@@ -1310,11 +1310,14 @@ export default function ProductImages({ urls }: Props) {
     const secondImage = imageRefs.current[1].current;
     const secondImageEl =  secondImage?.children[0] as HTMLImageElement;
 
+
     if (zoomedDuringWrap.current === true) {
       zoomedDuringWrap.current = false;
     }
 
-    if (Number(imageEl.dataset.index) !== imageRefs.current.length - 2) {
+    // console.log('Number(imageEl.dataset.index', Number(imageEl.dataset.index))
+
+    if (Number(imageEl.dataset.index) !== imageRefs.current.length - 2 && Number(imageEl.dataset.index) !== imageRefs.current.length - 3) {
       console.log('1')
       lastImageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${finalZoom})`;
     }
