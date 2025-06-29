@@ -1,3 +1,5 @@
+'use client'
+
 import { useRef, useCallback } from 'react';
 
 type Axis = 'x' | 'y';
