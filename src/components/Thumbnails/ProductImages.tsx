@@ -488,8 +488,8 @@ export default function ProductImages({ urls }: Props) {
           imgChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
           imgChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
         }
-          
-        if (index !== 1 && index !== imageRefs.current.length - 1 && firstImageRefChild) {
+          console.log('zoom in index', index, imageRefs.current.length - 1)
+        if (index === imageRefs.current.length - 2 && firstImageRefChild) {
           console.log('firstImageRefChild')
           firstImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
           firstImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
@@ -514,7 +514,7 @@ export default function ProductImages({ urls }: Props) {
           });
         }
 
-        if (index !== 1 && index !== imageRefs.current.length - 1 && firstImageRefChild) {
+        if (index === imageRefs.current.length - 2 && firstImageRefChild) {
           firstImageRefChild.addEventListener('transitionend', function handler() {
             firstImageRefChild.style.transition = '';
             firstImageRefChild.removeEventListener('transitionend', handler);
@@ -566,7 +566,7 @@ export default function ProductImages({ urls }: Props) {
           secondImageRef.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
         }
 
-        if (index !== imageRefs.current.length - 2 && lastImageRef) {
+        if (lastImageRef) {
           lastImageRef.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
         }
       
@@ -590,7 +590,7 @@ export default function ProductImages({ urls }: Props) {
           secondImageRefChild.style.transform = `translate(0, 0) scale(1)`;
         }
 
-        if (index !== imageRefs.current.length - 2 && lastImageRefChild) {
+        if (lastImageRefChild) {
           lastImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
           lastImageRefChild.style.transform = `translate(0, 0) scale(1)`;
         }
@@ -616,7 +616,7 @@ export default function ProductImages({ urls }: Props) {
           });
         }
 
-        if (index !== imageRefs.current.length - 2 && lastImageRefChild) {
+        if (lastImageRefChild) {
           lastImageRefChild.addEventListener('transitionend', function handler() {
             lastImageRefChild.style.transition = '';
             lastImageRefChild.removeEventListener('transitionend', handler);
@@ -635,7 +635,7 @@ export default function ProductImages({ urls }: Props) {
           secondImageRef.style.transform = `translate(0, 0) scale(1)`;
         }
 
-        if (index !== imageRefs.current.length - 2 && lastImageRef) {
+        if (lastImageRef) {
           lastImageRef.style.transform = `translate(0, 0) scale(1)`;
         }
         
@@ -663,7 +663,7 @@ export default function ProductImages({ urls }: Props) {
           });
         }
 
-        if (index !== imageRefs.current.length - 2 && lastImageRef) {
+        if (lastImageRef) {
           lastImageRef.addEventListener('transitionend', function handler() {
             if (!lastImageRef) return;
             lastImageRef.style.transition = '';
@@ -1180,8 +1180,6 @@ export default function ProductImages({ urls }: Props) {
     } else {
       setIsZoomed(false);
       setZoomLevel(1);
-      isPinching.current = false;
-      isTouchPinching.current = false;
     }
   }, [scale]);
 
@@ -1312,7 +1310,9 @@ export default function ProductImages({ urls }: Props) {
     const secondImage = imageRefs.current[1].current;
     const secondImageEl =  secondImage?.children[0] as HTMLImageElement;
 
-    console.log('Number(imageEl.dataset.index', Number(imageEl.dataset.index))
+    if (zoomedDuringWrap.current === true) {
+      zoomedDuringWrap.current = false;
+    }
 
     if (Number(imageEl.dataset.index) !== imageRefs.current.length - 2) {
       console.log('1')
