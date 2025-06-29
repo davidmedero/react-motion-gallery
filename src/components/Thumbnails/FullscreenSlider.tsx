@@ -25,6 +25,7 @@ interface FullscreenSliderProps {
   isWrapping: RefObject<boolean>;
   fullscreenImageWidth: RefObject<number>;
   zoomedDuringWrap: RefObject<boolean>;
+  isImageMoving: RefObject<boolean>;
 }
 
 const FullscreenSlider = ({
@@ -45,7 +46,8 @@ const FullscreenSlider = ({
   showFullscreenSlider,
   isWrapping,
   fullscreenImageWidth,
-  zoomedDuringWrap
+  zoomedDuringWrap,
+  isImageMoving
 }: FullscreenSliderProps) => {
   const friction = 0.28;
   const attraction = 0.025;
@@ -260,7 +262,7 @@ const FullscreenSlider = ({
   function positionSlider() {
     let currentPositionX = x.current;
     const currentPositionY = y.current;
-    if (!isClick.current && imageCount > 1 && zoomedDuringWrap.current !== true) {
+    if (!isClick.current && imageCount > 1 && zoomedDuringWrap.current !== true && isImageMoving.current !== true) {
       currentPositionX = ((currentPositionX % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
       currentPositionX += -sliderWidth.current;
     }
@@ -510,6 +512,7 @@ const FullscreenSlider = ({
     isScrolling.current = false;
     isPinching.current = false;
     zoomedDuringWrap.current = false;
+    isImageMoving.current = false;
     select(selectedIndex.current - 1);
   }
   
@@ -518,6 +521,7 @@ const FullscreenSlider = ({
     isScrolling.current = false;
     isPinching.current = false;
     zoomedDuringWrap.current = false;
+    isImageMoving.current = false
     select(selectedIndex.current + 1);
   }  
 
@@ -596,7 +600,7 @@ const FullscreenSlider = ({
   }, [scale]);
 
   function wrapSelect(index: number) {
-    if (!slider.current || zoomedDuringWrap.current === true) return;
+    if (!slider.current || zoomedDuringWrap.current === true || isImageMoving.current === true) return;
 
     const length = slides.current.length;
     const slideableWidth = sliderWidth.current;

@@ -1599,6 +1599,7 @@ export default function ProductImages({ urls }: Props) {
           isWrapping={isWrapping}
           fullscreenImageWidth={fullscreenImageWidth}
           zoomedDuringWrap={zoomedDuringWrap}
+          isImageMoving={isAnimating}
         >
           {urls.length > 1 ? wrappedFullscreenImages : oneFullscreenImage}
         </FullscreenSlider>
