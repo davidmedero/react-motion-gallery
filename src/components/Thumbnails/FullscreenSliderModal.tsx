@@ -182,8 +182,6 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     const scaledWidth = fullscreenImageWidth.current * currentScale;
     const windowOffset = window.innerWidth > scaledWidth ? window.innerWidth - scaledWidth : 0;
-    console.log('window.innerWidth', window.innerWidth)
-    console.log('fullscreenImageWidth', fullscreenImageWidth.current)
   
     deltaX =
       currentScale !== 1

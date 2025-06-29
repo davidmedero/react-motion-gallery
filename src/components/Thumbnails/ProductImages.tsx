@@ -1194,6 +1194,8 @@ export default function ProductImages({ urls }: Props) {
   }) {
     if (!imageRef.current) return;
 
+    getImageAspectRatio(imageRef.current);
+
     const finalZoom = clamp(destZoomLevel, 1, 3);
 
     if (finalZoom === scale) return;
