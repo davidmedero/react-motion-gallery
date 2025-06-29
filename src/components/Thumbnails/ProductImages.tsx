@@ -488,7 +488,7 @@ export default function ProductImages({ urls }: Props) {
           imgChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
           imgChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
         }
-          console.log('zoom in index', index, imageRefs.current.length - 1)
+
         if (index === imageRefs.current.length - 2 && firstImageRefChild) {
           console.log('firstImageRefChild')
           firstImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
@@ -501,7 +501,7 @@ export default function ProductImages({ urls }: Props) {
           secondImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
         }
 
-        if (index !== imageRefs.current.length - 2 && lastImageRefChild) {
+        if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
           console.log('lastImageRefChild')
           lastImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
           lastImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
@@ -529,7 +529,7 @@ export default function ProductImages({ urls }: Props) {
           });
         }
 
-        if (index !== imageRefs.current.length - 2 && lastImageRefChild) {
+        if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
           lastImageRefChild.addEventListener('transitionend', function handler() {
             lastImageRefChild.style.transition = '';
             lastImageRefChild.removeEventListener('transitionend', handler);
