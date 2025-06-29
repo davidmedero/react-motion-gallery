@@ -1312,15 +1312,20 @@ export default function ProductImages({ urls }: Props) {
     const secondImage = imageRefs.current[1].current;
     const secondImageEl =  secondImage?.children[0] as HTMLImageElement;
 
-    if (Number(imageEl.dataset.index) === 1) {
+    console.log('Number(imageEl.dataset.index', Number(imageEl.dataset.index))
+
+    if (Number(imageEl.dataset.index) !== imageRefs.current.length - 2) {
+      console.log('1')
       lastImageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${finalZoom})`;
     }
 
     if (Number(imageEl.dataset.index) === imageRefs.current.length - 2) {
+      console.log('2')
       firstImageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${finalZoom})`;
     }
 
     if (Number(imageEl.dataset.index) === imageRefs.current.length - 1) {
+      console.log('3')
       secondImageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${finalZoom})`;
     }
   }
