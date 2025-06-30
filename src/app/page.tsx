@@ -1,3 +1,6 @@
+export const dynamic    = 'force-static';
+export const fetchCache = 'force-cache';
+
 import styles from "./page.module.css";
 import ProductImages from "@/components/Thumbnails/ProductImages";
 
