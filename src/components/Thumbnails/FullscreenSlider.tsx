@@ -16,7 +16,6 @@ interface FullscreenSliderProps {
   show: boolean;
   handleZoomToggle: (e: React.PointerEvent<HTMLImageElement> | React.TouchEvent<HTMLImageElement>, imageRef: React.RefObject<HTMLImageElement | null>) => void;
   imageRefs: React.RefObject<HTMLImageElement | null>[];
-  setIsZoomed: (isZoomed: boolean) => void;
   cells: RefObject<{ element: HTMLElement; index: number }[]>;
   isPinching: React.RefObject<boolean>;
   scale: number;
@@ -43,7 +42,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       show,
       handleZoomToggle,
       imageRefs,
-      setIsZoomed,
       cells,
       isPinching,
       isTouchPinching,
@@ -188,7 +186,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isTouchPinching.current = false;
     isPointerDown.current = true;
     isClick.current = true;
-    console.log('start fs slider')
 
     const transformValues = getCurrentTransform(slider.current);
     const translateX = transformValues.x;
@@ -221,8 +218,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
 
   function animate() {
     if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true) {
-      console.log('stopping animation')
-      console.log('isPinching.current', isPinching.current)
       isAnimating.current = false;
       restingFrames.current = 0;
       isClosing.current = false;
@@ -323,7 +318,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     e.preventDefault();
     if (isZoomed) return;
     if (!isPointerDown.current) return;
-    console.log('moving fs slider')
     
     previousDragX.current = dragX.current;
     previousDragY.current = dragY.current;
@@ -419,7 +413,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         }
 
         handleZoomToggle(e, matchedRef);
-        setIsZoomed(true);
       }
       
     } else {
@@ -578,41 +571,12 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     }
   }, [windowSize]);
 
-  // useEffect(() => {
-  //   if (!slider.current || !firstCellInSlide.current || !isPinching.current) return;
-  //   lastTranslateX.current = getTranslateX(firstCellInSlide.current);
-  //   if (selectedIndex.current === 0) {
-  //     x.current = 0;
-  //     const currentPosition = x.current;
-  //     setTranslateX(currentPosition, 0);
-  //   } else {
-  //     x.current = -(slider.current.clientWidth * selectedIndex.current);
-  //     const currentPosition = x.current;
-  //     setTranslateX(currentPosition, 0);
-  //   }
-  // }, [scale]);
-
-  // useEffect(() => {
-  //   if (!slider.current || !firstCellInSlide.current) return;
-  //   if (isTouchPinching.current === true) {
-  //     lastTranslateX.current = getTranslateX(firstCellInSlide.current);
-  //     if (selectedIndex.current === 0) {
-  //       x.current = 0;
-  //       const currentPosition = x.current;
-  //       setTranslateX(currentPosition, 0);
-  //     } else {
-  //       x.current = -(slider.current.clientWidth * selectedIndex.current);
-  //       const currentPosition = x.current;
-  //       setTranslateX(currentPosition, 0);
-  //     }
-  //   }
-  // }, [scale]);
   const centerSlider = useCallback(() => {
     if (!slider.current || !firstCellInSlide.current) return;
 
     lastTranslateX.current = getTranslateX(firstCellInSlide.current);
 
-    const idx = selectedIndex.current;  // or however you track it
+    const idx = selectedIndex.current;
     const newX =
       idx === 0
         ? 0
@@ -622,7 +586,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     setTranslateX(newX, 0);
   }, [selectedIndex.current]);
 
-  // expose it via the forwarded ref
   useImperativeHandle(ref, () => ({
     centerSlider,
   }), [centerSlider]);

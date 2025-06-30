@@ -10,9 +10,7 @@ interface FullscreenSliderModalProps {
   isClick: RefObject<boolean>;
   isAnimating: RefObject<boolean>;
   overlayDivRef: RefObject<HTMLDivElement | null>;
-  setZoomLevel: (zoom: number) => void;
   zoomLevel: number;
-  setIsZoomed: (isZoomed: boolean) => void;
   children: React.ReactNode;
   cells: RefObject<{ element: HTMLElement; index: number }[]>;
   fullscreenPosition: DOMRect;
@@ -28,9 +26,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   isClick,
   isAnimating,
   overlayDivRef,
-  setZoomLevel,
   zoomLevel,
-  setIsZoomed,
   cells,
   fullscreenPosition,
   setShowFullscreenSlider,
@@ -224,13 +220,10 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   
       if (overlayDivRef.current) document.body.removeChild(overlayDivRef.current);
       onClose();
-      setZoomLevel(1);
-      setIsZoomed(false);
       setShowFullscreenSlider(false);
       zoomedImg.style.height = "100%";
     }, 300);
   }  
-
 
   return (
     <div

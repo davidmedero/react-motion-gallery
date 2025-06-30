@@ -12,6 +12,7 @@ import { useSyncExternalStore } from 'react';
 import slideStore from './slideStore';
 import styles from './ProductImages.module.css';
 import { useScrollDrag } from "./useScrollDrag";
+import scaleStore from './scaleStore';
 
 function useSlideIndex() {
   return useSyncExternalStore(
@@ -56,6 +57,14 @@ export default function ProductImages({ urls }: Props) {
     height: 0,
   });
 
+  const isZoomed = useSyncExternalStore(
+    scaleStore.subscribe,
+    scaleStore.getSnapshot,
+    scaleStore.getServerSnapshot
+  );
+
+  const zoomLevel = isZoomed ? 2 : 1;
+
   const scaleRef = useRef(1);
   const panRef   = useRef({ x: 0, y: 0 });
   const previousZoom = useRef({ x: 0, y: 0 });
@@ -64,7 +73,6 @@ export default function ProductImages({ urls }: Props) {
   const clickScale = 2.5;
   const friction = 0.15;
   const attraction = 0.015;
-  const [isZoomed, setIsZoomed] = useState(false);
   const isPointerDown = useRef(false);
   const currentImage = useRef<HTMLElement | null>(null);
   const dragStartPositionX = useRef(0);
@@ -82,7 +90,6 @@ export default function ProductImages({ urls }: Props) {
   const lastForceX = useRef(0);
   const lastForceY = useRef(0);
 
-  const [zoomLevel, setZoomLevel] = useState(1);
   const zoomX = useRef(0);
   const zoomY = useRef(0);
   const zoomOffset = useRef(0);
@@ -234,17 +241,13 @@ export default function ProductImages({ urls }: Props) {
   useEffect(() => {
     if (scaleRef.current === 1) return;
     changingSlides.current = true;
-    setZoomLevel(1);
-    setIsZoomed(false);
+    scaleStore.setScale(1);
     zoomX.current = 0;
     zoomY.current = 0;
-    // setScale(1);
     scaleRef.current = 1;
     previousZoom.current.x = 0;
     previousZoom.current.y = 0;
-    // setPan({ x: 0, y: 0 });
     panRef.current = { x: 0, y: 0 }
-    console.log('changing slides')
 
     const commonStyles = {
       transform: 'translate(0, 0) scale(1)',
@@ -351,8 +354,6 @@ export default function ProductImages({ urls }: Props) {
     if (!imageRef.current) return;
     
     const newZoom = zoomLevel === 1 ? 2 : 1;
-    
-    setZoomLevel(newZoom);
 
     const target = e.target as HTMLImageElement;
     const computedStyle = window.getComputedStyle(target);
@@ -465,6 +466,7 @@ export default function ProductImages({ urls }: Props) {
         zoomX.current = boundedX;
         zoomY.current = boundedY;
         scaleRef.current = clickScale
+        scaleStore.setScale(clickScale);
   
         const panX = (-zoomX.current) * (clickScale - 1);
         const panY = (-zoomY.current) * (clickScale - 1);
@@ -543,6 +545,7 @@ export default function ProductImages({ urls }: Props) {
         zoomX.current = 0;
         zoomY.current = 0;
         scaleRef.current = 1;
+        scaleStore.setScale(1);
         previousZoom.current.x = 0;
         previousZoom.current.y = 0;
         panRef.current = { x: 0, y: 0 }
@@ -690,7 +693,6 @@ export default function ProductImages({ urls }: Props) {
     isZoomClick.current = true;
 
     if (!isZoomed) return;
-    console.log('start')
     isPointerDown.current = true;
 
     const transformValues = getCurrentTransform(imageRef.current);
@@ -809,7 +811,6 @@ export default function ProductImages({ urls }: Props) {
     e.preventDefault();
     if (!isZoomed) return;
     if (!isPointerDown.current) return;
-    console.log('moving')
     
     let currentX: number = 0, currentY: number = 0;
 
@@ -906,9 +907,9 @@ export default function ProductImages({ urls }: Props) {
       if (imgIndex === undefined) return;
 
       const matchedRef = imageRefs.current[parseInt(imgIndex)];
-      console.log('zooming out')
+
       handleZoomToggle(e, matchedRef);
-      setIsZoomed(false);
+      scaleStore.setScale(1);
       return;
     }
 
@@ -1199,6 +1200,8 @@ export default function ProductImages({ urls }: Props) {
 
     if (finalZoom === scaleRef.current) return;
 
+    scaleStore.setScale(finalZoom);
+
     const image = imageRef.current;
     const imageEl = image.children[0] as HTMLImageElement;
     const rect = image.getBoundingClientRect();
@@ -1327,16 +1330,6 @@ export default function ProductImages({ urls }: Props) {
         // clear for the next frame
         rafId.current = null;
       });
-    }
-
-    const nextZoomed    = finalZoom > 1.01;
-    const nextZoomLevel = nextZoomed ? 2 : 1;
-
-    if (nextZoomed !== isZoomed) {
-      setIsZoomed(nextZoomed);
-    }
-    if (nextZoomLevel !== zoomLevel) {
-      setZoomLevel(nextZoomLevel);
     }
   }
 
@@ -1580,9 +1573,9 @@ export default function ProductImages({ urls }: Props) {
         isAnimating={isAnimating}
         fullscreenPosition={fullscreenPosition}
         overlayDivRef={overlayDivRef}
-        setZoomLevel={setZoomLevel}
+        // setZoomLevel={setZoomLevel}
         zoomLevel={zoomLevel}
-        setIsZoomed={setIsZoomed}
+        // setIsZoomed={setIsZoomed}
         cells={cells}
         setShowFullscreenSlider={setShowFullscreenSlider}
         imageCount={urls.length}
@@ -1598,7 +1591,7 @@ export default function ProductImages({ urls }: Props) {
           show={showFullscreenModal} 
           handleZoomToggle={handleZoomToggle} 
           imageRefs={imageRefs.current} 
-          setIsZoomed={setIsZoomed} 
+          // setIsZoomed={setIsZoomed} 
           cells={cells} 
           isPinching={isPinching} 
           scale={scaleRef.current} 
