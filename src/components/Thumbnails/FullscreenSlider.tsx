@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useRef, useEffect, ReactNode, Children, RefObject } from "react";
+import { useRef, useEffect, ReactNode, Children, RefObject, useCallback, useImperativeHandle, forwardRef } from "react";
 import slideStore from './slideStore';
 
 
@@ -25,30 +25,35 @@ interface FullscreenSliderProps {
   isWrapping: RefObject<boolean>;
   fullscreenImageWidth: RefObject<number>;
   zoomedDuringWrap: RefObject<boolean>;
-  isImageMoving: RefObject<boolean>;
 }
 
-const FullscreenSlider = ({
-  children,
-  imageCount,
-  slideIndex,
-  isClick,
-  isZoomed,
-  windowSize,
-  show,
-  handleZoomToggle,
-  imageRefs,
-  setIsZoomed,
-  cells,
-  isPinching,
-  scale,
-  isTouchPinching,
-  showFullscreenSlider,
-  isWrapping,
-  fullscreenImageWidth,
-  zoomedDuringWrap,
-  isImageMoving
-}: FullscreenSliderProps) => {
+export interface FullscreenSliderHandle {
+  centerSlider(): void;
+}
+
+const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProps>(
+  (
+    {
+      children,
+      imageCount,
+      slideIndex,
+      isClick,
+      isZoomed,
+      windowSize,
+      show,
+      handleZoomToggle,
+      imageRefs,
+      setIsZoomed,
+      cells,
+      isPinching,
+      isTouchPinching,
+      showFullscreenSlider,
+      isWrapping,
+      fullscreenImageWidth,
+      zoomedDuringWrap
+    },
+    ref
+  ) => {
   const friction = 0.28;
   const attraction = 0.025;
   const slider = useRef<HTMLDivElement | null>(null);
@@ -179,8 +184,11 @@ const FullscreenSlider = ({
   function handlePointerStart(e: PointerEventExtended) {
     if (isZoomed) return;
     isScrolling.current = false;
+    isPinching.current = false;
+    isTouchPinching.current = false;
     isPointerDown.current = true;
     isClick.current = true;
+    console.log('start fs slider')
 
     const transformValues = getCurrentTransform(slider.current);
     const translateX = transformValues.x;
@@ -213,6 +221,8 @@ const FullscreenSlider = ({
 
   function animate() {
     if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true) {
+      console.log('stopping animation')
+      console.log('isPinching.current', isPinching.current)
       isAnimating.current = false;
       restingFrames.current = 0;
       isClosing.current = false;
@@ -262,7 +272,7 @@ const FullscreenSlider = ({
   function positionSlider() {
     let currentPositionX = x.current;
     const currentPositionY = y.current;
-    if (!isClick.current && imageCount > 1 && zoomedDuringWrap.current !== true && isImageMoving.current !== true) {
+    if (!isClick.current && imageCount > 1 && zoomedDuringWrap.current !== true) {
       currentPositionX = ((currentPositionX % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
       currentPositionX += -sliderWidth.current;
     }
@@ -313,6 +323,7 @@ const FullscreenSlider = ({
     e.preventDefault();
     if (isZoomed) return;
     if (!isPointerDown.current) return;
+    console.log('moving fs slider')
     
     previousDragX.current = dragX.current;
     previousDragY.current = dragY.current;
@@ -512,7 +523,6 @@ const FullscreenSlider = ({
     isScrolling.current = false;
     isPinching.current = false;
     zoomedDuringWrap.current = false;
-    isImageMoving.current = false;
     select(selectedIndex.current - 1);
   }
   
@@ -521,7 +531,6 @@ const FullscreenSlider = ({
     isScrolling.current = false;
     isPinching.current = false;
     zoomedDuringWrap.current = false;
-    isImageMoving.current = false
     select(selectedIndex.current + 1);
   }  
 
@@ -569,38 +578,57 @@ const FullscreenSlider = ({
     }
   }, [windowSize]);
 
-  useEffect(() => {
-    if (!slider.current || !firstCellInSlide.current || !isPinching.current) return;
-    lastTranslateX.current = getTranslateX(firstCellInSlide.current);
-    if (selectedIndex.current === 0) {
-      x.current = 0;
-      const currentPosition = x.current;
-      setTranslateX(currentPosition, 0);
-    } else {
-      x.current = -(slider.current.clientWidth * selectedIndex.current);
-      const currentPosition = x.current;
-      setTranslateX(currentPosition, 0);
-    }
-  }, [scale]);
+  // useEffect(() => {
+  //   if (!slider.current || !firstCellInSlide.current || !isPinching.current) return;
+  //   lastTranslateX.current = getTranslateX(firstCellInSlide.current);
+  //   if (selectedIndex.current === 0) {
+  //     x.current = 0;
+  //     const currentPosition = x.current;
+  //     setTranslateX(currentPosition, 0);
+  //   } else {
+  //     x.current = -(slider.current.clientWidth * selectedIndex.current);
+  //     const currentPosition = x.current;
+  //     setTranslateX(currentPosition, 0);
+  //   }
+  // }, [scale]);
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   if (!slider.current || !firstCellInSlide.current) return;
+  //   if (isTouchPinching.current === true) {
+  //     lastTranslateX.current = getTranslateX(firstCellInSlide.current);
+  //     if (selectedIndex.current === 0) {
+  //       x.current = 0;
+  //       const currentPosition = x.current;
+  //       setTranslateX(currentPosition, 0);
+  //     } else {
+  //       x.current = -(slider.current.clientWidth * selectedIndex.current);
+  //       const currentPosition = x.current;
+  //       setTranslateX(currentPosition, 0);
+  //     }
+  //   }
+  // }, [scale]);
+  const centerSlider = useCallback(() => {
     if (!slider.current || !firstCellInSlide.current) return;
-    if (isTouchPinching.current === true) {
-      lastTranslateX.current = getTranslateX(firstCellInSlide.current);
-      if (selectedIndex.current === 0) {
-        x.current = 0;
-        const currentPosition = x.current;
-        setTranslateX(currentPosition, 0);
-      } else {
-        x.current = -(slider.current.clientWidth * selectedIndex.current);
-        const currentPosition = x.current;
-        setTranslateX(currentPosition, 0);
-      }
-    }
-  }, [scale]);
+
+    lastTranslateX.current = getTranslateX(firstCellInSlide.current);
+
+    const idx = selectedIndex.current;  // or however you track it
+    const newX =
+      idx === 0
+        ? 0
+        : -slider.current.clientWidth * idx;
+
+    x.current = newX;
+    setTranslateX(newX, 0);
+  }, [selectedIndex.current]);
+
+  // expose it via the forwarded ref
+  useImperativeHandle(ref, () => ({
+    centerSlider,
+  }), [centerSlider]);
 
   function wrapSelect(index: number) {
-    if (!slider.current || zoomedDuringWrap.current === true || isImageMoving.current === true) return;
+    if (!slider.current || zoomedDuringWrap.current === true) return;
 
     const length = slides.current.length;
     const slideableWidth = sliderWidth.current;
@@ -790,6 +818,9 @@ const FullscreenSlider = ({
       </div>
     </div>
   );
-};
+  }
+);
+
+FullscreenSlider.displayName = 'FullscreenSlider';
 
 export default FullscreenSlider;

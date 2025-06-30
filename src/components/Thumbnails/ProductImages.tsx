@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, createRef, useLayoutEffect, useCallback } 
 import SimpleBarReact from 'simplebar-react';
 import 'simplebar-react/dist/simplebar.min.css';
 import type SimpleBarCore from 'simplebar';
-import FullscreenSlider from "./FullscreenSlider";
+import FullscreenSlider, { FullscreenSliderHandle } from "./FullscreenSlider";
 import FullscreenSliderModal from "./FullscreenSliderModal";
 import ProductImageSlider from "./ProductImageSlider";
 import { useSyncExternalStore } from 'react';
@@ -38,6 +38,7 @@ export default function ProductImages({ urls }: Props) {
   const isWrapping = useRef(true);
   const fullscreenImageWidth = useRef(0);
   const zoomedDuringWrap = useRef(false);
+  const sliderApi = useRef<FullscreenSliderHandle>(null);
 
   const expandableImgRefs = useRef([]);
   const overlayDivRef = useRef<HTMLDivElement | null>(null);
@@ -55,8 +56,8 @@ export default function ProductImages({ urls }: Props) {
     height: 0,
   });
 
-  const [scale, setScale] = useState(1);
-  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
+  const scaleRef = useRef(1);
+  const panRef   = useRef({ x: 0, y: 0 });
   const previousZoom = useRef({ x: 0, y: 0 });
   const slideIndexSync = useSlideIndex();
   const changingSlides = useRef(false);
@@ -87,7 +88,7 @@ export default function ProductImages({ urls }: Props) {
   const zoomOffset = useRef(0);
   const zoomIncreaseDiff = useRef(0);
 
-  const [aspectRatio, setAspectRatio] = useState(1);
+  const aspectRatioRef = useRef(1);
 
   const isScrolling = useRef(false);
   const isPinching = useRef(false);
@@ -231,16 +232,18 @@ export default function ProductImages({ urls }: Props) {
   });
 
   useEffect(() => {
-    if (scale === 1) return;
+    if (scaleRef.current === 1) return;
     changingSlides.current = true;
     setZoomLevel(1);
     setIsZoomed(false);
     zoomX.current = 0;
     zoomY.current = 0;
-    setScale(1);
+    // setScale(1);
+    scaleRef.current = 1;
     previousZoom.current.x = 0;
     previousZoom.current.y = 0;
-    setPan({ x: 0, y: 0 });
+    // setPan({ x: 0, y: 0 });
+    panRef.current = { x: 0, y: 0 }
     console.log('changing slides')
 
     const commonStyles = {
@@ -336,7 +339,7 @@ export default function ProductImages({ urls }: Props) {
   
     if (imgElement && imgElement.naturalWidth && imgElement.naturalHeight) {
       const ratio = imgElement.naturalWidth / imgElement.naturalHeight;
-      setAspectRatio(ratio);
+      aspectRatioRef.current = ratio;
     }
   }
   
@@ -461,7 +464,7 @@ export default function ProductImages({ urls }: Props) {
         if (!imageRef.current) return;
         zoomX.current = boundedX;
         zoomY.current = boundedY;
-        setScale(clickScale);
+        scaleRef.current = clickScale
   
         const panX = (-zoomX.current) * (clickScale - 1);
         const panY = (-zoomY.current) * (clickScale - 1);
@@ -469,7 +472,7 @@ export default function ProductImages({ urls }: Props) {
         previousZoom.current.x = zoomX.current;
         previousZoom.current.y = zoomY.current;
   
-        setPan({ x: panX, y: panY });
+        panRef.current = { x: panX, y: panY }
   
         const firstImageRef = imageRefs.current[0].current;
         const secondImageRef = imageRefs.current[1].current;
@@ -539,10 +542,10 @@ export default function ProductImages({ urls }: Props) {
         if (!imageRef.current) return;
         zoomX.current = 0;
         zoomY.current = 0;
-        setScale(1);
+        scaleRef.current = 1;
         previousZoom.current.x = 0;
         previousZoom.current.y = 0;
-        setPan({ x: 0, y: 0 });
+        panRef.current = { x: 0, y: 0 }
 
         if (zoomedDuringWrap.current === true) {
           zoomedDuringWrap.current = false;
@@ -687,6 +690,7 @@ export default function ProductImages({ urls }: Props) {
     isZoomClick.current = true;
 
     if (!isZoomed) return;
+    console.log('start')
     isPointerDown.current = true;
 
     const transformValues = getCurrentTransform(imageRef.current);
@@ -805,6 +809,7 @@ export default function ProductImages({ urls }: Props) {
     e.preventDefault();
     if (!isZoomed) return;
     if (!isPointerDown.current) return;
+    console.log('moving')
     
     let currentX: number = 0, currentY: number = 0;
 
@@ -830,7 +835,7 @@ export default function ProductImages({ urls }: Props) {
     if (!imageRef.current) return;
 
     const imageWidth = imageRef.current.children[0].clientWidth;
-    const imageHeight = imageRef.current.children[0].clientWidth / aspectRatio;
+    const imageHeight = imageRef.current.children[0].clientWidth / aspectRatioRef.current;
 
     const distanceFromLeftBound = Math.max(0, dragStartPositionX.current - (zoomX.current * zoomOffset.current) + (windowSize.width - imageWidth) / 2);
 
@@ -932,7 +937,7 @@ export default function ProductImages({ urls }: Props) {
     if (!currentImage.current) return;
   
     const imageWidth = currentImage.current.children[0].clientWidth;
-    const imageHeight = currentImage.current.children[0].clientWidth / aspectRatio;
+    const imageHeight = currentImage.current.children[0].clientWidth / aspectRatioRef.current;
   
     const leftBound = restingX - (zoomX.current * zoomOffset.current) + (windowSize.width - imageWidth) / 2;
     const rightBound = restingX - (zoomX.current * zoomOffset.current) + (imageWidth * zoomIncreaseDiff.current) + (windowSize.width - imageWidth) / 2;
@@ -947,7 +952,7 @@ export default function ProductImages({ urls }: Props) {
       bottomBound = restingY - (zoomY.current * zoomOffset.current) + (((windowSize.height - imageHeight) / 2) * zoomIncreaseDiff.current) + (imageHeight * zoomIncreaseDiff.current) + (windowSize.height - imageHeight);
     }
   
-    if (windowSize.width >= imageWidth * scale) {
+    if (windowSize.width >= imageWidth * scaleRef.current) {
         const distance = -restingX + (zoomX.current * zoomOffset.current) - (imageWidth / 2) * zoomOffset.current;
         const force = distance * attraction;
         velocityX.current += force;
@@ -1055,7 +1060,7 @@ export default function ProductImages({ urls }: Props) {
     if (!currentImage.current) return;
 
     const imageWidth = currentImage.current.children[0].clientWidth;
-    const imageHeight = currentImage.current.children[0].clientWidth / aspectRatio;
+    const imageHeight = currentImage.current.children[0].clientWidth / aspectRatioRef.current;
 
     const leftBound = (translateX - (zoomX.current * zoomOffset.current) + (windowSize.width - imageWidth) / 2);
 
@@ -1065,7 +1070,7 @@ export default function ProductImages({ urls }: Props) {
 
     const bottomBound = (translateY - (zoomY.current * zoomOffset.current) + (imageHeight * zoomIncreaseDiff.current) + (windowSize.height - imageHeight) / 2);
 
-    if (windowSize.width >= imageWidth * scale) {
+    if (windowSize.width >= imageWidth * scaleRef.current) {
       const distance = -translateX + (zoomX.current * zoomOffset.current) - (imageWidth / 2) * zoomOffset.current;
       const force = distance * 1;
       translateX += force;
@@ -1083,7 +1088,7 @@ export default function ProductImages({ urls }: Props) {
       };
     }
 
-    if (windowSize.height > imageHeight * scale) {
+    if (windowSize.height > imageHeight * scaleRef.current) {
       translateY = 0;
     } else if (windowSize.height > imageHeight) {
       if (topBound > 0) {
@@ -1150,7 +1155,9 @@ export default function ProductImages({ urls }: Props) {
     if (!imageRef.current) return;
     if (!e.ctrlKey) return;
 
-    if (scale > 1.01) {
+    sliderApi.current?.centerSlider();
+
+    if (scaleRef.current > 1.01) {
       isPinching.current = true;
     }
 
@@ -1163,7 +1170,7 @@ export default function ProductImages({ urls }: Props) {
 
     const divisor = ctrlKey ? 100 : 300;
     const scaleDiff = 1 - deltaY / divisor;
-    const destZoomLevel = scale * scaleDiff;
+    const destZoomLevel = scaleRef.current * scaleDiff;
 
     zoomTo({
       destZoomLevel,
@@ -1171,17 +1178,9 @@ export default function ProductImages({ urls }: Props) {
       imageRef
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scale]);
+  }, [scaleRef.current]);
 
-  useLayoutEffect(() => {
-    if (scale > 1.01) {
-      setIsZoomed(true);
-      setZoomLevel(2);
-    } else {
-      setIsZoomed(false);
-      setZoomLevel(1);
-    }
-  }, [scale]);
+  const rafId = useRef<number|null>(null);
 
   function zoomTo({
     destZoomLevel,
@@ -1198,7 +1197,7 @@ export default function ProductImages({ urls }: Props) {
 
     const finalZoom = clamp(destZoomLevel, 1, 3);
 
-    if (finalZoom === scale) return;
+    if (finalZoom === scaleRef.current) return;
 
     const image = imageRef.current;
     const imageEl = image.children[0] as HTMLImageElement;
@@ -1216,18 +1215,18 @@ export default function ProductImages({ urls }: Props) {
     zoomOffset.current = finalZoom - 1;
     zoomIncreaseDiff.current = finalZoom - 2;
 
-    zoomX.current = (offsetX - pan.x) / scale;
+    zoomX.current = (offsetX - panRef.current.x) / scaleRef.current;
     const panX = (-zoomX.current) * (finalZoom - 1);
 
-    zoomY.current = (offsetY - pan.y) / scale;
+    zoomY.current = (offsetY - panRef.current.y) / scaleRef.current;
     const panY = (-zoomY.current) * (finalZoom - 1);
 
-    if (scale !== 1 && zoomY.current !== previousZoom.current.y) {
+    if (scaleRef.current !== 1 && zoomY.current !== previousZoom.current.y) {
       y.current += ((zoomY.current - previousZoom.current.y) * (finalZoom - 1));
       positionSlider();
     }
 
-    if (scale !== 1 && zoomX.current !== previousZoom.current.x) {
+    if (scaleRef.current !== 1 && zoomX.current !== previousZoom.current.x) {
       x.current += ((zoomX.current - previousZoom.current.x) * (finalZoom - 1));
       positionSlider();
     }
@@ -1235,8 +1234,8 @@ export default function ProductImages({ urls }: Props) {
     previousZoom.current.x = zoomX.current;
     previousZoom.current.y = zoomY.current;
 
-    setScale(finalZoom);
-    setPan({ x: panX, y: panY });
+    scaleRef.current = finalZoom
+    panRef.current = { x: panX, y: panY }
 
     let topBound = 0;
     let bottomBound = 0;
@@ -1301,37 +1300,43 @@ export default function ProductImages({ urls }: Props) {
       } 
     }
     
-    imageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${finalZoom})`;
+    if (rafId.current === null) {
+      rafId.current = requestAnimationFrame(() => {
+        // primary image
+        imageEl.style.transform = `translate3d(${panX}px, ${panY}px,0) scale(${finalZoom})`;
 
-    const lastImage = imageRefs.current[imageRefs.current.length - 1].current;
-    const lastImageEl = lastImage?.children[0] as HTMLImageElement;
+        // the cloned/wrap-around images
+        const lastImageEl   = imageRefs.current.at(-1)?.current?.children[0] as HTMLElement;
+        const firstImageEl  = imageRefs.current[0]?.current?.children[0] as HTMLElement;
+        const secondImageEl = imageRefs.current[1]?.current?.children[0] as HTMLElement;
 
-    const firstImage = imageRefs.current[0].current;
-    const firstImageEl =  firstImage?.children[0] as HTMLImageElement;
+        const idx = Number(imageEl.dataset.index);
+        const len = imageRefs.current.length;
 
-    const secondImage = imageRefs.current[1].current;
-    const secondImageEl =  secondImage?.children[0] as HTMLImageElement;
+        // only transform the ones that need it
+        if (idx !== len - 2 && idx !== len - 3 && lastImageEl) {
+          lastImageEl.style.transform = `translate3d(${panX}px, ${panY}px,0) scale(${finalZoom})`;
+        }
+        if (idx === len - 2 && firstImageEl) {
+          firstImageEl.style.transform = `translate3d(${panX}px, ${panY}px,0) scale(${finalZoom})`;
+        }
+        if (idx === len - 1 && secondImageEl) {
+          secondImageEl.style.transform = `translate3d(${panX}px, ${panY}px,0) scale(${finalZoom})`;
+        }
 
-
-    if (zoomedDuringWrap.current === true) {
-      zoomedDuringWrap.current = false;
+        // clear for the next frame
+        rafId.current = null;
+      });
     }
 
-    // console.log('Number(imageEl.dataset.index', Number(imageEl.dataset.index))
+    const nextZoomed    = finalZoom > 1.01;
+    const nextZoomLevel = nextZoomed ? 2 : 1;
 
-    if (Number(imageEl.dataset.index) !== imageRefs.current.length - 2 && Number(imageEl.dataset.index) !== imageRefs.current.length - 3) {
-      console.log('1')
-      lastImageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${finalZoom})`;
+    if (nextZoomed !== isZoomed) {
+      setIsZoomed(nextZoomed);
     }
-
-    if (Number(imageEl.dataset.index) === imageRefs.current.length - 2) {
-      console.log('2')
-      firstImageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${finalZoom})`;
-    }
-
-    if (Number(imageEl.dataset.index) === imageRefs.current.length - 1) {
-      console.log('3')
-      secondImageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${finalZoom})`;
+    if (nextZoomLevel !== zoomLevel) {
+      setZoomLevel(nextZoomLevel);
     }
   }
 
@@ -1388,10 +1393,12 @@ export default function ProductImages({ urls }: Props) {
     if (e.touches.length !== 2) return;
     e.preventDefault();
 
+    sliderApi.current?.centerSlider();
+
     isTouchPinching.current = true;
     const [t0, t1] = [e.touches[0], e.touches[1]];
     startDist.current = distance(t0, t1);
-    startScale.current = scale;
+    startScale.current = scaleRef.current;
   }
 
   const onTouchMove = (e: TouchEvent, imageRef: React.RefObject<HTMLDivElement | null>) => {
@@ -1582,6 +1589,7 @@ export default function ProductImages({ urls }: Props) {
         fullscreenImageWidth={fullscreenImageWidth}
       >
         <FullscreenSlider 
+          ref={sliderApi}
           imageCount={urls.length} 
           slideIndex={slideIndex} 
           isClick={isZoomClick} 
@@ -1593,13 +1601,12 @@ export default function ProductImages({ urls }: Props) {
           setIsZoomed={setIsZoomed} 
           cells={cells} 
           isPinching={isPinching} 
-          scale={scale} 
+          scale={scaleRef.current} 
           isTouchPinching={isTouchPinching}
           showFullscreenSlider={showFullscreenSlider}
           isWrapping={isWrapping}
           fullscreenImageWidth={fullscreenImageWidth}
           zoomedDuringWrap={zoomedDuringWrap}
-          isImageMoving={isAnimating}
         >
           {urls.length > 1 ? wrappedFullscreenImages : oneFullscreenImage}
         </FullscreenSlider>
