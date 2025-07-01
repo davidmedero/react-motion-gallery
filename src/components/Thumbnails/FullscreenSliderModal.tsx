@@ -17,6 +17,7 @@ interface FullscreenSliderModalProps {
   setShowFullscreenSlider: Dispatch<SetStateAction<boolean>>;
   imageCount: number;
   fullscreenImageWidth: RefObject<number>;
+  setClosingModal: Dispatch<SetStateAction<boolean>>;
 }
 
 const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
@@ -32,6 +33,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   setShowFullscreenSlider,
   imageCount,
   fullscreenImageWidth,
+  setClosingModal,
   children,
 }) => {  
 
@@ -78,6 +80,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     isAnimating.current = false;
     isClick.current = false;
     cells.current = [];
+    setClosingModal(true);
   
     const x = e.clientX;
     const y = e.clientY;
@@ -221,6 +224,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
       if (overlayDivRef.current) document.body.removeChild(overlayDivRef.current);
       onClose();
       setShowFullscreenSlider(false);
+      setClosingModal(false);
       zoomedImg.style.height = "100%";
     }, 300);
   }  

@@ -1,9 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useRef, useEffect, ReactNode, cloneElement, Children, useState, createRef, Dispatch, SetStateAction, ReactElement, HTMLAttributes, ClassAttributes, RefObject, useLayoutEffect } from "react";
+import { useRef, useEffect, ReactNode, cloneElement, Children, useState, createRef, Dispatch, SetStateAction, ReactElement, HTMLAttributes, ClassAttributes, RefObject, useLayoutEffect, useSyncExternalStore } from "react";
 import type SimpleBarCore from 'simplebar';
-import styles from './ProductImageSlider.module.css'
+import styles from './ProductImageSlider.module.css';
+import slideStore from './slideStore';
+
+function useSlideIndex() {
+  return useSyncExternalStore(
+    slideStore.subscribe.bind(slideStore),
+    slideStore.getSnapshot.bind(slideStore),
+    slideStore.getSnapshot.bind(slideStore)
+  );
+}
 
 interface ProductImageSliderProps {
   children: ReactNode;
@@ -21,6 +30,7 @@ interface ProductImageSliderProps {
   setShowFullscreenSlider: Dispatch<SetStateAction<boolean>>;
   showFullscreenSlider: boolean;
   isWrapping: RefObject<boolean>;
+  closingModal: boolean;
 }
 
 // --- 1) Define the prop shape we'll be adding ---
@@ -69,7 +79,8 @@ const ProductImageSlider = ({
   setFullscreenPosition,
   setShowFullscreenSlider,
   showFullscreenSlider,
-  isWrapping
+  isWrapping,
+  closingModal
 }: ProductImageSliderProps) => {
   const slider = useRef<HTMLDivElement | null>(null);
   const [firstChildWidth, setFirstChildWidth] = useState(0);
@@ -100,6 +111,8 @@ const ProductImageSlider = ({
   const progressFillRef = useRef<HTMLDivElement>(null);
   const isClosing = useRef(false);
   const hasPositioned = useRef<boolean>(false);
+  const slideIndexSync = useSlideIndex();
+  const sliderContainer = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!cells.current?.[0]?.element) return;
@@ -130,7 +143,6 @@ const ProductImageSlider = ({
 
   useEffect(() => {
     if (!slider.current) return;
-    console.log('rvwerv')
   
     const images = calculateVisibleImages();
     const childrenArray = Children.toArray(children);
@@ -997,12 +1009,12 @@ const ProductImageSlider = ({
   }, [fullscreenImg]);  
 
   function toggleFullscreen(e: React.PointerEvent<HTMLDivElement>, img: RefObject<HTMLImageElement | null>, index: number) {
-    if (!img.current) return;
+    if (!img.current || !sliderContainer.current) return;
 
     const target = e.target as HTMLImageElement;
     const position = target.getBoundingClientRect();
 
-    setFullscreenPosition(position);
+    setFullscreenPosition(sliderContainer.current.getBoundingClientRect());
     setFullscreenImg(target);
 
     const overlayDiv = document.createElement('div');
@@ -1165,6 +1177,59 @@ const ProductImageSlider = ({
     })
   }, [showFullscreenSlider]);
 
+  useEffect(() => {
+    if (closingModal === true && slider.current) {
+      selectedIndex.current = slideIndexSync;
+      firstCellInSlide.current = slides.current[slideIndexSync]?.cells[0]?.element;
+      const slideWidth = slider.current.children[0]?.clientWidth || 0;
+      x.current = -slideWidth * slideIndexSync;
+      velocity.current = 0;
+      positionSlider();
+      thumbnailRefs.current.forEach((img: HTMLImageElement | null, i: number) => {
+        if (img) {
+          img.style.border =
+            i === slideIndexSync ? '2px solid #2d2a26' : '0px solid transparent';
+          }
+      });
+      if (!simpleBarRef.current) return;
+      const simpleBarScrollElement = simpleBarRef.current.getScrollElement() as HTMLElement;
+      if (!simpleBarScrollElement) return;
+      const container = thumbnailContainerRef.current;
+      const containerHeight = simpleBarScrollElement.offsetHeight;
+      if (!container) return;
+      const numThumbnails = container.children.length;
+      const logicalIndex = ((slideIndexSync % numThumbnails) + numThumbnails) % numThumbnails;
+      
+      const thumbnail = container.children[logicalIndex] as HTMLElement;
+      if (!thumbnail) return;
+
+      const thumbnailTop = thumbnail.offsetTop;
+      const thumbnailBottom = thumbnailTop + thumbnail.offsetHeight;
+
+      if (window.innerWidth > 516) {
+        if (
+          thumbnailTop < simpleBarScrollElement.scrollTop ||
+          thumbnailBottom > simpleBarScrollElement.scrollTop + containerHeight
+        ) {
+          simpleBarScrollElement.scrollTop =
+            thumbnailTop - containerHeight / 2 + thumbnail.offsetHeight / 2;
+        }
+      } else {
+        // ─── HORIZONTAL CENTERING ─────────────────────────────
+        const cw = simpleBarScrollElement.clientWidth;
+        const left  = thumbnail.offsetLeft;
+        const right = left + thumbnail.offsetWidth;
+        const cur   = simpleBarScrollElement.scrollLeft;
+
+        // if out‐of‐view → center it
+        if (left < cur || right > cur + cw) {
+          const target = left - (cw - thumbnail.offsetWidth) / 2;
+          simpleBarScrollElement.scrollLeft = Math.max(0, target);
+        }
+      }
+    }
+  }, [closingModal]);
+
   const Arrow = ({ direction, size = 32 }: { direction: "prev" | "next"; size?: number }) => (
     <svg
       viewBox="0 0 24 24"
@@ -1233,7 +1298,7 @@ const ProductImageSlider = ({
   
 
   return (
-    <div className={styles.slider_container} style={{ position: 'relative', height: imageCount > 2 ? '606px' : '600px', backgroundColor: '#f8f9fa', zIndex: 1 }}>
+    <div ref={sliderContainer} className={styles.slider_container} style={{ position: 'relative', height: imageCount > 2 ? '606px' : '600px', backgroundColor: '#f8f9fa', zIndex: 1 }}>
     {/* Previous Button */}
     <div
       onClick={() => previous()}

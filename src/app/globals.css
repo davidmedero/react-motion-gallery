@@ -22,6 +22,7 @@ body {
 .simplebar-scrollbar {
   pointer-events: auto !important;
   cursor: grab !important;
+  scroll-snap-type: y mandatory !important;
 }
 
 .simplebar-scrollbar:active {

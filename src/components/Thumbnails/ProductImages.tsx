@@ -95,6 +95,8 @@ export default function ProductImages({ urls }: Props) {
   const zoomOffset = useRef(0);
   const zoomIncreaseDiff = useRef(0);
 
+  const [closingModal, setClosingModal] = useState(false);
+
   const aspectRatioRef = useRef(1);
 
   const isScrolling = useRef(false);
@@ -1202,6 +1204,8 @@ export default function ProductImages({ urls }: Props) {
 
     scaleStore.setScale(finalZoom);
 
+    zoomedDuringWrap.current = false;
+
     const image = imageRef.current;
     const imageEl = image.children[0] as HTMLImageElement;
     const rect = image.getBoundingClientRect();
@@ -1517,7 +1521,7 @@ export default function ProductImages({ urls }: Props) {
       <div className={styles.container}>
         <div className={styles.columns_container}>
           {/* Left Column — Thumbnails */}
-          <SimpleBarReact forceVisible="y" autoHide={false} style={{ height: '600px', width: '110px' }} ref={simpleBarRef}>
+          <SimpleBarReact forceVisible="y" autoHide={false} style={{ height: '600px', width: '110px' }} ref={simpleBarRef} className={styles.scrollContainer}>
             <div
               className={styles.thumbnail_container}
               ref={thumbnailContainerRef}
@@ -1541,7 +1545,7 @@ export default function ProductImages({ urls }: Props) {
           {/* Right Column — Main Image Display */}
           <div className={styles.right_column_container}>
             <div className={styles.right_column}>
-              <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} thumbnailRefs={thumbnailRefs} simpleBarRef={simpleBarRef} thumbnailContainerRef={thumbnailContainerRef} setFullscreenPosition={setFullscreenPosition} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping}>
+              <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} thumbnailRefs={thumbnailRefs} simpleBarRef={simpleBarRef} thumbnailContainerRef={thumbnailContainerRef} setFullscreenPosition={setFullscreenPosition} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping} closingModal={closingModal}>
                 {
                   urls.map((url, index) => {
 
@@ -1573,13 +1577,12 @@ export default function ProductImages({ urls }: Props) {
         isAnimating={isAnimating}
         fullscreenPosition={fullscreenPosition}
         overlayDivRef={overlayDivRef}
-        // setZoomLevel={setZoomLevel}
         zoomLevel={zoomLevel}
-        // setIsZoomed={setIsZoomed}
         cells={cells}
         setShowFullscreenSlider={setShowFullscreenSlider}
         imageCount={urls.length}
         fullscreenImageWidth={fullscreenImageWidth}
+        setClosingModal={setClosingModal}
       >
         <FullscreenSlider 
           ref={sliderApi}
@@ -1591,7 +1594,6 @@ export default function ProductImages({ urls }: Props) {
           show={showFullscreenModal} 
           handleZoomToggle={handleZoomToggle} 
           imageRefs={imageRefs.current} 
-          // setIsZoomed={setIsZoomed} 
           cells={cells} 
           isPinching={isPinching} 
           scale={scaleRef.current} 
