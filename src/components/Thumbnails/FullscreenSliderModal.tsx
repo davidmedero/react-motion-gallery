@@ -2,6 +2,7 @@
 'use client'
 
 import React, { Dispatch, RefObject, SetStateAction, useEffect } from "react";
+import scaleStore from './scaleStore';
 
 interface FullscreenSliderModalProps {
   open: boolean;
@@ -225,6 +226,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
       onClose();
       setShowFullscreenSlider(false);
       setClosingModal(false);
+      scaleStore.setScale(1);
       zoomedImg.style.height = "100%";
     }, 300);
   }  

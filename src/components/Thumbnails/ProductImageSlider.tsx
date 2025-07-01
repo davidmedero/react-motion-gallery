@@ -1062,7 +1062,7 @@ const ProductImageSlider = ({
     closeButton.type = "button";
     closeButton.className = 'close-button'
     Object.assign(closeButton.style, {
-      position: "absolute",
+      position: "fixed",
       top: "12px",
       right: "12px",
       minWidth: '0px',
@@ -1089,7 +1089,7 @@ const ProductImageSlider = ({
     const chevronStyles = {
       height: "50px",
       width: "50px",
-      position: "absolute",
+      position: "fixed",
       top: "45.5%",
       zIndex: 9999,
       cursor: "pointer",
@@ -1120,7 +1120,7 @@ const ProductImageSlider = ({
     const counter = document.createElement('div');
     counter.className = 'counter';
     Object.assign(counter.style, {
-      position: "absolute",
+      position: "fixed",
       top: "0",
       left: "0",
       color: "white",

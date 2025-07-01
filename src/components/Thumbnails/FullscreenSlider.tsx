@@ -133,12 +133,14 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     }
     if (slideIndex === 1 && isWrapping.current === true) {
       selectedIndex.current = 0;
+      slideStore.setSlideIndex(0);
       firstCellInSlide.current = slides.current[0].cells[0]?.element;
       hasPositioned.current = true;
       return;
     }
     if (slideIndex === 0 && !isWrapping.current) {
       selectedIndex.current = 0;
+      slideStore.setSlideIndex(0);
       firstCellInSlide.current = slides.current[0].cells[0]?.element;
       hasPositioned.current = true;
       return;
@@ -148,6 +150,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     if (actualIndex === 0) actualIndex = imageCount;
     const finalIndex = isWrapping.current === true ? actualIndex : slideIndex;
     selectedIndex.current = finalIndex;
+    slideStore.setSlideIndex(finalIndex);
     const slide = slider.current.clientWidth * finalIndex;
     setTimeout(() => {
       if (!slider.current) return;
@@ -539,7 +542,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     const length = slides.current.length;
     index = ((index % length) + length) % length;
     if (zoomedDuringWrap.current === true) {
-      console.log('zoomedDuringWrap')
       index = slides.current.length;
     }
     selectedIndex.current = index;
