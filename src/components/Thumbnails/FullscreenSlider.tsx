@@ -383,6 +383,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         if (!slider.current) return;
         isClosing.current = true;
         closeButton?.click();
+        return;
       }
     };
 
