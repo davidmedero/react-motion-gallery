@@ -1014,7 +1014,24 @@ const ProductImageSlider = ({
     const target = e.target as HTMLImageElement;
     const position = target.getBoundingClientRect();
 
-    setFullscreenPosition(sliderContainer.current.getBoundingClientRect());
+    const imgRect = img.current.getBoundingClientRect();
+
+    // decide which rect to use
+    let fullscreenRect: DOMRect;
+    if (window.innerWidth <= 516) {
+      // on narrow screens, snap to the image size at left=0
+      fullscreenRect = new DOMRect(
+        /* x */      0,
+        /* y */      imgRect.top,
+        /* width */  imgRect.width,
+        /* height */ imgRect.height
+      );
+    } else {
+      // on wider screens, use the slider container's position
+      fullscreenRect = sliderContainer.current.getBoundingClientRect();
+    }
+
+    setFullscreenPosition(fullscreenRect);
     setFullscreenImg(target);
 
     const overlayDiv = document.createElement('div');
