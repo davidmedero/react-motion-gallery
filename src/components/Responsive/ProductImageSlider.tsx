@@ -351,10 +351,10 @@ const ProductImageSlider = ({
     
     sliderWidth.current = totalWidth;
 
-    if (totalWidth <= slider.current.clientWidth) {
-      isWrapping.current = false;
-    } else {
+    if (childCount > visibleImages) {
       isWrapping.current = true;
+    } else {
+      isWrapping.current = false;
     }
 
   }, [windowSize, clonedChildren, firstChildWidth, visibleImages]);
@@ -568,9 +568,7 @@ const ProductImageSlider = ({
       setSlideIndex(finalIndex);
     } else {
       console.log('dragged');
-       if (visibleImagesRef.current === 1 && (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1))) {
-        index += dragEndBoostSelect();
-      } else if (visibleImagesRef.current > 1 && (index === selectedIndex.current || (index === slides.current.length - 1 && selectedIndex.current !== slides.current.length - 2) || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1))) {
+        if (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1)) {
         index += dragEndBoostSelect();
       }
     }
@@ -715,6 +713,8 @@ const ProductImageSlider = ({
     const slideWidth = cellWidth * childCount;
 
     isAnimating.current = false;
+    velocity.current = 0;
+    positionSlider();
     
     if (sliderWidth.current <= slider.current.clientWidth) {
       x.current = 0;

@@ -3,6 +3,7 @@ body {
   padding: 0;
   overscroll-behavior: contain;
   min-height: 100dvh;
+  font-family: var(--font-geist-sans);
 }
 
 @media(max-width: 516px) {

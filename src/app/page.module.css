@@ -1,0 +1,31 @@
+.title {
+  padding: 0 32px 32px;
+  text-align: center;
+  font-size: 42px;
+}
+
+.headers {
+  padding: 0 32px 0;
+}
+
+.description {
+  padding: 0 32px 32px;
+}
+
+@media(max-width: 1024px) {
+  .headers {
+    padding: 0 24px 0;
+  }
+  .description {
+    padding: 0 24px 24px;
+  }
+}
+
+@media(max-width: 767px) {
+  .headers {
+    padding: 0 16px 0;
+  }
+  .description {
+    padding: 0 16px 16px;
+  }
+}

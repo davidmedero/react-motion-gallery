@@ -33,17 +33,17 @@ export default function ResponsiveSlider({ urls }: Props) {
   const zoomedDuringWrap = useRef(false);
   const sliderApi = useRef<FullscreenSliderHandle>(null);
 
-  const productsPerSlide = useRef<number>(4);
+  const imagesPerSlide = useRef<number>(4);
 
-  const calculateProductsPerSlide = () => {
-    const maxProductWidth = 220;
-    return Math.max(2, Math.floor(window.innerWidth / maxProductWidth));
+  const calculateImagesPerSlide = () => {
+    const maxWidth = 220;
+    return Math.max(2, Math.floor(window.innerWidth / maxWidth));
   };
 
   useEffect(() => {
     const handleResize = () => {
-      const perSlide = calculateProductsPerSlide();
-      productsPerSlide.current = perSlide;
+      const perSlide = calculateImagesPerSlide();
+      imagesPerSlide.current = perSlide;
     };
 
     window.addEventListener("resize", handleResize);
@@ -1484,7 +1484,7 @@ export default function ResponsiveSlider({ urls }: Props) {
                 <div
                   key={index}
                   className={styles.image_container}
-                  style={{ width: `${100 / productsPerSlide.current}%` }}
+                  style={{ width: `${100 / imagesPerSlide.current}%` }}
                 >
                   <img
                     src={url}
