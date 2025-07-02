@@ -2,16 +2,12 @@
 'use client'
 
 import { useState, useEffect, useRef, createRef, useLayoutEffect, useCallback } from "react";
-import SimpleBarReact from 'simplebar-react';
-import 'simplebar-react/dist/simplebar.min.css';
-import type SimpleBarCore from 'simplebar';
 import FullscreenSlider, { FullscreenSliderHandle } from "./FullscreenSlider";
 import FullscreenSliderModal from "./FullscreenSliderModal";
 import ProductImageSlider from "./ProductImageSlider";
 import { useSyncExternalStore } from 'react';
 import slideStore from './slideStore';
-import styles from './ProductImages.module.css';
-import { useScrollDrag } from "./useScrollDrag";
+import styles from './FixedHeightSlider.module.css';
 import scaleStore from './scaleStore';
 
 function useSlideIndex() {
@@ -26,14 +22,10 @@ interface Props {
   urls: string[];
 }
 
-export default function ProductImages({ urls }: Props) {
+export default function FixedHeightSlider({ urls }: Props) {
   const [slideIndex, setSlideIndex] = useState(0);
   const isClick = useRef(false);
   const isZoomClick = useRef(false);
-  const thumbnailRefs = useRef<(HTMLImageElement | null)[]>([]);
-  const thumbnailContainerRef = useRef<HTMLDivElement | null>(null);
-  const [isHovering, setIsHovering] = useState(false);
-  const simpleBarRef = useRef<SimpleBarCore | null>(null);
   const imageRefs = useRef<React.RefObject<HTMLImageElement | null>[]>([]);
   const [showFullscreenSlider, setShowFullscreenSlider] = useState(false);
   const isWrapping = useRef(true);
@@ -1461,113 +1453,30 @@ export default function ProductImages({ urls }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomTo, onTouchStart, onTouchMove, endPinch]);
 
-  const highlightThumbs = useCallback((index: number) => {
-    thumbnailRefs.current.forEach((img: HTMLImageElement | null, i: number) => {
-      if (img) {
-        img.style.border =
-          i === index ? '2px solid #2d2a26' : '0px solid transparent';
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!simpleBarRef.current || !isHovering) return;
-    const scrollEl = simpleBarRef.current.getScrollElement() as HTMLElement;
-    if (!scrollEl) return;
-  
-    let lastX = 0;
-    let lastY = 0;
-  
-    // 1) Update lastX/lastY whenever the pointer moves anywhere over the scroll div
-    const onPointerMove = (e: PointerEvent) => {
-      lastX = e.clientX;
-      lastY = e.clientY;
-    };
-    scrollEl.addEventListener('pointermove', onPointerMove, { passive: true });
-  
-    // 2) On scroll, hit‑test exactly under that saved pointer coordinate
-    const onScroll = () => {
-      const elUnder = document.elementFromPoint(lastX, lastY);
-      if (!elUnder) return;
-  
-      // find the nearest <img> ancestor
-      const img = (elUnder as HTMLElement).closest('img');
-      if (!img) return;
-  
-      // look up its index in the refs array
-      const idx = thumbnailRefs.current.findIndex((thumb) => thumb === img);
-      if (idx >= 0) {
-        highlightThumbs(idx);
-      }
-    };
-    scrollEl.addEventListener('scroll', onScroll, { passive: true });
-  
-    return () => {
-      scrollEl.removeEventListener('pointermove', onPointerMove);
-      scrollEl.removeEventListener('scroll', onScroll);
-    };
-  }, [highlightThumbs, isHovering]);
-
-  const { containerRef, handleMouseDown } = useScrollDrag();
-
-  useEffect(() => {
-    if (simpleBarRef.current) {
-      containerRef.current = simpleBarRef.current.getScrollElement() as HTMLElement;
-    }
-  }, [simpleBarRef, containerRef]);
 
   return (
     <>
       <div className={styles.container}>
-        <div className={styles.columns_container}>
-          {/* Left Column — Thumbnails */}
-          <SimpleBarReact forceVisible="y" autoHide={false} style={{ height: '600px', width: '110px' }} ref={simpleBarRef} className={styles.scrollContainer}>
-            <div
-              className={styles.thumbnail_container}
-              ref={thumbnailContainerRef}
-              onMouseDown={(e) => handleMouseDown(e.nativeEvent)}
-              onPointerOver={() => setIsHovering(true)}
-              onPointerLeave={() => setIsHovering(false)}
-              style={{ display: urls.length > 1 ? 'flex' : 'none' }}
-            >
-              {urls.map((url, i) => (
-                <img
-                  key={i}
-                  ref={(el) => { thumbnailRefs.current[i] = el; }}
-                  className={styles.thumbnails}
-                  src={url}
-                  alt={`Thumbnail ${i + 1}`}
-                />
-              ))}
-            </div>
-          </SimpleBarReact>
+        <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} setFullscreenPosition={setFullscreenPosition} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping} closingModal={closingModal}>
+          {
+            urls.map((url, index) => {
 
-          {/* Right Column — Main Image Display */}
-          <div className={styles.right_column_container}>
-            <div className={styles.right_column}>
-              <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} thumbnailRefs={thumbnailRefs} simpleBarRef={simpleBarRef} thumbnailContainerRef={thumbnailContainerRef} setFullscreenPosition={setFullscreenPosition} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping} closingModal={closingModal}>
-                {
-                  urls.map((url, index) => {
-
-                    return (
-                      <div
-                        key={index}
-                        className={styles.image_container}
-                      >
-                        <img
-                          src={url}
-                          className={styles.image}
-                          alt={`Low-Res ${index}`}
-                          draggable="false"
-                        />
-                      </div>
-                    )
-                  })
-                }
-              </ProductImageSlider>
-            </div>
-          </div>
-        </div>
+              return (
+                <div
+                  key={index}
+                  className={styles.image_container}
+                >
+                  <img
+                    src={url}
+                    className={styles.image}
+                    alt={`Low-Res ${index}`}
+                    draggable="false"
+                  />
+                </div>
+              )
+            })
+          }
+        </ProductImageSlider>
       </div>
       <FullscreenSliderModal
         open={showFullscreenModal}

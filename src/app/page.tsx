@@ -1,8 +1,10 @@
 export const dynamic    = 'force-static';
 export const fetchCache = 'force-cache';
 
+import FixedHeightSlider from "@/components/FixedHeight/FixedHeightSlider";
 import styles from "./page.module.css";
-import ProductImages from "@/components/Thumbnails/ProductImages";
+import ThumbnailSlider from "@/components/Thumbnails/ThumbnailSlider";
+import ResponsiveSlider from "@/components/Responsive/ResponsiveSlider";
 
 export default function Home() {
 
@@ -20,7 +22,13 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <ProductImages urls={thumbnailSliderImages} />
+        <ThumbnailSlider urls={thumbnailSliderImages} />
+      </div>
+      <div>
+        <FixedHeightSlider urls={thumbnailSliderImages} />
+      </div>
+      <div>
+        <ResponsiveSlider urls={thumbnailSliderImages} />
       </div>
     </div>
   );
