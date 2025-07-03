@@ -185,12 +185,12 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   
     deltaX =
       currentScale !== 1
-        ? fullscreenPosition.left - (Math.abs(translateX) - Math.abs(zoomedRect.left) + windowOffset)
+        ? fullscreenPosition.left - (Math.abs(translateX) + zoomedRect.left + windowOffset)
         : fullscreenPosition.left - zoomedRect.left;
   
     deltaY =
       currentScale !== 1
-        ? fullscreenPosition.top - (Math.abs(translateY) - Math.abs(zoomedRect.top))
+        ? fullscreenPosition.top - (Math.abs(translateY) + zoomedRect.top)
         : fullscreenPosition.top - zoomedRect.top;
   
     const scaleX = fullscreenPosition.width / (zoomedRect.width / currentScale);

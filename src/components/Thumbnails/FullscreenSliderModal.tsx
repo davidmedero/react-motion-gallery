@@ -40,6 +40,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
   const pointerDownX = React.useRef<number>(0);
   const pointerDownY = React.useRef<number>(0);
+  const parentLeftOrigin = React.useRef<number>(0);
 
   useEffect(() => {
     const closeButton = document.querySelector(".close-button");
@@ -50,9 +51,49 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     };
   }, [open, zoomLevel, isZoomClick, children]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const btn = document.querySelector('.close-button') as HTMLElement;
+
+    if (!btn) return;
+
+    const rect = btn.getBoundingClientRect();
+
+    // compute the center point of the button
+    const x = rect.left + rect.width  / 2;
+    const y = rect.top  + rect.height / 2;
+
+    // temporarily disable pointer events so elementFromPoint skips the button
+    const prev = btn.style.pointerEvents;
+    btn.style.pointerEvents = 'none';
+
+    // grab whatever’s underneath at that point
+    const underneath = document.elementFromPoint(x, y);
+
+    let targetImg: HTMLImageElement | null = null;
+    if (underneath) {
+      if (underneath.tagName.toLowerCase() === "img") {
+        targetImg = underneath as HTMLImageElement;
+      } else {
+        targetImg = underneath.querySelector("img");
+      }
+    }
+
+    if (targetImg) {
+      const parentLeft = targetImg.parentElement?.getBoundingClientRect().left;
+      if (!parentLeft) return;
+      parentLeftOrigin.current = parentLeft;
+    }
+
+    // restore pointer events
+    btn.style.pointerEvents = prev;
+  }, [open]);
+
   if (!open) return null;
 
   function handleClose(e: any) {
+    setClosingModal(true);
     if ((e.target as HTMLElement).closest(".close-button")) {
       console.log("Close button clicked; closing modal immediately.");
       proceedToClose(e);
@@ -81,7 +122,6 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     isAnimating.current = false;
     isClick.current = false;
     cells.current = [];
-    setClosingModal(true);
   
     const x = e.clientX;
     const y = e.clientY;
@@ -185,12 +225,12 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   
     deltaX =
       currentScale !== 1
-        ? fullscreenPosition.left - (Math.abs(translateX) - Math.abs(zoomedRect.left) + windowOffset)
+        ? fullscreenPosition.left - (Math.abs(translateX) + zoomedRect.left + windowOffset)
         : fullscreenPosition.left - zoomedRect.left;
   
     deltaY =
       currentScale !== 1
-        ? fullscreenPosition.top - (Math.abs(translateY) - Math.abs(zoomedRect.top))
+        ? fullscreenPosition.top - (Math.abs(translateY) + zoomedRect.top)
         : fullscreenPosition.top - zoomedRect.top;
   
     const scaleX = fullscreenPosition.width / (zoomedRect.width / currentScale);

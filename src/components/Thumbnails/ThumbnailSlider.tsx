@@ -683,7 +683,6 @@ export default function ThumbnailSlider({ urls }: Props) {
         y.current = 0;
       }
     })
-    
   };
 
   function handlePanPointerStart(e: React.PointerEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,

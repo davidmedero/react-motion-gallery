@@ -128,6 +128,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   useEffect(() => {
     if (!slider.current || hasPositioned.current || sliderWidth.current === 0) return;
     const counter = document.querySelector(".counter");
+    zoomedDuringWrap.current = false;
+    console.log()
     if (counter) {
       counter.textContent = `${!isWrapping.current ? slideIndex + 1 : slideIndex} / ${imageCount}`;
     }
@@ -420,12 +422,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       }
       
     } else {
-      console.log('dragged FS slider');
-      console.log('index', index);
-      console.log('index === selectedIndex.current', index === selectedIndex.current);
-      console.log('slides.current.length', slides.current.length);
+      console.log('dragged');
       if (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1)) {
-        console.log('boosting index')
         index += dragEndBoostSelect();
       }
     }

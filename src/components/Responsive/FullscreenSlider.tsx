@@ -128,6 +128,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   useEffect(() => {
     if (!slider.current || hasPositioned.current || sliderWidth.current === 0) return;
     const counter = document.querySelector(".counter");
+    zoomedDuringWrap.current = false;
     if (counter) {
       counter.textContent = `${!isWrapping.current ? slideIndex + 1 : slideIndex} / ${imageCount}`;
     }
