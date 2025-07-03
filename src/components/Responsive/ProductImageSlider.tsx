@@ -693,6 +693,11 @@ const ProductImageSlider = ({
     if (!slider.current || !firstCellInSlide.current || cells.current.length === 0) return;
     lastTranslateX.current = getTranslateX(firstCellInSlide.current);
     const diff = lastTranslateX.current - Math.abs(x.current);
+    const containerWidth = slider.current.clientWidth;
+    const cellWidth = cells.current[0].element.clientWidth;
+    const childrenArray = Children.toArray(children);
+    const childCount = childrenArray.length;
+    const slideWidth = cellWidth * childCount;
 
     isAnimating.current = false;
     velocity.current = 0;
@@ -700,9 +705,15 @@ const ProductImageSlider = ({
     
     if (!isWrapping.current) {
       x.current = 0;
-      const currentPosition = x.current;
-      setTranslateX(currentPosition);
       selectedIndex.current = 0;
+      if (sliderWidth.current <= slider.current.clientWidth) {
+        const currentPosition = x.current + (containerWidth - slideWidth) / 2;
+        setTranslateX(currentPosition);
+      } else {
+        const currentPosition = x.current;
+        setTranslateX(currentPosition);
+      }
+      
     } else {
       x.current -= diff;
       const currentPosition = Math.min(x.current, 0);
@@ -1018,7 +1029,12 @@ const ProductImageSlider = ({
 
     if (!slider.current || slider.current.children.length === 0) return;
 
-    const idx = slideIndexSync + visibleImagesRef.current;
+    let idx;
+    if (isWrapping.current) {
+      idx = slideIndexSync + visibleImagesRef.current;
+    } else {
+      idx = slideIndexSync;
+    }
 
     // grab the first child of that slide (your image element)
     const slideEl = slider.current.children[idx] as HTMLElement | undefined;
@@ -1051,7 +1067,12 @@ const ProductImageSlider = ({
 
     if (!slider.current || slider.current.children.length === 0) return;
 
-    const idx = slideIndexSync + visibleImages;
+    let idx;
+    if (isWrapping.current) {
+      idx = slideIndexSync + visibleImagesRef.current;
+    } else {
+      idx = slideIndexSync;
+    }
 
     // grab the first child of that slide (your image element)
     const slideEl = slider.current.children[idx] as HTMLElement | undefined;

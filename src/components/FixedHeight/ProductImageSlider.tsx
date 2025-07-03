@@ -209,7 +209,7 @@ const ProductImageSlider = ({
 
     setClonedChildren(slides)
 
-  }, [children, windowSize, firstChildWidth]);
+  }, [windowSize, firstChildWidth]);
 
   useEffect(() => {
     if (!slider.current) return;
@@ -431,6 +431,7 @@ const ProductImageSlider = ({
       currentPosition = ((currentPosition % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
       currentPosition += -sliderWidth.current;
     }
+    console.log('positioning')
     setTranslateX(currentPosition);
   };
 
@@ -1026,7 +1027,12 @@ const ProductImageSlider = ({
 
     if (!slider.current || slider.current.children.length === 0) return;
 
-    const idx = slideIndexSync + visibleImagesRef.current;
+    let idx;
+    if (isWrapping.current) {
+      idx = slideIndexSync + visibleImagesRef.current;
+    } else {
+      idx = slideIndexSync;
+    }
 
     // grab the first child of that slide (your image element)
     const slideEl = slider.current.children[idx] as HTMLElement | undefined;
@@ -1059,7 +1065,12 @@ const ProductImageSlider = ({
 
     if (!slider.current || slider.current.children.length === 0) return;
 
-    const idx = slideIndexSync + visibleImages;
+    let idx;
+    if (isWrapping.current) {
+      idx = slideIndexSync + visibleImagesRef.current;
+    } else {
+      idx = slideIndexSync;
+    }
 
     // grab the first child of that slide (your image element)
     const slideEl = slider.current.children[idx] as HTMLElement | undefined;
