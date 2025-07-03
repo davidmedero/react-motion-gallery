@@ -816,7 +816,7 @@ const ProductImageSlider = ({
         setTranslateX(currentPosition);
       } else {
         x.current -= diff;
-        const currentPosition = x.current;
+        const currentPosition = Math.min(x.current, 0);
         setTranslateX(currentPosition);
         const index = Math.floor(Math.abs(currentPosition) / (sliderWidth.current / slides.current.length));
         selectedIndex.current = index;
