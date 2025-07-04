@@ -241,7 +241,8 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
         position: "fixed",
         inset: 0,
         zIndex: 9000,
-        contain: 'layout style size'
+        contain: 'layout style size',
+        touchAction: 'none'
       }}
     >
       {children}

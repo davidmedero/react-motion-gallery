@@ -1277,72 +1277,72 @@ function blockTouchForModal() {
     </svg>
   );
 
-  // const VERT_ANGLE_MIN =  60;
-  // const VERT_ANGLE_MAX = 120;
+  const VERT_ANGLE_MIN =  60;
+  const VERT_ANGLE_MAX = 120;
 
-  // function onTouchStart(e: TouchEvent) {
-  //   if (touchBlocked.current) {
-  //     document.body.style.overflowY = 'hidden';
-  //     return;
-  //   }
-  //   if (e.touches.length !== 1) return;
-  //   document.body.style.overflowY = 'auto';
-  //   const t0 = e.touches[0];
-  //   startX.current = t0.clientX;
-  //   startY.current = t0.clientY;
-  // }
+  function onTouchStart(e: TouchEvent) {
+    if (touchBlocked.current) {
+      document.body.style.overflowY = 'hidden';
+      return;
+    }
+    if (e.touches.length !== 1) return;
+    document.body.style.overflowY = 'auto';
+    const t0 = e.touches[0];
+    startX.current = t0.clientX;
+    startY.current = t0.clientY;
+  }
 
-  // function onTouchMove(e: TouchEvent) {
-  //   if (touchBlocked.current) {
-  //     document.body.style.overflowY = 'hidden';
-  //     return;
-  //   }
-  //   if (e.touches.length !== 1) return;    
-  //   console.log('touch movingggg')
-  //   const t0 = e.touches[0];
-  //   const dx = t0.clientX - startX.current;
-  //   const dy = t0.clientY - startY.current;
+  function onTouchMove(e: TouchEvent) {
+    if (touchBlocked.current) {
+      document.body.style.overflowY = 'hidden';
+      return;
+    }
+    if (e.touches.length !== 1) return;    
+    console.log('touch movingggg')
+    const t0 = e.touches[0];
+    const dx = t0.clientX - startX.current;
+    const dy = t0.clientY - startY.current;
 
-  //   const angle = Math.abs(Math.atan2(dy, dx) * (180 / Math.PI));
-  //     // vertical if within [60°,120°]
-  //   const isVerticalScroll = angle >= VERT_ANGLE_MIN && angle <= VERT_ANGLE_MAX;
+    const angle = Math.abs(Math.atan2(dy, dx) * (180 / Math.PI));
+      // vertical if within [60°,120°]
+    const isVerticalScroll = angle >= VERT_ANGLE_MIN && angle <= VERT_ANGLE_MAX;
 
-  //   if (isVerticalScroll) {
-  //     // vertical → handle scroll
-  //     document.body.style.overflowY = 'auto';
+    if (isVerticalScroll) {
+      // vertical → handle scroll
+      document.body.style.overflowY = 'auto';
 
-  //   } else {
-  //     // horizontal → let your slider logic run (no preventDefault)
-  //     e.preventDefault();
-  //     document.body.style.overflowY = 'hidden';
-  //   }
-  // }
+    } else {
+      // horizontal → let your slider logic run (no preventDefault)
+      e.preventDefault();
+      document.body.style.overflowY = 'hidden';
+    }
+  }
 
-  // function onTouchEnd() {
-  //   if (touchBlocked.current) {
-  //     document.body.style.overflowY = 'hidden';
-  //     return;
-  //   }
-  //   document.body.style.overflowY = 'auto';
-  // }
+  function onTouchEnd() {
+    if (touchBlocked.current) {
+      document.body.style.overflowY = 'hidden';
+      return;
+    }
+    document.body.style.overflowY = 'auto';
+  }
 
-  // useEffect(() => {
-  //   const el = slider.current!
-  //   if (touchBlocked.current) {
-  //     document.body.style.overflowY = 'hidden';
-  //     return;
-  //   }
-  //   el.addEventListener('touchstart', onTouchStart, { passive: false })
-  //   el.addEventListener('touchmove',  onTouchMove,  { passive: false })
-  //   el.addEventListener('touchend',   onTouchEnd)
-  //   el.addEventListener('touchcancel',onTouchEnd)
-  //   return () => {
-  //     el.removeEventListener('touchstart', onTouchStart)
-  //     el.removeEventListener('touchmove',  onTouchMove)
-  //     el.removeEventListener('touchend',   onTouchEnd)
-  //     el.removeEventListener('touchcancel',onTouchEnd)
-  //   }
-  // }, []);
+  useEffect(() => {
+    const el = slider.current!
+    if (touchBlocked.current) {
+      document.body.style.overflowY = 'hidden';
+      return;
+    }
+    el.addEventListener('touchstart', onTouchStart, { passive: false })
+    el.addEventListener('touchmove',  onTouchMove,  { passive: false })
+    el.addEventListener('touchend',   onTouchEnd)
+    el.addEventListener('touchcancel',onTouchEnd)
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove',  onTouchMove)
+      el.removeEventListener('touchend',   onTouchEnd)
+      el.removeEventListener('touchcancel',onTouchEnd)
+    }
+  }, []);
   
 
   return (
