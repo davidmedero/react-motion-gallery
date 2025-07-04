@@ -1,8 +1,10 @@
 body {
   margin: 0;
   padding: 0;
-  overscroll-behavior: contain;
+  overscroll-behavior: none;
   font-family: var(--font-geist-sans);
+  position: fixed;
+  overflow: hidden;
 }
 
 @media(max-width: 516px) {

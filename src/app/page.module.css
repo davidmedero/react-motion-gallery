@@ -3,7 +3,7 @@
   max-height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
-  overscroll-behavior: contain;
+  overscroll-behavior: none;
 }
 
 .title {
