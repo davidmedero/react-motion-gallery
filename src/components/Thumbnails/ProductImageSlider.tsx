@@ -582,10 +582,9 @@ const ProductImageSlider = ({
 
   const touchBlocked = useRef(false);
 
-  // Call this right before you open the modal
   function blockTouchForModal() {
     touchBlocked.current = true;
-    // unblock after your 300ms animation
+
     setTimeout(() => {
       touchBlocked.current = false;
     }, 300);
@@ -607,8 +606,6 @@ const ProductImageSlider = ({
       if (page) {
         page.style.overflowY = 'hidden';
       }
-      
-      console.log('clicked on normal image slider');
       isClosing.current = true;
       const targetImg = (e.target as HTMLElement).closest("img") as HTMLImageElement | null;
       if (!targetImg) return;
@@ -897,8 +894,6 @@ const ProductImageSlider = ({
     if (!slider.current) return;
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       e.preventDefault();
-      const scroller = document.scrollingElement!; 
-      scroller.scrollTop += e.deltaY;
       const page = document.getElementById('page_container') as HTMLDivElement;
       page.scrollTop += e.deltaY;
       return;
@@ -1219,7 +1214,6 @@ const ProductImageSlider = ({
       if (page) {
         page.style.overflowY = 'auto';
       }
-      
       selectedIndex.current = slideIndexSync;
       firstCellInSlide.current = slides.current[slideIndexSync]?.cells[0]?.element;
       const slideWidth = slider.current.children[0]?.clientWidth || 0;
@@ -1296,7 +1290,6 @@ const ProductImageSlider = ({
       if (page) {
         page.style.overflowY = 'hidden';
       }
-      
       return;
     }
     if (e.touches.length !== 1) return;
@@ -1304,7 +1297,6 @@ const ProductImageSlider = ({
     if (page) {
       page.style.overflowY = 'auto';
     }
-    
     const t0 = e.touches[0];
     startX.current = t0.clientX;
     startY.current = t0.clientY;
@@ -1334,7 +1326,6 @@ const ProductImageSlider = ({
       if (page) {
         page.style.overflowY = 'auto';
       }
-      
 
     } else {
       // horizontal → let your slider logic run (no preventDefault)
@@ -1343,7 +1334,6 @@ const ProductImageSlider = ({
       if (page) {
         page.style.overflowY = 'hidden';
       }
-      
     }
   }
 
@@ -1353,26 +1343,16 @@ const ProductImageSlider = ({
       if (page) {
         page.style.overflowY = 'hidden';
       }
-      
       return;
     }
     const page = document.getElementById('page_container') as HTMLDivElement;
-      if (page) {
-        page.style.overflowY = 'auto';
-      }
-    
+    if (page) {
+      page.style.overflowY = 'auto';
+    }
   }
 
   useEffect(() => {
     const el = slider.current!
-    if (touchBlocked.current) {
-      const page = document.getElementById('page_container') as HTMLDivElement;
-      if (page) {
-        page.style.overflowY = 'hidden';
-      }
-      
-      return;
-    }
     el.addEventListener('touchstart', onTouchStart, { passive: false })
     el.addEventListener('touchmove',  onTouchMove,  { passive: false })
     el.addEventListener('touchend',   onTouchEnd)

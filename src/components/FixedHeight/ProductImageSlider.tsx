@@ -522,7 +522,17 @@ const ProductImageSlider = ({
     dragMoveTime.current = new Date();
   };
   
-  type PointerEndEvent = MouseEvent
+  type PointerEndEvent = MouseEvent;
+
+  const touchBlocked = useRef(false);
+
+  function blockTouchForModal() {
+    touchBlocked.current = true;
+
+    setTimeout(() => {
+      touchBlocked.current = false;
+    }, 300);
+  }
 
   function handlePointerEnd(e: PointerEndEvent) {
     if (!slider.current) return;
@@ -536,12 +546,16 @@ const ProductImageSlider = ({
     let index = dragEndRestingSelect();
 
     if (isClick.current) {
-      console.log('clicked on normal image slider');
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
       isClosing.current = true;
       const targetImg = (e.target as HTMLElement).closest("img") as HTMLImageElement | null;
       if (!targetImg) return;
       const imgIndex = targetImg.dataset.index;
       if (imgIndex === undefined) return;
+      blockTouchForModal();
       setShowFullscreenModal(true);
       const parsedImgIndex = parseInt(imgIndex)
       const originalIndex = ((parsedImgIndex - visibleImagesRef.current) % imageCount + imageCount) % imageCount;
@@ -779,8 +793,8 @@ const ProductImageSlider = ({
     if (!slider.current) return;
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       e.preventDefault();
-      const scroller = document.scrollingElement!; 
-      scroller.scrollTop += e.deltaY;
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      page.scrollTop += e.deltaY;
       return;
     }
     if (sliderWidth.current <= slider.current.clientWidth) {
@@ -1009,6 +1023,15 @@ const ProductImageSlider = ({
   }, [showFullscreenSlider]);
 
   useEffect(() => {
+    if (closingModal) {
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'auto';
+      }
+    }
+  }, [closingModal]);
+
+  useEffect(() => {
     const slideArr = slides.current;
     // find the slide whose cells include the fullscreen image index
     const matchSlide = slideArr.find(s =>
@@ -1103,14 +1126,32 @@ const ProductImageSlider = ({
   const VERT_ANGLE_MAX = 120;
 
   function onTouchStart(e: TouchEvent) {
+    if (touchBlocked.current) {
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
+      return;
+    }
     if (e.touches.length !== 1) return;
-    document.body.style.overflowY = 'auto';
+    const page = document.getElementById('page_container') as HTMLDivElement;
+    if (page) {
+      page.style.overflowY = 'auto';
+    }
     const t0 = e.touches[0];
     startX.current = t0.clientX;
     startY.current = t0.clientY;
   }
 
   function onTouchMove(e: TouchEvent) {
+    if (touchBlocked.current) {
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
+      
+      return;
+    }
     if (e.touches.length !== 1) return;    
     const t0 = e.touches[0];
     const dx = t0.clientX - startX.current;
@@ -1122,17 +1163,33 @@ const ProductImageSlider = ({
 
     if (isVerticalScroll) {
       // vertical → handle scroll
-      document.body.style.overflowY = 'auto';
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'auto';
+      }
 
     } else {
       // horizontal → let your slider logic run (no preventDefault)
       e.preventDefault();
-      document.body.style.overflowY = 'hidden';
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
     }
   }
 
   function onTouchEnd() {
-    document.body.style.overflowY = 'auto';
+    if (touchBlocked.current) {
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
+      return;
+    }
+    const page = document.getElementById('page_container') as HTMLDivElement;
+    if (page) {
+      page.style.overflowY = 'auto';
+    }
   }
 
   useEffect(() => {
