@@ -1228,7 +1228,7 @@ function unlockScrollFixed() {
 
   useEffect(() => {
     if (closingModal === true && slider.current) {
-      // unlockScrollFixed()
+      unlockScrollFixed()
       document.body.style.overflowY = 'auto';
       selectedIndex.current = slideIndexSync;
       firstCellInSlide.current = slides.current[slideIndexSync]?.cells[0]?.element;
