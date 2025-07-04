@@ -1290,6 +1290,42 @@ const ProductImageSlider = ({
   const VERT_ANGLE_MIN =  60;
   const VERT_ANGLE_MAX = 120;
 
+  useEffect(() => {
+    const el = document.getElementById('page_container') as HTMLDivElement;
+    if (!el) return;
+
+    let startY = 0;
+
+    function onTouchStart(e: TouchEvent) {
+      if (e.touches.length !== 1) return;
+      startY = e.touches[0].clientY;
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      if (e.touches.length !== 1) return;
+
+      const currentY = e.touches[0].clientY;
+      const scrollTop = el.scrollTop;
+      const scrollHeight = el.scrollHeight;
+      const offsetHeight = el.offsetHeight;
+
+      const isPullingDown = scrollTop === 0 && currentY > startY;
+      const isPullingUp   = scrollTop + offsetHeight >= scrollHeight && currentY < startY;
+
+      if (isPullingDown || isPullingUp) {
+        e.preventDefault(); // block the bounce at the edges
+      }
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
+    el.addEventListener('touchmove',  onTouchMove,  { passive: false });
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove',  onTouchMove);
+    };
+  }, []);
+
   function onTouchStart(e: TouchEvent) {
     if (touchBlocked.current) {
       const page = document.getElementById('page_container') as HTMLDivElement;
