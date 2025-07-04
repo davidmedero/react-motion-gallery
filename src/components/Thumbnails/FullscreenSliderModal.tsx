@@ -93,7 +93,6 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   if (!open) return null;
 
   function handleClose(e: any) {
-    setClosingModal(true);
     if ((e.target as HTMLElement).closest(".close-button")) {
       console.log("Close button clicked; closing modal immediately.");
       proceedToClose(e);
@@ -122,6 +121,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     isAnimating.current = false;
     isClick.current = false;
     cells.current = [];
+    setClosingModal(true);
   
     const x = e.clientX;
     const y = e.clientY;

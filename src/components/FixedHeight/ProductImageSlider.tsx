@@ -553,7 +553,9 @@ const ProductImageSlider = ({
       console.log('dragged');
       if (visibleImagesRef.current === 1 && (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1))) {
         index += dragEndBoostSelect();
-      } else if (visibleImagesRef.current > 1 && (index === selectedIndex.current || (index === slides.current.length - 1 && selectedIndex.current !== slides.current.length - 2) || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1))) {
+      } else if (visibleImagesRef.current === 2 && (index === selectedIndex.current || (index === slides.current.length - 1 && selectedIndex.current !== slides.current.length - 2))) {
+        index += dragEndBoostSelect();
+      } else if (visibleImagesRef.current > 2 && (index === selectedIndex.current || (index === slides.current.length - 1 && selectedIndex.current !== slides.current.length - 2) || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1))) {
         index += dragEndBoostSelect();
       }
     }
