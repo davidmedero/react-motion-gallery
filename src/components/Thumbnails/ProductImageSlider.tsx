@@ -1068,7 +1068,8 @@ function blockTouchForModal() {
       position: "fixed",
       inset: "0",
       backgroundColor: "transparent",
-      zIndex: 8999
+      zIndex: 8999,
+      touchAction: 'none'
     });
 
     const closeButton = document.createElement('button');
@@ -1183,7 +1184,8 @@ function blockTouchForModal() {
       position: "fixed",
       inset: "0",
       backgroundColor: "rgba(0,0,0,0.8)",
-      zIndex: 8999
+      zIndex: 8999,
+      touchAction: 'none'
     });
 
     closeButton.style.opacity = "1";
