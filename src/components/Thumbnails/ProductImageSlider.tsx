@@ -603,6 +603,7 @@ function blockTouchForModal() {
     let index = dragEndRestingSelect();
 
     if (isClick.current) {
+      document.body.style.overflowY = 'hidden';
       console.log('clicked on normal image slider');
       isClosing.current = true;
       const targetImg = (e.target as HTMLElement).closest("img") as HTMLImageElement | null;
