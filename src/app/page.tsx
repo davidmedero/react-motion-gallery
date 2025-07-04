@@ -20,7 +20,7 @@ export default function Home() {
   ];
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} id='page_container'>
       <h1 className={styles.title}>REACT MOTION GALLERY</h1>
       <h2 className={styles.headers}>Thumbnails</h2>
       <p className={styles.description}>Resize the browser to 500px to see the horizontal thumbnail scrollbar.</p>

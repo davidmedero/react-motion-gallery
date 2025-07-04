@@ -580,6 +580,17 @@ const ProductImageSlider = ({
   
   type PointerEndEvent = MouseEvent
 
+  const touchBlocked = useRef(false);
+
+// Call this right before you open the modal
+function blockTouchForModal() {
+  touchBlocked.current = true;
+  // unblock after your 300ms animation
+  setTimeout(() => {
+    touchBlocked.current = false;
+  }, 300);
+}
+
   function handlePointerEnd(e: PointerEndEvent) {
     if (!slider.current) return;
     if (!isPointerDown.current) return;
@@ -598,6 +609,7 @@ const ProductImageSlider = ({
       if (!targetImg) return;
       const imgIndex = targetImg.dataset.index;
       if (imgIndex === undefined) return;
+      blockTouchForModal();
       setShowFullscreenModal(true);
       const parsedImgIndex = parseInt(imgIndex)
       const originalIndex = ((parsedImgIndex - visibleImagesRef.current) % imageCount + imageCount) % imageCount;
@@ -1196,6 +1208,7 @@ const ProductImageSlider = ({
 
   useEffect(() => {
     if (closingModal === true && slider.current) {
+      document.body.style.overflowY = 'auto';
       selectedIndex.current = slideIndexSync;
       firstCellInSlide.current = slides.current[slideIndexSync]?.cells[0]?.element;
       const slideWidth = slider.current.children[0]?.clientWidth || 0;
@@ -1267,6 +1280,10 @@ const ProductImageSlider = ({
   const VERT_ANGLE_MAX = 120;
 
   function onTouchStart(e: TouchEvent) {
+    if (touchBlocked.current) {
+      document.body.style.overflowY = 'hidden';
+      return;
+    }
     if (e.touches.length !== 1) return;
     document.body.style.overflowY = 'auto';
     const t0 = e.touches[0];
@@ -1275,7 +1292,12 @@ const ProductImageSlider = ({
   }
 
   function onTouchMove(e: TouchEvent) {
+    if (touchBlocked.current) {
+      document.body.style.overflowY = 'hidden';
+      return;
+    }
     if (e.touches.length !== 1) return;    
+    console.log('touch movingggg')
     const t0 = e.touches[0];
     const dx = t0.clientX - startX.current;
     const dy = t0.clientY - startY.current;
@@ -1296,11 +1318,19 @@ const ProductImageSlider = ({
   }
 
   function onTouchEnd() {
+    if (touchBlocked.current) {
+      document.body.style.overflowY = 'hidden';
+      return;
+    }
     document.body.style.overflowY = 'auto';
   }
 
   useEffect(() => {
     const el = slider.current!
+    if (touchBlocked.current) {
+      document.body.style.overflowY = 'hidden';
+      return;
+    }
     el.addEventListener('touchstart', onTouchStart, { passive: false })
     el.addEventListener('touchmove',  onTouchMove,  { passive: false })
     el.addEventListener('touchend',   onTouchEnd)
