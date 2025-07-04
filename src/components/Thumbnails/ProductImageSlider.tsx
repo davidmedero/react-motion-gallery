@@ -591,6 +591,24 @@ function blockTouchForModal() {
   }, 300);
 }
 
+let scrollY = 0;
+
+function lockScrollFixed() {
+  scrollY = window.scrollY;
+  document.body.style.position = 'fixed';
+  document.body.style.top      = `-${scrollY}px`;
+  document.body.style.left     = '0';
+  document.body.style.right    = '0';
+}
+
+function unlockScrollFixed() {
+  document.body.style.position = '';
+  document.body.style.top      = '';
+  document.body.style.left     = '';
+  document.body.style.right    = '';
+  // window.scrollTo(0, scrollY);
+}
+
   function handlePointerEnd(e: PointerEndEvent) {
     if (!slider.current) return;
     if (!isPointerDown.current) return;
@@ -603,6 +621,7 @@ function blockTouchForModal() {
     let index = dragEndRestingSelect();
 
     if (isClick.current) {
+      lockScrollFixed()
       document.body.style.overflowY = 'hidden';
       console.log('clicked on normal image slider');
       isClosing.current = true;
@@ -1068,8 +1087,7 @@ function blockTouchForModal() {
       position: "fixed",
       inset: "0",
       backgroundColor: "transparent",
-      zIndex: 8999,
-      touchAction: 'none'
+      zIndex: 8999
     });
 
     const closeButton = document.createElement('button');
@@ -1184,8 +1202,7 @@ function blockTouchForModal() {
       position: "fixed",
       inset: "0",
       backgroundColor: "rgba(0,0,0,0.8)",
-      zIndex: 8999,
-      touchAction: 'none'
+      zIndex: 8999
     });
 
     closeButton.style.opacity = "1";
@@ -1211,6 +1228,7 @@ function blockTouchForModal() {
 
   useEffect(() => {
     if (closingModal === true && slider.current) {
+      // unlockScrollFixed()
       document.body.style.overflowY = 'auto';
       selectedIndex.current = slideIndexSync;
       firstCellInSlide.current = slides.current[slideIndexSync]?.cells[0]?.element;
