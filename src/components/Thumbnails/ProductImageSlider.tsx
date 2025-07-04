@@ -582,32 +582,14 @@ const ProductImageSlider = ({
 
   const touchBlocked = useRef(false);
 
-// Call this right before you open the modal
-function blockTouchForModal() {
-  touchBlocked.current = true;
-  // unblock after your 300ms animation
-  setTimeout(() => {
-    touchBlocked.current = false;
-  }, 300);
-}
-
-let scrollY = 0;
-
-function lockScrollFixed() {
-  scrollY = window.scrollY;
-  document.body.style.position = 'fixed';
-  document.body.style.top      = `-${scrollY}px`;
-  document.body.style.left     = '0';
-  document.body.style.right    = '0';
-}
-
-function unlockScrollFixed() {
-  document.body.style.position = '';
-  document.body.style.top      = '';
-  document.body.style.left     = '';
-  document.body.style.right    = '';
-  // window.scrollTo(0, scrollY);
-}
+  // Call this right before you open the modal
+  function blockTouchForModal() {
+    touchBlocked.current = true;
+    // unblock after your 300ms animation
+    setTimeout(() => {
+      touchBlocked.current = false;
+    }, 300);
+  }
 
   function handlePointerEnd(e: PointerEndEvent) {
     if (!slider.current) return;
@@ -621,7 +603,10 @@ function unlockScrollFixed() {
     let index = dragEndRestingSelect();
 
     if (isClick.current) {
-      lockScrollFixed()
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
       document.body.style.overflowY = 'hidden';
       console.log('clicked on normal image slider');
       isClosing.current = true;
@@ -914,6 +899,8 @@ function unlockScrollFixed() {
       e.preventDefault();
       const scroller = document.scrollingElement!; 
       scroller.scrollTop += e.deltaY;
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      page.scrollTop += e.deltaY;
       return;
     }
     if (sliderWidth.current <= slider.current.clientWidth) {
@@ -1228,7 +1215,10 @@ function unlockScrollFixed() {
 
   useEffect(() => {
     if (closingModal === true && slider.current) {
-      unlockScrollFixed()
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'auto';
+      }
       document.body.style.overflowY = 'auto';
       selectedIndex.current = slideIndexSync;
       firstCellInSlide.current = slides.current[slideIndexSync]?.cells[0]?.element;
@@ -1302,10 +1292,18 @@ function unlockScrollFixed() {
 
   function onTouchStart(e: TouchEvent) {
     if (touchBlocked.current) {
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
       document.body.style.overflowY = 'hidden';
       return;
     }
     if (e.touches.length !== 1) return;
+    const page = document.getElementById('page_container') as HTMLDivElement;
+    if (page) {
+      page.style.overflowY = 'auto';
+    }
     document.body.style.overflowY = 'auto';
     const t0 = e.touches[0];
     startX.current = t0.clientX;
@@ -1314,11 +1312,14 @@ function unlockScrollFixed() {
 
   function onTouchMove(e: TouchEvent) {
     if (touchBlocked.current) {
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
       document.body.style.overflowY = 'hidden';
       return;
     }
     if (e.touches.length !== 1) return;    
-    console.log('touch movingggg')
     const t0 = e.touches[0];
     const dx = t0.clientX - startX.current;
     const dy = t0.clientY - startY.current;
@@ -1329,26 +1330,46 @@ function unlockScrollFixed() {
 
     if (isVerticalScroll) {
       // vertical → handle scroll
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'auto';
+      }
       document.body.style.overflowY = 'auto';
 
     } else {
       // horizontal → let your slider logic run (no preventDefault)
       e.preventDefault();
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
       document.body.style.overflowY = 'hidden';
     }
   }
 
   function onTouchEnd() {
     if (touchBlocked.current) {
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
       document.body.style.overflowY = 'hidden';
       return;
     }
+    const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'auto';
+      }
     document.body.style.overflowY = 'auto';
   }
 
   useEffect(() => {
     const el = slider.current!
     if (touchBlocked.current) {
+      const page = document.getElementById('page_container') as HTMLDivElement;
+      if (page) {
+        page.style.overflowY = 'hidden';
+      }
       document.body.style.overflowY = 'hidden';
       return;
     }
