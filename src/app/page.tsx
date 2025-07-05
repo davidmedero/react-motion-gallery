@@ -28,12 +28,12 @@ export default function Home() {
         <ThumbnailSlider urls={images} />
       </div>
       <h2 className={styles.headers}>Fixed Height</h2>
-      <p className={styles.description}>Width and height of all images are fixed, and the slider height is fixed.</p>
+      <p className={styles.description}>Width and height of all images are fixed, and the slider height is fixed. In this example, wrapping (loop) is disabled if there are 2 images or less that aren&#39;t visible. Resize the browser to toggle wrapping.</p>
       <div style={{ overflow: 'hidden' }}>
         <FixedHeightSlider urls={images} />
       </div>
       <h2 className={styles.headers} style={{ paddingTop: '32px' }}>Responsive</h2>
-      <p className={styles.description}>Column based layout which guarantees a slide shows 100% of each image, can be easily adjusted by simply modifying the maxWidth in the calculateImagesPerSlide function.</p>
+      <p className={styles.description}>Column based layout which guarantees a slide shows 100% of each image, can be easily adjusted by simply modifying the maxWidth in the calculateImagesPerSlide function. In this example, wrapping (loop) is disabled if there are 2 images or less that aren&#39;t visible. Resize the browser to toggle wrapping.</p>
       <div style={{ overflow: 'hidden' }}>
         <ResponsiveSlider urls={images} />
       </div>
