@@ -14,7 +14,7 @@ interface FullscreenSliderModalProps {
   zoomLevel: number;
   children: React.ReactNode;
   cells: RefObject<{ element: HTMLElement; index: number }[]>;
-  fullscreenPosition: DOMRect;
+  storedPositionRef: RefObject<DOMRect>;
   setShowFullscreenSlider: Dispatch<SetStateAction<boolean>>;
   imageCount: number;
   fullscreenImageWidth: RefObject<number>;
@@ -30,7 +30,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   overlayDivRef,
   zoomLevel,
   cells,
-  fullscreenPosition,
+  storedPositionRef,
   setShowFullscreenSlider,
   imageCount,
   fullscreenImageWidth,
@@ -166,7 +166,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
       });
     }
   
-    if (!targetImg || !overlayDivRef.current || !fullscreenPosition) return;
+    if (!targetImg || !overlayDivRef.current || !storedPositionRef.current) return;
   
     const zoomedImg = targetImg;
     const zoomedRect = targetImg.getBoundingClientRect();
@@ -185,15 +185,15 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   
     deltaX =
       currentScale !== 1
-        ? fullscreenPosition.left - (Math.abs(translateX) + zoomedRect.left + windowOffset)
-        : fullscreenPosition.left - zoomedRect.left;
+        ? storedPositionRef.current.left - (Math.abs(translateX) + zoomedRect.left + windowOffset)
+        : storedPositionRef.current.left - zoomedRect.left;
   
     deltaY =
       currentScale !== 1
-        ? fullscreenPosition.top - (Math.abs(translateY) + zoomedRect.top)
-        : fullscreenPosition.top - zoomedRect.top;
+        ? storedPositionRef.current.top - (Math.abs(translateY) + zoomedRect.top)
+        : storedPositionRef.current.top - zoomedRect.top;
   
-    const scaleX = fullscreenPosition.width / (zoomedRect.width / currentScale);
+    const scaleX = storedPositionRef.current.width / (zoomedRect.width / currentScale);
   
     zoomedImg.style.transformOrigin = "0 0";
     zoomedImg.style.transition = "transform 0.3s cubic-bezier(.4,0,.22,1)";

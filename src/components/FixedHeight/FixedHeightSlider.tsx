@@ -38,11 +38,11 @@ export default function FixedHeightSlider({ urls }: Props) {
   const [showFullscreenModal, setShowFullscreenModal] = useState(false);
   const [wrappedImages, setWrappedImages] = useState<string[]>([]);
 
-  const [fullscreenPosition, setFullscreenPosition] = useState<DOMRect>(() => {
-    return typeof DOMRect !== 'undefined'
+  const storedPositionRef = useRef<DOMRect>(
+    typeof DOMRect !== 'undefined'
       ? new DOMRect(0, 0, 0, 0)
-      : ({} as DOMRect);
-  });  
+      : ({} as DOMRect)
+  ); 
   
   const [windowSize, setWindowSize] = useState({
     width: 0,
@@ -1457,7 +1457,7 @@ export default function FixedHeightSlider({ urls }: Props) {
   return (
     <>
       <div className={styles.container}>
-        <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} setFullscreenPosition={setFullscreenPosition} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping} closingModal={closingModal}>
+        <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} storedPositionRef={storedPositionRef} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping} closingModal={closingModal}>
           {
             urls.map((url, index) => {
 
@@ -1484,7 +1484,7 @@ export default function FixedHeightSlider({ urls }: Props) {
         isZoomClick={isZoomClick}
         isClick={isClick}
         isAnimating={isAnimating}
-        fullscreenPosition={fullscreenPosition}
+        storedPositionRef={storedPositionRef}
         overlayDivRef={overlayDivRef}
         zoomLevel={zoomLevel}
         cells={cells}

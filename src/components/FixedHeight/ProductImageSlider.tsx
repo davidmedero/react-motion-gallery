@@ -22,7 +22,7 @@ interface ProductImageSliderProps {
   overlayDivRef: RefObject<HTMLDivElement | null>;
   setSlideIndex: (index: number) => void;
   setShowFullscreenModal: (show: boolean) => void;
-  setFullscreenPosition: Dispatch<SetStateAction<DOMRect>>;
+  storedPositionRef: RefObject<DOMRect>;
   setShowFullscreenSlider: Dispatch<SetStateAction<boolean>>;
   showFullscreenSlider: boolean;
   isWrapping: RefObject<boolean>;
@@ -69,7 +69,7 @@ const ProductImageSlider = ({
   overlayDivRef,
   setSlideIndex,
   setShowFullscreenModal,
-  setFullscreenPosition,
+  storedPositionRef,
   setShowFullscreenSlider,
   showFullscreenSlider,
   isWrapping,
@@ -860,7 +860,7 @@ const ProductImageSlider = ({
     const target = e.target as HTMLImageElement;
     const position = target.getBoundingClientRect();
 
-    setFullscreenPosition(position);
+    storedPositionRef.current = position;
 
     const overlayDiv = document.createElement('div');
     overlayDivRef.current = overlayDiv;
@@ -1065,7 +1065,7 @@ const ProductImageSlider = ({
 
     // snapshot its viewport rect
     const rect = slideEl.getBoundingClientRect();
-    setFullscreenPosition(rect);
+    storedPositionRef.current = rect;
   }, [closingModal, slideIndexSync, showFullscreenSlider]);
 
   useEffect(() => {
@@ -1103,7 +1103,7 @@ const ProductImageSlider = ({
 
     // snapshot its viewport rect
     const rect = slideEl.getBoundingClientRect();
-    setFullscreenPosition(rect);
+    storedPositionRef.current = rect;
   }, [windowSize]);
 
   const Arrow = ({ direction, size = 32 }: { direction: "prev" | "next"; size?: number }) => (
