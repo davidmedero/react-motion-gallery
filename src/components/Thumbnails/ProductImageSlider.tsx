@@ -1022,188 +1022,182 @@ const ProductImageSlider = ({
     return () => window.removeEventListener("resize", updateFullscreenPosition);
   }, [fullscreenImg]);  
 
-  function toggleFullscreen(e: React.PointerEvent<HTMLDivElement>, img: RefObject<HTMLImageElement | null>, index: number) {
-    if (!img.current || !sliderContainer.current) return;
+  function toggleFullscreen(
+    e: React.PointerEvent<HTMLDivElement>,
+    imgRef: RefObject<HTMLImageElement | null>,
+    index: number
+  ) {
+    const origImg   = imgRef.current;
+    const container = sliderContainer.current;
+    if (!origImg || !container) return;
 
-    const target = e.target as HTMLImageElement;
-    const position = target.getBoundingClientRect();
-
-    const imgRect = img.current.getBoundingClientRect();
-
-    // decide which rect to use
+    // 1) Measure the thumbnail & compute "fullscreen" rect
+    const imgRect = origImg.getBoundingClientRect();
     let fullscreenRect: DOMRect;
     if (window.innerWidth <= 516) {
-      // on narrow screens, snap to the image size at left=0
       fullscreenRect = new DOMRect(
-        /* x */      0,
-        /* y */      imgRect.top,
-        /* width */  imgRect.width,
-        /* height */ imgRect.height
+        0,
+        imgRect.top,
+        imgRect.width,
+        imgRect.height
       );
     } else {
-      // on wider screens, use the slider container's position
-      fullscreenRect = sliderContainer.current.getBoundingClientRect();
+      fullscreenRect = container.getBoundingClientRect();
+    }
+    setFullscreenPosition(fullscreenRect);
+    setFullscreenImg(origImg);
+
+    // 2) Create all the nodes
+    const overlay  = document.createElement('div');
+    overlay.className   = 'fullscreen-overlay';
+    overlay.style.display = 'none';
+    overlayDivRef.current = overlay;
+
+    const dup = document.createElement('img');
+    dup.className        = 'duplicate-img';
+    dup.style.display    = 'none';
+    dup.style.transformOrigin = '0 0';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type        = 'button';
+    closeBtn.className   = 'close-button';
+    closeBtn.style.display = 'none';
+    // build the “×” SVG
+    {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('width','35');
+      svg.setAttribute('height','35');
+      svg.setAttribute('viewBox','0 0 16 16');
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('fill','white');
+      path.setAttribute('stroke','#4f4f4f');
+      path.setAttribute('stroke-width','0.5');
+      path.setAttribute('d','M12.96 4.46l-1.42-1.42-3.54 3.55-3.54-3.55-1.42 1.42 3.55 3.54-3.55 3.54 1.42 1.42 3.54-3.55 3.54 3.55 1.42-1.42-3.55-3.54 3.55-3.54z');
+      svg.appendChild(path);
+      closeBtn.appendChild(svg);
     }
 
-    setFullscreenPosition(fullscreenRect);
-    setFullscreenImg(target);
+    const leftCh = document.createElement('div');
+    leftCh.className    = 'left-chevron';
+    leftCh.style.display = 'none';
+    // build left arrow SVG
+    {
+      const svg  = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('width','50');
+      svg.setAttribute('height','50');
+      svg.setAttribute('viewBox','0 0 16 16');
+      svg.setAttribute('fill','white');
+      const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+      poly.setAttribute('stroke','#4f4f4f');
+      poly.setAttribute('stroke-width','0.5');
+      poly.setAttribute('points','4.586,3.414 9.172,8 4.586,12.586 6,14 12,8 6,2');
+      svg.appendChild(poly);
+      leftCh.appendChild(svg);
+    }
 
-    const overlayDiv = document.createElement('div');
-    overlayDivRef.current = overlayDiv;
+    const rightCh = document.createElement('div');
+    rightCh.className    = 'right-chevron';
+    rightCh.style.display = 'none';
+    // build right arrow SVG
+    {
+      const svg  = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('width','50');
+      svg.setAttribute('height','50');
+      svg.setAttribute('viewBox','0 0 16 16');
+      svg.setAttribute('fill','white');
+      const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+      poly.setAttribute('stroke','#4f4f4f');
+      poly.setAttribute('stroke-width','0.5');
+      poly.setAttribute('points','4.586,3.414 9.172,8 4.586,12.586 6,14 12,8 6,2');
+      svg.appendChild(poly);
+      rightCh.appendChild(svg);
+    }
 
-    const duplicateImg = new Image();
-    duplicateImg.src = img.current.src;
-    duplicateImg.className = 'duplicateImg';
-    Object.assign(duplicateImg.style, {
-      width: img.current.offsetWidth + 'px',
-      height: img.current.offsetHeight + 'px',
-      position: "absolute",
-      left: position.left + 'px',
-      top: position.top + 'px',
-      transition: "all 0.3s cubic-bezier(.4,0,.22,1)",
-      zIndex: 9998
-    });
+    const ctr = document.createElement('div');
+    ctr.className       = 'counter';
+    ctr.style.display   = 'none';
+    ctr.textContent     = `${index + 1} / ${imageCount}`;
 
-    Object.assign(overlayDiv.style, {
-      transition: "background-color 0.3s cubic-bezier(.4,0,.22,1)",
-      position: "fixed",
-      inset: "0",
-      backgroundColor: "transparent",
-      zIndex: 8999
-    });
+    // 3) Batch-append in one go
+    const frag = document.createDocumentFragment();
+    frag.append(overlay, dup, closeBtn, leftCh, rightCh, ctr);
+    document.body.appendChild(frag);
 
-    const closeButton = document.createElement('button');
-    closeButton.type = "button";
-    closeButton.className = 'close-button'
-    Object.assign(closeButton.style, {
-      position: "fixed",
-      top: "12px",
-      right: "12px",
-      minWidth: '0px',
-      padding: '0px',
-      opacity: "0",
-      transition: "opacity 0.3s cubic-bezier(.4,0,.22,1)",
-      zIndex: 9999,
-      backgroundColor: 'transparent',
-      border: 'none',
-      cursor: 'pointer'
-    });
+    // 4) Prepare the “before” state
+    overlay.style.display = 'block';
+    overlay.classList.remove('open');
 
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("width", "35px");
-    svg.setAttribute("height", "35px");
-    svg.setAttribute("viewBox", "0 0 16 16");
+    dup.src           = origImg.src;
+    dup.style.display = 'block';
+    dup.style.left    = `${imgRect.left}px`;
+    dup.style.top     = `${imgRect.top}px`;
+    dup.style.width   = `${imgRect.width}px`;
+    dup.style.height  = `${imgRect.height}px`;
+    dup.style.transition = 'none';
 
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("fill", "white");
-    path.setAttribute("stroke", "#4f4f4f");
-    path.setAttribute("stroke-width", "0.5");
-    path.setAttribute("d", "M12.96 4.46l-1.42-1.42-3.54 3.55-3.54-3.55-1.42 1.42 3.55 3.54-3.55 3.54 1.42 1.42 3.54-3.55 3.54 3.55 1.42-1.42-3.55-3.54 3.55-3.54z");
+    // force reflow
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    dup.offsetWidth;
+    // restore transition
+    dup.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
 
-    const chevronStyles = {
-      height: "50px",
-      width: "50px",
-      position: "fixed",
-      top: "45.5%",
-      zIndex: 9999,
-      cursor: "pointer",
-      transition: "opacity 0.3s cubic-bezier(.4,0,.22,1)",
-      opacity: "0",
-      display: imageCount > 1 ? "block" : "none"
-    };
+    closeBtn.style.display = 'block';
+    closeBtn.classList.remove('open');
 
-    const leftChevron = document.createElement("div");
-    leftChevron.className = "left-chevron";
-    Object.assign(leftChevron.style, chevronStyles, { left: "0", transform: "rotate(180deg)" });
+    leftCh.style.display = imageCount > 1 ? 'block' : 'none';
+    leftCh.classList.remove('open');
 
-    const rightChevron = document.createElement("div");
-    rightChevron.className = "right-chevron";
-    Object.assign(rightChevron.style, chevronStyles, { right: "0" });
+    rightCh.style.display = imageCount > 1 ? 'block' : 'none';
+    rightCh.classList.remove('open');
 
-    const chevronSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    chevronSvg.setAttribute("width", "50px");
-    chevronSvg.setAttribute("height", "50px");
-    chevronSvg.setAttribute("fill", "white");
-    chevronSvg.setAttribute("viewBox", "0 0 16 16");
-
-    const chevronPolygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-    chevronPolygon.setAttribute("stroke", "#4f4f4f");
-    chevronPolygon.setAttribute("stroke-width", "0.5");
-    chevronPolygon.setAttribute("points", "4.586,3.414 9.172,8 4.586,12.586 6,14 12,8 6,2");
-
-    const counter = document.createElement('div');
-    counter.className = 'counter';
-    Object.assign(counter.style, {
-      position: "fixed",
-      top: "0",
-      left: "0",
-      color: "white",
-      zIndex: 9999,
-      userSelect: "none",
-      height: "32px",
-      marginTop: "15px",
-      marginLeft: "16px",
-      fontSize: "14px",
-      lineHeight: "32px",
-      transition: "opacity 0.3s cubic-bezier(.4,0,.22,1)",
-      opacity: "0",
-      fontFamily: "Roboto, sans-serif",
-      textShadow: "1px 1px 3px #4f4f4f",
-      display: imageCount > 1 ? "block" : "none"
-    });
-    counter.textContent = `${index} / ${imageCount}`;
-
-    svg.appendChild(path);
-    closeButton.appendChild(svg);
-    chevronSvg.appendChild(chevronPolygon);
-    leftChevron.appendChild(chevronSvg.cloneNode(true));
-    rightChevron.appendChild(chevronSvg);
-
-    document.body.appendChild(counter);
-    document.body.appendChild(leftChevron);
-    document.body.appendChild(rightChevron);
-    document.body.appendChild(duplicateImg);
-    document.body.appendChild(overlayDiv);
-    document.body.appendChild(closeButton);
+    ctr.style.display = imageCount > 1 ? 'block' : 'none';
+    ctr.classList.remove('open');
 
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    overlayDiv.offsetWidth;
+    overlay.offsetWidth;
+
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    duplicateImg.offsetWidth;
+    dup.offsetWidth;
 
-    Object.assign(duplicateImg.style, {
-      position: "fixed",
-      inset: "0",
-      width: "100%",
-      height: "100dvh",
-      objectFit: "contain",
-      zIndex: 9998
+    const scaleX = window.innerWidth  / imgRect.width;
+    const scaleY = window.innerHeight / imgRect.height;
+    const s = Math.min(scaleX, scaleY);
+
+    const finalW = imgRect.width  * s;
+    const finalH = imgRect.height * s;
+
+    const targetLeft = (window.innerWidth  - finalW) / 2;
+    const targetTop  = (window.innerHeight - finalH) / 2;
+
+    const dx = targetLeft - imgRect.left;
+    const dy = targetTop  - imgRect.top ;
+
+    requestAnimationFrame(() => {
+      dup.style.transform = `translate(${dx}px, ${dy}px) scale(${s})`;
+      overlay.style.backgroundColor = "rgba(0,0,0,0.8)";
+      overlay.classList.add('open');
+      closeBtn.classList.add('open');
+      leftCh.classList.add('open');
+      rightCh.classList.add('open');
+      ctr.classList.add('open');
     });
 
-    Object.assign(overlayDiv.style, {
-      position: "fixed",
-      inset: "0",
-      backgroundColor: "rgba(0,0,0,0.8)",
-      zIndex: 8999
-    });
-
-    closeButton.style.opacity = "1";
-    leftChevron.style.opacity = "1";
-    rightChevron.style.opacity = "1";
-    counter.style.opacity = "1";
-
-    duplicateImg.addEventListener('transitionend', function onEnd() {
+    // 7) Cleanup when the fly-out finishes
+    dup.addEventListener('transitionend', function handler(e) {
+      if (e.propertyName !== 'transform') return;
+      dup.removeEventListener('transitionend', handler);
       setShowFullscreenSlider(true);
     }, { once: true });
   }
 
   useLayoutEffect(() => {
     if (!showFullscreenSlider) return;
-    const duplicateImg = document.querySelector('.duplicateImg');
+    const duplicateImg = document.querySelector('.duplicate-img') as HTMLElement;
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        document.body.removeChild(duplicateImg!);
+        if (!duplicateImg) return;
+        document.body.removeChild(duplicateImg);
       })
     })
   }, [showFullscreenSlider]);

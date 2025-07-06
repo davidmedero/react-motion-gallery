@@ -194,18 +194,23 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
         : storedPositionRef.current.top - zoomedRect.top;
   
     const scaleX = storedPositionRef.current.width / (zoomedRect.width / currentScale);
-  
-    zoomedImg.style.transformOrigin = "0 0";
-    zoomedImg.style.transition = "transform 0.3s cubic-bezier(.4,0,.22,1)";
-  
-    zoomedImg.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${scaleX})`;
-  
-    overlayDivRef.current.style.backgroundColor = "transparent";
-  
-    const elementsToFade = [".left-chevron", ".right-chevron", ".counter", ".close-button"];
-    elementsToFade.forEach((selector) => {
-      const element = document.querySelector(selector) as HTMLElement;
-      if (element) element.style.opacity = "0";
+
+     const elementsToFade = [".left-chevron", ".right-chevron", ".counter", ".close-button"];
+      
+    requestAnimationFrame(() => {
+      zoomedImg.style.transformOrigin = "0 0";
+      zoomedImg.style.transition = "transform 0.3s cubic-bezier(.4,0,.22,1)";
+    
+      zoomedImg.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${scaleX})`;
+    
+      if (overlayDivRef.current) {
+        overlayDivRef.current.style.backgroundColor = "transparent";
+      }
+
+      elementsToFade.forEach((selector) => {
+        const element = document.querySelector(selector) as HTMLElement;
+        if (element) element.style.opacity = "0";
+      });
     });
   
     setTimeout(() => {
