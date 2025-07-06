@@ -421,10 +421,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       }
       
     } else {
-      console.log('dragged FS slider');
-      console.log('index', index);
-      console.log('index === selectedIndex.current', index === selectedIndex.current);
-      console.log('slides.current.length', slides.current.length);
+      console.log('dragged');
       if (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1)) {
         console.log('boosting index')
         index += dragEndBoostSelect();

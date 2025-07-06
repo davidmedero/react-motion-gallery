@@ -309,23 +309,6 @@ const ProductImageSlider = ({
 
   }, [clonedChildren, windowSize, visibleImages, firstChildWidth]);
 
-  // useEffect(() => {
-  //   if (!slider.current || cells.current.length === 0 || hasPositioned.current || sliderWidth.current === 0 || !slides.current || !slides.current[0].cells[0]?.element) return;
-    
-  //   if (!isWrapping.current) {
-  //     firstCellInSlide.current = slides.current[0].cells[0]?.element;
-  //     const containerWidth = slider.current.clientWidth;
-  //     const cellWidth = cells.current[0].element.clientWidth;
-  //     x.current = (containerWidth - cellWidth) / 2;
-  //     positionSlider();
-  //     hasPositioned.current = true;
-  //     slider.current.style.opacity = '1';
-  //   } else {
-  //     slider.current.style.opacity = '1';
-  //   }
-    
-  // }, [slides.current]);
-
   useEffect(() => {
     if (firstChildWidth === 0 || visibleImages === 0 || !slider.current) return;
     let totalWidth = 0;
@@ -381,7 +364,6 @@ const ProductImageSlider = ({
   function startAnimation() {
     if (isAnimating.current) return;
 
-    console.log('isAnimating')
     isAnimating.current = true;
     restingFrames.current = 0;
     animate();
@@ -458,7 +440,6 @@ const ProductImageSlider = ({
   function setTranslateX(x: number) {
     if (!slider.current) return;
     const translateX = getPositionValue(x);
-    console.log('translateX', translateX)
     slider.current.style.transform = `translate3d(${translateX},0,0)`;
     const pct =
       sliderWidth.current > 0
@@ -484,8 +465,6 @@ const ProductImageSlider = ({
     if (!slider.current) return;
     if (!isPointerDown.current) return;
     e.preventDefault();
-
-    console.log('moving')
 
     previousDragX.current = dragX.current;
 
@@ -1016,7 +995,7 @@ const ProductImageSlider = ({
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (!duplicateImg) return;
-        document.body.removeChild(duplicateImg);
+        duplicateImg.remove();
       })
     })
   }, [showFullscreenSlider]);

@@ -1011,6 +1011,7 @@ const ProductImageSlider = ({
   useEffect(() => {
     function updateFullscreenPosition() {
       if (fullscreenImg) {
+        console.log('detectedcghwgc')
         const newPos = fullscreenImg.getBoundingClientRect();
         if (selectedIndex.current === 0) {
           newPos.x -= sliderWidth.current;
@@ -1197,13 +1198,14 @@ const ProductImageSlider = ({
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (!duplicateImg) return;
-        document.body.removeChild(duplicateImg);
+        duplicateImg.remove();
       })
     })
   }, [showFullscreenSlider]);
 
   useEffect(() => {
     if (closingModal === true && slider.current) {
+      setFullscreenImg(null);
       const page = document.getElementById('page_container') as HTMLDivElement;
       if (page) {
         page.style.overflowY = 'auto';
@@ -1257,7 +1259,7 @@ const ProductImageSlider = ({
         }
       }
     }
-  }, [closingModal]);
+  }, [closingModal, slideIndexSync]);
 
   const Arrow = ({ direction, size = 32 }: { direction: "prev" | "next"; size?: number }) => (
     <svg

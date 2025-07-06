@@ -431,7 +431,6 @@ const ProductImageSlider = ({
       currentPosition = ((currentPosition % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
       currentPosition += -sliderWidth.current;
     }
-    console.log('positioning')
     setTranslateX(currentPosition);
   };
 
@@ -1016,7 +1015,7 @@ const ProductImageSlider = ({
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (!duplicateImg) return;
-        document.body.removeChild(duplicateImg);
+        duplicateImg.remove();
       })
     })
   }, [showFullscreenSlider]);

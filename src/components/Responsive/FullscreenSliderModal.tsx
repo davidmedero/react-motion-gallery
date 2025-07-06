@@ -78,6 +78,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   }
   
   function proceedToClose(e: MouseEvent) {
+    if (!open) return null;
     isAnimating.current = false;
     isClick.current = false;
     cells.current = [];
@@ -195,22 +196,20 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   
     const scaleX = storedPositionRef.current.width / (zoomedRect.width / currentScale);
 
-     const elementsToFade = [".left-chevron", ".right-chevron", ".counter", ".close-button"];
+    const elementsToFade = [".left-chevron", ".right-chevron", ".counter", ".close-button"];
       
-    requestAnimationFrame(() => {
-      zoomedImg.style.transformOrigin = "0 0";
-      zoomedImg.style.transition = "transform 0.3s cubic-bezier(.4,0,.22,1)";
-    
-      zoomedImg.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${scaleX})`;
-    
-      if (overlayDivRef.current) {
-        overlayDivRef.current.style.backgroundColor = "transparent";
-      }
+    zoomedImg.style.transformOrigin = "0 0";
+    zoomedImg.style.transition = "transform 0.3s cubic-bezier(.4,0,.22,1)";
+  
+    zoomedImg.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${scaleX})`;
+  
+    if (overlayDivRef.current) {
+      overlayDivRef.current.style.backgroundColor = "transparent";
+    }
 
-      elementsToFade.forEach((selector) => {
-        const element = document.querySelector(selector) as HTMLElement;
-        if (element) element.style.opacity = "0";
-      });
+    elementsToFade.forEach((selector) => {
+      const element = document.querySelector(selector) as HTMLElement;
+      if (element) element.style.opacity = "0";
     });
   
     setTimeout(() => {
@@ -219,7 +218,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   
       elementsToFade.forEach((selector) => {
         const element = document.querySelector(selector);
-        if (element) document.body.removeChild(element);
+        if (element) element.remove();
       });
 
       const slider = document.querySelector('.fullscreen_slider') as HTMLElement;
@@ -227,7 +226,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
         slider.style.opacity = '0';
       };
   
-      if (overlayDivRef.current) document.body.removeChild(overlayDivRef.current);
+      if (overlayDivRef.current) overlayDivRef.current.remove();
       onClose();
       setShowFullscreenSlider(false);
       setClosingModal(false);
