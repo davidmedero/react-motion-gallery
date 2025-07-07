@@ -1205,12 +1205,6 @@ const ProductImageSlider = ({
       if (page) {
         page.style.overflowY = 'auto';
       }
-      // selectedIndex.current = slideIndexSync;
-      // firstCellInSlide.current = productImageSlides.current[slideIndexSync]?.cells[0]?.element;
-      // const slideWidth = productImageSliderRef.current.children[0]?.clientWidth || 0;
-      // sliderX.current = -slideWidth * slideIndexSync;
-      // sliderVelocity.current = 0;
-      // positionSlider();
       thumbnailRefs.current.forEach((img: HTMLImageElement | null, i: number) => {
         if (img) {
           img.style.border =

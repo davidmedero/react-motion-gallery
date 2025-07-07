@@ -523,6 +523,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isVerticalScroll.current = false;
     isScrolling.current = false;
     isPinching.current = false;
+    isTouchPinching.current = false;
     zoomedDuringWrap.current = false;
     select(selectedIndex.current - 1);
   }
@@ -531,6 +532,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isVerticalScroll.current = false;
     isScrolling.current = false;
     isPinching.current = false;
+    isTouchPinching.current = false;
     zoomedDuringWrap.current = false;
     select(selectedIndex.current + 1);
   }  
