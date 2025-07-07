@@ -1,8 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import React, { Dispatch, RefObject, SetStateAction, useEffect } from "react";
+import React, { Dispatch, RefObject, SetStateAction, useEffect, useSyncExternalStore } from "react";
 import scaleStore from './scaleStore';
+import slideStore from './slideStore';
+
+function useSlideIndex() {
+  return useSyncExternalStore(
+    slideStore.subscribe.bind(slideStore),
+    slideStore.getSnapshot.bind(slideStore),
+    slideStore.getSnapshot.bind(slideStore)
+  );
+}
 
 interface FullscreenSliderModalProps {
   open: boolean;
@@ -19,6 +28,14 @@ interface FullscreenSliderModalProps {
   imageCount: number;
   fullscreenImageWidth: RefObject<number>;
   setClosingModal: Dispatch<SetStateAction<boolean>>;
+  productImageSlides: RefObject<{ cells: { element: HTMLElement, index: number }[], target: number }[]>;
+  productImageSliderRef: RefObject<HTMLDivElement | null>;
+  visibleImagesRef: RefObject<number>;
+  selectedIndex: RefObject<number>;
+  firstCellInSlide: RefObject<HTMLElement | null>;
+  sliderX: RefObject<number>;
+  sliderVelocity: RefObject<number>;
+  isWrapping: RefObject<boolean>;
 }
 
 const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
@@ -30,16 +47,25 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   overlayDivRef,
   zoomLevel,
   cells,
-  storedPositionRef,
+  // storedPositionRef,
   setShowFullscreenSlider,
   imageCount,
   fullscreenImageWidth,
   setClosingModal,
+  productImageSlides,
+  productImageSliderRef,
+  visibleImagesRef,
+  selectedIndex,
+  firstCellInSlide,
+  sliderX,
+  sliderVelocity,
+  isWrapping,
   children,
 }) => {  
 
   const pointerDownX = React.useRef<number>(0);
   const pointerDownY = React.useRef<number>(0);
+  const slideIndexSync = useSlideIndex();
 
   useEffect(() => {
     const closeButton = document.querySelector(".close-button");
@@ -76,6 +102,10 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     proceedToClose(e);
   }
+
+  function getPositionValue(position: number) {
+    return Math.round(position) + 'px';
+  };
   
   function proceedToClose(e: MouseEvent) {
     if (!open) return null;
@@ -83,6 +113,43 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     isClick.current = false;
     cells.current = [];
     setClosingModal(true);
+
+    const slideArr = productImageSlides.current;
+    // find the slide whose cells include the fullscreen image index
+    const matchSlide = slideArr.find(s =>
+      s.cells.some(cell => cell.index === slideIndexSync)
+    );
+    if (!matchSlide) return;
+
+    // now pull its position out
+    const newIndex = slideArr.indexOf(matchSlide);
+
+    // update your refs exactly as before
+    selectedIndex.current    = newIndex;
+    firstCellInSlide.current = matchSlide.cells[0]?.element ?? null;
+    sliderX.current                = -matchSlide.target;
+    sliderVelocity.current         = 0;
+
+    const translateSliderX = getPositionValue(sliderX.current);
+    
+    if (!productImageSliderRef.current) return;
+    productImageSliderRef.current.style.transform = `translate3d(${translateSliderX},0,0)`;
+
+    if (!productImageSliderRef.current || productImageSliderRef.current.children.length === 0) return;
+
+    let idx;
+    if (isWrapping.current) {
+      idx = slideIndexSync + visibleImagesRef.current;
+    } else {
+      idx = slideIndexSync;
+    }
+
+    // grab the first child of that slide (your image element)
+    const slideEl = productImageSliderRef.current.children[idx] as HTMLElement | undefined;
+    if (!slideEl) return;
+
+    // snapshot its viewport rect
+    const rect = slideEl.getBoundingClientRect();
   
     const x = e.clientX;
     const y = e.clientY;
@@ -167,7 +234,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
       });
     }
   
-    if (!targetImg || !overlayDivRef.current || !storedPositionRef.current) return;
+    if (!targetImg || !overlayDivRef.current || !rect) return;
   
     const zoomedImg = targetImg;
     const zoomedRect = targetImg.getBoundingClientRect();
@@ -186,15 +253,15 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   
     deltaX =
       currentScale !== 1
-        ? storedPositionRef.current.left - (Math.abs(translateX) + zoomedRect.left + windowOffset)
-        : storedPositionRef.current.left - zoomedRect.left;
+        ? rect.left - (Math.abs(translateX) + zoomedRect.left + windowOffset)
+        : rect.left - zoomedRect.left;
   
     deltaY =
       currentScale !== 1
-        ? storedPositionRef.current.top - (Math.abs(translateY) + zoomedRect.top)
-        : storedPositionRef.current.top - zoomedRect.top;
+        ? rect.top - (Math.abs(translateY) + zoomedRect.top)
+        : rect.top - zoomedRect.top;
   
-    const scaleX = storedPositionRef.current.width / (zoomedRect.width / currentScale);
+    const scaleX = rect.width / (zoomedRect.width / currentScale);
 
      const elementsToFade = [".left-chevron", ".right-chevron", ".counter", ".close-button"];
   

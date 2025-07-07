@@ -96,6 +96,13 @@ export default function ThumbnailSlider({ urls }: Props) {
   const zoomIncreaseDiff = useRef(0);
 
   const [closingModal, setClosingModal] = useState(false);
+  const productImageSlides = useRef<{ cells: { element: HTMLElement, index: number }[], target: number }[]>([]);
+  const productImageSliderRef = useRef<HTMLDivElement | null>(null);
+  const visibleImagesRef = useRef(0);
+  const selectedIndex = useRef(0);
+  const firstCellInSlide = useRef<HTMLElement | null>(null);
+  const sliderX = useRef(0);
+  const sliderVelocity = useRef(0);
 
   const aspectRatioRef = useRef(1);
 
@@ -1544,7 +1551,7 @@ export default function ThumbnailSlider({ urls }: Props) {
           {/* Right Column — Main Image Display */}
           <div className={styles.right_column_container}>
             <div className={styles.right_column}>
-              <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} thumbnailRefs={thumbnailRefs} simpleBarRef={simpleBarRef} thumbnailContainerRef={thumbnailContainerRef} setFullscreenPosition={setFullscreenPosition} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping} closingModal={closingModal}>
+              <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} thumbnailRefs={thumbnailRefs} simpleBarRef={simpleBarRef} thumbnailContainerRef={thumbnailContainerRef} setFullscreenPosition={setFullscreenPosition} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping} closingModal={closingModal} productImageSlides={productImageSlides} productImageSliderRef={productImageSliderRef} visibleImagesRef={visibleImagesRef} selectedIndex={selectedIndex} firstCellInSlide={firstCellInSlide} sliderX={sliderX} sliderVelocity={sliderVelocity}>
                 {
                   urls.map((url, index) => {
 
@@ -1582,6 +1589,14 @@ export default function ThumbnailSlider({ urls }: Props) {
         imageCount={urls.length}
         fullscreenImageWidth={fullscreenImageWidth}
         setClosingModal={setClosingModal}
+        productImageSlides={productImageSlides}
+        productImageSliderRef={productImageSliderRef}
+        visibleImagesRef={visibleImagesRef}
+        selectedIndex={selectedIndex} 
+        firstCellInSlide={firstCellInSlide} 
+        sliderX={sliderX} 
+        sliderVelocity={sliderVelocity}
+        isWrapping={isWrapping}
       >
         <FullscreenSlider 
           ref={sliderApi}
