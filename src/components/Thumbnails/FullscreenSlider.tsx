@@ -394,7 +394,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     let index = dragEndRestingSelect();
 
     if (isClick.current) {
-
       const closeButton = document.querySelector(".close-button") as HTMLElement | null;
       const clickedImg = (e.target as HTMLElement).closest("img");
       if (!clickedImg) {
@@ -417,7 +416,9 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
           fullscreenImageWidth.current = matchedRef.current.clientWidth
         }
 
-        handleZoomToggle(e, matchedRef);
+        if (index !== Number(imgIndex)) {
+          handleZoomToggle(e, matchedRef);
+        }
       }
       
     } else {

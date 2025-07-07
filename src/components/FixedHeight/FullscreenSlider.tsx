@@ -417,7 +417,9 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
           fullscreenImageWidth.current = matchedRef.current.clientWidth
         }
 
-        handleZoomToggle(e, matchedRef);
+        if (index !== Number(imgIndex)) {
+          handleZoomToggle(e, matchedRef);
+        }
       }
       
     } else {
