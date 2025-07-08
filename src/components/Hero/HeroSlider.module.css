@@ -1,0 +1,24 @@
+.image {
+  display: block;
+  object-fit: contain;
+  cursor: zoom-in;
+  user-select: none;
+  position: absolute;
+  left: 0;
+  max-width: 800px;
+  width: 100dvw;
+  margin: 0 auto;
+  user-select: none;
+}
+
+.image:active {
+  cursor: grabbing;
+}
+
+.fullscreenImages:active {
+  cursor: grabbing !important;
+}
+
+.imgMargin:active {
+  cursor: grabbing !important;
+}
