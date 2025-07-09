@@ -50,7 +50,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   // storedPositionRef,
   setShowFullscreenSlider,
   imageCount,
-  fullscreenImageWidth,
+  // fullscreenImageWidth,
   setClosingModal,
   productImageSlides,
   productImageSliderRef,
@@ -253,13 +253,10 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   
     let deltaX: number = 0;
     let deltaY: number = 0;
-
-    const scaledWidth = fullscreenImageWidth.current * currentScale;
-    const windowOffset = window.innerWidth > scaledWidth ? window.innerWidth - scaledWidth : 0;
   
     deltaX =
       currentScale !== 1
-        ? rect.left - (Math.abs(translateX) + zoomedRect.left + windowOffset)
+        ? rect.left - (Math.abs(translateX) + zoomedRect.left)
         : rect.left - zoomedRect.left;
   
     deltaY =

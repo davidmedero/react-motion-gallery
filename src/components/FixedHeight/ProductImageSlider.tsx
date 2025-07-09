@@ -89,36 +89,43 @@ const ProductImageSlider = ({
   sliderX,
   sliderVelocity
 }: ProductImageSliderProps) => {
-  // const slider = useRef<HTMLDivElement | null>(null);
   const [firstChildWidth, setFirstChildWidth] = useState(0);
   const isPointerDown = useRef(false);
   const startX = useRef(0);
   const startY = useRef(0);
-  // const x = useRef(0);
   const dragX = useRef(0);
   const previousDragX = useRef<number>(0);
   const dragStartPosition = useRef(0);
   const dragMoveTime = useRef<Date | null>(null);
-  // const velocity = useRef(0);
   const isAnimating = useRef(false);
   const restingFrames = useRef(0);
-  // const selectedIndex = useRef(0);
   const sliderWidth = useRef(0);
   const isScrolling = useRef(false);
   const [clonedChildren, setClonedChildren] = useState<React.ReactElement[]>([]);
   const [visibleImages, setVisibleImages] = useState(1);
   const friction = 0.28;
   const attraction = 0.025;
-  // const visibleImagesRef = useRef(0);
-  // const firstCellInSlide = useRef<HTMLElement | null>(null);
   const cells = useRef<{ element: HTMLElement, index: number }[]>([]);
-  // const slides = useRef<{ cells: { element: HTMLElement, index: number }[], target: number }[]>([]);
   const isDragSelect = useRef<boolean>(false);
   const lastTranslateX = useRef<number>(0);
   const progressFillRef = useRef<HTMLDivElement>(null);
   const isClosing = useRef(false);
   const slideIndexSync = useSlideIndex();
   const sliderContainer = useRef<HTMLDivElement | null>(null);
+  const hasPositioned = useRef<boolean>(false);
+  const [slidesState, setSlidesState] = useState<{ cells: { element: HTMLElement }[] }[]>([]);
+
+  useLayoutEffect(() => {
+    if (!productImageSliderRef.current || cells.current.length === 0 || hasPositioned.current || sliderWidth.current === 0 || !productImageSlides.current || !productImageSlides.current[0].cells[0]?.element) return;
+    firstCellInSlide.current = productImageSlides.current[0].cells[0]?.element;
+    const containerWidth = productImageSliderRef.current.clientWidth;
+    const cellWidth = cells.current[0].element.clientWidth;
+    if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+      sliderX.current = (containerWidth - cellWidth) / 2;
+      positionSlider();
+    }
+    hasPositioned.current = true;
+  }, [slidesState]);
 
   useEffect(() => {
     if (!cells.current?.[0]?.element) return;
@@ -316,6 +323,7 @@ const ProductImageSlider = ({
     } 
   
     productImageSlides.current = newSlides;
+    setSlidesState(newSlides); 
   }, [clonedChildren, windowSize, visibleImages, firstChildWidth]);
 
   useEffect(() => {
@@ -707,15 +715,11 @@ const ProductImageSlider = ({
     const childCount = childrenArray.length;
     const slideWidth = cellWidth * childCount;
 
-    isAnimating.current = false;
-    sliderVelocity.current = 0;
-    positionSlider();
-    
     if (!isWrapping.current) {
       sliderX.current = 0;
       selectedIndex.current = 0;
       if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
-        const currentPosition = sliderX.current + (containerWidth - slideWidth) / 2;
+        const currentPosition = (containerWidth - slideWidth) / 2;
         setTranslateX(currentPosition);
       } else {
         const currentPosition = sliderX.current;
@@ -1037,10 +1041,15 @@ const ProductImageSlider = ({
     // now pull its position out
     const newIndex = slideArr.indexOf(matchSlide);
 
+    if (!productImageSliderRef.current) return;
+
+    const containerWidth = productImageSliderRef.current.clientWidth;
+    const cellWidth = cells.current[0].element.clientWidth;
+
     // update your refs exactly as before
     selectedIndex.current    = newIndex;
     firstCellInSlide.current = matchSlide.cells[0]?.element ?? null;
-    sliderX.current                = -matchSlide.target;
+    sliderX.current                = isWrapping.current ? -matchSlide.target : (containerWidth - cellWidth) / 2;
     sliderVelocity.current         = 0;
 
     positionSlider();

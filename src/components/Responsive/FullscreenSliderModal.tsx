@@ -50,7 +50,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   // storedPositionRef,
   setShowFullscreenSlider,
   imageCount,
-  fullscreenImageWidth,
+  // fullscreenImageWidth,
   setClosingModal,
   productImageSlides,
   productImageSliderRef,
@@ -106,6 +106,19 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   function getPositionValue(position: number) {
     return Math.round(position) + 'px';
   };
+
+  function getTotalCellsWidth(): number {
+    const slides = productImageSlides.current;
+    let totalWidth = 0;
+
+    slides.forEach(slide => {
+      slide.cells.forEach(cell => {
+        totalWidth += cell.element.offsetWidth;
+      });
+    });
+
+    return totalWidth;
+  }
   
   function proceedToClose(e: MouseEvent) {
     if (!open) return null;
@@ -116,21 +129,24 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     const slideArr = productImageSlides.current;
     // find the slide whose cells include the fullscreen image index
-    if (!productImageSliderRef.current) return;
-    const wrapIndex = slideIndexSync >= productImageSliderRef.current.children.length - visibleImagesRef.current * 2 ? 0 : slideIndexSync;
     const matchSlide = slideArr.find(s =>
-      s.cells.some(cell => cell.index === wrapIndex)
+      s.cells.some(cell => cell.index === slideIndexSync)
     );
     if (!matchSlide) return;
 
     // now pull its position out
     const newIndex = slideArr.indexOf(matchSlide);
 
-    // update your refs exactly as before
-    selectedIndex.current    = newIndex;
+    const totalWidth = getTotalCellsWidth()
+
+    if (!productImageSliderRef.current) return;
+
+    const cellWidth = productImageSlides.current[0].cells[0].element.getBoundingClientRect().left;
+
+    selectedIndex.current = newIndex;
     firstCellInSlide.current = matchSlide.cells[0]?.element ?? null;
-    sliderX.current                = -matchSlide.target;
-    sliderVelocity.current         = 0;
+    sliderX.current = totalWidth <= productImageSliderRef.current.clientWidth ? cellWidth : -matchSlide.target;
+    sliderVelocity.current = 0;
 
     const translateSliderX = getPositionValue(sliderX.current);
     
@@ -140,9 +156,9 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     let idx;
     if (isWrapping.current) {
-      idx = wrapIndex + visibleImagesRef.current;
+      idx = slideIndexSync + visibleImagesRef.current;
     } else {
-      idx = wrapIndex;
+      idx = slideIndexSync;
     }
 
     // grab the first child of that slide (your image element)
@@ -248,13 +264,10 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   
     let deltaX: number = 0;
     let deltaY: number = 0;
-
-    const scaledWidth = fullscreenImageWidth.current * currentScale;
-    const windowOffset = window.innerWidth > scaledWidth ? window.innerWidth - scaledWidth : 0;
   
     deltaX =
       currentScale !== 1
-        ? rect.left - (Math.abs(translateX) + zoomedRect.left + windowOffset)
+        ? rect.left - (Math.abs(translateX) + zoomedRect.left)
         : rect.left - zoomedRect.left;
   
     deltaY =
