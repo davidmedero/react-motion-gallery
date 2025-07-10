@@ -153,7 +153,7 @@ const ProductImageSlider = ({
     setVisibleImages(images);
     visibleImagesRef.current = images;
 
-    if (childCount - 1 > images) {
+    if (childCount > images) {
       isWrapping.current = true;
     } else {
       isWrapping.current = false;
@@ -166,7 +166,7 @@ const ProductImageSlider = ({
     const slides: ReactElement<CarouselChildProps>[] = []
     
     // only do clones if we need infinite wrapping
-    if (childCount - 1 > images) {
+    if (childCount > images) {
       // before-clones: map [-images .. -1] → real indices [childCount-images .. childCount-1]
       const before = childrenArray.slice(-images).map((c, i) =>
         cloneSlide(
@@ -218,7 +218,7 @@ const ProductImageSlider = ({
 
     setClonedChildren(slides)
 
-  }, [firstChildWidth]);
+  }, [windowSize, firstChildWidth]);
 
   useEffect(() => {
     if (!productImageSliderRef.current) return;
@@ -270,7 +270,7 @@ const ProductImageSlider = ({
     const childrenArray = Children.toArray(children);
     const childCount = childrenArray.length;
 
-    if (childCount - 1 > visibleImages) {
+    if (childCount > visibleImages) {
       for (let i = visibleImages; i < clonedChildren.length - visibleImages; i++) {
         const slice = cells.current.slice(i, i + visibleImages);
     
@@ -282,7 +282,7 @@ const ProductImageSlider = ({
     } else {
       for (let i = 0; i < cells.current.length; i += cellsPerSlide) {
         const slice = cells.current.slice(i, i + cellsPerSlide);
-    
+        
         // are we on the last slice?
         const isLast = i + cellsPerSlide >= cells.current.length;
     
@@ -303,7 +303,7 @@ const ProductImageSlider = ({
   
     productImageSlides.current = newSlides;
     setSlidesState(newSlides); 
-    console.log('newSlides', newSlides)
+
   }, [clonedChildren, windowSize, visibleImages, firstChildWidth]);
 
   useEffect(() => {
@@ -311,8 +311,13 @@ const ProductImageSlider = ({
     firstCellInSlide.current = productImageSlides.current[0].cells[0]?.element;
     const containerWidth = productImageSliderRef.current.clientWidth;
     const cellWidth = cells.current[0].element.clientWidth;
-    sliderX.current = (containerWidth - cellWidth) / 2;
-    positionSlider();
+    if (isWrapping.current) {
+      sliderX.current = (containerWidth - cellWidth) / 2;
+      positionSlider();
+    } else if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+      sliderX.current = (containerWidth - sliderWidth.current) / 2;
+      positionSlider();
+    }
     hasPositioned.current = true;
     productImageSliderRef.current.style.opacity = '1';
   }, [slidesState]);
@@ -325,7 +330,7 @@ const ProductImageSlider = ({
     const childrenArray = Children.toArray(children);
     const childCount = childrenArray.length;
 
-    if (childCount - 1 > visibleImages) {
+    if (childCount > visibleImages) {
       for (let i = 0; i < sliderChildren.length - (visibleImages * 2); i++) {
         totalWidth += sliderChildren[i].getBoundingClientRect().width;
       }
@@ -600,8 +605,13 @@ const ProductImageSlider = ({
     const cell = cellWidth * selectedIndex.current;
 
     // ✅ Adjust position to center the cell
-    const centeredPosition = -cell + (containerWidth - cellWidth) / 2; 
-
+    let centeredPosition;
+    if (isWrapping.current) {
+      centeredPosition = -cell + (containerWidth - cellWidth) / 2;
+    } else {
+      centeredPosition = -productImageSlides.current[selectedIndex.current].target;
+    }
+     
     let distance = centeredPosition - sliderX.current;
 
     const childrenArray = Children.toArray(children);
@@ -640,7 +650,13 @@ const ProductImageSlider = ({
     const cellIndex = ((index % length) + length) % length;
     const cell = cellWidth * cellIndex;
     // ✅ Adjust cell distance calculation to be centered
-    const centeredCell = cell - (containerWidth - cellWidth) / 2;
+    let centeredCell;
+    if (isWrapping.current) {
+      centeredCell = cell - (containerWidth - cellWidth) / 2;
+    } else {
+      centeredCell = productImageSlides.current[selectedIndex.current].target;
+    }
+    
     let wrap = sliderWidth.current * Math.floor(index/length);
     if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
       wrap = 0;
@@ -706,13 +722,13 @@ const ProductImageSlider = ({
     const cellWidth = cells.current[0].element.clientWidth;
 
     if (!isWrapping.current) {
-      sliderX.current = (containerWidth - cellWidth) / 2;
+      sliderX.current = 0;
       selectedIndex.current = 0;
       if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
-        const currentPosition = sliderX.current + (containerWidth - cellWidth) / 2;
-        setTranslateX(currentPosition);
+        const currentPosition = (containerWidth - sliderWidth.current) / 2;
+        setTranslateX(currentPosition); 
       } else {
-        const currentPosition = sliderX.current + (containerWidth - cellWidth) / 2;
+        const currentPosition = sliderX.current;
         setTranslateX(currentPosition);
       }
       
@@ -832,18 +848,19 @@ const ProductImageSlider = ({
 
   useEffect(() => {
     const sliderRef = productImageSliderRef.current;
+    const sliderContainerRef = sliderContainer.current;
   
-    if (sliderRef) {
+    if (sliderRef && sliderContainerRef) {
       sliderRef.addEventListener("pointerdown", handlePointerStart);
       window.addEventListener("pointermove", handlePointerMove);
       window.addEventListener("pointerup", (e) => handlePointerEnd(e));
-      sliderRef.addEventListener("wheel", handleWheel, { passive: false });
+      sliderContainerRef.addEventListener("wheel", handleWheel, { passive: false });
 
       return () => {
         sliderRef.removeEventListener("pointerdown", handlePointerStart);
         window.removeEventListener("pointermove", handlePointerMove);
         window.removeEventListener("pointerup", handlePointerEnd);
-        sliderRef.removeEventListener("wheel", handleWheel);
+        sliderContainerRef.removeEventListener("wheel", handleWheel);
       };
     };
   }, [handlePointerStart, handlePointerMove, handlePointerEnd, handleWheel, productImageSliderRef.current, isScrolling.current]);
@@ -1040,10 +1057,10 @@ const ProductImageSlider = ({
     const cellWidth = cells.current[0].element.clientWidth;
 
     // update your refs exactly as before
-    selectedIndex.current    = newIndex;
+    selectedIndex.current = newIndex;
     firstCellInSlide.current = matchSlide.cells[0]?.element ?? null;
-    sliderX.current                = -matchSlide.target + (containerWidth - cellWidth) / 2;
-    sliderVelocity.current         = 0;
+    sliderX.current = isWrapping.current ? -matchSlide.target + (containerWidth - cellWidth) / 2 : -matchSlide.target;
+    sliderVelocity.current = 0;
 
     positionSlider();
 
@@ -1170,16 +1187,16 @@ const ProductImageSlider = ({
   }
 
   useEffect(() => {
-    const el = productImageSliderRef.current!
-    el.addEventListener('touchstart', onTouchStart, { passive: false })
-    el.addEventListener('touchmove',  onTouchMove,  { passive: false })
-    el.addEventListener('touchend',   onTouchEnd)
-    el.addEventListener('touchcancel',onTouchEnd)
+    const sliderContainerRef = sliderContainer.current!;
+    sliderContainerRef.addEventListener('touchstart', onTouchStart, { passive: false })
+    sliderContainerRef.addEventListener('touchmove',  onTouchMove,  { passive: false })
+    sliderContainerRef.addEventListener('touchend',   onTouchEnd)
+    sliderContainerRef.addEventListener('touchcancel',onTouchEnd)
     return () => {
-      el.removeEventListener('touchstart', onTouchStart)
-      el.removeEventListener('touchmove',  onTouchMove)
-      el.removeEventListener('touchend',   onTouchEnd)
-      el.removeEventListener('touchcancel',onTouchEnd)
+      sliderContainerRef.removeEventListener('touchstart', onTouchStart)
+      sliderContainerRef.removeEventListener('touchmove',  onTouchMove)
+      sliderContainerRef.removeEventListener('touchend',   onTouchEnd)
+      sliderContainerRef.removeEventListener('touchcancel',onTouchEnd)
     }
   }, []);
   
@@ -1260,7 +1277,7 @@ const ProductImageSlider = ({
           bottom: 0,
           left: 0,
           width: '100%',
-          height: 6,
+          height: '6px',
           backgroundColor: 'grey.300',
         }}
       >

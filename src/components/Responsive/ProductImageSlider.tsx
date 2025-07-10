@@ -120,9 +120,8 @@ const ProductImageSlider = ({
     if (!productImageSliderRef.current || cells.current.length === 0 || hasPositioned.current || sliderWidth.current === 0 || !productImageSlides.current || !productImageSlides.current[0].cells[0]?.element) return;
     firstCellInSlide.current = productImageSlides.current[0].cells[0]?.element;
     const containerWidth = productImageSliderRef.current.clientWidth;
-    const cellWidth = cells.current[0].element.clientWidth;
     if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
-      sliderX.current = (containerWidth - cellWidth) / 2;
+      sliderX.current = (containerWidth - sliderWidth.current) / 2;
       positionSlider();
     }
     hasPositioned.current = true;
@@ -277,7 +276,7 @@ const ProductImageSlider = ({
     const containerWidth = containerRect.width;         // visible width
 
     const cellWidth      = cells.current[0].element.offsetWidth;
-    const cellsPerSlide  = Math.max(1, Math.floor(containerWidth / cellWidth));
+    const cellsPerSlide  = Math.max(1, Math.ceil(containerWidth / cellWidth));
 
     const newSlides: { cells: typeof cells.current; target: number }[] = [];
 
@@ -835,18 +834,19 @@ const ProductImageSlider = ({
 
   useEffect(() => {
     const sliderRef = productImageSliderRef.current;
+    const sliderContainerRef = sliderContainer.current;
   
-    if (sliderRef) {
+    if (sliderRef && sliderContainerRef) {
       sliderRef.addEventListener("pointerdown", handlePointerStart);
       window.addEventListener("pointermove", handlePointerMove);
       window.addEventListener("pointerup", (e) => handlePointerEnd(e));
-      sliderRef.addEventListener("wheel", handleWheel, { passive: false });
+      sliderContainerRef.addEventListener("wheel", handleWheel, { passive: false });
 
       return () => {
         sliderRef.removeEventListener("pointerdown", handlePointerStart);
         window.removeEventListener("pointermove", handlePointerMove);
         window.removeEventListener("pointerup", handlePointerEnd);
-        sliderRef.removeEventListener("wheel", handleWheel);
+        sliderContainerRef.removeEventListener("wheel", handleWheel);
       };
     };
   }, [handlePointerStart, handlePointerMove, handlePointerEnd, handleWheel, productImageSliderRef.current, isScrolling.current]);
@@ -1170,16 +1170,16 @@ const ProductImageSlider = ({
   }
 
   useEffect(() => {
-    const el = productImageSliderRef.current!
-    el.addEventListener('touchstart', onTouchStart, { passive: false })
-    el.addEventListener('touchmove',  onTouchMove,  { passive: false })
-    el.addEventListener('touchend',   onTouchEnd)
-    el.addEventListener('touchcancel',onTouchEnd)
+    const sliderContainerRef = sliderContainer.current!;
+    sliderContainerRef.addEventListener('touchstart', onTouchStart, { passive: false })
+    sliderContainerRef.addEventListener('touchmove',  onTouchMove,  { passive: false })
+    sliderContainerRef.addEventListener('touchend',   onTouchEnd)
+    sliderContainerRef.addEventListener('touchcancel',onTouchEnd)
     return () => {
-      el.removeEventListener('touchstart', onTouchStart)
-      el.removeEventListener('touchmove',  onTouchMove)
-      el.removeEventListener('touchend',   onTouchEnd)
-      el.removeEventListener('touchcancel',onTouchEnd)
+      sliderContainerRef.removeEventListener('touchstart', onTouchStart)
+      sliderContainerRef.removeEventListener('touchmove',  onTouchMove)
+      sliderContainerRef.removeEventListener('touchend',   onTouchEnd)
+      sliderContainerRef.removeEventListener('touchcancel',onTouchEnd)
     }
   }, []);
   
@@ -1259,7 +1259,7 @@ const ProductImageSlider = ({
           bottom: 0,
           left: 0,
           width: '100%',
-          height: 6,
+          height: '6px',
           backgroundColor: 'grey.300',
         }}
       >
