@@ -1,5 +1,4 @@
 .container {
-  transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   height: 306px;
   max-height: 306px;
 }

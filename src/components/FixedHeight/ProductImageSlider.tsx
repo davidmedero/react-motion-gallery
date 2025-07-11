@@ -292,10 +292,21 @@ const ProductImageSlider = ({
 
     if (childCount - 1 > visibleImages) {
       for (let i = startingIndex; i < clonedChildren.length - imagesPerSlide; i += imagesPerSlide) {
-        const slice = cells.current.slice(i, i + imagesPerSlide);
+         const slice = cells.current.slice(i, i + imagesPerSlide);
     
-        const firstRect = slice[0].element.getBoundingClientRect();
-        const target = firstRect.left - containerRect.left;
+        // are we on the last slice?
+        const isLast = i + imagesPerSlide >= cells.current.length;
+    
+        let target: number;
+        if (!isLast) {
+          // normal case: align the first cell to the left edge
+          const firstRect = slice[0].element.getBoundingClientRect();
+          target = firstRect.left - containerRect.left;
+        } else {
+          // last slide: align end-of-content to right edge
+          // i.e. maximum scroll offset = contentWidth - containerWidth
+          target = contentWidth - containerWidth;
+        }
     
         newSlides.push({ cells: slice, target });
       }
@@ -323,6 +334,7 @@ const ProductImageSlider = ({
   
     productImageSlides.current = newSlides;
     setSlidesState(newSlides); 
+
   }, [clonedChildren, windowSize, visibleImages, firstChildWidth]);
 
   useEffect(() => {
@@ -548,10 +560,6 @@ const ProductImageSlider = ({
     let index = dragEndRestingSelect();
 
     if (isClick.current) {
-      const page = document.getElementById('page_container') as HTMLDivElement;
-      if (page) {
-        page.style.overflowY = 'hidden';
-      }
       isClosing.current = true;
       const targetImg = (e.target as HTMLElement).closest("img") as HTMLImageElement | null;
       if (!targetImg) return;

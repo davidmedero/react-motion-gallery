@@ -699,8 +699,6 @@ export default function ThumbnailSlider({ urls }: Props) {
     isTouchPinching.current = false;
     pinchJustEnded.current = false;
     isZoomClick.current = true;
-
-    if (!isZoomed) return;
     isPointerDown.current = true;
 
     const transformValues = getCurrentTransform(imageRef.current);
