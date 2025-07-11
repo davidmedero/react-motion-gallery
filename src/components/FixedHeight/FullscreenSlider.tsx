@@ -271,7 +271,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   function positionSlider() {
     let currentPositionX = x.current;
     const currentPositionY = y.current;
-    if (!isClick.current && imageCount > 1 && !zoomedDuringWrap.current) {
+    if (imageCount > 1 && !zoomedDuringWrap.current) {
       currentPositionX = ((currentPositionX % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
       currentPositionX += -sliderWidth.current;
     }
