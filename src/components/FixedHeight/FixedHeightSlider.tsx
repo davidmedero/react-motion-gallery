@@ -478,14 +478,14 @@ export default function FixedHeightSlider({ urls }: Props) {
         panRef.current = { x: panX, y: panY }
   
         const firstImageRef = imageRefs.current[0].current;
-        const secondImageRef = imageRefs.current[1].current;
-        // const lastImageRef = imageRefs.current[imageRefs.current.length - 1].current;
+        // const secondImageRef = imageRefs.current[1].current;
+        const lastImageRef = imageRefs.current[imageRefs.current.length - 1].current;
         
         const imgChild = imageRef.current.children[0] as HTMLImageElement | undefined;
   
         const firstImageRefChild = firstImageRef?.children[0] as HTMLImageElement | undefined;
-        const secondImageRefChild = secondImageRef?.children[0] as HTMLImageElement | undefined;
-        // const lastImageRefChild = lastImageRef?.children[0] as HTMLImageElement | undefined;
+        // const secondImageRefChild = secondImageRef?.children[0] as HTMLImageElement | undefined;
+        const lastImageRefChild = lastImageRef?.children[0] as HTMLImageElement | undefined;
 
         const index = Number(imageRef.current.querySelector('img')?.dataset.index);
 
@@ -501,17 +501,17 @@ export default function FixedHeightSlider({ urls }: Props) {
           firstImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
         }
 
-        if (index === imageRefs.current.length - 1 && secondImageRefChild) {
-          console.log('secondImageRefChild');
-          secondImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
-          secondImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
-        }
-
-        // if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
-        //   console.log('lastImageRefChild')
-        //   lastImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
-        //   lastImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
+        // if (index === imageRefs.current.length - 1 && secondImageRefChild) {
+        //   console.log('secondImageRefChild');
+        //   secondImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
+        //   secondImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
         // }
+
+        if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
+          console.log('lastImageRefChild')
+          lastImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
+          lastImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
+        }
         
         if (imgChild && index !== imageRefs.current.length - 1) {
             imgChild.addEventListener('transitionend', function handler() {
@@ -527,20 +527,20 @@ export default function FixedHeightSlider({ urls }: Props) {
           });
         }
 
-        if (index === imageRefs.current.length - 1 && secondImageRefChild) {
-          console.log('secondImageRefChild transitionend')
-          secondImageRefChild.addEventListener('transitionend', function handler() {
-            secondImageRefChild.style.transition = '';
-            secondImageRefChild.removeEventListener('transitionend', handler);
-          });
-        }
-
-        // if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
-        //   lastImageRefChild.addEventListener('transitionend', function handler() {
-        //     lastImageRefChild.style.transition = '';
-        //     lastImageRefChild.removeEventListener('transitionend', handler);
+        // if (index === imageRefs.current.length - 1 && secondImageRefChild) {
+        //   console.log('secondImageRefChild transitionend')
+        //   secondImageRefChild.addEventListener('transitionend', function handler() {
+        //     secondImageRefChild.style.transition = '';
+        //     secondImageRefChild.removeEventListener('transitionend', handler);
         //   });
         // }
+
+        if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
+          lastImageRefChild.addEventListener('transitionend', function handler() {
+            lastImageRefChild.style.transition = '';
+            lastImageRefChild.removeEventListener('transitionend', handler);
+          });
+        }
       } else {
         if (!imageRef.current) return;
         zoomX.current = 0;
