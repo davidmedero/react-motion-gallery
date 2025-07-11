@@ -591,10 +591,6 @@ const ProductImageSlider = ({
     let index = dragEndRestingSelect();
 
     if (isClick.current) {
-      const page = document.getElementById('page_container') as HTMLDivElement;
-      if (page) {
-        page.style.overflowY = 'hidden';
-      }
       isClosing.current = true;
       const targetImg = (e.target as HTMLElement).closest("img") as HTMLImageElement | null;
       if (!targetImg) return;
