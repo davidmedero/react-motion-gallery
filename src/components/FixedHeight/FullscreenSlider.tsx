@@ -426,8 +426,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         if (slider.current && slider.current.children.length === 1) {
           handleZoomToggle(e, matchedRef);
         }
-
-        return;
       }
       
     } else {
@@ -536,12 +534,14 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   }
   
   function next() {
+    isDragSelect.current = true;
     isVerticalScroll.current = false;
     isScrolling.current = false;
     isPinching.current = false;
     isTouchPinching.current = false;
     zoomedDuringWrap.current = false;
     select(selectedIndex.current + 1);
+    isDragSelect.current = false;
   }  
 
   function select(index: number) {
