@@ -488,7 +488,7 @@ const ProductImageSlider = ({
     return () => {
       window.clearInterval(id);
     };
-  }, [showFullscreenSlider, slidesState, slideIndexSync]);
+  }, [showFullscreenSlider, slidesState, slideIndexSync, windowSize]);
 
   function setTranslateX(x: number) {
     if (!productImageSliderRef.current) return;
@@ -637,8 +637,16 @@ const ProductImageSlider = ({
   function applySelectedAttraction() {
     if (isPointerDown.current) return;
     if (!productImageSliderRef.current) return;
+    if (!productImageSlides.current) return;
 
-    const index = selectedIndex.current >= productImageSlides.current.length - 1 && productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current ? 0 : selectedIndex.current;
+    let index;
+    if (!productImageSlides.current[productImageSlides.current.length - 1]) {
+      index = selectedIndex.current;
+    } else {
+      index = selectedIndex.current >= productImageSlides.current.length - 1 && productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current ? 0 : selectedIndex.current;
+    }
+
+    if (!productImageSlides.current[index]) return;
 
     let distance = -productImageSlides.current[index].target - sliderX.current;
 
