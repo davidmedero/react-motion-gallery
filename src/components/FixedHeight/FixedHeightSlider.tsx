@@ -507,11 +507,11 @@ export default function FixedHeightSlider({ urls }: Props) {
           secondImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
         }
 
-        if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
-          console.log('lastImageRefChild')
-          lastImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
-          lastImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
-        }
+        // if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
+        //   console.log('lastImageRefChild')
+        //   lastImageRefChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
+        //   lastImageRefChild.style.transform = `scale(${clickScale}) translate(${-boundedX / zoomDenominator}px,${-boundedY / zoomDenominator}px)`;
+        // }
         
         if (imgChild && index !== imageRefs.current.length - 1) {
             imgChild.addEventListener('transitionend', function handler() {
@@ -535,12 +535,12 @@ export default function FixedHeightSlider({ urls }: Props) {
           });
         }
 
-        if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
-          lastImageRefChild.addEventListener('transitionend', function handler() {
-            lastImageRefChild.style.transition = '';
-            lastImageRefChild.removeEventListener('transitionend', handler);
-          });
-        }
+        // if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
+        //   lastImageRefChild.addEventListener('transitionend', function handler() {
+        //     lastImageRefChild.style.transition = '';
+        //     lastImageRefChild.removeEventListener('transitionend', handler);
+        //   });
+        // }
       } else {
         if (!imageRef.current) return;
         zoomX.current = 0;
