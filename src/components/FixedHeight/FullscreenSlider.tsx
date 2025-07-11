@@ -271,7 +271,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   function positionSlider() {
     let currentPositionX = x.current;
     const currentPositionY = y.current;
-    if (!isClick.current && imageCount > 1 && !zoomedDuringWrap.current && !isZoomed && selectedIndex.current !== slides.current.length) {
+    if (!isClick.current && imageCount > 1 && !zoomedDuringWrap.current && !isZoomed && selectedIndex.current !== 0) {
       currentPositionX = ((currentPositionX % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
       currentPositionX += -sliderWidth.current;
     }
@@ -543,7 +543,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   }  
 
   function select(index: number) {
-    if (imageCount > 1 && !isZoomed && selectedIndex.current !== slides.current.length) {
+    if (imageCount > 1 && !isZoomed && selectedIndex.current !== 0) {
       wrapSelect(index);
     }
     const length = slides.current.length;
