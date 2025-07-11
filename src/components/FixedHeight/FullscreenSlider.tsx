@@ -548,14 +548,15 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     }
     const length = slides.current.length;
     index = ((index % length) + length) % length;
-    if (zoomedDuringWrap.current === true) {
-      index = slides.current.length;
-    }
+    // if (zoomedDuringWrap.current === true) {
+    //   index = slides.current.length;
+    // }
     selectedIndex.current = index;
     slideStore.setSlideIndex(index);
-    if (zoomedDuringWrap.current !== true) {
-      firstCellInSlide.current = slides.current[index].cells[0]?.element;
-    }
+    // if (zoomedDuringWrap.current !== true) {
+    //   firstCellInSlide.current = slides.current[index].cells[0]?.element;
+    // }
+    firstCellInSlide.current = slides.current[index].cells[0]?.element;
     let actualIndex = index + 1;
     actualIndex = ((actualIndex % length) + length) % length;
     if (actualIndex === 0) actualIndex = imageCount;
