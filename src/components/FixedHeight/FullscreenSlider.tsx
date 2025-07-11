@@ -500,7 +500,10 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     const cellWidth = slider.current.children[0].clientWidth;
     const cellIndex = ((index % length) + length) % length;
     const cell = cellWidth * cellIndex;
-    const wrap = sliderWidth.current * Math.floor(index/length);
+    let wrap = sliderWidth.current * Math.floor(index/length);
+    if (zoomedDuringWrap.current === true) {
+      wrap = 0;
+    }
 
     return x - (cell + wrap);
   };
@@ -543,20 +546,19 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   }  
 
   function select(index: number) {
-    if (imageCount > 1) {
+    if (imageCount > 1 && zoomedDuringWrap.current !== true) {
       wrapSelect(index);
     }
     const length = slides.current.length;
     index = ((index % length) + length) % length;
-    // if (zoomedDuringWrap.current === true) {
-    //   index = slides.current.length;
-    // }
+    if (zoomedDuringWrap.current === true) {
+      index = slides.current.length;
+    }
     selectedIndex.current = index;
     slideStore.setSlideIndex(index);
-    // if (zoomedDuringWrap.current !== true) {
-    //   firstCellInSlide.current = slides.current[index].cells[0]?.element;
-    // }
-    firstCellInSlide.current = slides.current[index].cells[0]?.element;
+    if (zoomedDuringWrap.current !== true) {
+      firstCellInSlide.current = slides.current[index].cells[0]?.element;
+    }
     let actualIndex = index + 1;
     actualIndex = ((actualIndex % length) + length) % length;
     if (actualIndex === 0) actualIndex = imageCount;
