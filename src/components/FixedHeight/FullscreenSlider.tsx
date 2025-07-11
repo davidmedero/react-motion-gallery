@@ -391,7 +391,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       }
     };
 
-    const index = dragEndRestingSelect();
+    let index = dragEndRestingSelect();
 
     if (isClick.current) {
 
@@ -429,10 +429,9 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       }
       
     } else {
-      console.log('index', index, dragEndBoostSelect())
       console.log('dragged');
       if (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1)) {
-        // index += dragEndBoostSelect();
+        index += dragEndBoostSelect();
       }
     }
 
