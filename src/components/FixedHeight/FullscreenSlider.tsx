@@ -534,14 +534,12 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   }
   
   function next() {
-    isDragSelect.current = true;
     isVerticalScroll.current = false;
     isScrolling.current = false;
     isPinching.current = false;
     isTouchPinching.current = false;
     zoomedDuringWrap.current = false;
     select(selectedIndex.current + 1);
-    isDragSelect.current = false;
   }  
 
   function select(index: number) {

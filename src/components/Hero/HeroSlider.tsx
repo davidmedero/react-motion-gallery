@@ -1393,6 +1393,7 @@ export default function HeroSlider({ urls }: Props) {
   }, [handlePinchWheel]);
 
   function midpoint(a: Touch, b: Touch): Point {
+    if (!b) return { x: a.clientX, y: a.clientY };
     return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }
   }
   
