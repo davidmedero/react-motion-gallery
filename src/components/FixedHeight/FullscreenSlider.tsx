@@ -417,15 +417,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
           fullscreenImageWidth.current = matchedRef.current.clientWidth
         }
 
-        if (index !== Number(imgIndex) && Number(imgIndex) !== index + 2) {
-          handleZoomToggle(e, matchedRef);
-        }
-        if (index === imageCount - 1 && Number(imgIndex) === imageCount + 1) {
-          handleZoomToggle(e, matchedRef);
-        }
-        if (slider.current && slider.current.children.length === 1) {
-          handleZoomToggle(e, matchedRef);
-        }
+        handleZoomToggle(e, matchedRef);
       }
       
     } else {
@@ -500,10 +492,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     const cellWidth = slider.current.children[0].clientWidth;
     const cellIndex = ((index % length) + length) % length;
     const cell = cellWidth * cellIndex;
-    let wrap = sliderWidth.current * Math.floor(index/length);
-    if (zoomedDuringWrap.current === true) {
-      wrap = 0;
-    }
+    const wrap = sliderWidth.current * Math.floor(index/length);
 
     return x - (cell + wrap);
   };
@@ -546,7 +535,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   }  
 
   function select(index: number) {
-    if (imageCount > 1 && zoomedDuringWrap.current !== true) {
+    if (imageCount > 1) {
       wrapSelect(index);
     }
     const length = slides.current.length;
