@@ -479,13 +479,13 @@ export default function FixedHeightSlider({ urls }: Props) {
   
         const firstImageRef = imageRefs.current[0].current;
         const secondImageRef = imageRefs.current[1].current;
-        const lastImageRef = imageRefs.current[imageRefs.current.length - 1].current;
+        // const lastImageRef = imageRefs.current[imageRefs.current.length - 1].current;
         
         const imgChild = imageRef.current.children[0] as HTMLImageElement | undefined;
   
         const firstImageRefChild = firstImageRef?.children[0] as HTMLImageElement | undefined;
         const secondImageRefChild = secondImageRef?.children[0] as HTMLImageElement | undefined;
-        const lastImageRefChild = lastImageRef?.children[0] as HTMLImageElement | undefined;
+        // const lastImageRefChild = lastImageRef?.children[0] as HTMLImageElement | undefined;
 
         const index = Number(imageRef.current.querySelector('img')?.dataset.index);
 
