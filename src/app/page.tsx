@@ -6,6 +6,8 @@ import styles from "./page.module.css";
 import ThumbnailSlider from "@/components/Thumbnails/ThumbnailSlider";
 import ResponsiveSlider from "@/components/Responsive/ResponsiveSlider";
 import HeroSlider from "@/components/Hero/HeroSlider";
+import SeamlessSlider from "@/components/Seamless AutoPlay/SeamlessSlider";
+import PerSlideAutoPlaySlider from "@/components/Per Slide AutoPlay/PerSlideAutoPlaySlider";
 
 export default function Home() {
 
@@ -50,6 +52,16 @@ export default function Home() {
       <p className={styles.description}>Slides are centered. One image is equal to one slide.</p>
       <div style={{ overflow: 'hidden' }}>
         <HeroSlider urls={heroImages} />
+      </div>
+      <h2 className={styles.headers} style={{ paddingTop: '32px' }}>Seamless Autoplay</h2>
+      <p className={styles.description}>Fixed Height Slider with a constant speed for autoplay.</p>
+      <div style={{ overflow: 'hidden' }}>
+        <SeamlessSlider urls={images} />
+      </div>
+      <h2 className={styles.headers} style={{ paddingTop: '32px' }}>Per Slide Autoplay</h2>
+      <p className={styles.description}>Fixed Height Slider that autoplays per slide every 3ms.</p>
+      <div style={{ overflow: 'hidden' }}>
+        <PerSlideAutoPlaySlider urls={images} />
       </div>
     </div>
   );
