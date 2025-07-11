@@ -52,8 +52,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     },
     ref
   ) => {
-  const friction = 0.28;
-  const attraction = 0.025;
+  const friction = 0.42;
+  const attraction = 0.065;
   const slider = useRef<HTMLDivElement | null>(null);
   const isPointerDown = useRef(false);
   const startX = useRef(0);
@@ -271,7 +271,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   function positionSlider() {
     let currentPositionX = x.current;
     const currentPositionY = y.current;
-    if (imageCount > 1 && !zoomedDuringWrap.current) {
+    if (!isClick.current && imageCount > 1 && !zoomedDuringWrap.current) {
       currentPositionX = ((currentPositionX % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
       currentPositionX += -sliderWidth.current;
     }
@@ -376,6 +376,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     if (!isPointerDown.current) return;
     isPointerDown.current = false;
 
+    let index = dragEndRestingSelect();
+
     if (isVerticalScroll.current) {
       const deltaY = Math.abs(previousDragY.current);
       const speedThreshold = 0.1;
@@ -390,8 +392,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         return;
       }
     };
-
-    let index = dragEndRestingSelect();
 
     if (isClick.current) {
 
