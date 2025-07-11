@@ -221,15 +221,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   };
 
   function animate() {
-    if (zoomedDuringWrap.current && slider.current) {
-      const slide = slider.current.clientWidth * slides.current.length;
-      x.current = -slide;
-      setTranslateX(x.current, 0)
-      isAnimating.current = false;
-      restingFrames.current = 0;
-      isClosing.current = false;
-      return;
-    }
     if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true) {
       isAnimating.current = false;
       restingFrames.current = 0;
@@ -280,7 +271,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   function positionSlider() {
     let currentPositionX = x.current;
     const currentPositionY = y.current;
-    if (!isClick.current && imageCount > 1 && zoomedDuringWrap.current !== true) {
+    if (!isClick.current && imageCount > 1 && !zoomedDuringWrap.current) {
       currentPositionX = ((currentPositionX % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
       currentPositionX += -sliderWidth.current;
     }
@@ -435,6 +426,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         if (slider.current && slider.current.children.length === 1) {
           handleZoomToggle(e, matchedRef);
         }
+
+        return;
       }
       
     } else {
