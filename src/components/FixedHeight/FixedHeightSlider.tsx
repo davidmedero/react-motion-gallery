@@ -692,11 +692,8 @@ export default function FixedHeightSlider({ urls }: Props) {
     isTouchPinching.current = false;
     pinchJustEnded.current = false;
     isZoomClick.current = true;
-    isPointerDown.current = true;
 
-    // if (zoomedDuringWrap.current) {
-    //   imageRef.current = imageRefs.current[1].current;
-    // }
+    isPointerDown.current = true;
 
     const transformValues = getCurrentTransform(imageRef.current);
     const translateX = transformValues.x;
@@ -814,10 +811,6 @@ export default function FixedHeightSlider({ urls }: Props) {
     e.preventDefault();
     if (!isZoomed) return;
     if (!isPointerDown.current) return;
-
-    if (zoomedDuringWrap.current) {
-      imageRef.current = imageRefs.current[1].current;
-    }
     
     let currentX: number = 0, currentY: number = 0;
 
@@ -1131,10 +1124,7 @@ export default function FixedHeightSlider({ urls }: Props) {
   };
 
   useEffect(() => {
-    let sliderElement = imageRefs.current[slideIndex]?.current;
-    if (zoomedDuringWrap.current) {
-      sliderElement = imageRefs.current[1].current;
-    }
+    const sliderElement = imageRefs.current[slideIndex]?.current;
     if (!sliderElement) return;
   
     const pointerMoveHandler = (e: PointerEvent | TouchEvent) => handlePanPointerMove(e, imageRefs.current[slideIndex]);

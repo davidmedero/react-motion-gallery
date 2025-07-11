@@ -221,6 +221,15 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   };
 
   function animate() {
+    if (zoomedDuringWrap.current && slider.current) {
+      const slide = slider.current.clientWidth * slides.current.length;
+      x.current = -slide;
+      setTranslateX(x.current, 0)
+      isAnimating.current = false;
+      restingFrames.current = 0;
+      isClosing.current = false;
+      return;
+    }
     if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true) {
       isAnimating.current = false;
       restingFrames.current = 0;
