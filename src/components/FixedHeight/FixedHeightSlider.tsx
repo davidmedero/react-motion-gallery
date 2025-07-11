@@ -101,8 +101,8 @@ export default function FixedHeightSlider({ urls }: Props) {
   const isScrolling = useRef(false);
   const isPinching = useRef(false);
 
-  // const startDist = useRef(0);
-  // const startScale = useRef(1);
+  const startDist = useRef(0);
+  const startScale = useRef(1);
   const isTouchPinching = useRef(false);
 
   const cells = useRef<{ element: HTMLElement, index: number }[]>([]);
@@ -1374,91 +1374,91 @@ export default function FixedHeightSlider({ urls }: Props) {
     };
   }, [handlePinchWheel]);
 
-  // function midpoint(a: Touch, b: Touch): Point {
-  //   if (!b) return { x: a.clientX, y: a.clientY };
-  //   return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }
-  // }
+  function midpoint(a: Touch, b: Touch): Point {
+    if (!b) return { x: a.clientX, y: a.clientY };
+    return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }
+  }
   
-  // function distance(a: Touch, b: Touch): number {
-  //   const dx = a.clientX - b.clientX
-  //   const dy = a.clientY - b.clientY
-  //   return Math.hypot(dx, dy)
-  // }
+  function distance(a: Touch, b: Touch): number {
+    const dx = a.clientX - b.clientX
+    const dy = a.clientY - b.clientY
+    return Math.hypot(dx, dy)
+  }
 
-  // const onTouchStart = (e: TouchEvent) => {
-  //   if (e.touches.length !== 2) return;
-  //   e.preventDefault();
+  const onTouchStart = (e: TouchEvent) => {
+    if (e.touches.length !== 2) return;
+    e.preventDefault();
 
-  //   sliderApi.current?.centerSlider();
+    sliderApi.current?.centerSlider();
 
-  //   isTouchPinching.current = true;
-  //   const [t0, t1] = [e.touches[0], e.touches[1]];
-  //   startDist.current = distance(t0, t1);
-  //   startScale.current = scaleRef.current;
-  // }
+    isTouchPinching.current = true;
+    const [t0, t1] = [e.touches[0], e.touches[1]];
+    startDist.current = distance(t0, t1);
+    startScale.current = scaleRef.current;
+  }
 
-  // const onTouchMove = (e: TouchEvent, imageRef: React.RefObject<HTMLDivElement | null>) => {
-  //   if (!isTouchPinching.current || e.touches.length !== 2) return;
-  //   e.preventDefault();
+  const onTouchMove = (e: TouchEvent, imageRef: React.RefObject<HTMLDivElement | null>) => {
+    if (!isTouchPinching.current || e.touches.length !== 2) return;
+    e.preventDefault();
 
-  //   const [t0, t1] = [e.touches[0], e.touches[1]];
-  //   const currDist = distance(t0, t1);
-  //   const factor = currDist / startDist.current;
-  //   const destZoom = startScale.current * factor;
+    const [t0, t1] = [e.touches[0], e.touches[1]];
+    const currDist = distance(t0, t1);
+    const factor = currDist / startDist.current;
+    const destZoom = startScale.current * factor;
 
-  //   const center = midpoint(t0, t1);
-  //   zoomTo({ destZoomLevel: destZoom, centerPoint: center, imageRef })
-  // }
+    const center = midpoint(t0, t1);
+    zoomTo({ destZoomLevel: destZoom, centerPoint: center, imageRef })
+  }
 
-  // const endPinch = () => {
-  //   if (!isTouchPinching.current) return;
-  //   isTouchPinching.current = false;
-  //   pinchJustEnded.current  = true;
-  // }
+  const endPinch = () => {
+    if (!isTouchPinching.current) return;
+    isTouchPinching.current = false;
+    pinchJustEnded.current  = true;
+  }
 
-  // useLayoutEffect(() => {
-  //   function touchPinchMoveHandler(e: TouchEvent) {
-  //     let targetImg: HTMLImageElement | null = null;
+  useLayoutEffect(() => {
+    function touchPinchMoveHandler(e: TouchEvent) {
+      let targetImg: HTMLImageElement | null = null;
 
-  //     const { x, y } = midpoint(e.touches[0], e.touches[1])
+      const { x, y } = midpoint(e.touches[0], e.touches[1])
 
-  //     const underlyingElement = document.elementFromPoint(x, y);
+      const underlyingElement = document.elementFromPoint(x, y);
 
-  //     if (underlyingElement) {
-  //       if (underlyingElement.tagName.toLowerCase() === "img") {
-  //         targetImg = underlyingElement as HTMLImageElement;
-  //       } else {
-  //         targetImg = underlyingElement.querySelector("img");
-  //       }
-  //     }
+      if (underlyingElement) {
+        if (underlyingElement.tagName.toLowerCase() === "img") {
+          targetImg = underlyingElement as HTMLImageElement;
+        } else {
+          targetImg = underlyingElement.querySelector("img");
+        }
+      }
 
-  //     if (!targetImg) return;
+      if (!targetImg) return;
 
-  //     const imgIndex = targetImg.dataset.index;
+      const imgIndex = targetImg.dataset.index;
 
-  //     if (imgIndex === undefined) return;
+      if (imgIndex === undefined) return;
 
-  //     const matchedRef = imageRefs.current[parseInt(imgIndex)];
+      const matchedRef = imageRefs.current[parseInt(imgIndex)];
 
-  //     if (!matchedRef) return;
+      if (!matchedRef) return;
 
-  //     currentImage.current = imageRefs.current[parseInt(imgIndex)].current;
+      currentImage.current = imageRefs.current[parseInt(imgIndex)].current;
 
-  //     onTouchMove(e, matchedRef);
-  //   }
+      onTouchMove(e, matchedRef);
+    }
 
-  //   window.addEventListener('touchstart', onTouchStart, { passive: false });
-  //   window.addEventListener('touchmove', touchPinchMoveHandler, { passive: false });
-  //   window.addEventListener('touchend', endPinch);
-  //   window.addEventListener('touchcancel', endPinch);
-  //   return () => {
-  //     window.removeEventListener('touchstart', onTouchStart);
-  //     window.removeEventListener('touchmove', touchPinchMoveHandler);
-  //     window.removeEventListener('touchend', endPinch);
-  //     window.removeEventListener('touchcancel', endPinch);
-  //   }
-  // // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [zoomTo, onTouchStart, onTouchMove, endPinch]);
+    window.addEventListener('touchstart', onTouchStart, { passive: false });
+    window.addEventListener('touchmove', touchPinchMoveHandler, { passive: false });
+    window.addEventListener('touchend', endPinch);
+    window.addEventListener('touchcancel', endPinch);
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', touchPinchMoveHandler);
+      window.removeEventListener('touchend', endPinch);
+      window.removeEventListener('touchcancel', endPinch);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoomTo, onTouchStart, onTouchMove, endPinch]);
 
 
   return (
