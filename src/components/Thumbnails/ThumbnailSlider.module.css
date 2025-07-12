@@ -1,12 +1,12 @@
 .container {
   height: 606px;
   max-height: 606px;
-  overflow: hidden;
 }
 
 .columns_container {
   display: flex;
   flex-direction: row;
+  justify-content: center;
 }
 
 .thumbnail_container {
@@ -73,7 +73,7 @@
   cursor: grabbing !important;
 }
 
-@media (max-width: 516px) {
+@media (max-width: 535px) {
   .container {
     height: 100%;
     max-height: 753px;
@@ -84,7 +84,7 @@
   }
 
   .right_column_container {
-    width: 100%;
+    width: 100dvw;
   }
 
   .right_column {

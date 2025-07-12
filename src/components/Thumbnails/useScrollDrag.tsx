@@ -37,7 +37,7 @@ export function useScrollDrag() {
 
     e.preventDefault();
     isDragging.current = true;
-    dragAxis.current = window.innerWidth < 516 ? 'x' : 'y';
+    dragAxis.current = window.innerWidth < 535 ? 'x' : 'y';
 
     if (dragAxis.current === 'y') {
       startY.current         = e.clientY;

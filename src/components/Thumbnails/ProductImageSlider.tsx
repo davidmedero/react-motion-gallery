@@ -680,7 +680,7 @@ const ProductImageSlider = ({
 
   function getSlideDistance(x: number, index: number) {
     if (!productImageSliderRef.current) return 1;
-    const length = (productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || window.innerWidth <= 516) ? productImageSlides.current.length - 1 : productImageSlides.current.length;
+    const length = (productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || window.innerWidth <= 535) ? productImageSlides.current.length - 1 : productImageSlides.current.length;
     const slideIndex = ((index % length) + length) % length;
     const finalIndex = isWrapping.current === true ? slideIndex : index;
     const slide = productImageSlides.current[finalIndex];
@@ -728,7 +728,7 @@ const ProductImageSlider = ({
       wrapSelect(index);
     }
     const containedIndex = index < 0 ? 0 : index > productImageSlides.current.length - 1 ? productImageSlides.current.length - 1 : index;
-    const length = (productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || window.innerWidth <= 516) ? productImageSlides.current.length - 1 : productImageSlides.current.length;
+    const length = (productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || window.innerWidth <= 535) ? productImageSlides.current.length - 1 : productImageSlides.current.length;
     index = ((index % length) + length) % length;
     const finalIndex = isWrapping.current === true ? index : containedIndex;
     selectedIndex.current = finalIndex;
@@ -761,7 +761,7 @@ const ProductImageSlider = ({
       simpleBarScrollElement.style.scrollBehavior = "";
     }, 1000);
 
-    if (window.innerWidth > 516) {
+    if (window.innerWidth > 535) {
       if (
         thumbnailTop < simpleBarScrollElement.scrollTop ||
         thumbnailBottom > simpleBarScrollElement.scrollTop + containerHeight
@@ -827,7 +827,7 @@ const ProductImageSlider = ({
   function wrapSelect(index: number) {
     if (!productImageSliderRef.current) return;
 
-    const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || window.innerWidth <= 516 ? productImageSlides.current.length - 1 : productImageSlides.current.length;
+    const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || window.innerWidth <= 535 ? productImageSlides.current.length - 1 : productImageSlides.current.length;
     const slideableWidth = sliderWidth.current;
     const selectedIdx = selectedIndex.current;
 
@@ -943,7 +943,7 @@ const ProductImageSlider = ({
         simpleBarScrollElement.style.scrollBehavior = "";
       }, 1000);
   
-      if (window.innerWidth > 516) {
+      if (window.innerWidth > 535) {
         if (
           thumbnailTop < simpleBarScrollElement.scrollTop ||
           thumbnailBottom > simpleBarScrollElement.scrollTop + containerHeight
@@ -1020,7 +1020,7 @@ const ProductImageSlider = ({
     // 1) Measure the thumbnail & compute "fullscreen" rect
     const imgRect = origImg.getBoundingClientRect();
     let fullscreenRect: DOMRect;
-    if (window.innerWidth <= 516) {
+    if (window.innerWidth <= 535) {
       fullscreenRect = new DOMRect(
         0,
         imgRect.top,
@@ -1216,7 +1216,7 @@ const ProductImageSlider = ({
       const thumbnailTop = thumbnail.offsetTop;
       const thumbnailBottom = thumbnailTop + thumbnail.offsetHeight;
 
-      if (window.innerWidth > 516) {
+      if (window.innerWidth > 535) {
         if (
           thumbnailTop < simpleBarScrollElement.scrollTop ||
           thumbnailBottom > simpleBarScrollElement.scrollTop + containerHeight

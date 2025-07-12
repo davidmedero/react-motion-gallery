@@ -7,9 +7,9 @@ body {
   overflow: hidden;
 }
 
-@media(max-width: 516px) {
+@media(max-width: 535px) {
   .simplebar-scrollable-y {
-    width: 100dvw !important;
+    width: 100% !important;
     height: 160px !important;
   }
 }

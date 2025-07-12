@@ -35,7 +35,7 @@ export default function Home() {
       <h1 className={styles.title}>REACT MOTION GALLERY</h1>
       <h2 className={styles.headers}>Thumbnails</h2>
       <p className={styles.description}>Resize the browser to 500px to see the horizontal thumbnail scrollbar. One image is equal to one slide.</p>
-      <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '32px' }}>
+      <div style={{ paddingBottom: '32px', overflow: 'hidden' }}>
         <ThumbnailSlider urls={images} />
       </div>
       <h2 className={styles.headers}>Fixed Height</h2>
