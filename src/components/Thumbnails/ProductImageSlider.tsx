@@ -366,7 +366,7 @@ const ProductImageSlider = ({
       productImageSlides.current = [];
       newSlides.push({ cells: cells.current, target: 0 });
     }
-  console.log('newSlides', newSlides)
+
     productImageSlides.current = newSlides;
   }, [clonedChildren, visibleImages, firstChildWidth]);
 

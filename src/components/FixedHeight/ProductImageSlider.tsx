@@ -87,7 +87,6 @@ const ProductImageSlider = ({
   sliderX,
   sliderVelocity
 }: ProductImageSliderProps) => {
-  const [firstChildWidth, setFirstChildWidth] = useState(0);
   const isPointerDown = useRef(false);
   const startX = useRef(0);
   const startY = useRef(0);
@@ -112,6 +111,44 @@ const ProductImageSlider = ({
   const sliderContainer = useRef<HTMLDivElement | null>(null);
   const hasPositioned = useRef<boolean>(false);
   const [slidesState, setSlidesState] = useState<{ cells: { element: HTMLElement }[] }[]>([]);
+  const [allImagesLoaded, setAllImagesLoaded] = useState(false);
+
+  useEffect(() => {
+    const container = productImageSliderRef.current;
+    if (!container) return;
+
+    const imgs = Array.from(container.querySelectorAll<HTMLImageElement>('img'));
+    if (imgs.length === 0) {
+      return;
+    }
+
+    let loadedCount = 0;
+    const total = imgs.length;
+
+    function onImgLoad() {
+      loadedCount += 1;
+      if (loadedCount === total) {
+        setAllImagesLoaded(true);
+      }
+    }
+
+    imgs.forEach(img => {
+      if (img.complete && img.naturalWidth > 0) {
+        // already cached & loaded
+        onImgLoad();
+      } else {
+        img.addEventListener('load', onImgLoad);
+        img.addEventListener('error', onImgLoad); // treat errors as “done” so you don’t hang
+      }
+    });
+
+    return () => {
+      imgs.forEach(img => {
+        img.removeEventListener('load', onImgLoad);
+        img.removeEventListener('error', onImgLoad);
+      });
+    };
+  }, [clonedChildren, visibleImages]);
 
   useLayoutEffect(() => {
     if (!productImageSliderRef.current || cells.current.length === 0 || hasPositioned.current || sliderWidth.current === 0 || !productImageSlides.current || !productImageSlides.current[0] || !productImageSlides.current[0].cells[0]?.element) return;
@@ -124,38 +161,16 @@ const ProductImageSlider = ({
     hasPositioned.current = true;
   }, [slidesState]);
 
-  useEffect(() => {
-    if (!cells.current?.[0]?.element) return;
-    
-    const updateWidth = () => {
-      requestAnimationFrame(() => {
-        if (!cells.current) return;
-          const width = cells.current[0]?.element.clientWidth;
-
-          if (width > 0 && width !== firstChildWidth) {
-            setFirstChildWidth(width);
-          }
-      });
-    };
-  
-    const observer = new ResizeObserver(() => updateWidth());
-    observer.observe(cells.current[0].element);
-  
-    return () => observer.disconnect();
-  
-  }, [children, windowSize]);
-
   const calculateVisibleImages = (): number => {
     const container = productImageSliderRef.current;
     if (!container || cells.current.length === 0) return 1;
 
     const cw = container.clientWidth;
-    // grab the true widths of each original cell in order
+
     const widths = cells.current
-      .filter(c => c.element)            // guard
+      .filter(c => c.element)
       .map(c => c.element.getBoundingClientRect().width);
 
-    // for each start index, count how many fit fully before overflowing
     const counts: number[] = [];
     for (let i = 0; i < widths.length; i++) {
       let sum = 0;
@@ -169,7 +184,6 @@ const ProductImageSlider = ({
       counts.push(cnt);
     }
 
-    // pick the largest “window” that fits
     const maxCount = counts.length ? Math.max(...counts) : 1;
     return Math.max(1, maxCount);
   };
@@ -198,13 +212,12 @@ const ProductImageSlider = ({
     
     // only do clones if we need infinite wrapping
     if (childCount - 1 > images) {
-      console.log('cloning')
       // before-clones: map [-images .. -1] → real indices [childCount-images .. childCount-1]
       const before = childrenArray.slice(-images).map((c, i) =>
         cloneSlide(
           c as ReactElement<any>,
           `before-${i}`,
-          -images + i,         // elementIndex
+          -images + i,
           cells
         )
       )
@@ -214,7 +227,7 @@ const ProductImageSlider = ({
         cloneSlide(
           c as ReactElement<any>,
           `original-${i}`,
-          i,              // elementIndex
+          i,
           cells
         )
       )
@@ -224,7 +237,7 @@ const ProductImageSlider = ({
         cloneSlide(
           c as ReactElement<any>,
           `after-${i}`,
-          i,              // elementIndex
+          i,
           cells
         )
       )
@@ -246,30 +259,24 @@ const ProductImageSlider = ({
 
     setClonedChildren(slides);
 
-  }, [windowSize, firstChildWidth]);
+  }, [windowSize, children, allImagesLoaded, isWrapping.current]);
 
   useEffect(() => {
-    const GAP = 0;                           // ← space between slides (px)
+    const GAP = 0;
     const container = productImageSliderRef.current;
-    if (!container) return;
+    if (!container || !allImagesLoaded) return;
 
-    // 1) pull in all slide elements
     const slides = Array.from(container.children) as HTMLElement[];
 
-    // 2) measure & lock each slide’s width
     const widths = slides.map(slideEl => {
       const w = slideEl.getBoundingClientRect().width;
       slideEl.style.width = `${w}px`;
       return w;
     });
 
-    // 3) figure out how many “before” clones there were
     const originalCount = Children.toArray(children).length;
     const clonesBefore  = originalCount - 1 > visibleImages ? visibleImages : 0;
 
-    // 4) compute starting X:
-    //    negative sum of the first `clonesBefore` widths
-    //    *plus* a gap for each of those clones
     const beforeWidths = widths.slice(0, clonesBefore);
     
     let runningX = -(
@@ -277,131 +284,90 @@ const ProductImageSlider = ({
       + GAP * clonesBefore
     );
 
-    // 5) position each slide, adding GAP after each one
     slides.forEach((slideEl, idx) => {
-      // position it
       slideEl.style.transform = `translateX(${runningX}px)`;
-
-      // bump X by this slide’s width + our GAP
       runningX += widths[idx] + GAP;
     });
 
-    const clonesAfter = clonesBefore; // symmetric
+    const clonesAfter = clonesBefore;
     const originalWidths = widths.slice(
       clonesBefore,
       widths.length - clonesAfter
     );
 
-    // sum of original widths plus gaps between them
     const totalOriginalWidth =
       originalWidths.reduce((sum, w) => sum + w, 0) +
       GAP * (originalWidths.length);
 
     sliderWidth.current = totalOriginalWidth;
 
-  }, [clonedChildren, windowSize, visibleImages]);
+  }, [clonedChildren, windowSize, visibleImages, allImagesLoaded]);
 
   useEffect(() => {
     const containerEl = productImageSliderRef.current;
-    if (!containerEl) return;
+    if (!containerEl || !allImagesLoaded) return;
 
     const containerRect = containerEl.getBoundingClientRect();
     const cw            = containerRect.width;
 
-    // 1) Pull in your ORIGINAL cells (skip clones if they exist)
     const allEls   = Array.from(containerEl.children) as HTMLElement[];
     const clonesOn = isWrapping.current; 
     const clonesBefore = clonesOn ? visibleImages : 0;
     const clonesAfter  = clonesOn ? visibleImages : 0;
     const originals = allEls.slice(clonesBefore, allEls.length - clonesAfter);
-    const childCount = originals.length;
+    const n = originals.length;
+    if (n === 0) return;
 
-    // ----
-    // 2) Measure each cell once
-    // ----
-    type CellInfo = { element: HTMLElement; index: number; width: number; left: number };
-    const cellInfo: CellInfo[] = originals.map(el => {
-      const rect = el.getBoundingClientRect();
-      const orig = cells.current.find(c => c.element === el)!;
+    const data = originals.map(el => {
+      const r = el.getBoundingClientRect();
       return {
-        element: el,
-        index:   orig?.index,
-        width:   rect.width,
-        left:    rect.left - containerRect.left,
+        el,
+        left:  r.left  - containerRect.left,
+        right: r.right - containerRect.left
       };
     });
 
-    // ----
-    // 3) Pack into pages (greedy until overflow)
-    // ----
-    const pages: { cells: CellInfo[]; target: number }[] = [];
+    const pages: { els: HTMLElement[]; target: number }[] = [];
     let i = 0;
-    const n = cellInfo.length;
-
-    // ----
-    // 4) Wrap logic if fewer originals than visibleImages
-    // ----
     
-    if (childCount - 1 > visibleImages) {
-      while (i < n) {
-        let sumW = 0, j = i;
-        // add fully‐visible cells
-        while (j < n && sumW + cellInfo[j].width <= cw) {
-          sumW += cellInfo[j].width;
-          j++;
-        }
-        // if none fit (one cell > cw), include it anyway
-        if (j === i) j++;
-
-        const slice = cellInfo.slice(i, j);
-        let target  = slice[0].left;
-
-        // make *sure* the very first slide always starts at 0
-        if (i === 0) target = 0;
-
-        pages.push({ cells: slice, target });
-        i = j;
+    while (i < n) {
+      const startLeft = data[i].left;
+      const viewRight = startLeft + cw;
+      let j = i;
+      // add fully‐visible cells
+      while (j < n && data[j].right <= viewRight) {
+        j++;
       }
-    } else {
-      while (i < n) {
-        const startLeft = cellInfo[i].left;
-        let sumW = 0, j = i;
-        // add fully‐visible cells
-        while (j < n && sumW + cellInfo[j].width <= cw) {
-          sumW += cellInfo[j].width;
-          j++;
-        }
-        // if none fit (one cell > cw), include it anyway
-        if (j === i) j++;
 
-        const slice = cellInfo.slice(i, j);
+      if (j === i) j++;
 
-        const isLast = j >= n;
+      const slice = originals.slice(i, j);
+
+      const isLast = j >= n;
       let target = startLeft;   
       
       if (isLast && !isWrapping.current) {
         target = sliderWidth.current - cw
       }
 
-        // make *sure* the very first slide always starts at 0
-        if (i === 0) target = 0;
+      if (i === 0) target = 0;
 
-        pages.push({ cells: slice, target });
-        i = j;
-      }
+      pages.push({ els: slice, target });
+      i = j;
     }
-    // ----
-    // 5) Map into your slider state and commit
-    // ----
-    const newSlides = pages.map(p => ({
-      target: p.target,
-      cells:  p.cells.map(c => ({ element: c.element, index: c.index })),
+
+    const newSlides = pages.map(page => ({
+      target: page.target,
+      cells: page.els.map(el => {
+        const cell = cells.current.find(c => c.element === el)!;
+        return { element: el, index: cell?.index };
+      }),
     }));
 
     productImageSlides.current = newSlides;
     setSlidesState(newSlides);
 
-  }, [clonedChildren, windowSize, visibleImages]);
+  }, [clonedChildren, windowSize, visibleImages, allImagesLoaded, isWrapping.current]);
 
   useEffect(() => {
     if (!productImageSliderRef.current) return;
@@ -667,13 +633,13 @@ const ProductImageSlider = ({
   };
 
   function dragEndBoostSelect() {
-    // const movedAt = dragMoveTime.current;
-    // if (
-    //   !movedAt ||
-    //   (new Date().getTime() - movedAt.getTime()) > 100
-    // ) {
-    //   return 0;
-    // }
+    const movedAt = dragMoveTime.current;
+    if (
+      (!movedAt ||
+      (new Date().getTime() - movedAt.getTime()) > 100) && isWrapping.current === true
+    ) {
+      return 0;
+    }
   
     const delta = previousDragX.current - dragX.current;
 
