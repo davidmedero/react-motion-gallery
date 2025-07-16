@@ -1469,17 +1469,13 @@ export default function FixedHeightSlider({ urls }: Props) {
             urls.map((url, index) => {
 
               return (
-                <div
-                  key={index}
-                  className={styles.image_container}
-                >
-                  <img
+                <img
+                    key={index}
                     src={url}
                     className={styles.image}
                     alt={`Low-Res ${index}`}
                     draggable="false"
                   />
-                </div>
               )
             })
           }

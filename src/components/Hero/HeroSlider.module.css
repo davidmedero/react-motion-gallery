@@ -1,13 +1,10 @@
 .image {
   display: block;
-  object-fit: contain;
-  cursor: zoom-in;
-  user-select: none;
   position: absolute;
   left: 0;
-  max-width: 800px;
-  width: 100dvw;
-  margin: 0 auto;
+  object-fit: contain;
+  cursor: zoom-in;
+  height: 400px;
   user-select: none;
 }
 

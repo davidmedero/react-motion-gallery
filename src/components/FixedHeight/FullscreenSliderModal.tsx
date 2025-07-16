@@ -131,13 +131,19 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     // find the slide whose cells include the fullscreen image index
     if (!productImageSliderRef.current) return;
     const wrapIndex = isWrapping.current && slideIndexSync >= productImageSliderRef.current.children.length - visibleImagesRef.current * 2 ? 0 : slideIndexSync;
+    console.log('slideIndexSync', slideIndexSync)
+    console.log('slideArr', slideArr)
     const matchSlide = slideArr.find(s =>
       s.cells.some(cell => cell.index === wrapIndex)
     );
     if (!matchSlide) return;
 
+    console.log('matchSlide', matchSlide)
+
     // now pull its position out
     const newIndex = slideArr.indexOf(matchSlide);
+
+    console.log('newIndex', newIndex)
 
     const totalWidth = getTotalCellsWidth()
 
@@ -156,6 +162,8 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     if (!productImageSliderRef.current || productImageSliderRef.current.children.length === 0) return;
 
+    console.log('visibleImagesRef.current', visibleImagesRef.current)
+
     let idx;
     if (isWrapping.current) {
       idx = wrapIndex + visibleImagesRef.current;
@@ -163,12 +171,18 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
       idx = wrapIndex;
     }
 
+    console.log('idx', idx)
+
     // grab the first child of that slide (your image element)
-    const slideEl = productImageSliderRef.current.children[idx] as HTMLElement | undefined;
+    let slideEl = productImageSliderRef.current.children[idx] as HTMLElement | undefined;
     if (!slideEl) return;
 
+    console.log('slideEl', slideEl)
+
     // snapshot its viewport rect
-    const rect = slideEl.getBoundingClientRect();
+    let rect = slideEl.getBoundingClientRect();
+
+    console.log('rect', rect)
   
     const x = e.clientX;
     const y = e.clientY;
@@ -191,6 +205,10 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
       const counter = document.querySelector('.counter');
       const currentIndex = parseInt(targetImg?.getAttribute("data-index") || "-1", 10);
       const nextImg = document.querySelector(`.fullscreen_slider img[data-index="${Number(counter?.textContent?.split('/')[0])}"]`) as HTMLImageElement | null;
+      const currentImg = document.querySelector(`.fullscreen_slider img[data-index="${currentIndex}"]`) as HTMLImageElement | null;
+
+      console.log('counter', counter)
+      console.log('currentIndex', currentIndex)
 
       const slider = document.querySelector('.fullscreen_slider') as HTMLElement;
       let currentTranslateX = 0;
@@ -212,10 +230,22 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
       if (currentIndex !== Number(counter?.textContent?.split('/')[0]) ) {
         if (currentIndex === 0 && (Math.abs(currentTranslateX) >= slider.scrollWidth - slider.getBoundingClientRect().width * 1.5 && Math.abs(currentTranslateX) <= slider.scrollWidth - slider.getBoundingClientRect().width) && React.isValidElement<{ imageCount: number }>(children)) {
+          console.log('check 1')
           const { imageCount } = children.props
           targetImg = document.querySelector(`.fullscreen_slider img[data-index="${imageCount + 1}"]`) as HTMLImageElement | null;
         } else {
-          targetImg = nextImg;
+          console.log('check 2')
+          if (currentIndex > slideIndexSync + 1 && slideIndexSync !== 0) {
+            console.log('cur')
+            targetImg = currentImg;
+            slideEl = productImageSliderRef.current.children[idx + 1] as HTMLElement | undefined;
+            if (!slideEl) return;
+
+            rect = slideEl.getBoundingClientRect();
+          } else {
+            console.log('next')
+            targetImg = nextImg;
+          }
         }
       }
 
@@ -223,6 +253,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
         const { imageCount } = children.props
     
         if (currentIndex === imageCount && Number(counter!.textContent!.split('/')[0]) === 1) {
+          console.log('check 3')
           const actualImg = document.querySelector(
             `.fullscreen_slider img[data-index="${imageCount + 1}"]`
           ) as HTMLImageElement | null
@@ -230,6 +261,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
         }
     
         if (currentIndex === imageCount + 1) {
+          console.log('check 4')
           const actualImg = document.querySelector(
             `.fullscreen_slider img[data-index="${imageCount + 1}"]`
           ) as HTMLImageElement | null
@@ -254,6 +286,8 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     }
   
     if (!targetImg || !overlayDivRef.current || !rect) return;
+
+    console.log('targetImg', targetImg)
   
     const zoomedImg = targetImg;
     const zoomedRect = targetImg.getBoundingClientRect();

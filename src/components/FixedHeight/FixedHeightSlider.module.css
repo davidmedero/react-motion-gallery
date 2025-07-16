@@ -1,21 +1,12 @@
-.container {
-  height: 306px;
-  max-height: 306px;
-}
-
-.image_container {
-  display: block;
-  position: absolute;
-  left: 0;
-  max-width: 200px;
-}
-
 .image {
   display: block;
-  width: 100%;
   object-fit: contain;
   cursor: zoom-in;
   user-select: none;
+  display: block;
+  position: absolute;
+  left: 0;
+  height: 300px;
 }
 
 .image:active {

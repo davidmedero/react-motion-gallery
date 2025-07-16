@@ -41,8 +41,10 @@ body {
 
 /* Overlay background */
 .fullscreen-overlay {
-  position: fixed; inset: 0;
+  position: fixed; 
+  inset: 0;
   opacity: 0;
+  will-change: opacity;
   pointer-events: none;
   background-color: transparent;
   transition: opacity 0.3s, background-color 0.3s;

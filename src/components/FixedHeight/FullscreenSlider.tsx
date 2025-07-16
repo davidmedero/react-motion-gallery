@@ -430,7 +430,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       
     } else {
       console.log('dragged');
-      if (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1)) {
+      if (!isClosing.current && index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1)) {
         index += dragEndBoostSelect();
       }
     }

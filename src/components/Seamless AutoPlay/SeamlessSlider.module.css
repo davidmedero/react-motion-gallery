@@ -1,31 +1,9 @@
-.container {
-  height: 306px;
-  max-height: 306px;
-}
-
-.image_container {
+.image {
   display: block;
   position: absolute;
   left: 0;
-  max-width: 200px;
-}
-
-.image {
-  display: block;
-  width: 100%;
   object-fit: contain;
-  cursor: zoom-in;
+  height: 120px;
+  margin: 0 20px;
   user-select: none;
-}
-
-.image:active {
-  cursor: grabbing;
-}
-
-.fullscreenImages:active {
-  cursor: grabbing !important;
-}
-
-.imgMargin:active {
-  cursor: grabbing !important;
 }
