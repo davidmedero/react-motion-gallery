@@ -5,6 +5,10 @@
   overscroll-behavior: none;
 }
 
+.sliderContainer {
+  overflow: hidden;
+}
+
 .title {
   font-size: clamp(2.5rem, 8vw, 5rem);
   text-align: center;
