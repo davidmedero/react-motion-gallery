@@ -585,13 +585,14 @@ const ProductImageSlider = ({
 
     if (isClick.current) {
     } else {
-      console.log('dragged');
-      if (visibleImagesRef.current === 1 && (index === selectedIndex.current || (index === productImageSlides.current.length && selectedIndex.current !== productImageSlides.current.length - 1))) {
-        index += dragEndBoostSelect();
-      } else if (visibleImagesRef.current === 2 && (index === selectedIndex.current || (index === productImageSlides.current.length - 1 && selectedIndex.current !== productImageSlides.current.length - 2))) {
-        index += dragEndBoostSelect();
-      } else if (visibleImagesRef.current > 2 && (index === selectedIndex.current || (index === productImageSlides.current.length - 1 && selectedIndex.current !== productImageSlides.current.length - 2) || (index === productImageSlides.current.length && selectedIndex.current !== productImageSlides.current.length - 1))) {
-        index += dragEndBoostSelect();
+      if (!isWrapping.current) {
+        if (index === selectedIndex.current) {
+          index += dragEndBoostSelect();
+        }
+      } else {
+        if (index === selectedIndex.current || (index === productImageSlides.current.length && selectedIndex.current === 0)) {
+          index += dragEndBoostSelect();
+        }
       }
     }
 

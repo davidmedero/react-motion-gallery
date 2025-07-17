@@ -27,20 +27,20 @@ export default function Home() {
     'https://react-motion-gallery.s3.us-east-1.amazonaws.com/ds/rmg-ds-image-2.jpg',
     'https://react-motion-gallery.s3.us-east-1.amazonaws.com/ds/rmg-ds-image-3.jpg',
     'https://react-motion-gallery.s3.us-east-1.amazonaws.com/ds/rmg-ds-image-4.jpg',
-    // 'https://react-motion-gallery.s3.us-east-1.amazonaws.com/ds/rmg-ds-image-5.jpg'
+    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/ds/rmg-ds-image-5.jpg'
   ];
 
   const logoImages = [
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/adobe.png',
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/canva.png',
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/github.png',
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/google.png',
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/hubspot.png',
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/instagram.png',
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/microsoft.png',
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/slack.png',
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/spotify.png',
-    'https://react-motion-gallery.s3.us-east-1.amazonaws.com/seamless/stripe.png',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/2560px-Google_2015_logo.svg.png',
+    'https://upload.wikimedia.org/wikipedia/en/thumb/b/bb/Canva_Logo.svg/1114px-Canva_Logo.svg.png?20250530000654',
+    'https://wallpapers.com/images/featured-full/github-logo-png-s8wb6yxlatsyp8s1.png',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Adobe_Corporate_logo.svg/1024px-Adobe_Corporate_logo.svg.png?20220820114255',
+    'https://tbkconsult.com/wp-content/uploads/2016/11/HubSpot-Logo-PNG-600x173.png',
+    'https://cdn.worldvectorlogo.com/logos/instagram-1.svg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/1024px-Microsoft_logo_%282012%29.svg.png',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Slack_Technologies_Logo.svg/996px-Slack_Technologies_Logo.svg.png',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Spotify_logo_with_text.svg/1118px-Spotify_logo_with_text.svg.png?20160123211747',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/1024px-Stripe_Logo%2C_revised_2016.svg.png?20240909030005',
   ];
 
   return (

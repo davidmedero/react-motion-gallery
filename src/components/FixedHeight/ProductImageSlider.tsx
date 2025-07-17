@@ -185,7 +185,7 @@ const ProductImageSlider = ({
     }
 
     const maxCount = counts.length ? Math.max(...counts) : 1;
-    return Math.max(1, maxCount);
+    return Math.max(2, maxCount + 1);
   };
 
   useEffect(() => {
@@ -198,7 +198,7 @@ const ProductImageSlider = ({
     setVisibleImages(images);
     visibleImagesRef.current = images;
 
-    if (childCount - 1 > images) {
+    if (childCount > images) {
       isWrapping.current = true;
     } else {
       isWrapping.current = false;
@@ -211,7 +211,7 @@ const ProductImageSlider = ({
     const slides: ReactElement<CarouselChildProps>[] = []
     
     // only do clones if we need infinite wrapping
-    if (childCount - 1 > images) {
+    if (childCount > images) {
       // before-clones: map [-images .. -1] → real indices [childCount-images .. childCount-1]
       const before = childrenArray.slice(-images).map((c, i) =>
         cloneSlide(
@@ -275,7 +275,7 @@ const ProductImageSlider = ({
     });
 
     const originalCount = Children.toArray(children).length;
-    const clonesBefore  = originalCount - 1 > visibleImages ? visibleImages : 0;
+    const clonesBefore  = originalCount > visibleImages ? visibleImages : 0;
 
     const beforeWidths = widths.slice(0, clonesBefore);
     
