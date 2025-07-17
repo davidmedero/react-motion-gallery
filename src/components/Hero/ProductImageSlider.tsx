@@ -359,7 +359,6 @@ const ProductImageSlider = ({
 
     const pages: { cells: CellInfo[]; target: number }[] = [];
     
-    // instead of your grouping logic, just:
     pages.length = 0;
     for (let k = 0; k < cellInfo.length; k++) {
       const { left } = cellInfo[k];

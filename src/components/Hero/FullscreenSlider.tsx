@@ -87,6 +87,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
 
   useEffect(() => {  
     const childrenArray = Children.toArray(children);
+    if (slides.current.length > 0) return;
 
     slides.current = [];
   
@@ -103,10 +104,13 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         });
       }
     }
+
+    console.log('hcmjcfhjk')
     
   }, [children]);
 
   useEffect(() => {
+    if (sliderWidth.current > 0) return;
     if (slider.current) {
       let totalWidth = 0;
       const sliderChildren = slider.current.children;
@@ -429,9 +433,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       }
       
     } else {
-      console.log('dragged');
       if (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1)) {
-        console.log('boosting index')
         index += dragEndBoostSelect();
       }
     }
