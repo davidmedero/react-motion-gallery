@@ -104,8 +104,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         });
       }
     }
-
-    console.log('hcmjcfhjk')
     
   }, [children]);
 
@@ -430,6 +428,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         if (slider.current && slider.current.children.length === 1) {
           handleZoomToggle(e, matchedRef);
         }
+        return;
       }
       
     } else {
