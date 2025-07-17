@@ -155,11 +155,11 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     }
 
     // grab the first child of that slide (your image element)
-    let slideEl = productImageSliderRef.current.children[idx] as HTMLElement | undefined;
+    const slideEl = productImageSliderRef.current.children[idx] as HTMLElement | undefined;
     if (!slideEl) return;
 
     // snapshot its viewport rect
-    let rect = slideEl.getBoundingClientRect();
+    const rect = slideEl.getBoundingClientRect();
   
     const x = e.clientX;
     const y = e.clientY;
@@ -182,7 +182,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
       const counter = document.querySelector('.counter');
       const currentIndex = parseInt(targetImg?.getAttribute("data-index") || "-1", 10);
       const nextImg = document.querySelector(`.fullscreen_slider img[data-index="${Number(counter?.textContent?.split('/')[0])}"]`) as HTMLImageElement | null;
-      const currentImg = document.querySelector(`.fullscreen_slider img[data-index="${currentIndex}"]`) as HTMLImageElement | null;
+      // const currentImg = document.querySelector(`.fullscreen_slider img[data-index="${currentIndex}"]`) as HTMLImageElement | null;
 
       const slider = document.querySelector('.fullscreen_slider') as HTMLElement;
       let currentTranslateX = 0;
@@ -207,17 +207,8 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
           const { imageCount } = children.props
           targetImg = document.querySelector(`.fullscreen_slider img[data-index="${imageCount + 1}"]`) as HTMLImageElement | null;
         } else {
-          if (currentIndex > slideIndexSync + 1 && Number(counter?.textContent?.split('/')[0]) !== 1) {
-            console.log('cur')
-            targetImg = currentImg;
-            slideEl = productImageSliderRef.current.children[idx + 1] as HTMLElement | undefined;
-            if (!slideEl) return;
-
-            rect = slideEl.getBoundingClientRect();
-          } else {
-            console.log('next')
-            targetImg = nextImg;
-          }
+          console.log('next')
+          targetImg = nextImg;
         }
       }
 

@@ -754,16 +754,12 @@ const ProductImageSlider = ({
     const containerWidth = productImageSliderRef.current.clientWidth;
 
     if (!isWrapping.current) {
-      sliderX.current = 0;
-      selectedIndex.current = 0;
       if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
-        const currentPosition = (containerWidth - sliderWidth.current) / 2;
-        setTranslateX(currentPosition);
-      } else {
+        sliderX.current = (containerWidth - sliderWidth.current) / 2;
         const currentPosition = sliderX.current;
         setTranslateX(currentPosition);
+        selectedIndex.current = 0;
       }
-      
     } else {
         sliderX.current -= diff;
         const currentPosition = Math.min(sliderX.current, 0);

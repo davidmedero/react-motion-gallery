@@ -470,7 +470,7 @@ const ProductImageSlider = ({
       lastTime = now;
 
       // pause if dragging or in fullscreen
-      if (isPointerDown.current || sliderWidth.current === 0 || !isWrapping.current) {
+      if (sliderWidth.current === 0 || !isWrapping.current) {
         return;
       }
 
@@ -487,7 +487,7 @@ const ProductImageSlider = ({
 
     frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
-  }, [isPointerDown.current]);
+  }, []);
 
   function setTranslateX(x: number) {
     if (!productImageSliderRef.current) return;
@@ -543,7 +543,7 @@ const ProductImageSlider = ({
         dragX.current = (dragX.current + originBound) * 0.5;
       }
 
-      const lastSlide = sliderWidth.current <= productImageSliderRef.current.clientWidth ? (productImageSlides.current.length - visibleImages) * cells.current[0].element.offsetWidth : productImageSlides.current[productImageSlides.current.length - 1].target;
+      const lastSlide =  productImageSlides.current[productImageSlides.current.length - 1].target;
       const endBound = Math.min(-lastSlide, dragStartPosition.current);
 
       if (dragX.current < endBound) {

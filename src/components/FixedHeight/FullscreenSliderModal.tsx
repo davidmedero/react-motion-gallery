@@ -174,13 +174,13 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     console.log('idx', idx)
 
     // grab the first child of that slide (your image element)
-    let slideEl = productImageSliderRef.current.children[idx] as HTMLElement | undefined;
+    const slideEl = productImageSliderRef.current.children[idx] as HTMLElement | undefined;
     if (!slideEl) return;
 
     console.log('slideEl', slideEl)
 
     // snapshot its viewport rect
-    let rect = slideEl.getBoundingClientRect();
+    const rect = slideEl.getBoundingClientRect();
 
     console.log('rect', rect)
   
@@ -205,7 +205,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
       const counter = document.querySelector('.counter');
       const currentIndex = parseInt(targetImg?.getAttribute("data-index") || "-1", 10);
       const nextImg = document.querySelector(`.fullscreen_slider img[data-index="${Number(counter?.textContent?.split('/')[0])}"]`) as HTMLImageElement | null;
-      const currentImg = document.querySelector(`.fullscreen_slider img[data-index="${currentIndex}"]`) as HTMLImageElement | null;
+      // const currentImg = document.querySelector(`.fullscreen_slider img[data-index="${currentIndex}"]`) as HTMLImageElement | null;
 
       console.log('counter', counter)
       console.log('currentIndex', currentIndex)
@@ -235,17 +235,8 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
           targetImg = document.querySelector(`.fullscreen_slider img[data-index="${imageCount + 1}"]`) as HTMLImageElement | null;
         } else {
           console.log('check 2')
-          if (currentIndex > slideIndexSync + 1 && slideIndexSync !== 0) {
-            console.log('cur')
-            targetImg = currentImg;
-            slideEl = productImageSliderRef.current.children[idx + 1] as HTMLElement | undefined;
-            if (!slideEl) return;
-
-            rect = slideEl.getBoundingClientRect();
-          } else {
-            console.log('next')
-            targetImg = nextImg;
-          }
+          console.log('next')
+          targetImg = nextImg;
         }
       }
 
