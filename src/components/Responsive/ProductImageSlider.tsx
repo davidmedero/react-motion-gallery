@@ -718,14 +718,10 @@ const ProductImageSlider = ({
         const currentPosition = sliderX.current;
         setTranslateX(currentPosition);
       }
-      
     } else {
         sliderX.current -= diff;
         const currentPosition = Math.min(sliderX.current, 0);
         setTranslateX(currentPosition);
-        const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current ? productImageSlides.current.length - 1 : productImageSlides.current.length;
-        const index = Math.floor(Math.abs(currentPosition) / (sliderWidth.current / length));
-        selectedIndex.current = index;
     }
     
   }, [windowSize, clonedChildren, visibleImages]);

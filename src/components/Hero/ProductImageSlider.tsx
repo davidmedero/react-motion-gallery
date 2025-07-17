@@ -175,7 +175,6 @@ const ProductImageSlider = ({
       }
       counts.push(cnt);
     }
-    console.log('counts', counts)
 
     const maxCount = counts.length ? Math.max(...counts) : 1;
 
@@ -564,7 +563,7 @@ const ProductImageSlider = ({
         dragX.current = (dragX.current + originBound) * 0.5;
       }
 
-      const lastSlide = (productImageSlides.current.length - visibleImages) * cells.current[0].element.offsetWidth;
+      const lastSlide = productImageSlides.current[productImageSlides.current.length - 1].target;
       const endBound = Math.min(-lastSlide, dragStartPosition.current);
 
       if (dragX.current < endBound) {
@@ -761,7 +760,7 @@ const ProductImageSlider = ({
   }
 
   useEffect(() => {
-    if (!productImageSliderRef.current || !firstCellInSlide.current || cells.current.length === 0 || !productImageSlides.current[selectedIndex.current]) return;
+    if (!productImageSliderRef.current || !firstCellInSlide.current || cells.current.length === 0 || !productImageSlides.current[selectedIndex.current] || showFullscreenSlider) return;
     lastTranslateX.current = getTranslateX(firstCellInSlide.current);
     const diff = lastTranslateX.current - Math.abs(sliderX.current);
     const containerWidth = productImageSliderRef.current.clientWidth;
@@ -777,7 +776,6 @@ const ProductImageSlider = ({
         const currentPosition = sliderX.current;
         setTranslateX(currentPosition);
       }
-      
     } else {
       if (selectedIndex.current === 0) {
         sliderX.current = (containerWidth - cellWidth) / 2;
@@ -787,8 +785,6 @@ const ProductImageSlider = ({
         sliderX.current -= diff;
         const currentPosition = Math.min(sliderX.current + (containerWidth - cellWidth) / 2, 0);
         setTranslateX(currentPosition);
-        const index = Math.ceil(Math.abs(currentPosition) / (sliderWidth.current / productImageSlides.current.length));
-        selectedIndex.current = index;
       }
     }
     
@@ -909,7 +905,7 @@ const ProductImageSlider = ({
         sliderContainerRef.removeEventListener("wheel", handleWheel);
       };
     };
-  }, [handlePointerStart, handlePointerMove, handlePointerEnd, handleWheel, productImageSliderRef.current, isScrolling.current]);
+  }, []);
 
   function toggleFullscreen(e: React.PointerEvent<HTMLDivElement>, imgRef: RefObject<HTMLImageElement | null>, index: number) {
     const origImg   = imgRef.current;
@@ -1100,7 +1096,7 @@ const ProductImageSlider = ({
     const newIndex = slideArr.indexOf(matchSlide);
 
     const containerWidth = productImageSliderRef.current.clientWidth;
-    const cellWidth = cells.current[0].element.clientWidth;
+    const cellWidth = productImageSlides.current[newIndex].cells[0].element.clientWidth;
 
     // update your refs exactly as before
     selectedIndex.current = newIndex;

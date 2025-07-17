@@ -151,7 +151,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     if (isWrapping.current) {
       idx = wrapIndex + visibleImagesRef.current;
     } else {
-      idx = slideIndexSync;
+      idx = wrapIndex;
     }
 
     // grab the first child of that slide (your image element)
@@ -202,12 +202,19 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
         currentTranslateX = translateX;
       }
 
+      console.log('visibleImages', visibleImagesRef.current)
+      console.log('idx', idx)
+      console.log('wrapIndex', wrapIndex)
+      console.log('currentIndex', currentIndex)
+      console.log('counter', counter)
+
       if (currentIndex !== Number(counter?.textContent?.split('/')[0]) ) {
         if (currentIndex === 0 && (Math.abs(currentTranslateX) >= slider.scrollWidth - slider.getBoundingClientRect().width * 1.5 && Math.abs(currentTranslateX) <= slider.scrollWidth - slider.getBoundingClientRect().width) && React.isValidElement<{ imageCount: number }>(children)) {
+          console.log('next 1')
           const { imageCount } = children.props
           targetImg = document.querySelector(`.fullscreen_slider img[data-index="${imageCount + 1}"]`) as HTMLImageElement | null;
         } else {
-          console.log('next')
+          console.log('next 2')
           targetImg = nextImg;
         }
       }

@@ -162,7 +162,7 @@ const ProductImageSlider = ({
     }
 
     const maxCount = counts.length ? Math.max(...counts) : 1;
-    return Math.max(1, maxCount);
+    return Math.max(2, maxCount + 1);
   };
 
   useEffect(() => {
@@ -256,7 +256,7 @@ const ProductImageSlider = ({
     });
 
     const originalCount = Children.toArray(children).length;
-    const clonesBefore  = originalCount - 1 > visibleImages ? visibleImages : 0;
+    const clonesBefore  = originalCount > visibleImages ? visibleImages : 0;
 
     const beforeWidths = widths.slice(0, clonesBefore);
     
@@ -749,9 +749,6 @@ const ProductImageSlider = ({
         sliderX.current -= diff;
         const currentPosition = Math.min(sliderX.current, 0);
         setTranslateX(currentPosition);
-        const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current ? productImageSlides.current.length - 1 : productImageSlides.current.length;
-        const index = Math.floor(Math.abs(currentPosition) / (sliderWidth.current / length));
-        selectedIndex.current = index;
     }
     
   }, [windowSize, clonedChildren, visibleImages]);
