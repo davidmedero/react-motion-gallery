@@ -699,38 +699,32 @@ const ProductImageSlider = ({
   }
 
   useEffect(() => {
-    function handleResize() {
-      if (!productImageSliderRef.current || !firstCellInSlide.current) return;
-      lastTranslateX.current = getTranslateX(firstCellInSlide.current);
-      const diff = lastTranslateX.current - Math.abs(sliderX.current);
-      const containerWidth = productImageSliderRef.current.clientWidth;
+    if (!productImageSliderRef.current || !firstCellInSlide.current || cells.current.length === 0) return;
+    lastTranslateX.current = getTranslateX(firstCellInSlide.current);
+    const diff = lastTranslateX.current - Math.abs(sliderX.current);
+    const containerWidth = productImageSliderRef.current.clientWidth;
+    const cellWidth = cells.current[0].element.clientWidth;
+    const childrenArray = Children.toArray(children);
+    const childCount = childrenArray.length;
+    const slideWidth = cellWidth * childCount;
 
-      if (!isWrapping.current) {
-        sliderX.current = 0;
-        selectedIndex.current = 0;
-        if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
-          const currentPosition = (containerWidth - sliderWidth.current) / 2;
-          setTranslateX(currentPosition);
-        } else {
-          const currentPosition = sliderX.current;
-          setTranslateX(currentPosition);
-        }
-        
+    if (!isWrapping.current) {
+      sliderX.current = 0;
+      selectedIndex.current = 0;
+      if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+        const currentPosition = (containerWidth - slideWidth) / 2;
+        setTranslateX(currentPosition);
       } else {
-          sliderX.current -= diff;
-          const currentPosition = Math.min(sliderX.current, 0);
-          setTranslateX(currentPosition);
-          const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? productImageSlides.current.length - 1 : productImageSlides.current.length;
-          const index = Math.floor(Math.abs(currentPosition) / (sliderWidth.current / length));
-          selectedIndex.current = index;
+        const currentPosition = sliderX.current;
+        setTranslateX(currentPosition);
       }
+    } else {
+        sliderX.current -= diff;
+        const currentPosition = Math.min(sliderX.current, 0);
+        setTranslateX(currentPosition);
     }
     
-    window.addEventListener("resize", handleResize);
-    handleResize();
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [windowSize, clonedChildren, visibleImages]);
 
   function wrapSelect(index: number) {
     if (!productImageSliderRef.current) return;

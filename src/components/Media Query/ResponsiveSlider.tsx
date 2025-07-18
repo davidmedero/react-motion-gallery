@@ -7,7 +7,7 @@ import FullscreenSliderModal from "./FullscreenSliderModal";
 import ProductImageSlider from "./ProductImageSlider";
 import { useSyncExternalStore } from 'react';
 import slideStore from './slideStore';
-import styles from './FixedHeightSlider.module.css';
+import styles from './ResponsiveSlider.module.css';
 import scaleStore from './scaleStore';
 
 function useSlideIndex() {
@@ -22,7 +22,7 @@ interface Props {
   urls: string[];
 }
 
-export default function FixedHeightSlider({ urls }: Props) {
+export default function ResponsiveSlider({ urls }: Props) {
   const [slideIndex, setSlideIndex] = useState(0);
   const isClick = useRef(false);
   const isZoomClick = useRef(false);
@@ -32,6 +32,30 @@ export default function FixedHeightSlider({ urls }: Props) {
   const fullscreenImageWidth = useRef(0);
   const zoomedDuringWrap = useRef(false);
   const sliderApi = useRef<FullscreenSliderHandle>(null);
+
+  const imagesPerSlide = useRef<number>(4);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 0) {
+        imagesPerSlide.current = 2
+      }
+      if (window.innerWidth >= 767) {
+        imagesPerSlide.current = 3
+      }
+      if (window.innerWidth >= 1024) {
+        imagesPerSlide.current = 4
+      }
+      if (window.innerWidth >= 1500) {
+        imagesPerSlide.current = 5
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const expandableImgRefs = useRef([]);
   const overlayDivRef = useRef<HTMLDivElement | null>(null);
@@ -692,7 +716,6 @@ export default function FixedHeightSlider({ urls }: Props) {
     isTouchPinching.current = false;
     pinchJustEnded.current = false;
     isZoomClick.current = true;
-
     isPointerDown.current = true;
 
     const transformValues = getCurrentTransform(imageRef.current);
@@ -1469,13 +1492,18 @@ export default function FixedHeightSlider({ urls }: Props) {
             urls.map((url, index) => {
 
               return (
-                <img
-                    key={index}
+                <div
+                  key={index}
+                  className={styles.image_container}
+                  style={{ width: `${100 / imagesPerSlide.current}%` }}
+                >
+                  <img
                     src={url}
                     className={styles.image}
                     alt={`Low-Res ${index}`}
                     draggable="false"
                   />
+                </div>
               )
             })
           }

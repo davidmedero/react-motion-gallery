@@ -79,7 +79,6 @@ const ProductImageSlider = ({
   const attraction = 0.025;
   const cells = useRef<{ element: HTMLElement, index: number }[]>([]);
   const isDragSelect = useRef<boolean>(false);
-  // const lastTranslateX = useRef<number>(0);
   const progressFillRef = useRef<HTMLDivElement>(null);
   const isClosing = useRef(false);
   const sliderContainer = useRef<HTMLDivElement | null>(null);
@@ -713,40 +712,35 @@ const ProductImageSlider = ({
     startAnimation();
   };
 
-  // function getTranslateX(element: HTMLElement): number {
-  //   const style = window.getComputedStyle(element);
-  //   const matrix = new DOMMatrix(style.transform);
-  //   return matrix.m41 || 0;
-  // }
+  useEffect(() => {
+    function handleResize() {
+      if (!productImageSliderRef.current || !firstCellInSlide.current) return;
+      const containerWidth = productImageSliderRef.current.clientWidth;
 
-  // useEffect(() => {
-  //   if (!productImageSliderRef.current || !firstCellInSlide.current || cells.current.length === 0) return;
-  //   lastTranslateX.current = getTranslateX(firstCellInSlide.current);
-  //   const diff = lastTranslateX.current - Math.abs(sliderX.current);
-  //   const containerWidth = productImageSliderRef.current.clientWidth;
-  //   const cellWidth = cells.current[0].element.clientWidth;
-  //   const childrenArray = Children.toArray(children);
-  //   const childCount = childrenArray.length;
-  //   const slideWidth = cellWidth * childCount;
-
-  //   if (!isWrapping.current) {
-  //     sliderX.current = 0;
-  //     selectedIndex.current = 0;
-  //     if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
-  //       const currentPosition = (containerWidth - slideWidth) / 2;
-  //       setTranslateX(currentPosition);
-  //     } else {
-  //       const currentPosition = sliderX.current;
-  //       setTranslateX(currentPosition);
-  //     }
-      
-  //   } else {
-  //       sliderX.current -= diff;
-  //       const currentPosition = Math.min(sliderX.current, 0);
-  //       setTranslateX(currentPosition);
-  //   }
+      if (!isWrapping.current) {
+        sliderX.current = 0;
+        selectedIndex.current = 0;
+        if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+          const currentPosition = (containerWidth - sliderWidth.current) / 2;
+          setTranslateX(currentPosition);
+        } else {
+          const currentPosition = sliderX.current;
+          setTranslateX(currentPosition);
+        }
+        
+      } else {
+          const currentPosition = sliderX.current;
+          const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? productImageSlides.current.length - 1 : productImageSlides.current.length;
+          const index = Math.ceil(Math.abs(currentPosition) / (sliderWidth.current / length));
+          selectedIndex.current = index;
+      }
+    }
     
-  // }, [windowSize, clonedChildren, visibleImages]);
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   function wrapSelect(index: number) {
     if (!productImageSliderRef.current) return;

@@ -8,6 +8,7 @@ import ResponsiveSlider from "@/components/Responsive/ResponsiveSlider";
 import HeroSlider from "@/components/Hero/HeroSlider";
 import SeamlessSlider from "@/components/Seamless AutoPlay/SeamlessSlider";
 import PerSlideAutoPlaySlider from "@/components/Per Slide AutoPlay/PerSlideAutoPlaySlider";
+import MediaQuerySlider from "@/components/Media Query/ResponsiveSlider";
 
 export default function Home() {
 
@@ -113,6 +114,16 @@ export default function Home() {
         </p>
         <div className={styles.sliderContainer}>
           <PerSlideAutoPlaySlider urls={images} />
+        </div>
+
+        {/** Media Query Section **/}
+      
+        <h2 className={styles.headers}>Media Query</h2>
+        <p className={styles.description}>
+          Full control over how many cells to show per slide.
+        </p>
+        <div className={styles.sliderContainer}>
+          <MediaQuerySlider urls={images} />
         </div>
       
     </div>

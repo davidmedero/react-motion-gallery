@@ -1586,7 +1586,6 @@ export default function ThumbnailSlider({ urls }: Props) {
         cells={cells}
         setShowFullscreenSlider={setShowFullscreenSlider}
         imageCount={urls.length}
-        fullscreenImageWidth={fullscreenImageWidth}
         setClosingModal={setClosingModal}
         productImageSlides={productImageSlides}
         productImageSliderRef={productImageSliderRef}

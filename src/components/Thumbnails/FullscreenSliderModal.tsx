@@ -26,7 +26,6 @@ interface FullscreenSliderModalProps {
   fullscreenPosition: DOMRect;
   setShowFullscreenSlider: Dispatch<SetStateAction<boolean>>;
   imageCount: number;
-  fullscreenImageWidth: RefObject<number>;
   setClosingModal: Dispatch<SetStateAction<boolean>>;
   productImageSlides: RefObject<{ cells: { element: HTMLElement, index: number }[], target: number }[]>;
   productImageSliderRef: RefObject<HTMLDivElement | null>;
@@ -47,10 +46,8 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   overlayDivRef,
   zoomLevel,
   cells,
-  // fullscreenPosition,
   setShowFullscreenSlider,
   imageCount,
-  // fullscreenImageWidth,
   setClosingModal,
   productImageSlides,
   productImageSliderRef,
@@ -116,8 +113,10 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     const slideArr = productImageSlides.current;
     // find the slide whose cells include the fullscreen image index
+    if (!productImageSliderRef.current) return;
+    const wrapIndex = isWrapping.current && slideIndexSync >= productImageSliderRef.current.children.length - visibleImagesRef.current * 2 ? 0 : slideIndexSync;
     const matchSlide = slideArr.find(s =>
-      s.cells.some(cell => cell.index === slideIndexSync)
+      s.cells.some(cell => cell.index === wrapIndex)
     );
     if (!matchSlide) return;
 
@@ -131,8 +130,6 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     sliderVelocity.current         = 0;
 
     const translateSliderX = getPositionValue(sliderX.current);
-
-    if (!productImageSliderRef.current) return;
     
     productImageSliderRef.current.style.transform = `translate3d(${translateSliderX},0,0)`;
 
@@ -140,9 +137,9 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     let idx;
     if (isWrapping.current) {
-      idx = slideIndexSync + visibleImagesRef.current;
+      idx = wrapIndex + visibleImagesRef.current;
     } else {
-      idx = slideIndexSync;
+      idx = wrapIndex;
     }
 
     // grab the first child of that slide (your image element)

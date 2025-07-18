@@ -1505,13 +1505,11 @@ export default function HeroSlider({ urls }: Props) {
         isZoomClick={isZoomClick}
         isClick={isClick}
         isAnimating={isAnimating}
-        storedPositionRef={storedPositionRef}
         overlayDivRef={overlayDivRef}
         zoomLevel={zoomLevel}
         cells={cells}
         setShowFullscreenSlider={setShowFullscreenSlider}
         imageCount={urls.length}
-        fullscreenImageWidth={fullscreenImageWidth}
         setClosingModal={setClosingModal}
         productImageSlides={productImageSlides}
         productImageSliderRef={productImageSliderRef}
