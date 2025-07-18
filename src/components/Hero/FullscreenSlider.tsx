@@ -757,13 +757,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       window.removeEventListener('pointerup',     (e) => handlePointerEnd(e as any));
       window.removeEventListener('wheel',         handleWheel);
     };
-  }, [
-    handlePointerStart,
-    handlePointerMove,
-    handlePointerEnd,
-    handleWheel,
-    slider.current,
-  ]);
+  }, []);
 
   useEffect(() => {
     const leftChevron = document.querySelector(".left-chevron");

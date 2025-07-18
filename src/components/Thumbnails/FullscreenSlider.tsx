@@ -542,6 +542,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   }  
 
   function select(index: number) {
+    if (isVerticalScroll.current) return;
     if (imageCount > 1) {
       wrapSelect(index);
     }
@@ -754,22 +755,16 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       window.removeEventListener('pointerup',     (e) => handlePointerEnd(e as any));
       window.removeEventListener('wheel',         handleWheel);
     };
-  }, [
-    handlePointerStart,
-    handlePointerMove,
-    handlePointerEnd,
-    handleWheel,
-    slider.current,
-  ]);
+  }, []);
 
   useEffect(() => {
     const leftChevron = document.querySelector(".left-chevron");
     const rightChevron = document.querySelector(".right-chevron");
-    leftChevron?.addEventListener("click", previous);
-    rightChevron?.addEventListener("click", next);
+    leftChevron?.addEventListener("pointerdown", previous);
+    rightChevron?.addEventListener("pointerdown", next);
     return () => {
-      leftChevron?.removeEventListener("click", previous);
-      rightChevron?.removeEventListener("click", next);
+      leftChevron?.removeEventListener("pointerdown", previous);
+      rightChevron?.removeEventListener("pointerdown", next);
     }
   }, []);
   

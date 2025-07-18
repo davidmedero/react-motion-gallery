@@ -844,7 +844,7 @@ export default function ResponsiveSlider({ urls }: Props) {
     const moveX = currentX - startX.current;
     const moveY = currentY - startY.current;
     
-    if (Math.abs(moveX) > 0 || Math.abs(moveY) > 0) {
+    if (Math.abs(moveX) > 5 || Math.abs(moveY) > 5) {
       isZoomClick.current = false;
     }
     
