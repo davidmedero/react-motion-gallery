@@ -428,8 +428,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         if (slider.current && slider.current.children.length === 1) {
           handleZoomToggle(e, matchedRef);
         }
-        return;
       }
+      return;
       
     } else {
       if (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1)) {
@@ -545,6 +545,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   }  
 
   function select(index: number) {
+    if (isVerticalScroll.current) return;
     if (imageCount > 1) {
       wrapSelect(index);
     }

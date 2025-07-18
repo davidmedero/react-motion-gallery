@@ -202,13 +202,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
         currentTranslateX = translateX;
       }
 
-      console.log('visibleImages', visibleImagesRef.current)
-      console.log('idx', idx)
-      console.log('wrapIndex', wrapIndex)
-      console.log('currentIndex', currentIndex)
-      console.log('counter', counter)
-
-      if (currentIndex !== Number(counter?.textContent?.split('/')[0]) ) {
+      if (currentIndex !== Number(counter?.textContent?.split('/')[0])) {
         if (currentIndex === 0 && (Math.abs(currentTranslateX) >= slider.scrollWidth - slider.getBoundingClientRect().width * 1.5 && Math.abs(currentTranslateX) <= slider.scrollWidth - slider.getBoundingClientRect().width) && React.isValidElement<{ imageCount: number }>(children)) {
           console.log('next 1')
           const { imageCount } = children.props
