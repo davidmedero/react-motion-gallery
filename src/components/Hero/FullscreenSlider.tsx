@@ -84,6 +84,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   const VERT_ANGLE_MAX = 120;
   const isVerticalScroll = useRef(false);
   const isClosing = useRef(false);
+  const isZooming = useRef(false);
 
   useEffect(() => {  
     const childrenArray = Children.toArray(children);
@@ -187,6 +188,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
 
   function handlePointerStart(e: PointerEventExtended) {
     if (isZoomed) return;
+    isZooming.current = false;
     isScrolling.current = false;
     isPinching.current = false;
     isTouchPinching.current = false;
@@ -223,7 +225,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   };
 
   function animate() {
-    if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed) {
+    if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed || isZooming.current === true) {
       isAnimating.current = false;
       restingFrames.current = 0;
       isClosing.current = false;
@@ -428,8 +430,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         if (slider.current && slider.current.children.length === 1) {
           handleZoomToggle(e, matchedRef);
         }
+        isZooming.current = true;
       }
-      return;
       
     } else {
       if (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current !== slides.current.length - 1)) {
@@ -532,6 +534,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isPinching.current = false;
     isTouchPinching.current = false;
     zoomedDuringWrap.current = false;
+    isZooming.current = false;
     select(selectedIndex.current - 1);
   }
   
@@ -541,6 +544,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isPinching.current = false;
     isTouchPinching.current = false;
     zoomedDuringWrap.current = false;
+    isZooming.current = false;
     select(selectedIndex.current + 1);
   }  
 
