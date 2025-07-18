@@ -54,7 +54,7 @@ export default function Home() {
       
         <h2 className={styles.headers}>Thumbnails</h2>
         <p className={styles.description}>
-          Resize the browser to 500px to see the horizontal thumbnail scrollbar. One image is equal to one slide.
+          Resize the browser to 500px to see the horizontal thumbnail scrollbar. One cell is equal to one slide.
         </p>
         <div className={styles.sliderContainer}>
           <ThumbnailSlider urls={images} />
@@ -65,7 +65,7 @@ export default function Home() {
       
         <h2 className={styles.headers}>Fixed Height</h2>
         <p className={styles.description}>
-          Height of all images is fixed, and the slider container height is fixed. Wrapping disabled if there are 2 images or less.
+          Height of all cells are fixed, and the slider container height is fixed. Wrapping is disabled if the total number of cells is less than or equal to the number of visible cells.
         </p>
         <div className={styles.sliderContainer}>
           <FixedHeightSlider urls={heroImages} />
@@ -87,7 +87,7 @@ export default function Home() {
       
         <h2 className={styles.headers}>Hero</h2>
         <p className={styles.description}>
-          Slides are centered. Each image has a different size and aspect ratio.
+          Slides are centered. One cell is equal to one slide.
         </p>
         <div className={styles.sliderContainer}>
           <HeroSlider urls={heroImages} />
