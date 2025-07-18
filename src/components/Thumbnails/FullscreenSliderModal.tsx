@@ -116,10 +116,8 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     const slideArr = productImageSlides.current;
     // find the slide whose cells include the fullscreen image index
-    if (!productImageSliderRef.current) return;
-    const wrapIndex = slideIndexSync >= productImageSliderRef.current.children.length - visibleImagesRef.current * 2 ? 0 : slideIndexSync;
     const matchSlide = slideArr.find(s =>
-      s.cells.some(cell => cell.index === wrapIndex)
+      s.cells.some(cell => cell.index === slideIndexSync)
     );
     if (!matchSlide) return;
 
@@ -133,6 +131,8 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     sliderVelocity.current         = 0;
 
     const translateSliderX = getPositionValue(sliderX.current);
+
+    if (!productImageSliderRef.current) return;
     
     productImageSliderRef.current.style.transform = `translate3d(${translateSliderX},0,0)`;
 
@@ -140,9 +140,9 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     let idx;
     if (isWrapping.current) {
-      idx = wrapIndex + visibleImagesRef.current;
+      idx = slideIndexSync + visibleImagesRef.current;
     } else {
-      idx = wrapIndex;
+      idx = slideIndexSync;
     }
 
     // grab the first child of that slide (your image element)
