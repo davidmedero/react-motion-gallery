@@ -84,7 +84,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   const VERT_ANGLE_MAX = 120;
   const isVerticalScroll = useRef(false);
   const isClosing = useRef(false);
-  const isZooming = useRef(false);
 
   useEffect(() => {  
     const childrenArray = Children.toArray(children);
@@ -188,7 +187,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
 
   function handlePointerStart(e: PointerEventExtended) {
     if (isZoomed) return;
-    isZooming.current = false;
     isScrolling.current = false;
     isPinching.current = false;
     isTouchPinching.current = false;
@@ -225,7 +223,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   };
 
   function animate() {
-    if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed || isZooming.current === true) {
+    if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed) {
       isAnimating.current = false;
       restingFrames.current = 0;
       isClosing.current = false;
@@ -430,7 +428,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         if (slider.current && slider.current.children.length === 1) {
           handleZoomToggle(e, matchedRef);
         }
-        isZooming.current = true;
       }
       
     } else {
@@ -534,7 +531,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isPinching.current = false;
     isTouchPinching.current = false;
     zoomedDuringWrap.current = false;
-    isZooming.current = false;
     select(selectedIndex.current - 1);
   }
   
@@ -544,7 +540,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isPinching.current = false;
     isTouchPinching.current = false;
     zoomedDuringWrap.current = false;
-    isZooming.current = false;
     select(selectedIndex.current + 1);
   }  
 
@@ -729,19 +724,19 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     window.addEventListener('pointercancel', onUpCap,     { capture: true });
 
     // ——— 2) Intercept any 2nd finger down on the slider ———
-    const interceptSecondFinger = (e: PointerEvent) => {
-      if (activePointers.size > 1) {
-        console.log('more than one pointer', activePointers.size)
-        // swallow it so handlePointerStart never runs
-        e.stopImmediatePropagation();
-        isPointerDown.current = false;
-        isAnimating.current = false;
-        restingFrames.current = 0;
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    sliderEl.addEventListener('pointerdown', interceptSecondFinger, { capture: true });
+    // const interceptSecondFinger = (e: PointerEvent) => {
+    //   if (activePointers.size > 1) {
+    //     console.log('more than one pointer', activePointers.size)
+    //     // swallow it so handlePointerStart never runs
+    //     e.stopImmediatePropagation();
+    //     isPointerDown.current = false;
+    //     isAnimating.current = false;
+    //     restingFrames.current = 0;
+    //     e.preventDefault();
+    //     e.stopPropagation();
+    //   }
+    // };
+    // sliderEl.addEventListener('pointerdown', interceptSecondFinger, { capture: true });
 
     // ——— 3) Wire up your existing bubble‐phase handlers ———
     sliderEl.addEventListener('pointerdown', handlePointerStart);
@@ -755,7 +750,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       window.removeEventListener('pointerup',    onUpCap,     { capture: true });
       window.removeEventListener('pointercancel', onUpCap,     { capture: true });
 
-      sliderEl.removeEventListener('pointerdown', interceptSecondFinger, { capture: true });
+      // sliderEl.removeEventListener('pointerdown', interceptSecondFinger, { capture: true });
 
       sliderEl.removeEventListener('pointerdown', handlePointerStart);
       window.removeEventListener('pointermove',   handlePointerMove);
