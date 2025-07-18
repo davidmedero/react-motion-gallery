@@ -52,8 +52,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     },
     ref
   ) => {
-  const friction = 0.5;
-  const attraction = 0.085;
+  const friction = 0.36;
+  const attraction = 0.045;
   const slider = useRef<HTMLDivElement | null>(null);
   const isPointerDown = useRef(false);
   const startX = useRef(0);

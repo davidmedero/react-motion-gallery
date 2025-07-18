@@ -31,7 +31,6 @@ function cloneSlide(
   child: ReactElement<any>,
   key: string,
   elementIndex: number,
-  translateIndex: number,
   cells: React.RefObject<
     { element: HTMLElement; index: number }[]
   >
@@ -80,7 +79,7 @@ const ProductImageSlider = ({
   const attraction = 0.025;
   const cells = useRef<{ element: HTMLElement, index: number }[]>([]);
   const isDragSelect = useRef<boolean>(false);
-  const lastTranslateX = useRef<number>(0);
+  // const lastTranslateX = useRef<number>(0);
   const progressFillRef = useRef<HTMLDivElement>(null);
   const isClosing = useRef(false);
   const sliderContainer = useRef<HTMLDivElement | null>(null);
@@ -162,7 +161,7 @@ const ProductImageSlider = ({
     }
 
     const maxCount = counts.length ? Math.max(...counts) : 1;
-    return Math.max(2, maxCount + 1);
+    return Math.max(2, maxCount + 2);
   };
 
   useEffect(() => {
@@ -195,7 +194,6 @@ const ProductImageSlider = ({
           c as ReactElement<any>,
           `before-${i}`,
           -images + i,         // elementIndex
-          -images + i,         // translateIndex
           cells
         )
       )
@@ -206,7 +204,6 @@ const ProductImageSlider = ({
           c as ReactElement<any>,
           `original-${i}`,
           i,              // elementIndex
-          i,              // translateIndex
           cells
         )
       )
@@ -217,7 +214,6 @@ const ProductImageSlider = ({
           c as ReactElement<any>,
           `after-${i}`,
           i,              // elementIndex
-          childCount + i, // translateIndex
           cells
         )
       )
@@ -230,7 +226,6 @@ const ProductImageSlider = ({
           cloneSlide(
             c as ReactElement<any>,
             `original-${i}`,
-            i,
             i,
             cells
           )
@@ -718,40 +713,40 @@ const ProductImageSlider = ({
     startAnimation();
   };
 
-  function getTranslateX(element: HTMLElement): number {
-    const style = window.getComputedStyle(element);
-    const matrix = new DOMMatrix(style.transform);
-    return matrix.m41 || 0;
-  }
+  // function getTranslateX(element: HTMLElement): number {
+  //   const style = window.getComputedStyle(element);
+  //   const matrix = new DOMMatrix(style.transform);
+  //   return matrix.m41 || 0;
+  // }
 
-  useEffect(() => {
-    if (!productImageSliderRef.current || !firstCellInSlide.current || cells.current.length === 0) return;
-    lastTranslateX.current = getTranslateX(firstCellInSlide.current);
-    const diff = lastTranslateX.current - Math.abs(sliderX.current);
-    const containerWidth = productImageSliderRef.current.clientWidth;
-    const cellWidth = cells.current[0].element.clientWidth;
-    const childrenArray = Children.toArray(children);
-    const childCount = childrenArray.length;
-    const slideWidth = cellWidth * childCount;
+  // useEffect(() => {
+  //   if (!productImageSliderRef.current || !firstCellInSlide.current || cells.current.length === 0) return;
+  //   lastTranslateX.current = getTranslateX(firstCellInSlide.current);
+  //   const diff = lastTranslateX.current - Math.abs(sliderX.current);
+  //   const containerWidth = productImageSliderRef.current.clientWidth;
+  //   const cellWidth = cells.current[0].element.clientWidth;
+  //   const childrenArray = Children.toArray(children);
+  //   const childCount = childrenArray.length;
+  //   const slideWidth = cellWidth * childCount;
 
-    if (!isWrapping.current) {
-      sliderX.current = 0;
-      selectedIndex.current = 0;
-      if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
-        const currentPosition = (containerWidth - slideWidth) / 2;
-        setTranslateX(currentPosition);
-      } else {
-        const currentPosition = sliderX.current;
-        setTranslateX(currentPosition);
-      }
+  //   if (!isWrapping.current) {
+  //     sliderX.current = 0;
+  //     selectedIndex.current = 0;
+  //     if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+  //       const currentPosition = (containerWidth - slideWidth) / 2;
+  //       setTranslateX(currentPosition);
+  //     } else {
+  //       const currentPosition = sliderX.current;
+  //       setTranslateX(currentPosition);
+  //     }
       
-    } else {
-        sliderX.current -= diff;
-        const currentPosition = Math.min(sliderX.current, 0);
-        setTranslateX(currentPosition);
-    }
+  //   } else {
+  //       sliderX.current -= diff;
+  //       const currentPosition = Math.min(sliderX.current, 0);
+  //       setTranslateX(currentPosition);
+  //   }
     
-  }, [windowSize, clonedChildren, visibleImages]);
+  // }, [windowSize, clonedChildren, visibleImages]);
 
   function wrapSelect(index: number) {
     if (!productImageSliderRef.current) return;
