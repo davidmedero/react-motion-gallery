@@ -724,19 +724,19 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     window.addEventListener('pointercancel', onUpCap,     { capture: true });
 
     // ——— 2) Intercept any 2nd finger down on the slider ———
-    // const interceptSecondFinger = (e: PointerEvent) => {
-    //   if (activePointers.size > 1) {
-    //     console.log('more than one pointer', activePointers.size)
-    //     // swallow it so handlePointerStart never runs
-    //     e.stopImmediatePropagation();
-    //     isPointerDown.current = false;
-    //     isAnimating.current = false;
-    //     restingFrames.current = 0;
-    //     e.preventDefault();
-    //     e.stopPropagation();
-    //   }
-    // };
-    // sliderEl.addEventListener('pointerdown', interceptSecondFinger, { capture: true });
+    const interceptSecondFinger = (e: PointerEvent) => {
+      if (activePointers.size > 1) {
+        console.log('more than one pointer', activePointers.size)
+        // swallow it so handlePointerStart never runs
+        e.stopImmediatePropagation();
+        isPointerDown.current = false;
+        isAnimating.current = false;
+        restingFrames.current = 0;
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    sliderEl.addEventListener('pointerdown', interceptSecondFinger, { capture: true });
 
     // ——— 3) Wire up your existing bubble‐phase handlers ———
     sliderEl.addEventListener('pointerdown', handlePointerStart);
@@ -750,7 +750,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       window.removeEventListener('pointerup',    onUpCap,     { capture: true });
       window.removeEventListener('pointercancel', onUpCap,     { capture: true });
 
-      // sliderEl.removeEventListener('pointerdown', interceptSecondFinger, { capture: true });
+      sliderEl.removeEventListener('pointerdown', interceptSecondFinger, { capture: true });
 
       sliderEl.removeEventListener('pointerdown', handlePointerStart);
       window.removeEventListener('pointermove',   handlePointerMove);
@@ -768,11 +768,11 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   useEffect(() => {
     const leftChevron = document.querySelector(".left-chevron");
     const rightChevron = document.querySelector(".right-chevron");
-    leftChevron?.addEventListener("click", previous);
-    rightChevron?.addEventListener("click", next);
+    leftChevron?.addEventListener("pointerdown", previous);
+    rightChevron?.addEventListener("pointerdown", next);
     return () => {
-      leftChevron?.removeEventListener("click", previous);
-      rightChevron?.removeEventListener("click", next);
+      leftChevron?.removeEventListener("pointerdown", previous);
+      rightChevron?.removeEventListener("pointerdown", next);
     }
   }, []);
   
