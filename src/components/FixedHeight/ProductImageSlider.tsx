@@ -749,7 +749,7 @@ const ProductImageSlider = ({
 
   useEffect(() => {
     function handleResize() {
-      if (!productImageSliderRef.current || !firstCellInSlide.current) return;
+      if (!productImageSliderRef.current || !firstCellInSlide.current || showFullscreenSlider) return;
       lastTranslateX.current = getTranslateX(firstCellInSlide.current);
       const diff = lastTranslateX.current - Math.abs(sliderX.current);
       const containerWidth = productImageSliderRef.current.clientWidth;
@@ -779,7 +779,7 @@ const ProductImageSlider = ({
     handleResize();
 
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [clonedChildren]);
 
   function wrapSelect(index: number) {
     if (!productImageSliderRef.current) return;

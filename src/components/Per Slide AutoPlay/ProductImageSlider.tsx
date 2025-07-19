@@ -745,7 +745,7 @@ const ProductImageSlider = ({
   }
 
   useEffect(() => {
-    if (!productImageSliderRef.current || !firstCellInSlide.current || cells.current.length === 0) return;
+    if (!productImageSliderRef.current || !firstCellInSlide.current || cells.current.length === 0 || showFullscreenSlider) return;
     lastTranslateX.current = getTranslateX(firstCellInSlide.current);
     const diff = lastTranslateX.current - Math.abs(sliderX.current);
     const containerWidth = productImageSliderRef.current.clientWidth;
