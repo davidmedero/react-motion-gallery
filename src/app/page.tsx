@@ -55,7 +55,7 @@ export default function Home() {
       
         <h2 className={styles.headers}>Thumbnails</h2>
         <p className={styles.description}>
-          Resize the browser to 500px to see the horizontal thumbnail scrollbar. One cell is equal to one slide.
+          Resize the browser to 500px to see the horizontal thumbnail scrollbar. One cell is equal to one slide. Every image is the same size.
         </p>
         <div className={styles.sliderContainer}>
           <ThumbnailSlider urls={images} />
@@ -66,7 +66,7 @@ export default function Home() {
       
         <h2 className={styles.headers}>Fixed Height</h2>
         <p className={styles.description}>
-          Height of all cells are fixed, and the slider container height is fixed. Wrapping is disabled if the total number of cells is less than or equal to the number of visible cells.
+          Fixed height for all cells and the slider container. Cells are grouped. Accomodates images of any size. Wrapping is disabled if the total number of cells is less than or equal to the number of visible cells (you have complete control over when and why wrapping happens).
         </p>
         <div className={styles.sliderContainer}>
           <FixedHeightSlider urls={heroImages} />
@@ -77,7 +77,7 @@ export default function Home() {
       
         <h2 className={styles.headers}>Responsive</h2>
         <p className={styles.description}>
-          Column-based layout guaranteeing a full image per slide. Adjust `maxWidth` in <code>calculateImagesPerSlide</code>.
+          Column-based layout guaranteeing full image visibility per slide. The number of cells per slide is derived from the maxWidth value you assign it which is 220 in the example below. The minimum number of slides is set to 2. 
         </p>
         <div className={styles.sliderContainer}>
           <ResponsiveSlider urls={images} />
