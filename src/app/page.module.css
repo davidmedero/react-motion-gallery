@@ -22,6 +22,8 @@
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1.1em;
+  padding: 0 32px;
 }
 
 .subtitle {
@@ -56,8 +58,11 @@
 }
 
 @media (max-width: 1024px) {
+  .title { 
+    padding: 0 24px;
+  }
   .subtitle { 
-    padding: 0 2rem; 
+    padding: 0 24px;
   }
   .headers {
     padding: 0 24px;
@@ -68,8 +73,11 @@
 }
 
 @media (max-width: 767px) {
+  .title { 
+   padding: 0 16px;
+  }
   .subtitle { 
-    padding: 0 1rem;
+    padding: 0 16px;
     font-size: 1rem; 
   }
   .headers { 

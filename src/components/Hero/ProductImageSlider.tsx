@@ -759,35 +759,48 @@ const ProductImageSlider = ({
   }
 
   useEffect(() => {
-    if (!productImageSliderRef.current || !firstCellInSlide.current || cells.current.length === 0 || !productImageSlides.current[selectedIndex.current] || showFullscreenSlider) return;
-    lastTranslateX.current = getTranslateX(firstCellInSlide.current);
-    const diff = lastTranslateX.current - Math.abs(sliderX.current);
-    const containerWidth = productImageSliderRef.current.clientWidth;
-    const cellWidth = productImageSlides.current[selectedIndex.current].cells[0].element.clientWidth;
-
-    if (!isWrapping.current) {
-      sliderX.current = 0;
-      selectedIndex.current = 0;
-      if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
-        const currentPosition = (containerWidth - sliderWidth.current) / 2;
-        setTranslateX(currentPosition); 
-      } else {
-        const currentPosition = sliderX.current;
-        setTranslateX(currentPosition);
-      }
-    } else {
-      if (selectedIndex.current === 0) {
+    function handleResize() {
+      if (!productImageSlides.current[selectedIndex.current] && productImageSliderRef.current && productImageSlides.current[0]) {
+        const containerWidth = productImageSliderRef.current.clientWidth;
+        const cellWidth = productImageSlides.current[0].cells[0].element.clientWidth;
         sliderX.current = (containerWidth - cellWidth) / 2;
         const currentPosition = sliderX.current;
         setTranslateX(currentPosition);
+        selectedIndex.current = 0;
+      }
+      if (!productImageSliderRef.current || !firstCellInSlide.current || showFullscreenSlider) return;
+      lastTranslateX.current = getTranslateX(firstCellInSlide.current);
+      const diff = lastTranslateX.current - Math.abs(sliderX.current);
+      const containerWidth = productImageSliderRef.current.clientWidth;
+      const cellWidth = productImageSlides.current[selectedIndex.current].cells[0].element.clientWidth;
+
+      if (!isWrapping.current) {
+        sliderX.current = 0;
+        selectedIndex.current = 0;
+        if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+          const currentPosition = (containerWidth - sliderWidth.current) / 2;
+          setTranslateX(currentPosition); 
+        } else {
+          const currentPosition = sliderX.current;
+          setTranslateX(currentPosition);
+        }
       } else {
-        sliderX.current -= diff;
-        const currentPosition = Math.min(sliderX.current + (containerWidth - cellWidth) / 2, 0);
-        setTranslateX(currentPosition);
+        if (selectedIndex.current === 0) {
+          sliderX.current = (containerWidth - cellWidth) / 2;
+          positionSlider()
+        } else {
+          sliderX.current -= diff;
+          const currentPosition = Math.min(sliderX.current + (containerWidth - cellWidth) / 2, 0);
+          setTranslateX(currentPosition);
+        }
       }
     }
     
-  }, [windowSize, clonedChildren, visibleImages]);
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, [clonedChildren]);
 
   function wrapSelect(index: number) {
     if (!productImageSliderRef.current) return;
@@ -1225,7 +1238,7 @@ const ProductImageSlider = ({
   
 
   return (
-    <div ref={sliderContainer} className={styles.slider_container} style={{ position: 'relative', height: '400px', backgroundColor: '#f8f9fa', zIndex: 1 }}>
+    <div ref={sliderContainer} className={styles.slider_container} style={{ position: 'relative', height: imageCount > 2 ? '406px' : '400px', backgroundColor: '#f8f9fa', zIndex: 1 }}>
     {/* Previous Button */}
     <div
       onClick={() => previous()}

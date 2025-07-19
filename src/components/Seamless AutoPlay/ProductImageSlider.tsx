@@ -625,15 +625,9 @@ const ProductImageSlider = ({
     let distance = -productImageSlides.current[index].target - sliderX.current;
 
     const containerWidth = productImageSliderRef.current.clientWidth;
-    const cellWidth = cells.current[0].element.clientWidth;
-
-    const childrenArray = Children.toArray(children);
-    const childCount = childrenArray.length;
-
-    const slideWidth = cellWidth * childCount;
 
     if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
-      distance = (containerWidth - slideWidth) / 2 - sliderX.current;
+      distance = (containerWidth - sliderWidth.current) / 2 - sliderX.current;
     }
     const force = distance * attraction;
     applyForce(force);
@@ -727,12 +721,6 @@ const ProductImageSlider = ({
           const currentPosition = sliderX.current;
           setTranslateX(currentPosition);
         }
-        
-      } else {
-          const currentPosition = sliderX.current;
-          const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? productImageSlides.current.length - 1 : productImageSlides.current.length;
-          const index = Math.ceil(Math.abs(currentPosition) / (sliderWidth.current / length));
-          selectedIndex.current = index;
       }
     }
     
@@ -740,7 +728,7 @@ const ProductImageSlider = ({
     handleResize();
 
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [clonedChildren]);
 
   function wrapSelect(index: number) {
     if (!productImageSliderRef.current) return;
@@ -857,7 +845,7 @@ const ProductImageSlider = ({
         sliderContainerRef.removeEventListener("wheel", handleWheel);
       };
     };
-  }, [handlePointerStart, handlePointerMove, handlePointerEnd, handleWheel, productImageSliderRef.current, isScrolling.current]);
+  }, []);
 
   const Arrow = ({ direction, size = 32 }: { direction: "prev" | "next"; size?: number }) => (
     <svg
@@ -960,7 +948,7 @@ const ProductImageSlider = ({
   
 
   return (
-    <div ref={sliderContainer} className={styles.slider_container} style={{ position: 'relative', height: '120px', zIndex: 1 }}>
+    <div ref={sliderContainer} className={styles.slider_container} style={{ position: 'relative', height: imageCount > 2 ? '126px' : '120px', zIndex: 1 }}>
     {/* Previous Button */}
     <div
       onClick={() => previous()}
