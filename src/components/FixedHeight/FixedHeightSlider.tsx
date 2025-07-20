@@ -33,6 +33,10 @@ export default function FixedHeightSlider({ urls }: Props) {
   const zoomedDuringWrap = useRef(false);
   const sliderApi = useRef<FullscreenSliderHandle>(null);
 
+  const prevTimeRef    = useRef(0);
+  const FPS            = 60;
+  const MS_PER_FRAME   = 1000 / FPS;
+
   const expandableImgRefs = useRef([]);
   const overlayDivRef = useRef<HTMLDivElement | null>(null);
   const [showFullscreenModal, setShowFullscreenModal] = useState(false);
@@ -722,11 +726,23 @@ export default function FixedHeightSlider({ urls }: Props) {
     
     isAnimating.current = true;
     restingFrames.current = 0;
-    animate();
+    prevTimeRef.current    = performance.now();
+    requestAnimationFrame(animate);
   };
 
-  function animate() {
+  function animate(now: number) {
     if (isAnimating.current === false) return;
+
+    const msPassed = now - prevTimeRef.current;
+    if (msPassed < MS_PER_FRAME) {
+      // not enough time has passed → try again next RAF
+      requestAnimationFrame(animate);
+      return;
+    }
+    // carry over any excess (for more stable timing)
+    const excessTime = msPassed % MS_PER_FRAME;
+    prevTimeRef.current = now - excessTime;
+
     if (isScrolling.current === true || isPinching.current === true || changingSlides.current || isTouchPinching.current === true) {
       isAnimating.current = false;
       restingFrames.current = 0;
@@ -742,7 +758,7 @@ export default function FixedHeightSlider({ urls }: Props) {
     positionSlider();
     settle(previousX, previousY);
 
-    if (isAnimating.current) requestAnimationFrame(() => animate());
+    requestAnimationFrame(animate);
   };
 
   function applyDragForce() {
