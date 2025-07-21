@@ -758,7 +758,7 @@ export default function FixedHeightSlider({ urls }: Props) {
     positionSlider();
     settle(previousX, previousY);
 
-    requestAnimationFrame(animate);
+    if (isAnimating.current) requestAnimationFrame(animate);
   };
 
   function applyDragForce() {

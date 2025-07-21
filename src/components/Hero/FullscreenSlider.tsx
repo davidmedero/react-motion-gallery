@@ -84,6 +84,9 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   const VERT_ANGLE_MAX = 120;
   const isVerticalScroll = useRef(false);
   const isClosing = useRef(false);
+  const prevTimeRef    = useRef(0);
+  const FPS            = 60;
+  const MS_PER_FRAME   = 1000 / FPS;
 
   useEffect(() => {  
     const childrenArray = Children.toArray(children);
@@ -216,13 +219,24 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
 
   function startAnimation() {
     if (isAnimating.current) return;
-
+    
     isAnimating.current = true;
     restingFrames.current = 0;
-    animate();
+    prevTimeRef.current    = performance.now();
+    requestAnimationFrame(animate);
   };
 
-  function animate() {
+  function animate(now: number) {
+    const msPassed = now - prevTimeRef.current;
+    if (msPassed < MS_PER_FRAME) {
+      // not enough time has passed → try again next RAF
+      requestAnimationFrame(animate);
+      return;
+    }
+    // carry over any excess (for more stable timing)
+    const excessTime = msPassed % MS_PER_FRAME;
+    prevTimeRef.current = now - excessTime;
+
     if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed) {
       isAnimating.current = false;
       restingFrames.current = 0;
@@ -239,7 +253,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     positionSlider();
     settle(previousX, previousY);
 
-    if (isAnimating.current) requestAnimationFrame(() => animate());
+    if (isAnimating.current) requestAnimationFrame(animate);
   };
 
   function applyDragForce() {

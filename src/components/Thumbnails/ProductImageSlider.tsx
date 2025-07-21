@@ -119,6 +119,9 @@ const ProductImageSlider = ({
   const isClosing = useRef(false);
   const slideIndexSync = useSlideIndex();
   const sliderContainer = useRef<HTMLDivElement | null>(null);
+  const prevTimeRef    = useRef(0);
+  const FPS            = 60;
+  const MS_PER_FRAME   = 1000 / FPS;
 
   useEffect(() => {
     if (!cells.current?.[0]?.element) return;
@@ -424,13 +427,24 @@ const ProductImageSlider = ({
 
   function startAnimation() {
     if (isAnimating.current) return;
-
+    
     isAnimating.current = true;
     restingFrames.current = 0;
-    animate();
+    prevTimeRef.current    = performance.now();
+    requestAnimationFrame(animate);
   };
 
-  function animate() {
+  function animate(now: number) {
+    const msPassed = now - prevTimeRef.current;
+    if (msPassed < MS_PER_FRAME) {
+      // not enough time has passed → try again next RAF
+      requestAnimationFrame(animate);
+      return;
+    }
+    // carry over any excess (for more stable timing)
+    const excessTime = msPassed % MS_PER_FRAME;
+    prevTimeRef.current = now - excessTime;
+
     if (isScrolling.current === true || isClosing.current) {
       isAnimating.current = false;
       restingFrames.current = 0;
@@ -446,7 +460,7 @@ const ProductImageSlider = ({
     positionSlider();
     settle(previousX);
 
-    if (isAnimating.current) requestAnimationFrame(() => animate());
+    if (isAnimating.current) requestAnimationFrame(animate);
   };
 
   function applyDragForce() {
