@@ -633,7 +633,7 @@ const ProductImageSlider = ({
           index += dragEndBoostSelect();
         }
       } else {
-        if (index === selectedIndex.current || (index === productImageSlides.current.length && selectedIndex.current === 0)) {
+        if (index === selectedIndex.current || (index === productImageSlides.current.length && selectedIndex.current === 0) || (selectedIndex.current === index - 1)) {
           index += dragEndBoostSelect();
         }
       }
