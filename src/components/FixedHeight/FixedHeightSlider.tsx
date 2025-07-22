@@ -378,8 +378,6 @@ export default function FixedHeightSlider({ urls }: Props) {
     if (index === imageRefs.current.length - 1) {
       zoomedDuringWrap.current = true;
     }
-    
-    currentImage.current = imageRef.current
 
     getImageAspectRatio(imageRef.current);
 
@@ -696,8 +694,9 @@ export default function FixedHeightSlider({ urls }: Props) {
     isTouchPinching.current = false;
     pinchJustEnded.current = false;
     isZoomClick.current = true;
-
     isPointerDown.current = true;
+
+    currentImage.current = imageRef.current;
 
     const transformValues = getCurrentTransform(imageRef.current);
     const translateX = transformValues.x;
