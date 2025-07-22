@@ -32,7 +32,6 @@ export default function SeamlessSlider({ urls }: Props) {
   const isWrapping = useRef(false);
   const productImageSlides = useRef<{ cells: { element: HTMLElement, index: number }[], target: number }[]>([]);
   const productImageSliderRef = useRef<HTMLDivElement | null>(null);
-  const visibleImagesRef = useRef(0);
   const selectedIndex = useRef(0);
   const firstCellInSlide = useRef<HTMLElement | null>(null);
   const sliderX = useRef(0);
@@ -41,7 +40,7 @@ export default function SeamlessSlider({ urls }: Props) {
   return (
     <>
       <div className={styles.container}>
-        <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} isWrapping={isWrapping} productImageSlides={productImageSlides} productImageSliderRef={productImageSliderRef} visibleImagesRef={visibleImagesRef} selectedIndex={selectedIndex} firstCellInSlide={firstCellInSlide} sliderX={sliderX} sliderVelocity={sliderVelocity}>
+        <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} isWrapping={isWrapping} productImageSlides={productImageSlides} productImageSliderRef={productImageSliderRef} selectedIndex={selectedIndex} firstCellInSlide={firstCellInSlide} sliderX={sliderX} sliderVelocity={sliderVelocity}>
           {
             urls.map((url, index) => {
 
@@ -50,7 +49,7 @@ export default function SeamlessSlider({ urls }: Props) {
                     key={index}
                     src={url}
                     className={styles.image}
-                    alt={`Low-Res ${index}`}
+                    alt={`${index}`}
                     draggable="false"
                   />
               )

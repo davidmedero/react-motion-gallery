@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useRef, useEffect, ReactNode, cloneElement, Children, useState, ReactElement, HTMLAttributes, ClassAttributes, RefObject, useLayoutEffect} from "react";
+import { useRef, useEffect, ReactNode, cloneElement, Children, useState, ReactElement, HTMLAttributes, ClassAttributes, RefObject, useLayoutEffect, isValidElement} from "react";
 import styles from './ProductImageSlider.module.css';
 
 interface ProductImageSliderProps {
@@ -12,7 +12,6 @@ interface ProductImageSliderProps {
   isWrapping: RefObject<boolean>;
   productImageSlides: RefObject<{ cells: { element: HTMLElement, index: number }[], target: number }[]>;
   productImageSliderRef: RefObject<HTMLDivElement | null>;
-  visibleImagesRef: RefObject<number>;
   selectedIndex: RefObject<number>;
   firstCellInSlide: RefObject<HTMLElement | null>;
   sliderX: RefObject<number>;
@@ -56,7 +55,6 @@ const ProductImageSlider = ({
   isWrapping,
   productImageSlides,
   productImageSliderRef,
-  visibleImagesRef,
   selectedIndex,
   firstCellInSlide,
   sliderX,
@@ -75,6 +73,7 @@ const ProductImageSlider = ({
   const isScrolling = useRef(false);
   const [clonedChildren, setClonedChildren] = useState<React.ReactElement[]>([]);
   const [visibleImages, setVisibleImages] = useState(1);
+  const visibleImagesRef = useRef(1);
   const friction = 0.28;
   const attraction = 0.025;
   const cells = useRef<{ element: HTMLElement, index: number }[]>([]);
@@ -126,7 +125,7 @@ const ProductImageSlider = ({
         img.removeEventListener('error', onImgLoad);
       });
     };
-  }, [clonedChildren, visibleImages]);
+  }, [children]);
 
   useLayoutEffect(() => {
     if (!productImageSliderRef.current || cells.current.length === 0 || hasPositioned.current || sliderWidth.current === 0 || !productImageSlides.current || !productImageSlides.current[0] || !productImageSlides.current[0].cells[0]?.element) return;
@@ -141,29 +140,45 @@ const ProductImageSlider = ({
 
   const calculateVisibleImages = (): number => {
     const container = productImageSliderRef.current;
-    if (!container || cells.current.length === 0) return 1;
+    const allKids   = Children.toArray(children).filter(isValidElement);
+    const childCount = allKids.length;
+    if (!container || childCount === 0) return 1;
 
+    // How many clones you rendered on each side last time
+    // (falls back to 1 on first mount)
+    const provisional = visibleImagesRef.current || 1;
+    const clonesBefore = provisional;
+
+
+    // Grab the raw DOM children: [ ...clonesBefore, originals…, clonesAfter ]
+    const allEls = Array.from(container.children) as HTMLElement[];
+
+    // Extract exactly the originals by slicing out the middle `childCount` elements
+    const originalEls = allEls.slice(
+      clonesBefore,
+      clonesBefore + childCount
+    );
+
+    // Now measure only originals
+    const widths = originalEls.map(el => el.getBoundingClientRect().width);
+
+    // Sliding‑window: for each start index, how many fit before overflowing?
     const cw = container.clientWidth;
-
-    const widths = cells.current
-      .filter(c => c.element)
-      .map(c => c.element.getBoundingClientRect().width);
-
     const counts: number[] = [];
     for (let i = 0; i < widths.length; i++) {
-      let sum = 0;
-      let cnt = 0;
+      let sum = 0, cnt = 0;
       for (let j = i; j < widths.length; j++) {
         sum += widths[j];
-        if (sum <= cw) {
-          cnt++;
-        } else break;
+        if (sum <= cw) cnt++;
+        else break;
       }
       counts.push(cnt);
     }
 
     const maxCount = counts.length ? Math.max(...counts) : 1;
-    return Math.max(2, maxCount + 2);
+
+    // Never more than the real children
+    return Math.max(2, Math.min(childCount, maxCount + 2));
   };
 
   useEffect(() => {
@@ -174,7 +189,7 @@ const ProductImageSlider = ({
     const childCount = childrenArray.length;
   
     setVisibleImages(images);
-    visibleImagesRef.current = images;
+    visibleImagesRef.current = images
 
     if (childCount > images) {
       isWrapping.current = true;
@@ -237,7 +252,7 @@ const ProductImageSlider = ({
 
     setClonedChildren(slides)
 
-  }, [windowSize, children, allImagesLoaded, isWrapping.current]);
+  }, [windowSize, allImagesLoaded, isWrapping.current]);
 
   useEffect(() => {
     const GAP = 60;
@@ -479,6 +494,7 @@ const ProductImageSlider = ({
 
       // pause if dragging or in fullscreen
       if (sliderWidth.current === 0 || !isWrapping.current) {
+        lastTime = now;
         return;
       }
 

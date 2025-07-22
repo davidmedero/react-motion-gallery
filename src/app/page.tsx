@@ -61,7 +61,6 @@ export default function Home() {
           <ThumbnailSlider urls={images} />
         </div>
       
-
       {/** Fixed Height Section **/}
       
         <h2 className={styles.headers}>Fixed Height</h2>
