@@ -509,11 +509,15 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
 
   function getSlideDistance(x: number, index: number) {
     if (!slider.current) return 1;
+    console.log('inde3x', index)
     const length = slides.current.length;
     const cellWidth = slider.current.children[0].clientWidth;
     const cellIndex = ((index % length) + length) % length;
     const cell = cellWidth * cellIndex;
-    const wrap = sliderWidth.current * Math.floor(index/length);
+    let wrap = sliderWidth.current * Math.floor(index/length);
+    if (index === 0) {
+      wrap = 0;
+    }
 
     return x - (cell + wrap);
   };
@@ -556,8 +560,9 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   }  
 
   function select(index: number) {
+    console.log('index', index)
     if (isVerticalScroll.current) return;
-    if (imageCount > 1) {
+    if (imageCount > 1 && index !== 0) {
       wrapSelect(index);
     }
     const length = slides.current.length;

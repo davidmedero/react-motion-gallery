@@ -498,6 +498,8 @@ export default function ThumbnailSlider({ urls }: Props) {
 
         const index = Number(imageRef.current.querySelector('img')?.dataset.index);
 
+        console.log('index', index)
+
         if (imgChild && index !== imageRefs.current.length - 1) {
           console.log('imgChild')
           imgChild.style.transition = 'transform 0.3s cubic-bezier(.4,0,.22,1)';
