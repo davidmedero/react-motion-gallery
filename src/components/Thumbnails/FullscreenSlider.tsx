@@ -87,6 +87,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   const prevTimeRef    = useRef(0);
   const FPS            = 60;
   const MS_PER_FRAME   = 1000 / FPS;
+  const isZooming = useRef(false);
 
   useEffect(() => {  
     const childrenArray = Children.toArray(children);
@@ -224,8 +225,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     prevTimeRef.current    = performance.now();
     requestAnimationFrame(animate);
   };
-
-  const isZooming = useRef(false);
 
   function animate(now: number) {
     const msPassed = now - prevTimeRef.current;
@@ -443,15 +442,16 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
           fullscreenImageWidth.current = matchedRef.current.clientWidth
         }
 
-        isZooming.current = true;
-
         if (index !== Number(imgIndex) && Number(imgIndex) !== index + 2) {
+          isZooming.current = true;
           handleZoomToggle(e, matchedRef);
         }
         if (index === imageCount - 1 && Number(imgIndex) === imageCount + 1) {
+          isZooming.current = true;
           handleZoomToggle(e, matchedRef);
         }
         if (slider.current && slider.current.children.length === 1) {
+          isZooming.current = true;
           handleZoomToggle(e, matchedRef);
         }
       }

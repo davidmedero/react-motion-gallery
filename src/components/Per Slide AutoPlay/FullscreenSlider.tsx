@@ -87,6 +87,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   const prevTimeRef    = useRef(0);
   const FPS            = 60;
   const MS_PER_FRAME   = 1000 / FPS;
+  const isZooming = useRef(false);
 
   useEffect(() => {  
     const childrenArray = Children.toArray(children);
@@ -193,6 +194,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isTouchPinching.current = false;
     isPointerDown.current = true;
     isClick.current = true;
+    isZooming.current = false;
 
     const transformValues = getCurrentTransform(slider.current);
     const translateX = transformValues.x;
@@ -234,6 +236,16 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     // carry over any excess (for more stable timing)
     const excessTime = msPassed % MS_PER_FRAME;
     prevTimeRef.current = now - excessTime;
+
+    if (isZooming.current === true && selectedIndex.current === 0) {
+      isZooming.current = false;
+      x.current = 0;
+      const currentPosition = x.current;
+      setTranslateX(currentPosition, 0);
+      isAnimating.current = false;
+      restingFrames.current = 0;
+      return;
+    }
 
     if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed) {
       isAnimating.current = false;
@@ -432,12 +444,15 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
         }
 
         if (index !== Number(imgIndex) && Number(imgIndex) !== index + 2) {
+          isZooming.current = true;
           handleZoomToggle(e, matchedRef);
         }
         if (index === imageCount - 1 && Number(imgIndex) === imageCount + 1) {
+          isZooming.current = true;
           handleZoomToggle(e, matchedRef);
         }
         if (slider.current && slider.current.children.length === 1) {
+          isZooming.current = true;
           handleZoomToggle(e, matchedRef);
         }
       }
