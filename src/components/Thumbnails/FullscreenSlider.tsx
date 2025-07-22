@@ -193,6 +193,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isTouchPinching.current = false;
     isPointerDown.current = true;
     isClick.current = true;
+    isZooming.current = false;
 
     const transformValues = getCurrentTransform(slider.current);
     const translateX = transformValues.x;
@@ -237,14 +238,17 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     const excessTime = msPassed % MS_PER_FRAME;
     prevTimeRef.current = now - excessTime;
 
-    if (isZooming.current) {
+    if (isZooming.current === true && selectedIndex.current === 0) {
+      isZooming.current = false;
       x.current = 0;
       const currentPosition = x.current;
       setTranslateX(currentPosition, 0);
-      isZooming.current = false;
+      isAnimating.current = false;
+      restingFrames.current = 0;
+      return;
     }
 
-    if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed || isZooming.current) {
+    if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed) {
       isAnimating.current = false;
       restingFrames.current = 0;
       isClosing.current = false;
