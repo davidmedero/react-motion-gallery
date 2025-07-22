@@ -224,6 +224,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     requestAnimationFrame(animate);
   };
 
+  const isZooming = useRef(false);
+
   function animate(now: number) {
     const msPassed = now - prevTimeRef.current;
     if (msPassed < MS_PER_FRAME) {
@@ -235,7 +237,14 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     const excessTime = msPassed % MS_PER_FRAME;
     prevTimeRef.current = now - excessTime;
 
-    if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed) {
+    if (isZooming.current) {
+      x.current = 0;
+      const currentPosition = x.current;
+      setTranslateX(currentPosition, 0);
+      isZooming.current = false;
+    }
+
+    if (isScrolling.current === true || (isClick.current && clickedImgMargin.current) || isTouchPinching.current === true || isClosing.current || isPinching.current === true || isZoomed || isZooming.current) {
       isAnimating.current = false;
       restingFrames.current = 0;
       isClosing.current = false;
@@ -430,6 +439,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
           fullscreenImageWidth.current = matchedRef.current.clientWidth
         }
 
+        isZooming.current = true;
+
         if (index !== Number(imgIndex) && Number(imgIndex) !== index + 2) {
           handleZoomToggle(e, matchedRef);
         }
@@ -509,15 +520,11 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
 
   function getSlideDistance(x: number, index: number) {
     if (!slider.current) return 1;
-    console.log('inde3x', index)
     const length = slides.current.length;
     const cellWidth = slider.current.children[0].clientWidth;
     const cellIndex = ((index % length) + length) % length;
     const cell = cellWidth * cellIndex;
-    let wrap = sliderWidth.current * Math.floor(index/length);
-    if (index === 0) {
-      wrap = 0;
-    }
+    const wrap = sliderWidth.current * Math.floor(index/length);
 
     return x - (cell + wrap);
   };
@@ -560,9 +567,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   }  
 
   function select(index: number) {
-    console.log('index', index)
     if (isVerticalScroll.current) return;
-    if (imageCount > 1 && index !== 0) {
+    if (imageCount > 1) {
       wrapSelect(index);
     }
     const length = slides.current.length;
