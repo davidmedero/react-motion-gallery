@@ -234,10 +234,9 @@ const ProductImageSlider = ({
 
     const correct = Math.max(1, Math.min(n, count));
 
-    if (correct !== visibleImages) {
-      setVisibleImages(correct);
-      visibleImagesRef.current = correct;
-    }
+    setVisibleImages(correct);
+    visibleImagesRef.current = correct;
+    
   }, [clonedChildren, windowSize, allImagesLoaded]);
 
   useLayoutEffect(() => {
@@ -333,7 +332,7 @@ const ProductImageSlider = ({
   
   }, [clonedChildren, visibleImages]);
   
-  useLayoutEffect(() => {
+  useEffect(() => {
     const containerEl = productImageSliderRef.current;
     if (!containerEl || !allImagesLoaded) return;
 
@@ -365,12 +364,6 @@ const ProductImageSlider = ({
         };
       });
 
-      // if any of the originals haven't been laid out yet, retry
-      if (data.some(d => d.right === 0 && d.left === 0)) {
-        requestAnimationFrame(buildPages);
-        return;
-      }
-
       // now build your pages exactly as before
       const pages: { els: HTMLElement[]; target: number }[] = [];
       let i = 0;
@@ -386,11 +379,11 @@ const ProductImageSlider = ({
       } else {
         // pack as many as fit
         while (i < childCount) {
-          const startLeft = data[i].left;
+          const startLeft = data[i]?.left;
           const viewRight = startLeft + cw;
           let j = i;
 
-          while (j < childCount && data[j].right <= viewRight) j++;
+          while (j < childCount && data[j]?.right <= viewRight) j++;
           if (j === i) j++; // peek‑by‑1px
 
           const slice   = data.slice(i, j).map(d => d.el);
@@ -414,9 +407,14 @@ const ProductImageSlider = ({
         target: page.target,
         cells:  page.els.map(el => {
           const c = cells.current.find(c => c.element === el)!;
-          return { element: el, index: c.index };
+          return { element: el, index: c?.index };
         })
       }));
+
+      if (newSlides[1] && newSlides[1].target === 0 || (isWrapping.current && newSlides.length === 1)) {
+        requestAnimationFrame(buildPages);
+        return;
+      }
 
       productImageSlides.current = newSlides;
       setSlidesState(newSlides);

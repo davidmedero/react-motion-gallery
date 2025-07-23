@@ -244,10 +244,9 @@ const ProductImageSlider = ({
 
     const correct = Math.max(1, Math.min(n, count));
 
-    if (correct !== visibleImages) {
-      setVisibleImages(correct);
-      visibleImagesRef.current = correct;
-    }
+    setVisibleImages(correct);
+    visibleImagesRef.current = correct;
+    
   }, [clonedChildren, windowSize, allImagesLoaded]);
 
   useLayoutEffect(() => {
@@ -311,7 +310,7 @@ const ProductImageSlider = ({
     };
   }, [clonedChildren, windowSize, visibleImages, allImagesLoaded]);
   
-  useLayoutEffect(() => {
+  useEffect(() => {
     const containerEl = productImageSliderRef.current;
     if (!containerEl || !allImagesLoaded) return;
 
@@ -343,22 +342,16 @@ const ProductImageSlider = ({
         };
       });
 
-      // if any of the originals haven't been laid out yet, retry
-      if (data.some(d => d.right === 0 && d.left === 0)) {
-        requestAnimationFrame(buildPages);
-        return;
-      }
-
       // now build your pages exactly as before
       const pages: { els: HTMLElement[]; target: number }[] = [];
       let i = 0;
       
       while (i < childCount) {
-        const startLeft = data[i].left;
+        const startLeft = data[i]?.left;
         const viewRight = startLeft + cw;
         let j = i;
         // add fully‐visible cells
-        while (j < childCount && data[j].right <= viewRight) {
+        while (j < childCount && data[j]?.right <= viewRight) {
           j++;
         }
 
@@ -384,9 +377,14 @@ const ProductImageSlider = ({
         target: page.target,
         cells:  page.els.map(el => {
           const c = cells.current.find(c => c.element === el)!;
-          return { element: el, index: c.index };
+          return { element: el, index: c?.index };
         })
       }));
+
+      if (newSlides[1] && newSlides[1].target === 0 || (isWrapping.current && newSlides.length === 1)) {
+        requestAnimationFrame(buildPages);
+        return;
+      }
 
       productImageSlides.current = newSlides;
       setSlidesState(newSlides);
