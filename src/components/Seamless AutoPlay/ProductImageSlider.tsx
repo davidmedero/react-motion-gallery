@@ -377,6 +377,15 @@ const ProductImageSlider = ({
 
   function handlePointerStart(e: PointerEvent) {
     if (!productImageSliderRef.current) return;
+    const hit = (e.target as Node);
+
+    if (prevButtonRef.current?.contains(hit)) {
+      return;
+    }
+
+    if (nextButtonRef.current?.contains(hit)) {
+      return;
+    }
     isClick.current = true;
     isScrolling.current = false;
     isPointerDown.current = true;
