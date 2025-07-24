@@ -3,18 +3,18 @@
 
 import { useState, useEffect, useRef, createRef, useLayoutEffect, useCallback } from "react";
 import FullscreenSlider, { FullscreenSliderHandle } from "./FullscreenSlider";
-import FullscreenSliderModal from "./FullscreenSliderModal";
-import ProductImageSlider from "./ProductImageSlider";
+import FullscreenModal from "./FullscreenModal";
+import Slider from "./Slider";
 import { useSyncExternalStore } from 'react';
-import slideStore from './slideStore';
-import styles from './FixedHeightSlider.module.css';
+import fullscreenSlideStore from './fullscreenSlideStore';
+import styles from './index.module.css';
 import scaleStore from './scaleStore';
 
 function useSlideIndex() {
   return useSyncExternalStore(
-    slideStore.subscribe.bind(slideStore),
-    slideStore.getSnapshot.bind(slideStore),
-    slideStore.getSnapshot.bind(slideStore)
+    fullscreenSlideStore.subscribe.bind(fullscreenSlideStore),
+    fullscreenSlideStore.getSnapshot.bind(fullscreenSlideStore),
+    fullscreenSlideStore.getSnapshot.bind(fullscreenSlideStore)
   );
 }
 
@@ -22,45 +22,33 @@ interface Props {
   urls: string[];
 }
 
-export default function FixedHeightSlider({ urls }: Props) {
+export default function SliderWrapper({ urls }: Props) {
   const [slideIndex, setSlideIndex] = useState(0);
   const isClick = useRef(false);
   const isZoomClick = useRef(false);
   const imageRefs = useRef<React.RefObject<HTMLImageElement | null>[]>([]);
   const [showFullscreenSlider, setShowFullscreenSlider] = useState(false);
   const isWrapping = useRef(true);
-  const fullscreenImageWidth = useRef(0);
   const zoomedDuringWrap = useRef(false);
-  const sliderApi = useRef<FullscreenSliderHandle>(null);
-  const prevTimeRef    = useRef(0);
-  const FPS            = 60;
-  const MS_PER_FRAME   = 1000 / FPS;
+  const fullscreenSliderApi = useRef<FullscreenSliderHandle>(null);
+  const prevTimeRef = useRef(0);
+  const FPS = 60;
+  const MS_PER_FRAME = 1000 / FPS;
   const isZooming = useRef(false);
-
   const expandableImgRefs = useRef([]);
   const overlayDivRef = useRef<HTMLDivElement | null>(null);
   const [showFullscreenModal, setShowFullscreenModal] = useState(false);
   const [wrappedImages, setWrappedImages] = useState<string[]>([]);
-
-  const storedPositionRef = useRef<DOMRect>(
-    typeof DOMRect !== 'undefined'
-      ? new DOMRect(0, 0, 0, 0)
-      : ({} as DOMRect)
-  ); 
-  
   const [windowSize, setWindowSize] = useState({
     width: 0,
     height: 0,
   });
-
   const isZoomed = useSyncExternalStore(
     scaleStore.subscribe,
     scaleStore.getSnapshot,
     scaleStore.getServerSnapshot
   );
-
   const zoomLevel = isZoomed ? 2 : 1;
-
   const scaleRef = useRef(1);
   const panRef   = useRef({ x: 0, y: 0 });
   const previousZoom = useRef({ x: 0, y: 0 });
@@ -85,30 +73,24 @@ export default function FixedHeightSlider({ urls }: Props) {
   const restingFrames = useRef(0);
   const lastForceX = useRef(0);
   const lastForceY = useRef(0);
-
   const zoomX = useRef(0);
   const zoomY = useRef(0);
   const zoomOffset = useRef(0);
   const zoomIncreaseDiff = useRef(0);
-
   const [closingModal, setClosingModal] = useState(false);
-  const productImageSlides = useRef<{ cells: { element: HTMLElement, index: number }[], target: number }[]>([]);
-  const productImageSliderRef = useRef<HTMLDivElement | null>(null);
+  const slides = useRef<{ cells: { element: HTMLElement, index: number }[], target: number }[]>([]);
+  const slider = useRef<HTMLDivElement | null>(null);
   const visibleImagesRef = useRef(0);
   const selectedIndex = useRef(0);
   const firstCellInSlide = useRef<HTMLElement | null>(null);
   const sliderX = useRef(0);
   const sliderVelocity = useRef(0);
-
   const aspectRatioRef = useRef(1);
-
   const isScrolling = useRef(false);
   const isPinching = useRef(false);
-
   const startDist = useRef(0);
   const startScale = useRef(1);
   const isTouchPinching = useRef(false);
-
   const cells = useRef<{ element: HTMLElement, index: number }[]>([]);
 
   const wrappedFullscreenImages = wrappedImages.map((url, index) => {
@@ -173,7 +155,7 @@ export default function FixedHeightSlider({ urls }: Props) {
               cursor: isZoomed ? 'grab' : 'zoom-in',
               userSelect: 'none'
             }}
-            alt={`High-Res ${index}`}
+            alt={`cell-${index}`}
             draggable='false'
           />
         </div>
@@ -235,7 +217,7 @@ export default function FixedHeightSlider({ urls }: Props) {
               cursor: isZoomed ? 'grab' : 'zoom-in',
               userSelect: 'none'
             }}
-            alt={`High-Res ${index}`}
+            alt={`cell-${index}`}
             draggable='false'
           />
         </div>
@@ -1175,7 +1157,7 @@ export default function FixedHeightSlider({ urls }: Props) {
     if (!imageRef.current) return;
     if (!e.ctrlKey) return;
 
-    sliderApi.current?.centerSlider();
+    fullscreenSliderApi.current?.centerSlider();
 
     if (scaleRef.current > 1.01) {
       isPinching.current = true;
@@ -1408,7 +1390,7 @@ export default function FixedHeightSlider({ urls }: Props) {
     if (e.touches.length !== 2) return;
     e.preventDefault();
 
-    sliderApi.current?.centerSlider();
+    fullscreenSliderApi.current?.centerSlider();
 
     isTouchPinching.current = true;
     const [t0, t1] = [e.touches[0], e.touches[1]];
@@ -1483,7 +1465,7 @@ export default function FixedHeightSlider({ urls }: Props) {
   return (
     <>
       <div className={styles.container}>
-        <ProductImageSlider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} storedPositionRef={storedPositionRef} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping} closingModal={closingModal} productImageSlides={productImageSlides} productImageSliderRef={productImageSliderRef} visibleImagesRef={visibleImagesRef} selectedIndex={selectedIndex} firstCellInSlide={firstCellInSlide} sliderX={sliderX} sliderVelocity={sliderVelocity}>
+        <Slider imageCount={urls.length} windowSize={windowSize} isClick={isClick} expandableImgRefs={expandableImgRefs} overlayDivRef={overlayDivRef} setSlideIndex={setSlideIndex} setShowFullscreenModal={setShowFullscreenModal} setShowFullscreenSlider={setShowFullscreenSlider} showFullscreenSlider={showFullscreenSlider} isWrapping={isWrapping} closingModal={closingModal} slides={slides} slider={slider} visibleImagesRef={visibleImagesRef} selectedIndex={selectedIndex} firstCellInSlide={firstCellInSlide} sliderX={sliderX} sliderVelocity={sliderVelocity}>
           {
             urls.map((url, index) => {
 
@@ -1492,15 +1474,15 @@ export default function FixedHeightSlider({ urls }: Props) {
                     key={index}
                     src={url}
                     className={styles.image}
-                    alt={`Low-Res ${index}`}
+                    alt={`cell-${index}`}
                     draggable="false"
                   />
               )
             })
           }
-        </ProductImageSlider>
+        </Slider>
       </div>
-      <FullscreenSliderModal
+      <FullscreenModal
         open={showFullscreenModal}
         onClose={() => setShowFullscreenModal(false)}
         isZoomClick={isZoomClick}
@@ -1512,8 +1494,8 @@ export default function FixedHeightSlider({ urls }: Props) {
         setShowFullscreenSlider={setShowFullscreenSlider}
         imageCount={urls.length}
         setClosingModal={setClosingModal}
-        productImageSlides={productImageSlides}
-        productImageSliderRef={productImageSliderRef}
+        slides={slides}
+        slider={slider}
         visibleImagesRef={visibleImagesRef}
         selectedIndex={selectedIndex} 
         firstCellInSlide={firstCellInSlide} 
@@ -1522,7 +1504,7 @@ export default function FixedHeightSlider({ urls }: Props) {
         isWrapping={isWrapping}
       >
         <FullscreenSlider 
-          ref={sliderApi}
+          ref={fullscreenSliderApi}
           imageCount={urls.length} 
           slideIndex={slideIndex} 
           isClick={isZoomClick} 
@@ -1537,13 +1519,12 @@ export default function FixedHeightSlider({ urls }: Props) {
           isTouchPinching={isTouchPinching}
           showFullscreenSlider={showFullscreenSlider}
           isWrapping={isWrapping}
-          fullscreenImageWidth={fullscreenImageWidth}
           zoomedDuringWrap={zoomedDuringWrap}
           isZooming={isZooming}
         >
           {urls.length > 1 ? wrappedFullscreenImages : oneFullscreenImage}
         </FullscreenSlider>
-      </FullscreenSliderModal>
+      </FullscreenModal>
     </>
   );
 }

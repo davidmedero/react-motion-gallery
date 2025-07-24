@@ -3,8 +3,7 @@
 'use client'
 
 import { useRef, useEffect, ReactNode, Children, RefObject, useCallback, useImperativeHandle, forwardRef } from "react";
-import slideStore from './slideStore';
-
+import fullscreenSlideStore from './fullscreenSlideStore';
 
 interface FullscreenSliderProps {
   children: ReactNode;
@@ -22,7 +21,6 @@ interface FullscreenSliderProps {
   isTouchPinching: React.RefObject<boolean>;
   showFullscreenSlider: boolean;
   isWrapping: RefObject<boolean>;
-  fullscreenImageWidth: RefObject<number>;
   zoomedDuringWrap: RefObject<boolean>;
   isZooming: RefObject<boolean>;
 }
@@ -48,7 +46,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       isTouchPinching,
       showFullscreenSlider,
       isWrapping,
-      fullscreenImageWidth,
       zoomedDuringWrap,
       isZooming
     },
@@ -86,9 +83,9 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   const VERT_ANGLE_MAX = 120;
   const isVerticalScroll = useRef(false);
   const isClosing = useRef(false);
-  const prevTimeRef    = useRef(0);
-  const FPS            = 60;
-  const MS_PER_FRAME   = 1000 / FPS;
+  const prevTimeRef = useRef(0);
+  const FPS = 60;
+  const MS_PER_FRAME = 1000 / FPS;
 
   useEffect(() => {  
     const childrenArray = Children.toArray(children);
@@ -139,14 +136,14 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     }
     if (slideIndex === 1 && isWrapping.current === true) {
       selectedIndex.current = 0;
-      slideStore.setSlideIndex(0);
+      fullscreenSlideStore.setSlideIndex(0);
       firstCellInSlide.current = slides.current[0].cells[0]?.element;
       hasPositioned.current = true;
       return;
     }
     if (slideIndex === 0 && !isWrapping.current) {
       selectedIndex.current = 0;
-      slideStore.setSlideIndex(0);
+      fullscreenSlideStore.setSlideIndex(0);
       firstCellInSlide.current = slides.current[0].cells[0]?.element;
       hasPositioned.current = true;
       return;
@@ -156,7 +153,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     if (actualIndex === 0) actualIndex = imageCount;
     const finalIndex = isWrapping.current === true ? actualIndex : slideIndex;
     selectedIndex.current = finalIndex;
-    slideStore.setSlideIndex(finalIndex);
+    fullscreenSlideStore.setSlideIndex(finalIndex);
     const slide = slider.current.clientWidth * finalIndex;
     setTimeout(() => {
       if (!slider.current) return;
@@ -439,10 +436,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   
         const matchedRef = imageRefs[parseInt(imgIndex)];
 
-        if (matchedRef.current) {
-          fullscreenImageWidth.current = matchedRef.current.clientWidth
-        }
-
         if (index !== Number(imgIndex) && Number(imgIndex) !== index + 2) {
           isZooming.current = true;
           handleZoomToggle(e, matchedRef);
@@ -581,7 +574,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       index = slides.current.length;
     }
     selectedIndex.current = index;
-    slideStore.setSlideIndex(index);
+    fullscreenSlideStore.setSlideIndex(index);
     if (zoomedDuringWrap.current !== true) {
       firstCellInSlide.current = slides.current[index].cells[0]?.element;
     }
@@ -721,7 +714,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     const index = Math.round(Math.abs(currentPosition) / slider.current.clientWidth);
     selectedIndex.current = index;
     
-    slideStore.setSlideIndex(index);
+    fullscreenSlideStore.setSlideIndex(index);
     let actualIndex = index + 1;
     actualIndex = ((actualIndex % imageCount) + imageCount) % imageCount;
     if (actualIndex === 0) actualIndex = imageCount;

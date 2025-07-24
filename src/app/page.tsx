@@ -1,7 +1,7 @@
 export const dynamic    = 'force-static';
 export const fetchCache = 'force-cache';
 
-import FixedHeightSlider from "@/components/FixedHeight/FixedHeightSlider";
+import FixedHeightSlider from "@/components/FixedHeight";
 import styles from "./page.module.css";
 import ThumbnailSlider from "@/components/Thumbnails/ThumbnailSlider";
 import ResponsiveSlider from "@/components/Responsive/ResponsiveSlider";

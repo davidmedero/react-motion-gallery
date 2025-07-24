@@ -4,16 +4,17 @@
 import React, { Dispatch, RefObject, SetStateAction, useEffect, useSyncExternalStore } from "react";
 import scaleStore from './scaleStore';
 import slideStore from './slideStore';
+import fullscreenSlideStore from './fullscreenSlideStore';
 
 function useSlideIndex() {
   return useSyncExternalStore(
-    slideStore.subscribe.bind(slideStore),
-    slideStore.getSnapshot.bind(slideStore),
-    slideStore.getSnapshot.bind(slideStore)
+    fullscreenSlideStore.subscribe.bind(fullscreenSlideStore),
+    fullscreenSlideStore.getSnapshot.bind(fullscreenSlideStore),
+    fullscreenSlideStore.getSnapshot.bind(fullscreenSlideStore)
   );
 }
 
-interface FullscreenSliderModalProps {
+interface FullscreenModalProps {
   open: boolean;
   onClose: () => void;
   isZoomClick: RefObject<boolean>;
@@ -26,8 +27,8 @@ interface FullscreenSliderModalProps {
   setShowFullscreenSlider: Dispatch<SetStateAction<boolean>>;
   imageCount: number;
   setClosingModal: Dispatch<SetStateAction<boolean>>;
-  productImageSlides: RefObject<{ cells: { element: HTMLElement, index: number }[], target: number }[]>;
-  productImageSliderRef: RefObject<HTMLDivElement | null>;
+  slides: RefObject<{ cells: { element: HTMLElement, index: number }[], target: number }[]>;
+  slider: RefObject<HTMLDivElement | null>;
   visibleImagesRef: RefObject<number>;
   selectedIndex: RefObject<number>;
   firstCellInSlide: RefObject<HTMLElement | null>;
@@ -36,7 +37,7 @@ interface FullscreenSliderModalProps {
   isWrapping: RefObject<boolean>;
 }
 
-const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
+const FullscreenModal: React.FC<FullscreenModalProps> = ({
   open,
   onClose,
   isZoomClick,
@@ -48,8 +49,8 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   setShowFullscreenSlider,
   imageCount,
   setClosingModal,
-  productImageSlides,
-  productImageSliderRef,
+  slides,
+  slider,
   visibleImagesRef,
   selectedIndex,
   firstCellInSlide,
@@ -104,10 +105,9 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   };
 
   function getTotalCellsWidth(): number {
-    const slides = productImageSlides.current;
     let totalWidth = 0;
 
-    slides.forEach(slide => {
+    slides.current.forEach(slide => {
       slide.cells.forEach(cell => {
         totalWidth += cell.element.offsetWidth;
       });
@@ -123,10 +123,10 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     cells.current = [];
     setClosingModal(true);
 
-    const slideArr = productImageSlides.current;
+    const slideArr = slides.current;
     // find the slide whose cells include the fullscreen image index
-    if (!productImageSliderRef.current) return;
-    const wrapIndex = isWrapping.current && slideIndexSync >= productImageSliderRef.current.children.length - visibleImagesRef.current * 2 ? 0 : slideIndexSync;
+    if (!slider.current) return;
+    const wrapIndex = isWrapping.current && slideIndexSync >= slider.current.children.length - visibleImagesRef.current * 2 ? 0 : slideIndexSync;
 
     const matchSlide = slideArr.find(s =>
       s.cells.some(cell => cell.index === wrapIndex)
@@ -138,20 +138,21 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
 
     const totalWidth = getTotalCellsWidth()
 
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
 
-    const cellWidth = productImageSlides.current[0].cells[0].element.getBoundingClientRect().left;
+    const cellWidth = slides.current[0].cells[0].element.getBoundingClientRect().left;
 
     selectedIndex.current = newIndex;
+    slideStore.setSlideIndex(newIndex);
     firstCellInSlide.current = matchSlide.cells[0]?.element ?? null;
-    sliderX.current = totalWidth <= productImageSliderRef.current.clientWidth ? cellWidth : -matchSlide.target;
+    sliderX.current = totalWidth <= slider.current.clientWidth ? cellWidth : -matchSlide.target;
     sliderVelocity.current = 0;
 
     const translateSliderX = getPositionValue(sliderX.current);
     
-    productImageSliderRef.current.style.transform = `translate3d(${translateSliderX},0,0)`;
+    slider.current.style.transform = `translate3d(${translateSliderX},0,0)`;
 
-    if (!productImageSliderRef.current || productImageSliderRef.current.children.length === 0) return;
+    if (!slider.current || slider.current.children.length === 0) return;
 
     let idx;
     if (isWrapping.current) {
@@ -161,7 +162,7 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
     }
 
     // grab the first child of that slide (your image element)
-    const slideEl = productImageSliderRef.current.children[idx] as HTMLElement | undefined;
+    const slideEl = slider.current.children[idx] as HTMLElement | undefined;
     if (!slideEl) return;
 
     // snapshot its viewport rect
@@ -333,4 +334,4 @@ const FullscreenSliderModal: React.FC<FullscreenSliderModalProps> = ({
   );
 };
 
-export default FullscreenSliderModal;
+export default FullscreenModal;

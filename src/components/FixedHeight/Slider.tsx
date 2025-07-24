@@ -2,9 +2,7 @@
 'use client'
 
 import { useRef, useEffect, ReactNode, cloneElement, Children, useState, createRef, Dispatch, SetStateAction, ReactElement, HTMLAttributes, ClassAttributes, RefObject, useLayoutEffect, useSyncExternalStore, isValidElement } from "react";
-import styles from './ProductImageSlider.module.css';
 import slideStore from './slideStore';
-import originalSlideStore from './originalSlideStore';
 
 function useSlideIndex() {
   return useSyncExternalStore(
@@ -14,15 +12,7 @@ function useSlideIndex() {
   );
 }
 
-function useOriginalSlideIndex() {
-  return useSyncExternalStore(
-    originalSlideStore.subscribe.bind(originalSlideStore),
-    originalSlideStore.getSnapshot.bind(originalSlideStore),
-    originalSlideStore.getSnapshot.bind(originalSlideStore)
-  );
-}
-
-interface ProductImageSliderProps {
+interface SliderProps {
   children: ReactNode;
   imageCount: number;
   windowSize: { width: number; height: number };
@@ -31,13 +21,12 @@ interface ProductImageSliderProps {
   overlayDivRef: RefObject<HTMLDivElement | null>;
   setSlideIndex: (index: number) => void;
   setShowFullscreenModal: (show: boolean) => void;
-  storedPositionRef: RefObject<DOMRect>;
   setShowFullscreenSlider: Dispatch<SetStateAction<boolean>>;
   showFullscreenSlider: boolean;
   isWrapping: RefObject<boolean>;
   closingModal: boolean;
-  productImageSlides: RefObject<{ cells: { element: HTMLElement, index: number }[], target: number }[]>;
-  productImageSliderRef: RefObject<HTMLDivElement | null>;
+  slides: RefObject<{ cells: { element: HTMLElement, index: number }[], target: number }[]>;
+  slider: RefObject<HTMLDivElement | null>;
   visibleImagesRef: RefObject<number>;
   selectedIndex: RefObject<number>;
   firstCellInSlide: RefObject<HTMLElement | null>;
@@ -45,14 +34,12 @@ interface ProductImageSliderProps {
   sliderVelocity: RefObject<number>;
 }
 
-// --- 1) Define the prop shape we'll be adding ---
 type CarouselChildProps =
   HTMLAttributes<HTMLElement> &
   ClassAttributes<HTMLElement> & {
     style?: React.CSSProperties
   }
 
-// --- 2) A helper to clone any slide with the right key, index & transform ---
 function cloneSlide(
   child: ReactElement<any>,
   key: string,
@@ -74,7 +61,7 @@ function cloneSlide(
   })
 }
 
-const ProductImageSlider = ({
+const Slider = ({
   children,
   imageCount,
   windowSize,
@@ -83,19 +70,18 @@ const ProductImageSlider = ({
   overlayDivRef,
   setSlideIndex,
   setShowFullscreenModal,
-  storedPositionRef,
   setShowFullscreenSlider,
   showFullscreenSlider,
   isWrapping,
   closingModal,
-  productImageSlides,
-  productImageSliderRef,
+  slides,
+  slider,
   visibleImagesRef,
   selectedIndex,
   firstCellInSlide,
   sliderX,
   sliderVelocity
-}: ProductImageSliderProps) => {
+}: SliderProps) => {
   const isPointerDown = useRef(false);
   const startX = useRef(0);
   const startY = useRef(0);
@@ -108,26 +94,26 @@ const ProductImageSlider = ({
   const sliderWidth = useRef(0);
   const isScrolling = useRef(false);
   const [clonedChildren, setClonedChildren] = useState<React.ReactElement[]>([]);
+  const clonesCountRef = useRef(0);
   const [visibleImages, setVisibleImages] = useState(1);
   const friction = 0.28;
   const attraction = 0.025;
   const cells = useRef<{ element: HTMLElement, index: number }[]>([]);
   const isDragSelect = useRef<boolean>(false);
   const lastTranslateX = useRef<number>(0);
-  const progressFillRef = useRef<HTMLDivElement>(null);
+  // const progressFillRef = useRef<HTMLDivElement>(null);
   const isClosing = useRef(false);
   const slideIndexSync = useSlideIndex();
-  const originalSlideIndexSync = useOriginalSlideIndex();
   const sliderContainer = useRef<HTMLDivElement | null>(null);
   const hasPositioned = useRef<boolean>(false);
   const [slidesState, setSlidesState] = useState<{ cells: { element: HTMLElement }[] }[]>([]);
   const [allImagesLoaded, setAllImagesLoaded] = useState(false);
-  const prevTimeRef    = useRef(0);
-  const FPS            = 60;
-  const MS_PER_FRAME   = 1000 / FPS;
+  const prevTimeRef = useRef(0);
+  const FPS = 60;
+  const MS_PER_FRAME = 1000 / FPS;
 
   useEffect(() => {
-    const container = productImageSliderRef.current;
+    const container = slider.current;
     if (!container) return;
 
     const imgs = Array.from(container.querySelectorAll<HTMLImageElement>('img'));
@@ -164,57 +150,51 @@ const ProductImageSlider = ({
   }, [children]);
 
   useLayoutEffect(() => {
-    if (!productImageSliderRef.current || cells.current.length === 0 || hasPositioned.current || sliderWidth.current === 0 || !productImageSlides.current || !productImageSlides.current[0] || !productImageSlides.current[0].cells[0]?.element) return;
-    firstCellInSlide.current = productImageSlides.current[0].cells[0]?.element;
-    const containerWidth = productImageSliderRef.current.clientWidth;
-    if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+    if (!slider.current || cells.current.length === 0 || hasPositioned.current || sliderWidth.current === 0 || !slides.current || !slides.current[0] || !slides.current[0].cells[0]?.element) return;
+    firstCellInSlide.current = slides.current[0].cells[0]?.element;
+    const containerWidth = slider.current.clientWidth;
+    if (sliderWidth.current <= slider.current.clientWidth) {
       sliderX.current = (containerWidth - sliderWidth.current) / 2;
       positionSlider();
     }
     hasPositioned.current = true;
   }, [slidesState]);
-
-  const clonesCountRef  = useRef(0);
   
   useEffect(() => {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
 
-    // 1) only your real React children
     const raw = Children
       .toArray(children)
       .filter(isValidElement) as ReactElement<any>[];
-    const n   = raw.length - 1;
+    const n = raw.length - 1;
 
-    // 2) use the dynamic visibleImages here
-    const per  = visibleImages;
+    const per = visibleImages;
     const wrap = n > per;
 
-    // 3) record your wrap flag & clones count
-    isWrapping.current      = wrap;
-    clonesCountRef.current  = wrap ? per : 0;
+    isWrapping.current = wrap;
+    clonesCountRef.current = wrap ? per : 0;
 
-    // 4) rebuild cells.current + clonedChildren…
     cells.current = [];
     const slides: ReactElement<any>[] = [];
 
     if (wrap) {
       slides.push(
         ...raw.slice(-per).map((c, i) =>
-          cloneSlide(c, `b-${i}`, -per + i, cells)
+          cloneSlide(c, `before-${i}`, -per + i, cells)
         )
       );
     }
 
     slides.push(
       ...raw.map((c, i) =>
-        cloneSlide(c, `o-${i}`, i, cells)
+        cloneSlide(c, `original-${i}`, i, cells)
       )
     );
 
     if (wrap) {
       slides.push(
         ...raw.slice(0, per).map((c, i) =>
-          cloneSlide(c, `a-${i}`, i, cells)
+          cloneSlide(c, `after-${i}`, i, cells)
         )
       );
     }
@@ -223,7 +203,7 @@ const ProductImageSlider = ({
   }, [visibleImages, allImagesLoaded]);
 
   useLayoutEffect(() => {
-    const cont = productImageSliderRef.current;
+    const cont = slider.current;
     if (!cont || cells.current.length === 0 || !allImagesLoaded) return;
 
     // how many originals you actually passed in
@@ -261,7 +241,7 @@ const ProductImageSlider = ({
 
   useLayoutEffect(() => {
     const GAP = 0;
-    const container = productImageSliderRef.current;
+    const container = slider.current;
     if (!container || !allImagesLoaded) return;
 
     // grab your slide elements once
@@ -287,8 +267,8 @@ const ProductImageSlider = ({
       });
 
       const originalCount = Children.toArray(children).length;
-      const clonesBefore  = originalCount - 1 > visibleImages ? visibleImages : 0;
-      const beforeWidths  = widths.slice(0, clonesBefore);
+      const clonesBefore = originalCount - 1 > visibleImages ? visibleImages : 0;
+      const beforeWidths = widths.slice(0, clonesBefore);
 
       // compute starting X
       let runningX = -(
@@ -321,16 +301,16 @@ const ProductImageSlider = ({
   }, [clonedChildren, windowSize, visibleImages, allImagesLoaded]);
   
   useEffect(() => {
-    const containerEl = productImageSliderRef.current;
+    const containerEl = slider.current;
     if (!containerEl || !allImagesLoaded) return;
 
     let canceled = false;
 
     // how many clones on each side?
-    const rawKids      = Children.toArray(children).filter(isValidElement);
-    const childCount   = rawKids.length;
+    const rawKids = Children.toArray(children).filter(isValidElement);
+    const childCount = rawKids.length;
     const clonesBefore = isWrapping.current ? visibleImages : 0;
-    const clonesAfter  = clonesBefore;
+    const clonesAfter = clonesBefore;
 
     const cw = containerEl.getBoundingClientRect().width;
 
@@ -339,7 +319,7 @@ const ProductImageSlider = ({
       if (!containerEl) return;
 
       // slice out just the originals
-      const allEls    = Array.from(containerEl.children) as HTMLElement[];
+      const allEls = Array.from(containerEl.children) as HTMLElement[];
       const originals = allEls.slice(clonesBefore, allEls.length - clonesAfter);
 
       // map to { el, left, right }
@@ -391,12 +371,13 @@ const ProductImageSlider = ({
         })
       }));
 
+      // trigger RAF‑retry if slides came out broken
       if (newSlides[1] && newSlides[1].target === 0 || (isWrapping.current && newSlides.length === 1)) {
         requestAnimationFrame(buildPages);
         return;
       }
 
-      productImageSlides.current = newSlides;
+      slides.current = newSlides;
       setSlidesState(newSlides);
     }
 
@@ -407,7 +388,7 @@ const ProductImageSlider = ({
   }, [clonedChildren, windowSize, visibleImages, allImagesLoaded, isWrapping.current]);
 
   useEffect(() => {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
   
     const childrenArray = Children.toArray(children);
 
@@ -422,7 +403,7 @@ const ProductImageSlider = ({
       .fill(null)
       .map(() => createRef<HTMLImageElement>());
   
-    const images = productImageSliderRef.current.querySelectorAll("img");
+    const images = slider.current.querySelectorAll("img");
   
     images.forEach((img, index) => {
       img.setAttribute("data-index", index.toString());
@@ -446,12 +427,12 @@ const ProductImageSlider = ({
   }
 
   function handlePointerStart(e: PointerEvent) {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
     isClick.current = true;
     isScrolling.current = false;
     isPointerDown.current = true;
 
-    const translateX = productImageSliderRef.current ? getCurrentXFromTransform(productImageSliderRef.current) : 0;
+    const translateX = slider.current ? getCurrentXFromTransform(slider.current) : 0;
 
     dragStartPosition.current = translateX;
     dragX.current = translateX;
@@ -528,7 +509,7 @@ const ProductImageSlider = ({
   }
 
   function positionSlider() {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
     let currentPosition = sliderX.current;
     if (!isClick.current && isWrapping.current === true) {
       currentPosition = ((currentPosition % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
@@ -550,22 +531,22 @@ const ProductImageSlider = ({
       isAnimating.current = false;
       restingFrames.current = 0;
 
-      if (!productImageSliderRef.current) return;
+      if (!slider.current) return;
       positionSlider();
     }
   };
 
   function setTranslateX(x: number) {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
     const translateX = getPositionValue(x);
-    productImageSliderRef.current.style.transform = `translate3d(${translateX},0,0)`;
-    const pct =
-      sliderWidth.current > 0
-        ? Math.abs(x) / sliderWidth.current * 100
-        : 0
-    if (progressFillRef.current) {
-      progressFillRef.current.style.width = `${pct > 99 ? 0 : pct}%`
-    }
+    slider.current.style.transform = `translate3d(${translateX},0,0)`;
+    // const pct =
+    //   sliderWidth.current > 0
+    //     ? Math.abs(x) / sliderWidth.current * 100
+    //     : 0
+    // if (progressFillRef.current) {
+    //   progressFillRef.current.style.width = `${pct > 99 ? 0 : pct}%`
+    // }
   };
 
   function getPositionValue(position: number) {
@@ -580,7 +561,7 @@ const ProductImageSlider = ({
   }  
 
   function handlePointerMove(e: PointerMoveEvent) {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
     if (!isPointerDown.current) return;
     e.preventDefault();
 
@@ -609,7 +590,7 @@ const ProductImageSlider = ({
         dragX.current = (dragX.current + originBound) * 0.5;
       }
 
-      const lastSlide = productImageSlides.current[productImageSlides.current.length - 1].target;
+      const lastSlide = slides.current[slides.current.length - 1].target;
       const endBound = Math.min(-lastSlide, dragStartPosition.current);
 
       if (dragX.current < endBound) {
@@ -637,11 +618,11 @@ const ProductImageSlider = ({
   }
 
   function handlePointerEnd(e: PointerEndEvent) {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
     if (!isPointerDown.current) return;
     isPointerDown.current = false;
 
-    if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+    if (sliderWidth.current <= slider.current.clientWidth) {
       select(0);
     }
 
@@ -667,7 +648,7 @@ const ProductImageSlider = ({
           index += dragEndBoostSelect();
         }
       } else {
-        if (index === selectedIndex.current || (index === productImageSlides.current.length && selectedIndex.current === 0) || (selectedIndex.current === index - 1)) {
+        if (index === selectedIndex.current || (index === slides.current.length && selectedIndex.current === 0) || (selectedIndex.current === index - 1)) {
           index += dragEndBoostSelect();
         }
       }
@@ -701,15 +682,15 @@ const ProductImageSlider = ({
 
   function applySelectedAttraction() {
     if (isPointerDown.current) return;
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
 
-    const index = selectedIndex.current >= productImageSlides.current.length - 1 && productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current ? 0 : selectedIndex.current;
+    const index = selectedIndex.current >= slides.current.length - 1 && slides.current[slides.current.length - 1].target === sliderWidth.current ? 0 : selectedIndex.current;
 
-    let distance = -productImageSlides.current[index].target - sliderX.current;
+    let distance = -slides.current[index].target - sliderX.current;
 
-    const containerWidth = productImageSliderRef.current.clientWidth;
+    const containerWidth = slider.current.clientWidth;
 
-    if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+    if (sliderWidth.current <= slider.current.clientWidth) {
       distance = (containerWidth - sliderWidth.current) / 2 - sliderX.current;
     }
     const force = distance * attraction;
@@ -733,13 +714,13 @@ const ProductImageSlider = ({
   };
 
   function getSlideDistance(x: number, index: number) {
-    if (!productImageSliderRef.current) return 1;
-    const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? productImageSlides.current.length - 1 : productImageSlides.current.length;
+    if (!slider.current) return 1;
+    const length = slides.current[slides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? slides.current.length - 1 : slides.current.length;
     const slideIndex = ((index % length) + length) % length;
-    const slide = productImageSlides.current[slideIndex];
+    const slide = slides.current[slideIndex];
     if (!slide) return null;
     let wrap = sliderWidth.current * Math.floor(index/length);
-    if (sliderWidth.current <= productImageSliderRef.current.clientWidth || !isWrapping.current) {
+    if (sliderWidth.current <= slider.current.clientWidth || !isWrapping.current) {
       wrap = 0;
     }
 
@@ -776,17 +757,17 @@ const ProductImageSlider = ({
   };
 
   function select(index: number) {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
     if (isWrapping.current === true) {
       wrapSelect(index);
     }
-    const containedIndex = index < 0 ? 0 : index > productImageSlides.current.length - 1 ? productImageSlides.current.length - 1 : index;
-    const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? productImageSlides.current.length - 1 : productImageSlides.current.length;
+    const containedIndex = index < 0 ? 0 : index > slides.current.length - 1 ? slides.current.length - 1 : index;
+    const length = slides.current[slides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? slides.current.length - 1 : slides.current.length;
     index = ((index % length) + length) % length;
     const finalIndex = isWrapping.current === true ? index : containedIndex;
     selectedIndex.current = finalIndex;
-    originalSlideStore.setSlideIndex(finalIndex);
-    firstCellInSlide.current = productImageSlides.current[finalIndex].cells[0]?.element;
+    slideStore.setSlideIndex(finalIndex);
+    firstCellInSlide.current = slides.current[finalIndex].cells[0]?.element;
     startAnimation();
   };
 
@@ -798,15 +779,15 @@ const ProductImageSlider = ({
 
   useEffect(() => {
     function handleResize() {
-      if (!productImageSliderRef.current || !firstCellInSlide.current || showFullscreenSlider) return;
+      if (!slider.current || !firstCellInSlide.current || showFullscreenSlider) return;
       lastTranslateX.current = getTranslateX(firstCellInSlide.current);
       const diff = lastTranslateX.current - Math.abs(sliderX.current);
-      const containerWidth = productImageSliderRef.current.clientWidth;
+      const containerWidth = slider.current.clientWidth;
 
       if (!isWrapping.current) {
         sliderX.current = 0;
         selectedIndex.current = 0;
-        if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+        if (sliderWidth.current <= slider.current.clientWidth) {
           const currentPosition = (containerWidth - sliderWidth.current) / 2;
           setTranslateX(currentPosition);
         } else {
@@ -818,7 +799,7 @@ const ProductImageSlider = ({
           sliderX.current -= diff;
           const currentPosition = Math.min(sliderX.current, 0);
           setTranslateX(currentPosition);
-          const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? productImageSlides.current.length - 1 : productImageSlides.current.length;
+          const length = slides.current[slides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? slides.current.length - 1 : slides.current.length;
           const index = Math.floor(Math.abs(currentPosition) / (sliderWidth.current / length));
           selectedIndex.current = index;
       }
@@ -831,9 +812,9 @@ const ProductImageSlider = ({
   }, [clonedChildren]);
 
   function wrapSelect(index: number) {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
 
-    const length = productImageSlides.current[productImageSlides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? productImageSlides.current.length - 1 : productImageSlides.current.length;
+    const length = slides.current[slides.current.length - 1].target === sliderWidth.current || !isWrapping.current ? slides.current.length - 1 : slides.current.length;
     const slideableWidth = sliderWidth.current;
     const selectedIdx = selectedIndex.current;
 
@@ -882,14 +863,14 @@ const ProductImageSlider = ({
   }
 
   function handleWheel(e: WheelEvent) {
-    if (!productImageSliderRef.current) return;
+    if (!slider.current) return;
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       e.preventDefault();
       const page = document.getElementById('page_container') as HTMLDivElement;
       page.scrollTop += e.deltaY;
       return;
     }
-    if (sliderWidth.current <= productImageSliderRef.current.clientWidth) {
+    if (sliderWidth.current <= slider.current.clientWidth) {
       return;
     }
     const isHorizontalScroll = Math.abs(e.deltaX) > Math.abs(e.deltaY);
@@ -898,7 +879,7 @@ const ProductImageSlider = ({
       isScrolling.current = true;
       e.preventDefault();
   
-      let translateX = getCurrentXFromTransform(productImageSliderRef.current);
+      let translateX = getCurrentXFromTransform(slider.current);
       translateX -= e.deltaX;
   
       let currentPosition = translateX;
@@ -907,8 +888,8 @@ const ProductImageSlider = ({
         currentPosition = ((translateX % sliderWidth.current) + sliderWidth.current) % sliderWidth.current;
         currentPosition += -sliderWidth.current;
       } else {
-        const containerWidth = productImageSliderRef.current.clientWidth;
-        const contentWidth   = productImageSliderRef.current.scrollWidth;
+        const containerWidth = slider.current.clientWidth;
+        const contentWidth   = slider.current.scrollWidth;
       
         const maxTranslateX = 0;
 
@@ -919,19 +900,19 @@ const ProductImageSlider = ({
       
       setTranslateX(currentPosition);
   
-      const index = Math.round(Math.abs(currentPosition) / (sliderWidth.current / productImageSlides.current.length));
+      const index = Math.round(Math.abs(currentPosition) / (sliderWidth.current / slides.current.length));
       selectedIndex.current = index;
-      const wrapIndex = ((index % productImageSlides.current.length) + productImageSlides.current.length) % productImageSlides.current.length;
-      originalSlideStore.setSlideIndex(wrapIndex);
+      const wrapIndex = ((index % slides.current.length) + slides.current.length) % slides.current.length;
+      slideStore.setSlideIndex(wrapIndex);
       sliderX.current = currentPosition;
-      firstCellInSlide.current = productImageSlides.current[wrapIndex].cells[0]?.element;
+      firstCellInSlide.current = slides.current[wrapIndex].cells[0]?.element;
     } else {
       isScrolling.current = false;
     }
   };
 
   useEffect(() => {
-    const sliderRef = productImageSliderRef.current;
+    const sliderRef = slider.current;
     const sliderContainerRef = sliderContainer.current;
   
     if (sliderRef && sliderContainerRef) {
@@ -953,11 +934,6 @@ const ProductImageSlider = ({
     const origImg   = imgRef.current;
     const container = sliderContainer.current;
     if (!origImg || !container) return;
-
-    const target = e.target as HTMLImageElement;
-    const position = target.getBoundingClientRect();
-
-    storedPositionRef.current = position;
 
     const imgRect = origImg.getBoundingClientRect();
 
@@ -1125,49 +1101,6 @@ const ProductImageSlider = ({
     }
   }, [closingModal]);
 
-  useEffect(() => {
-    if (!showFullscreenSlider || cells.current.length === 0) return;
-    const slideArr = productImageSlides.current;
-    // find the slide whose cells include the fullscreen image index
-    const matchSlide = slideArr.find(s =>
-      s.cells.some(cell => cell.index === slideIndexSync)
-    );
-    if (!matchSlide) return;
-
-    // now pull its position out
-    const newIndex = slideArr.indexOf(matchSlide);
-
-    if (!productImageSliderRef.current) return;
-
-    const containerWidth = productImageSliderRef.current.clientWidth;
-    const cellWidth = cells.current[slideIndexSync].element.clientWidth;
-
-    // update your refs exactly as before
-    selectedIndex.current    = newIndex;
-    firstCellInSlide.current = matchSlide.cells[0]?.element ?? null;
-    sliderX.current                = isWrapping.current ? -matchSlide.target : (containerWidth - cellWidth) / 2;
-    sliderVelocity.current         = 0;
-
-    positionSlider();
-
-    if (!productImageSliderRef.current || productImageSliderRef.current.children.length === 0) return;
-
-    let idx;
-    if (isWrapping.current) {
-      idx = slideIndexSync + visibleImagesRef.current;
-    } else {
-      idx = slideIndexSync;
-    }
-
-    // grab the first child of that slide (your image element)
-    const slideEl = productImageSliderRef.current.children[idx] as HTMLElement | undefined;
-    if (!slideEl) return;
-
-    // snapshot its viewport rect
-    const rect = slideEl.getBoundingClientRect();
-    storedPositionRef.current = rect;
-  }, [windowSize]);
-
   const Arrow = ({ direction, size = 32 }: { direction: "prev" | "next"; size?: number }) => (
     <svg
       viewBox="0 0 24 24"
@@ -1269,14 +1202,14 @@ const ProductImageSlider = ({
   
 
   return (
-    <div ref={sliderContainer} className={styles.slider_container} style={{ position: 'relative', height: imageCount > 2 ? '306px' : '300px', backgroundColor: '#f8f9fa', zIndex: 1 }}>
+    <div ref={sliderContainer} style={{ position: 'relative', height: '300px', backgroundColor: '#f8f9fa', zIndex: 1 }}>
     {/* Previous Button */}
     <div
       onClick={() => previous()}
       style={{
         position: "absolute",
         display:
-          imageCount > 1 && productImageSliderRef.current && sliderWidth.current > productImageSliderRef.current.clientWidth
+          imageCount > 1 && slider.current && sliderWidth.current > slider.current.clientWidth
             ? "flex"
             : "none",
         left: 10,
@@ -1301,7 +1234,7 @@ const ProductImageSlider = ({
       style={{
         position: "absolute",
         display:
-          imageCount > 1 && productImageSliderRef.current && sliderWidth.current > productImageSliderRef.current.clientWidth
+          imageCount > 1 && slider.current && sliderWidth.current > slider.current.clientWidth
             ? "flex"
             : "none",
         right: 10,
@@ -1322,15 +1255,14 @@ const ProductImageSlider = ({
     </div>
       {/* Slider */}
       <div 
-        ref={productImageSliderRef}
+        ref={slider}
         style={{ 
           overflow: "visible",
           position: 'absolute',
           left: 0,
           width: '100%',
           height: '100%',
-          cursor: 'grab',
-          willChange: 'opacity'
+          cursor: 'grab'
         }}
       >
         {clonedChildren}
@@ -1359,7 +1291,7 @@ const ProductImageSlider = ({
                 height: 12,
                 borderRadius: "50%",
                 backgroundColor:
-                  originalSlideIndexSync === index ? "rgb(115, 171, 245)" : "lightgray",
+                  slideIndexSync === index ? "rgb(115, 171, 245)" : "lightgray",
                 margin: "10px 5px 5px 5px",
                 cursor: "pointer",
                 transition: "background-color 0.3s ease",
@@ -1372,4 +1304,4 @@ const ProductImageSlider = ({
   );
 };
 
-export default ProductImageSlider;
+export default Slider;
