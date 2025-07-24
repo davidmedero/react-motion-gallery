@@ -5,6 +5,7 @@ import { useRef, useEffect, ReactNode, cloneElement, Children, useState, createR
 import type SimpleBarCore from 'simplebar';
 import styles from './ProductImageSlider.module.css';
 import slideStore from './slideStore';
+import originalSlideStore from './originalSlideStore';
 
 function useSlideIndex() {
   return useSyncExternalStore(
@@ -13,6 +14,14 @@ function useSlideIndex() {
     slideStore.getSnapshot.bind(slideStore)
   );
 }
+
+// function useOriginalSlideIndex() {
+//   return useSyncExternalStore(
+//     originalSlideStore.subscribe.bind(originalSlideStore),
+//     originalSlideStore.getSnapshot.bind(originalSlideStore),
+//     originalSlideStore.getSnapshot.bind(originalSlideStore)
+//   );
+// }
 
 interface ProductImageSliderProps {
   children: ReactNode;
@@ -118,6 +127,7 @@ const ProductImageSlider = ({
   const progressFillRef = useRef<HTMLDivElement>(null);
   const isClosing = useRef(false);
   const slideIndexSync = useSlideIndex();
+  // const originalSlideIndexSync = useOriginalSlideIndex();
   const sliderContainer = useRef<HTMLDivElement | null>(null);
   const prevTimeRef    = useRef(0);
   const FPS            = 60;
@@ -271,7 +281,7 @@ const ProductImageSlider = ({
     thumbnailRefs.current.forEach((img: HTMLImageElement | null, i: number) => {
       if (img) {
         img.style.border =
-          i === 0 ? '2px solid #2d2a26' : '0px solid transparent';
+          i === 0 ? '2px solid rgb(115, 171, 245)' : '0px solid transparent';
       }
     });
   }, []);
@@ -281,7 +291,7 @@ const ProductImageSlider = ({
       thumbnailRefs.current.forEach((img: HTMLImageElement | null, i: number) => {
         if (img) {
           img.style.border =
-            i === index ? '2px solid #2d2a26' : '0px solid transparent';
+            i === index ? '2px solid rgb(115, 171, 245)' : '0px solid transparent';
         }
       });
       selectedIndex.current = index;
@@ -746,12 +756,13 @@ const ProductImageSlider = ({
     index = ((index % length) + length) % length;
     const finalIndex = isWrapping.current === true ? index : containedIndex;
     selectedIndex.current = finalIndex;
+    originalSlideStore.setSlideIndex(finalIndex);
     firstCellInSlide.current = productImageSlides.current[finalIndex].cells[0]?.element;
     startAnimation();
     thumbnailRefs.current.forEach((img: HTMLImageElement | null, i: number) => {
       if (img) {
         img.style.border =
-          i === index ? '2px solid #2d2a26' : '0px solid transparent';
+          i === index ? '2px solid rgb(115, 171, 245)' : '0px solid transparent';
       }
     });
     if (!simpleBarRef.current) return;
@@ -925,13 +936,13 @@ const ProductImageSlider = ({
       
       setTranslateX(currentPosition);
   
-      let index = Math.round(Math.abs(currentPosition) / (sliderWidth.current / productImageSlides.current.length));
+      const index = Math.round(Math.abs(currentPosition) / (sliderWidth.current / productImageSlides.current.length));
       selectedIndex.current = index;
       
       thumbnailRefs.current.forEach((img: HTMLImageElement | null, i: number) => {
         if (img) {
           img.style.border =
-            (i === index) || (i === 0 && index === productImageSlides.current.length - 1) || (i === 0 && index === productImageSlides.current.length) ? '2px solid #2d2a26' : '0px solid transparent';
+            (i === index) || (i === 0 && index === productImageSlides.current.length - 1) || (i === 0 && index === productImageSlides.current.length) ? '2px solid rgb(115, 171, 245)' : '0px solid transparent';
         }
       });
       if (!simpleBarRef.current) return;
@@ -976,9 +987,10 @@ const ProductImageSlider = ({
           simpleBarScrollElement.scrollLeft = Math.max(0, target);
         }
       }
+      const wrapIndex = ((index % productImageSlides.current.length) + productImageSlides.current.length) % productImageSlides.current.length;
+      originalSlideStore.setSlideIndex(wrapIndex);
       sliderX.current = currentPosition;
-      index = ((index % productImageSlides.current.length) + productImageSlides.current.length) % productImageSlides.current.length;
-      firstCellInSlide.current = productImageSlides.current[index].cells[0]?.element;
+      firstCellInSlide.current = productImageSlides.current[wrapIndex].cells[0]?.element;
       return () => clearTimeout(timeout);
     } else {
       isScrolling.current = false;
@@ -1210,7 +1222,7 @@ const ProductImageSlider = ({
       thumbnailRefs.current.forEach((img: HTMLImageElement | null, i: number) => {
         if (img) {
           img.style.border =
-            i === slideIndexSync ? '2px solid #2d2a26' : '0px solid transparent';
+            i === slideIndexSync ? '2px solid rgb(115, 171, 245)' : '0px solid transparent';
           }
       });
       if (!simpleBarRef.current) return;
@@ -1429,7 +1441,7 @@ const ProductImageSlider = ({
           left: 0,
           width: '100%',
           height: '6px',
-          backgroundColor: 'grey.300',
+          backgroundColor: 'rgba(230, 230, 230, 1)',
         }}
       >
         {/* progress fill */}
@@ -1439,7 +1451,7 @@ const ProductImageSlider = ({
             display: 'block',
             height: '100%',
             width: '0%',
-            backgroundColor: '#2d2a26',
+            backgroundColor: 'rgb(115, 171, 245)',
             transition: 'width 0.2s ease-out',
           }}
         />

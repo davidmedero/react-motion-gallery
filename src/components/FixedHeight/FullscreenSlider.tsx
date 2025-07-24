@@ -731,7 +731,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     }
 
     x.current = currentPosition;
-    firstCellInSlide.current = slides.current[index].cells[0]?.element;
+    const wrapIndex = ((index % imageCount) + imageCount) % imageCount;
+    firstCellInSlide.current = slides.current[wrapIndex].cells[0]?.element;
   };
 
   useEffect(() => {

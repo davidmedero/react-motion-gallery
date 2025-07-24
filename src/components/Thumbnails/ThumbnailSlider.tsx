@@ -1492,7 +1492,7 @@ export default function ThumbnailSlider({ urls }: Props) {
     thumbnailRefs.current.forEach((img: HTMLImageElement | null, i: number) => {
       if (img) {
         img.style.border =
-          i === index ? '2px solid #2d2a26' : '0px solid transparent';
+          i === index ? '2px solid rgb(115, 171, 245)' : '0px solid transparent';
       }
     });
   }, []);

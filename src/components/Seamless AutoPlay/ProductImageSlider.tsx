@@ -3,6 +3,15 @@
 
 import { useRef, useEffect, ReactNode, cloneElement, Children, useState, ReactElement, HTMLAttributes, ClassAttributes, RefObject, useLayoutEffect, isValidElement} from "react";
 import styles from './ProductImageSlider.module.css';
+import originalSlideStore from './originalSlideStore';
+
+// function useOriginalSlideIndex() {
+//   return useSyncExternalStore(
+//     originalSlideStore.subscribe.bind(originalSlideStore),
+//     originalSlideStore.getSnapshot.bind(originalSlideStore),
+//     originalSlideStore.getSnapshot.bind(originalSlideStore)
+//   );
+// }
 
 interface ProductImageSliderProps {
   children: ReactNode;
@@ -79,6 +88,7 @@ const ProductImageSlider = ({
   const isDragSelect = useRef<boolean>(false);
   const progressFillRef = useRef<HTMLDivElement>(null);
   const isClosing = useRef(false);
+  // const originalSlideIndexSync = useOriginalSlideIndex();
   const sliderContainer = useRef<HTMLDivElement | null>(null);
   const hasPositioned = useRef<boolean>(false);
   const [slidesState, setSlidesState] = useState<{ cells: { element: HTMLElement }[] }[]>([]);
@@ -747,6 +757,7 @@ const ProductImageSlider = ({
     index = ((index % length) + length) % length;
     const finalIndex = isWrapping.current === true ? index : containedIndex;
     selectedIndex.current = finalIndex;
+    originalSlideStore.setSlideIndex(finalIndex);
     firstCellInSlide.current = productImageSlides.current[finalIndex].cells[0]?.element;
     startAnimation();
   };
@@ -866,8 +877,10 @@ const ProductImageSlider = ({
   
       const index = Math.round(Math.abs(currentPosition) / (sliderWidth.current / productImageSlides.current.length));
       selectedIndex.current = index;
+      const wrapIndex = ((index % productImageSlides.current.length) + productImageSlides.current.length) % productImageSlides.current.length;
+      originalSlideStore.setSlideIndex(wrapIndex);
       sliderX.current = currentPosition;
-      firstCellInSlide.current = productImageSlides.current[index].cells[0]?.element;
+      firstCellInSlide.current = productImageSlides.current[wrapIndex].cells[0]?.element;
     } else {
       isScrolling.current = false;
     }
@@ -1069,7 +1082,7 @@ const ProductImageSlider = ({
           left: 0,
           width: '100%',
           height: '6px',
-          backgroundColor: 'grey.300',
+          backgroundColor: 'rgba(230, 230, 230, 1)',
         }}
       >
         {/* progress fill */}
@@ -1079,7 +1092,7 @@ const ProductImageSlider = ({
             display: 'block',
             height: '100%',
             width: '0%',
-            backgroundColor: '#2d2a26',
+            backgroundColor: 'rgb(115, 171, 245)',
             transition: 'width 0.2s ease-out',
           }}
         />

@@ -4,12 +4,21 @@
 import { useRef, useEffect, ReactNode, cloneElement, Children, useState, createRef, Dispatch, SetStateAction, ReactElement, HTMLAttributes, ClassAttributes, RefObject, useLayoutEffect, useSyncExternalStore, isValidElement } from "react";
 import styles from './ProductImageSlider.module.css';
 import slideStore from './slideStore';
+import originalSlideStore from './originalSlideStore';
 
 function useSlideIndex() {
   return useSyncExternalStore(
     slideStore.subscribe.bind(slideStore),
     slideStore.getSnapshot.bind(slideStore),
     slideStore.getSnapshot.bind(slideStore)
+  );
+}
+
+function useOriginalSlideIndex() {
+  return useSyncExternalStore(
+    originalSlideStore.subscribe.bind(originalSlideStore),
+    originalSlideStore.getSnapshot.bind(originalSlideStore),
+    originalSlideStore.getSnapshot.bind(originalSlideStore)
   );
 }
 
@@ -108,6 +117,7 @@ const ProductImageSlider = ({
   const progressFillRef = useRef<HTMLDivElement>(null);
   const isClosing = useRef(false);
   const slideIndexSync = useSlideIndex();
+  const originalSlideIndexSync = useOriginalSlideIndex();
   const sliderContainer = useRef<HTMLDivElement | null>(null);
   const hasPositioned = useRef<boolean>(false);
   const [slidesState, setSlidesState] = useState<{ cells: { element: HTMLElement }[] }[]>([]);
@@ -246,7 +256,7 @@ const ProductImageSlider = ({
 
     setVisibleImages(correct);
     visibleImagesRef.current = correct;
-    
+
   }, [clonedChildren, windowSize, allImagesLoaded]);
 
   useLayoutEffect(() => {
@@ -775,6 +785,7 @@ const ProductImageSlider = ({
     index = ((index % length) + length) % length;
     const finalIndex = isWrapping.current === true ? index : containedIndex;
     selectedIndex.current = finalIndex;
+    originalSlideStore.setSlideIndex(finalIndex);
     firstCellInSlide.current = productImageSlides.current[finalIndex].cells[0]?.element;
     startAnimation();
   };
@@ -910,8 +921,10 @@ const ProductImageSlider = ({
   
       const index = Math.round(Math.abs(currentPosition) / (sliderWidth.current / productImageSlides.current.length));
       selectedIndex.current = index;
+      const wrapIndex = ((index % productImageSlides.current.length) + productImageSlides.current.length) % productImageSlides.current.length;
+      originalSlideStore.setSlideIndex(wrapIndex);
       sliderX.current = currentPosition;
-      firstCellInSlide.current = productImageSlides.current[index].cells[0]?.element;
+      firstCellInSlide.current = productImageSlides.current[wrapIndex].cells[0]?.element;
     } else {
       isScrolling.current = false;
     }
@@ -1322,29 +1335,38 @@ const ProductImageSlider = ({
       >
         {clonedChildren}
       </div>
-      {/* progress track */}
+      {/* Pagination Dots */}
       <div
         style={{
-          position: 'absolute',
-          display: imageCount > 2 ? 'block' : 'none',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          height: '6px',
-          backgroundColor: 'grey.300',
+          display: "flex",
+          justifyContent: "center",
+          position: "absolute",
+          bottom: 5,
+          width: "100%",
+          zIndex: 10
         }}
       >
-        {/* progress fill */}
-        <span
-          ref={progressFillRef}
-          style={{
-            display: 'block',
-            height: '100%',
-            width: '0%',
-            backgroundColor: '#2d2a26',
-            transition: 'width 0.2s ease-out',
-          }}
-        />
+        {Array.from({ length: slidesState.length }).map(
+          (_, index) => (
+            <div
+              key={index}
+              onClick={() => {
+                isScrolling.current = false;
+                select(index)
+              }}
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: "50%",
+                backgroundColor:
+                  originalSlideIndexSync === index ? "rgb(115, 171, 245)" : "lightgray",
+                margin: "10px 5px 5px 5px",
+                cursor: "pointer",
+                transition: "background-color 0.3s ease",
+              }}
+            />
+          )
+        )}
       </div>
     </div>
   );

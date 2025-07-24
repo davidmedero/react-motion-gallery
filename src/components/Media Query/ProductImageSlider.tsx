@@ -4,6 +4,7 @@
 import { useRef, useEffect, ReactNode, cloneElement, Children, useState, createRef, Dispatch, SetStateAction, ReactElement, HTMLAttributes, ClassAttributes, RefObject, useLayoutEffect, useSyncExternalStore } from "react";
 import styles from './ProductImageSlider.module.css';
 import slideStore from './slideStore';
+import originalSlideStore from './originalSlideStore';
 
 function useSlideIndex() {
   return useSyncExternalStore(
@@ -12,6 +13,14 @@ function useSlideIndex() {
     slideStore.getSnapshot.bind(slideStore)
   );
 }
+
+// function useOriginalSlideIndex() {
+//   return useSyncExternalStore(
+//     originalSlideStore.subscribe.bind(originalSlideStore),
+//     originalSlideStore.getSnapshot.bind(originalSlideStore),
+//     originalSlideStore.getSnapshot.bind(originalSlideStore)
+//   );
+// }
 
 interface ProductImageSliderProps {
   children: ReactNode;
@@ -111,6 +120,7 @@ const ProductImageSlider = ({
   const progressFillRef = useRef<HTMLDivElement>(null);
   const isClosing = useRef(false);
   const slideIndexSync = useSlideIndex();
+  // const originalSlideIndexSync = useOriginalSlideIndex();
   const sliderContainer = useRef<HTMLDivElement | null>(null);
   const [sliderHeight, setSliderHeight] = useState(0);
   const hasPositioned = useRef<boolean>(false);
@@ -267,8 +277,6 @@ const ProductImageSlider = ({
   }, [clonedChildren, visibleImages]);
   
   useEffect(() => {
-    const imagesPerSlide = calculateVisibleImages();
-
     productImageSlides.current = [];
 
     const el = productImageSliderRef.current;
@@ -287,11 +295,11 @@ const ProductImageSlider = ({
     const childCount = childrenArray.length;
 
     if (childCount - 2 > visibleImages) {
-      for (let i = imagesPerSlide; i < clonedChildren.length - imagesPerSlide; i += imagesPerSlide) {
-        const slice = cells.current.slice(i, i + imagesPerSlide);
+      for (let i = visibleImages; i < clonedChildren.length - visibleImages; i += visibleImages) {
+        const slice = cells.current.slice(i, i + visibleImages);
     
         // are we on the last slice?
-        const isLast = i + imagesPerSlide >= cells.current.length;
+        const isLast = i + visibleImages >= cells.current.length;
     
         let target: number;
         if (!isLast) {
@@ -702,6 +710,7 @@ const ProductImageSlider = ({
     index = ((index % length) + length) % length;
     const finalIndex = isWrapping.current === true ? index : containedIndex;
     selectedIndex.current = finalIndex;
+    originalSlideStore.setSlideIndex(finalIndex);
     firstCellInSlide.current = productImageSlides.current[finalIndex].cells[0]?.element;
     startAnimation();
   };
@@ -831,8 +840,10 @@ const ProductImageSlider = ({
   
       const index = Math.round(Math.abs(currentPosition) / (sliderWidth.current / productImageSlides.current.length));
       selectedIndex.current = index;
+      const wrapIndex = ((index % productImageSlides.current.length) + productImageSlides.current.length) % productImageSlides.current.length;
+      originalSlideStore.setSlideIndex(wrapIndex);
       sliderX.current = currentPosition;
-      firstCellInSlide.current = productImageSlides.current[index].cells[0]?.element;
+      firstCellInSlide.current = productImageSlides.current[wrapIndex].cells[0]?.element;
     } else {
       isScrolling.current = false;
     }
@@ -1266,7 +1277,7 @@ const ProductImageSlider = ({
           left: 0,
           width: '100%',
           height: '6px',
-          backgroundColor: 'grey.300',
+          backgroundColor: 'rgba(230, 230, 230, 1)',
         }}
       >
         {/* progress fill */}
@@ -1276,7 +1287,7 @@ const ProductImageSlider = ({
             display: 'block',
             height: '100%',
             width: '0%',
-            backgroundColor: '#2d2a26',
+            backgroundColor: 'rgb(115, 171, 245)',
             transition: 'width 0.2s ease-out',
           }}
         />
