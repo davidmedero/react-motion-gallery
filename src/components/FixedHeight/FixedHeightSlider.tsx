@@ -32,10 +32,10 @@ export default function FixedHeightSlider({ urls }: Props) {
   const fullscreenImageWidth = useRef(0);
   const zoomedDuringWrap = useRef(false);
   const sliderApi = useRef<FullscreenSliderHandle>(null);
-
   const prevTimeRef    = useRef(0);
   const FPS            = 60;
   const MS_PER_FRAME   = 1000 / FPS;
+  const isZooming = useRef(false);
 
   const expandableImgRefs = useRef([]);
   const overlayDivRef = useRef<HTMLDivElement | null>(null);
@@ -518,6 +518,7 @@ export default function FixedHeightSlider({ urls }: Props) {
         if (imgChild && index !== imageRefs.current.length - 1) {
             imgChild.addEventListener('transitionend', function handler() {
             imgChild.style.transition = '';
+            isZooming.current = false;
             imgChild.removeEventListener('transitionend', handler);
           });
         }
@@ -525,6 +526,7 @@ export default function FixedHeightSlider({ urls }: Props) {
         if (index === imageRefs.current.length - 2 && firstImageRefChild) {
           firstImageRefChild.addEventListener('transitionend', function handler() {
             firstImageRefChild.style.transition = '';
+            isZooming.current = false;
             firstImageRefChild.removeEventListener('transitionend', handler);
           });
         }
@@ -533,6 +535,7 @@ export default function FixedHeightSlider({ urls }: Props) {
           console.log('secondImageRefChild transitionend')
           secondImageRefChild.addEventListener('transitionend', function handler() {
             secondImageRefChild.style.transition = '';
+            isZooming.current = false;
             secondImageRefChild.removeEventListener('transitionend', handler);
           });
         }
@@ -540,6 +543,7 @@ export default function FixedHeightSlider({ urls }: Props) {
         if (index !== imageRefs.current.length - 2 && index !== imageRefs.current.length - 3 && lastImageRefChild) {
           lastImageRefChild.addEventListener('transitionend', function handler() {
             lastImageRefChild.style.transition = '';
+            isZooming.current = false;
             lastImageRefChild.removeEventListener('transitionend', handler);
           });
         }
@@ -1535,6 +1539,7 @@ export default function FixedHeightSlider({ urls }: Props) {
           isWrapping={isWrapping}
           fullscreenImageWidth={fullscreenImageWidth}
           zoomedDuringWrap={zoomedDuringWrap}
+          isZooming={isZooming}
         >
           {urls.length > 1 ? wrappedFullscreenImages : oneFullscreenImage}
         </FullscreenSlider>

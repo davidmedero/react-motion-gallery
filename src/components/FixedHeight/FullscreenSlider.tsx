@@ -24,6 +24,7 @@ interface FullscreenSliderProps {
   isWrapping: RefObject<boolean>;
   fullscreenImageWidth: RefObject<number>;
   zoomedDuringWrap: RefObject<boolean>;
+  isZooming: RefObject<boolean>;
 }
 
 export interface FullscreenSliderHandle {
@@ -48,7 +49,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       showFullscreenSlider,
       isWrapping,
       fullscreenImageWidth,
-      zoomedDuringWrap
+      zoomedDuringWrap,
+      isZooming
     },
     ref
   ) => {
@@ -87,7 +89,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
   const prevTimeRef    = useRef(0);
   const FPS            = 60;
   const MS_PER_FRAME   = 1000 / FPS;
-  const isZooming = useRef(false);
 
   useEffect(() => {  
     const childrenArray = Children.toArray(children);
@@ -194,7 +195,6 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
     isTouchPinching.current = false;
     isPointerDown.current = true;
     isClick.current = true;
-    isZooming.current = false;
 
     const transformValues = getCurrentTransform(slider.current);
     const translateX = transformValues.x;
