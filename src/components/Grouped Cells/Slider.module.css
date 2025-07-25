@@ -1,0 +1,5 @@
+@media (max-width: 600px) {
+  .slider_container {
+    height: 50vw !important;
+  }
+}

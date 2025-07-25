@@ -3,6 +3,7 @@
 
 import { useRef, useEffect, ReactNode, cloneElement, Children, useState, createRef, Dispatch, SetStateAction, ReactElement, HTMLAttributes, ClassAttributes, RefObject, useLayoutEffect, useSyncExternalStore, isValidElement } from "react";
 import slideStore from './slideStore';
+import styles from './Slider.module.css';
 
 function useSlideIndex() {
   return useSyncExternalStore(
@@ -204,7 +205,7 @@ const Slider = ({
 
   useLayoutEffect(() => {
     const cont = slider.current;
-    if (!cont || cells.current.length === 0 || !allImagesLoaded) return;
+    if (!cont || cells.current.length === 0) return;
 
     // how many originals you actually passed in
     const raw = Children.toArray(children).filter(isValidElement);
@@ -212,14 +213,14 @@ const Slider = ({
     if (n === 0) return;
 
     // slice live DOM into clones/originals/clones
-    const allEls     = Array.from(cont.children) as HTMLElement[];
-    const cCount     = clonesCountRef.current;
-    const originals  = allEls.slice(cCount, allEls.length - cCount);
+    const allEls = Array.from(cont.children) as HTMLElement[];
+    const cCount = clonesCountRef.current;
+    const originals = allEls.slice(cCount, allEls.length - cCount);
 
-    // measure only originals
-    const cw     = cont.clientWidth;
-    let sum      = 0;
-    let count    = 0;
+    // how many images are visible on the first slide even if only 1px of the image is present 
+    const cw = cont.clientWidth;
+    let sum = 0;
+    let count = 0;
     for (const el of originals) {
       const w = el.getBoundingClientRect().width;
       if (sum + w <= cw) {
@@ -232,77 +233,73 @@ const Slider = ({
       }
     }
 
-    const correct = Math.max(1, Math.min(n, count));
+    const clampedCount = Math.max(1, Math.min(n, count));
 
-    setVisibleImages(correct);
-    visibleImagesRef.current = correct;
+    setVisibleImages(clampedCount);
+    visibleImagesRef.current = clampedCount;
 
   }, [clonedChildren, windowSize, allImagesLoaded]);
 
   useLayoutEffect(() => {
     const GAP = 0;
     const container = slider.current;
-    if (!container || !allImagesLoaded) return;
+    if (!container) return;
 
-    // grab your slide elements once
     const slides = Array.from(container.children) as HTMLElement[];
-
     let canceled = false;
 
     function measureAndPosition() {
       if (canceled) return;
 
-      // 1) measure
-      const widths = slides.map(sl => sl.getBoundingClientRect().width);
+      // 0) clear any previously‐locked widths so CSS can take over
+      slides.forEach(sl => {
+        sl.style.width = "";     // remove old inline width
+        sl.style.transform = "";     // remove old transform if you like
+      });
+
+      // 1) measure each slide at its new CSS size
+      const widths = slides.map(sl =>
+        sl.getBoundingClientRect().width
+      );
 
       // 2) if any are still zero, try again next frame
       if (widths.some(w => w === 0)) {
-        requestAnimationFrame(measureAndPosition);
-        return;
+        return requestAnimationFrame(measureAndPosition);
       }
 
-      // 3) now that we have all non-zero widths, lock them in & position
+      // 3) now lock in the fresh widths and position
       slides.forEach((sl, i) => {
         sl.style.width = `${widths[i]}px`;
       });
 
-      const originalCount = Children.toArray(children).length;
-      const clonesBefore = originalCount - 1 > visibleImages ? visibleImages : 0;
+      const clonesBefore = clonesCountRef.current;
       const beforeWidths = widths.slice(0, clonesBefore);
-
-      // compute starting X
       let runningX = -(
         beforeWidths.reduce((sum, w) => sum + w, 0)
         + GAP * clonesBefore
       );
 
-      // position every single slide
       slides.forEach((sl, i) => {
         sl.style.transform = `translateX(${runningX}px)`;
         runningX += widths[i] + GAP;
       });
 
-      // total width of the *originals* (no clones)
-      const originalWidths = widths.slice(
+      // recompute total width for wrap logic
+      const origWidths = widths.slice(
         clonesBefore,
         widths.length - clonesBefore
       );
-      sliderWidth.current =
-        originalWidths.reduce((sum, w) => sum + w, 0)
-        + GAP * originalWidths.length;
+      sliderWidth.current = origWidths.reduce((sum, w) => sum + w, 0) 
+      + GAP * origWidths.length;
     }
 
-    // kick it off
     requestAnimationFrame(measureAndPosition);
-
-    return () => {
-      canceled = true;
-    };
+    return () => { canceled = true; };
   }, [clonedChildren, windowSize, visibleImages, allImagesLoaded]);
-  
+
   useEffect(() => {
     const containerEl = slider.current;
-    if (!containerEl || !allImagesLoaded) return;
+    if (!containerEl) return;
 
     let canceled = false;
 
@@ -1202,7 +1199,7 @@ const Slider = ({
   
 
   return (
-    <div ref={sliderContainer} style={{ position: 'relative', height: '300px', backgroundColor: '#f8f9fa', zIndex: 1 }}>
+    <div ref={sliderContainer} className={styles.slider_container} style={{ position: 'relative', height: '300px', backgroundColor: '#f8f9fa', zIndex: 1 }}>
     {/* Previous Button */}
     <div
       onClick={() => previous()}

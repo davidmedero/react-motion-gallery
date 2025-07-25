@@ -8,6 +8,12 @@
   height: 300px;
 }
 
+@media (max-width: 600px) {
+  .image {
+    height: 50vw !important;
+  }
+}
+
 .image:active {
   cursor: grabbing;
 }

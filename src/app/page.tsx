@@ -1,7 +1,7 @@
 export const dynamic    = 'force-static';
 export const fetchCache = 'force-cache';
 
-import FixedHeightSlider from "@/components/FixedHeight";
+import GroupedCellsSlider from "@/components/Grouped Cells";
 import styles from "./page.module.css";
 import ThumbnailSlider from "@/components/Thumbnails/ThumbnailSlider";
 import ResponsiveSlider from "@/components/Responsive/ResponsiveSlider";
@@ -53,77 +53,73 @@ export default function Home() {
 
       {/** Thumbnails Section **/}
       
-        <h2 className={styles.headers}>Thumbnails</h2>
-        <p className={styles.description}>
-          Resize the browser to 500px to see the horizontal thumbnail scrollbar. One cell is equal to one slide. Every image is the same size.
-        </p>
-        <div className={styles.sliderContainer}>
-          <ThumbnailSlider urls={images} />
-        </div>
-      
-      {/** Fixed Height Section **/}
-      
-        <h2 className={styles.headers}>Fixed Height</h2>
-        <p className={styles.description}>
-          Fixed height for all cells and the slider container. Cells are grouped. Accomodates images of any size. Wrapping is disabled if the total number of cells is less than or equal to the number of visible cells (you have complete control over when and why wrapping happens).
-        </p>
-        <div className={styles.sliderContainer}>
-          <FixedHeightSlider urls={heroImages} />
-        </div>
-      
-
+      <h2 className={styles.headers}>Thumbnails</h2>
+      <p className={styles.description}>
+        Resize the browser to 500px to see the horizontal thumbnail scrollbar. One cell is equal to one slide. Every image is the same size.
+      </p>
+      <div className={styles.sliderContainer}>
+        <ThumbnailSlider urls={images} />
+      </div>
+    
+      {/** Grouped Cells Section **/}
+    
+      <h2 className={styles.headers}>Grouped Cells</h2>
+      <p className={styles.description}>
+        I gave this slider a height of 300px then change it to 50vw when the viewport is 600px and below. Cells are grouped. Accomodates images of any size. I disable wrapping once the second to last image is visible (you have complete control over when and why wrapping happens).
+      </p>
+      <div className={styles.sliderContainer}>
+        <GroupedCellsSlider urls={heroImages} />
+      </div>
+    
       {/** Responsive Section **/}
-      
-        <h2 className={styles.headers}>Responsive</h2>
-        <p className={styles.description}>
-          Column-based layout guaranteeing full image visibility per slide. The number of cells per slide is derived from the maxWidth value you assign it which is 220 in the example below. The minimum number of slides is set to 2. 
-        </p>
-        <div className={styles.sliderContainer}>
-          <ResponsiveSlider urls={images} />
-        </div>
-      
-
+    
+      <h2 className={styles.headers}>Responsive</h2>
+      <p className={styles.description}>
+        Column-based layout guaranteeing full image visibility per slide. The number of cells per slide is derived from the maxWidth value you assign it which is 220 in the example below. The minimum number of slides is set to 2. 
+      </p>
+      <div className={styles.sliderContainer}>
+        <ResponsiveSlider urls={images} />
+      </div>
+    
       {/** Hero Section **/}
-      
-        <h2 className={styles.headers}>Hero</h2>
-        <p className={styles.description}>
-          Slides are centered. One cell is equal to one slide.
-        </p>
-        <div className={styles.sliderContainer}>
-          <HeroSlider urls={heroImages} />
-        </div>
-      
+    
+      <h2 className={styles.headers}>Hero</h2>
+      <p className={styles.description}>
+        Slides are centered. One cell is equal to one slide.
+      </p>
+      <div className={styles.sliderContainer}>
+        <HeroSlider urls={heroImages} />
+      </div>
 
       {/** Seamless Autoplay Section **/}
-      
-        <h2 className={styles.headers}>Seamless Autoplay</h2>
-        <p className={styles.description}>
-          Constant-speed horizontal scroll. Wrapping enabled; no fullscreen.
-        </p>
-        <div className={styles.sliderContainer}>
-          <SeamlessSlider urls={logoImages} />
-        </div>
-      
+    
+      <h2 className={styles.headers}>Seamless Autoplay</h2>
+      <p className={styles.description}>
+        Constant-speed horizontal scroll. Wrapping enabled; no fullscreen.
+      </p>
+      <div className={styles.sliderContainer}>
+        <SeamlessSlider urls={logoImages} />
+      </div>
 
       {/** Per-Slide Autoplay Section **/}
-      
-        <h2 className={styles.headers}>Per-Slide Autoplay</h2>
-        <p className={styles.description}>
-          Automatically advance to the next slide every 3 seconds.
-        </p>
-        <div className={styles.sliderContainer}>
-          <PerSlideAutoPlaySlider urls={images} />
-        </div>
+    
+      <h2 className={styles.headers}>Per-Slide Autoplay</h2>
+      <p className={styles.description}>
+        Automatically advance to the next slide every 3 seconds.
+      </p>
+      <div className={styles.sliderContainer}>
+        <PerSlideAutoPlaySlider urls={images} />
+      </div>
 
-        {/** Media Query Section **/}
-      
-        <h2 className={styles.headers}>Media Query</h2>
-        <p className={styles.description}>
-          Full control over how many cells to show per slide.
-        </p>
-        <div className={styles.sliderContainer}>
-          <MediaQuerySlider urls={images} />
-        </div>
+      {/** Media Query Section **/}
+    
+      <h2 className={styles.headers}>Media Query</h2>
+      <p className={styles.description}>
+        Full control over how many cells to show per slide.
+      </p>
+      <div className={styles.sliderContainer}>
+        <MediaQuerySlider urls={images} />
+      </div>
       
     </div>
   );

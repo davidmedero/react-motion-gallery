@@ -319,7 +319,9 @@ export default function SliderWrapper({ urls }: Props) {
     }
     window.addEventListener("resize", handleResize);
     handleResize();
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    }
   }, []);
 
   function getImageAspectRatio(image: HTMLDivElement | null) {
