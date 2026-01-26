@@ -1,0 +1,23 @@
+export const DEFAULT_FULLSCREEN = {
+  enabled: true,
+  effects: {
+    introDuration: 300,
+    introEasing: "cubic-bezier(.4,0,.22,1)",
+    introFade: false,
+    slideFade: false,
+    slideFadeDuration: 120,
+    slideFadeEasing: "cubic-bezier(.4,0,.22,1)",
+    thumbnailsFadeDuration: 300,
+    thumbnailsFadeEasing: "cubic-bezier(.4,0,.22,1)",
+  },
+  slider: {
+    duration: 25,
+    friction: 0.68,
+  },
+  zoom: {
+    clickZoomLevel: 2.5,
+    maxZoomLevel: 3,
+    panDuration: 43,
+    panFriction: 0.68,
+  },
+} as const;

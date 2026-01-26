@@ -1,0 +1,133 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: opacity 260ms ease;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.backdrop.closed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.panel {
+  position: fixed;
+  margin-top: 12px;
+  right: 0;
+  width: 100dvw;
+  background: #fff;
+  box-shadow: 0 10px 20px rgba(0,0,0,.12);
+  outline: none;
+  overflow: hidden;
+  z-index: 60;
+  transform-origin: top center;
+  transition: opacity 260ms ease;
+  will-change: opacity;
+}
+
+.panel.closed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.panel.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.list { padding: 6px 0; }
+
+.list > li {
+  position: relative;
+}
+
+.list > li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 30dvw;
+  right: 30dvw;
+  bottom: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.list > li::after {
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.panel.open .list > li::after {
+  opacity: 1;
+}
+
+.list > li > a,
+.list > li > button {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 180ms ease,
+    transform 260ms cubic-bezier(.22,.61,.36,1);
+  will-change: opacity, transform;
+}
+
+.panel.open .list > li > a,
+.panel.open .list > li > button {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.panel.open .list > li > a,
+.panel.open .list > li > button {
+  transition-delay: var(--d, 0ms);
+}
+.panel.closed .list > li > * { transition-delay: 0ms; }
+
+.burger {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition:
+    transform .38s cubic-bezier(.2,.8,.2,1.4),
+    width     .38s cubic-bezier(.2,.8,.2,1.4);
+  isolation: isolate;
+}
+
+.top    { transform: translate(-50%, calc(50% - 10px)); }
+.middle { transform: translate(-50%, -50%); }
+.bottom { transform: translate(-50%, calc(50% + 8px)); }
+
+.top    { transition-delay: 20ms; }
+.middle { transition-delay: 0ms; }
+.bottom { transition-delay: 40ms; }
+
+button[data-open="true"] .top {
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 26px;
+}
+button[data-open="true"] .middle {
+  transform: translate(-50%, -50%) scaleX(0.2);
+}
+button[data-open="true"] .bottom {
+  transform: translate(-50%, -50%) rotate(-45deg);
+  width: 26px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .burger,
+  .burger::after {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,1 @@
+type WindowType = Window & typeof globalThis

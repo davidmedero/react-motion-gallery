@@ -1,0 +1,21 @@
+{
+  "name": "react-motion-gallery",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "lerna run dev --parallel",
+    "build": "lerna run build",
+    "lint": "lerna run lint",
+    "test": "lerna run test",
+    "storybook": "lerna run dev --scope @rmg/storybook"
+  },
+  "devDependencies": {
+    "lerna": "^8.2.4",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
