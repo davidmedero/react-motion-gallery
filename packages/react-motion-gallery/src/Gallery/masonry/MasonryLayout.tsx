@@ -1,5 +1,5 @@
 import * as React from 'react';
-import styles from '../index.module.css';
+import styles from '../styles.module.css';
 import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
 import { parseNumberLike, resolveNumberFromResponsive } from '../shared/responsive';
 
@@ -33,12 +33,23 @@ type IntroNormalized = {
 type LoadingNormalized = {
   isLoading?: boolean;
   renderLoading?: (args: { layout: 'masonry'; count: number }) => React.ReactNode;
+  shimmer?: {
+    paddingBottom?: string;
+    radius?: number | string;
+    c1?: string;
+    c2?: string;
+    c3?: string;
+    size?: string;
+    duration?: string;
+    timing?: string;
+  };
+  ratios?: number[];
 };
 
 export type MasonryLayoutProps = {
   items: React.ReactNode[];
   masonry: MasonryOptions;
-  breakpoints: BreakpointMap;
+  breakpoints?: BreakpointMap;
   viewportWidth: number;
   loading: LoadingNormalized;
   intro: IntroNormalized;
@@ -106,6 +117,7 @@ export function MasonryLayout({
           column: styles.gridSkeletonMasonryCol,
           item: styles.gridSkeletonItem,
         }}
+        ratios={loading.ratios}
       />
     </div>
   );
@@ -131,8 +143,28 @@ export function MasonryLayout({
     assignRef(masonry.rootRef as any, node);
   }, [masonry.rootRef]);
 
+  const shimmerStyleVars = React.useMemo(() => {
+    const s = loading.shimmer;
+    if (!s) return undefined;
+
+    const px = (v: number | string | undefined) =>
+      v == null ? undefined : typeof v === 'number' ? `${v}px` : v;
+
+    return {
+      ...(s.paddingBottom != null ? ({ ["--rmg-shimmer-padding-bottom" as any]: px(s.paddingBottom) } as any) : {}),
+      ...(s.radius != null ? ({ ['--rmg-shimmer-radius' as any]: px(s.radius) } as any) : {}),
+      ...(s.c1 != null ? ({ ['--rmg-shimmer-c1' as any]: s.c1 } as any) : {}),
+      ...(s.c2 != null ? ({ ['--rmg-shimmer-c2' as any]: s.c2 } as any) : {}),
+      ...(s.c3 != null ? ({ ['--rmg-shimmer-c3' as any]: s.c3 } as any) : {}),
+      ...(s.size != null ? ({ ['--rmg-shimmer-size' as any]: s.size } as any) : {}),
+      ...(s.duration != null ? ({ ['--rmg-shimmer-duration' as any]: s.duration } as any) : {}),
+      ...(s.timing != null ? ({ ['--rmg-shimmer-timing' as any]: s.timing } as any) : {}),
+    } as React.CSSProperties;
+  }, [loading.shimmer]);
+
+
   return (
-    <>
+    <div style={shimmerStyleVars}>
       {loadingNode}
       <Masonry
         items={items}
@@ -155,6 +187,6 @@ export function MasonryLayout({
         masonryRootRef={mergedRootRef}
         breakpoints={breakpoints}
       />
-    </>
+    </div>
   );
 }

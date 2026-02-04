@@ -31,7 +31,6 @@ import { TranslateFullscreen as Translate } from '../shared/motion/translate'
 import { createBaseLimit } from '../shared/motion/baseLimit'
 import { Counter, CounterType } from '../shared/motion/counter'
 
-const mathAbs = Math.abs
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
@@ -99,13 +98,14 @@ interface FullscreenSliderProps {
   introDuration?: number;
   introEasing?: string;
   resetAllZoomDom: () => void;
+  requestFsCloseRef: React.RefObject<null | (() => void)>;
 }
 
 export interface FullscreenSliderHandle {
   centerSlider(): void
 }
 
-const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProps>(
+export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProps>(
   (
     {
       sub,
@@ -144,7 +144,8 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
       normalizedItems,
       introDuration = 300,
       introEasing = 'cubic-bezier(.4,0,.22,1)',
-      resetAllZoomDom
+      resetAllZoomDom,
+      requestFsCloseRef
     },
     ref
   ) => {
@@ -1193,7 +1194,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
             restoreOverlayTransition()
             clickedImgMargin.current = true
             animRef.current?.stop()
-            closeButtonRef.current?.click()
+            requestFsCloseRef.current?.();
             if (t.cancelable)  {
               t.preventDefault()
             }
@@ -1235,7 +1236,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
             translateRef.current?.lockY(yTemp.current)
             restoreOverlayTransition()
             isClosing.current = true
-            closeButtonRef.current?.click()
+            requestFsCloseRef.current?.();
             yTemp.current = 0
             isVerticalScroll.current = false
             return
@@ -1247,7 +1248,7 @@ const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSliderProp
             translateRef.current?.lockY(yTemp.current)
             restoreOverlayTransition()
             isClosing.current = true
-            closeButtonRef.current?.click()
+            requestFsCloseRef.current?.();
             yTemp.current = 0
             isVerticalScroll.current = false
             return

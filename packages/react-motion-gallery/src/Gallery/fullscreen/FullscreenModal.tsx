@@ -13,6 +13,10 @@ import { containTransformForRect, coverTransformForRect, objectFitContentRect } 
 import { MediaItem } from '../shared/types/media';
 import { IndexMode } from '../api/types';
 import { MediaEntryLink } from '../entries';
+import { FullscreenOptions } from './types';
+import { DefaultCloseIcon } from './DefaultCloseIcon';
+import { DefaultChevronIcon } from './DefaultChevronIcon';
+import { DefaultCounterText } from './DefaultCounterText';
 
 interface FullscreenModalProps {
   fsSub: FullscreenSliderSub
@@ -49,6 +53,11 @@ interface FullscreenModalProps {
   introFade?: boolean;
   introDuration?: number;
   introEasing?: string;
+  requestFsCloseRef: React.RefObject<null | (() => void)>;
+  fs: FullscreenOptions;
+  styles: Record<string, string>;
+  direction: 'ltr' | 'rtl';
+  setFullscreenOpen: (open: boolean) => void;
 }
 
 function freezeRect(el: HTMLElement) {
@@ -511,7 +520,7 @@ async function animateVideoCloseProxy({
   });
 }
 
-const FullscreenModal: React.FC<FullscreenModalProps> = ({
+export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   children,
   fsSub,
   open,
@@ -545,7 +554,12 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
   entryMediaLayout,
   introFade,
   introDuration = 300,
-  introEasing = 'cubic-bezier(.4,0,.22,1)'
+  introEasing = 'cubic-bezier(.4,0,.22,1)',
+  requestFsCloseRef,
+  fs,
+  styles,
+  direction,
+  setFullscreenOpen
 }) => {
   const DURATION_MS = introDuration
   const EASING = introEasing
@@ -609,19 +623,35 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
     return () => unmountShield();
   }, []);
 
+  type ElementStyleLike = { className?: string; style?: React.CSSProperties } | null | undefined;
+
+  function mergeClassNames(...parts: Array<string | undefined | null | false>) {
+    return parts.filter(Boolean).join(" ");
+  }
+
+  function styleFromElementStyle(es?: ElementStyleLike) {
+    return (es?.style ?? undefined) as React.CSSProperties | undefined;
+  }
+
+  function classFromElementStyle(es?: ElementStyleLike) {
+    return es?.className ?? "";
+  }
+ 
+  function getArrowAction(side: "left" | "right", isRtl: boolean): "prev" | "next" {
+    // visual-left button means "previous" in LTR, but "next" in RTL
+    if (side === "left") return isRtl ? "next" : "prev";
+    return isRtl ? "prev" : "next";
+  }
+
+  function runArrowAction(fsSub: FullscreenSliderSub, action: "prev" | "next") {
+    if (action === "next") fsSub.requestNext();
+    else fsSub.requestPrev();
+  }
+
   function withinFs<T extends Element = HTMLElement>(sel: string): T | null {
     const root = modalRef.current;
     return root ? (root.querySelector(sel) as T | null) : null;
   }
-
-  useEffect(() => {
-    const btn = closeButtonRef.current
-    if (!btn) return
-    const handler = (ev: Event) => handleClose(ev as MouseEvent)
-    btn.addEventListener('click', handler)
-    return () => btn.removeEventListener('click', handler)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -637,12 +667,6 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
     return () => window.removeEventListener("keydown", onKeyDown, { capture: true } as any);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  function handleClose(e: MouseEvent) {
-    const clickedImg = (e.target as HTMLElement)?.closest('img')
-    if (clickedImg) return
-    proceedToClose()
-  }
 
   function nodeIdxFromFs(fsIdx: number, imageCount: number) {
     const fsSlider = withinFs<HTMLElement>('.fullscreen_slider');
@@ -703,11 +727,16 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
   }
 
   function fadeChrome() {
-    const els = [leftChevronRef.current, rightChevronRef.current, counterRef.current, closeButtonRef.current];
-    els.forEach(el => {
+    const els = [
+      leftChevronRef.current,
+      rightChevronRef.current,
+      counterRef.current,
+      closeButtonRef.current,
+    ];
+
+    els.forEach((el) => {
       if (!el) return;
-      el.style.transition = `opacity ${DURATION_MS}ms ${EASING}`;
-      el.style.opacity = '0';
+      el.classList.remove(styles.open);
     });
   }
 
@@ -961,6 +990,7 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
     let localSlideIdx = 0;
 
     if (!isGridish) {
+      console.log('expandableImgRefs.current closing modal', expandableImgRefs.current)
       // slider canonical logic
       if (!slider.current || !slides.current?.length) return;
 
@@ -984,6 +1014,7 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
       if (layout === "entries" && entryMapRef?.current) {
         const link = entryMapRef.current[canonicalIdx];
+        console.log('link', link)
         if (link) {
           localSlideIdx = link.mediaIndex;
           await scrollEntrySectionIntoView(link.entryIndex);
@@ -1036,6 +1067,9 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
       let matchSlide = slideArr.find((s) => s.cells.some((c) => c.index === localSlideIdx));
       let newIndex = matchSlide ? slideArr.indexOf(matchSlide) : -1;
 
+      console.log('slides.current', slides.current)
+      console.log('matchSlide', matchSlide)
+
       if (newIndex < 0) {
         newIndex = slideArr.length - 1;
         matchSlide = slideArr[slideArr.length - 1];
@@ -1050,6 +1084,8 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
         matchSlide.cells.find((c) => c.index === localSlideIdx)?.element ??
         matchSlide.cells[0]?.element ??
         null;
+
+      console.log('targetCellEl', targetCellEl)
 
       const shouldMove = !!(viewport && targetCellEl) && !isCellVisible(targetCellEl!, viewport, true);
 
@@ -1113,37 +1149,64 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
       return;
     }
 
-    // grid destination: use expandableImgRefs
+    // grid destination: use expandableImgRefs (support: element | ref)
     if (!expandableImgRefs?.current) {
       safeTeardown();
       return;
     }
 
-    const origImgRef =
-      (expandableImgRefs.current?.[canonicalIdx] as unknown as HTMLImageElement | null) ?? null;
+    const slot: any = (expandableImgRefs.current as any)[canonicalIdx] ?? null;
+    console.log('slot', slot)
+    console.log('expandableImgRefs.current', expandableImgRefs.current)
 
-    if (!origImgRef) {
+    // slot might be: HTMLImageElement | HTMLElement | RefObject<...>
+    const slotCurrent: any =
+      slot && typeof slot === "object" && "current" in slot ? slot.current : slot;
+
+    let destImg: HTMLImageElement | null = null;
+
+    // if we got an img directly
+    if (slotCurrent?.tagName === "IMG") {
+      destImg = slotCurrent as HTMLImageElement;
+    } else if (slotCurrent) {
+      // wrapper host -> find an img inside
+      const host = slotCurrent as HTMLElement;
+      destImg = host.querySelector?.("img") as HTMLImageElement | null;
+    }
+
+    // as a last fallback, try a DOM query by index if your grid wrappers carry data-rmg-idx
+    if (!destImg) {
+      const host = document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`);
+      destImg = (host?.querySelector("img") as HTMLImageElement | null) ?? null;
+    }
+
+    if (!destImg) {
       safeTeardown();
       return;
     }
 
-    const { cropRect: thumbCropRect, objPos: endObjPos } = computeThumbCropRectFromImg(origImgRef);
+    const { cropRect: thumbCropRect, objPos: endObjPos } = computeThumbCropRectFromImg(destImg);
 
     await animateCloseToThumb({
       thumbCropRect,
       endObjPos,
       isVideoSlide: false,
     });
+
   }
+
+  useEffect(() => {
+    requestFsCloseRef.current = () => {
+      void proceedToClose();
+    };
+
+    return () => {
+      if (requestFsCloseRef.current) requestFsCloseRef.current = null;
+    };
+  }, [requestFsCloseRef, proceedToClose]);
 
   function safeTeardown() {
     unmountShield();
-    [leftChevronRef.current, rightChevronRef.current, counterRef.current, closeButtonRef.current]
-      .forEach(el => el?.remove())
-    leftChevronRef.current = null
-    rightChevronRef.current = null
-    counterRef.current = null
-    closeButtonRef.current = null
 
     if (!introFade) {
       const fsSlider = withinFs<HTMLElement>('.fullscreen_slider');
@@ -1164,6 +1227,54 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
     setShowFullscreenSlider(false)
     setClosingModal(false)
   }
+
+  const closeEnabled = fs?.controls?.close?.enabled !== false;
+
+  const close = () => void proceedToClose();
+
+  const userNode =
+    typeof fs?.controls?.close?.render === "function"
+      ? fs?.controls?.close.render()
+      : null;
+
+  const allowFsArrows =
+    fs?.controls?.arrows?.enabled !== false && imageCount > 1;
+
+  const isRtl = direction === "rtl" || false;
+
+  const arrows = fs?.controls?.arrows;
+
+  const renderArrowNode = (dir: "prev" | "next", side: "left" | "right") => {
+    const explicit =
+      dir === "prev"
+        ? typeof arrows?.renderPrev === "function" ? arrows.renderPrev() : null
+        : typeof arrows?.renderNext === "function" ? arrows.renderNext() : null;
+
+    if (explicit != null) return explicit;
+
+    if (typeof arrows?.render === "function") {
+      const node = arrows.render({ dir });
+      if (node != null) return node;
+    }
+
+    return <DefaultChevronIcon side={side} />;
+  };
+
+  function canonicalFromFsIndex(fsIndex: number, originalsLen: number) {
+    return Math.max(0, Math.min(originalsLen - 1, fsIndex));
+  }
+
+  const originalsLen = Math.max(0, wrappedItems.length - 2);
+  const canonicalIdx = canonicalFromFsIndex(fsSub.get(), Math.max(1, originalsLen));
+
+  const counterEnabled = fs?.controls?.counter?.enabled !== false;
+  const showCounter = counterEnabled && imageCount > 1;
+
+  const userCounterNode =
+    typeof fs?.controls?.counter?.render === "function"
+      ? fs.controls.counter.render({ index: canonicalIdx, count: imageCount })
+      : null;
+
 
   return (
     <div
@@ -1188,6 +1299,84 @@ const FullscreenModal: React.FC<FullscreenModalProps> = ({
         overflow: 'hidden',
       }}
     >
+      {closeEnabled && (
+        <button
+          ref={closeButtonRef as any}
+          type="button"
+          aria-label="Close"
+          onClick={() => close()}
+          className={[
+            styles?.closeBtn,
+            fs?.controls?.close?.className ?? "",
+            open ? styles.open : "",
+          ].filter(Boolean).join(" ")}
+          style={{
+            ...fs?.controls?.close?.style,
+          }}
+        >
+          {userNode ?? <DefaultCloseIcon />}
+        </button>
+      )}
+      {allowFsArrows && (
+        <>
+          {/* LEFT */}
+          <button
+            ref={leftChevronRef as any}
+            type="button"
+            aria-label={getArrowAction("left", isRtl) === "prev" ? "Previous" : "Next"}
+            onClick={() => runArrowAction(fsSub as any, getArrowAction("left", isRtl))}
+            className={mergeClassNames(
+              styles?.leftChevron,
+              classFromElementStyle(arrows?.arrow as any),
+              classFromElementStyle(arrows?.prev as any),
+              open ? styles.open : ""
+            )}
+            style={{
+              ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
+              ...(styleFromElementStyle(arrows?.prev as any) ?? {}),
+            }}
+          >
+            {renderArrowNode(getArrowAction("left", isRtl), "left")}
+          </button>
+
+          {/* RIGHT */}
+          <button
+            ref={rightChevronRef as any}
+            type="button"
+            aria-label={getArrowAction("right", isRtl) === "prev" ? "Previous" : "Next"}
+            onClick={() => runArrowAction(fsSub as any, getArrowAction("right", isRtl))}
+            className={mergeClassNames(
+              styles?.rightChevron,
+              classFromElementStyle(arrows?.arrow as any),
+              classFromElementStyle(arrows?.next as any),
+              open ? styles.open : ""
+            )}
+            style={{
+              ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
+              ...(styleFromElementStyle(arrows?.next as any) ?? {}),
+            }}
+          >
+            {renderArrowNode(getArrowAction("right", isRtl), "right")}
+          </button>
+        </>
+      )}
+      {showCounter && (
+        <div
+          ref={counterRef as any}
+          className={[
+            styles?.counter,
+            fs?.controls?.counter?.className ?? "",
+            open ? styles.open : "",
+          ].filter(Boolean).join(" ")}
+          style={{
+            ...(fs?.controls?.counter?.style ?? {}),
+          }}
+        >
+          {userCounterNode ?? (
+            <DefaultCounterText index={canonicalIdx} count={imageCount} />
+          )}
+        </div>
+      )}
       {children}
     </div>
   )

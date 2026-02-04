@@ -5,5 +5,7 @@ export function normalizeLoading(src?: LoadingOptions) {
     isLoading: src?.isLoading,
     skeletonCount: src?.skeletonCount,
     renderLoading: src?.renderLoading,
+    shimmer: src?.shimmer,
+    ratios: src?.ratios
   };
 }

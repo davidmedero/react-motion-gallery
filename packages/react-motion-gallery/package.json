@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.2",
+  "version": "2.0.4",
   "description": "React Motion Gallery - smooth, customizable media gallery components",
   "license": "SEE LICENSE IN LICENSE.md",
   "author": "React Motion Gallery",
@@ -21,41 +21,73 @@
     "requiredForRevenueUse": true,
     "url": "https://react-motion-gallery.com/license"
   },
-  "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs"
+    },
+
+    "./slider": {
+      "types": "./dist/slider/index.d.ts",
+      "import": "./dist/slider/index.mjs"
+    },
+
+    "./grid": {
+      "types": "./dist/grid/index.d.ts",
+      "import": "./dist/grid/index.mjs"
+    },
+
+    "./masonry": {
+      "types": "./dist/masonry/index.d.ts",
+      "import": "./dist/masonry/index.mjs"
+    },
+
+    "./entries": {
+      "types": "./dist/entries/index.d.ts",
+      "import": "./dist/entries/index.mjs"
+    },
+
+    "./fullscreen": {
+      "types": "./dist/fullscreen/index.d.ts",
+      "import": "./dist/fullscreen/index.mjs"
     }
   },
+
   "files": [
     "dist"
   ],
+
   "sideEffects": [
     "*.css",
     "**/*.css"
   ],
+
   "peerDependencies": {
-    "plyr": "^3.8.4",
-    "plyr-react": "^6.0.0",
     "react": ">=18",
-    "react-dom": ">=18"
+    "react-dom": ">=18",
+    "plyr": "^3.8.4",
+    "plyr-react": "^6.0.0"
   },
+
   "peerDependenciesMeta": {
-    "plyr-react": {
+    "plyr": {
       "optional": true
     },
-    "plyr": {
+    "plyr-react": {
       "optional": true
     }
   },
+
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup"
   },
+
   "devDependencies": {
     "plyr": "^3.8.4",
     "plyr-react": "^6.0.0"

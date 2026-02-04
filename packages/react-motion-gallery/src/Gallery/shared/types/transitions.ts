@@ -7,6 +7,17 @@ export type LoadingOptions = {
     layout: "slider" | "grid" | "masonry" | "entries";
     count: number;
   }) => React.ReactNode;
+  shimmer?: {
+    paddingBottom?: string;
+    radius?: number | string;
+    c1?: string;
+    c2?: string;
+    c3?: string;
+    size?: string;
+    duration?: string;
+    timing?: string;
+  };
+  ratios?: number[];
 };
 
 export type IntroOptions = {

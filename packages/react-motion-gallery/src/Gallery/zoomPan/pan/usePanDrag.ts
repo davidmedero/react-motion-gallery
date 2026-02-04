@@ -70,7 +70,6 @@ export function usePanDrag(d: PanRuntimeDeps) {
       if (!imageRef.current) return;
 
       d.currentImage.current = imageRef.current as any;
-      d.getImageAspectRatio(imageRef.current as any);
 
       d.rebuildPanBodies();
 

@@ -26,7 +26,6 @@ export type PanRuntimeDeps = {
   interactionModeRef: React.RefObject<"idle" | "drag" | string>;
 
   // hooks/util fns
-  getImageAspectRatio: (imgEl: HTMLDivElement | null) => void;
   rebuildPanBodies: () => void;
   renderPan: (x: number, y: number) => void;
 

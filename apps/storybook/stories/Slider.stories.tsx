@@ -1,42 +1,122 @@
-import type { Meta, StoryObj } from "@storybook/react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
 import * as React from "react";
-import { Gallery } from "../../../packages/react-motion-gallery/src";
+import type { Meta, StoryObj } from "@storybook/react";
+import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
+import { SliderLayout } from "../../../packages/react-motion-gallery/src/Gallery/slider";
+import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
+
+const ITEMS = [
+  "https://picsum.photos/id/1018/1600/1000",
+  "https://picsum.photos/id/1025/1600/1000",
+  "https://picsum.photos/id/1035/1600/1000",
+  "https://picsum.photos/id/1043/1600/1000",
+  "https://picsum.photos/id/1069/1600/1000",
+  "https://picsum.photos/id/1074/1600/1000",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={`Slide ${i + 1}`}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        display: "block",
+        borderRadius: 12,
+      }}
+    />
+  );
+}
+
+function FullscreenAddon(props: {
+  fullscreenEnabled?: boolean;
+  sliderObject: any;
+  cellsStateLength: number;
+}) {
+  const { fullscreenEnabled = true, sliderObject, cellsStateLength } = props;
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: { enabled: fullscreenEnabled } as any,
+    slider: undefined,
+    sliderObject,
+    cellsStateLength,
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+function Demo() {
+  const sliderObject = React.useMemo(
+    () => ({
+      align: "center",
+      direction: { dir: "ltr" },
+    }),
+    []
+  );
+
+  const ratio = "1600 / 1000";
+
+  return (
+    <div style={{ padding: 24, maxWidth: 980 }}>
+      <h3 style={{ margin: "0 0 12px" }}>Slider ↔ Fullscreen connection test</h3>
+      <p style={{ margin: "0 0 16px", opacity: 0.8 }}>
+        Click any slide. Fullscreen should open. Close it, and it should fully reset.
+      </p>
+
+      <GalleryCore layout="slider" fullscreenItems={ITEMS}>
+        <div
+          style={{
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 16,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              aspectRatio: ratio as any,
+              overflow: "hidden",
+            }}
+          >
+            <SliderLayout
+              size={{
+                initialHeight: "100%",
+              }}
+              // transitions={{
+              //   loading: {
+              //     isLoading: true
+              //   }
+              // }}
+            >
+              {ITEMS.map((src, i) => (
+                <div key={src} style={{ height: "100%" }}>
+                  <Slide src={src} i={i} />
+                </div>
+              ))}
+            </SliderLayout>
+          </div>
+        </div>
+
+        <FullscreenAddon sliderObject={sliderObject} cellsStateLength={ITEMS.length} />
+      </GalleryCore>
+    </div>
+  );
+}
 
 const meta: Meta = {
-  title: "RMG/Gallery/Slider",
+  title: "RMG/Tests/Slider + Fullscreen Connection",
+  component: Demo,
+  parameters: { layout: "fullscreen" },
 };
+
 export default meta;
 
 type Story = StoryObj;
 
-export const Basic: Story = {
-  render: () => {
-    const items = [
-      { id: 'img-1', kind: "image", src: "https://picsum.photos/seed/1/1600/1200" },
-      { id: 'img-2', kind: "image", src: "https://picsum.photos/seed/2/1600/1200" },
-      { id: 'img-3', kind: "image", src: "https://picsum.photos/seed/3/1600/1200" },
-    ];
-    return (
-      <Gallery 
-        layout="slider"
-        fullscreen={{ enabled: true, items: items.map((item) => ({ kind: "image", src: item.src })) }}
-        slider={{ 
-          size: {
-            height: '400px'
-          },
-          transitions: {
-          loading: {
-            isLoading: true,
-            skeletonCount: 2
-          }
-        }}}
-      >
-        {items.map((item) => (
-          <div key={item.id}>
-            <img src={item.src} alt="" style={{ height: '400px' }} />
-          </div>
-        ))}
-      </Gallery>
-    );
-  },
+export const Connection: Story = {
+  render: () => <Demo />,
 };

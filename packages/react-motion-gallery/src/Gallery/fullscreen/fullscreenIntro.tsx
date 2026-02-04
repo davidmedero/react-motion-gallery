@@ -2,20 +2,17 @@
 import * as React from "react";
 import { flushSync } from "react-dom";
 import { createRoot, Root } from "react-dom/client";
-
 import { parseObjectPosition } from "../shared/transitions/objectPosition";
 import {
   containTransformForRect,
   coverTransformForRect,
   objectFitContentRect,
 } from "../shared/transitions/objectFitTransform";
-
 import type {
   FsCaptionPlacement,
   FullscreenOptions,
   FsCaptionRenderArgs,
 } from "../fullscreen/types";
-import type { ElementStyle } from "../shared/types/elements";
 
 type RefEl<T extends HTMLElement> = React.RefObject<T | null>;
 
@@ -29,10 +26,7 @@ export type FullscreenIntroArgs = {
   /** The resolved/normalized items the fullscreen slider will use. */
   normalizedItems: any[];
 
-  /** Current RTL state (already resolved). */
-  isRtl: boolean;
-
-  /** CSS module map (needs: fullscreenOverlay, fsOverlayCaption, open, closeBtn, leftChevron, rightChevron, counter, etc.) */
+  /** CSS module map (needs: fullscreenOverlay, fsOverlayCaption, open) */
   styles: Record<string, string>;
 
   /** Fullscreen options (single unified source of truth). */
@@ -43,10 +37,6 @@ export type FullscreenIntroArgs = {
   duplicateImgRef: RefEl<HTMLElement>;
   overlayCaptionRef: RefEl<HTMLDivElement>;
   overlayCaptionRootRef: React.RefObject<Root | null>;
-  closeButtonRef: RefEl<HTMLElement>;
-  counterRef: RefEl<HTMLElement>;
-  leftChevronRef: RefEl<HTMLElement>;
-  rightChevronRef: RefEl<HTMLElement>;
 
   /**
    * If you have a thumbnails container in fullscreen, pass it so we can reserve content space
@@ -78,52 +68,6 @@ export type FullscreenIntroArgs = {
   closestSelector?: string;
 };
 
-function elementStyleFromCfg(
-  cfg?: { className?: string; style?: React.CSSProperties } | null
-): ElementStyle | undefined {
-  if (!cfg) return undefined;
-  const out: ElementStyle = {};
-  if (cfg.className) out.className = cfg.className;
-  if (cfg.style) out.style = cfg.style as any;
-  return out;
-}
-
-function applyElementStyle(el: HTMLElement | null, cfg?: ElementStyle) {
-  if (!el || !cfg) return;
-
-  if (cfg.className) {
-    cfg.className
-      .split(" ")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .forEach((c) => el.classList.add(c));
-  }
-
-  if (cfg.style) {
-    Object.assign(el.style, cfg.style);
-  }
-}
-
-function ensureButtonLike(el: HTMLElement) {
-  if (el.tagName.toLowerCase() === "button") {
-    (el as HTMLButtonElement).type ||= "button";
-    return;
-  }
-
-  el.setAttribute("role", "button");
-  el.tabIndex = 0;
-
-  if (!el.dataset.rmgKeybind) {
-    el.dataset.rmgKeybind = "1";
-    el.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter" || ev.key === " ") {
-        ev.preventDefault();
-        el.click();
-      }
-    });
-  }
-}
-
 function detectVideoSlide(item: any, slideEl: HTMLElement) {
   return (
     item?.type === "video" ||
@@ -140,7 +84,6 @@ function detectVideoSlide(item: any, slideEl: HTMLElement) {
  * Unified fullscreen intro for Slider / Grid / Masonry / Entries.
  * - Uses ONLY `fs: FullscreenOptions` for behavior.
  * - Computes clip-path + duplicate image transform intro (or fade intro).
- * - Builds close/arrows/counter elements (or uses your renderers).
  * - Optionally renders a temporary “overlay caption” during the intro.
  */
 export function runFullscreenIntro(args: FullscreenIntroArgs) {
@@ -148,17 +91,12 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     origImg,
     index,
     normalizedItems,
-    isRtl,
     styles,
     fs,
     overlayDivRef,
     duplicateImgRef,
     overlayCaptionRef,
     overlayCaptionRootRef,
-    closeButtonRef,
-    counterRef,
-    leftChevronRef,
-    rightChevronRef,
     fsThumbContainerRef,
     setShowFullscreenSlider,
     setFsFadeOpening,
@@ -220,7 +158,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
   overlay.style.pointerEvents = "none";
   overlay.style.transition = "none";
 
-  document.body.appendChild(overlay);
   void overlay.offsetWidth;
   overlay.style.transition = `opacity ${DURATION_MS}ms ${EASING}`;
 
@@ -360,197 +297,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     }
   }
 
-  // --- Controls (close / arrows / counter) ---
-  const imageCount = normalizedItems.length;
-
-  const closeEnabled = fs.controls?.close?.enabled !== false;
-  const counterEnabled = fs.controls?.counter?.enabled !== false;
-  const allowFsArrows =
-    fs.controls?.arrows?.enabled !== false && imageCount > 1;
-
-  const defaultClose = () => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = styles.closeBtn;
-
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("width", "35");
-    svg.setAttribute("height", "35");
-    svg.setAttribute("viewBox", "0 0 16 16");
-
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("fill", "white");
-    path.setAttribute("stroke", "#4f4f4f");
-    path.setAttribute("stroke-width", "0.5");
-    path.setAttribute(
-      "d",
-      "M12.96 4.46l-1.42-1.42-3.54 3.55-3.54-3.55-1.42 1.42 3.55 3.54-3.55 3.54 1.42 1.42 3.54-3.55 3.54 3.55 1.42-1.42-3.55-3.54 3.55-3.54z"
-    );
-
-    svg.appendChild(path);
-    btn.appendChild(svg);
-    return btn;
-  };
-
-  const defaultChevron = (side: "left" | "right") => {
-    const ns = "http://www.w3.org/2000/svg";
-    const action =
-      side === "left" ? (isRtl ? "next" : "prev") : isRtl ? "prev" : "next";
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = side === "left" ? styles.leftChevron : styles.rightChevron;
-    btn.dataset.action = action;
-    btn.setAttribute("aria-label", action === "prev" ? "Previous" : "Next");
-
-    const svg = document.createElementNS(ns, "svg");
-    svg.setAttribute("viewBox", "0 0 16 16");
-    svg.setAttribute("width", "100%");
-    svg.setAttribute("height", "100%");
-    svg.setAttribute("focusable", "false");
-    svg.style.display = "block";
-
-    const poly = document.createElementNS(ns, "polygon");
-    poly.setAttribute(
-      "points",
-      "4.586,3.414 9.172,8 4.586,12.586 6,14 12,8 6,2"
-    );
-    poly.setAttribute("fill", "white");
-    poly.setAttribute("stroke", "#4f4f4f");
-    poly.setAttribute("stroke-width", "0.5");
-
-    if (side === "left") {
-      const g = document.createElementNS(ns, "g");
-      g.appendChild(poly);
-      svg.appendChild(g);
-    } else {
-      svg.appendChild(poly);
-    }
-
-    btn.appendChild(svg);
-    return btn;
-  };
-
-  const makeArrowEl = (dir: "prev" | "next", side: "left" | "right") => {
-    const explicit =
-      dir === "prev"
-        ? typeof fs.controls?.arrows?.renderPrev === "function"
-          ? fs.controls.arrows.renderPrev()
-          : null
-        : typeof fs.controls?.arrows?.renderNext === "function"
-        ? fs.controls.arrows.renderNext()
-        : null;
-
-    if (explicit instanceof HTMLElement) return explicit;
-
-    if (typeof fs.controls?.arrows?.render === "function") {
-      const el = fs.controls.arrows.render({ dir });
-      if (el instanceof HTMLElement) return el;
-    }
-
-    return defaultChevron(side);
-  };
-
-  const defaultCounter = (cur: number, total: number) => {
-    const el = document.createElement("div");
-    el.className = styles.counter;
-    el.textContent = `${cur + 1} / ${total}`;
-    return el;
-  };
-
-  const closeExplicit =
-    typeof fs.controls?.close?.render === "function"
-      ? fs.controls.close.render()
-      : null;
-
-  const closeBtn = closeEnabled
-    ? closeExplicit instanceof HTMLElement
-      ? closeExplicit
-      : defaultClose()
-    : null;
-
-  if (closeBtn) {
-    ensureButtonLike(closeBtn);
-    if (!closeBtn.getAttribute("aria-label"))
-      closeBtn.setAttribute("aria-label", "Close");
-  }
-
-  const leftAction: "prev" | "next" = isRtl ? "next" : "prev";
-  const rightAction: "prev" | "next" = isRtl ? "prev" : "next";
-
-  const leftCh = makeArrowEl(leftAction, "left");
-  const rightCh = makeArrowEl(rightAction, "right");
-
-  if (leftCh) ensureButtonLike(leftCh);
-  if (rightCh) ensureButtonLike(rightCh);
-
-  [leftCh, rightCh].forEach((btn, i) => {
-    if (!btn) return;
-    const action = i === 0 ? leftAction : rightAction;
-    btn.dataset.action = action;
-    if (!btn.getAttribute("aria-label")) {
-      btn.setAttribute("aria-label", action === "prev" ? "Previous" : "Next");
-    }
-  });
-
-  const ctrExplicit =
-    typeof fs.controls?.counter?.render === "function"
-      ? fs.controls.counter.render({ index, count: imageCount })
-      : null;
-
-  const ctr = counterEnabled
-    ? ctrExplicit instanceof HTMLElement
-      ? ctrExplicit
-      : defaultCounter(index, imageCount)
-    : null;
-
-  // Apply style overrides
-  // - arrows already use ElementStyle in your types
-  // - close/counter are (style,className), so adapt them to ElementStyle
-  applyElementStyle(closeBtn, elementStyleFromCfg(fs.controls?.close ?? null));
-  applyElementStyle(leftCh, fs.controls?.arrows?.arrow);
-  applyElementStyle(rightCh, fs.controls?.arrows?.arrow);
-  applyElementStyle(leftCh, fs.controls?.arrows?.prev);
-  applyElementStyle(rightCh, fs.controls?.arrows?.next);
-  applyElementStyle(ctr, elementStyleFromCfg(fs.controls?.counter ?? null));
-
-  // Ensure base classes exist for transitions
-  if (leftCh) leftCh.classList.add(styles.leftChevron);
-  if (rightCh) rightCh.classList.add(styles.rightChevron);
-
-  closeButtonRef.current = closeBtn;
-  leftChevronRef.current = leftCh;
-  rightChevronRef.current = rightCh;
-  (counterRef as any).current = ctr;
-
-  // Mount controls into body (same pattern as your current code)
-  [closeBtn, leftCh, rightCh, ctr].forEach((el) => {
-    if (el) {
-      el.style.display = "none";
-      document.body.appendChild(el);
-    }
-  });
-
-  if (closeBtn) {
-    closeBtn.style.display = "block";
-    closeBtn.classList.remove(styles.open);
-  }
-
-  if (leftCh) {
-    leftCh.style.display = allowFsArrows ? "block" : "none";
-    leftCh.classList.remove(styles.open);
-  }
-
-  if (rightCh) {
-    rightCh.style.display = allowFsArrows ? "block" : "none";
-    rightCh.classList.remove(styles.open);
-  }
-
-  if (ctr) {
-    ctr.style.display = imageCount > 1 ? "block" : "none";
-    ctr.classList.remove(styles.open);
-  }
-
   // --- Decide fade vs clip+transform intro ---
   const item = normalizedItems[index];
   const isVideoSlide = detectVideoSlide(item, slideEl);
@@ -665,21 +411,8 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
 
     // Open controls immediately (while animation runs)
     requestAnimationFrame(() => {
-      const many = imageCount > 1;
-      const addOpen = (el: Element) => el.classList.add(styles.open);
-
       overlay.style.opacity = "1";
       overlay.style.pointerEvents = "auto";
-
-      if (closeBtn) addOpen(closeBtn);
-
-      if (many) {
-        if (allowFsArrows) {
-          if (leftCh) addOpen(leftCh);
-          if (rightCh) addOpen(rightCh);
-        }
-        if (ctr) addOpen(ctr);
-      }
     });
 
     const onEnd = async (ev: TransitionEvent) => {
@@ -740,22 +473,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
       overlayCaptionRef.current = null;
     }
   }, DURATION_MS + 30);
-
-  // Open controls (fade path)
-  requestAnimationFrame(() => {
-    const many = imageCount > 1;
-    const addOpen = (el: Element) => el.classList.add(styles.open);
-
-    if (closeBtn) addOpen(closeBtn);
-
-    if (many) {
-      if (allowFsArrows) {
-        if (leftCh) addOpen(leftCh);
-        if (rightCh) addOpen(rightCh);
-      }
-      if (ctr) addOpen(ctr);
-    }
-  });
 }
 
 /**

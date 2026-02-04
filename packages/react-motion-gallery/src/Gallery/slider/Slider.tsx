@@ -6,7 +6,6 @@ import {
   useEffect,
   useLayoutEffect,
   useState,
-  createRef,
   cloneElement,
   Children,
   ReactNode,
@@ -26,7 +25,6 @@ import {
 } from 'react'
 import styles from './Slider.module.css'
 import createIndexChannel from './sliderSub'
-import { createRoot } from 'react-dom/client';
 import { AxisKey, isMouseEvent } from '../shared/input/pointerTypes';
 import { createDragTracker } from '../shared/input/dragTracker';
 import { Vector1D, Vector1DType } from '../shared/motion/vector1d';
@@ -39,17 +37,14 @@ import { EventStore } from '../shared/motion/eventStore';
 import { Animations, AnimationsType } from '../shared/motion/animations';
 import type { APITypes } from 'plyr-react';
 import { RmgSlideProvider } from '../shared/slideContext';
-import { ResponsiveHeightRule, SliderHandle, SliderIntroOptions, SliderLoadingOptions } from './types';
+import { ResponsiveHeightRule, SliderHandle, SliderIntroOptions } from './types';
 import { ArrowRenderArgs, DotsRenderArgs, ProgressRenderArgs } from '../shared/types/controls';
-import { ElementStyle } from '../shared/types/elements';
-import { FsCaptionPlacement, FsCaptionRenderArgs, FsCounterArgs } from '../fullscreen/types';
+import { FsCaptionPlacement, FsCaptionRenderArgs } from '../fullscreen/types';
 import { MediaItem } from '../shared/types/media';
-import { ThumbnailPosition } from './thumbnails/types';
 import { BreakpointMap } from '../shared/responsive';
 import { IndexMode } from '../api/types';
 import { Counter, CounterType } from '../shared/motion/counter';
 import { createGestureShield } from '../fullscreen/gestureShield';
-import { buildScopedSkeletonCountCss } from '../shared/skeleton/buildScopedSkeletonCountCss';
 import { useParallaxEffect } from './effects/useParallaxEffect';
 import { useScaleEffect } from './effects/useScaleEffect';
 import { useFadeEffect } from './effects/useFadeEffect';
@@ -57,8 +52,6 @@ import { BaseLimit, createBaseLimit } from '../shared/motion/baseLimit';
 import { RmgArrows } from './controls/arrows';
 import { buildDotsNode } from './controls/dots';
 import { buildProgressNode } from './controls/progress';
-import { FullscreenOptions } from '../fullscreen/types';
-import { createSliderFullscreenIntroRunner } from '../fullscreen/fullscreenIntro';
 import { WindowType } from '../shared/input/pointerTypes'
 import { AXSpec } from '../shared/types/axis';
 import { Translate } from '../shared/motion/translate';
@@ -82,12 +75,9 @@ interface SliderProps {
   children: ReactNode
   imageCount: number
   isClick: RefObject<boolean>
-  expandableImgRefs?: RefObject<RefObject<HTMLImageElement | null>[]>
+  expandableImgRefs?: React.RefObject<(HTMLImageElement | null)[]>
   overlayDivRef: RefObject<HTMLDivElement | null>
   setSlideIndex: (index: number) => void
-  setShowFullscreenModal: (show: boolean) => void
-  setShowFullscreenSlider: Dispatch<SetStateAction<boolean>>
-  showFullscreenSlider: boolean
   duplicateImgRef: RefObject<HTMLElement | null>
   closeButtonRef: RefObject<HTMLElement | null>
   counterRef: RefObject<HTMLElement | null>
@@ -131,34 +121,12 @@ interface SliderProps {
   renderDots?: (args: DotsRenderArgs) => React.ReactNode;
   showArrows?: boolean;
   showDots?: boolean;
-  enableFullscreen?: boolean;
   showProgress?: boolean;
   progressClassName?: string;
   progressStyle?: React.CSSProperties;
   progressInnerClassName?: string;
   progressInnerStyle?: React.CSSProperties;
   renderProgress?: (args: ProgressRenderArgs) => React.ReactNode;
-  fullscreenControls?: {
-    close?: ElementStyle;
-    arrows?: {
-      arrow?: ElementStyle;
-      prev?: ElementStyle;
-      next?: ElementStyle;
-    };
-    counter?: ElementStyle;
-  };
-  showFsArrows?: boolean;
-  showFsClose?: boolean;
-  renderFsClose?:   ()   => HTMLElement | null;
-  renderFsArrows?: (args: { dir: "prev" | "next" }) => HTMLElement | null;
-  renderFsPrev?: () => HTMLElement | null;
-  renderFsNext?: () => HTMLElement | null;
-  showFsCounter?: boolean;
-  renderFsCounter?: (args: FsCounterArgs) => HTMLElement | null;
-  fsCaptionPlacement?: FsCaptionPlacement;
-  fsCaptionWidth?: number;
-  fsCaptionHeight?: number;
-  fsCaptionBreakpoint?: number;
   parallax?: boolean;
   parallaxBleedPct?: string;
   parallaxBorderRadius?: string;
@@ -175,21 +143,22 @@ interface SliderProps {
   freeScrollDuration: number;
   sliderFriction: number;
   indexChannel?: ReturnType<typeof createIndexChannel>;
-  loadingOptions?: SliderLoadingOptions;
   introOptions?: SliderIntroOptions;
   lazyLoad?: boolean;
   rippleEnabled?: boolean;
   rippleClassName?: string;
   renderFsCaption?: (args: FsCaptionRenderArgs) => React.ReactNode;
   normalizedItems: MediaItem[];
-  fsThumbContainerRef?: RefObject<HTMLDivElement | null>
-  fullscreenThumbnails?: ThumbnailPosition;
   sliderImagesReady?: boolean;
-  fullscreenIntroFade?: boolean;
-  setFsFadeOpening: Dispatch<SetStateAction<boolean>>;
   breakpointMap: BreakpointMap;
-  fsIntroDuration?: number;
-  fsIntroEasing?: string;
+  enableFullscreen?: boolean;
+  requestFullscreenOpen?: (req: {
+    index: number;
+    img: HTMLImageElement | null;
+    event?: Event;
+  }) => void;
+  isFullscreenOpen: boolean;
+  setFullscreenOpen: (open: boolean) => void;
 }
 
 type CarouselChildProps = HTMLAttributes<HTMLElement> &
@@ -370,16 +339,7 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     imageCount,
     isClick,
     expandableImgRefs,
-    overlayDivRef,
     setSlideIndex,
-    setShowFullscreenModal,
-    setShowFullscreenSlider,
-    showFullscreenSlider,
-    duplicateImgRef,
-    closeButtonRef,
-    counterRef,
-    leftChevronRef,
-    rightChevronRef,
     isReady,
     setIsReady,
     loop,
@@ -417,26 +377,12 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     renderDots,
     showArrows,
     showDots,
-    enableFullscreen,
     showProgress,
     progressClassName,
     progressStyle,
     progressInnerClassName,
     progressInnerStyle,
     renderProgress,
-    fullscreenControls = {},
-    showFsArrows,
-    showFsClose,
-    renderFsClose,
-    renderFsArrows,
-    renderFsPrev,
-    renderFsNext,
-    showFsCounter,
-    renderFsCounter,
-    fsCaptionPlacement,
-    fsCaptionWidth,
-    fsCaptionHeight,
-    fsCaptionBreakpoint,
     parallax,
     parallaxBleedPct,
     parallaxBorderRadius,
@@ -453,21 +399,15 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     freeScrollDuration,
     sliderFriction,
     indexChannel: externalIndexChannel,
-    loadingOptions,
     introOptions,
     lazyLoad,
     rippleEnabled,
     rippleClassName,
-    renderFsCaption,
-    normalizedItems,
-    fsThumbContainerRef,
-    fullscreenThumbnails,
     sliderImagesReady,
-    fullscreenIntroFade,
-    setFsFadeOpening,
-    breakpointMap,
-    fsIntroDuration = 300,
-    fsIntroEasing = 'cubic-bezier(.4,0,.22,1)'
+    enableFullscreen,
+    requestFullscreenOpen,
+    isFullscreenOpen,
+    setFullscreenOpen,
   }: SliderProps,
   ref: Ref<SliderHandle>
 ) {
@@ -498,8 +438,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
   const slideBuildSubs = useRef(new Set<(nodes: HTMLElement[]) => void>());
   const [layoutReady, setLayoutReady] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
-  const overlayCaptionRef = useRef<HTMLDivElement | null>(null);
-  const overlayCaptionRootRef = useRef<ReturnType<typeof createRoot> | null>(null);
   const locationRef = useRef<Vector1DType | null>(null)
   const previousLocationRef = useRef<Vector1DType | null>(null)
   const offsetLocationRef = useRef<Vector1DType | null>(null)
@@ -807,7 +745,7 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
       const now = performance.now();
       if (
         isPointerDown.current ||
-        showFullscreenSlider ||
+        isFullscreenOpen ||
         !isWrapping.current ||
         !autoPlay ||
         !isReady ||
@@ -829,7 +767,7 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
       window.clearInterval(id);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showFullscreenSlider, slidesState, clonedChildren, isWrapping.current]);
+  }, [isFullscreenOpen, slidesState, clonedChildren, isWrapping.current]);
 
   useEffect(() => {
     let lastTime = performance.now();
@@ -846,7 +784,7 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
         !isWrapping.current ||
         isPointerDown.current ||
         isAnimatingRef.current ||
-        showFullscreenSlider ||
+        isFullscreenOpen ||
         !autoScroll ||
         (pauseAutoScrollOnHover && isHoveringRef.current)
       ) {
@@ -873,7 +811,7 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showFullscreenSlider]);
+  }, [isFullscreenOpen]);
 
   function setWrapSafe(next: boolean) {
     if (loopStableRef.current === next) return;
@@ -1218,7 +1156,7 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
   useEffect(() => {
     if (isReady) return;
 
-    const imagesOk = lazyLoad ? true : sliderImagesReady;
+    const imagesOk = lazyLoad ? true : (sliderImagesReady ?? true);
     if (!engineReady || !imagesOk) return;
 
     setIsReady(true);
@@ -1467,27 +1405,29 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
   }, [lazyLoad, clonedChildren, wrap, AX.main]);
 
   useEffect(() => {
-    if (!slider.current) return
-    const childrenArray = Children.toArray(children)
-    const imgOffset = !wrap ? 0 : visibleImages * 2
-    if (clonedChildren.length !== Children.toArray(children).length + imgOffset) return
+    const root = slider.current;
+    if (!root) return;
+
+    const childrenArray = Children.toArray(children);
+    const imgOffset = !wrap ? 0 : visibleImages * 2;
+
+    if (clonedChildren.length !== childrenArray.length + imgOffset) return;
     if (!expandableImgRefs) return;
 
-    expandableImgRefs.current = []
-    expandableImgRefs.current = Array(childrenArray.length + imgOffset)
-      .fill(null)
-      .map(() => createRef<HTMLImageElement>())
+    // allocate to correct length
+    const len = childrenArray.length + imgOffset;
+    expandableImgRefs.current = Array(len).fill(null);
 
-    const images = slider.current.querySelectorAll('img')
+    // grab imgs in DOM order
+    const images = root.querySelectorAll<HTMLImageElement>("img");
     images.forEach((img, index) => {
-      if (expandableImgRefs.current[index]) {
-        ;(expandableImgRefs.current[index] as any).current = img
-      }
-    })
+      if (index < len) expandableImgRefs.current[index] = img;
+    });
+
     return () => {
-      expandableImgRefs.current = []
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      expandableImgRefs.current = [];
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [children, clonedChildren, visibleImages, wrap]);
 
   useLayoutEffect(() => {
@@ -1638,9 +1578,16 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     return best
   }
 
+  const containerSize = (slider.current as any)?.[AX.clientKey] as number;
+
+  const centerOffset =
+    !wrap && sliderWidth.current <= containerSize
+    ? (containerSize - sliderWidth.current) / 2
+    : 0;
+
   function positionSlider(loc?: number) {
     const x = loc ?? xRef.current
-    translateRef.current?.to(x * sign)
+    translateRef.current?.to((x + centerOffset) * sign)
   }
 
   function updateActiveIndexFromX(loc: number) {
@@ -2037,11 +1984,14 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
         const target = evt.target as HTMLElement
         const img = target.closest('img') as HTMLImageElement | null
         if (img) {
-          if (!expandableImgRefs) return;
-          const index = expandableImgRefs.current.findIndex((ref) => ref.current === img)
-          if (index >= 0) handleImageClick(evt as any, index)
-          scrollToIndex(selectedIndex.current)
-          return
+          if (!expandableImgRefs) {
+            scrollToIndex(selectedIndex.current);
+            return;
+          };
+          const index = expandableImgRefs.current.findIndex((el) => el === img);
+          if (index >= 0) handleImageClick(evt as any, index);
+          scrollToIndex(selectedIndex.current);
+          return;
         }
         if (clickedVideoSurface(evt) && !isYouTubeVideoEvent(evt)) {
           evt.preventDefault?.();
@@ -2456,7 +2406,7 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
       } as SliderHandle;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [centerSlider, indexChannel, wrap, imageCount, isRtl, showFullscreenSlider]
+    [centerSlider, indexChannel, wrap, imageCount, isRtl, isFullscreenOpen]
   );
   
   function updateControlsImperatively() {
@@ -2589,125 +2539,27 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     shieldRef.current = createGestureShield(10000);
   }, []);
 
-  const addShield = useCallback((timeoutMs?: number) => {
-    shieldCleanupRef.current?.();
-    const teardown = shieldRef.current?.add(timeoutMs);
-    shieldCleanupRef.current = teardown ?? null;
-  }, []);
-
   function handleImageClick(e: React.PointerEvent | MouseEvent, parsedImgIndex: number) {
-    isClick.current = true
-    const originalIndex = ((parsedImgIndex - visibleImagesRef.current) % imageCount + imageCount) % imageCount
-    const fullscreenIndex = originalIndex + 1
-    const finalIndex = !wrap ? parsedImgIndex : fullscreenIndex
-    setShowFullscreenModal(true)
-    if (!expandableImgRefs) return;
-    runSlideFullscreenIntro(e as React.PointerEvent<HTMLDivElement>, expandableImgRefs.current[parsedImgIndex], finalIndex)
-    setSlideIndex(finalIndex)
-  }
+    isClick.current = true;
 
-  const fsForIntro = useMemo<FullscreenOptions>(() => {
-    return {
-      effects: {
-        introDuration: fsIntroDuration,
-        introEasing: fsIntroEasing,
-        introFade: fullscreenIntroFade,
-      },
-      caption: {
-        placement: fsCaptionPlacement,
-        breakpoint: fsCaptionBreakpoint,
-        width: fsCaptionWidth,
-        height: fsCaptionHeight,
-        render: renderFsCaption,
-      },
-      thumbnails: {
-        layout: { position: fullscreenThumbnails } as any,
-      } as any,
-      controls: {
-        close: {
-          enabled: showFsClose !== false,
-          render: renderFsClose ?? undefined,
-          style: fullscreenControls?.close?.style as any,
-          className: fullscreenControls?.close?.className,
-        },
-        counter: {
-          enabled: showFsCounter !== false,
-          render: renderFsCounter ?? undefined,
-          style: fullscreenControls?.counter?.style as any,
-          className: fullscreenControls?.counter?.className,
-        },
-        arrows: {
-          enabled: showFsArrows !== false,
-          render: renderFsArrows ?? undefined,
-          renderPrev: renderFsPrev ?? undefined,
-          renderNext: renderFsNext ?? undefined,
-          arrow: fullscreenControls?.arrows?.arrow,
-          prev: fullscreenControls?.arrows?.prev,
-          next: fullscreenControls?.arrows?.next,
-        },
-      },
-    };
-  }, [
-    fsIntroDuration,
-    fsIntroEasing,
-    fullscreenIntroFade,
-    fsCaptionPlacement,
-    fsCaptionBreakpoint,
-    fsCaptionWidth,
-    fsCaptionHeight,
-    fullscreenThumbnails,
-    showFsClose,
-    showFsCounter,
-    showFsArrows,
-    fullscreenControls,
-    renderFsCaption,
-    renderFsClose,
-    renderFsCounter,
-    renderFsArrows,
-    renderFsPrev,
-    renderFsNext,
-  ]);
+    const originalIndex =
+      ((parsedImgIndex - visibleImagesRef.current) % imageCount + imageCount) % imageCount;
 
-  const runSlideFullscreenIntro = useMemo(() => {
-    return createSliderFullscreenIntroRunner({
-      normalizedItems,
-      isRtl: direction === "rtl",
-      styles,
-      fs: fsForIntro,
-      overlayDivRef,
-      duplicateImgRef,
-      overlayCaptionRef,
-      overlayCaptionRootRef,
-      closeButtonRef,
-      leftChevronRef,
-      rightChevronRef,
-      counterRef,
-      fsThumbContainerRef,
-      setShowFullscreenSlider,
-      setFsFadeOpening,
-      addShield,
-      resolveFsCaptionPlacement,
-      closestSelector: ".rmg__slide",
+    const fullscreenIndex = originalIndex + 1;
+    const finalIndex = !wrap ? parsedImgIndex : fullscreenIndex;
+
+    setFullscreenOpen(true);
+
+    const imgEl = expandableImgRefs?.current?.[parsedImgIndex] ?? null;
+
+    requestFullscreenOpen?.({
+      index: finalIndex,
+      img: imgEl,
+      event: e as any,
     });
-  }, [
-    normalizedItems,
-    direction,
-    styles,
-    fsForIntro,
-    overlayDivRef,
-    duplicateImgRef,
-    overlayCaptionRef,
-    overlayCaptionRootRef,
-    closeButtonRef,
-    leftChevronRef,
-    rightChevronRef,
-    counterRef,
-    fsThumbContainerRef,
-    setShowFullscreenSlider,
-    setFsFadeOpening,
-    addShield,
-    resolveFsCaptionPlacement,
-  ]);
+
+    setSlideIndex(finalIndex);
+  }
 
   function onTouchStart(e: TouchEvent) {
     const t0 = e.touches[0]
@@ -2846,15 +2698,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     return () => ro.disconnect();
   }, [clonedChildren, visibleImages, wrap, isReady, hasResponsiveHeights]);
 
-  const normalizedLoading = useMemo(() => {
-    const src = loadingOptions ?? {};
-    return {
-      isLoading: src.isLoading,
-      skeletonCount: src.skeletonCount,
-      renderLoading: src.renderLoading,
-    };
-  }, [loadingOptions]);
-
   const normalizedIntro = useMemo(() => {
     const src = introOptions ?? {};
     return {
@@ -2924,51 +2767,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     'aria-busy': !isReady ? true : undefined,
   };
 
-  const columnsForSkeleton =
-    typeof cellsPerSlide === 'number' && cellsPerSlide > 0
-      ? cellsPerSlide
-      : (visibleImages || visibleImagesRef.current || 1);
-
-  const MAX_SKELETONS = 12;
-
-  const bpMap = breakpointMap
-
-  const { cssText: skeletonCss, ssrBaseCount: skeletonCountBase } = useMemo(() => {
-    return buildScopedSkeletonCountCss({
-      scopeId,
-      responsiveCount: normalizedLoading.skeletonCount,
-      fallbackCount: columnsForSkeleton,
-      breakpointMap: bpMap,
-      maxSlots: MAX_SKELETONS,
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeId, normalizedLoading.skeletonCount, columnsForSkeleton, bpMap]);
-
-  const defaultSliderSkeleton = (
-    <div className={styles.sliderSkeletonOverlay} data-rmg-skel-part="overlay">
-      <div className={styles.sliderSkeletonRow} data-rmg-skel-part="row">
-        {Array.from({ length: MAX_SKELETONS }).map((_, i) => (
-          <div
-            key={`rmg-slider-skel-${i}`}
-            className={styles.sliderSkeleton}
-            data-rmg-skel-slot={i + 1}
-          />
-        ))}
-      </div>
-    </div>
-  );
-
-  const loadingNode = (!isReady)
-    ? (
-        normalizedLoading.renderLoading
-          ? normalizedLoading.renderLoading({
-              layout: 'slider',
-              count: skeletonCountBase,
-            })
-          : defaultSliderSkeleton
-      )
-    : null;
-
   const introWrapped = normalizedIntro.renderIntro
     ? (
         <div {...baseContainerProps}>
@@ -2987,7 +2785,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     <>
       {responsiveCss && <style dangerouslySetInnerHTML={{ __html: responsiveCss }} />}
       {baseCss && <style dangerouslySetInnerHTML={{ __html: baseCss }} />}
-      {skeletonCss && <style dangerouslySetInnerHTML={{ __html: skeletonCss }} />}
 
       <div
         id={scopeId}
@@ -3010,7 +2807,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
           ...sliderContainerStyles,
         }}
       >
-        {loadingNode}
         {introWrapped}
       </div>
     </>

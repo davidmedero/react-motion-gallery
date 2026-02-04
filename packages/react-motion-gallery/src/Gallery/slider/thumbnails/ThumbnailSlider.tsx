@@ -1635,15 +1635,6 @@ export default function ThumbnailSlider({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentLength, containerLength, thumbLong, thumbSize, count])
 
-  const normalizedLoading = useMemo(() => {
-    const src = loadingOptions ?? {};
-    return {
-      isLoading: src.isLoading,
-      skeletonCount: src.skeletonCount,
-      renderLoading: src.renderLoading,
-    };
-  }, [loadingOptions]);
-
   const normalizedIntro = useMemo(() => {
     const src = introOptions ?? {};
     return {
@@ -1678,69 +1669,12 @@ export default function ThumbnailSlider({
     });
   }, [renderedThumbs]);
 
-  const MAX_SKELETONS = 12;
-
-  const fallbackCount = 6;
-
-  const { cssText: skeletonCss, ssrBaseCount: skeletonCountBase } = useMemo(() => {
-    return buildScopedSkeletonCountCss({
-      scopeId,
-      responsiveCount: normalizedLoading.skeletonCount,
-      fallbackCount,
-      breakpointMap,
-      maxSlots: MAX_SKELETONS,
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeId, normalizedLoading.skeletonCount, breakpointMap]);
-
-  const defaultThumbSkeleton = (
-    <div className={cls.thumbSkeletonOverlay} data-rmg-skel-part="overlay">
-      <div
-        className={cls.thumbSkeletonRow}
-        data-rmg-skel-part="row"
-        style={{
-          gap,
-          flexDirection: isHorizontal ? 'row' : 'column',
-        }}
-      >
-        {Array.from({ length: MAX_SKELETONS }).map((_, i) => (
-          <div
-            key={`rmg-thumb-skel-${i}`}
-            className={cls.thumbSkeleton}
-            data-rmg-skel-slot={i + 1}
-            style={{
-              width: isHorizontal ? (thumbnailWidth ?? thumbSize ?? 64) : '100%',
-              height: isHorizontal ? '100%' : (thumbnailHeight ?? thumbSize ?? 64),
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-
-  const showLoading =
-    normalizedLoading.isLoading != null
-      ? !!normalizedLoading.isLoading
-      : !isReady;
-
-  const loadingNode = showLoading
-    ? (
-        normalizedLoading.renderLoading
-          ? normalizedLoading.renderLoading({ layout: 'thumbnails', count: skeletonCountBase })
-          : defaultThumbSkeleton
-      )
-    : null;
-
-  const fadeClass =
-    showLoading
-      ? ''
-      : (isReady && inView)
-        ? cls.fadeInActive
-        : cls.fadeInStart;
+  const fadeClass = (isReady && inView)
+    ? cls.fadeInActive
+    : cls.fadeInStart;
 
   const baseContainerProps: React.HTMLAttributes<HTMLDivElement> = {
-    className: [cls.fade_container, fadeClass].filter(Boolean).join(' '),
-    'aria-busy': showLoading ? true : undefined,
+    className: [cls.fade_container, fadeClass].filter(Boolean).join(' ')
   };
 
   const outerStyle: React.CSSProperties = {
@@ -1849,7 +1783,6 @@ export default function ThumbnailSlider({
         ['--rmg-intro-easing' as any]: normalizedIntro.easing,
       }}
     >
-      {loadingNode}
       {normalizedIntro.renderIntro
         ? normalizedIntro.renderIntro(
             { active: isReady && inView, containerProps: baseContainerProps },
@@ -1861,7 +1794,6 @@ export default function ThumbnailSlider({
 
   return (
     <>
-      {skeletonCss && <style dangerouslySetInnerHTML={{ __html: skeletonCss }} />}
       {root}
     </>
   );

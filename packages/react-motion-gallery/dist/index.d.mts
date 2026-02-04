@@ -227,21 +227,21 @@ type FullscreenArrows = {
     next?: ElementStyle;
     render?: (args: {
         dir: "prev" | "next";
-    }) => HTMLElement | null;
-    renderPrev?: () => HTMLElement | null;
-    renderNext?: () => HTMLElement | null;
+    }) => React$1.ReactNode;
+    renderPrev?: () => React$1.ReactNode;
+    renderNext?: () => React$1.ReactNode;
 };
 type FullscreenClose = {
     enabled?: boolean;
     style?: React$1.CSSProperties;
     className?: string;
-    render?: () => HTMLElement | null;
+    render?: () => React$1.ReactNode;
 };
 type FullscreenCounter = {
     enabled?: boolean;
     style?: React$1.CSSProperties;
     className?: string;
-    render?: (args: FsCounterArgs) => HTMLElement | null;
+    render?: (args: FsCounterArgs) => React$1.ReactNode;
 };
 type FullscreenControlsOptions = {
     close?: FullscreenClose;

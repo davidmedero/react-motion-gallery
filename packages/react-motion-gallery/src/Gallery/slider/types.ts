@@ -25,6 +25,8 @@ export type SliderSize = {
   height?: string;
   heightRules?: ResponsiveHeightRule[];
   initialHeight?: number | string;
+  initialHeightRules?: ResponsiveHeightRule[];
+  aspectRatio?: number | `${number}/${number}` | `${number} / ${number}`;
 };
 
 export type SliderElements = {
@@ -98,9 +100,18 @@ export type SliderLoadingOptions = {
   isLoading?: boolean;
   skeletonCount?: ResponsiveNumber;
   renderLoading?: (args: {
-    layout: "slider" | "grid" | "masonry" | "entries";
+    layout: "slider" | "thumbnails";
     count: number;
   }) => React.ReactNode;
+  shimmer?: {
+    radius?: number | string;
+    c1?: string;
+    c2?: string;
+    c3?: string;
+    size?: string;
+    duration?: string;
+    timing?: string;
+  };
 };
 
 export type SliderIntroOptions = {

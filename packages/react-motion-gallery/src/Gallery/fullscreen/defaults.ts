@@ -1,5 +1,28 @@
 export const DEFAULT_FULLSCREEN = {
-  enabled: true,
+  enabled: false,
+  controls: {
+    close: {
+      enabled: true,
+      style: {},
+      className: '',
+      render: undefined
+    },
+    arrows: {
+      enabled: true,
+      arrow: {},
+      prev: {},
+      next: {},
+      render: undefined,
+      renderPrev: undefined,
+      renderNext: undefined
+    },
+    counter: {
+      enabled: true,
+      style: {},
+      className: '',
+      render: undefined
+    }
+  },
   effects: {
     introDuration: 300,
     introEasing: "cubic-bezier(.4,0,.22,1)",
@@ -10,6 +33,7 @@ export const DEFAULT_FULLSCREEN = {
     thumbnailsFadeDuration: 300,
     thumbnailsFadeEasing: "cubic-bezier(.4,0,.22,1)",
   },
+  thumbnails: {},
   slider: {
     duration: 25,
     friction: 0.68,
@@ -20,4 +44,5 @@ export const DEFAULT_FULLSCREEN = {
     panDuration: 43,
     panFriction: 0.68,
   },
+  caption: {}
 } as const;

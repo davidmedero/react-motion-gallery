@@ -1,0 +1,239 @@
+/* src/Gallery/slider/Slider.module.css */
+.rtl {
+}
+.track {
+  position: relative;
+  left: 0;
+}
+.rtl .track {
+  left: auto;
+  right: 0;
+}
+.slider_container,
+.fade_container {
+  height: var(--rmg-slider-height);
+  cursor: grab;
+}
+.viewport {
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+.track {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+.fadeInStart {
+  opacity: 0;
+}
+.fadeInActive {
+  opacity: 1;
+  transition: opacity var(--rmg-intro-duration, 420ms) var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
+}
+.shimmerOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rmg-shimmer-radius, 10px);
+  overflow: hidden;
+  background:
+    linear-gradient(
+      90deg,
+      var(--rmg-shimmer-c1, #f0f2f5) 25%,
+      var(--rmg-shimmer-c2, #e6e9ef) 37%,
+      var(--rmg-shimmer-c3, #f0f2f5) 63%);
+  background-size: var(--rmg-shimmer-size, 400% 100%);
+  animation: rmgShimmer var(--rmg-shimmer-duration, 1.2s) infinite var(--rmg-shimmer-timing, linear);
+}
+@keyframes rmgShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fadeInActive {
+    transition: none;
+  }
+  .shimmerOverlay {
+    animation: none;
+  }
+}
+.pagination_dot {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 50%;
+  margin: 5px 5px 5px 5px;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+.pagination_dot:hover {
+  transform: scale(1.2);
+}
+.pagination_dot.active {
+  background-color: rgb(80, 163, 255);
+  box-shadow: 0 0 8px rgba(80, 163, 255, 0.6);
+}
+.pagination_dot.inactive {
+  background-color: lightgray;
+}
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 600ms linear;
+  background-color: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+.fullscreenOverlay {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background-color: rgba(0, 0, 0, 0.8);
+  transition: opacity 300ms cubic-bezier(.4, 0, .22, 1);
+  will-change: opacity;
+  z-index: 8999;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: paint;
+}
+.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.duplicateImg {
+  position: fixed;
+  display: none;
+  transform-origin: top left;
+  transition: transform 0.3s cubic-bezier(.4, 0, .22, 1);
+  z-index: 9998;
+  will-change: transform;
+}
+.closeBtn,
+.leftChevron,
+.rightChevron,
+.counter {
+  position: fixed;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(.4, 0, .22, 1);
+  z-index: 2147483602;
+}
+.closeBtn.open,
+.leftChevron.open,
+.rightChevron.open,
+.counter.open {
+  display: block;
+  opacity: 1;
+}
+.closeBtn {
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+}
+.leftChevron,
+.rightChevron {
+  top: 45.5%;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+}
+.leftChevron {
+  left: 0;
+  transform: rotate(180deg);
+}
+.rightChevron {
+  right: 0;
+}
+.counter {
+  top: 15px;
+  left: 16px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 32px;
+  user-select: none;
+  text-shadow: 1px 1px 3px #4f4f4f;
+}
+.fsOverlayCaption {
+  position: fixed;
+  padding: 1rem 1.5rem;
+  color: #fff;
+  font-size: 0.875rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 300ms cubic-bezier(.4, 0, .22, 1), transform 300ms cubic-bezier(.4, 0, .22, 1);
+  z-index: 9999;
+}
+.fsOverlayCaption.open {
+  opacity: 1;
+  transform: translateY(0);
+}
+.sliderSkeletonOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+}
+.sliderSkeletonRow {
+  display: flex;
+  width: 100%;
+  gap: 0.75rem;
+  height: var(--rmg-slider-height, 320px);
+}
+.sliderSkeleton {
+  flex: 1 1 0;
+  height: 100%;
+  border-radius: var(--rmg-shimmer-radius, 10px);
+  overflow: hidden;
+  position: relative;
+  background:
+    linear-gradient(
+      90deg,
+      var(--rmg-shimmer-c1, #f0f2f5) 25%,
+      var(--rmg-shimmer-c2, #e6e9ef) 37%,
+      var(--rmg-shimmer-c3, #f0f2f5) 63%);
+  background-size: var(--rmg-shimmer-size, 400% 100%);
+  animation: rmgShimmer var(--rmg-shimmer-duration, 1.2s) infinite var(--rmg-shimmer-timing, linear);
+}
+.fade_container [data-rmg-idx] > * {
+  opacity: 0;
+  transform: translateY(var(--rmg-intro-offset, 10px));
+  transition: opacity var(--rmg-intro-duration, 300) var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1)), transform var(--rmg-intro-duration, 300) var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
+  transition-delay: calc(var(--rmg-intro-index, 0) * var(--rmg-intro-stagger, 40ms));
+  will-change: opacity, transform;
+}
+.fade_container.fadeInActive [data-rmg-idx] > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+/*# sourceMappingURL=Slider-BIKHYWOR.css.map */

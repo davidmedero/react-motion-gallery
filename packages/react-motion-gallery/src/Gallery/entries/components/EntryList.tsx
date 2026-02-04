@@ -1,11 +1,12 @@
 import * as React from "react";
-import styles from "../../index.module.css";
+import styles from "../../styles.module.css";
 import type { EntriesOptions } from "../types";
 import { useEntryInView } from "../hooks/useEntryInView";
 import { useEntryDecodeReady } from "../hooks/useEntryDecodeReady";
-import { EntrySkeletonCard } from "./EntrySkeleton";
+import { EntrySkeletonCard, EntrySkeletonSpec } from "./EntrySkeleton";
 import { useNormalizedEntriesIntro, useNormalizedEntriesLoading } from "../normalize";
 import { MediaItem } from "../../shared/types/media";
+import { SliderHandle } from "../../slider/types";
 
 type Props = {
   enabled: boolean; // layout === 'entries'
@@ -28,10 +29,11 @@ type Props = {
   renderMediaContainer: (args: {
     entryIndex: number;
     mediaNodes: React.ReactNode[];
+    entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
   }) => React.ReactNode;
 
   registerExpandableImg?: (globalIndex: number, node: HTMLElement | null) => void;
-
+  entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
 };
 
 export function EntryList({
@@ -43,8 +45,61 @@ export function EntryList({
   nodeFromMedia,
   isClickRef,
   renderMediaContainer,
-  registerExpandableImg
+  registerExpandableImg,
+  entrySliderRefs
 }: Props) {
+    // --- click suppression when user dragged ---
+  const DRAG_PX = 6;
+
+  const downPosRef = React.useRef<{ x: number; y: number } | null>(null);
+  const draggedRef = React.useRef(false);
+
+  const onPointerDownCapture: React.PointerEventHandler<HTMLElement> = (e) => {
+    // only primary button / touch
+    if ((e as any).button != null && (e as any).button !== 0) return;
+
+    draggedRef.current = false;
+    downPosRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const onPointerMoveCapture: React.PointerEventHandler<HTMLElement> = (e) => {
+    const p = downPosRef.current;
+    if (!p) return;
+
+    const dx = e.clientX - p.x;
+    const dy = e.clientY - p.y;
+
+    if (!draggedRef.current && (dx * dx + dy * dy) >= DRAG_PX * DRAG_PX) {
+      draggedRef.current = true;
+    }
+  };
+
+  const onPointerUpCapture: React.PointerEventHandler<HTMLElement> = () => {
+    downPosRef.current = null;
+
+    // Clear on next tick so the synthetic click that follows pointerup is still blocked
+    window.setTimeout(() => {
+      draggedRef.current = false;
+    }, 0);
+  };
+
+  const shouldBlockClick = () => draggedRef.current;
+
+  function buildEntrySkeletonSpec(entry: any, entryIndex: number): EntrySkeletonSpec {
+    const mediaCount = Array.isArray(entry?.media) ? entry.media.length : 0;
+
+    return {
+      header: { showAvatar: true, lines: ["short", "long"] },
+      body: { lines: ["long", "medium"] },
+      media: {
+        count: Math.max(1, Math.min(mediaCount || 1, 6)), // 1
+        heightPx: 260,
+        columns: mediaCount >= 4 ? 2 : 1,
+        gapPx: 20,
+      },
+    };
+  }
+
   const items = entries.items ?? [];
   const len = items.length;
 
@@ -74,7 +129,7 @@ export function EntryList({
 
         const shouldMountContent = hasEver || isNear;
         const reveal = hasEver && isDecoded;
-        const showSkeleton = !reveal;
+        const showSkeleton = shouldMountContent && !reveal;
 
         let contentNode: React.ReactNode = null;
 
@@ -97,8 +152,6 @@ export function EntryList({
             const handleClick: React.MouseEventHandler<HTMLElement> = (e) => {
               e.preventDefault();
               if (!fsEnabled) return;
-
-              if (entries.mediaLayout === "slider" && isClickRef && !isClickRef.current) return;
 
               openFullscreenAt(globalIndex, e.currentTarget as HTMLElement);
             };
@@ -125,7 +178,17 @@ export function EntryList({
 
                 return React.cloneElement(original, {
                   key: `${entryIndex}-${mediaIndex}`,
-                  onClick: mergedOnClick,
+                  onClick: (e: any) => {
+                    if (shouldBlockClick()) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return;
+                    }
+                    mergedOnClick(e);
+                  },
+                  onPointerDownCapture,
+                  onPointerMoveCapture,
+                  onPointerUpCapture,
                   ref: mergedRef,
                 });
               }
@@ -136,9 +199,19 @@ export function EntryList({
                   key={`${entryIndex}-${mediaIndex}`}
                   ref={reg as any}
                   style={{ display: "contents" }}
+                  onPointerDownCapture={onPointerDownCapture as any}
+                  onPointerMoveCapture={onPointerMoveCapture as any}
+                  onPointerUpCapture={onPointerUpCapture as any}
                 >
                   {React.cloneElement(original, {
-                    onClick: mergedOnClick,
+                    onClick: (e: any) => {
+                      if (shouldBlockClick()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                      }
+                      mergedOnClick(e);
+                    },
                   })}
                 </span>
               );
@@ -158,7 +231,7 @@ export function EntryList({
             );
           });
 
-          const mediaContainer = renderMediaContainer({ entryIndex, mediaNodes });
+          const mediaContainer = renderMediaContainer({ entryIndex, mediaNodes, entrySliderRefs });
 
           contentNode =
             typeof entries.render?.card === "function"
@@ -176,10 +249,10 @@ export function EntryList({
             data-rmg-entry-ready={reveal ? "1" : "0"}
             className={styles.entryRow}
             data-rmg-entry-owner={entryIndex}
-            style={{ ["--rmg-entry-intro-index" as any]: delayIndex }}
+            style={{ ["--rmg-entry-intro-index" as any]: delayIndex, minHeight: 260 }}
           >
             <div className={styles.entrySkeletonWrap} aria-hidden={showSkeleton ? undefined : true}>
-              <EntrySkeletonCard />
+              <EntrySkeletonCard spec={buildEntrySkeletonSpec(entry, entryIndex)} />
             </div>
 
             {shouldMountContent ? (
