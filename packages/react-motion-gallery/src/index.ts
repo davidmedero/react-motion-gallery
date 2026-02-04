@@ -1,4 +1,9 @@
-export { default as Gallery } from "./Gallery";
+export { GalleryCore } from "./Gallery/core";
+export { Entries, flattenEntries } from "./Gallery/entries";
+export { useFullscreenController } from "./Gallery/fullscreen";
+export { SliderLayout } from "./Gallery/slider";
+export { default as GridLayoutRuntime } from "./Gallery/grid";
+export { default as MasonryLayoutRuntime } from "./Gallery/masonry";
 export { RmgPlyrVideo } from "./Gallery/video/RmgPlyrVideo";
 
 // types / helpers (your existing exports)
