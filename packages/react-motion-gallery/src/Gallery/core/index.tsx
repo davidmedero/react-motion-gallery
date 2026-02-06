@@ -12,11 +12,8 @@ import { MediaEntryLink } from "../entries";
 export type FullscreenOpenRequest =
   | {
       source: "slider";
-      // index in slider space (your finalIndex)
       index: number;
-      // clicked image element if any (for intro)
       img: HTMLImageElement | null;
-      // original DOM event (optional)
       event?: Event;
     }
   | {
@@ -54,49 +51,31 @@ export type FullscreenEntryContext = {
 };
 
 export type FullscreenSourceAdapter = {
-  /** for layouts that have a “real slider” behind a given index */
   getOwnerSliderHandle?: (index: number) => SliderHandle | null;
-
-  /** for entries: ensure the correct media slider is ready before opening */
   syncBeforeOpen?: (index: number) => void;
-
-  /** used by intro logic to find the “cell wrapper” */
   closestSelector?: string;
-
-  /** extra context used by fullscreen runtime (entries only) */
   getEntryContext?: () => FullscreenEntryContext;
 };
 
 export type GalleryCore = {
-  // config
   layout: CoreLayout;
   effectiveBreakpoints: BreakpointMap;
-
-  // nodes (optional helper if you want core to “own” node arrays)
   cellsState: Cell[];
   cellsRef: React.RefObject<Cell[]>;
-
-  // normalized media (optional: used by fullscreen or any consumer)
   normalizedItems: MediaItem[];
   setNormalizedItems: React.Dispatch<React.SetStateAction<MediaItem[]>>;
-
-  // base slider ref (used by fullscreen bridge or external add-ons)
   sliderApiRef: React.RefObject<SliderHandle | null>;
-
-  // basic API for dynamic node operations (optional but useful)
   append: (nodes: React.ReactNode | React.ReactNode[]) => number;
   prepend: (nodes: React.ReactNode | React.ReactNode[]) => number;
   insert: (index: number, nodes: React.ReactNode | React.ReactNode[]) => number;
   remove: (index: number) => number;
   replace: (index: number, node: React.ReactNode) => void;
   setItems: (nodes: React.ReactNode[]) => number;
-
   requestFullscreenOpen: (req: FullscreenOpenRequest) => void;
   fsOpenSub: {
     emit(v: FullscreenOpenRequest): void;
     subscribe(fn: (v: FullscreenOpenRequest) => void): () => void;
   };
-
   isFullscreenOpen: boolean;
   isFullscreenOpenRef: React.RefObject<boolean>;
   setFullscreenOpen: (open: boolean) => void;
@@ -108,26 +87,9 @@ export type GalleryCore = {
 
 export type GalleryCoreProps = {
   children?: React.ReactNode;
-
-  /** tells add-ons which base layout is mounted */
   layout: CoreLayout;
-
-  /** optional breakpoint override */
   breakpoints?: BreakpointMap;
-
-  /**
-   * optional: provide fullscreen/media items centrally.
-   * - If MediaItem[], use as-is
-   * - If string[], will be converted via toMediaItems()
-   */
   fullscreenItems?: MediaItem[] | string[];
-
-  /**
-   * optional: if user passes children nodes (e.g. SliderLayout children),
-   * core can manage them as cells.
-   *
-   * NOTE: This is intentionally "opt-in" to keep core generic.
-   */
   nodes?: React.ReactNode | React.ReactNode[];
 };
 
@@ -207,7 +169,6 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     _setIsFullscreenOpen(open);
   }, []);
 
-  // nodes -> cells (one-time init by design)
   const initialCells = React.useMemo<Cell[]>(
     () => buildCellsFromNodes(nodes, newId),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -221,7 +182,6 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     return normalizeItemsInput(fullscreenItems);
   });
 
-  // keep normalizedItems in sync if fullscreenItems changes
   React.useEffect(() => {
     setNormalizedItems(normalizeItemsInput(fullscreenItems));
   }, [fullscreenItems]);
@@ -300,40 +260,31 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
   return {
     layout,
     effectiveBreakpoints,
-
     cellsState,
     cellsRef,
-
     normalizedItems,
     setNormalizedItems,
-
     sliderApiRef,
-
     append,
     prepend,
     insert,
     remove,
     replace,
     setItems,
-
     requestFullscreenOpen,
     fsOpenSub,
-
     isFullscreenOpen,
     isFullscreenOpenRef,
     setFullscreenOpen,
     registerFullscreenAdapter,
     getFullscreenAdapter,
-
     expandableImgRefs,
     registerExpandableImg,
   };
 }
 
-/** Context + hooks */
 const GalleryCoreContext = React.createContext<GalleryCore | null>(null);
 
-/** Provider (internal name kept for clarity) */
 export function GalleryCoreProvider(props: GalleryCoreProps) {
   const core = useGalleryCoreInternal(props);
   return (
@@ -343,17 +294,14 @@ export function GalleryCoreProvider(props: GalleryCoreProps) {
   );
 }
 
-/** ✅ Option A: public component alias */
 export const GalleryCore = GalleryCoreProvider;
 
-/** Strict: used by add-ons (Fullscreen) */
 export function useGalleryCore(): GalleryCore {
   const v = React.useContext(GalleryCoreContext);
   if (!v) throw new Error("useGalleryCore() must be used inside <GalleryCore />");
   return v;
 }
 
-/** Optional: used by base layouts (Slider/Grid/Masonry) */
 export function useOptionalGalleryCore(): GalleryCore | null {
   return React.useContext(GalleryCoreContext);
 }

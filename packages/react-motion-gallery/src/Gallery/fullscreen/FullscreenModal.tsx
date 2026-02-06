@@ -985,13 +985,10 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       window.setTimeout(() => finish(), DURATION_MS + 80);
     };
 
-    // ---- resolve canonicalIdx + destination thumb info (layout-specific) ----
     let canonicalIdx = 0;
     let localSlideIdx = 0;
 
     if (!isGridish) {
-      console.log('expandableImgRefs.current closing modal', expandableImgRefs.current)
-      // slider canonical logic
       if (!slider.current || !slides.current?.length) return;
 
       const fsIndex = fsIdx;
@@ -1021,11 +1018,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         }
       }
     } else {
-      // grid canonical logic
       canonicalIdx = Math.max(0, Math.min(originals.length - 1, fsIdx));
       localSlideIdx = canonicalIdx;
 
-      // center the grid cell + entries section if needed
       const el = document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`);
       await scrollElementIntoCenterView(el);
 
@@ -1045,13 +1040,10 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       return;
     }
 
-    // shared chrome fade
     fadeChrome();
     fadeOverlay();
 
-    // ---- compute thumb rect + objPos, then animate ----
     if (!isGridish) {
-      // slider destination: ensure thumb visible (may move slider), then measure
       if (!slider.current || !slides.current?.length) {
         safeTeardown();
         return;
@@ -1067,9 +1059,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       let matchSlide = slideArr.find((s) => s.cells.some((c) => c.index === localSlideIdx));
       let newIndex = matchSlide ? slideArr.indexOf(matchSlide) : -1;
 
-      console.log('slides.current', slides.current)
-      console.log('matchSlide', matchSlide)
-
       if (newIndex < 0) {
         newIndex = slideArr.length - 1;
         matchSlide = slideArr[slideArr.length - 1];
@@ -1084,8 +1073,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         matchSlide.cells.find((c) => c.index === localSlideIdx)?.element ??
         matchSlide.cells[0]?.element ??
         null;
-
-      console.log('targetCellEl', targetCellEl)
 
       const shouldMove = !!(viewport && targetCellEl) && !isCellVisible(targetCellEl!, viewport, true);
 
@@ -1109,7 +1096,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           return;
         }
 
-        // Prefer the actual image content rect if present
         let thumbCropRect = thumbInfo.cropRect;
         let endObjPos = thumbInfo.objPos ?? { x: 0.5, y: 0.5 };
 
@@ -1149,32 +1135,25 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       return;
     }
 
-    // grid destination: use expandableImgRefs (support: element | ref)
     if (!expandableImgRefs?.current) {
       safeTeardown();
       return;
     }
 
     const slot: any = (expandableImgRefs.current as any)[canonicalIdx] ?? null;
-    console.log('slot', slot)
-    console.log('expandableImgRefs.current', expandableImgRefs.current)
 
-    // slot might be: HTMLImageElement | HTMLElement | RefObject<...>
     const slotCurrent: any =
       slot && typeof slot === "object" && "current" in slot ? slot.current : slot;
 
     let destImg: HTMLImageElement | null = null;
 
-    // if we got an img directly
     if (slotCurrent?.tagName === "IMG") {
       destImg = slotCurrent as HTMLImageElement;
     } else if (slotCurrent) {
-      // wrapper host -> find an img inside
       const host = slotCurrent as HTMLElement;
       destImg = host.querySelector?.("img") as HTMLImageElement | null;
     }
 
-    // as a last fallback, try a DOM query by index if your grid wrappers carry data-rmg-idx
     if (!destImg) {
       const host = document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`);
       destImg = (host?.querySelector("img") as HTMLImageElement | null) ?? null;
@@ -1192,7 +1171,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       endObjPos,
       isVideoSlide: false,
     });
-
   }
 
   useEffect(() => {

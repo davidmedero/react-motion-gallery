@@ -188,6 +188,21 @@ function Demo() {
               render: {
                 card: renderCard,
                 overlay: renderOverlay,
+                media: ({ media, entryIndex, mediaIndex }) => (
+                  <img
+                    src={media.src}
+                    alt={media.alt ?? ""}
+                    style={{
+                      width: "100%",
+                      height: "320px",
+                      display: "block",
+                      objectFit: "cover",
+                      borderRadius: 12,
+                    }}
+                    data-entry={entryIndex}
+                    data-media={mediaIndex}
+                  />
+                )
               },
             }}
             fullscreen={{ enabled: true }}

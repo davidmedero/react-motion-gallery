@@ -9,10 +9,8 @@ import {
   resolveNumberFromResponsive,
 } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
-import { normalizeLoading } from "../shared/normalize/normalizeLoading";
-import { normalizeIntro } from "../shared/normalize/normalizeIntro";
 import type { BreakpointMap } from "../shared/responsive";
-import type { GridOptions } from "./types";
+import type { GridOptions, IntroOptions, LoadingOptions } from "./types";
 import { useOptionalGalleryCore } from "../core";
 
 type Props = GridOptions & {
@@ -91,10 +89,29 @@ export default function GridLayoutRuntime(props: Props) {
 
   const [cellsState] = React.useState<Cell[]>(initialCells);
 
+  function normalizeLoading(src?: LoadingOptions) {
+    return {
+      isLoading: src?.isLoading,
+      renderLoading: src?.renderLoading,
+      skeleton: src?.skeleton,
+      shimmer: src?.shimmer,
+    };
+  }
+
   const gridLoading = React.useMemo(
     () => normalizeLoading(gridObject.loading),
     [gridObject.loading]
   );
+
+  function normalizeIntro(src?: IntroOptions) {
+    return {
+      renderIntro: src?.renderIntro,
+      staggerMs: src?.staggerMs ?? 40,
+      transform: src?.transform ?? "translateY(10px) scale(0.99)",
+      durationMs: src?.durationMs ?? 300,
+      easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
+    };
+  }
 
   const gridIntro = React.useMemo(
     () => normalizeIntro(gridObject.intro),

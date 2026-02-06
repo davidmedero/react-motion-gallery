@@ -17,54 +17,24 @@ import type {
 type RefEl<T extends HTMLElement> = React.RefObject<T | null>;
 
 export type FullscreenIntroArgs = {
-  /** Source image element that was clicked/tapped. */
   origImg: HTMLImageElement;
-
-  /** Index of the item you’re opening fullscreen to. */
   index: number;
-
-  /** The resolved/normalized items the fullscreen slider will use. */
   normalizedItems: any[];
-
-  /** CSS module map (needs: fullscreenOverlay, fsOverlayCaption, open) */
   styles: Record<string, string>;
-
-  /** Fullscreen options (single unified source of truth). */
   fs: FullscreenOptions;
-
-  /** Refs used by the rest of fullscreen system */
   overlayDivRef: RefEl<HTMLDivElement>;
   duplicateImgRef: RefEl<HTMLElement>;
   overlayCaptionRef: RefEl<HTMLDivElement>;
   overlayCaptionRootRef: React.RefObject<Root | null>;
-
-  /**
-   * If you have a thumbnails container in fullscreen, pass it so we can reserve content space
-   * during the intro transform.
-   */
   fsThumbContainerRef?: RefEl<HTMLElement>;
-
-  /** State toggles in your fullscreen host */
   setShowFullscreenSlider: (v: boolean) => void;
   setFsFadeOpening: (v: boolean) => void;
-
-  /** Optional: prevent gestures / pointer leak during intro */
   addShield?: (timeoutMs?: number) => void;
-
-  /**
-   * Your existing resolver:
-   * - returns final placement (or null to mean “no caption area reserved”)
-   */
   resolveFsCaptionPlacement: (
     placement: any,
     breakpoint: number | undefined,
     viewportWidth: number
   ) => FsCaptionPlacement | null;
-
-  /**
-   * Used to find a “slide element” to compute cover transforms.
-   * Defaults: grid/masonry -> .rmg__grid-item, slider -> .rmg__slide
-   */
   closestSelector?: string;
 };
 
@@ -80,12 +50,6 @@ function detectVideoSlide(item: any, slideEl: HTMLElement) {
   );
 }
 
-/**
- * Unified fullscreen intro for Slider / Grid / Masonry / Entries.
- * - Uses ONLY `fs: FullscreenOptions` for behavior.
- * - Computes clip-path + duplicate image transform intro (or fade intro).
- * - Optionally renders a temporary “overlay caption” during the intro.
- */
 export function runFullscreenIntro(args: FullscreenIntroArgs) {
   const {
     origImg,
@@ -118,13 +82,11 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
   const slideEl =
     (origImg.closest(
       closestSelector ??
-        // sensible default:
         (closestSelector === undefined ? ".rmg__grid-item, .rmg__slide" : "")
     ) as HTMLElement) ||
     (origImg.parentElement as HTMLElement) ||
     origImg;
 
-  const slideRect = slideEl.getBoundingClientRect();
   const imgRect = origImg.getBoundingClientRect();
 
   const natW = Math.max(1, origImg.naturalWidth || 0);
@@ -149,7 +111,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
 
   const startInset = insetForRect(visibleImgRect);
 
-  // --- Overlay (fade layer behind fullscreen) ---
   const overlay = document.createElement("div");
   overlay.className = styles.fullscreenOverlay;
   overlayDivRef.current = overlay;
@@ -161,7 +122,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
   void overlay.offsetWidth;
   overlay.style.transition = `opacity ${DURATION_MS}ms ${EASING}`;
 
-  // --- Reserve content area for caption + thumbnails ---
   const effectivePlacement = resolveFsCaptionPlacement(
     fs.caption?.placement,
     fs.caption?.breakpoint,
@@ -207,14 +167,12 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     Math.max(1, contentBottom - contentTop)
   );
 
-  // --- Optional overlay caption (temporary, during intro) ---
   if (typeof fs.caption?.render === "function") {
     try {
       const overlayCaption = document.createElement("div");
       overlayCaption.className = styles.fsOverlayCaption;
       overlayCaptionRef.current = overlayCaption;
 
-      // base styles (same as your existing versions)
       const base: Partial<CSSStyleDeclaration> = {
         position: "fixed",
         display: "flex",
@@ -258,7 +216,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
         base.right = `${Math.max(0, vw - contentRight)}px`;
         base.height = `${topBottomHeight}px`;
       } else {
-        // if placement resolves to null, don’t reserve space; still allow overlay caption
         base.bottom = "0";
         base.left = "0";
         base.right = "0";
@@ -267,7 +224,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
 
       Object.assign(overlayCaption.style, base);
 
-      // user overrides
       if (fs.caption?.className) {
         fs.caption.className
           .split(" ")
@@ -297,7 +253,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     }
   }
 
-  // --- Decide fade vs clip+transform intro ---
   const item = normalizedItems[index];
   const isVideoSlide = detectVideoSlide(item, slideEl);
   const forceFadeIntro = !!fs.effects?.introFade || isVideoSlide;
@@ -338,7 +293,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     duplicateImgRef.current = dup;
 
     clipper.appendChild(dup);
-    // Append overlay + clipper in one go (reduces paint jitter)
     const frag = document.createDocumentFragment();
     frag.append(overlay, clipper);
     document.body.appendChild(frag);
@@ -346,7 +300,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     const startT =
       fit === "contain"
         ? containTransformForRect(natW, natH, visibleImgRect, startObjPos)
-        : coverTransformForRect(natW, natH, slideRect, startObjPos);
+        : coverTransformForRect(natW, natH, imgRect, startObjPos);
 
     dup.style.transform =
       `translate3d(${startT.cx}px, ${startT.cy}px, 0)` +
@@ -373,7 +327,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
       ` scale(${endT.scale})`;
 
     function startAnimation() {
-      // reset to start (important if decode resolves after layout changes)
       dup!.style.transform =
         `translate3d(${startT.cx}px, ${startT.cy}px, 0)` +
         ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
@@ -409,7 +362,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
 
     ready.then(() => startAnimation());
 
-    // Open controls immediately (while animation runs)
     requestAnimationFrame(() => {
       overlay.style.opacity = "1";
       overlay.style.pointerEvents = "auto";
@@ -444,7 +396,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     return;
   }
 
-  // --- Fade intro path ---
   requestAnimationFrame(() => {
     overlay.style.opacity = "1";
     overlay.style.pointerEvents = "auto";
@@ -462,7 +413,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     setFsFadeOpening(false);
   });
 
-  // cleanup overlay caption shortly after fade in
   window.setTimeout(() => {
     if (overlayCaptionRootRef.current) {
       overlayCaptionRootRef.current.unmount();
@@ -475,10 +425,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
   }, DURATION_MS + 30);
 }
 
-/**
- * Small helper for Slider call-sites that currently have `(e, imgRef, index)`.
- * You can keep your click handler identical and just call this factory.
- */
 export function createSliderFullscreenIntroRunner(deps: Omit<
   FullscreenIntroArgs,
   "origImg" | "index"

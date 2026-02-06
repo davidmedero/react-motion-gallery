@@ -9,29 +9,19 @@ import { MediaItem } from "../shared/types/media";
 import { FsCaptionPlacement, FsCaptionRenderArgs } from "./types";
 
 type RenderFullscreenSlidesArgs = {
-  // data
   items: MediaItem[];
   plyrList: PlyrProp[];
-
-  // positioning
   getTransform: (index: number) => string;
-
-  // refs
   imageRefs: React.RefObject<React.RefObject<HTMLDivElement | null>[]>;
   playerRefs: React.RefObject<(APITypes | null)[]>;
   cells: React.RefObject<{ element: HTMLElement; index: number }[]>;
-
-  // zoom/pan integration
   isZoomed: boolean;
   showFullscreenSlider: boolean;
   defaultPlayerStyle: React.CSSProperties;
   fsVideoStyle?: React.CSSProperties;
   fsVideoClassName?: string;
-
   onPanPointerDown: (e: React.PointerEvent<HTMLDivElement>, imageRef: React.RefObject<HTMLDivElement | null>) => void;
   onSuppressNextClickCapture: (e: React.SyntheticEvent) => void;
-
-  // caption
   renderCaption?: (args: FsCaptionRenderArgs) => React.ReactNode;
   captionClassName?: string;
   captionStyle?: React.CSSProperties;
@@ -39,20 +29,15 @@ type RenderFullscreenSlidesArgs = {
   fsCaptionWidth?: number;
   fsCaptionHeight?: number;
   fsCaptionBreakpoint?: number;
-
   resolveFsCaptionPlacement: (
     placement: FsCaptionPlacement | undefined,
     breakpoint: number | undefined,
     viewportWidth: number
   ) => FsCaptionPlacement | null;
-
-  // styling module class (was styles.imgMargin + styles.fullscreenImages)
   styles: {
     imgMargin: string;
     fullscreenImages: string;
   };
-
-  // optional image renderer
   renderImage?: (args: {
     item: Extract<MediaItem, { kind: "image" }>;
     index: number;

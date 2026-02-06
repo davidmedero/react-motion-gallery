@@ -85,7 +85,6 @@ function Demo() {
           border: "1px solid rgba(0,0,0,0.12)",
           borderRadius: 12,
           padding: 12,
-          marginBottom: 16,
           background: "#fff",
         }}
       >
@@ -195,13 +194,49 @@ function Demo() {
                       height: "320px",
                       display: "block",
                       objectFit: "cover",
-                      borderRadius: 14,
+                      borderRadius: 12,
                     }}
                     data-entry={entryIndex}
                     data-media={mediaIndex}
                   />
                 )
               },
+              loading: {
+                isLoading: false,
+                skeletonWrap: {
+                  style: {
+                    backgroundColor: '#fff',
+                    height: 380,
+                    border: '1px solid rgba(0, 0, 0, 0.12)'
+                  }
+                },
+                skeleton: ({ entry }: any) => ({
+                  layout: {
+                    kind: "stack",
+                    style: { padding: '12px' },
+                    children: [
+                      {
+                        kind: "row",
+                        style: { justify: "space-between", align: "center", width: "100%", gap: 12, padding: '6px 0 6px 0' },
+                        children: [
+                          { kind: "rect", style: { height: 12, width: 90 } },
+                          { kind: "rect", style: { height: 12, width: 60 } },
+                        ],
+                      },
+                      {
+                        kind: "media",
+                        count: Math.min(3, entry?.media?.length ?? 2),
+                        direction: "row",
+                        style: {
+                          0: { gap: 20, justify: "", padding: '10px 0 0 0' },
+                          925: { justify: `${entry?.media?.length === 2 ? 'center' : ''}`, align: "center" },
+                        },
+                        tile: { shape: "rect", style: { width: 407, height: 320 } },
+                      },
+                    ],
+                  },
+                }),
+              }
             }}
             fullscreen={{ enabled: true }}
             renderMediaContainer={mediaRenderer}

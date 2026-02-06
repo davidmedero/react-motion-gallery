@@ -39,7 +39,7 @@ import type { APITypes } from 'plyr-react';
 import { RmgSlideProvider } from '../shared/slideContext';
 import { ResponsiveHeightRule, SliderHandle, SliderIntroOptions } from './types';
 import { ArrowRenderArgs, DotsRenderArgs, ProgressRenderArgs } from '../shared/types/controls';
-import { FsCaptionPlacement, FsCaptionRenderArgs } from '../fullscreen/types';
+import { FsCaptionRenderArgs } from '../fullscreen/types';
 import { MediaItem } from '../shared/types/media';
 import { BreakpointMap } from '../shared/responsive';
 import { IndexMode } from '../api/types';
@@ -77,7 +77,6 @@ interface SliderProps {
   isClick: RefObject<boolean>
   expandableImgRefs?: React.RefObject<(HTMLImageElement | null)[]>
   overlayDivRef: RefObject<HTMLDivElement | null>
-  setSlideIndex: (index: number) => void
   duplicateImgRef: RefObject<HTMLElement | null>
   closeButtonRef: RefObject<HTMLElement | null>
   counterRef: RefObject<HTMLElement | null>
@@ -333,13 +332,12 @@ function cloneSlide(
   );
 }
 
-const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
+const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   {
     children,
     imageCount,
     isClick,
     expandableImgRefs,
-    setSlideIndex,
     isReady,
     setIsReady,
     loop,
@@ -486,7 +484,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
   const lastGeomSigRef = useRef<string>("");
   const plyrRefsByIdx = useRef<Record<number, any>>({});
   const lastCloneSigRef = useRef<string>("");
-  const shieldCleanupRef = useRef<null | (() => void)>(null);
   const shieldRef = useRef<ReturnType<typeof createGestureShield> | null>(null);
   const internalIndexChannel = useMemo(() => createIndexChannel(), []);
   const indexChannel = externalIndexChannel ?? internalIndexChannel;
@@ -614,19 +611,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
   });
 
   const progressNode = progressApi.progressNode;
-
-  function resolveFsCaptionPlacement(
-    placement: FsCaptionPlacement | undefined,
-    breakpoint: number | undefined,
-    viewportWidth: number
-  ): FsCaptionPlacement | null {
-    if (!placement) return null;
-
-    if (breakpoint != null && viewportWidth < breakpoint) {
-      return 'bottom';
-    }
-    return placement;
-  }
 
   const childrenKey = useMemo(() => {
     const arr = Children.toArray(children) as any[];
@@ -1176,8 +1160,8 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     const containerSize = (slider.current as any)[AX.clientKey] as number;
 
     if (!wrap && sliderWidth.current <= containerSize) {
-      sliderX.current = (containerSize - sliderWidth.current) / 2;
-      translateRef.current?.to(Math.round(sliderX.current));
+      trackCenterOffsetRef.current = Math.round((containerSize - sliderWidth.current) / 2);
+      positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
     }
 
     updateControlsImperatively();
@@ -1430,60 +1414,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [children, clonedChildren, visibleImages, wrap]);
 
-  useLayoutEffect(() => {
-    if (hasResponsiveHeights) return;
-
-    if (sliderHeight) return;
-
-    if (typeof initialHeight === 'number' && initialHeight > 0) return;
-
-    if (typeof initialHeight === 'string' && initialHeight.trim() !== '') return;
-
-    if (typeof cellsPerSlide !== 'number' || cellsPerSlide <= 0) return;
-
-    if (axis !== 'x') return;
-
-    const root = sliderContainer.current;
-    if (!root) return;
-
-    const updateFromWidth = () => {
-      if (!sliderContainer.current) return;
-      const cw = sliderContainer.current.getBoundingClientRect().width;
-      if (!cw || cw <= 0) return;
-
-      const cols = Math.max(1, cellsPerSlide);
-      const totalGap = gap * Math.max(0, cols - 1);
-      const cellSize = (cw - totalGap) / cols;
-
-      if (cellSize <= 0) return;
-
-      if (Math.abs(cellSize - lastNonZeroHeightRef.current) >= 1) {
-        lastNonZeroHeightRef.current = cellSize;
-        setResponsiveSliderHeight(cellSize + 'px');
-      }
-    };
-
-    updateFromWidth();
-
-    const ro = new ResizeObserver(() => {
-      updateFromWidth();
-    });
-
-    ro.observe(root);
-
-    return () => {
-      ro.disconnect();
-    };
-    }, [
-    sliderHeight,
-    initialHeight,
-    cellsPerSlide,
-    axis,
-    gap,
-    sliderContainer,
-    hasResponsiveHeights
-  ]);
-
   useEffect(() => {
     if (inView) return;
     if (!sliderContainer.current || !layoutReady || !engineReady || !isReady || !isMeasured) return;
@@ -1578,16 +1508,11 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     return best
   }
 
-  const containerSize = (slider.current as any)?.[AX.clientKey] as number;
-
-  const centerOffset =
-    !wrap && sliderWidth.current <= containerSize
-    ? (containerSize - sliderWidth.current) / 2
-    : 0;
+  const trackCenterOffsetRef = useRef(0);
 
   function positionSlider(loc?: number) {
     const x = loc ?? xRef.current
-    translateRef.current?.to((x + centerOffset) * sign)
+    translateRef.current?.to((x + trackCenterOffsetRef.current) * sign);
   }
 
   function updateActiveIndexFromX(loc: number) {
@@ -1728,7 +1653,7 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
     xRef.current = initialSnap;
 
     translateRef.current = Translate(track, AX);
-    translateRef.current.to(initialSnap * sign);
+    positionSlider(initialSnap);
 
     selectedIndex.current = startIdx;
     indexChannel.set(startIdx, 'instant');
@@ -2434,93 +2359,165 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
   }
 
   useEffect(() => {
+    const root = sliderContainer.current
     const track = slider.current;
-    if (!track) return;
+    if (
+      !root ||
+      !track ||
+      !slides.current?.length ||
+      !layoutReady ||
+      !isMeasured ||
+      sliderWidth.current === 0 ||
+      !isReady
+    ) {
+      return;
+    }
 
     const ro = new ResizeObserver(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const cw = (track as any)[AX.clientKey] as number
-          const contentW = sliderWidth.current || 0;
+      const cw = (track as any)[AX.clientKey] as number;
+      const contentW = sliderWidth.current || 0;
 
-          if (!isWrapping.current) {
-            if (contentW <= cw) {
-              const center = Math.round((cw - contentW) / 2);
+      // =========================
+      // ✅ NON-WRAP
+      // =========================
+      if (!wrap) {
+        // ✅ When non-scrollable, we MUST reset to a "single snap world" at index 0,
+        // otherwise resizing from scrollable -> non-scrollable while on index != 0
+        // can freeze after onUp (snap logic runs with stale multi-snap state).
+        if (contentW <= cw) {
+          const center = Math.round((cw - contentW) / 2);
+          trackCenterOffsetRef.current = center;
 
-              const newLimit = Limit(center, center);
-              limitRef.current = newLimit;
-              povRef.current = PercentOfView(cw);
-              boundsRef.current = ScrollBounds(
-                newLimit,
-                offsetLocationRef.current!,
-                targetRef.current!,
-                bodyRef.current!,
-                povRef.current!,
-                selectDuration
-              );
-
-              locationRef.current?.set(center);
-              previousLocationRef.current?.set(center);
-              offsetLocationRef.current?.set(center);
-              targetRef.current?.set(center);
-              translateRef.current?.to(center);
-              xRef.current = center;
-              sliderX.current = center;
-            } else {
-              const min = -(contentW - cw);
-              const max = 0;
-
-              const newLimit = Limit(min, max);
-              limitRef.current = newLimit;
-              povRef.current = PercentOfView(cw);
-              boundsRef.current = ScrollBounds(
-                newLimit,
-                offsetLocationRef.current!,
-                targetRef.current!,
-                bodyRef.current!,
-                povRef.current!,
-                selectDuration
-              );
-
-              const cur = offsetLocationRef.current?.get() ?? 0;
-              const constrained = newLimit.constrain(cur);
-
-              locationRef.current?.set(constrained);
-              previousLocationRef.current?.set(constrained);
-              offsetLocationRef.current?.set(constrained);
-              targetRef.current?.set(constrained);
-              translateRef.current?.to(constrained);
-              xRef.current = constrained;
-              sliderX.current = constrained;
-            }
-          } else {
-            limitRef.current = null;
-            povRef.current = null;
-            boundsRef.current = null;
-
-            const a = offsetLocationRef.current?.get() ?? xRef.current ?? 0;
-            const W = sliderWidth.current || 0;
-            if (W > 0) {
-              const normalized = ((a % W) + W) % W - W;
-              const delta = normalized - a;
-
-              locationRef.current?.add(delta);
-              previousLocationRef.current?.add(delta);
-              offsetLocationRef.current?.add(delta);
-              targetRef.current?.add(delta);
-              xRef.current += delta;
-
-              translateRef.current?.to(xRef.current);
-            }
+          // If engine isn't ready yet, just re-position (don't touch null refs).
+          if (
+            !locationRef.current ||
+            !previousLocationRef.current ||
+            !offsetLocationRef.current ||
+            !targetRef.current ||
+            !bodyRef.current
+          ) {
+            positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
+            return;
           }
-        });
-      });
+
+          // ✅ collapse snaps to a single snap at 0
+          scrollSnapsRef.current = [0];
+
+          // ✅ force index back to 0 everywhere
+          selectedIndex.current = 0;
+          indexCurrentRef.current?.set(0);
+          indexPreviousRef.current?.set(0);
+          indexChannel.set(0, "instant");
+
+          // ✅ trivial limits/bounds (no movement possible)
+          limitRef.current = Limit(0, 0);
+          povRef.current = PercentOfView(cw);
+          boundsRef.current = ScrollBounds(
+            limitRef.current,
+            offsetLocationRef.current!,
+            targetRef.current!,
+            bodyRef.current!,
+            povRef.current,
+            selectDuration
+          );
+
+          // ✅ kill motion + set canonical state to 0
+          bodyRef.current.useDuration(0).useFriction(1);
+
+          isAnimatingRef.current = false;
+          animRef.current?.stop();
+
+          locationRef.current.set(0);
+          previousLocationRef.current.set(0);
+          offsetLocationRef.current.set(0);
+          targetRef.current.set(0);
+          xRef.current = 0;
+
+          // ✅ always position through canonical function
+          positionSlider(0);
+          progressApi.updateProgressInFrame();
+          tweenParallax();
+          applyPairScaleTween();
+          applyFadeTween();
+          updateControlsImperatively();
+          return;
+        }
+
+        // ✅ scrollable again: remove centering offset + restore bounds/limits
+        trackCenterOffsetRef.current = 0;
+
+        const min = -(Math.max(0, contentW - cw));
+        const max = 0;
+
+        // update limit used by wheel + bounds
+        limitRef.current = Limit(isNaN(min) ? 0 : min, max);
+
+        // update bounds helpers too (they depend on cw)
+        if (offsetLocationRef.current && targetRef.current && bodyRef.current) {
+          povRef.current = PercentOfView(cw);
+          boundsRef.current = ScrollBounds(
+            limitRef.current,
+            offsetLocationRef.current!,
+            targetRef.current!,
+            bodyRef.current!,
+            povRef.current,
+            selectDuration
+          );
+
+          // clamp current to new limits to keep state consistent
+          const cur = offsetLocationRef.current?.get() ?? xRef.current ?? 0;
+          const clamped = limitRef.current.constrain(cur);
+
+          locationRef.current?.set(clamped);
+          previousLocationRef.current?.set(clamped);
+          offsetLocationRef.current?.set(clamped);
+          targetRef.current?.set(clamped);
+          xRef.current = clamped;
+
+          positionSlider(clamped);
+          animRef.current?.start();
+        } else {
+          // engine not ready yet; just reposition safely
+          positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
+        }
+
+        updateControlsImperatively();
+        return;
+      }
+
+      // =========================
+      // ✅ WRAP
+      // =========================
+      limitRef.current = null;
+      povRef.current = null;
+      boundsRef.current = null;
+
+      const a = offsetLocationRef.current?.get() ?? xRef.current ?? 0;
+      const W = sliderWidth.current || 0;
+
+      if (W > 0) {
+        const normalized = ((a % W) + W) % W - W;
+        const delta = normalized - a;
+
+        locationRef.current?.add(delta);
+        previousLocationRef.current?.add(delta);
+        offsetLocationRef.current?.add(delta);
+        targetRef.current?.add(delta);
+        xRef.current += delta;
+
+        positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
+        progressApi.updateProgressInFrame();
+        tweenParallax();
+        applyPairScaleTween();
+        applyFadeTween();
+        updateControlsImperatively();
+      }
     });
 
     ro.observe(track);
     return () => ro.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wrap]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wrap, layoutReady, isMeasured, isReady]);
 
   useEffect(() => {
     const track = slider.current;
@@ -2557,8 +2554,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
       img: imgEl,
       event: e as any,
     });
-
-    setSlideIndex(finalIndex);
   }
 
   function onTouchStart(e: TouchEvent) {
@@ -2780,7 +2775,6 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
         <div {...baseContainerProps}>{inner}</div>
       );
 
-
   return (
     <>
       {responsiveCss && <style dangerouslySetInnerHTML={{ __html: responsiveCss }} />}
@@ -2799,6 +2793,7 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
         style={{
           position: 'relative',
           ...(heightVarValue != null ? { ['--rmg-slider-height' as any]: heightVarValue } : {}),
+          maxHeight: responsiveSliderHeight,
           ['--rmg-intro-stagger' as any]: `${normalizedIntro.staggerMs}ms`,
           ['--rmg-intro-transform' as any]: `${normalizedIntro.transform}px`,
           ['--rmg-intro-duration' as any]: `${normalizedIntro.durationMs}ms`,
@@ -2813,4 +2808,4 @@ const Slider = forwardRef<SliderHandle, SliderProps>(function Slider(
   );
 });
 
-export default Slider
+export default SliderCore

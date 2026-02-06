@@ -1,11 +1,10 @@
 import * as React from 'react';
-import styles from '../styles.module.css';
+import styles from './Grid.module.css';
 import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
 import { resolveNumberFromResponsive } from '../shared/responsive';
-
-// ✅ shared hooks (update these paths/names to yours)
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
+import { GridSkeletonCard, GridSkeletonSpec } from './GridSkeleton';
 
 type GridOptions = {
   columns?: ResponsiveNumber;
@@ -30,7 +29,8 @@ type IntroNormalized = {
 
 type LoadingNormalized = {
   isLoading?: boolean;
-  renderLoading?: (args: { layout: 'grid'; count: number }) => React.ReactNode;
+  renderLoading?: (args: { count: number }) => React.ReactNode;
+  skeleton?: GridSkeletonSpec;
   shimmer?: {
     paddingBottom?: string;
     radius?: number | string;
@@ -48,17 +48,12 @@ export type GridLayoutProps = {
   grid: GridOptions;
   breakpoints?: BreakpointMap;
   viewportWidth: number;
-
   loading: LoadingNormalized;
   intro: IntroNormalized;
-
-  // fullscreen wiring from Gallery
   enableFullscreen: boolean;
   onOpen: (index: number, originEl?: HTMLElement | null) => void;
   registerExpandableImg: (index: number, node: HTMLElement | null) => void;
-
-  // styling
-  gridItemBaseClass?: string; // default 'rmg__grid-item'
+  gridItemBaseClass?: string;
   renderMode?: 'wrap' | 'passthrough';
 };
 
@@ -75,18 +70,12 @@ export function GridLayout({
   gridItemBaseClass = 'rmg__grid-item',
   renderMode,
 }: GridLayoutProps) {
-  /* ------------------------------------------------------------------
-     View + media-ready (shared hooks)
-  ------------------------------------------------------------------ */
   const gridRootRef = React.useRef<HTMLDivElement | null>(null);
-
   const [inView, setInView] = React.useState(false);
   const [mediaReady, setMediaReady] = React.useState(false);
 
-  // in-view once
   useInViewOnce(true, gridRootRef as any, () => setInView(true));
 
-  // media ready
   useMediaReady(true, gridRootRef as any, setMediaReady);
 
   const isLoading = loading.isLoading ?? !mediaReady;
@@ -111,9 +100,6 @@ export function GridLayout({
     } as React.CSSProperties;
   }, [loading.shimmer]);
 
-  /* ------------------------------------------------------------------
-     Grid style
-  ------------------------------------------------------------------ */
   const minWidth =
     typeof grid.minColumnWidth === 'number'
       ? `${grid.minColumnWidth}px`
@@ -149,34 +135,29 @@ export function GridLayout({
     gridStyle.gridTemplateColumns = `repeat(${resolvedGridColumnCount}, minmax(0, 1fr))`;
   }
 
-  /* ------------------------------------------------------------------
-     Loading UI
-  ------------------------------------------------------------------ */
   const skeletonCount = cells.length;
 
   const defaultGridSkeleton = (
-    <div className={styles.gridSkeletonOverlay}>
-      <div
-        className={[styles.gridSkeletonGrid, grid.rootClassName || ''].filter(Boolean).join(' ')}
-        style={gridStyle}
-      >
-        {Array.from({ length: skeletonCount }).map((_, i) => (
-          <div key={`rmg-grid-skel-${i}`} className={styles.gridSkeletonItem} />
-        ))}
-      </div>
-    </div>
+    <GridSkeletonCard
+      count={skeletonCount}
+      gridStyle={gridStyle}
+      spec={loading.skeleton}
+    />
   );
 
   const loadingNode = isLoading
     ? loading.renderLoading
-      ? loading.renderLoading({ layout: 'grid', count: skeletonCount })
+      ? loading.renderLoading({ count: skeletonCount })
       : defaultGridSkeleton
     : null;
 
-  /* ------------------------------------------------------------------
-     Children
-  ------------------------------------------------------------------ */
   const renderModeProp = renderMode ?? 'wrap';
+
+  const getOriginImg = (host: HTMLElement | null, fallback?: EventTarget | null) => {
+    const img = host?.querySelector("img") as HTMLImageElement | null;
+    if (img) return img;
+    return (fallback instanceof HTMLImageElement ? fallback : null);
+  };
 
   const gridChildren = React.useMemo(() => {
     return cells.map((cell, index) => {
@@ -195,8 +176,6 @@ export function GridLayout({
         .filter(Boolean)
         .join(' ');
 
-      // ✅ PASS-THROUGH MODE: don't wrap/clone, don't touch clicks/refs.
-      // This is the mode you want for Entries, because EntryList already handles click/origin.
       if (renderModeProp === 'passthrough') {
         return (
           <div
@@ -210,11 +189,6 @@ export function GridLayout({
         );
       }
 
-      // ------------------------------
-      // WRAP MODE
-      // ------------------------------
-
-      // 1) Non-elements: wrap with a button (existing behavior)
       if (!React.isValidElement(original)) {
         return (
           <button
@@ -225,11 +199,14 @@ export function GridLayout({
             style={introStyle}
             onClick={(e) => {
               e.preventDefault();
-              if (!enableFullscreen) return;
-              onOpen(index, e.target as any);
+              const host = e.currentTarget as HTMLElement;
+              const img = getOriginImg(host, e.target);
+              if (!enableFullscreen || !img) return;
+              onOpen(index, img);
             }}
             ref={(node) => {
-              registerExpandableImg(index, node as any);
+              const img = getOriginImg(node, null);
+              registerExpandableImg(index, img ?? node);
             }}
           >
             {original as any}
@@ -239,9 +216,6 @@ export function GridLayout({
 
       const originalEl = original as React.ReactElement<any, any>;
 
-      // 2) ✅ NEW: If the element is NOT a DOM element (i.e. a React component),
-      // cloneElement won't reliably attach onClick/ref unless that component forwards props/refs.
-      // So we wrap it in a button host we control.
       const isDomElement = typeof originalEl.type === 'string';
 
       if (!isDomElement) {
@@ -254,11 +228,14 @@ export function GridLayout({
             style={introStyle}
             onClick={(e) => {
               e.preventDefault();
-              if (!enableFullscreen) return;
-              onOpen(index, e.target as any);
+              const host = e.currentTarget as HTMLElement;
+              const img = getOriginImg(host, e.target);
+              if (!enableFullscreen || !img) return;
+              onOpen(index, img);
             }}
             ref={(node) => {
-              registerExpandableImg(index, node as any);
+              const img = getOriginImg(node, null);
+              registerExpandableImg(index, img ?? node);
             }}
           >
             {originalEl}
@@ -266,7 +243,6 @@ export function GridLayout({
         );
       }
 
-      // 3) DOM element: keep your existing clone logic
       const origProps = (originalEl.props ?? {}) as {
         onClick?: React.MouseEventHandler<HTMLElement>;
         className?: string;
@@ -277,14 +253,18 @@ export function GridLayout({
       const mergedRef: React.RefCallback<HTMLElement> = (node) => {
         if (typeof origRef === 'function') origRef(node);
         else if (origRef && typeof origRef === 'object') (origRef as any).current = node;
-        registerExpandableImg(index, node);
+        const img = getOriginImg(node, null);
+        registerExpandableImg(index, img ?? node);
       };
 
       const mergedOnClick: React.MouseEventHandler<HTMLElement> = (e) => {
         origProps.onClick?.(e);
         if (e.defaultPrevented) return;
         if (!enableFullscreen) return;
-        onOpen(index, e.target as any);
+        const host = e.currentTarget as HTMLElement;
+        const img = getOriginImg(host, e.target);
+        if (!enableFullscreen || !img) return;
+        onOpen(index, img);
       };
 
       return React.cloneElement(originalEl, {
@@ -312,7 +292,6 @@ export function GridLayout({
     const root = gridRootRef.current;
     if (!root) return;
 
-    // Find each rendered cell wrapper by data-rmg-idx
     for (let i = 0; i < cells.length; i++) {
       const host = root.querySelector(`[data-rmg-idx="${i}"]`) as HTMLElement | null;
       if (!host) {
@@ -320,20 +299,15 @@ export function GridLayout({
         continue;
       }
 
-      // Prefer an actual img inside
       const img = host.querySelector('img') as HTMLImageElement | null;
       registerExpandableImg(i, img ?? host);
     }
 
-    // Cleanup: when unmounting, clear refs
     return () => {
       for (let i = 0; i < cells.length; i++) registerExpandableImg(i, null);
     };
   }, [renderModeProp, cells.length, registerExpandableImg]);
 
-  /* ------------------------------------------------------------------
-     Container + intro wrapper
-  ------------------------------------------------------------------ */
   const containerProps: React.HTMLAttributes<HTMLDivElement> = {
     className: [
       styles.gridRoot,

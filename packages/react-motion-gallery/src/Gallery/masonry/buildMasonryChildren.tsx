@@ -6,15 +6,10 @@ export type MasonryCell = {
 };
 
 export type BuildMasonryChildrenOpts = {
-  // data
   cells: MasonryCell[];
-
-  // behavior
   fsEnabled: boolean;
   openFullscreenAt: (index: number) => void;
   registerExpandableImg: (index: number, node: HTMLElement) => void;
-
-  // styling
   itemBaseClass: string;
   itemBaseStyleClass: string;
   itemClassName?: string;
@@ -42,7 +37,6 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts) {
       .filter(Boolean)
       .join(" ");
 
-    // Common props for both button wrapper and cloned element
     const common = {
       key: cell.id,
       "data-rmg-idx": index,
@@ -50,7 +44,6 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts) {
       className,
     } as const;
 
-    // If it’s not a valid element, wrap it in a button
     if (!React.isValidElement(original)) {
       return (
         <button

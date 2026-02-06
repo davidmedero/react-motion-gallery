@@ -1,17 +1,14 @@
 import type React from "react";
-import { getCurrentTransform, baseFitSizeC } from "../core/utils";
+import { getCurrentTransform, baseFitSize } from "../core/utils";
 import { getPrimaryImgEl, gapAllEdges, getClientXY } from "../core/dom";
 import { applySmoothTransform, type ZoomCtx } from "./zoomTo";
 
 type ImageRef = React.RefObject<HTMLElement | null>;
 
 export type HandleZoomToggleCtx = ZoomCtx & {
-  // handleZoomToggle uses these extra refs/helpers
   panRef: { current: { x: number; y: number } };
   resetAllZoomDom: () => void;
-
-  // If you rely on this elsewhere, keep it in ctx too
-  scale: number; // optional if you keep setScale only; remove if unused
+  scale: number;
 };
 
 export function handleZoomToggle(
@@ -31,7 +28,6 @@ export function handleZoomToggle(
   const rect0 = container.getBoundingClientRect();
   if (gapAllEdges({ width: rect0.width, height: rect0.height }, imgEl)) return;
 
-  // Ensure vectors/bodies exist (same as your original logic)
   const { x: domTx, y: domTy } = getCurrentTransform(imgEl);
   if (!ctx.locX.current || !ctx.locY.current) {
     ctx.locX.current = ctx.Vector1D(domTx);
@@ -83,7 +79,7 @@ export function handleZoomToggle(
   const cx = clientX - rect.left;
   const cy = clientY - rect.top;
 
-  const { baseW, baseH } = baseFitSizeC(imgEl, containerW, containerH);
+  const { baseW, baseH } = baseFitSize(imgEl, containerW, containerH);
   const offXc = (containerW - baseW) / 2;
   const offYc = (containerH - baseH) / 2;
 
@@ -123,7 +119,6 @@ export function handleZoomToggle(
 
   ctx.panRef.current = { x: tx1, y: ty1 };
 
-  // rebuild bodies/bounds exactly like your original
   ctx.locX.current!.set(tx1);
   ctx.prevX.current!.set(tx1);
   ctx.offX.current!.set(tx1);

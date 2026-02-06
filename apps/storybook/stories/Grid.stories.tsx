@@ -4,11 +4,11 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
-import GridLayoutRuntime from "../../../packages/react-motion-gallery/src/Gallery/grid";
+import Grid from "../../../packages/react-motion-gallery/src/Gallery/grid";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
 
 const ITEMS = Array.from({ length: 12 }).map(
-  (_, i) => `https://picsum.photos/seed/grid-${i}/1600/1600`
+  (_, i) => `https://picsum.photos/seed/grid-${i}/1000/1500`
 );
 
 function GridCell({ src, i }: { src: string; i: number }) {
@@ -64,28 +64,28 @@ function Demo() {
       </p>
 
       <GalleryCore layout="grid" fullscreenItems={ITEMS}>
-        <div
-          style={{
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 16,
-            padding: 16,
+        <Grid
+          columns={{ 0: 1, 500: 2, 768: 3, 1024: 4, 1280: 5 }}
+          gap={12}
+          loading={{
+            // isLoading: true,
+            skeleton: {
+              layout: {
+                kind: "grid",
+                item: {
+                  kind: "rect",
+                  style: { aspectRatio: '2/3' },
+                },
+              }
+            }
           }}
         >
-          <GridLayoutRuntime
-            columns={{ 0: 1, 500: 2, 768: 3, 1024: 4, 1280: 5 }}
-            gap={12}
-            // loading={{
-            //   isLoading: true,
-            // }}
-          >
-            {ITEMS.map((src, i) => (
-               <div key={src}>
-                <GridCell src={src} i={i} />
-              </div>
-            ))}
-          </GridLayoutRuntime>
-        </div>
-
+          {ITEMS.map((src, i) => (
+              <div key={src}>
+              <GridCell src={src} i={i} />
+            </div>
+          ))}
+        </Grid>
         <FullscreenAddon sliderObject={sliderObject} cellsStateLength={ITEMS.length} />
       </GalleryCore>
     </div>

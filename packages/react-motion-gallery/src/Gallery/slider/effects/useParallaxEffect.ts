@@ -53,7 +53,6 @@ export function useParallaxEffect({
       const layer = el.querySelector<HTMLElement>(".rmg__parallax__layer");
       if (!layer) continue;
 
-      // your original behavior: read translateX(...) if present, else offsetLeft
       const m = /translateX\((-?\d+(\.\d+)?)px\)/.exec(el.style.transform || "");
       const baseX = m ? parseFloat(m[1]) : el.offsetLeft;
 
@@ -121,20 +120,17 @@ export function useParallaxEffect({
     }
   }, [enabled, wrap, axisMain, scrollProgressNorm, currentTweenFactor]);
 
-  // collect whenever structure changes
   React.useEffect(() => {
     if (!enabled) return;
     collectParallaxForAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, slidesLen, clonedLen, wrap, isReady, collectParallaxForAll]);
 
-  // cleanup styles when disabled
   React.useEffect(() => {
     if (enabled) return;
     tweenNodesRef.current.forEach((n) => n && n.removeAttribute("style"));
   }, [enabled]);
 
-  // initial tween after paint
   React.useEffect(() => {
     if (!enabled) return;
     if (!slidesLen) return;

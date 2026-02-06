@@ -1,4 +1,4 @@
-import { baseFitSizeC, getCurrentTransform } from "./utils";
+import { baseFitSize, getCurrentTransform } from "./utils";
 import { getPrimaryImgEl } from "./dom";
 
 type VectorLike = { get(): number; set(v: number): void };
@@ -6,32 +6,23 @@ type RefLike<T> = { current: T };
 
 export type RebuildPanBodiesCtx = {
   fs: { zoom: { panDuration: number; panFriction: number } };
-
   currentImage: RefLike<HTMLElement | null>;
   scaleRef: RefLike<number>;
-
-  // vectors
   locX: RefLike<VectorLike | null>;
   prevX: RefLike<VectorLike | null>;
   offX: RefLike<VectorLike | null>;
   tgtX: RefLike<VectorLike | null>;
-
   locY: RefLike<VectorLike | null>;
   prevY: RefLike<VectorLike | null>;
   offY: RefLike<VectorLike | null>;
   tgtY: RefLike<VectorLike | null>;
-
-  // bodies/bounds
   bodyX: RefLike<any>;
   bodyY: RefLike<any>;
   boundsX: RefLike<any>;
   boundsY: RefLike<any>;
-
-  // factories
   Vector1D: (n: number) => VectorLike;
   ScrollBody: (...args: any[]) => any;
   ScrollBounds: (...args: any[]) => any;
-
   boundsForCurrent: (
     scale: number,
     baseW: number,
@@ -52,7 +43,7 @@ export function rebuildPanBodiesFn(ctx: RebuildPanBodiesCtx) {
   const containerW = rect.width;
   const containerH = rect.height;
 
-  const { baseW, baseH } = baseFitSizeC(img, containerW, containerH);
+  const { baseW, baseH } = baseFitSize(img, containerW, containerH);
 
   const { x, y } = getCurrentTransform(img);
 

@@ -29,7 +29,6 @@ import { ThumbnailIntroOptions, ThumbnailLoadingOptions, ThumbnailPosition } fro
 import { ArrowRenderArgs } from '../../shared/types/controls'
 import { BreakpointMap } from '../../shared/responsive'
 import { Counter, CounterType } from '../../shared/motion/counter'
-import { buildScopedSkeletonCountCss } from '../../shared/skeleton/buildScopedSkeletonCountCss'
 import { BaseLimit, createBaseLimit } from '../../shared/motion/baseLimit'
 import { RmgArrows } from '../controls/arrows'
 import { isMouseEvent } from '../../shared/input/pointerTypes'

@@ -108,7 +108,6 @@ export function useEntryInView(len: number, opts?: UseEntryInViewOpts) {
     (index: number) => (node: HTMLElement | null) => {
       const prevNode = indexToNodeRef.current[index] ?? null;
 
-      // If node changed or unmounted, unobserve the old node
       if (prevNode && prevNode !== node) {
         nodeToIndexRef.current.delete(prevNode);
         nearIORef.current?.unobserve(prevNode);
@@ -117,7 +116,6 @@ export function useEntryInView(len: number, opts?: UseEntryInViewOpts) {
 
       indexToNodeRef.current[index] = node;
 
-      // If unmount, we're done
       if (!node) return;
 
       nodeToIndexRef.current.set(node, index);

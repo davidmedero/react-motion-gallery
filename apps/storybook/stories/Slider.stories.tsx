@@ -4,7 +4,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
-import { SliderLayout } from "../../../packages/react-motion-gallery/src/Gallery/slider";
+import { Slider } from "../../../packages/react-motion-gallery/src/Gallery/slider";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
 
 const ITEMS = [
@@ -58,49 +58,29 @@ function Demo() {
     []
   );
 
-  const ratio = "1600 / 1000";
-
   return (
     <div style={{ padding: 24, maxWidth: 980 }}>
       <h3 style={{ margin: "0 0 12px" }}>Slider ↔ Fullscreen connection test</h3>
       <p style={{ margin: "0 0 16px", opacity: 0.8 }}>
         Click any slide. Fullscreen should open. Close it, and it should fully reset.
       </p>
-
       <GalleryCore layout="slider" fullscreenItems={ITEMS}>
-        <div
-          style={{
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 16,
-            padding: 16,
+        <Slider
+          size={{
+            aspectRatio: 1600/1000
           }}
+          // transitions={{
+          //   loading: {
+          //     isLoading: false
+          //   }
+          // }}
         >
-          <div
-            style={{
-              width: "100%",
-              aspectRatio: ratio as any,
-              overflow: "hidden",
-            }}
-          >
-            <SliderLayout
-              size={{
-                initialHeight: "100%",
-              }}
-              // transitions={{
-              //   loading: {
-              //     isLoading: true
-              //   }
-              // }}
-            >
-              {ITEMS.map((src, i) => (
-                <div key={src} style={{ height: "100%" }}>
-                  <Slide src={src} i={i} />
-                </div>
-              ))}
-            </SliderLayout>
-          </div>
-        </div>
-
+          {ITEMS.map((src, i) => (
+            <div key={src}>
+              <Slide src={src} i={i} />
+            </div>
+          ))}
+        </Slider>
         <FullscreenAddon sliderObject={sliderObject} cellsStateLength={ITEMS.length} />
       </GalleryCore>
     </div>

@@ -1,5 +1,5 @@
-import * as React24 from 'react';
-import React24__default, { forwardRef, useRef, useCallback, useEffect, Children, useImperativeHandle, useState, useMemo, useId, isValidElement, useLayoutEffect, cloneElement } from 'react';
+import * as React25 from 'react';
+import React25__default, { forwardRef, useRef, useCallback, useEffect, Children, useImperativeHandle, useState, useMemo, useId, isValidElement, useLayoutEffect, cloneElement } from 'react';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -121,13 +121,13 @@ function normalizeItemsInput(v) {
 }
 function buildCellsFromNodes(nodes, newId) {
   if (!nodes) return [];
-  const arr = React24.Children.toArray(nodes);
+  const arr = React25.Children.toArray(nodes);
   return arr.map((n) => ({ id: newId(), node: n }));
 }
 function useGalleryCoreInternal(props) {
   const { layout, breakpoints, fullscreenItems, nodes } = props;
-  const expandableImgRefs = React24.useRef([]);
-  const registerExpandableImg = React24.useCallback((index, node) => {
+  const expandableImgRefs = React25.useRef([]);
+  const registerExpandableImg = React25.useCallback((index, node) => {
     if (!node) {
       expandableImgRefs.current[index] = null;
       return;
@@ -135,48 +135,48 @@ function useGalleryCoreInternal(props) {
     const img = node.tagName === "IMG" ? node : node.querySelector("img");
     expandableImgRefs.current[index] = img;
   }, []);
-  const effectiveBreakpoints = React24.useMemo(
+  const effectiveBreakpoints = React25.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...breakpoints || {} }),
     [breakpoints]
   );
-  const sliderApiRef = React24.useRef(null);
-  const fsAdaptersRef = React24.useRef(/* @__PURE__ */ new Map());
-  const registerFullscreenAdapter = React24.useCallback(
+  const sliderApiRef = React25.useRef(null);
+  const fsAdaptersRef = React25.useRef(/* @__PURE__ */ new Map());
+  const registerFullscreenAdapter = React25.useCallback(
     (source, a) => {
       fsAdaptersRef.current.set(source, a);
     },
     []
   );
-  const getFullscreenAdapter = React24.useCallback(
+  const getFullscreenAdapter = React25.useCallback(
     (source) => fsAdaptersRef.current.get(source) ?? null,
     []
   );
-  const idSeqRef = React24.useRef(0);
-  const newId = React24.useCallback(() => `rmg-${++idSeqRef.current}`, []);
-  const [isFullscreenOpen, _setIsFullscreenOpen] = React24.useState(false);
-  const isFullscreenOpenRef = React24.useRef(false);
-  const setFullscreenOpen = React24.useCallback((open) => {
+  const idSeqRef = React25.useRef(0);
+  const newId = React25.useCallback(() => `rmg-${++idSeqRef.current}`, []);
+  const [isFullscreenOpen, _setIsFullscreenOpen] = React25.useState(false);
+  const isFullscreenOpenRef = React25.useRef(false);
+  const setFullscreenOpen = React25.useCallback((open) => {
     isFullscreenOpenRef.current = open;
     _setIsFullscreenOpen(open);
   }, []);
-  const initialCells = React24.useMemo(
+  const initialCells = React25.useMemo(
     () => buildCellsFromNodes(nodes, newId),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
-  const cellsRef = React24.useRef(initialCells);
-  const [cellsState, setCellsState] = React24.useState(initialCells);
-  const [normalizedItems, setNormalizedItems] = React24.useState(() => {
+  const cellsRef = React25.useRef(initialCells);
+  const [cellsState, setCellsState] = React25.useState(initialCells);
+  const [normalizedItems, setNormalizedItems] = React25.useState(() => {
     return normalizeItemsInput(fullscreenItems);
   });
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     setNormalizedItems(normalizeItemsInput(fullscreenItems));
   }, [fullscreenItems]);
   function commit(next) {
     cellsRef.current = next;
     setCellsState(next);
   }
-  const append = React24.useCallback(
+  const append = React25.useCallback(
     (nodes2) => {
       const add = asArray(nodes2).map((n) => ({ id: newId(), node: n }));
       const next = [...cellsRef.current, ...add];
@@ -185,7 +185,7 @@ function useGalleryCoreInternal(props) {
     },
     [newId]
   );
-  const prepend = React24.useCallback(
+  const prepend = React25.useCallback(
     (nodes2) => {
       const add = asArray(nodes2).map((n) => ({ id: newId(), node: n }));
       const next = [...add, ...cellsRef.current];
@@ -194,7 +194,7 @@ function useGalleryCoreInternal(props) {
     },
     [newId]
   );
-  const insert = React24.useCallback(
+  const insert = React25.useCallback(
     (index, nodes2) => {
       const arr = cellsRef.current.slice();
       const add = asArray(nodes2).map((n) => ({ id: newId(), node: n }));
@@ -205,7 +205,7 @@ function useGalleryCoreInternal(props) {
     },
     [newId]
   );
-  const remove = React24.useCallback((index) => {
+  const remove = React25.useCallback((index) => {
     const arr = cellsRef.current;
     if (!arr.length) return 0;
     const i = clamp(index | 0, 0, arr.length - 1);
@@ -213,7 +213,7 @@ function useGalleryCoreInternal(props) {
     commit(next);
     return next.length;
   }, []);
-  const replace = React24.useCallback((index, node) => {
+  const replace = React25.useCallback((index, node) => {
     const arr = cellsRef.current;
     if (!arr.length) return;
     const i = clamp(index | 0, 0, arr.length - 1);
@@ -222,7 +222,7 @@ function useGalleryCoreInternal(props) {
     next[i] = { id: keepId, node };
     commit(next);
   }, []);
-  const setItems = React24.useCallback(
+  const setItems = React25.useCallback(
     (nodes2) => {
       const next = (nodes2 ?? []).map((n) => ({ id: newId(), node: n }));
       commit(next);
@@ -230,8 +230,8 @@ function useGalleryCoreInternal(props) {
     },
     [newId]
   );
-  const fsOpenSub = React24.useMemo(() => createSub(), []);
-  const requestFullscreenOpen = React24.useCallback((req) => {
+  const fsOpenSub = React25.useMemo(() => createSub(), []);
+  const requestFullscreenOpen = React25.useCallback((req) => {
     fsOpenSub.emit(req);
   }, [fsOpenSub]);
   return {
@@ -259,19 +259,19 @@ function useGalleryCoreInternal(props) {
     registerExpandableImg
   };
 }
-var GalleryCoreContext = React24.createContext(null);
+var GalleryCoreContext = React25.createContext(null);
 function GalleryCoreProvider(props) {
   const core = useGalleryCoreInternal(props);
   return /* @__PURE__ */ jsx(GalleryCoreContext.Provider, { value: core, children: props.children });
 }
 var GalleryCore = GalleryCoreProvider;
 function useGalleryCore() {
-  const v = React24.useContext(GalleryCoreContext);
+  const v = React25.useContext(GalleryCoreContext);
   if (!v) throw new Error("useGalleryCore() must be used inside <GalleryCore />");
   return v;
 }
 function useOptionalGalleryCore() {
-  return React24.useContext(GalleryCoreContext);
+  return React25.useContext(GalleryCoreContext);
 }
 
 // src/Gallery/entries/defaults.ts
@@ -279,22 +279,22 @@ var DEFAULT_ENTRIES = {
   mediaLayout: "slider"
 };
 function useEntryInView(len, opts) {
-  const nearMargin = opts?.nearMargin;
-  const viewMargin = opts?.viewMargin;
-  const nearThreshold = opts?.threshold;
+  const nearMargin = opts?.nearMargin ?? "700px 0px";
+  const viewMargin = opts?.viewMargin ?? "0px 0px";
+  const nearThreshold = opts?.threshold ?? 0.01;
   const everThreshold = 0;
   const root = null;
-  const [nearView, setNearView] = React24.useState(
+  const [nearView, setNearView] = React25.useState(
     () => Array.from({ length: len }, () => false)
   );
-  const [everInView, setEverInView] = React24.useState(
+  const [everInView, setEverInView] = React25.useState(
     () => Array.from({ length: len }, () => false)
   );
-  const nearIORef = React24.useRef(null);
-  const viewIORef = React24.useRef(null);
-  const nodeToIndexRef = React24.useRef(/* @__PURE__ */ new Map());
-  const indexToNodeRef = React24.useRef([]);
-  React24.useEffect(() => {
+  const nearIORef = React25.useRef(null);
+  const viewIORef = React25.useRef(null);
+  const nodeToIndexRef = React25.useRef(/* @__PURE__ */ new Map());
+  const indexToNodeRef = React25.useRef([]);
+  React25.useEffect(() => {
     indexToNodeRef.current = Array.from({ length: len }, () => null);
     setNearView(Array.from({ length: len }, () => false));
     setEverInView(Array.from({ length: len }, () => false));
@@ -304,7 +304,7 @@ function useEntryInView(len, opts) {
     nearIORef.current = null;
     viewIORef.current = null;
   }, [len]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (typeof window === "undefined") return;
     nearIORef.current?.disconnect();
     viewIORef.current?.disconnect();
@@ -362,7 +362,7 @@ function useEntryInView(len, opts) {
       viewIORef.current = null;
     };
   }, [root, nearMargin, viewMargin, nearThreshold, everThreshold, len]);
-  const setEntryRef = React24.useCallback(
+  const setEntryRef = React25.useCallback(
     (index) => (node) => {
       const prevNode = indexToNodeRef.current[index] ?? null;
       if (prevNode && prevNode !== node) {
@@ -409,19 +409,19 @@ function decodeImageUrl(url, signal) {
   });
 }
 function useEntryDecodeReady(enabled, entries, inView, opts) {
-  const timeoutMs = opts?.timeoutMs;
-  const entriesKey = React24.useMemo(() => safeEntriesKey(entries), [entries]);
-  const entryImageUrls = React24.useMemo(() => {
+  const timeoutMs = opts?.timeoutMs ?? 8e3;
+  const entriesKey = React25.useMemo(() => safeEntriesKey(entries), [entries]);
+  const entryImageUrls = React25.useMemo(() => {
     const list = entries ?? [];
     return list.map(
       (entry) => (entry.media ?? []).filter((m) => m?.kind === "image" && typeof m?.src === "string").map((m) => m.src)
     );
   }, [entries]);
-  const [decodedReady, setDecodedReady] = React24.useState([]);
-  const startedRef = React24.useRef([]);
-  const controllersRef = React24.useRef(/* @__PURE__ */ new Map());
-  const initKeyRef = React24.useRef("");
-  React24.useEffect(() => {
+  const [decodedReady, setDecodedReady] = React25.useState([]);
+  const startedRef = React25.useRef([]);
+  const controllersRef = React25.useRef(/* @__PURE__ */ new Map());
+  const initKeyRef = React25.useRef("");
+  React25.useEffect(() => {
     if (!enabled) return;
     const len = entries?.length ?? 0;
     if (initKeyRef.current !== entriesKey) {
@@ -434,7 +434,7 @@ function useEntryDecodeReady(enabled, entries, inView, opts) {
       controllersRef.current.clear();
     }
   }, [enabled, entriesKey, entries, entryImageUrls]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (!enabled) return;
     const len = entries?.length ?? 0;
     if (!len) return;
@@ -485,7 +485,7 @@ function useEntryDecodeReady(enabled, entries, inView, opts) {
       })();
     }
   }, [enabled, entries, entryImageUrls, inView, decodedReady, timeoutMs]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     return () => {
       for (const [, ac] of controllersRef.current) ac.abort();
       controllersRef.current.clear();
@@ -493,23 +493,38 @@ function useEntryDecodeReady(enabled, entries, inView, opts) {
   }, []);
   return { decodedReady, entriesKey };
 }
+function cssLen(v) {
+  if (v == null) return void 0;
+  return typeof v === "number" ? `${v}px` : v;
+}
 function useNormalizedEntriesLoading(entries) {
-  return React24.useMemo(() => {
+  return React25.useMemo(() => {
     const src = entries.loading ?? {};
+    const nearMargin = typeof src.nearMargin === "string" ? src.nearMargin : "700px 0px";
+    const viewMargin = typeof src.viewMargin === "string" ? src.viewMargin : "0px 0px";
+    const threshold = typeof src.threshold === "number" && !Number.isNaN(src.threshold) ? src.threshold : 0.01;
+    const waitForDecode = src.waitForDecode !== false;
+    const decodeTimeoutMs = typeof src.decodeTimeoutMs === "number" && src.decodeTimeoutMs > 0 ? src.decodeTimeoutMs : 8e3;
+    const minHeight = cssLen(src.minHeight) ?? "260px";
     return {
       isLoading: src.isLoading,
-      skeletonCount: src.skeletonCount,
-      renderLoading: src.renderLoading
+      skeleton: src.skeleton,
+      minHeight,
+      nearMargin,
+      viewMargin,
+      threshold,
+      waitForDecode,
+      decodeTimeoutMs,
+      skeletonWrap: src.skeletonWrap
     };
   }, [entries.loading]);
 }
 function useNormalizedEntriesIntro(entries) {
-  return React24.useMemo(() => {
+  return React25.useMemo(() => {
     const src = entries.intro ?? {};
     return {
       renderIntro: src.renderIntro,
       staggerMs: src.staggerMs ?? 200,
-      transform: src.transform ?? "translateY(30px) scale(0.99)",
       durationMs: src.durationMs ?? 700,
       easing: src.easing ?? "cubic-bezier(.2,.7,.2,1)",
       staggerLimit: Math.max(0, (src.staggerLimit ?? 6) | 0)
@@ -519,66 +534,253 @@ function useNormalizedEntriesIntro(entries) {
 
 // src/Gallery/styles.module.css
 var styles_default = {};
-function Line({ kind }) {
-  const cls = kind === "short" ? styles_default.entrySkeletonLineShort : kind === "medium" ? styles_default.entrySkeletonLineMedium : styles_default.entrySkeletonLineLong;
-  return /* @__PURE__ */ jsx("div", { className: `${cls} ${styles_default.entrySkeletonShimmer}` });
+function defaultSpec() {
+  return { variant: "solid", minHeight: 260 };
 }
-function EntrySkeletonCard({ spec }) {
-  const s = spec ?? {
-    header: { showAvatar: true, lines: ["short", "long"] },
-    body: { lines: ["long", "medium"] },
-    media: {
-      count: 1,
-      columns: 1,
-      gapPx: 10,
-      heightPx: 260
-      // ✅ sensible default for Entries rows
+function cssLen2(v) {
+  if (v == null) return void 0;
+  return typeof v === "number" ? `${v}px` : v;
+}
+function applyBoxMargins(style) {
+  if (!style) return {};
+  const mt = cssLen2(style.marginTop);
+  const mr = cssLen2(style.marginRight);
+  const mb = cssLen2(style.marginBottom);
+  const ml = cssLen2(style.marginLeft);
+  const out = {};
+  if (mt != null) out.marginTop = mt;
+  if (mr != null) out.marginRight = mr;
+  if (mb != null) out.marginBottom = mb;
+  if (ml != null) out.marginLeft = ml;
+  return out;
+}
+function nodeStyleVars(base, shimmer) {
+  const s = {};
+  if (base?.width != null) s.width = cssLen2(base.width);
+  if (base?.maxWidth != null) s.maxWidth = cssLen2(base.maxWidth);
+  if (base?.height != null) s.height = cssLen2(base.height);
+  if (base?.maxHeight != null) s.maxHeight = cssLen2(base.maxHeight);
+  if (base?.backgroundColor) s["--rmg-skel-bg"] = base.backgroundColor;
+  if (base?.borderRadius != null) s["--rmg-skel-radius"] = cssLen2(base.borderRadius);
+  if (base?.alignSelf) s.alignSelf = base.alignSelf;
+  if (shimmer?.enabled === false) s["--rmg-skel-shimmer-enabled"] = "0";
+  if (shimmer?.durationMs != null)
+    s["--rmg-skel-shimmer-duration"] = `${shimmer.durationMs}ms`;
+  if (shimmer?.bandSizePct != null)
+    s["--rmg-skel-shimmer-band"] = `${shimmer.bandSizePct}%`;
+  if (shimmer?.angleDeg != null) s["--rmg-skel-shimmer-angle"] = `${shimmer.angleDeg}deg`;
+  return s;
+}
+function containerStylesPlain(style) {
+  const s = {};
+  if (!style) return s;
+  if (style.gap != null) s.gap = cssLen2(style.gap);
+  if (style.padding != null) s.padding = cssLen2(style.padding);
+  if (style.align) s.alignItems = style.align;
+  if (style.justify) s.justifyContent = style.justify;
+  if (style.wrap) s.flexWrap = "wrap";
+  if (style.width != null) s.width = cssLen2(style.width);
+  if (style.maxWidth != null) s.maxWidth = cssLen2(style.maxWidth);
+  return s;
+}
+function isResponsiveContainerStyle(style) {
+  if (!style) return false;
+  return Object.keys(style).some((k) => String(+k) === k);
+}
+function escapeAttrValue(v) {
+  return v.replace(/"/g, '\\"');
+}
+function sanitizeIdForAttr(id) {
+  return id.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+function containerStyleToCssDecls(style) {
+  const decls = [];
+  if (style.gap != null) decls.push(`gap:${cssLen2(style.gap)};`);
+  if (style.padding != null) decls.push(`padding:${cssLen2(style.padding)};`);
+  if (style.align) decls.push(`align-items:${style.align};`);
+  if (style.justify) decls.push(`justify-content:${style.justify};`);
+  if (style.wrap) decls.push(`flex-wrap:wrap;`);
+  if (style.width != null) decls.push(`width:${cssLen2(style.width)};`);
+  if (style.maxWidth != null) decls.push(`max-width:${cssLen2(style.maxWidth)};`);
+  return decls.join("");
+}
+function collectResponsiveCss(node, allocId, out) {
+  switch (node.kind) {
+    case "rect":
+    case "square":
+    case "circle":
+      return node;
+    case "media": {
+      const id = allocId();
+      const style = node.style;
+      if (isResponsiveContainerStyle(style)) {
+        const rs = style;
+        const rules = Object.keys(style).map((k) => +k).filter((n) => Number.isFinite(n) && n >= 0).sort((a, b) => a - b).map((minWidth) => ({
+          minWidth,
+          css: containerStyleToCssDecls(rs[String(minWidth)] || {})
+        })).filter((r) => r.css.length > 0);
+        if (rules.length) out.push({ nodeId: id, rules });
+      }
+      return { ...node, __rmgNodeId: id };
     }
-  };
-  const headerLines = s.header?.lines ?? [];
-  const bodyLines = s.body?.lines ?? [];
-  const mediaCount = Math.max(0, s.media?.count ?? 0);
-  const cols = Math.max(1, s.media?.columns ?? 1);
-  const gap = s.media?.gapPx ?? 10;
-  const heightPx = s.media?.heightPx ?? 260;
-  const columns = Array.from({ length: cols }, () => []);
-  for (let i = 0; i < mediaCount; i++) {
-    columns[i % cols].push(i);
+    case "stack":
+    case "row":
+    case "col": {
+      const id = allocId();
+      const style = node.style;
+      if (isResponsiveContainerStyle(style)) {
+        const rules = Object.keys(style).map((k) => +k).filter((n) => Number.isFinite(n) && n >= 0).sort((a, b) => a - b).map((minWidth) => ({
+          minWidth,
+          css: containerStyleToCssDecls(style[minWidth] || {})
+        })).filter((r) => r.css.length > 0);
+        if (rules.length) out.push({ nodeId: id, rules });
+      }
+      const children = node.children.map((c) => collectResponsiveCss(c, allocId, out));
+      return { ...node, __rmgNodeId: id, children };
+    }
+    default: {
+      const _exhaustive = node;
+      return _exhaustive;
+    }
   }
-  return /* @__PURE__ */ jsxs("article", { className: styles_default.entrySkeletonCard, children: [
-    (s.header?.showAvatar || headerLines.length) && /* @__PURE__ */ jsxs("div", { className: styles_default.entrySkeletonHeader, children: [
-      s.header?.showAvatar ? /* @__PURE__ */ jsx("div", { className: `${styles_default.entrySkeletonAvatar} ${styles_default.entrySkeletonShimmer}` }) : null,
-      headerLines.length ? /* @__PURE__ */ jsx("div", { className: styles_default.entrySkeletonLines, children: headerLines.map((k, idx) => /* @__PURE__ */ jsx(Line, { kind: k }, idx)) }) : null
-    ] }),
-    bodyLines.length ? /* @__PURE__ */ jsx("div", { className: styles_default.entrySkeletonBody, children: bodyLines.map((k, idx) => /* @__PURE__ */ jsx(Line, { kind: k }, idx)) }) : null,
-    mediaCount > 0 ? /* @__PURE__ */ jsx(
+}
+function buildResponsiveCssText(scopeId, rules) {
+  if (!rules.length) return "";
+  const scopeSel = `[data-rmg-entry-skel-scope="${escapeAttrValue(scopeId)}"]`;
+  const lines = [];
+  for (const nodeRule of rules) {
+    const nodeSel = `${scopeSel} [data-rmg-skel-node="${escapeAttrValue(nodeRule.nodeId)}"]`;
+    for (const r of nodeRule.rules) {
+      lines.push(`@media (min-width:${r.minWidth}px){${nodeSel}{${r.css}}}`);
+    }
+  }
+  return lines.join("\n");
+}
+function ShapeNode({
+  kind,
+  style,
+  shimmer
+}) {
+  const cls = kind === "circle" ? styles_default.entrySkelCircle : kind === "square" ? styles_default.entrySkelSquare : styles_default.entrySkelRect;
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      className: [styles_default.entrySkelTile, cls].join(" "),
+      style: {
+        ...nodeStyleVars(style, shimmer),
+        ...applyBoxMargins(style)
+      }
+    }
+  );
+}
+function LayoutNode({ node }) {
+  switch (node.kind) {
+    case "rect":
+    case "square":
+    case "circle":
+      return /* @__PURE__ */ jsx(ShapeNode, { ...node });
+    case "media": {
+      const count = Math.max(0, node.count | 0);
+      const dir = node.direction ?? "row";
+      const tileShape = node.tile?.shape ?? "rect";
+      const nodeId = node.__rmgNodeId;
+      const plainStyle = isResponsiveContainerStyle(node.style) ? void 0 : containerStylesPlain(node.style);
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-rmg-skel-node": nodeId,
+          className: [
+            styles_default.entrySkelGroup,
+            dir === "row" ? styles_default.entrySkelRow : styles_default.entrySkelCol
+          ].join(" "),
+          style: plainStyle,
+          children: Array.from({ length: count }).map((_, i) => /* @__PURE__ */ jsx(
+            ShapeNode,
+            {
+              kind: tileShape,
+              style: node.tile?.style,
+              shimmer: node.tile?.shimmer
+            },
+            i
+          ))
+        }
+      );
+    }
+    case "stack":
+    case "row":
+    case "col": {
+      const dirCls = node.kind === "row" ? styles_default.entrySkelRow : node.kind === "col" ? styles_default.entrySkelCol : styles_default.entrySkelStack;
+      const nodeId = node.__rmgNodeId;
+      const plainStyle = isResponsiveContainerStyle(node.style) ? void 0 : containerStylesPlain(node.style);
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-rmg-skel-node": nodeId,
+          className: [styles_default.entrySkelGroup, dirCls].join(" "),
+          style: plainStyle,
+          children: node.children.map((child, i) => /* @__PURE__ */ jsx(LayoutNode, { node: child }, i))
+        }
+      );
+    }
+    default: {
+      return null;
+    }
+  }
+}
+function EntrySkeletonCard({ spec, className }) {
+  const s = spec ?? defaultSpec();
+  const rootStyle = {
+    ...s.minHeight != null ? { minHeight: cssLen2(s.minHeight) } : null
+  };
+  if (s.defaults?.backgroundColor) rootStyle["--rmg-skel-bg"] = s.defaults.backgroundColor;
+  if (s.defaults?.highlightColor) rootStyle["--rmg-skel-hi"] = s.defaults.highlightColor;
+  if (s.defaults?.radius != null) rootStyle["--rmg-skel-radius"] = cssLen2(s.defaults.radius);
+  const sh = s.defaults?.shimmer;
+  if (sh?.enabled === false) rootStyle["--rmg-skel-shimmer-enabled"] = "0";
+  if (sh?.durationMs != null) rootStyle["--rmg-skel-shimmer-duration"] = `${sh.durationMs}ms`;
+  if (sh?.bandSizePct != null) rootStyle["--rmg-skel-shimmer-band"] = `${sh.bandSizePct}%`;
+  if (sh?.angleDeg != null) rootStyle["--rmg-skel-shimmer-angle"] = `${sh.angleDeg}deg`;
+  if (s.variant === "solid" && !s.layout) {
+    return /* @__PURE__ */ jsx(
       "div",
       {
-        className: styles_default.entrySkeletonMediaGrid,
-        style: { display: "flex", columnGap: gap },
-        children: columns.map((colItems, colIdx) => /* @__PURE__ */ jsx(
-          "div",
-          {
-            style: {
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              rowGap: gap
-            },
-            children: colItems.map((i) => /* @__PURE__ */ jsx(
-              "div",
-              {
-                className: `${styles_default.entrySkeletonMedia} ${styles_default.entrySkeletonShimmer}`,
-                style: { height: heightPx }
-              },
-              i
-            ))
-          },
-          colIdx
-        ))
+        className: [styles_default.entrySkeletonTile, styles_default.entrySkeletonShimmer, className].filter(Boolean).join(" "),
+        style: rootStyle
       }
-    ) : null
-  ] });
+    );
+  }
+  const defaultLayout = React25.useMemo(() => ({
+    kind: "stack",
+    style: { gap: 12 },
+    children: [
+      { kind: "rect", style: { height: 18, width: "60%" } },
+      { kind: "rect", style: { height: 14, width: "90%" } },
+      { kind: "media", count: 2, direction: "row", style: { gap: 10, wrap: true } }
+    ]
+  }), []);
+  const layoutIn = s.layout ?? defaultLayout;
+  const reactId = React25.useId();
+  const scopeId = React25.useMemo(() => `skel_${sanitizeIdForAttr(reactId)}`, [reactId]);
+  const { layout, responsiveCss } = React25.useMemo(() => {
+    let n = 0;
+    const allocId = () => `n${++n}`;
+    const collected = [];
+    const withIds = collectResponsiveCss(layoutIn, allocId, collected);
+    const cssText = buildResponsiveCssText(scopeId, collected);
+    return { layout: withIds, responsiveCss: cssText };
+  }, [layoutIn, scopeId]);
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      "data-rmg-entry-skel-scope": scopeId,
+      className: [styles_default.entrySkelRoot, className].filter(Boolean).join(" "),
+      style: rootStyle,
+      children: [
+        responsiveCss ? /* @__PURE__ */ jsx("style", { dangerouslySetInnerHTML: { __html: responsiveCss } }) : null,
+        /* @__PURE__ */ jsx(LayoutNode, { node: layout })
+      ]
+    }
+  );
 }
 function EntryList({
   enabled,
@@ -593,8 +795,8 @@ function EntryList({
   entrySliderRefs
 }) {
   const DRAG_PX = 6;
-  const downPosRef = React24.useRef(null);
-  const draggedRef = React24.useRef(false);
+  const downPosRef = React25.useRef(null);
+  const draggedRef = React25.useRef(false);
   const onPointerDownCapture = (e) => {
     if (e.button != null && e.button !== 0) return;
     draggedRef.current = false;
@@ -616,31 +818,30 @@ function EntryList({
     }, 0);
   };
   const shouldBlockClick = () => draggedRef.current;
-  function buildEntrySkeletonSpec(entry, entryIndex) {
-    const mediaCount = Array.isArray(entry?.media) ? entry.media.length : 0;
+  function resolveEntrySkeletonSpec(entry, entryIndex) {
+    const skel = entries?.loading?.skeleton;
+    if (typeof skel === "function") {
+      const out = skel({ entry, entryIndex });
+      if (out && typeof out === "object") return out;
+    } else if (skel && typeof skel === "object") {
+      return skel;
+    }
     return {
-      header: { showAvatar: true, lines: ["short", "long"] },
-      body: { lines: ["long", "medium"] },
-      media: {
-        count: Math.max(1, Math.min(mediaCount || 1, 6)),
-        // 1
-        heightPx: 260,
-        columns: mediaCount >= 4 ? 2 : 1,
-        gapPx: 20
-      }
+      variant: "solid",
+      minHeight: 260
     };
   }
   const items = entries.items ?? [];
   const len = items.length;
+  const loadingN = useNormalizedEntriesLoading(entries);
   const { nearView, everInView, setEntryRef } = useEntryInView(len, {
-    nearMargin: "700px 0px",
-    viewMargin: "0px 0px",
-    threshold: 0.01
+    nearMargin: loadingN.nearMargin,
+    viewMargin: loadingN.viewMargin,
+    threshold: loadingN.threshold
   });
   const { decodedReady } = useEntryDecodeReady(enabled, items, nearView, {
-    timeoutMs: 8e3
+    timeoutMs: loadingN.decodeTimeoutMs
   });
-  const loadingN = useNormalizedEntriesLoading(entries);
   const introN = useNormalizedEntriesIntro(entries);
   const showGlobalLoading = enabled && (loadingN.isLoading === true || len === 0);
   const entryRows = !len ? null : items.map((entry, entryIndex) => {
@@ -648,7 +849,7 @@ function EntryList({
     const hasEver = everInView[entryIndex] ?? false;
     const isDecoded = decodedReady[entryIndex] ?? false;
     const shouldMountContent = hasEver || isNear;
-    const reveal = hasEver && isDecoded;
+    const reveal = hasEver && (loadingN.waitForDecode ? isDecoded : true);
     const showSkeleton = shouldMountContent && !reveal;
     let contentNode = null;
     if (shouldMountContent) {
@@ -665,7 +866,7 @@ function EntryList({
           if (!fsEnabled) return;
           openFullscreenAt(globalIndex, e.currentTarget);
         };
-        if (React24.isValidElement(rawContent)) {
+        if (React25.isValidElement(rawContent)) {
           const original = rawContent;
           const origOnClick = original.props?.onClick;
           const origRef = original.ref;
@@ -680,7 +881,7 @@ function EntryList({
               else if (origRef && typeof origRef === "object") origRef.current = node;
               reg(node);
             };
-            return React24.cloneElement(original, {
+            return React25.cloneElement(original, {
               key: `${entryIndex}-${mediaIndex}`,
               onClick: (e) => {
                 if (shouldBlockClick()) {
@@ -704,7 +905,7 @@ function EntryList({
               onPointerDownCapture,
               onPointerMoveCapture,
               onPointerUpCapture,
-              children: React24.cloneElement(original, {
+              children: React25.cloneElement(original, {
                 onClick: (e) => {
                   if (shouldBlockClick()) {
                     e.preventDefault();
@@ -735,16 +936,35 @@ function EntryList({
     }
     const limit = introN.staggerLimit;
     const delayIndex = limit > 0 && entryIndex < limit ? entryIndex : 0;
+    const skeletonOverride = typeof entries.render?.skeleton === "function" ? entries.render.skeleton({ entry, entryIndex }) : null;
+    const spec = resolveEntrySkeletonSpec(entry, entryIndex);
+    const skelWrap = loadingN.skeletonWrap;
     return /* @__PURE__ */ jsxs(
       "div",
       {
         ref: setEntryRef(entryIndex),
         "data-rmg-entry-ready": reveal ? "1" : "0",
-        className: styles_default.entryRow,
+        "data-rmg-entry-mounted": shouldMountContent ? "1" : "0",
+        className: [styles_default.entryRow, entries.entryRow?.className].filter(Boolean).join(" "),
         "data-rmg-entry-owner": entryIndex,
-        style: { ["--rmg-entry-intro-index"]: delayIndex, minHeight: 260 },
+        style: {
+          ["--rmg-entry-min-height"]: loadingN.minHeight,
+          ["--rmg-entry-intro-index"]: delayIndex,
+          ...entries.entryRow?.style
+        },
         children: [
-          /* @__PURE__ */ jsx("div", { className: styles_default.entrySkeletonWrap, "aria-hidden": showSkeleton ? void 0 : true, children: /* @__PURE__ */ jsx(EntrySkeletonCard, { spec: buildEntrySkeletonSpec(entry) }) }),
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: [
+                styles_default.entrySkeletonWrap,
+                skelWrap?.className
+              ].filter(Boolean).join(" "),
+              style: skelWrap?.style,
+              "aria-hidden": showSkeleton ? void 0 : true,
+              children: skeletonOverride ?? /* @__PURE__ */ jsx(EntrySkeletonCard, { spec })
+            }
+          ),
           shouldMountContent ? /* @__PURE__ */ jsx("div", { className: styles_default.entryInner, children: contentNode }) : null
         ]
       },
@@ -752,12 +972,12 @@ function EntryList({
     );
   });
   const containerProps = {
-    className: [styles_default.entryList].filter(Boolean).join(" "),
+    className: [styles_default.entryList, entries.entryList?.className].filter(Boolean).join(" "),
     style: {
       ["--rmg-entry-intro-stagger"]: `${introN.staggerMs}ms`,
-      ["--rmg-entry-intro-transform"]: introN.transform,
       ["--rmg-entry-intro-duration"]: `${introN.durationMs}ms`,
-      ["--rmg-entry-intro-easing"]: introN.easing
+      ["--rmg-entry-intro-easing"]: introN.easing,
+      ...entries.entryList?.style
     },
     "aria-busy": showGlobalLoading ? true : void 0
   };
@@ -813,19 +1033,19 @@ function Entries(props) {
     nodeFromMedia = nodeFromMediaDefault,
     onOpenFullscreen
   } = props;
-  const entriesObject = React24.useMemo(() => {
+  const entriesObject = React25.useMemo(() => {
     return {
       ...entries,
       mediaLayout: entries?.mediaLayout ?? DEFAULT_ENTRIES.mediaLayout
     };
   }, [entries]);
   const core = useOptionalGalleryCore();
-  const entryFlatIndexRef = props.entryFlatIndexRef ?? React24.useRef(null);
-  const entryMapRef = props.entryMapRef ?? React24.useRef(null);
-  const fsOwnersRef = props.fsOwnersRef ?? React24.useRef([]);
-  const entrySliderRefs = props.entrySliderRefs ?? React24.useRef([]);
-  const expandableImgRefs = core?.expandableImgRefs ?? React24.useRef([]);
-  const registerExpandableImg = core?.registerExpandableImg ?? React24.useCallback((index, node) => {
+  const entryFlatIndexRef = props.entryFlatIndexRef ?? React25.useRef(null);
+  const entryMapRef = props.entryMapRef ?? React25.useRef(null);
+  const fsOwnersRef = props.fsOwnersRef ?? React25.useRef([]);
+  const entrySliderRefs = props.entrySliderRefs ?? React25.useRef([]);
+  const expandableImgRefs = core?.expandableImgRefs ?? React25.useRef([]);
+  const registerExpandableImg = core?.registerExpandableImg ?? React25.useCallback((index, node) => {
     if (!node) {
       expandableImgRefs.current[index] = null;
       return;
@@ -833,20 +1053,20 @@ function Entries(props) {
     const img = node.tagName === "IMG" ? node : node.querySelector("img");
     expandableImgRefs.current[index] = img;
   }, []);
-  const { flattenedMedia, flattenedMap, entryFlatIndex, owners } = React24.useMemo(() => {
+  const { flattenedMedia, flattenedMap, entryFlatIndex, owners } = React25.useMemo(() => {
     return flattenEntries(entriesObject.items);
   }, [entriesObject.items]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     entryFlatIndexRef.current = entryFlatIndex;
     fsOwnersRef.current = owners;
     entryMapRef.current = flattenedMap;
   }, [entryFlatIndex, owners, flattenedMap, entryFlatIndexRef, fsOwnersRef, entryMapRef]);
-  const normalizedItems = React24.useMemo(() => {
+  const normalizedItems = React25.useMemo(() => {
     const fsItems = normalizeFsItems(fullscreen?.items);
     if (fsItems.length) return fsItems;
     return flattenedMedia;
   }, [fullscreen?.items, flattenedMedia]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (!core) return;
     core.registerFullscreenAdapter("entries", {
       closestSelector: entriesObject.mediaLayout === "slider" ? ".rmg__slide" : ".rmg__grid-item",
@@ -868,7 +1088,7 @@ function Entries(props) {
       })
     });
   }, [core, entriesObject]);
-  const openFullscreenAt = React24.useCallback(
+  const openFullscreenAt = React25.useCallback(
     (globalIndex, originEl) => {
       const fsEnabled2 = fullscreen?.enabled ?? true;
       if (!fsEnabled2) return;
@@ -1043,7 +1263,7 @@ function getCurrentTransform(slide) {
   const ty = matrixValues[5] || 0;
   return { x: tx, y: ty };
 }
-function baseFitSizeC(imgEl, containerW, containerH) {
+function baseFitSize(imgEl, containerW, containerH) {
   const natW = imgEl.naturalWidth || imgEl.width || containerW;
   const natH = imgEl.naturalHeight || imgEl.height || containerH;
   const fit = Math.min(containerW / natW, containerH / natH);
@@ -1171,7 +1391,7 @@ function zoomTo(ctx, args) {
   const containerH = rect.height;
   const cx = centerPoint.x - rect.left;
   const cy = centerPoint.y - rect.top;
-  const { baseW, baseH } = baseFitSizeC(imgEl, containerW, containerH);
+  const { baseW, baseH } = baseFitSize(imgEl, containerW, containerH);
   const offXc = (containerW - baseW) / 2;
   const offYc = (containerH - baseH) / 2;
   const tx0 = ctx.offX.current.get();
@@ -1274,7 +1494,7 @@ function handleZoomToggle(ctx, e, imageRef) {
   const { clientX, clientY } = getClientXY(e);
   const cx = clientX - rect.left;
   const cy = clientY - rect.top;
-  const { baseW, baseH } = baseFitSizeC(imgEl, containerW, containerH);
+  const { baseW, baseH } = baseFitSize(imgEl, containerW, containerH);
   const offXc = (containerW - baseW) / 2;
   const offYc = (containerH - baseH) / 2;
   const tx0 = ctx.offX.current.get();
@@ -1357,11 +1577,11 @@ function handleZoomToggle(ctx, e, imageRef) {
   ctx.animRef.current?.resetBlend();
 }
 function useViewportWidth() {
-  const [vw, setVw] = React24.useState(() => {
+  const [vw, setVw] = React25.useState(() => {
     if (typeof window === "undefined") return 0;
     return window.innerWidth;
   });
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (typeof window === "undefined") return;
     const onResize = () => setVw(window.innerWidth);
     window.addEventListener("resize", onResize);
@@ -1376,11 +1596,11 @@ function readSize() {
   };
 }
 function useWindowSize() {
-  const [size, setSize] = React24.useState(() => {
+  const [size, setSize] = React25.useState(() => {
     if (typeof window === "undefined") return { width: 1024, height: 768 };
     return readSize();
   });
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (typeof window === "undefined") return;
     const onResize = () => setSize(readSize());
     window.addEventListener("resize", onResize);
@@ -1882,10 +2102,10 @@ var FullscreenModal = ({
 }) => {
   const DURATION_MS = introDuration;
   const EASING = introEasing;
-  const modalRef = React24__default.useRef(null);
-  const pointerDownX = React24__default.useRef(0);
-  const pointerDownY = React24__default.useRef(0);
-  const shieldRef = React24__default.useRef(null);
+  const modalRef = React25__default.useRef(null);
+  const pointerDownX = React25__default.useRef(0);
+  const pointerDownY = React25__default.useRef(0);
+  const shieldRef = React25__default.useRef(null);
   function mountShield() {
     if (shieldRef.current) return;
     const shield = document.createElement("div");
@@ -4257,7 +4477,7 @@ function createIndexChannel(initialIndex = 0, initialMode = "animated") {
 function ScrollBounds(limit, location, target, body, pov, selectDuration) {
   const pullBack = pov.measure(10);
   const edgeTol = pov.measure(50);
-  const fricLim = Limit(0.1, 0.99);
+  const fricLim = Limit(0.5, 1);
   function reached() {
     return limit.reachedAny(target.get()) && limit.reachedAny(location.get());
   }
@@ -5942,7 +6162,7 @@ function runFullscreenIntro(args) {
     closestSelector ?? // sensible default:
     (closestSelector === void 0 ? ".rmg__grid-item, .rmg__slide" : "")
   ) || origImg.parentElement || origImg;
-  const slideRect = slideEl.getBoundingClientRect();
+  slideEl.getBoundingClientRect();
   const imgRect = origImg.getBoundingClientRect();
   const natW = Math.max(1, origImg.naturalWidth || 0);
   const natH = Math.max(1, origImg.naturalHeight || 0);
@@ -6131,7 +6351,7 @@ function runFullscreenIntro(args) {
     const frag = document.createDocumentFragment();
     frag.append(overlay, clipper);
     document.body.appendChild(frag);
-    const startT = fit === "contain" ? containTransformForRect(natW, natH, visibleImgRect, startObjPos) : coverTransformForRect(natW, natH, slideRect, startObjPos);
+    const startT = fit === "contain" ? containTransformForRect(natW, natH, visibleImgRect, startObjPos) : coverTransformForRect(natW, natH, imgRect, startObjPos);
     dup.style.transform = `translate3d(${startT.cx}px, ${startT.cy}px, 0) translate3d(${-natW / 2}px, ${-natH / 2}px, 0) scale(${startT.scale})`;
     void dup.offsetWidth;
     void clipper.offsetWidth;
@@ -6247,7 +6467,7 @@ function isVideoSlideElement(el) {
 // src/Gallery/video/usePlyrProps.ts
 function usePlyrProps(args) {
   const { items, source, options } = args;
-  return React24.useMemo(() => {
+  return React25.useMemo(() => {
     if (!items?.length) return [];
     const getSource = (item, index) => (source ?? defaultPlyrSource)(item, index);
     const getOptions = mergePlyrOptions(defaultPlyrOptions, options);
@@ -6392,7 +6612,7 @@ function installDblclickGuardWhenReady(player) {
 function resolvePlyrComponent(mod2) {
   return mod2?.Plyr ?? mod2?.default?.Plyr ?? mod2?.default;
 }
-var LazyPlyr = React24.lazy(async () => {
+var LazyPlyr = React25.lazy(async () => {
   const mod2 = await import('plyr-react');
   const Comp = resolvePlyrComponent(mod2);
   if (!Comp) {
@@ -6404,7 +6624,7 @@ var LazyPlyr = React24.lazy(async () => {
   }
   return { default: Comp };
 });
-var Plyr = React24.forwardRef(function PlyrForwarded(props, ref) {
+var Plyr = React25.forwardRef(function PlyrForwarded(props, ref) {
   return /* @__PURE__ */ jsx(LazyPlyr, { ...props, ref });
 });
 function renderFullscreenSlides(opts) {
@@ -6641,7 +6861,7 @@ var defaultPlayerStyle = {
   transform: "translateX(-50%)"
 };
 function usePanAnimation(d) {
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     const anim = Animations(
       document,
       window,
@@ -6695,11 +6915,11 @@ function DragTracker3(axis, ownerWindow) {
   return createDragTracker({ ownerWindow, axis });
 }
 function usePanDrag(d) {
-  const freeBoost = React24.useMemo(() => ({ mouse: 400, touch: 400 }), []);
-  const trackerRef = React24.useRef(null);
-  const dragStore = React24.useRef(EventStore()).current;
-  const moveStore = React24.useRef(EventStore()).current;
-  const forceBoost = React24.useCallback(
+  const freeBoost = React25.useMemo(() => ({ mouse: 400, touch: 400 }), []);
+  const trackerRef = React25.useRef(null);
+  const dragStore = React25.useRef(EventStore()).current;
+  const moveStore = React25.useRef(EventStore()).current;
+  const forceBoost = React25.useCallback(
     (rawForce, isMouse) => rawForce * (isMouse ? freeBoost.mouse : freeBoost.touch),
     [freeBoost]
   );
@@ -6718,15 +6938,15 @@ function usePanDrag(d) {
     `;
     document.head.appendChild(style);
   }
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     ensurePanCursorStyle();
   }, []);
-  const setGrabbing = React24.useCallback((on) => {
+  const setGrabbing = React25.useCallback((on) => {
     const root = document.documentElement;
     if (on) root.classList.add("rmg-pan-grabbing");
     else root.classList.remove("rmg-pan-grabbing");
   }, []);
-  const handlePanPointerStart = React24.useCallback(
+  const handlePanPointerStart = React25.useCallback(
     (e, imageRef) => {
       if (!d.isZoomed) return;
       if (!imageRef.current) return;
@@ -6837,7 +7057,7 @@ function usePanDrag(d) {
     },
     [d, dragStore, moveStore, forceBoost, setGrabbing]
   );
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     return () => {
       moveStore.clear();
       dragStore.clear();
@@ -6862,7 +7082,7 @@ function rebuildPanBodiesFn(ctx) {
   const rect = container.getBoundingClientRect();
   const containerW = rect.width;
   const containerH = rect.height;
-  const { baseW, baseH } = baseFitSizeC(img, containerW, containerH);
+  const { baseW, baseH } = baseFitSize(img, containerW, containerH);
   const { x, y } = getCurrentTransform(img);
   ctx.locX.current = ctx.Vector1D(x);
   ctx.prevX.current = ctx.Vector1D(x);
@@ -6959,7 +7179,7 @@ function useGlobalPinchZoom(args) {
     imageRefs,
     fullscreenSliderApi,
     rebuildPanBodies,
-    baseFitSizeC: baseFitSizeC2,
+    baseFitSize: baseFitSize2,
     boundsForCurrent: boundsForCurrent2,
     ScrollBounds: ScrollBounds2,
     boundsX,
@@ -6977,12 +7197,12 @@ function useGlobalPinchZoom(args) {
     distance: distance2,
     midpoint: midpoint2
   } = args;
-  const isPinching = React24.useRef(false);
-  const isTouchPinching = React24.useRef(false);
-  const pinchJustEnded = React24.useRef(false);
-  const startDist = React24.useRef(0);
-  const startScale = React24.useRef(1);
-  const handlePinchWheel = React24.useCallback(
+  const isPinching = React25.useRef(false);
+  const isTouchPinching = React25.useRef(false);
+  const pinchJustEnded = React25.useRef(false);
+  const startDist = React25.useRef(0);
+  const startScale = React25.useRef(1);
+  const handlePinchWheel = React25.useCallback(
     (e, imageRef) => {
       if (!imageRef.current) return;
       if (!e.ctrlKey) return;
@@ -7007,7 +7227,7 @@ function useGlobalPinchZoom(args) {
     },
     [fullscreenSliderApi, scaleRef, zoomTo2, zoomCtx]
   );
-  const handleWheelPan = React24.useCallback(
+  const handleWheelPan = React25.useCallback(
     (e) => {
       if (!isZoomed) return;
       if (isPinchGesture(e)) return;
@@ -7019,7 +7239,7 @@ function useGlobalPinchZoom(args) {
       const rect = container.getBoundingClientRect();
       const containerW = rect.width;
       const containerH = rect.height;
-      const { baseW, baseH } = baseFitSizeC2(
+      const { baseW, baseH } = baseFitSize2(
         container.children[0],
         containerW,
         containerH
@@ -7061,7 +7281,7 @@ function useGlobalPinchZoom(args) {
       isZoomed,
       currentImage,
       rebuildPanBodies,
-      baseFitSizeC2,
+      baseFitSize2,
       boundsForCurrent2,
       scaleRef,
       boundsX,
@@ -7077,11 +7297,11 @@ function useGlobalPinchZoom(args) {
       panDuration
     ]
   );
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     window.addEventListener("wheel", handleWheelPan, { passive: false });
     return () => window.removeEventListener("wheel", handleWheelPan);
   }, [handleWheelPan]);
-  React24.useLayoutEffect(() => {
+  React25.useLayoutEffect(() => {
     function pinchWheelHandler(e) {
       const img = findImgAtPoint2(document, e.clientX, e.clientY);
       if (!img) return;
@@ -7095,7 +7315,7 @@ function useGlobalPinchZoom(args) {
     window.addEventListener("wheel", pinchWheelHandler, { passive: false });
     return () => window.removeEventListener("wheel", pinchWheelHandler);
   }, [findImgAtPoint2, readDataIndex2, imageRefs, currentImage, handlePinchWheel]);
-  const onTouchStart = React24.useCallback(
+  const onTouchStart = React25.useCallback(
     (e) => {
       if (e.touches.length !== 2) return;
       e.preventDefault();
@@ -7107,7 +7327,7 @@ function useGlobalPinchZoom(args) {
     },
     [distance2, fullscreenSliderApi, scaleRef]
   );
-  const onTouchMove = React24.useCallback(
+  const onTouchMove = React25.useCallback(
     (e, imageRef) => {
       if (!isTouchPinching.current || e.touches.length !== 2) return;
       e.preventDefault();
@@ -7120,12 +7340,12 @@ function useGlobalPinchZoom(args) {
     },
     [distance2, midpoint2, zoomTo2, zoomCtx]
   );
-  const endPinch = React24.useCallback(() => {
+  const endPinch = React25.useCallback(() => {
     if (!isTouchPinching.current) return;
     isTouchPinching.current = false;
     pinchJustEnded.current = true;
   }, []);
-  React24.useLayoutEffect(() => {
+  React25.useLayoutEffect(() => {
     function touchPinchMoveHandler(e) {
       if (e.touches.length < 2) return;
       const mid = midpoint2(e.touches[0], e.touches[1]);
@@ -7165,15 +7385,15 @@ function useGlobalPinchZoom(args) {
 }
 function useWrappedItemsAndRefs(args) {
   const { normalizedItems, wrappedItems, setWrappedItems, imageRefs } = args;
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (!normalizedItems.length) return;
     const first = normalizedItems[0];
     const last = normalizedItems[normalizedItems.length - 1];
     setWrappedItems([last, ...normalizedItems, first]);
   }, [normalizedItems, setWrappedItems]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (!wrappedItems.length) return;
-    imageRefs.current = wrappedItems.map(() => React24.createRef());
+    imageRefs.current = wrappedItems.map(() => React25.createRef());
   }, [wrappedItems, imageRefs]);
 }
 
@@ -7262,7 +7482,7 @@ function resetPanForScale1(args) {
     boundsY,
     ScrollBody: ScrollBody2,
     ScrollBounds: ScrollBounds2,
-    baseFitSizeC: baseFitSizeC2,
+    baseFitSize: baseFitSize2,
     boundsForCurrent: boundsForCurrent2,
     panDuration,
     panFriction,
@@ -7276,7 +7496,7 @@ function resetPanForScale1(args) {
   const rect = container.getBoundingClientRect();
   const containerW = rect.width;
   const containerH = rect.height;
-  const { baseW, baseH } = baseFitSizeC2(imgEl, containerW, containerH);
+  const { baseW, baseH } = baseFitSize2(imgEl, containerW, containerH);
   locX.current.set(0);
   prevX.current.set(0);
   offX.current.set(0);
@@ -7320,30 +7540,30 @@ function useFsEntryOverlay(args) {
     fadeOutMs = 120,
     closing
   } = args;
-  const mountRef = React24.useRef(null);
-  const rootRef = React24.useRef(null);
-  const rootMountRef = React24.useRef(null);
-  const fsIndexRef = React24.useRef(fsSub.get());
-  React24.useRef(1);
-  const overlayElRef = React24.useRef(null);
-  const openTokenRef = React24.useRef(0);
-  const enteredTokenRef = React24.useRef(0);
-  const enterRafRef = React24.useRef(0);
-  const pendingUnmountRef = React24.useRef(0);
-  const swapJobRef = React24.useRef(null);
-  const cancelSwapJob = React24.useCallback(() => {
+  const mountRef = React25.useRef(null);
+  const rootRef = React25.useRef(null);
+  const rootMountRef = React25.useRef(null);
+  const fsIndexRef = React25.useRef(fsSub.get());
+  React25.useRef(1);
+  const overlayElRef = React25.useRef(null);
+  const openTokenRef = React25.useRef(0);
+  const enteredTokenRef = React25.useRef(0);
+  const enterRafRef = React25.useRef(0);
+  const pendingUnmountRef = React25.useRef(0);
+  const swapJobRef = React25.useRef(null);
+  const cancelSwapJob = React25.useCallback(() => {
     const job = swapJobRef.current;
     if (!job) return;
     if (job.raf) cancelAnimationFrame(job.raf);
     if (job.t) clearTimeout(job.t);
     swapJobRef.current = null;
   }, []);
-  const setEntryOverlayOpacity = React24.useCallback((next) => {
+  const setEntryOverlayOpacity = React25.useCallback((next) => {
     const el = overlayElRef.current;
     if (!el) return;
     el.style.setProperty("--rmg-entry-opacity", String(next));
   }, []);
-  const getEntryIndexForFsIndex = React24.useCallback(
+  const getEntryIndexForFsIndex = React25.useCallback(
     (fsIndex) => {
       const map = entryMapRef.current;
       const link = map?.[fsIndex];
@@ -7351,7 +7571,7 @@ function useFsEntryOverlay(args) {
     },
     [entryMapRef]
   );
-  const renderEntryOverlayForIndex = React24.useCallback(
+  const renderEntryOverlayForIndex = React25.useCallback(
     (index) => {
       const mount = mountRef.current;
       if (!mount) return;
@@ -7452,7 +7672,7 @@ function useFsEntryOverlay(args) {
     },
     [entriesObject, entryMapRef, wrapperBaseStyle]
   );
-  const fadeSwapToIndex = React24.useCallback(
+  const fadeSwapToIndex = React25.useCallback(
     (nextIndex) => {
       if (closing) return;
       cancelSwapJob();
@@ -7478,7 +7698,7 @@ function useFsEntryOverlay(args) {
       syncFullscreenSourceFromIndex
     ]
   );
-  const setMountEl = React24.useCallback(
+  const setMountEl = React25.useCallback(
     (el) => {
       mountRef.current = el;
       if (el) return;
@@ -7503,7 +7723,7 @@ function useFsEntryOverlay(args) {
     },
     [cancelSwapJob]
   );
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (closing) {
       cancelSwapJob();
       setEntryOverlayOpacity(0);
@@ -7689,7 +7909,7 @@ function FullscreenRuntime(props) {
     syncFullscreenSourceFromIndex,
     setFullscreenOpen
   } = props;
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (!fsIntroReq) return;
     const { origImg, index, closestSelector } = fsIntroReq;
     runFullscreenIntro({
@@ -7721,10 +7941,10 @@ function FullscreenRuntime(props) {
       viewH
     });
   }
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     axisRef.current = PanAxis();
   }, []);
-  const zoomCtx = React24.useMemo(() => ({
+  const zoomCtx = React25.useMemo(() => ({
     fs,
     currentImage,
     scaleRef,
@@ -7777,7 +7997,7 @@ function FullscreenRuntime(props) {
       boundsY,
       ScrollBody,
       ScrollBounds,
-      baseFitSizeC,
+      baseFitSize,
       boundsForCurrent: boundsForCurrent2,
       panDuration: fs.zoom?.panDuration,
       panFriction: fs.zoom?.panFriction,
@@ -7816,7 +8036,7 @@ function FullscreenRuntime(props) {
     setWrappedItems,
     imageRefs
   });
-  const rebuildPanBodies = React24.useCallback(() => {
+  const rebuildPanBodies = React25.useCallback(() => {
     rebuildPanBodiesFn({
       fs,
       currentImage,
@@ -7848,7 +8068,7 @@ function FullscreenRuntime(props) {
     imageRefs,
     fullscreenSliderApi,
     rebuildPanBodies,
-    baseFitSizeC,
+    baseFitSize,
     boundsForCurrent: boundsForCurrent2,
     ScrollBounds,
     boundsX,
@@ -7866,7 +8086,7 @@ function FullscreenRuntime(props) {
     distance,
     midpoint
   });
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (!showFullscreenModal) return;
     const start = fsSub.get();
     fsIndexRef.current = start;
@@ -7894,11 +8114,11 @@ function FullscreenRuntime(props) {
     source: fs.video?.source,
     options: fs.video?.options
   });
-  const wrappedTransform = React24.useMemo(
+  const wrappedTransform = React25.useMemo(
     () => createWrappedTransform({ length: wrappedItems.length, sign }),
     [wrappedItems.length, sign]
   );
-  const singleTransform = React24.useMemo(
+  const singleTransform = React25.useMemo(
     () => createSingleTransform(),
     []
   );
@@ -8002,7 +8222,7 @@ function FullscreenRuntime(props) {
     },
     renderImage: fs.renderImage
   });
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (animRef.current) {
       animRef.current.stop();
       setScale(1);
@@ -8627,7 +8847,7 @@ function useFullscreenController(args) {
 
 // src/Gallery/slider/Slider.module.css
 var Slider_default = {};
-var RmgSlideContext = React24.createContext(null);
+var RmgSlideContext = React25.createContext(null);
 function RmgSlideProvider({
   value,
   children
@@ -8635,7 +8855,7 @@ function RmgSlideProvider({
   return /* @__PURE__ */ jsx(RmgSlideContext.Provider, { value, children });
 }
 function useRmgSlide() {
-  return React24.useContext(RmgSlideContext);
+  return React25.useContext(RmgSlideContext);
 }
 var TWEEN_FACTOR_BASE = 0.2;
 function mod(n, m) {
@@ -8653,10 +8873,10 @@ function useParallaxEffect({
   clonedLen,
   isReady
 }) {
-  const tweenNodesRef = React24.useRef([]);
-  const parallaxNodesRef = React24.useRef([]);
-  const parallaxSnapsRef = React24.useRef([]);
-  const collectParallaxForAll = React24.useCallback(() => {
+  const tweenNodesRef = React25.useRef([]);
+  const parallaxNodesRef = React25.useRef([]);
+  const parallaxSnapsRef = React25.useRef([]);
+  const collectParallaxForAll = React25.useCallback(() => {
     const track = sliderRef.current;
     if (!track) return;
     const W = sliderWidthRef.current || 0;
@@ -8676,12 +8896,12 @@ function useParallaxEffect({
     parallaxNodesRef.current = nodes;
     parallaxSnapsRef.current = snaps;
   }, [sliderRef, sliderWidthRef]);
-  const currentTweenFactor = React24.useCallback(() => {
+  const currentTweenFactor = React25.useCallback(() => {
     const count = parallaxSnapsRef.current.length || 1;
     const visible = Math.max(visibleImagesRef.current || 1, 1);
     return TWEEN_FACTOR_BASE * (count / visible);
   }, [visibleImagesRef]);
-  const scrollProgressNorm = React24.useCallback(() => {
+  const scrollProgressNorm = React25.useCallback(() => {
     const track = sliderRef.current;
     const W = sliderWidthRef.current || 0;
     if (!track) return 0;
@@ -8695,7 +8915,7 @@ function useParallaxEffect({
     const world = mod(loc, W);
     return world / W;
   }, [sliderRef, sliderWidthRef, offsetLocationRef, wrap]);
-  const tweenParallax = React24.useCallback(() => {
+  const tweenParallax = React25.useCallback(() => {
     if (!enabled) return;
     const nodes = parallaxNodesRef.current;
     const snaps = parallaxSnapsRef.current;
@@ -8715,15 +8935,15 @@ function useParallaxEffect({
       nodes[i].style.transform = axisMain === "x" ? `translateX(${translatePct}%)` : `translateY(${translatePct}%)`;
     }
   }, [enabled, wrap, axisMain, scrollProgressNorm, currentTweenFactor]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (!enabled) return;
     collectParallaxForAll();
   }, [enabled, slidesLen, clonedLen, wrap, isReady, collectParallaxForAll]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (enabled) return;
     tweenNodesRef.current.forEach((n) => n && n.removeAttribute("style"));
   }, [enabled]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (!enabled) return;
     if (!slidesLen) return;
     requestAnimationFrame(() => {
@@ -8754,7 +8974,7 @@ function useScaleEffect({
   slidesLen,
   clonedLen
 }) {
-  const slideCenterX = React24.useCallback(
+  const slideCenterX = React25.useCallback(
     (logicalIdx) => {
       const s = slidesRef.current?.[logicalIdx];
       if (!s || !sliderRef.current) return 0;
@@ -8763,13 +8983,13 @@ function useScaleEffect({
     },
     [slidesRef, sliderRef, getCenterOffsetForIndex]
   );
-  const getCenters = React24.useCallback(() => {
+  const getCenters = React25.useCallback(() => {
     const L = slidesRef.current?.length ?? 0;
     const arr = [];
     for (let i = 0; i < L; i++) arr.push(slideCenterX(i));
     return arr;
   }, [slidesRef, slideCenterX]);
-  const findBoundingPair = React24.useCallback(
+  const findBoundingPair = React25.useCallback(
     (loc) => {
       const centers = getCenters();
       const L = centers.length;
@@ -8813,7 +9033,7 @@ function useScaleEffect({
     },
     [getCenters, sliderWidthRef, wrap]
   );
-  const applyPairScaleTween = React24.useCallback(() => {
+  const applyPairScaleTween = React25.useCallback(() => {
     if (!enabled || !sliderRef.current || !slidesRef.current?.length || !scaleAmount) return;
     const track = sliderRef.current;
     const kids = Array.from(track.children);
@@ -8840,10 +9060,10 @@ function useScaleEffect({
       if (!el.style.transition) el.style.transition = "transform 120ms linear";
     }
   }, [enabled, sliderRef, slidesRef, scaleAmount, offsetLocationRef, findBoundingPair]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     applyPairScaleTween();
   }, [enabled, scaleAmount, slidesLen, clonedLen]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (enabled) return;
     const track = sliderRef.current;
     if (!track) return;
@@ -8874,7 +9094,7 @@ function useFadeEffect({
   slidesLen,
   clonedLen
 }) {
-  const slideCenterX = React24.useCallback(
+  const slideCenterX = React25.useCallback(
     (logicalIdx) => {
       const s = slidesRef.current?.[logicalIdx];
       if (!s || !sliderRef.current) return 0;
@@ -8883,13 +9103,13 @@ function useFadeEffect({
     },
     [slidesRef, sliderRef, getCenterOffsetForIndex]
   );
-  const getCenters = React24.useCallback(() => {
+  const getCenters = React25.useCallback(() => {
     const L = slidesRef.current?.length ?? 0;
     const arr = [];
     for (let i = 0; i < L; i++) arr.push(slideCenterX(i));
     return arr;
   }, [slidesRef, slideCenterX]);
-  const applyFadeTween = React24.useCallback(() => {
+  const applyFadeTween = React25.useCallback(() => {
     if (!enabled || !sliderRef.current || !slidesRef.current?.length) return;
     const track = sliderRef.current;
     const kids = Array.from(track.children);
@@ -8949,10 +9169,10 @@ function useFadeEffect({
     sliderWidthRef,
     wrap
   ]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     applyFadeTween();
   }, [enabled, slidesLen, clonedLen, wrap]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (enabled) return;
     const track = sliderRef.current;
     if (!track) return;
@@ -9349,7 +9569,7 @@ function cloneSlide(child, key, elementIndex, cells, enableParallax, imageCountF
   }
   return /* @__PURE__ */ jsx("div", { ...shellProps, className: "rmg__slide", children: /* @__PURE__ */ jsx(RmgSlideProvider, { value: ctxVal, children: /* @__PURE__ */ jsx("div", { className: "rmg__parallax", children: /* @__PURE__ */ jsx("div", { className: "rmg__parallax__layer", children: contentNode }) }) }) }, key);
 }
-var Slider = forwardRef(function Slider2({
+var SliderCore = forwardRef(function SliderCore2({
   children,
   imageCount,
   isClick,
@@ -9496,7 +9716,6 @@ var Slider = forwardRef(function Slider2({
   const lastGeomSigRef = useRef("");
   const plyrRefsByIdx = useRef({});
   const lastCloneSigRef = useRef("");
-  useRef(null);
   const shieldRef = useRef(null);
   const internalIndexChannel = useMemo(() => createIndexChannel(), []);
   const indexChannel = externalIndexChannel ?? internalIndexChannel;
@@ -9659,9 +9878,9 @@ var Slider = forwardRef(function Slider2({
   function getCenterOffsetForIndex(idx) {
     const track = slider.current;
     if (!track || !slides.current?.[idx]?.cells?.[0]?.element) return 0;
-    const containerSize2 = track[AX.clientKey];
+    const containerSize = track[AX.clientKey];
     const cellSize = slides.current[idx].cells[0].element.getBoundingClientRect()[AX.sizeKey];
-    return centerAlign ? (containerSize2 - cellSize) / 2 : 0;
+    return centerAlign ? (containerSize - cellSize) / 2 : 0;
   }
   useEffect(() => {
     const root = sliderContainer.current;
@@ -9987,10 +10206,10 @@ var Slider = forwardRef(function Slider2({
   }, [lazyLoad, sliderImagesReady, engineReady, isReady]);
   useLayoutEffect(() => {
     if (!slider.current || cells.current.length === 0 || sliderWidth.current === 0 || !slides.current || !slides.current[0] || !slides.current[0].cells[0]?.element) return;
-    const containerSize2 = slider.current[AX.clientKey];
-    if (!wrap && sliderWidth.current <= containerSize2) {
-      sliderX.current = (containerSize2 - sliderWidth.current) / 2;
-      translateRef.current?.to(Math.round(sliderX.current));
+    const containerSize = slider.current[AX.clientKey];
+    if (!wrap && sliderWidth.current <= containerSize) {
+      trackCenterOffsetRef.current = Math.round((containerSize - sliderWidth.current) / 2);
+      positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
     }
     updateControlsImperatively();
   }, [slidesState, wrap]);
@@ -10191,45 +10410,6 @@ var Slider = forwardRef(function Slider2({
       expandableImgRefs.current = [];
     };
   }, [children, clonedChildren, visibleImages, wrap]);
-  useLayoutEffect(() => {
-    if (hasResponsiveHeights) return;
-    if (sliderHeight) return;
-    if (typeof initialHeight === "number" && initialHeight > 0) return;
-    if (typeof initialHeight === "string" && initialHeight.trim() !== "") return;
-    if (typeof cellsPerSlide !== "number" || cellsPerSlide <= 0) return;
-    if (axis !== "x") return;
-    const root = sliderContainer.current;
-    if (!root) return;
-    const updateFromWidth = () => {
-      if (!sliderContainer.current) return;
-      const cw = sliderContainer.current.getBoundingClientRect().width;
-      if (!cw || cw <= 0) return;
-      const cols = Math.max(1, cellsPerSlide);
-      const totalGap = gap * Math.max(0, cols - 1);
-      const cellSize = (cw - totalGap) / cols;
-      if (cellSize <= 0) return;
-      if (Math.abs(cellSize - lastNonZeroHeightRef.current) >= 1) {
-        lastNonZeroHeightRef.current = cellSize;
-        setResponsiveSliderHeight(cellSize + "px");
-      }
-    };
-    updateFromWidth();
-    const ro = new ResizeObserver(() => {
-      updateFromWidth();
-    });
-    ro.observe(root);
-    return () => {
-      ro.disconnect();
-    };
-  }, [
-    sliderHeight,
-    initialHeight,
-    cellsPerSlide,
-    axis,
-    gap,
-    sliderContainer,
-    hasResponsiveHeights
-  ]);
   useEffect(() => {
     if (inView) return;
     if (!sliderContainer.current || !layoutReady || !engineReady || !isReady || !isMeasured) return;
@@ -10301,11 +10481,10 @@ var Slider = forwardRef(function Slider2({
     }
     return best;
   }
-  const containerSize = slider.current?.[AX.clientKey];
-  const centerOffset = !wrap && sliderWidth.current <= containerSize ? (containerSize - sliderWidth.current) / 2 : 0;
+  const trackCenterOffsetRef = useRef(0);
   function positionSlider(loc) {
-    const x = xRef.current;
-    translateRef.current?.to((x + centerOffset) * sign);
+    const x = loc ?? xRef.current;
+    translateRef.current?.to((x + trackCenterOffsetRef.current) * sign);
   }
   function updateActiveIndexFromX(loc) {
     const indexCurrent = indexCurrentRef.current;
@@ -10401,8 +10580,8 @@ var Slider = forwardRef(function Slider2({
     contentSizeRef.current = W;
     scrollContentSizeRef.current = W;
     const scrollSnaps = slides.current.map((slide, i) => {
-      const centerOffset2 = getCenterOffsetForIndex(i);
-      return -slide.target + centerOffset2;
+      const centerOffset = getCenterOffsetForIndex(i);
+      return -slide.target + centerOffset;
     });
     scrollSnapsRef.current = scrollSnaps;
     const initialSnap = scrollSnaps[startIdx] ?? 0;
@@ -10412,7 +10591,7 @@ var Slider = forwardRef(function Slider2({
     target.set(initialSnap);
     xRef.current = initialSnap;
     translateRef.current = Translate(track, AX);
-    translateRef.current.to(initialSnap * sign);
+    positionSlider(initialSnap);
     selectedIndex.current = startIdx;
     indexChannel.set(startIdx, "instant");
     const minSnap = Math.min(...scrollSnaps);
@@ -10717,9 +10896,9 @@ var Slider = forwardRef(function Slider2({
     function onWheel(e) {
       const trackEl = slider.current;
       if (!trackEl) return;
-      const containerSize2 = trackEl[AX.clientKey];
+      const containerSize = trackEl[AX.clientKey];
       const contentSize = sliderWidth.current;
-      const canScrollMain = contentSize > containerSize2;
+      const canScrollMain = contentSize > containerSize;
       const isMain = AX.main === "x" ? Math.abs(e.deltaX) > Math.abs(e.deltaY) : Math.abs(e.deltaY) >= Math.abs(e.deltaX);
       if (!isMain || !canScrollMain) return;
       autoScrollPauseUntil.current = performance.now() + 100;
@@ -10961,81 +11140,106 @@ var Slider = forwardRef(function Slider2({
     }
   }
   useEffect(() => {
+    const root = sliderContainer.current;
     const track = slider.current;
-    if (!track) return;
+    if (!root || !track || !slides.current?.length || !layoutReady || !isMeasured || sliderWidth.current === 0 || !isReady) {
+      return;
+    }
     const ro = new ResizeObserver(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const cw = track[AX.clientKey];
-          const contentW = sliderWidth.current || 0;
-          if (!isWrapping.current) {
-            if (contentW <= cw) {
-              const center = Math.round((cw - contentW) / 2);
-              const newLimit = Limit(center, center);
-              limitRef.current = newLimit;
-              povRef.current = PercentOfView(cw);
-              boundsRef.current = ScrollBounds(
-                newLimit,
-                offsetLocationRef.current,
-                targetRef.current,
-                bodyRef.current,
-                povRef.current,
-                selectDuration
-              );
-              locationRef.current?.set(center);
-              previousLocationRef.current?.set(center);
-              offsetLocationRef.current?.set(center);
-              targetRef.current?.set(center);
-              translateRef.current?.to(center);
-              xRef.current = center;
-              sliderX.current = center;
-            } else {
-              const min = -(contentW - cw);
-              const max = 0;
-              const newLimit = Limit(min, max);
-              limitRef.current = newLimit;
-              povRef.current = PercentOfView(cw);
-              boundsRef.current = ScrollBounds(
-                newLimit,
-                offsetLocationRef.current,
-                targetRef.current,
-                bodyRef.current,
-                povRef.current,
-                selectDuration
-              );
-              const cur = offsetLocationRef.current?.get() ?? 0;
-              const constrained = newLimit.constrain(cur);
-              locationRef.current?.set(constrained);
-              previousLocationRef.current?.set(constrained);
-              offsetLocationRef.current?.set(constrained);
-              targetRef.current?.set(constrained);
-              translateRef.current?.to(constrained);
-              xRef.current = constrained;
-              sliderX.current = constrained;
-            }
-          } else {
-            limitRef.current = null;
-            povRef.current = null;
-            boundsRef.current = null;
-            const a = offsetLocationRef.current?.get() ?? xRef.current ?? 0;
-            const W = sliderWidth.current || 0;
-            if (W > 0) {
-              const normalized = (a % W + W) % W - W;
-              const delta = normalized - a;
-              locationRef.current?.add(delta);
-              previousLocationRef.current?.add(delta);
-              offsetLocationRef.current?.add(delta);
-              targetRef.current?.add(delta);
-              xRef.current += delta;
-              translateRef.current?.to(xRef.current);
-            }
+      const cw = track[AX.clientKey];
+      const contentW = sliderWidth.current || 0;
+      if (!wrap) {
+        if (contentW <= cw) {
+          const center = Math.round((cw - contentW) / 2);
+          trackCenterOffsetRef.current = center;
+          if (!locationRef.current || !previousLocationRef.current || !offsetLocationRef.current || !targetRef.current || !bodyRef.current) {
+            positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
+            return;
           }
-        });
-      });
+          scrollSnapsRef.current = [0];
+          selectedIndex.current = 0;
+          indexCurrentRef.current?.set(0);
+          indexPreviousRef.current?.set(0);
+          indexChannel.set(0, "instant");
+          limitRef.current = Limit(0, 0);
+          povRef.current = PercentOfView(cw);
+          boundsRef.current = ScrollBounds(
+            limitRef.current,
+            offsetLocationRef.current,
+            targetRef.current,
+            bodyRef.current,
+            povRef.current,
+            selectDuration
+          );
+          bodyRef.current.useDuration(0).useFriction(1);
+          isAnimatingRef.current = false;
+          animRef.current?.stop();
+          locationRef.current.set(0);
+          previousLocationRef.current.set(0);
+          offsetLocationRef.current.set(0);
+          targetRef.current.set(0);
+          xRef.current = 0;
+          positionSlider(0);
+          progressApi.updateProgressInFrame();
+          tweenParallax();
+          applyPairScaleTween();
+          applyFadeTween();
+          updateControlsImperatively();
+          return;
+        }
+        trackCenterOffsetRef.current = 0;
+        const min = -Math.max(0, contentW - cw);
+        const max = 0;
+        limitRef.current = Limit(isNaN(min) ? 0 : min, max);
+        if (offsetLocationRef.current && targetRef.current && bodyRef.current) {
+          povRef.current = PercentOfView(cw);
+          boundsRef.current = ScrollBounds(
+            limitRef.current,
+            offsetLocationRef.current,
+            targetRef.current,
+            bodyRef.current,
+            povRef.current,
+            selectDuration
+          );
+          const cur = offsetLocationRef.current?.get() ?? xRef.current ?? 0;
+          const clamped = limitRef.current.constrain(cur);
+          locationRef.current?.set(clamped);
+          previousLocationRef.current?.set(clamped);
+          offsetLocationRef.current?.set(clamped);
+          targetRef.current?.set(clamped);
+          xRef.current = clamped;
+          positionSlider(clamped);
+          animRef.current?.start();
+        } else {
+          positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
+        }
+        updateControlsImperatively();
+        return;
+      }
+      limitRef.current = null;
+      povRef.current = null;
+      boundsRef.current = null;
+      const a = offsetLocationRef.current?.get() ?? xRef.current ?? 0;
+      const W = sliderWidth.current || 0;
+      if (W > 0) {
+        const normalized = (a % W + W) % W - W;
+        const delta = normalized - a;
+        locationRef.current?.add(delta);
+        previousLocationRef.current?.add(delta);
+        offsetLocationRef.current?.add(delta);
+        targetRef.current?.add(delta);
+        xRef.current += delta;
+        positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
+        progressApi.updateProgressInFrame();
+        tweenParallax();
+        applyPairScaleTween();
+        applyFadeTween();
+        updateControlsImperatively();
+      }
     });
     ro.observe(track);
     return () => ro.disconnect();
-  }, [wrap]);
+  }, [wrap, layoutReady, isMeasured, isReady]);
   useEffect(() => {
     const track = slider.current;
     if (!track || sliderHeight) return;
@@ -11263,6 +11467,7 @@ var Slider = forwardRef(function Slider2({
         style: {
           position: "relative",
           ...heightVarValue != null ? { ["--rmg-slider-height"]: heightVarValue } : {},
+          maxHeight: responsiveSliderHeight,
           ["--rmg-intro-stagger"]: `${normalizedIntro.staggerMs}ms`,
           ["--rmg-intro-transform"]: `${normalizedIntro.transform}px`,
           ["--rmg-intro-duration"]: `${normalizedIntro.durationMs}ms`,
@@ -11275,7 +11480,7 @@ var Slider = forwardRef(function Slider2({
     )
   ] });
 });
-var Slider_default2 = Slider;
+var Slider_default2 = SliderCore;
 
 // src/Gallery/slider/thumbnails/defaults.ts
 var DEFAULT_THUMBNAILS = {
@@ -11375,16 +11580,14 @@ function buildScopedAutoInitialHeightCssFromAspectRatio(args) {
   const rootSel = `[data-rmg-scope="${scope}"]`;
   const lines = [];
   lines.push(
-    `${rootSel}{--rmg-slider-ar:${aspectRatioWOverH};--rmg-slider-cells:${baseCells};--rmg-slider-gap:${baseGap}px;--rmg-slider-initial-height:calc(((100% - ((var(--rmg-slider-cells) - 1) * var(--rmg-slider-gap))) / var(--rmg-slider-cells)) / var(--rmg-slider-ar));}`
+    `${rootSel}{container-type:inline-size;--rmg-slider-ar:${aspectRatioWOverH};--rmg-slider-cells:${baseCells};--rmg-slider-gap:${baseGap}px;--rmg-slider-initial-height:calc(((100cqw - ((var(--rmg-slider-cells) - 1) * var(--rmg-slider-gap))) / var(--rmg-slider-cells)) / var(--rmg-slider-ar));}`
   );
   if (cellsPerSlide && typeof cellsPerSlide === "object") {
     Object.entries(cellsPerSlide).forEach(([k, v]) => {
       const min = Number(k);
       const cells = Math.max(1, Number(v) | 0);
       if (!Number.isFinite(min) || !Number.isFinite(cells)) return;
-      lines.push(
-        `@media (min-width:${min}px){${rootSel}{--rmg-slider-cells:${cells};}}`
-      );
+      lines.push(`@media (min-width:${min}px){${rootSel}{--rmg-slider-cells:${cells};}}`);
     });
   }
   if (gap && typeof gap === "object") {
@@ -11392,9 +11595,7 @@ function buildScopedAutoInitialHeightCssFromAspectRatio(args) {
       const min = Number(k);
       const g = Math.max(0, Number(v) | 0);
       if (!Number.isFinite(min) || !Number.isFinite(g)) return;
-      lines.push(
-        `@media (min-width:${min}px){${rootSel}{--rmg-slider-gap:${g}px;}}`
-      );
+      lines.push(`@media (min-width:${min}px){${rootSel}{--rmg-slider-gap:${g}px;}}`);
     });
   }
   return lines.join("\n");
@@ -11412,7 +11613,7 @@ function useScopedSkeleton(args) {
     defaultNode
   } = args;
   const showLoading = enabled && (loading.isLoading != null ? !!loading.isLoading : showLoadingFallback);
-  const { cssText, ssrBaseCount } = React24.useMemo(() => {
+  const { cssText, ssrBaseCount } = React25.useMemo(() => {
     if (!enabled) return { cssText: "", ssrBaseCount: fallbackCount };
     return buildScopedSkeletonCountCss({
       scopeId,
@@ -11425,21 +11626,21 @@ function useScopedSkeleton(args) {
   const node = showLoading ? loading.renderLoading ? loading.renderLoading({ layout, count: ssrBaseCount }) : defaultNode(maxSlots, ssrBaseCount) : null;
   return { cssText, ssrBaseCount, node, showLoading };
 }
-var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef) {
+var Slider = React25.forwardRef(function Slider2(props, forwardedRef) {
   const { children, breakpoints, ...sliderOptions } = props;
   const core = useOptionalGalleryCore();
-  const indexChannel = React24.useMemo(() => createIndexChannel(), []);
-  const isClick = React24.useRef(false);
-  const localExpandableImgRefs = React24.useRef([]);
+  const indexChannel = React25.useMemo(() => createIndexChannel(), []);
+  const isClick = React25.useRef(false);
+  const localExpandableImgRefs = React25.useRef([]);
   const expandableImgRefs = props.expandableImgRefs !== void 0 ? props.expandableImgRefs : core?.expandableImgRefs ?? localExpandableImgRefs;
-  const overlayDivRef = React24.useRef(null);
-  const duplicateImgRef = React24.useRef(null);
-  const closeButtonRef = React24.useRef(null);
-  const counterRef = React24.useRef(null);
-  const leftChevronRef = React24.useRef(null);
-  const rightChevronRef = React24.useRef(null);
-  const localSliderApiRef = React24.useRef(null);
-  const setSliderHandle = React24.useCallback(
+  const overlayDivRef = React25.useRef(null);
+  const duplicateImgRef = React25.useRef(null);
+  const closeButtonRef = React25.useRef(null);
+  const counterRef = React25.useRef(null);
+  const leftChevronRef = React25.useRef(null);
+  const rightChevronRef = React25.useRef(null);
+  const localSliderApiRef = React25.useRef(null);
+  const setSliderHandle = React25.useCallback(
     (inst) => {
       localSliderApiRef.current = inst;
       if (core?.sliderApiRef) {
@@ -11451,13 +11652,13 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
     },
     [core, forwardedRef]
   );
-  const [slideIndex, setSlideIndex] = React24.useState(0);
-  const [isReady, setIsReady] = React24.useState(false);
-  const effectiveBreakpoints = React24.useMemo(
+  const [slideIndex, setSlideIndex] = React25.useState(0);
+  const [isReady, setIsReady] = React25.useState(false);
+  const effectiveBreakpoints = React25.useMemo(
     () => core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP, ...breakpoints || {} },
     [core?.effectiveBreakpoints, breakpoints]
   );
-  const sliderObject = React24.useMemo(() => {
+  const sliderObject = React25.useMemo(() => {
     return {
       ...DEFAULT_SLIDER,
       ...sliderOptions ?? {},
@@ -11524,23 +11725,23 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
       motion: { ...DEFAULT_SLIDER.motion, ...sliderOptions?.motion ?? {} }
     };
   }, [sliderOptions]);
-  const idSeqRef = React24.useRef(0);
-  const newId = React24.useCallback(() => `rmg-${++idSeqRef.current}`, []);
-  const initialCells = React24.useMemo(() => {
-    const kids = React24.Children.toArray(children);
+  const idSeqRef = React25.useRef(0);
+  const newId = React25.useCallback(() => `rmg-${++idSeqRef.current}`, []);
+  const initialCells = React25.useMemo(() => {
+    const kids = React25.Children.toArray(children);
     return kids.map((n) => ({ id: newId(), node: n }));
   }, []);
-  const [cellsState] = React24.useState(initialCells);
-  const renderedCells = React24.useMemo(() => {
+  const [cellsState] = React25.useState(initialCells);
+  const renderedCells = React25.useMemo(() => {
     return cellsState.map((c) => {
       const n = c.node;
-      return React24.isValidElement(n) ? React24.cloneElement(n, { key: c.id }) : /* @__PURE__ */ jsx("span", { style: { display: "block" }, children: n }, c.id);
+      return React25.isValidElement(n) ? React25.cloneElement(n, { key: c.id }) : /* @__PURE__ */ jsx("span", { style: { display: "block" }, children: n }, c.id);
     });
   }, [cellsState]);
   const vw = useViewportWidth();
-  const resolvedCellsPerSlide = React24.useMemo(() => {
-    const hasCellsPerSlideProp = sliderObject.layout.cellsPerSlide != null;
-    if (!hasCellsPerSlideProp) return void 0;
+  const resolvedCellsPerSlide = React25.useMemo(() => {
+    const hasCellsPerSlideProp2 = sliderObject.layout.cellsPerSlide != null;
+    if (!hasCellsPerSlideProp2) return void 0;
     const raw = resolveNumberFromResponsive(
       sliderObject.layout.cellsPerSlide,
       1,
@@ -11550,7 +11751,7 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
     return Math.max(1, raw | 0);
   }, [sliderObject.layout.cellsPerSlide, vw, effectiveBreakpoints]);
   const sliderResponsiveColumns = typeof resolvedCellsPerSlide === "number" ? resolvedCellsPerSlide : void 0;
-  const resolvedGap = React24.useMemo(() => {
+  const resolvedGap = React25.useMemo(() => {
     const raw = resolveNumberFromResponsive(
       sliderObject.layout.gap,
       20,
@@ -11559,7 +11760,7 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
     );
     return Math.max(0, raw | 0);
   }, [sliderObject.layout.gap, vw, effectiveBreakpoints]);
-  const resolvedThumbPos = React24.useMemo(() => {
+  const resolvedThumbPos = React25.useMemo(() => {
     if (!sliderOptions?.thumbnails?.layout?.position) return void 0;
     return resolvePositionFromResponsive(
       sliderOptions?.thumbnails?.layout?.position,
@@ -11568,9 +11769,9 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
       effectiveBreakpoints
     );
   }, [sliderOptions?.thumbnails?.layout?.position, vw, effectiveBreakpoints]);
-  const sliderScopeId = React24.useId();
+  const sliderScopeId = React25.useId();
   const sliderScope = `rmg-slider-${sliderScopeId.replace(/:/g, "")}`;
-  const sliderLoading = React24.useMemo(() => {
+  const sliderLoading = React25.useMemo(() => {
     const src = sliderObject.transitions?.loading ?? {};
     return {
       isLoading: src.isLoading,
@@ -11578,19 +11779,36 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
       renderLoading: src.renderLoading
     };
   }, [sliderObject.transitions?.loading]);
-  const responsiveCss = React24.useMemo(() => {
+  const responsiveCss = React25.useMemo(() => {
     const rules = Array.isArray(sliderObject.size?.heightRules) ? sliderObject.size?.heightRules : [];
     if (!rules.length) return "";
     const rootSel = `[data-rmg-scope="${sliderScope}"]`;
     return rules.map((r) => `@media ${r.query} { ${rootSel} { --rmg-slider-height: ${r.height} !important; } }`).join("\n");
   }, [sliderObject.size?.heightRules, sliderScope]);
-  const columnsForSkeleton = typeof sliderResponsiveColumns === "number" && sliderResponsiveColumns > 0 ? sliderResponsiveColumns : 1;
+  function pickSsrBaseResponsiveValue(v, fallback) {
+    if (typeof v === "number") return v;
+    if (v && typeof v === "object") {
+      const entries = Object.entries(v).map(([k, val]) => [Number(k), Number(val)]).filter(([k, val]) => Number.isFinite(k) && Number.isFinite(val)).sort((a, b) => a[0] - b[0]);
+      if (entries.length) return entries[0][1];
+    }
+    return fallback;
+  }
+  const ssrCellsBase = Math.max(
+    1,
+    pickSsrBaseResponsiveValue(sliderObject.layout?.cellsPerSlide, 1) | 0
+  );
+  const [cellsPerSlideLive, setCellsPerSlideLive] = React25.useState(ssrCellsBase);
+  React25.useEffect(() => {
+    if (typeof sliderResponsiveColumns === "number") {
+      setCellsPerSlideLive(sliderResponsiveColumns);
+    }
+  }, [sliderResponsiveColumns]);
   const sliderSkeleton = useScopedSkeleton({
     enabled: true,
     scopeId: sliderScope,
     layout: "slider",
     loading: sliderLoading,
-    fallbackCount: columnsForSkeleton,
+    fallbackCount: ssrCellsBase,
     breakpointMap: effectiveBreakpoints,
     maxSlots: 12,
     showLoadingFallback: !isReady,
@@ -11603,7 +11821,7 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
       `rmg-slider-skel-${i}`
     )) }) })
   });
-  const initialHeightCss = React24.useMemo(() => {
+  const initialHeightCss = React25.useMemo(() => {
     const rules = Array.isArray(sliderObject.size?.initialHeightRules) ? sliderObject.size.initialHeightRules : [];
     const hasRules = rules.length > 0;
     const hasValue = sliderObject.size?.initialHeight != null;
@@ -11615,8 +11833,8 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
     }
     const ar = parseAspectRatio(sliderObject.size?.aspectRatio);
     if (!ar) return "";
-    const baseCells = sliderObject.layout?.cellsPerSlide && typeof sliderObject.layout.cellsPerSlide === "object" ? Math.max(1, Number(Object.values(sliderObject.layout.cellsPerSlide)[0]) | 0) : 1;
-    const baseGap = sliderObject.layout?.gap != null && typeof sliderObject.layout.gap === "number" ? Math.max(0, sliderObject.layout.gap | 0) : 12;
+    const baseCells = Math.max(1, pickSsrBaseResponsiveValue(sliderObject.layout?.cellsPerSlide, 1) | 0);
+    const baseGap = Math.max(0, pickSsrBaseResponsiveValue(sliderObject.layout?.gap, 12) | 0);
     return buildScopedAutoInitialHeightCssFromAspectRatio({
       scope: sliderScope,
       aspectRatioWOverH: ar,
@@ -11635,9 +11853,9 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
     sliderScope,
     effectiveBreakpoints
   ]);
-  const thumbsScopeId = React24.useId();
+  const thumbsScopeId = React25.useId();
   const thumbsScope = `rmg-thumbs-${thumbsScopeId.replace(/:/g, "")}`;
-  const thumbsLoading = React24.useMemo(() => {
+  const thumbsLoading = React25.useMemo(() => {
     const src = sliderObject.thumbnails.transitions?.loading ?? {};
     return {
       isLoading: src.isLoading,
@@ -11693,11 +11911,11 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
       }
     )
   });
-  const sliderShellRef = React24.useRef(null);
-  const resolvedInitialHeight = sliderObject.size?.initialHeight;
+  const sliderShellRef = React25.useRef(null);
+  sliderObject.size?.initialHeight;
   const sliderImagesReady = true;
   const normalizedItems = core?.normalizedItems ?? [];
-  const shimmerStyleVars = React24.useMemo(() => {
+  const shimmerStyleVars = React25.useMemo(() => {
     const s = sliderObject.transitions?.loading?.shimmer;
     if (!s) return void 0;
     const px2 = (v) => v == null ? void 0 : typeof v === "number" ? `${v}px` : v;
@@ -11711,6 +11929,14 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
       ...s.timing != null ? { ["--rmg-shimmer-timing"]: s.timing } : {}
     };
   }, [sliderObject.transitions?.loading?.shimmer]);
+  const userProvidedHeight = sliderOptions?.size?.height != null || Array.isArray(sliderOptions?.size?.heightRules) && sliderOptions.size.heightRules.length > 0;
+  const userProvidedInitialHeight = sliderOptions?.size?.initialHeight != null || Array.isArray(sliderOptions?.size?.initialHeightRules) && sliderOptions.size.initialHeightRules.length > 0;
+  !userProvidedInitialHeight && !userProvidedHeight && !!parseAspectRatio(sliderObject.size?.aspectRatio);
+  const sliderHeightProp = userProvidedHeight ? sliderObject.size?.height : void 0;
+  const responsiveHeightsProp = userProvidedHeight ? sliderObject.size?.heightRules : void 0;
+  const initialHeightProp = userProvidedInitialHeight ? sliderObject.size?.initialHeight : void 0;
+  const hasCellsPerSlideProp = sliderObject.layout.cellsPerSlide != null;
+  const cellsPerSlideProp = hasCellsPerSlideProp ? cellsPerSlideLive : void 0;
   return /* @__PURE__ */ jsxs(Fragment, { children: [
     (resolvedThumbPos === "top" || resolvedThumbPos === "left") && /* @__PURE__ */ jsxs(Fragment, { children: [
       thumbsSkeleton.cssText && /* @__PURE__ */ jsx("style", { dangerouslySetInnerHTML: { __html: thumbsSkeleton.cssText } }),
@@ -11771,8 +11997,8 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
         className: styles_default.sliderShell,
         style: {
           position: "relative",
-          ...sliderObject.size?.height != null ? { ["--rmg-slider-height"]: sliderObject.size.height } : {},
-          ...sliderObject.size?.initialHeight != null ? { ["--rmg-slider-initial-height"]: sliderObject.size.initialHeight } : {},
+          ...userProvidedHeight && sliderObject.size?.height != null ? { ["--rmg-slider-height"]: sliderObject.size.height } : {},
+          ...userProvidedInitialHeight && sliderObject.size?.initialHeight != null ? { ["--rmg-slider-initial-height"]: sliderObject.size.initialHeight } : {},
           ...shimmerStyleVars ?? {}
         },
         children: [
@@ -11809,9 +12035,9 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
               sliderViewportClassName: sliderObject.elements?.viewport?.className,
               sliderContainerStyles: sliderObject.elements?.container?.style,
               sliderContainerClassName: sliderObject.elements?.container?.className,
-              sliderHeight: sliderObject.size?.height,
-              responsiveHeights: sliderObject.size?.heightRules,
-              initialHeight: resolvedInitialHeight,
+              sliderHeight: sliderHeightProp,
+              responsiveHeights: responsiveHeightsProp,
+              initialHeight: initialHeightProp,
               arrowStyles: sliderObject.controls.arrows.arrow.style,
               arrowClassName: sliderObject.controls.arrows.arrow.className,
               prevArrowStyles: sliderObject.controls.arrows.prev.style,
@@ -11842,7 +12068,7 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
               scaleEffect: sliderObject.effects?.scale?.enabled,
               scaleAmount: sliderObject.effects?.scale?.amount,
               fadeEffect: sliderObject.effects?.fade?.enabled,
-              cellsPerSlide: sliderResponsiveColumns,
+              cellsPerSlide: cellsPerSlideProp,
               direction: sliderObject.direction.dir,
               axis: sliderObject.direction.axis,
               skipSnaps: sliderObject.scroll.skipSnaps,
@@ -11917,7 +12143,7 @@ var SliderLayout = React24.forwardRef(function SliderLayout2(props, forwardedRef
   ] });
 });
 function useInViewOnce(enabled, ref, onInView) {
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(([entry]) => {
@@ -11931,10 +12157,10 @@ function useInViewOnce(enabled, ref, onInView) {
   }, [enabled, ref, onInView]);
 }
 function useMediaReady(enabled, ref, setReady) {
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     setReady(false);
   }, [enabled, setReady]);
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     const root = ref.current;
     if (!root) return;
     const media = Array.from(root.querySelectorAll("img,video"));
@@ -11996,6 +12222,295 @@ function useMediaReady(enabled, ref, setReady) {
     };
   }, [enabled, ref, setReady]);
 }
+function cssLen3(v) {
+  if (v == null) return void 0;
+  return typeof v === "number" ? `${v}px` : v;
+}
+function applyBoxMargins2(style) {
+  if (!style) return {};
+  const mt = cssLen3(style.marginTop);
+  const mr = cssLen3(style.marginRight);
+  const mb = cssLen3(style.marginBottom);
+  const ml = cssLen3(style.marginLeft);
+  const out = {};
+  if (mt != null) out.marginTop = mt;
+  if (mr != null) out.marginRight = mr;
+  if (mb != null) out.marginBottom = mb;
+  if (ml != null) out.marginLeft = ml;
+  return out;
+}
+function nodeStyleVars2(base, shimmer) {
+  const s = {};
+  if (base?.aspectRatio != null) s.aspectRatio = base.aspectRatio;
+  if (base?.width != null) s.inlineSize = cssLen3(base.width);
+  if (base?.maxWidth != null) s.maxInlineSize = cssLen3(base.maxWidth);
+  if (base?.height != null) s.height = cssLen3(base.height);
+  if (base?.maxHeight != null) s.maxHeight = cssLen3(base.maxHeight);
+  if (base?.backgroundColor) s["--rmg-skel-bg"] = base.backgroundColor;
+  if (base?.borderRadius != null) s["--rmg-skel-radius"] = cssLen3(base.borderRadius);
+  if (base?.alignSelf) s.alignSelf = base.alignSelf;
+  if (shimmer?.enabled === false) s["--rmg-skel-shimmer-enabled"] = "0";
+  if (shimmer?.durationMs != null)
+    s["--rmg-skel-shimmer-duration"] = `${shimmer.durationMs}ms`;
+  if (shimmer?.bandSizePct != null)
+    s["--rmg-skel-shimmer-band"] = `${shimmer.bandSizePct}%`;
+  if (shimmer?.angleDeg != null) s["--rmg-skel-shimmer-angle"] = `${shimmer.angleDeg}deg`;
+  return s;
+}
+function containerStylesPlain2(style) {
+  const s = {};
+  if (!style) return s;
+  if (style.gap != null) s.gap = cssLen3(style.gap);
+  if (style.padding != null) s.padding = cssLen3(style.padding);
+  if (style.align) s.alignItems = style.align;
+  if (style.justify) s.justifyContent = style.justify;
+  if (style.wrap) s.flexWrap = "wrap";
+  if (style.width != null) s.width = cssLen3(style.width);
+  if (style.maxWidth != null) s.maxWidth = cssLen3(style.maxWidth);
+  return s;
+}
+function isResponsiveContainerStyle2(style) {
+  if (!style) return false;
+  return Object.keys(style).some((k) => String(+k) === k);
+}
+function escapeAttrValue2(v) {
+  return v.replace(/"/g, '\\"');
+}
+function sanitizeIdForAttr2(id) {
+  return id.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+function containerStyleToCssDecls2(style) {
+  const decls = [];
+  if (style.gap != null) decls.push(`gap:${cssLen3(style.gap)};`);
+  if (style.padding != null) decls.push(`padding:${cssLen3(style.padding)};`);
+  if (style.align) decls.push(`align-items:${style.align};`);
+  if (style.justify) decls.push(`justify-content:${style.justify};`);
+  if (style.wrap) decls.push(`flex-wrap:wrap;`);
+  if (style.width != null) decls.push(`width:${cssLen3(style.width)};`);
+  if (style.maxWidth != null) decls.push(`max-width:${cssLen3(style.maxWidth)};`);
+  return decls.join("");
+}
+function collectResponsiveCss2(node, allocId, out) {
+  switch (node.kind) {
+    case "rect":
+    case "square":
+    case "circle":
+      return node;
+    case "media": {
+      const id = allocId();
+      const style = node.style;
+      if (isResponsiveContainerStyle2(style)) {
+        const rs = style;
+        const rules = Object.keys(style).map((k) => +k).filter((n) => Number.isFinite(n) && n >= 0).sort((a, b) => a - b).map((minWidth) => ({
+          minWidth,
+          css: containerStyleToCssDecls2(rs[String(minWidth)] || {})
+        })).filter((r) => r.css.length > 0);
+        if (rules.length) out.push({ nodeId: id, rules });
+      }
+      return { ...node, __rmgNodeId: id };
+    }
+    case "stack":
+    case "row":
+    case "col": {
+      const id = allocId();
+      const style = node.style;
+      if (isResponsiveContainerStyle2(style)) {
+        const rules = Object.keys(style).map((k) => +k).filter((n) => Number.isFinite(n) && n >= 0).sort((a, b) => a - b).map((minWidth) => ({
+          minWidth,
+          css: containerStyleToCssDecls2(style[String(minWidth)] || {})
+        })).filter((r) => r.css.length > 0);
+        if (rules.length) out.push({ nodeId: id, rules });
+      }
+      const children = node.children.map((c) => collectResponsiveCss2(c, allocId, out));
+      return { ...node, __rmgNodeId: id, children };
+    }
+    case "grid": {
+      const id = allocId();
+      const style = node.style;
+      if (isResponsiveContainerStyle2(style)) {
+        const rules = Object.keys(style).map((k) => +k).filter((n) => Number.isFinite(n) && n >= 0).sort((a, b) => a - b).map((minWidth) => ({
+          minWidth,
+          css: containerStyleToCssDecls2(style[String(minWidth)] || {})
+        })).filter((r) => r.css.length > 0);
+        if (rules.length) out.push({ nodeId: id, rules });
+      }
+      const item = collectResponsiveCss2(node.item, allocId, out);
+      return { ...node, __rmgNodeId: id, item };
+    }
+    default: {
+      const _exhaustive = node;
+      return _exhaustive;
+    }
+  }
+}
+function buildResponsiveCssText2(scopeId, rules) {
+  if (!rules.length) return "";
+  const scopeSel = `[data-rmg-grid-skel-scope="${escapeAttrValue2(scopeId)}"]`;
+  const lines = [];
+  for (const nodeRule of rules) {
+    const nodeSel = `${scopeSel} [data-rmg-skel-node="${escapeAttrValue2(nodeRule.nodeId)}"]`;
+    for (const r of nodeRule.rules) {
+      lines.push(`@media (min-width:${r.minWidth}px){${nodeSel}{${r.css}}}`);
+    }
+  }
+  return lines.join("\n");
+}
+function ShapeNode2({
+  kind,
+  style,
+  shimmer
+}) {
+  const shapeCls = kind === "circle" ? styles_default.gridSkelCircle : kind === "square" ? styles_default.gridSkelSquare : styles_default.gridSkelRect;
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      className: [
+        styles_default.gridSkelTile,
+        shapeCls,
+        styles_default.gridSkelShimmer
+        // shimmer overlay/animation class
+      ].join(" "),
+      style: {
+        ...nodeStyleVars2(style, shimmer),
+        ...applyBoxMargins2(style)
+      }
+    }
+  );
+}
+function LayoutNode2({ node }) {
+  switch (node.kind) {
+    case "rect":
+    case "square":
+    case "circle":
+      return /* @__PURE__ */ jsx(ShapeNode2, { ...node });
+    case "media": {
+      const count = Math.max(0, node.count | 0);
+      const dir = node.direction ?? "row";
+      const tileShape = node.tile?.shape ?? "rect";
+      const nodeId = node.__rmgNodeId;
+      const plainStyle = isResponsiveContainerStyle2(node.style) ? void 0 : containerStylesPlain2(node.style);
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-rmg-skel-node": nodeId,
+          className: [
+            styles_default.gridSkelGroup,
+            dir === "row" ? styles_default.gridSkelRow : styles_default.gridSkelCol
+          ].join(" "),
+          style: plainStyle,
+          children: Array.from({ length: count }).map((_, i) => /* @__PURE__ */ jsx(
+            ShapeNode2,
+            {
+              kind: tileShape,
+              style: node.tile?.style,
+              shimmer: node.tile?.shimmer
+            },
+            i
+          ))
+        }
+      );
+    }
+    case "stack":
+    case "row":
+    case "col": {
+      const dirCls = node.kind === "row" ? styles_default.gridSkelRow : node.kind === "col" ? styles_default.gridSkelCol : styles_default.gridSkelStack;
+      const nodeId = node.__rmgNodeId;
+      const plainStyle = isResponsiveContainerStyle2(node.style) ? void 0 : containerStylesPlain2(node.style);
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-rmg-skel-node": nodeId,
+          className: [styles_default.gridSkelGroup, dirCls].join(" "),
+          style: plainStyle,
+          children: node.children.map((child, i) => /* @__PURE__ */ jsx(LayoutNode2, { node: child }, i))
+        }
+      );
+    }
+    default:
+      return null;
+  }
+}
+function defaultGridSpec() {
+  const item = {
+    kind: "rect",
+    style: { width: "100%", aspectRatio: 1, borderRadius: 14 }
+  };
+  return {
+    layout: {
+      kind: "grid",
+      item,
+      itemWrapStyle: void 0
+    },
+    defaults: {
+      radius: 14
+    }
+  };
+}
+function GridSkeletonCard({ count, gridStyle, spec }) {
+  const s = spec ?? defaultGridSpec();
+  const layoutIn = s.layout ?? defaultGridSpec().layout;
+  const reactId = React25.useId();
+  const scopeId = React25.useMemo(() => `gskel_${sanitizeIdForAttr2(reactId)}`, [reactId]);
+  const rootStyle = {
+    ...gridStyle || {}
+  };
+  if (s.defaults?.backgroundColor) rootStyle["--rmg-skel-bg"] = s.defaults.backgroundColor;
+  if (s.defaults?.highlightColor) rootStyle["--rmg-skel-hi"] = s.defaults.highlightColor;
+  if (s.defaults?.radius != null) rootStyle["--rmg-skel-radius"] = cssLen3(s.defaults.radius);
+  const sh = s.defaults?.shimmer;
+  if (sh?.enabled === false) rootStyle["--rmg-skel-shimmer-enabled"] = "0";
+  if (sh?.durationMs != null) rootStyle["--rmg-skel-shimmer-duration"] = `${sh.durationMs}ms`;
+  if (sh?.bandSizePct != null) rootStyle["--rmg-skel-shimmer-band"] = `${sh.bandSizePct}%`;
+  if (sh?.angleDeg != null) rootStyle["--rmg-skel-shimmer-angle"] = `${sh.angleDeg}deg`;
+  const { layout, responsiveCss } = React25.useMemo(() => {
+    let n = 0;
+    const allocId = () => `n${++n}`;
+    const collected = [];
+    const withIds = collectResponsiveCss2(layoutIn, allocId, collected);
+    const cssText = buildResponsiveCssText2(scopeId, collected);
+    return { layout: withIds, responsiveCss: cssText };
+  }, [layoutIn, scopeId]);
+  const gridNode = layout;
+  const gridNodeId = gridNode.__rmgNodeId;
+  const plainGridStyle = isResponsiveContainerStyle2(gridNode.style) ? void 0 : containerStylesPlain2(gridNode.style);
+  const cellCount = gridNode.count != null ? Math.max(0, gridNode.count | 0) : Math.max(0, count | 0);
+  const itemWrap = gridNode.itemWrapStyle;
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      "data-rmg-grid-skel-scope": scopeId,
+      className: [styles_default.gridSkeletonOverlay, s.className].filter(Boolean).join(" "),
+      children: [
+        responsiveCss ? /* @__PURE__ */ jsx("style", { dangerouslySetInnerHTML: { __html: responsiveCss } }) : null,
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            "data-rmg-skel-node": gridNodeId,
+            className: styles_default.gridSkeletonGrid,
+            style: {
+              ...rootStyle,
+              ...plainGridStyle || {},
+              // ensure it is grid even if someone’s CSS changes:
+              display: "grid"
+            },
+            children: Array.from({ length: cellCount }).map((_, i) => /* @__PURE__ */ jsx(
+              "div",
+              {
+                className: styles_default.gridSkeletonItem,
+                style: {
+                  ...itemWrap ? nodeStyleVars2(itemWrap, void 0) : null,
+                  ...itemWrap ? applyBoxMargins2(itemWrap) : null
+                },
+                children: /* @__PURE__ */ jsx(LayoutNode2, { node: gridNode.item })
+              },
+              `rmg-grid-skel-${i}`
+            ))
+          }
+        )
+      ]
+    }
+  );
+}
 function GridLayout({
   cells,
   grid,
@@ -12009,14 +12524,14 @@ function GridLayout({
   gridItemBaseClass = "rmg__grid-item",
   renderMode
 }) {
-  const gridRootRef = React24.useRef(null);
-  const [inView, setInView] = React24.useState(false);
-  const [mediaReady, setMediaReady] = React24.useState(false);
+  const gridRootRef = React25.useRef(null);
+  const [inView, setInView] = React25.useState(false);
+  const [mediaReady, setMediaReady] = React25.useState(false);
   useInViewOnce(true, gridRootRef, () => setInView(true));
   useMediaReady(true, gridRootRef, setMediaReady);
   const isLoading = loading.isLoading ?? !mediaReady;
   const introActive = !isLoading && inView;
-  const shimmerStyleVars = React24.useMemo(() => {
+  const shimmerStyleVars = React25.useMemo(() => {
     const s = loading.shimmer;
     if (!s) return void 0;
     const px2 = (v) => v == null ? void 0 : typeof v === "number" ? `${v}px` : v;
@@ -12032,7 +12547,7 @@ function GridLayout({
     };
   }, [loading.shimmer]);
   const minWidth = typeof grid.minColumnWidth === "number" ? `${grid.minColumnWidth}px` : grid.minColumnWidth ?? "160px";
-  const gapVal = React24.useMemo(() => {
+  const gapVal = React25.useMemo(() => {
     if (typeof grid.gap === "string" && Number.isNaN(parseFloat(grid.gap)))
       return grid.gap;
     const raw = resolveNumberFromResponsive(
@@ -12044,7 +12559,7 @@ function GridLayout({
     const px2 = Math.max(0, raw | 0);
     return `${px2}px`;
   }, [grid.gap, viewportWidth, breakpoints]);
-  const resolvedGridColumnCount = React24.useMemo(() => {
+  const resolvedGridColumnCount = React25.useMemo(() => {
     if (grid.columns == null) return void 0;
     const raw = resolveNumberFromResponsive(grid.columns, 1, viewportWidth, breakpoints);
     return Math.max(1, raw | 0);
@@ -12057,17 +12572,22 @@ function GridLayout({
     gridStyle.gridTemplateColumns = `repeat(${resolvedGridColumnCount}, minmax(0, 1fr))`;
   }
   const skeletonCount = cells.length;
-  const defaultGridSkeleton = /* @__PURE__ */ jsx("div", { className: styles_default.gridSkeletonOverlay, children: /* @__PURE__ */ jsx(
-    "div",
+  const defaultGridSkeleton = /* @__PURE__ */ jsx(
+    GridSkeletonCard,
     {
-      className: [styles_default.gridSkeletonGrid, grid.rootClassName || ""].filter(Boolean).join(" "),
-      style: gridStyle,
-      children: Array.from({ length: skeletonCount }).map((_, i) => /* @__PURE__ */ jsx("div", { className: styles_default.gridSkeletonItem }, `rmg-grid-skel-${i}`))
+      count: skeletonCount,
+      gridStyle,
+      spec: loading.skeleton
     }
-  ) });
-  const loadingNode = isLoading ? loading.renderLoading ? loading.renderLoading({ layout: "grid", count: skeletonCount }) : defaultGridSkeleton : null;
+  );
+  const loadingNode = isLoading ? loading.renderLoading ? loading.renderLoading({ count: skeletonCount }) : defaultGridSkeleton : null;
   const renderModeProp = renderMode ?? "wrap";
-  const gridChildren = React24.useMemo(() => {
+  const getOriginImg = (host, fallback) => {
+    const img = host?.querySelector("img");
+    if (img) return img;
+    return fallback instanceof HTMLImageElement ? fallback : null;
+  };
+  const gridChildren = React25.useMemo(() => {
     return cells.map((cell, index) => {
       const original = cell.node;
       const introStyle = {
@@ -12091,7 +12611,7 @@ function GridLayout({
           cell.id
         );
       }
-      if (!React24.isValidElement(original)) {
+      if (!React25.isValidElement(original)) {
         return /* @__PURE__ */ jsx(
           "button",
           {
@@ -12101,11 +12621,14 @@ function GridLayout({
             style: introStyle,
             onClick: (e) => {
               e.preventDefault();
-              if (!enableFullscreen) return;
-              onOpen(index, e.target);
+              const host = e.currentTarget;
+              const img = getOriginImg(host, e.target);
+              if (!enableFullscreen || !img) return;
+              onOpen(index, img);
             },
             ref: (node) => {
-              registerExpandableImg(index, node);
+              const img = getOriginImg(node, null);
+              registerExpandableImg(index, img ?? node);
             },
             children: original
           },
@@ -12124,11 +12647,14 @@ function GridLayout({
             style: introStyle,
             onClick: (e) => {
               e.preventDefault();
-              if (!enableFullscreen) return;
-              onOpen(index, e.target);
+              const host = e.currentTarget;
+              const img = getOriginImg(host, e.target);
+              if (!enableFullscreen || !img) return;
+              onOpen(index, img);
             },
             ref: (node) => {
-              registerExpandableImg(index, node);
+              const img = getOriginImg(node, null);
+              registerExpandableImg(index, img ?? node);
             },
             children: originalEl
           },
@@ -12140,15 +12666,19 @@ function GridLayout({
       const mergedRef = (node) => {
         if (typeof origRef === "function") origRef(node);
         else if (origRef && typeof origRef === "object") origRef.current = node;
-        registerExpandableImg(index, node);
+        const img = getOriginImg(node, null);
+        registerExpandableImg(index, img ?? node);
       };
       const mergedOnClick = (e) => {
         origProps.onClick?.(e);
         if (e.defaultPrevented) return;
         if (!enableFullscreen) return;
-        onOpen(index, e.target);
+        const host = e.currentTarget;
+        const img = getOriginImg(host, e.target);
+        if (!enableFullscreen || !img) return;
+        onOpen(index, img);
       };
-      return React24.cloneElement(originalEl, {
+      return React25.cloneElement(originalEl, {
         key: cell.id,
         ref: mergedRef,
         onClick: mergedOnClick,
@@ -12166,7 +12696,7 @@ function GridLayout({
     gridItemBaseClass,
     renderModeProp
   ]);
-  React24.useLayoutEffect(() => {
+  React25.useLayoutEffect(() => {
     if (renderModeProp !== "passthrough") return;
     const root = gridRootRef.current;
     if (!root) return;
@@ -12213,18 +12743,15 @@ var DEFAULT_GRID = {
   gap: 8
 };
 
-// src/Gallery/shared/normalize/normalizeLoading.ts
+// src/Gallery/grid/types.ts
 function normalizeLoading(src) {
   return {
     isLoading: src?.isLoading,
-    skeletonCount: src?.skeletonCount,
     renderLoading: src?.renderLoading,
-    shimmer: src?.shimmer,
-    ratios: src?.ratios
+    skeleton: src?.skeleton,
+    shimmer: src?.shimmer
   };
 }
-
-// src/Gallery/shared/normalize/normalizeIntro.ts
 function normalizeIntro(src) {
   return {
     renderIntro: src?.renderIntro,
@@ -12243,11 +12770,11 @@ function GridLayoutRuntime(props) {
   const { children, breakpoints, gridItemBaseClass, renderMode, ...gridOptions } = props;
   const core = useOptionalGalleryCore();
   const vw = useViewportWidth();
-  const effectiveBreakpoints = React24.useMemo(
+  const effectiveBreakpoints = React25.useMemo(
     () => core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP, ...breakpoints || {} },
     [core?.effectiveBreakpoints, breakpoints]
   );
-  const gridObject = React24.useMemo(() => {
+  const gridObject = React25.useMemo(() => {
     const resolvedColumns = gridOptions.columns != null ? Math.max(
       1,
       resolveNumberFromResponsive(
@@ -12274,23 +12801,23 @@ function GridLayoutRuntime(props) {
       gap: resolvedGap
     };
   }, [gridOptions, vw, effectiveBreakpoints]);
-  const idSeqRef = React24.useRef(0);
-  const newId = React24.useCallback(() => `rmg-${++idSeqRef.current}`, []);
-  const initialCells = React24.useMemo(() => {
-    const kids = React24.Children.toArray(children);
+  const idSeqRef = React25.useRef(0);
+  const newId = React25.useCallback(() => `rmg-${++idSeqRef.current}`, []);
+  const initialCells = React25.useMemo(() => {
+    const kids = React25.Children.toArray(children);
     return kids.map((n) => ({ id: newId(), node: n }));
   }, []);
-  const [cellsState] = React24.useState(initialCells);
-  const gridLoading = React24.useMemo(
+  const [cellsState] = React25.useState(initialCells);
+  const gridLoading = React25.useMemo(
     () => normalizeLoading(gridObject.loading),
     [gridObject.loading]
   );
-  const gridIntro = React24.useMemo(
+  const gridIntro = React25.useMemo(
     () => normalizeIntro(gridObject.intro),
     [gridObject.intro]
   );
-  const expandableImgRefs = core?.expandableImgRefs ?? React24.useRef([]);
-  const registerExpandableImg = core?.registerExpandableImg ?? React24.useCallback((index, node) => {
+  const expandableImgRefs = core?.expandableImgRefs ?? React25.useRef([]);
+  const registerExpandableImg = core?.registerExpandableImg ?? React25.useCallback((index, node) => {
     if (!node) {
       expandableImgRefs.current[index] = null;
       return;
@@ -12298,7 +12825,7 @@ function GridLayoutRuntime(props) {
     const img = node.tagName === "IMG" ? node : node.querySelector("img");
     expandableImgRefs.current[index] = img;
   }, []);
-  const onOpen = React24.useCallback(
+  const onOpen = React25.useCallback(
     (gridIndex, originEl) => {
       if (!core?.requestFullscreenOpen) return;
       const img = pickImgEl(originEl ?? null) ?? expandableImgRefs.current[gridIndex] ?? null;
@@ -12333,7 +12860,7 @@ function GridLayoutRuntime(props) {
 var DEFAULT_MASONRY = {
   placement: "balanced"
 };
-var Masonry = ({
+var MasonryCore = ({
   items,
   masonryColumns,
   masonryGap,
@@ -12347,20 +12874,20 @@ var Masonry = ({
 }) => {
   const DEFAULT_MASONRY_COLUMNS = 4;
   const DEFAULT_MASONRY_GAP_PX = 8;
-  const [viewportWidth, setViewportWidth] = React24.useState(() => {
+  const [viewportWidth, setViewportWidth] = React25.useState(() => {
     if (typeof window === "undefined") return 0;
     return window.innerWidth;
   });
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     if (typeof window === "undefined") return;
     const onResize = () => setViewportWidth(window.innerWidth);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-  const [heights, setHeights] = React24.useState(
+  const [heights, setHeights] = React25.useState(
     () => items.map(() => masonryEstimatedItemHeight)
   );
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     setHeights((prev) => {
       const next = [];
       for (let i = 0; i < items.length; i++) {
@@ -12369,7 +12896,7 @@ var Masonry = ({
       return next;
     });
   }, [items.length, masonryEstimatedItemHeight]);
-  const columnCount = React24.useMemo(() => {
+  const columnCount = React25.useMemo(() => {
     const raw = resolveNumberFromResponsive(
       masonryColumns,
       DEFAULT_MASONRY_COLUMNS,
@@ -12378,7 +12905,7 @@ var Masonry = ({
     );
     return Math.max(1, raw | 0);
   }, [masonryColumns, viewportWidth, breakpoints]);
-  const gapPx = React24.useMemo(() => {
+  const gapPx = React25.useMemo(() => {
     const raw = resolveNumberFromResponsive(
       masonryGap,
       DEFAULT_MASONRY_GAP_PX,
@@ -12387,12 +12914,12 @@ var Masonry = ({
     );
     return Math.max(0, parseNumberLike(raw, DEFAULT_MASONRY_GAP_PX));
   }, [masonryGap, viewportWidth, breakpoints]);
-  const [colIndex, setColIndex] = React24.useState(
+  const [colIndex, setColIndex] = React25.useState(
     () => items.map(
       (_, i) => masonryPlacement === "roundRobin" ? i % Math.max(1, columnCount) : 0
     )
   );
-  React24.useEffect(() => {
+  React25.useEffect(() => {
     const layout = new Array(items.length);
     if (masonryPlacement === "roundRobin") {
       for (let i = 0; i < items.length; i++) {
@@ -12423,7 +12950,7 @@ var Masonry = ({
     gapPx,
     masonryEstimatedItemHeight
   ]);
-  const handleHeight = React24.useCallback((index, height) => {
+  const handleHeight = React25.useCallback((index, height) => {
     setHeights((prev) => {
       const old = prev[index];
       if (old === height) return prev;
@@ -12432,7 +12959,7 @@ var Masonry = ({
       return next;
     });
   }, []);
-  const columnsChildren = React24.useMemo(() => {
+  const columnsChildren = React25.useMemo(() => {
     const cols = Array.from({ length: columnCount }, () => []);
     items.forEach((child, index) => {
       let c = colIndex[index];
@@ -12500,8 +13027,8 @@ var MasonryItem = ({
   gapPx,
   children
 }) => {
-  const ref = React24.useRef(null);
-  React24.useLayoutEffect(() => {
+  const ref = React25.useRef(null);
+  React25.useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const measure = () => onHeight(index, el.offsetHeight);
@@ -12605,16 +13132,16 @@ function MasonryLayout({
   intro,
   skeletonCount
 }) {
-  const localRootRef = React24.useRef(null);
-  const [inView, setInView] = React24.useState(false);
-  const [mediaReady, setMediaReady] = React24.useState(false);
+  const localRootRef = React25.useRef(null);
+  const [inView, setInView] = React25.useState(false);
+  const [mediaReady, setMediaReady] = React25.useState(false);
   useInViewOnce(true, localRootRef, () => setInView(true));
   useMediaReady(true, localRootRef, setMediaReady);
   const isLoading = loading.isLoading ?? !mediaReady;
   const introActive = !isLoading && inView;
   const DEFAULT_MASONRY_COLUMNS = 4;
   const DEFAULT_MASONRY_GAP_PX = 8;
-  const masonryColumnCount = React24.useMemo(() => {
+  const masonryColumnCount = React25.useMemo(() => {
     const raw = resolveNumberFromResponsive(
       masonry.columns,
       DEFAULT_MASONRY_COLUMNS,
@@ -12623,7 +13150,7 @@ function MasonryLayout({
     );
     return Math.max(1, raw | 0);
   }, [masonry.columns, viewportWidth, breakpoints]);
-  const masonryGapPx = React24.useMemo(() => {
+  const masonryGapPx = React25.useMemo(() => {
     const raw = resolveNumberFromResponsive(
       masonry.gap,
       DEFAULT_MASONRY_GAP_PX,
@@ -12653,11 +13180,11 @@ function MasonryLayout({
     introActive ? styles_default.introActive : "",
     masonry.classNames?.root || ""
   ].filter(Boolean).join(" ");
-  const mergedRootRef = React24.useCallback((node) => {
+  const mergedRootRef = React25.useCallback((node) => {
     localRootRef.current = node;
     assignRef(masonry.rootRef, node);
   }, [masonry.rootRef]);
-  const shimmerStyleVars = React24.useMemo(() => {
+  const shimmerStyleVars = React25.useMemo(() => {
     const s = loading.shimmer;
     if (!s) return void 0;
     const px2 = (v) => v == null ? void 0 : typeof v === "number" ? `${v}px` : v;
@@ -12675,7 +13202,7 @@ function MasonryLayout({
   return /* @__PURE__ */ jsxs("div", { style: shimmerStyleVars, children: [
     loadingNode,
     /* @__PURE__ */ jsx(
-      Masonry,
+      MasonryCore,
       {
         items,
         masonryColumns: masonry.columns,
@@ -12722,7 +13249,7 @@ function buildMasonryChildren(opts) {
       style: introStyle,
       className
     };
-    if (!React24.isValidElement(original)) {
+    if (!React25.isValidElement(original)) {
       return /* @__PURE__ */ jsx(
         "button",
         {
@@ -12751,7 +13278,7 @@ function buildMasonryChildren(opts) {
       if (!fsEnabled) return;
       openFullscreenAt(index);
     };
-    return React24.cloneElement(originalEl, {
+    return React25.cloneElement(originalEl, {
       key: cell.id,
       ref: mergedRef,
       onClick: mergedOnClick,
@@ -12764,14 +13291,36 @@ function buildMasonryChildren(opts) {
     });
   });
 }
-function MasonryLayoutRuntime(props) {
+
+// src/Gallery/shared/normalize/normalizeLoading.ts
+function normalizeLoading2(src) {
+  return {
+    isLoading: src?.isLoading,
+    skeletonCount: src?.skeletonCount,
+    renderLoading: src?.renderLoading,
+    shimmer: src?.shimmer,
+    ratios: src?.ratios
+  };
+}
+
+// src/Gallery/shared/normalize/normalizeIntro.ts
+function normalizeIntro2(src) {
+  return {
+    renderIntro: src?.renderIntro,
+    staggerMs: src?.staggerMs ?? 40,
+    transform: src?.transform ?? "translateY(10px) scale(0.99)",
+    durationMs: src?.durationMs ?? 300,
+    easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)"
+  };
+}
+function Masonry(props) {
   const { children, breakpoints, ...masonryOptions } = props;
   const core = useOptionalGalleryCore();
-  const effectiveBreakpoints = React24.useMemo(
+  const effectiveBreakpoints = React25.useMemo(
     () => core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP, ...breakpoints || {} },
     [core?.effectiveBreakpoints, breakpoints]
   );
-  const masonryObject = React24.useMemo(() => {
+  const masonryObject = React25.useMemo(() => {
     const src = masonryOptions ?? {};
     return {
       ...DEFAULT_MASONRY,
@@ -12791,18 +13340,18 @@ function MasonryLayoutRuntime(props) {
       }
     };
   }, [masonryOptions]);
-  const idSeqRef = React24.useRef(0);
-  const newId = React24.useCallback(() => `rmg-${++idSeqRef.current}`, []);
-  const initialCells = React24.useMemo(() => {
-    const kids = React24.Children.toArray(children);
+  const idSeqRef = React25.useRef(0);
+  const newId = React25.useCallback(() => `rmg-${++idSeqRef.current}`, []);
+  const initialCells = React25.useMemo(() => {
+    const kids = React25.Children.toArray(children);
     return kids.map((n) => ({ id: newId(), node: n }));
   }, []);
-  const [localCellsState] = React24.useState(initialCells);
+  const [localCellsState] = React25.useState(initialCells);
   const coreCells = core?.cellsState ?? void 0;
   const cellsState = coreCells && coreCells.length > 0 ? coreCells : localCellsState;
-  const isClick = React24.useRef(false);
-  const expandableImgRefs = core?.expandableImgRefs ?? React24.useRef([]);
-  const registerExpandableImg = core?.registerExpandableImg ?? React24.useCallback((index, node) => {
+  const isClick = React25.useRef(false);
+  const expandableImgRefs = core?.expandableImgRefs ?? React25.useRef([]);
+  const registerExpandableImg = core?.registerExpandableImg ?? React25.useCallback((index, node) => {
     if (!node) {
       expandableImgRefs.current[index] = null;
       return;
@@ -12812,7 +13361,7 @@ function MasonryLayoutRuntime(props) {
   }, []);
   const normalizedItems = core?.normalizedItems ?? [];
   const enableFullscreen = !!core?.requestFullscreenOpen;
-  const openFullscreenAt = React24.useCallback(
+  const openFullscreenAt = React25.useCallback(
     (index, originEl) => {
       if (!enableFullscreen) return;
       const imageCount = normalizedItems.length;
@@ -12837,14 +13386,14 @@ function MasonryLayoutRuntime(props) {
     [core, enableFullscreen, normalizedItems.length]
   );
   const viewportWidth = useViewportWidth();
-  const masonryLoading = React24.useMemo(() => {
-    return normalizeLoading(masonryObject.loading ?? masonryObject.transitions?.loading);
+  const masonryLoading = React25.useMemo(() => {
+    return normalizeLoading2(masonryObject.loading ?? masonryObject.transitions?.loading);
   }, [masonryObject]);
-  const masonryIntro = React24.useMemo(() => {
-    return normalizeIntro(masonryObject.intro ?? masonryObject.transitions?.intro);
+  const masonryIntro = React25.useMemo(() => {
+    return normalizeIntro2(masonryObject.intro ?? masonryObject.transitions?.intro);
   }, [masonryObject]);
   const itemClassName = masonryObject.classNames?.item ?? "";
-  const masonryChildren = React24.useMemo(() => {
+  const masonryChildren = React25.useMemo(() => {
     return buildMasonryChildren({
       cells: cellsState,
       fsEnabled: enableFullscreen,
@@ -12923,6 +13472,4 @@ function RmgPlyrVideo(props) {
   );
 }
 
-export { BREAKPOINT_MAP, DEFAULT_ENTRIES, DEFAULT_FULLSCREEN, DEFAULT_GRID, DEFAULT_MASONRY, DEFAULT_SLIDER, Entries, GalleryCore, GridLayoutRuntime, MasonryLayoutRuntime, RmgPlyrVideo, SliderLayout, flattenEntries, toMediaItems, useFullscreenController };
-//# sourceMappingURL=index.mjs.map
-//# sourceMappingURL=index.mjs.map
+export { BREAKPOINT_MAP, DEFAULT_ENTRIES, DEFAULT_FULLSCREEN, DEFAULT_GRID, DEFAULT_MASONRY, DEFAULT_SLIDER, Entries, GalleryCore, GridLayoutRuntime as Grid, Masonry, RmgPlyrVideo, Slider, flattenEntries, toMediaItems, useFullscreenController };

@@ -11,7 +11,7 @@ export function getCurrentTransform(slide: HTMLElement | null) {
   return { x: tx, y: ty };
 }
 
-export function baseFitSizeC(
+export function baseFitSize(
   imgEl: HTMLImageElement,
   containerW: number,
   containerH: number

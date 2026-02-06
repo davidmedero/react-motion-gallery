@@ -12,20 +12,13 @@ export type FSEvent =
 
 export type FullscreenSliderSub = {
   get: () => number;
-
   requestSet: (index: number, mode?: JumpMode) => void;
-
   requestPrev: () => void;
   requestNext: () => void;
-
   requestCenter: () => void;
-
   onEvent: (fn: (evt: FSEvent) => void) => () => void;
-
   onRequest: (fn: (req: FSRequest) => void) => () => void;
-
   setLocalIndex: (index: number) => void;
-
   destroy: () => void;
 };
 

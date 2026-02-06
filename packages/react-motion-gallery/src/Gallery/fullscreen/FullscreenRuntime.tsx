@@ -30,7 +30,7 @@ import { forceResetZoom as forceResetZoomFn } from "../zoomPan/zoom/forceResetZo
 import { resetZoomForSlideChange as resetZoomForSlideChangeFn } from "../zoomPan/zoom/resetZoomForSlideChange";
 import { resetPanForScale1 as resetPanForScale1Fn } from '../zoomPan/pan/resetPanForScale1';
 import { useFsEntryOverlay } from '../entries/overlay/useFsEntryOverlay';
-import { baseFitSizeC, distance, midpoint } from '../zoomPan/core/utils';
+import { baseFitSize, distance, midpoint } from '../zoomPan/core/utils';
 import { zoomTo } from '../zoomPan/zoom/zoomTo';
 import { findImgAtPoint, readDataIndex } from '../zoomPan/core/dom';
 
@@ -404,7 +404,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       boundsY,
       ScrollBody,
       ScrollBounds,
-      baseFitSizeC,
+      baseFitSize,
       boundsForCurrent,
       panDuration: fs.zoom?.panDuration!,
       panFriction: fs.zoom?.panFriction!,
@@ -472,7 +472,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     imageRefs,
     fullscreenSliderApi,
     rebuildPanBodies,
-    baseFitSizeC,
+    baseFitSize,
     boundsForCurrent,
     ScrollBounds,
     boundsX,
@@ -493,13 +493,9 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
 
   React.useEffect(() => {
     if (!showFullscreenModal) return;
-
     const start = fsSub.get();
     fsIndexRef.current = start;
-
-    // ✅ core/controller hydrates all slider internals for this fsIndex
     syncFullscreenSourceFromIndex(start);
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFullscreenModal, fsSub]);
 
@@ -508,10 +504,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fsSub,
     entriesObject,
     entryMapRef,
-
-    // ✅ pass the same hydration function into overlay logic
     syncFullscreenSourceFromIndex,
-
     resetAllZoomDom: resetZoomForSlideChange,
     closing: !!closingModal
   });
@@ -573,17 +566,14 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     items: wrappedItems,
     plyrList: wrappedPlyrProps,
     getTransform: wrappedTransform,
-
     imageRefs,
     playerRefs: wrappedModePlyrRefs,
     cells,
-
     isZoomed,
     showFullscreenSlider,
     defaultPlayerStyle,
     fsVideoStyle: fs.video?.style,
     fsVideoClassName: fs.video?.className,
-
     onPanPointerDown: (e, imageRef) => pan.handlePanPointerStart(e, imageRef),
     onSuppressNextClickCapture: (e) => {
       if (suppressNextClickRef.current) {
@@ -592,7 +582,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
         (e as any).stopPropagation?.();
       }
     },
-
     renderCaption: fs.caption?.render,
     captionClassName: fs.caption?.className,
     captionStyle: fs.caption?.style,
@@ -601,12 +590,10 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fsCaptionHeight: fs.caption?.height,
     fsCaptionBreakpoint: fs.caption?.breakpoint,
     resolveFsCaptionPlacement,
-
     styles: {
       imgMargin: styles.imgMargin,
       fullscreenImages: styles.fullscreenImages,
     },
-
     renderImage: fs.renderImage as any,
   });
 
@@ -614,17 +601,14 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     items: normalizedItems,
     plyrList: singlePlyrProps,
     getTransform: singleTransform,
-
     imageRefs,
     playerRefs: singleModePlyrRefs,
     cells,
-
     isZoomed,
     showFullscreenSlider,
     defaultPlayerStyle,
     fsVideoStyle: fs.video?.style,
     fsVideoClassName: fs.video?.className,
-
     onPanPointerDown: (e, imageRef) => pan.handlePanPointerStart(e, imageRef),
     onSuppressNextClickCapture: (e) => {
       if (suppressNextClickRef.current) {
@@ -633,7 +617,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
         (e as any).stopPropagation?.();
       }
     },
-
     renderCaption: fs.caption?.render,
     captionClassName: fs.caption?.className,
     captionStyle: fs.caption?.style,
@@ -642,12 +625,10 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fsCaptionHeight: fs.caption?.height,
     fsCaptionBreakpoint: fs.caption?.breakpoint,
     resolveFsCaptionPlacement,
-
     styles: {
       imgMargin: styles.imgMargin,
       fullscreenImages: styles.fullscreenImages,
     },
-
     renderImage: fs.renderImage as any,
   });
 

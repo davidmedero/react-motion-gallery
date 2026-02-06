@@ -14,23 +14,18 @@ export type MasonryPlacement = 'balanced' | 'roundRobin';
 
 export type MasonryProps = {
   items: React.ReactNode[];
-
   masonryColumns?: ResponsiveNumber;
   masonryGap?: ResponsiveNumber;
   masonryPlacement?: MasonryPlacement;
-
   masonryEstimatedItemHeight?: number;
-
   masonryClassNames?: MasonryClassNames;
   masonryStyle?: React.CSSProperties;
-
   masonryAs?: React.ElementType;
   masonryRootRef?: React.Ref<any>;
-
   breakpoints?: BreakpointMap;
 };
 
-export const Masonry: React.FC<MasonryProps> = ({
+export const MasonryCore: React.FC<MasonryProps> = ({
   items,
   masonryColumns,
   masonryGap,
@@ -106,7 +101,6 @@ export const Masonry: React.FC<MasonryProps> = ({
         layout[i] = i % columnCount;
       }
     } else {
-      // balanced
       const colHeights = new Array(columnCount).fill(0);
 
       for (let i = 0; i < items.length; i++) {

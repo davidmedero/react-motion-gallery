@@ -1,0 +1,99 @@
+.fullscreenOverlay {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background-color: rgba(0,0,0,0.8);
+  transition: opacity 300ms cubic-bezier(.4,0,.22,1);
+  will-change: opacity;
+  z-index: 8999;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: paint;
+}
+
+.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.duplicateImg {
+  position: fixed;
+  display: none;
+  transform-origin: top left;
+  transition: transform 0.3s cubic-bezier(.4,0,.22,1);
+  z-index: 9998;
+  will-change: transform;
+}
+
+.closeBtn,
+.leftChevron,
+.rightChevron,
+.counter {
+  position: fixed;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(.4,0,.22,1);
+  z-index: 2147483602;
+}
+
+.closeBtn.open,
+.leftChevron.open,
+.rightChevron.open,
+.counter.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.closeBtn {
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+}
+
+.leftChevron,
+.rightChevron {
+  top: 45.5%;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+}
+
+.leftChevron { left: 0; transform: rotate(180deg); }
+.rightChevron { right: 0; }
+
+.counter {
+  top: 15px;
+  left: 16px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 32px;
+  user-select: none;
+  text-shadow: 1px 1px 3px #4f4f4f;
+}
+
+.fsOverlayCaption {
+  position: fixed;
+  padding: 1rem 1.5rem;
+  color: #fff;
+  font-size: 0.875rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 300ms cubic-bezier(.4,0,.22,1),
+    transform 300ms cubic-bezier(.4,0,.22,1);
+  z-index: 9999;
+}
+
+.fsOverlayCaption.open {
+  opacity: 1;
+  transform: translateY(0);
+}

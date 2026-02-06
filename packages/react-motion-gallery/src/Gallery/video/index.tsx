@@ -16,7 +16,7 @@ export type RmgPlyrOptionsResolver =
   | any
   | ((args: { src: string; poster?: string; index: number }) => any);
 
-export type RmgPlyrVideoProps = {
+export type VideoProps = {
   src: string;
   poster?: string;
   alt?: string;
@@ -38,7 +38,7 @@ const basePoster: React.CSSProperties = {
   objectFit: 'contain',
 };
 
-export function RmgPlyrVideo(props: RmgPlyrVideoProps) {
+export function Video(props: VideoProps) {
   const ctx = useRmgSlide();
   const isClone = ctx?.isClone ?? false;
   const index = ctx?.normIdx ?? 0;

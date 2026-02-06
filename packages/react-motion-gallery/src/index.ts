@@ -1,12 +1,11 @@
 export { GalleryCore } from "./Gallery/core";
 export { Entries, flattenEntries } from "./Gallery/entries";
 export { useFullscreenController } from "./Gallery/fullscreen";
-export { SliderLayout } from "./Gallery/slider";
-export { default as GridLayoutRuntime } from "./Gallery/grid";
-export { default as MasonryLayoutRuntime } from "./Gallery/masonry";
-export { RmgPlyrVideo } from "./Gallery/video/RmgPlyrVideo";
+export { Slider } from "./Gallery/slider";
+export { default as Grid } from "./Gallery/grid";
+export { default as Masonry } from "./Gallery/masonry";
+export { Video } from "./Gallery/video";
 
-// types / helpers (your existing exports)
 export type { GalleryApi, IndexMode } from "./Gallery/api/types";
 export type { MediaItem } from "./Gallery/shared/types/media";
 export type { ElementStyle } from "./Gallery/shared/types/elements";

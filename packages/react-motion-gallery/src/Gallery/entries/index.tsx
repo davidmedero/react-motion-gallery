@@ -7,7 +7,6 @@ export * from "./hooks/useEntryInView";
 export * from "./hooks/useEntryDecodeReady";
 export * from "./normalize";
 export * from "./components/EntryList";
-
 import * as React from "react";
 import { EntryList } from "./components/EntryList";
 import { DEFAULT_ENTRIES } from "./defaults";
@@ -38,12 +37,6 @@ export function nodeFromMediaDefault(m: MediaItem): React.ReactNode {
   return null;
 }
 
-/**
- * Flatten entries -> media list + link map + entry->flat indices + owners
- * Useful for:
- *  - fullscreenItems (fs addon)
- *  - entryFlatIndexRef / entryMapRef bookkeeping
- */
 export function flattenEntries(items: EntryItem[] | undefined) {
   const media: MediaItem[] = [];
   const map: MediaEntryLink[] = [];
@@ -80,44 +73,17 @@ export function flattenEntries(items: EntryItem[] | undefined) {
 
 export type EntriesProps = {
   enabled?: boolean;
-
   entries: EntriesOptions;
-
-  /**
-   * If you don't pass this, Entries will default to:
-   *  - fullscreen.items if provided
-   *  - else flattened entries media
-   */
   fullscreen?: {
     enabled?: boolean;
     items?: FullscreenItemsInput;
   };
-
-  /**
-   * Called by EntryList to wrap mediaNodes in the chosen layout container.
-   * This is what makes slider/grid/masonry *fully treeshakable*:
-   * users import ONE media renderer module and pass it here.
-   */
   renderMediaContainer: EntriesMediaContainerRender;
-
-  /**
-   * Override for media node creation when entries.render.media isn't provided.
-   */
   nodeFromMedia?: (m: MediaItem) => React.ReactNode;
-
-  /**
-   * Optional: provide your own refs if you want to read them outside.
-   * If omitted, Entries creates internal refs.
-   */
   entryFlatIndexRef?: React.RefObject<number[][] | null>;
   entryMapRef?: React.RefObject<MediaEntryLink[] | null>;
   fsOwnersRef?: React.RefObject<SlideOwner[]>;
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
-
-  /**
-   * Optional: if you're NOT inside GalleryCore and still want to open fullscreen,
-   * you can provide a callback.
-   */
   onOpenFullscreen?: (args: { index: number; img: HTMLImageElement; event?: Event }) => void;
 };
 
@@ -140,7 +106,6 @@ export function Entries(props: EntriesProps) {
 
   const core = useOptionalGalleryCore();
 
-  // ---- refs (either user-supplied or internal) ----
   const entryFlatIndexRef = props.entryFlatIndexRef ?? React.useRef<number[][] | null>(null);
   const entryMapRef = props.entryMapRef ?? React.useRef<MediaEntryLink[] | null>(null);
   const fsOwnersRef = props.fsOwnersRef ?? React.useRef<SlideOwner[]>([]);
@@ -165,7 +130,6 @@ export function Entries(props: EntriesProps) {
       expandableImgRefs.current[index] = img;
   }, []);
 
-  // ---- flatten entries ----
   const { flattenedMedia, flattenedMap, entryFlatIndex, owners } = React.useMemo(() => {
     return flattenEntries(entriesObject.items as any);
   }, [entriesObject.items]);
@@ -176,7 +140,6 @@ export function Entries(props: EntriesProps) {
     entryMapRef.current = flattenedMap;
   }, [entryFlatIndex, owners, flattenedMap, entryFlatIndexRef, fsOwnersRef, entryMapRef]);
 
-  // ---- normalized fullscreen items (strings or MediaItems) ----
   const normalizedItems = React.useMemo<MediaItem[]>(() => {
     const fsItems = normalizeFsItems(fullscreen?.items as any);
     if (fsItems.length) return fsItems;
@@ -188,26 +151,21 @@ export function Entries(props: EntriesProps) {
 
     core.registerFullscreenAdapter("entries", {
       closestSelector: (entriesObject.mediaLayout === "slider" ? ".rmg__slide" : ".rmg__grid-item"),
-      syncBeforeOpen: (index) => {
-        // your existing logic:
-        // syncEntrySliderBeforeOpen(index)
-      },
       getOwnerSliderHandle: (globalIndex: number) => {
         const link = entryMapRef.current?.[globalIndex];
         if (!link) return null;
         return entrySliderRefs.current?.[link.entryIndex] ?? null;
       },
       getEntryContext: () => ({
-        entryMapRef,                 // your ref
+        entryMapRef,
         entryMediaLayout: entriesObject.mediaLayout,
-        entriesObject,               // optional, short-term
+        entriesObject,
         entrySliderRefs,
         expandableImgRefs: core?.expandableImgRefs ?? expandableImgRefs,
       }),
     });
   }, [core, entriesObject]);
 
-  // ---- openFullscreenAt (uses GalleryCore if present) ----
   const openFullscreenAt = React.useCallback(
     (globalIndex: number, originEl?: HTMLElement | null) => {
       const fsEnabled = fullscreen?.enabled ?? true;
@@ -222,13 +180,11 @@ export function Entries(props: EntriesProps) {
       }
       if (!imgEl) return;
 
-      // Prefer GalleryCore wiring if available
       if (core?.requestFullscreenOpen) {
         core.requestFullscreenOpen({ source: "entries", index: globalIndex, img: imgEl, event: undefined });
         return;
       }
 
-      // Fallback: allow standalone usage if user provides it
       onOpenFullscreen?.({ index: globalIndex, img: imgEl });
     },
     [fullscreen?.enabled, core, onOpenFullscreen]

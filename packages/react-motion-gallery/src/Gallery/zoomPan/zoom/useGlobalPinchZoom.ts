@@ -23,7 +23,7 @@ export type UseGlobalPinchZoomArgs = {
   imageRefs: React.RefObject<Array<RefDiv | null>>;
   fullscreenSliderApi: React.RefObject<{ centerSlider: () => void } | null>;
   rebuildPanBodies: () => void;
-  baseFitSizeC: (
+  baseFitSize: (
     img: HTMLImageElement,
     containerW: number,
     containerH: number
@@ -85,7 +85,7 @@ export function useGlobalPinchZoom(args: UseGlobalPinchZoomArgs) {
     imageRefs,
     fullscreenSliderApi,
     rebuildPanBodies,
-    baseFitSizeC,
+    baseFitSize,
     boundsForCurrent,
     ScrollBounds,
     boundsX,
@@ -159,7 +159,7 @@ export function useGlobalPinchZoom(args: UseGlobalPinchZoomArgs) {
       const containerW = rect.width;
       const containerH = rect.height;
 
-      const { baseW, baseH } = baseFitSizeC(
+      const { baseW, baseH } = baseFitSize(
         container.children[0] as HTMLImageElement,
         containerW,
         containerH
@@ -208,7 +208,7 @@ export function useGlobalPinchZoom(args: UseGlobalPinchZoomArgs) {
       isZoomed,
       currentImage,
       rebuildPanBodies,
-      baseFitSizeC,
+      baseFitSize,
       boundsForCurrent,
       scaleRef,
       boundsX,

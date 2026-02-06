@@ -5,8 +5,8 @@
 
 .slider_container,
 .fade_container {
-  height: var(--rmg-slider-height);
-  cursor: grab;
+  height: 100%;
+  min-height: var(--rmg-slider-height, var(--rmg-slider-initial-height, 1px));
 }
 
 .viewport {
@@ -83,106 +83,6 @@
   }
 }
 
-.fullscreenOverlay {
-  position: fixed;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-  background-color: rgba(0,0,0,0.8);
-  transition: opacity 300ms cubic-bezier(.4,0,.22,1);
-  will-change: opacity;
-  z-index: 8999;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  contain: paint;
-}
-
-.open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.duplicateImg {
-  position: fixed;
-  display: none;
-  transform-origin: top left;
-  transition: transform 0.3s cubic-bezier(.4,0,.22,1);
-  z-index: 9998;
-  will-change: transform;
-}
-
-.closeBtn,
-.leftChevron,
-.rightChevron,
-.counter {
-  position: fixed;
-  display: none;
-  opacity: 0;
-  transition: opacity 0.3s cubic-bezier(.4,0,.22,1);
-  z-index: 2147483602;
-}
-
-.closeBtn.open,
-.leftChevron.open,
-.rightChevron.open,
-.counter.open {
-  display: block;
-  opacity: 1;
-}
-
-.closeBtn {
-  top: 12px;
-  right: 12px;
-  background: transparent;
-  border: none;
-  padding: 0;
-  width: 35px;
-  height: 35px;
-  cursor: pointer;
-}
-
-.leftChevron,
-.rightChevron {
-  top: 45.5%;
-  width: 50px;
-  height: 50px;
-  cursor: pointer;
-  background-color: transparent;
-  border: none;
-}
-
-.leftChevron { left: 0; transform: rotate(180deg); }
-.rightChevron { right: 0; }
-
-.counter {
-  top: 15px;
-  left: 16px;
-  color: #fff;
-  font-size: 14px;
-  line-height: 32px;
-  user-select: none;
-  text-shadow: 1px 1px 3px #4f4f4f;
-}
-
-.fsOverlayCaption {
-  position: fixed;
-  padding: 1rem 1.5rem;
-  color: #fff;
-  font-size: 0.875rem;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(8px);
-  transition:
-    opacity 300ms cubic-bezier(.4,0,.22,1),
-    transform 300ms cubic-bezier(.4,0,.22,1);
-  z-index: 9999;
-}
-
-.fsOverlayCaption.open {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .fade_container [data-rmg-idx] > * {
   opacity: 0;
   transform: translateY(var(--rmg-intro-offset, 10px));
@@ -203,4 +103,93 @@
 .fade_container.fadeInActive [data-rmg-idx] > * {
   opacity: 1;
   transform: translateY(0);
+}
+
+.sliderSkeletonOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.sliderSkeletonRow {
+  display: flex;
+  width: 100%;
+  gap: 0.75rem;
+  height: var(--rmg-slider-initial-height, var(--rmg-slider-height, 320px));
+  align-items: stretch;
+}
+
+.sliderShell {
+  position: relative;
+  width: 100%;
+  container-type: inline-size;
+  height: var(--rmg-slider-height, var(--rmg-slider-initial-height, 1px));
+  min-height: var(--rmg-slider-height, var(--rmg-slider-initial-height, 1px));
+  max-height: var(--rmg-slider-height, var(--rmg-slider-initial-height, 1px));
+}
+
+.sliderSkeletonItem {
+  flex: 1 1 0;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+}
+
+.sliderSkeletonGroup {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.sliderSkeleton {
+  width: 100%;
+  height: auto;
+  border-radius: var(--rmg-shimmer-radius, 10px);
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    var(--rmg-shimmer-c1, #f0f2f5) 25%,
+    var(--rmg-shimmer-c2, #e6e9ef) 37%,
+    var(--rmg-shimmer-c3, #f0f2f5) 63%
+  );
+  background-size: var(--rmg-shimmer-size, 400% 100%);
+  animation: rmgShimmer var(--rmg-shimmer-duration, 1.2s)
+    infinite var(--rmg-shimmer-timing, linear);
+}
+
+.thumbSkeletonOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.thumbSkeletonRow {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.thumbSkeleton {
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    var(--rmg-shimmer-c1, #f0f2f5) 25%,
+    var(--rmg-shimmer-c2, #e6e9ef) 37%,
+    var(--rmg-shimmer-c3, #f0f2f5) 63%
+  );
+  background-size: var(--rmg-shimmer-size, 400% 100%);
+  animation: rmgShimmer var(--rmg-shimmer-duration, 1.2s)
+    infinite var(--rmg-shimmer-timing, linear);
 }

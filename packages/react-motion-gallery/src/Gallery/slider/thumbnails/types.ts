@@ -13,7 +13,7 @@ export type ResponsivePosition =
 export type ThumbnailLoadingOptions = {
   isLoading?: boolean;
   skeletonCount?: ResponsiveNumber;
-  renderLoading?: (args: { layout: "slider" | "thumbnails"; count: number }) => React.ReactNode;
+  renderLoading?: () => React.ReactNode;
 };
 
 export type ThumbnailIntroOptions = {

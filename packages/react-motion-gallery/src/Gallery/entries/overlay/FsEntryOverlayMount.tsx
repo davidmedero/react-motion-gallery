@@ -4,7 +4,6 @@ import * as React from 'react';
 
 type Props = {
   setMountEl: (el: HTMLDivElement | null) => void;
-  /** optional styles override */
   style?: React.CSSProperties;
   className?: string;
 };

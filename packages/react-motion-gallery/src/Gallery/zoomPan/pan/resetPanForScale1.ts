@@ -11,25 +11,18 @@ type AnimationsLike = {
 
 type ResetZoomArgs = {
   currentImage: React.RefObject<HTMLElement | null>;
-
-  // vectors
   locX: React.RefObject<Vector1DType | null>;
   prevX: React.RefObject<Vector1DType | null>;
   offX: React.RefObject<Vector1DType | null>;
   tgtX: React.RefObject<Vector1DType | null>;
-
   locY: React.RefObject<Vector1DType | null>;
   prevY: React.RefObject<Vector1DType | null>;
   offY: React.RefObject<Vector1DType | null>;
   tgtY: React.RefObject<Vector1DType | null>;
-
-  // bodies + bounds
   bodyX: React.RefObject<ScrollBodyType | null>;
   bodyY: React.RefObject<ScrollBodyType | null>;
   boundsX: React.RefObject<ScrollBoundsType | null>;
   boundsY: React.RefObject<ScrollBoundsType | null>;
-
-  // factories
   ScrollBody: (
     loc: Vector1DType,
     off: Vector1DType,
@@ -38,7 +31,6 @@ type ResetZoomArgs = {
     duration: number,
     friction: number
   ) => ScrollBodyType;
-
   ScrollBounds: (
     lim: LimitType,
     off: Vector1DType,
@@ -47,14 +39,11 @@ type ResetZoomArgs = {
     pov: PercentOfViewType,
     duration: number
   ) => ScrollBoundsType;
-
-  // sizing helpers
-  baseFitSizeC: (
+  baseFitSize: (
     img: HTMLImageElement,
     containerW: number,
     containerH: number
   ) => { baseW: number; baseH: number };
-
   boundsForCurrent: (
     scale: number,
     imgW: number,
@@ -62,12 +51,8 @@ type ResetZoomArgs = {
     viewW?: number,
     viewH?: number
   ) => { x: LimitType; y: LimitType; povX: any; povY: any };
-
-  // settings
   panDuration: number;
   panFriction: number;
-
-  // animation runtime
   animRef: React.RefObject<AnimationsLike | null>;
 };
 
@@ -88,7 +73,7 @@ export function resetPanForScale1(args: ResetZoomArgs) {
     boundsY,
     ScrollBody,
     ScrollBounds,
-    baseFitSizeC,
+    baseFitSize,
     boundsForCurrent,
     panDuration,
     panFriction,
@@ -116,7 +101,7 @@ export function resetPanForScale1(args: ResetZoomArgs) {
   const containerW = rect.width;
   const containerH = rect.height;
 
-  const { baseW, baseH } = baseFitSizeC(imgEl, containerW, containerH);
+  const { baseW, baseH } = baseFitSize(imgEl, containerW, containerH);
 
   locX.current!.set(0); prevX.current!.set(0); offX.current!.set(0); tgtX.current!.set(0);
   locY.current!.set(0); prevY.current!.set(0); offY.current!.set(0); tgtY.current!.set(0);

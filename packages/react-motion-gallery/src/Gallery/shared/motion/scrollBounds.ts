@@ -14,7 +14,7 @@ export function ScrollBounds(
 ) {
   const pullBack = pov.measure(10)
   const edgeTol  = pov.measure(50)
-  const fricLim  = Limit(0.1, 0.99)
+  const fricLim  = Limit(0.5, 1)
 
   function reached() {
     return limit.reachedAny(target.get()) && limit.reachedAny(location.get())

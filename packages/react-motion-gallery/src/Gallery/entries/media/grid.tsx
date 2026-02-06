@@ -1,14 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import * as React from "react";
 import { GridLayout } from "../../grid/GridLayout";
 import type { EntriesMediaContainerRender } from "../index";
-import { BREAKPOINT_MAP, type BreakpointMap } from "../../shared/responsive";
-import { normalizeIntro } from "../../shared/normalize/normalizeIntro";
+import { BREAKPOINT_MAP } from "../../shared/responsive";
 import { useViewportWidth } from "../../shared/hooks/useViewportWidth";
-import { normalizeLoading } from "../../shared/normalize/normalizeLoading";
 import { useOptionalGalleryCore } from "../../core";
+import { IntroOptions, LoadingOptions } from "../../grid/types";
 
 export function createEntriesGridMedia(args: {
   gridObject?: any;
@@ -19,7 +17,27 @@ export function createEntriesGridMedia(args: {
 
   const core = useOptionalGalleryCore();
 
+  function normalizeLoading(src?: LoadingOptions) {
+    return {
+      isLoading: src?.isLoading,
+      renderLoading: src?.renderLoading,
+      skeleton: src?.skeleton,
+      shimmer: src?.shimmer,
+    };
+  }
+
   const normalizedLoading = normalizeLoading(gridLoading ?? gridObject?.loading);
+
+  function normalizeIntro(src?: IntroOptions) {
+    return {
+      renderIntro: src?.renderIntro,
+      staggerMs: src?.staggerMs ?? 40,
+      transform: src?.transform ?? "translateY(10px) scale(0.99)",
+      durationMs: src?.durationMs ?? 300,
+      easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
+    };
+  }
+  
   const normalizedIntro = normalizeIntro(gridIntro ?? gridObject?.intro);
 
   const viewportWidth = useViewportWidth();

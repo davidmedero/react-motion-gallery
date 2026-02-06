@@ -71,22 +71,15 @@ export function useFsEntryOverlay<EntryT>(
     fadeOutMs = 120,
     closing
   } = args;
-
   const mountRef = React.useRef<HTMLDivElement | null>(null);
   const rootRef = React.useRef<Root | null>(null);
   const rootMountRef = React.useRef<HTMLDivElement | null>(null);
-
   const fsIndexRef = React.useRef<number>(fsSub.get());
-
-  const entryOpacityRef = React.useRef<number>(1);
   const overlayElRef = React.useRef<HTMLDivElement | null>(null);
-
   const openTokenRef = React.useRef(0);
   const enteredTokenRef = React.useRef(0);
   const enterRafRef = React.useRef<number>(0);
-
   const pendingUnmountRef = React.useRef<number>(0);
-
   const swapJobRef = React.useRef<{ t: any; raf: number } | null>(null);
 
   const cancelSwapJob = React.useCallback(() => {

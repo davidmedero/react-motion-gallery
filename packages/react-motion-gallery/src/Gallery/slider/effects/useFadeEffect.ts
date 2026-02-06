@@ -126,13 +126,11 @@ export function useFadeEffect({
     wrap,
   ]);
 
-  // run when key stuff changes
   React.useEffect(() => {
     applyFadeTween();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, slidesLen, clonedLen, wrap]);
 
-  // cleanup when disabled
   React.useEffect(() => {
     if (enabled) return;
     const track = sliderRef.current;

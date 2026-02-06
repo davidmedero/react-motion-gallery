@@ -1,5 +1,5 @@
 import * as React from "react";
-import styles from "../Entries.module.css";
+import styles from "./Slider.module.css";
 
 export type SkeletonLength = number | string;
 
@@ -22,7 +22,7 @@ export type SkeletonBaseStyle = {
   marginBottom?: SkeletonLength;
   marginLeft?: SkeletonLength;
   alignSelf?: React.CSSProperties["alignSelf"];
-  aspectRatio?: number | string;
+  aspectRatio?: SkeletonLength;
 };
 
 export type SkeletonContainerStyle = {
@@ -38,6 +38,17 @@ export type SkeletonContainerStyle = {
 export type SkeletonContainerStyleResponsive =
   | SkeletonContainerStyle
   | Record<string, SkeletonContainerStyle>;
+
+export type SliderSkeletonNode =
+  | {
+      kind: "slider";
+      style?: SkeletonContainerStyleResponsive;
+      count?: number;
+      item: SkeletonNode;
+      itemWrapStyle?: SkeletonBaseStyle;
+      direction?: "row" | "col";
+    }
+  | SkeletonNode;
 
 export type SkeletonNode =
   | {
@@ -62,10 +73,9 @@ export type SkeletonNode =
       };
     };
 
-export type EntrySkeletonSpec = {
-  layout?: SkeletonNode;
-  variant?: "solid";
-  minHeight?: SkeletonLength;
+export type SliderSkeletonSpec = {
+  className?: string;
+  layout?: SliderSkeletonNode;
   defaults?: {
     backgroundColor?: string;
     highlightColor?: string;
@@ -74,14 +84,12 @@ export type EntrySkeletonSpec = {
   };
 };
 
-export type EntrySkeletonCardProps = {
-  spec?: EntrySkeletonSpec;
-  className?: string;
+export type SliderSkeletonCardProps = {
+  count: number;
+  maxSlots: number;
+  rowStyle?: React.CSSProperties;
+  spec?: SliderSkeletonSpec;
 };
-
-function defaultSpec(): EntrySkeletonSpec {
-  return { variant: "solid", minHeight: 260 };
-}
 
 function cssLen(v: SkeletonLength | undefined): string | undefined {
   if (v == null) return undefined;
@@ -109,12 +117,34 @@ function nodeStyleVars(
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
 
-  if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio;
+  if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio as any;
 
-  if (base?.width != null) s.width = cssLen(base.width);
-  if (base?.maxWidth != null) s.maxWidth = cssLen(base.maxWidth);
-  if (base?.height != null) s.height = cssLen(base.height);
-  if (base?.maxHeight != null) s.maxHeight = cssLen(base.maxHeight);
+  const w = cssLen(base?.width);
+  const mw = cssLen(base?.maxWidth);
+  const h = cssLen(base?.height);
+  const mh = cssLen(base?.maxHeight);
+
+  if (w != null) {
+    (s as any).inlineSize = w;
+    (s as any).width = w;
+  }
+  if (mw != null) {
+    (s as any).maxInlineSize = mw;
+    (s as any).maxWidth = mw;
+  }
+
+  if (h != null) s.height = h;
+  if (mh != null) s.maxHeight = mh;
+
+  if (base?.aspectRatio != null && base?.height == null) {
+    (s as any).height = "auto";
+  }
+
+  if (base?.aspectRatio != null && base?.width == null && base?.height == null) {
+    (s as any).inlineSize = "100%";
+    (s as any).width = "100%";
+    (s as any).height = "auto";
+  }
 
   if (base?.backgroundColor) (s as any)["--rmg-skel-bg"] = base.backgroundColor;
   if (base?.borderRadius != null) (s as any)["--rmg-skel-radius"] = cssLen(base.borderRadius);
@@ -174,10 +204,10 @@ function containerStyleToCssDecls(style: SkeletonContainerStyle): string {
 }
 
 function collectResponsiveCss(
-  node: SkeletonNode,
+  node: SliderSkeletonNode,
   allocId: () => string,
   out: Array<{ nodeId: string; rules: Array<{ minWidth: number; css: string }> }>
-): SkeletonNode {
+): SliderSkeletonNode {
   switch (node.kind) {
     case "rect":
     case "square":
@@ -219,15 +249,37 @@ function collectResponsiveCss(
           .sort((a, b) => a - b)
           .map((minWidth) => ({
             minWidth,
-            css: containerStyleToCssDecls(style[minWidth] || {}),
+            css: containerStyleToCssDecls((style as any)[String(minWidth)] || {}),
           }))
           .filter((r) => r.css.length > 0);
 
         if (rules.length) out.push({ nodeId: id, rules });
       }
 
-      const children = node.children.map((c) => collectResponsiveCss(c, allocId, out));
+      const children = node.children.map((c) => collectResponsiveCss(c, allocId, out)) as any;
       return { ...(node as any), __rmgNodeId: id, children };
+    }
+
+    case "slider": {
+      const id = allocId();
+      const style = node.style;
+
+      if (isResponsiveContainerStyle(style)) {
+        const rules = Object.keys(style)
+          .map((k) => +k)
+          .filter((n) => Number.isFinite(n) && n >= 0)
+          .sort((a, b) => a - b)
+          .map((minWidth) => ({
+            minWidth,
+            css: containerStyleToCssDecls((style as any)[String(minWidth)] || {}),
+          }))
+          .filter((r) => r.css.length > 0);
+
+        if (rules.length) out.push({ nodeId: id, rules });
+      }
+
+      const item = collectResponsiveCss(node.item, allocId, out) as SkeletonNode;
+      return { ...(node as any), __rmgNodeId: id, item };
     }
 
     default: {
@@ -243,12 +295,11 @@ function buildResponsiveCssText(
 ) {
   if (!rules.length) return "";
 
-  const scopeSel = `[data-rmg-entry-skel-scope="${escapeAttrValue(scopeId)}"]`;
+  const scopeSel = `[data-rmg-slider-skel-scope="${escapeAttrValue(scopeId)}"]`;
   const lines: string[] = [];
 
   for (const nodeRule of rules) {
     const nodeSel = `${scopeSel} [data-rmg-skel-node="${escapeAttrValue(nodeRule.nodeId)}"]`;
-
     for (const r of nodeRule.rules) {
       lines.push(`@media (min-width:${r.minWidth}px){${nodeSel}{${r.css}}}`);
     }
@@ -262,19 +313,24 @@ function ShapeNode({
   style,
   shimmer,
 }: Extract<SkeletonNode, { kind: "rect" | "square" | "circle" }>) {
-  const cls =
-    kind === "circle"
-      ? styles.entrySkelCircle
-      : kind === "square"
-      ? styles.entrySkelSquare
-      : styles.entrySkelRect;
+  const extra: React.CSSProperties = {};
+
+  if (kind === "circle") extra.borderRadius = "9999px";
+  if (kind === "square") {
+    if (style?.aspectRatio == null) (extra as any).aspectRatio = "1";
+  }
+
+  if (style?.aspectRatio != null && style?.height == null) {
+    (extra as any).height = "auto";
+  }
 
   return (
     <div
-      className={[styles.entrySkelTile, cls].join(" ")}
+      className={styles.sliderSkeleton}
       style={{
         ...nodeStyleVars(style, shimmer),
         ...applyBoxMargins(style),
+        ...extra,
       }}
     />
   );
@@ -300,19 +356,15 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
       return (
         <div
           data-rmg-skel-node={nodeId}
-          className={[
-            styles.entrySkelGroup,
-            dir === "row" ? styles.entrySkelRow : styles.entrySkelCol,
-          ].join(" ")}
-          style={plainStyle}
+          className={styles.sliderSkeletonGroup}
+          style={{
+            display: "flex",
+            flexDirection: dir === "row" ? "row" : "column",
+            ...(plainStyle || {}),
+          }}
         >
           {Array.from({ length: count }).map((_, i) => (
-            <ShapeNode
-              key={i}
-              kind={tileShape}
-              style={node.tile?.style}
-              shimmer={node.tile?.shimmer}
-            />
+            <ShapeNode key={i} kind={tileShape} style={node.tile?.style} shimmer={node.tile?.shimmer} />
           ))}
         </div>
       );
@@ -321,12 +373,7 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
     case "stack":
     case "row":
     case "col": {
-      const dirCls =
-        node.kind === "row"
-          ? styles.entrySkelRow
-          : node.kind === "col"
-          ? styles.entrySkelCol
-          : styles.entrySkelStack;
+      const dir = node.kind === "row" ? "row" : "column";
 
       const nodeId = (node as any).__rmgNodeId as string | undefined;
       const plainStyle = isResponsiveContainerStyle(node.style)
@@ -336,8 +383,12 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
       return (
         <div
           data-rmg-skel-node={nodeId}
-          className={[styles.entrySkelGroup, dirCls].join(" ")}
-          style={plainStyle}
+          className={styles.sliderSkeletonGroup}
+          style={{
+            display: "flex",
+            flexDirection: dir,
+            ...(plainStyle || {}),
+          }}
         >
           {node.children.map((child, i) => (
             <LayoutNode key={i} node={child} />
@@ -346,18 +397,40 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
       );
     }
 
-    default: {
-      const _exhaustive: never = node;
+    default:
       return null;
-    }
   }
 }
 
-export function EntrySkeletonCard({ spec, className }: EntrySkeletonCardProps) {
-  const s = spec ?? defaultSpec();
+function defaultSliderSpec(): SliderSkeletonSpec {
+  const item: SkeletonNode = {
+    kind: "rect",
+    style: { width: "100%", height: "100%", borderRadius: 2 },
+  };
+
+  return {
+    layout: {
+      kind: "slider",
+      direction: "row",
+      item,
+      itemWrapStyle: undefined,
+    },
+    defaults: {
+      radius: 12,
+    },
+  };
+}
+
+export function SliderSkeletonCard({ count, maxSlots, rowStyle, spec }: SliderSkeletonCardProps) {
+  const s = spec ?? defaultSliderSpec();
+
+  const layoutIn: SliderSkeletonNode = s.layout ?? (defaultSliderSpec().layout as SliderSkeletonNode);
+
+  const reactId = React.useId();
+  const scopeId = React.useMemo(() => `ssk_${sanitizeIdForAttr(reactId)}`, [reactId]);
 
   const rootStyle: React.CSSProperties = {
-    ...(s.minHeight != null ? { minHeight: cssLen(s.minHeight) } : null),
+    ...(rowStyle || {}),
   };
 
   if (s.defaults?.backgroundColor) (rootStyle as any)["--rmg-skel-bg"] = s.defaults.backgroundColor;
@@ -370,51 +443,66 @@ export function EntrySkeletonCard({ spec, className }: EntrySkeletonCardProps) {
   if (sh?.bandSizePct != null) (rootStyle as any)["--rmg-skel-shimmer-band"] = `${sh.bandSizePct}%`;
   if (sh?.angleDeg != null) (rootStyle as any)["--rmg-skel-shimmer-angle"] = `${sh.angleDeg}deg`;
 
-  if (s.variant === "solid" && !s.layout) {
-    return (
-      <div
-        className={[styles.entrySkeletonTile, styles.entrySkeletonShimmer, className]
-          .filter(Boolean)
-          .join(" ")}
-        style={rootStyle}
-      />
-    );
-  }
-
-  const defaultLayout = React.useMemo<SkeletonNode>(() => ({
-    kind: "stack",
-    style: { gap: 12 },
-    children: [
-      { kind: "rect", style: { height: 18, width: "60%" } },
-      { kind: "rect", style: { height: 14, width: "90%" } },
-      { kind: "media", count: 2, direction: "row", style: { gap: 10, wrap: true } },
-    ],
-  }), []);
-
-  const layoutIn = s.layout ?? defaultLayout;
-
-  const reactId = React.useId();
-  const scopeId = React.useMemo(() => `skel_${sanitizeIdForAttr(reactId)}`, [reactId]);
-
   const { layout, responsiveCss } = React.useMemo(() => {
     let n = 0;
     const allocId = () => `n${++n}`;
     const collected: Array<{ nodeId: string; rules: Array<{ minWidth: number; css: string }> }> = [];
 
-    const withIds = collectResponsiveCss(layoutIn as SkeletonNode, allocId, collected);
+    const withIds = collectResponsiveCss(layoutIn, allocId, collected);
     const cssText = buildResponsiveCssText(scopeId, collected);
-
     return { layout: withIds, responsiveCss: cssText };
   }, [layoutIn, scopeId]);
 
+  const sliderNode = layout as Extract<SliderSkeletonNode, { kind: "slider" }>;
+
+  const sliderNodeId = (sliderNode as any).__rmgNodeId as string | undefined;
+  const plainSliderStyle = isResponsiveContainerStyle(sliderNode.style)
+    ? undefined
+    : containerStylesPlain(sliderNode.style as SkeletonContainerStyle | undefined);
+
+  const slotCount = sliderNode.count != null ? Math.max(0, sliderNode.count | 0) : Math.max(0, count | 0);
+
+  const dir = sliderNode.direction ?? "row";
+  const itemWrap = sliderNode.itemWrapStyle;
+
+  const slotsToRender = Math.max(0, maxSlots | 0);
+
   return (
     <div
-      data-rmg-entry-skel-scope={scopeId}
-      className={[styles.entrySkelRoot, className].filter(Boolean).join(" ")}
-      style={rootStyle}
+      data-rmg-slider-skel-scope={scopeId}
+      className={[styles.sliderSkeletonOverlay, s.className].filter(Boolean).join(" ")}
+      data-rmg-skel-part="overlay"
     >
       {responsiveCss ? <style dangerouslySetInnerHTML={{ __html: responsiveCss }} /> : null}
-      <LayoutNode node={layout} />
+
+      <div
+        data-rmg-skel-node={sliderNodeId}
+        className={styles.sliderSkeletonRow}
+        data-rmg-skel-part="row"
+        style={{
+          ...rootStyle,
+          ...(plainSliderStyle || {}),
+          display: "flex",
+          flexDirection: dir === "row" ? "row" : "column",
+        }}
+      >
+        {Array.from({ length: slotsToRender }).map((_, i) => (
+          <div
+            key={`rmg-slider-skel-${i}`}
+            className={styles.sliderSkeletonItem}
+            data-rmg-skel-slot={i + 1}
+            data-rmg-skel-visible-count={slotCount}
+            style={{
+              ...(itemWrap ? nodeStyleVars(itemWrap, undefined) : null),
+              ...(itemWrap ? applyBoxMargins(itemWrap) : null),
+              minWidth: 0,
+              minHeight: 0,
+            }}
+          >
+            <LayoutNode node={sliderNode.item} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

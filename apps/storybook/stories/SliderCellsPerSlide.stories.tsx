@@ -4,7 +4,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
-import { SliderLayout } from "../../../packages/react-motion-gallery/src/Gallery/slider";
+import { Slider } from "../../../packages/react-motion-gallery/src/Gallery/slider";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
 
 const ITEMS = [
@@ -67,10 +67,9 @@ function Demo() {
         Click any slide. Fullscreen should open. Close it, and it should fully reset.
       </p>
       <GalleryCore layout="slider" fullscreenItems={ITEMS}>
-        <SliderLayout
+        <Slider
           size={{
-            initialHeight: "100%",
-            aspectRatio: 1.6
+            aspectRatio: 1000/1600
           }}
           layout={{
             cellsPerSlide: { 0: 2, 600: 3, 900: 4 },
@@ -88,7 +87,7 @@ function Demo() {
               <Slide src={src} i={i} />
             </div>
           ))}
-        </SliderLayout>
+        </Slider>
         <FullscreenAddon sliderObject={sliderObject} cellsStateLength={ITEMS.length} />
       </GalleryCore>
     </div>

@@ -1,6 +1,6 @@
 import { ElementStyle } from "../shared/types/elements";
 import { MediaItem } from "../shared/types/media";
-import { IntroOptions, LoadingOptions } from "../shared/types/transitions";
+import type { EntrySkeletonSpec, SkeletonLength } from "./components/EntrySkeleton";
 
 export type EntryItem = {
   media?: MediaItem[];
@@ -38,6 +38,41 @@ export type EntryCardRenderArgs = {
   media: React.ReactNode;
 };
 
+export type EntrySkeletonResolverArgs = {
+  entry: EntryItem;
+  entryIndex: number;
+};
+
+export type EntriesLoadingOptions = {
+  isLoading?: boolean;
+  skeleton?:
+    | EntrySkeletonSpec
+    | ((args: EntrySkeletonResolverArgs) => EntrySkeletonSpec | null | undefined);
+  minHeight?: SkeletonLength;
+  nearMargin?: string;   // default "700px 0px"
+  viewMargin?: string;   // default "0px 0px"
+  threshold?: number;    // default 0.01
+  waitForDecode?: boolean; // default true
+  decodeTimeoutMs?: number; // default 8000
+  skeletonWrap?: ElementStyle;
+};
+
+export type IntroOptions = {
+  renderIntro?: (
+    args: { active: boolean; containerProps: React.HTMLAttributes<HTMLDivElement> },
+    content: React.ReactNode
+  ) => React.ReactNode;
+  staggerMs?: number;
+  durationMs?: number;
+  easing?: string;
+  staggerLimit?: number;
+};
+
+export type EntrySkeletonRenderArgs = {
+  entry: EntryItem;
+  entryIndex: number;
+}
+
 export type EntriesOptions = {
   items?: EntryItem[];
   mediaLayout?: EntryMediaLayout;
@@ -45,10 +80,13 @@ export type EntriesOptions = {
     card?: (args: EntryCardRenderArgs) => React.ReactNode;
     media?: (args: EntryMediaRenderArgs) => React.ReactNode;
     overlay?: (args: EntryOverlayRenderArgs) => React.ReactNode;
+    skeleton?: (args: EntrySkeletonRenderArgs) => React.ReactNode;
   };
   overlay?: ElementStyle;
-  loading?: LoadingOptions;
+  loading?: EntriesLoadingOptions;
   intro?: IntroOptions;
+  entryList?: ElementStyle;
+  entryRow?: ElementStyle;
 };
 
 export type SlideOwner = {

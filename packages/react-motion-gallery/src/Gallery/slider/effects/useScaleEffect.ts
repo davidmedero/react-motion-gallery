@@ -139,13 +139,11 @@ export function useScaleEffect({
     }
   }, [enabled, sliderRef, slidesRef, scaleAmount, offsetLocationRef, findBoundingPair]);
 
-  // run when key stuff changes
   React.useEffect(() => {
     applyPairScaleTween();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, scaleAmount, slidesLen, clonedLen]);
 
-  // optional cleanup when disabled
   React.useEffect(() => {
     if (enabled) return;
     const track = sliderRef.current;

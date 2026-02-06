@@ -4,7 +4,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
-import MasonryLayoutRuntime from "../../../packages/react-motion-gallery/src/Gallery/masonry";
+import Masonry from "../../../packages/react-motion-gallery/src/Gallery/masonry";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
 
 const COUNT = 18;
@@ -90,7 +90,7 @@ function Demo() {
             padding: 16,
           }}
         >
-          <MasonryLayoutRuntime
+          <Masonry
             columns={{ xs: 2, md: 3, lg: 4 }}
             gap={10 as any}
             loading={{
@@ -112,7 +112,7 @@ function Demo() {
                 <MasonryCell src={src} i={i} />
               </div>
             ))}
-          </MasonryLayoutRuntime>
+          </Masonry>
         </div>
 
         <FullscreenAddon sliderObject={sliderObject} cellsStateLength={ITEMS.length} />

@@ -1,12 +1,10 @@
 import * as React from 'react';
-import styles from '../styles.module.css';
+import styles from './Masonry.module.css';
 import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
 import { parseNumberLike, resolveNumberFromResponsive } from '../shared/responsive';
-
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
-
-import { Masonry, DefaultMasonrySkeleton } from './Masonry';
+import { MasonryCore, DefaultMasonrySkeleton } from './Masonry';
 
 type MasonryOptions = {
   columns?: ResponsiveNumber;
@@ -76,7 +74,6 @@ export function MasonryLayout({
   const [inView, setInView] = React.useState(false);
   const [mediaReady, setMediaReady] = React.useState(false);
 
-  // observe whichever node is actually mounted
   useInViewOnce(true, localRootRef as any, () => setInView(true));
   useMediaReady(true, localRootRef as any, setMediaReady);
 
@@ -137,7 +134,6 @@ export function MasonryLayout({
     .filter(Boolean)
     .join(' ');
 
-  // merged ref so both localRootRef + user rootRef get the node
   const mergedRootRef = React.useCallback((node: HTMLDivElement | null) => {
     localRootRef.current = node;
     assignRef(masonry.rootRef as any, node);
@@ -166,7 +162,7 @@ export function MasonryLayout({
   return (
     <div style={shimmerStyleVars}>
       {loadingNode}
-      <Masonry
+      <MasonryCore
         items={items}
         masonryColumns={masonry.columns}
         masonryGap={masonry.gap}

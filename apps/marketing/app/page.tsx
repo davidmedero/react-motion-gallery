@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 import Image from "next/image";
-import { Gallery } from "../../../packages/react-motion-gallery/src";
 import * as React from "react";
 import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
 import { Entries, flattenEntries } from "../../../packages/react-motion-gallery/src/Gallery/entries";
 import { createEntriesSliderMedia } from "../../../packages/react-motion-gallery/src/Gallery/entries/media/slider";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
+import { Slider } from "../../../packages/react-motion-gallery/src/Gallery/slider";
 
 type Entry = {
   id: string;
@@ -734,7 +734,6 @@ export default function Home() {
           border: "1px solid rgba(0,0,0,0.12)",
           borderRadius: 12,
           padding: 12,
-          marginBottom: 16,
           background: "#fff",
         }}
       >
@@ -828,9 +827,154 @@ export default function Home() {
     { id: "img-6", src: "https://picsum.photos/seed/6/900/500" },
     { id: "img-7", src: "https://picsum.photos/seed/7/900/500" }
   ];
+
+  const ITEMS = [
+  "https://picsum.photos/id/1018/1000/1500",
+  "https://picsum.photos/id/1025/1000/1500",
+  "https://picsum.photos/id/1035/1000/1500",
+  "https://picsum.photos/id/1043/1000/1500",
+  "https://picsum.photos/id/1069/1000/1500",
+  "https://picsum.photos/id/1074/1000/1500",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <div
+      style={{
+        height: "100%",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
+      {/* image */}
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100%",
+          flex: "1 1 auto",
+          minHeight: 0,
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
+
+      {/* text */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            lineHeight: 1.2,
+          }}
+        >
+          Slide title {i + 1}
+        </div>
+
+        <div style={{ fontSize: 12, opacity: 0.8, lineHeight: 1.3 }}>
+          This is a short description under the image. It can wrap to two lines.
+        </div>
+      </div>
+    </div>
+  );
+}
+
   return (
     <> 
-      <p className="home-intro">
+
+        <Slider
+          size={{
+            // initialHeight: "100%",
+            aspectRatio: 2/3
+          }}
+          scroll={{
+            freeScroll: true
+          }}
+          controls={{
+            dots: {
+              root: {
+                style: {
+                  bottom: '-45px'
+                }
+              }
+            }
+          }}
+          layout={{
+            cellsPerSlide: { 0: 2, 600: 3, 900: 4 },
+            gap: 12,
+          }}
+          transitions={{
+            loading: {
+              // isLoading: true,
+              skeletonCount: { 0: 2, 600: 3, 900: 4 },
+              skeleton: {
+                defaults: {
+                  // these hook into your existing shimmer vars (since your sliderSkeleton uses --rmg-shimmer-*)
+                  radius: 12,
+                },
+                layout: {
+                  kind: "slider",
+                  // optional: make gaps match the real slide gap if you want
+                  style: { gap: 12 },
+                  // each slot = column layout: image block + text block
+                  item: {
+                    kind: "col",
+                    style: { gap: 10 },
+                    children: [
+                      // image placeholder (dominant area)
+                      {
+                        kind: "rect",
+                        style: {
+                          width: "100%",
+                          aspectRatio: 2/3,
+                          borderRadius: 12,
+                        },
+                      },
+                      // text placeholders (fixed heights)
+                      {
+                        kind: "col",
+                        style: { gap: 6 },
+                        children: [
+                          // title line
+                          {
+                            kind: "rect",
+                            style: {
+                              width: "70%",
+                              height: 14,
+                              borderRadius: 6,
+                            },
+                          },
+                          // description line
+                          {
+                            kind: "rect",
+                            style: {
+                              width: "90%",
+                              height: 12,
+                              borderRadius: 6,
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  // optional: ensure the slot wrapper doesn't add padding/margins
+                  itemWrapStyle: undefined,
+                },
+              },
+            }
+          }}
+        >
+          {ITEMS.map((src, i) => (
+            <div key={src} style={{ height: "100%" }}>
+              <Slide src={src} i={i} />
+            </div>
+          ))}
+        </Slider>
+
+      <p className="home-intro mt-50!">
         <span className="intro-line">
           A high-performance image and video gallery library with fluid motion,
           responsive layouts, seamless transitions, and immersive fullscreen
@@ -1493,13 +1637,49 @@ fullscreenCaptionHeight?: number;`}</code>
                       height: "320px",
                       display: "block",
                       objectFit: "cover",
-                      borderRadius: 14,
+                      borderRadius: 12,
                     }}
                     data-entry={entryIndex}
                     data-media={mediaIndex}
                   />
                 )
               },
+              loading: {
+                isLoading: false,
+                skeletonWrap: {
+                  style: {
+                    backgroundColor: '#fff',
+                    height: 380,
+                    border: '1px solid rgba(0, 0, 0, 0.12)'
+                  }
+                },
+                skeleton: ({ entry }: any) => ({
+                  layout: {
+                    kind: "stack",
+                    style: { padding: '12px' },
+                    children: [
+                      {
+                        kind: "row",
+                        style: { justify: "space-between", align: "center", width: "100%", gap: 12, padding: '6px 0 6px 0' },
+                        children: [
+                          { kind: "rect", style: { height: 12, width: 60 } },
+                          { kind: "rect", style: { height: 12, width: 60 } },
+                        ],
+                      },
+                      {
+                        kind: "media",
+                        count: Math.min(3, entry?.media?.length ?? 2),
+                        direction: "row",
+                        style: {
+                          0: { gap: 20, justify: "", padding: '10px 0 0 0' },
+                          925: { justify: `${entry?.media?.length === 2 ? 'center' : ''}`, align: "center" },
+                        },
+                        tile: { shape: "rect", style: { width: 407, height: 320 } },
+                      },
+                    ],
+                  },
+                }),
+              }
             }}
             fullscreen={{ enabled: true }}
             renderMediaContainer={mediaRenderer}
@@ -1509,7 +1689,7 @@ fullscreenCaptionHeight?: number;`}</code>
         <FullscreenAddon sliderObject={sliderObject} cellsStateLength={fullscreenItems.length} />
       </GalleryCore>
     </div>
-      <div className="mb-100"></div>
+      <div className="mb-600"></div>
     </>
   );
 }

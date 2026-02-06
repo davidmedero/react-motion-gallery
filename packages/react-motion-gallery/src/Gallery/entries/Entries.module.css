@@ -1,0 +1,164 @@
+.entryRow {
+  position: relative;
+  min-height: var(--rmg-entry-min-height, 260px);
+}
+
+.entryRow[data-rmg-entry-mounted="1"] .entrySkeletonWrap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  height: auto;
+}
+
+.entrySkeletonWrap {
+  position: relative;
+  display: block;
+  opacity: 1;
+  transition: opacity 150ms linear;
+  pointer-events: none;
+  z-index: 0;
+  height: var(--rmg-entry-min-height, 260px);
+  border-radius: 12px;
+  background-color: var(--rmg-entry-skeleton-bg, transparent);
+  overflow: hidden;
+}
+
+.entryInner {
+  position: relative;
+  opacity: 0;
+  pointer-events: none;
+  min-height: var(--rmg-entry-min-height, 260px);
+  transition:
+    opacity var(--rmg-entry-intro-duration, 700ms)
+      var(--rmg-entry-intro-easing, cubic-bezier(.4,0,.22,1));
+  transition-delay: 0ms;
+  z-index: 0;
+}
+
+.entryRow[data-rmg-entry-ready="1"] .entrySkeletonWrap {
+  opacity: 0;
+}
+
+.entryRow[data-rmg-entry-ready="1"] .entryInner {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: calc(
+    var(--rmg-entry-intro-index, 0) * var(--rmg-entry-intro-stagger, 200ms)
+  );
+}
+
+.entryList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.entrySkeletonTile {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.entrySkeletonShimmer {
+  position: relative;
+  overflow: hidden;
+  border-radius: inherit;
+  --rmg-shimmer-c1: #f0f2f5;
+  --rmg-shimmer-c2: #e6e9ef;
+  --rmg-shimmer-c3: #f0f2f5;
+  --rmg-shimmer-size: 400% 100%;
+  --rmg-shimmer-duration: 1.2s;
+  --rmg-shimmer-timing: linear;
+  background: linear-gradient(
+    90deg,
+    var(--rmg-shimmer-c1) 25%,
+    var(--rmg-shimmer-c2) 37%,
+    var(--rmg-shimmer-c3) 63%
+  );
+  background-size: var(--rmg-shimmer-size);
+  animation: rmgShimmer var(--rmg-shimmer-duration)
+    infinite var(--rmg-shimmer-timing);
+}
+
+.entrySkelRoot {
+  --rmg-skel-bg: rgba(0, 0, 0, 0.08);
+  --rmg-skel-hi: rgba(0, 0, 0, 0.12);
+  --rmg-skel-radius: 12px;
+  --rmg-skel-shimmer-enabled: 1;
+  --rmg-skel-shimmer-duration: 1200ms;
+  --rmg-skel-shimmer-band: 40%;
+  --rmg-skel-shimmer-angle: 25deg;
+  width: 100%;
+}
+
+.entrySkelGroup {
+  display: flex;
+  min-width: 0;
+}
+
+.entrySkelStack {
+  flex-direction: column;
+  width: 100%;
+}
+
+.entrySkelRow {
+  flex-direction: row;
+  width: 100%;
+}
+
+.entrySkelCol {
+  flex-direction: column;
+  width: 100%;
+}
+
+.entrySkelTile {
+  flex: 0 0 auto;
+  position: relative;
+  display: block;
+  background: var(--rmg-skel-bg, rgba(0, 0, 0, 0.08));
+  border-radius: var(--rmg-skel-radius);
+  overflow: hidden;
+}
+
+.entrySkelTile::after {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  opacity: calc(var(--rmg-skel-shimmer-enabled) * 1);
+  transform: rotate(var(--rmg-skel-shimmer-angle));
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--rmg-skel-hi, rgba(255, 255, 255, 0.18)) 50%,
+    transparent 100%
+  );
+  width: var(--rmg-skel-shimmer-band);
+  left: -60%;
+  animation: rmg-skel-shimmer var(--rmg-skel-shimmer-duration) linear infinite;
+}
+
+@keyframes rmg-skel-shimmer {
+  0% {
+    left: -60%;
+  }
+  100% {
+    left: 160%;
+  }
+}
+
+.entrySkelRect {
+  flex: 0 0 auto;
+  width: 100%;
+  height: 16px;
+}
+
+.entrySkelSquare {
+  width: 48px;
+  height: 48px;
+}
+
+.entrySkelCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+}

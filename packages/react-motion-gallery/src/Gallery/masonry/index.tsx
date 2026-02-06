@@ -7,11 +7,9 @@ import { BREAKPOINT_MAP } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { useOptionalGalleryCore } from "../core";
 import { DEFAULT_MASONRY } from "./defaults";
-import type { MasonryOptions } from "./types";
+import type { IntroOptions, LoadingOptions, MasonryOptions } from "./types";
 import { MasonryLayout } from "./MasonryLayout";
 import { buildMasonryChildren } from "./buildMasonryChildren";
-import { normalizeLoading } from "../shared/normalize/normalizeLoading";
-import { normalizeIntro } from "../shared/normalize/normalizeIntro";
 
 type Props = MasonryOptions & {
   children?: React.ReactNode;
@@ -20,7 +18,7 @@ type Props = MasonryOptions & {
 
 type Cell = { id: string; node: React.ReactNode };
 
-export default function MasonryLayoutRuntime(props: Props) {
+export default function Masonry(props: Props) {
   const { children, breakpoints, ...masonryOptions } = props;
 
   const core = useOptionalGalleryCore();
@@ -126,9 +124,28 @@ export default function MasonryLayoutRuntime(props: Props) {
 
   const viewportWidth = useViewportWidth();
 
+  function normalizeLoading(src?: LoadingOptions) {
+    return {
+      isLoading: src?.isLoading,
+      renderLoading: src?.renderLoading,
+      shimmer: src?.shimmer,
+      ratios: src?.ratios
+    };
+  }
+
   const masonryLoading = React.useMemo(() => {
     return normalizeLoading((masonryObject as any).loading ?? (masonryObject as any).transitions?.loading);
   }, [masonryObject]);
+
+  function normalizeIntro(src?: IntroOptions) {
+    return {
+      renderIntro: src?.renderIntro,
+      staggerMs: src?.staggerMs ?? 40,
+      transform: src?.transform ?? "translateY(10px) scale(0.99)",
+      durationMs: src?.durationMs ?? 300,
+      easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
+    };
+  }
 
   const masonryIntro = React.useMemo(() => {
     return normalizeIntro((masonryObject as any).intro ?? (masonryObject as any).transitions?.intro);

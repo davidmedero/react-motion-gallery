@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import type { APITypes } from "plyr-react";
-
 import { DEFAULT_FULLSCREEN } from "./defaults";
 import { createFullscreenSliderSub } from "./fullscreenSliderSub";
 import { createGestureShield } from "./gestureShield";
@@ -23,7 +22,7 @@ import type { IndexMode } from "../api/types";
 import type { SliderOptions } from "../slider/types";
 import type { FullscreenSliderHandle } from "./FullscreenSlider";
 import FullscreenRuntime from "./FullscreenRuntime";
-import styles from '../styles.module.css'
+import styles from './Fullscreen.module.css'
 
 import { FullscreenOpenRequest, useGalleryCore } from "../core";
 
@@ -47,7 +46,6 @@ export type UseFullscreenArgs = {
 export function useFullscreenController(args: UseFullscreenArgs) {
   const { fullscreen, slider, sliderObject, cellsStateLength } = args;
 
-  // ✅ Stop passing a custom bridge – use the real core context.
   const core = useGalleryCore();
 
   const {
@@ -82,11 +80,9 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   const entriesAdapter = adapterFor("entries");
   const entryCtx = entriesAdapter?.getEntryContext?.() ?? {};
 
-  // entryCtx can be {} if adapter isn't registered yet (common in Storybook)
   const fallbackEntryMapRef = useRef<any>(null);
 
   const safeEntriesObject = useMemo(() => {
-    // must at least have .render to satisfy overlay hook
     return entryCtx.entriesObject ?? { render: {}, mediaLayout: "slider" };
   }, [entryCtx.entriesObject]);
 
@@ -97,15 +93,13 @@ export function useFullscreenController(args: UseFullscreenArgs) {
     safeEntriesObject.mediaLayout ??
     "slider";
 
-  // Only mount overlay if we truly have entries context from adapter
   const canMountEntryOverlay =
     layout === "entries" &&
-    !!entryCtx.entriesObject &&         // <-- critical
-    !!entryCtx.entryMapRef;             // <-- critical
+    !!entryCtx.entriesObject &&
+    !!entryCtx.entryMapRef;
 
   const getOwnerSliderHandle = useCallback(
     (index: number) => {
-      // entries slider owner
       if (layout === "entries" && safeEntryMediaLayout === "slider") {
         const map = safeEntryMapRef.current;
         const link = map?.[index] ?? null;
@@ -117,7 +111,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         return entryHandle ?? null;
       }
 
-      // default: base slider
       return sliderApiRef.current ?? null;
     },
     [layout, safeEntryMediaLayout, safeEntryMapRef, entryCtx.entrySliderRefs, sliderApiRef]
@@ -125,14 +118,12 @@ export function useFullscreenController(args: UseFullscreenArgs) {
 
   const fsSub = useMemo(() => createFullscreenSliderSub(0), []);
   const [slideIndex, setSlideIndex] = useState(0);
-
   const isClick = useRef(false);
   const isZoomClick = useRef(false);
   const imageRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
   const [showFullscreenSlider, setShowFullscreenSlider] = useState(false);
   const fullscreenSliderApi = useRef<FullscreenSliderHandle>(null);
   const isZooming = useRef(false);
-
   const expandableImgRefs = core.expandableImgRefs;
   const overlayDivRef = useRef<HTMLDivElement | null>(null);
   const duplicateImgRef = useRef<HTMLElement | null>(null);
@@ -140,15 +131,12 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   const counterRef = useRef<HTMLElement | null>(null);
   const leftChevronRef = useRef<HTMLElement | null>(null);
   const rightChevronRef = useRef<HTMLElement | null>(null);
-
   const [showFullscreenModal, setShowFullscreenModal] = useState(false);
   const [wrappedItems, setWrappedItems] = useState<MediaItem[]>([]);
   const windowSize = useWindowSize();
-
   const scaleRef = useRef(1);
   const panRef = useRef({ x: 0, y: 0 });
   const previousZoom = useRef({ x: 0, y: 0 });
-
   const sliderForFullscreen = useRef<HTMLDivElement | null>(null);
   const slidesForFullscreen = useRef<
     { cells: { element: HTMLElement; index: number }[]; target: number }[]
@@ -158,21 +146,16 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   const sliderXForFullscreen = useRef<number>(0);
   const sliderVelocityForFullscreen = useRef<number>(0);
   const isWrappingForFullscreen = useRef<boolean>(false);
-
   const fsIndexRef = useRef<number>(fsSub.get());
   const [fsFadeOpening, setFsFadeOpening] = useState(false);
   const [closingModal, setClosingModal] = useState(false);
-
   const changingSlides = useRef(false);
-
   const [isZoomed, setIsZoomed] = useState(false);
   const isZoomedRef = useRef(false);
-
   const currentImage = useRef<HTMLDivElement | null>(null);
   const axisRef = useRef<AxisType | null>(null);
   const pointerDownRef = useRef(false);
   const interactionModeRef = useRef<"idle" | "drag" | "wheel" | "programmatic">("idle");
-
   const locX = useRef<Vector1DType | null>(null);
   const locY = useRef<Vector1DType | null>(null);
   const prevX = useRef<Vector1DType | null>(null);
@@ -181,32 +164,23 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   const offY = useRef<Vector1DType | null>(null);
   const tgtX = useRef<Vector1DType | null>(null);
   const tgtY = useRef<Vector1DType | null>(null);
-
   const overlayCaptionRef = useRef<HTMLDivElement | null>(null);
   const overlayCaptionRootRef = useRef<ReturnType<typeof createRoot> | null>(null);
-
   const fsThumbContainerRef = useRef<HTMLDivElement | null>(null);
   const epoch = useOpenEpoch(showFullscreenModal);
-
   const suppressLoopRef = useRef(false);
-
   const shieldCleanupRef = useRef<null | (() => void)>(null);
   const shieldRef = useRef<ReturnType<typeof createGestureShield> | null>(null);
-
   const bodyX = useRef<ScrollBodyType | null>(null);
   const bodyY = useRef<ScrollBodyType | null>(null);
   const boundsX = useRef<ScrollBoundsType | null>(null);
   const boundsY = useRef<ScrollBoundsType | null>(null);
-
   const isAnimatingRef = useRef(false);
   const animRef = useRef<AnimationsType | null>(null);
-
   const wrappedModePlyrRefs = useRef<(APITypes | null)[]>([]);
   const singleModePlyrRefs = useRef<(APITypes | null)[]>([]);
-
   const suppressNextClickRef = useRef(false);
   const cells = useRef<{ element: HTMLElement; index: number }[]>([]);
-
   const [fsIntroReq, setFsIntroReq] = useState<FsIntroRequest>(null);
   const requestFsCloseRef = useRef<null | (() => void)>(null);
 
@@ -235,8 +209,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       setIsZoomed(next);
     }
   }, []);
-
-  const viewportWidth = useViewportWidth();
 
   function resolveFsCaptionPlacement(
     placement: FsCaptionPlacement | undefined,
@@ -327,7 +299,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         imgEl = (expandableImgRefs.current[gridIndex] ?? null) as HTMLImageElement | null;
       }
 
-      // For now keep your original behavior (intro requires img)
       if (!imgEl) return;
 
       let fullscreenIndex = gridIndex;
@@ -337,7 +308,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
 
       isClick.current = true;
 
-      // ✅ global state says fullscreen is open
       setFullscreenOpen(true);
 
       setShowFullscreenModal(true);
@@ -401,7 +371,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
     return () => (unsub as any)?.();
   }, [fs.enabled, fsOpenSub, openFullscreenAt, setFullscreenOpen, syncFullscreenSourceFromIndex]);
 
-  // ✅ when modal closes, mark global state closed
   useEffect(() => {
     if (showFullscreenModal) return;
     setFullscreenOpen(false);

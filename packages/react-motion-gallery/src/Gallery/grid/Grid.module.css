@@ -1,0 +1,156 @@
+.gridRoot {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--rmg-grid-min, 160px), 1fr)
+  );
+  gap: var(--rmg-grid-gap, 8px);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--rmg-grid-min, 160px), 1fr)
+  );
+  gap: var(--rmg-grid-gap, 8px);
+}
+
+.gridItem {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.gridItem img,
+.gridItem video {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.gridSkeletonOverlay {
+  position: relative;
+  width: 100%;
+}
+
+.gridSkeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--rmg-grid-min, 160px), 1fr)
+  );
+  gap: var(--rmg-grid-gap, 8px);
+}
+
+.gridSkeletonItem {
+  position: relative;
+  width: 100%;
+}
+
+@keyframes rmgShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gridSkeletonItem {
+    animation: none;
+  }
+}
+
+.gridSkelTile {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  background: var(--rmg-skel-bg, rgba(0, 0, 0, 0.08));
+  border-radius: var(--rmg-skel-radius, 12px);
+  overflow: hidden;
+}
+
+.gridSkelRect {}
+
+.gridSkelSquare {
+  aspect-ratio: 1 / 1;
+}
+
+.gridSkelCircle {
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+}
+
+.gridSkelGroup {
+  display: flex;
+  min-width: 0;
+}
+
+.gridSkelRow {
+  flex-direction: row;
+  align-items: center;
+}
+
+.gridSkelCol {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.gridSkelStack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.gridSkelShimmer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: calc(var(--rmg-skel-shimmer-enabled, 1) * 1);
+  background: linear-gradient(
+    var(--rmg-skel-shimmer-angle, 25deg),
+    transparent 0%,
+    var(--rmg-skel-hi, rgba(255, 255, 255, 0.16)) 50%,
+    transparent 100%
+  );
+  transform: translateX(-120%);
+  animation: rmg_grid_skel_shimmer var(--rmg-skel-shimmer-duration, 1200ms) linear infinite;
+  background-size: var(--rmg-skel-shimmer-band, 40%) 100%;
+}
+
+@keyframes rmg_grid_skel_shimmer {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+.introContainer {
+  opacity: 0;
+}
+
+.introActive {
+  opacity: 1;
+  transition:
+    opacity var(--rmg-intro-duration, 420ms)
+      var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
+}
+
+.introContainer [data-rmg-idx] {
+  opacity: 0;
+  transform: var(--rmg-intro-transform, translateY(10px) scale(0.99));
+  transition:
+    opacity 300ms cubic-bezier(.4, 0, .22, 1),
+    transform 300ms cubic-bezier(.4, 0, .22, 1);
+  transition-delay: calc(
+    var(--rmg-intro-index, 0) * var(--rmg-intro-stagger, 40ms)
+  );
+  will-change: opacity, transform;
+}
+
+.introContainer.introActive [data-rmg-idx] {
+  opacity: 1;
+  transform: none;
+}

@@ -6,8 +6,9 @@ export default defineConfig({
   splitting: true,
   treeshake: true,
   dts: true,
-  sourcemap: true,
+  sourcemap: false,
   clean: true,
-  external: ["react", "react-dom"],
+  minify: true,
   metafile: true,
+  external: ["react", "react-dom", "react/jsx-runtime"],
 });

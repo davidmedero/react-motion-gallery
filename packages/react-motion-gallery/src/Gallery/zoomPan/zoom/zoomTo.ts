@@ -1,5 +1,5 @@
 import type React from "react";
-import { getCurrentTransform, baseFitSizeC, clampNum } from "../core/utils";
+import { getCurrentTransform, baseFitSize, clampNum } from "../core/utils";
 import { getPrimaryImgEl, gapAllEdges } from "../core/dom";
 
 export type ZoomPoint = { x: number; y: number };
@@ -24,38 +24,26 @@ export type ZoomCtx = {
       clickZoomLevel: number;
     };
   };
-
   currentImage: RefLike<HTMLElement | null>;
-
   scaleRef: RefLike<number>;
   setScale: (n: number) => void;
-
   previousZoom: RefLike<{ x: number; y: number }>;
   suppressLoopRef: RefLike<boolean>;
-
-  // vectors/bodies/bounds
   locX: RefLike<VectorLike | null>;
   prevX: RefLike<VectorLike | null>;
   offX: RefLike<VectorLike | null>;
   tgtX: RefLike<VectorLike | null>;
-
   locY: RefLike<VectorLike | null>;
   prevY: RefLike<VectorLike | null>;
   offY: RefLike<VectorLike | null>;
   tgtY: RefLike<VectorLike | null>;
-
   bodyX: RefLike<any>;
   bodyY: RefLike<any>;
-
   boundsX: RefLike<any>;
   boundsY: RefLike<any>;
-
-  // factories
   Vector1D: (n: number) => VectorLike;
   ScrollBody: (...args: any[]) => any;
   ScrollBounds: (...args: any[]) => any;
-
-  // math helpers owned elsewhere
   boundsForCurrent: (
     scale: number,
     baseW: number,
@@ -63,8 +51,6 @@ export type ZoomCtx = {
     containerW: number,
     containerH: number
   ) => { x: any; y: any; povX: PovLike; povY: PovLike };
-
-  // rendering/animation
   renderPan: (x: number, y: number) => void;
   animRef: RefLike<{ start(): void; stop(): void; resetBlend(): void } | null>;
 };
@@ -168,7 +154,7 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
   const cx = centerPoint.x - rect.left;
   const cy = centerPoint.y - rect.top;
 
-  const { baseW, baseH } = baseFitSizeC(imgEl, containerW, containerH);
+  const { baseW, baseH } = baseFitSize(imgEl, containerW, containerH);
   const offXc = (containerW - baseW) / 2;
   const offYc = (containerH - baseH) / 2;
 

@@ -8,6 +8,7 @@ import type { ThumbnailsOptions } from "./thumbnails/types";
 import { ElementStyle } from "../shared/types/elements";
 import { IndexMode } from "../api/types";
 import { RefObject } from "react";
+import { SliderSkeletonSpec } from "./SliderSkeleton";
 
 export type ResponsiveHeightRule = { query: string; height: string };
 
@@ -99,10 +100,8 @@ export type SliderAuto = {
 export type SliderLoadingOptions = {
   isLoading?: boolean;
   skeletonCount?: ResponsiveNumber;
-  renderLoading?: (args: {
-    layout: "slider" | "thumbnails";
-    count: number;
-  }) => React.ReactNode;
+  renderLoading?: () => React.ReactNode;
+  skeleton?: SliderSkeletonSpec;
   shimmer?: {
     radius?: number | string;
     c1?: string;

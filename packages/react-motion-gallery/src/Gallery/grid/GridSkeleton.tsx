@@ -1,5 +1,5 @@
 import * as React from "react";
-import styles from "../Entries.module.css";
+import styles from "./Grid.module.css";
 
 export type SkeletonLength = number | string;
 
@@ -22,7 +22,7 @@ export type SkeletonBaseStyle = {
   marginBottom?: SkeletonLength;
   marginLeft?: SkeletonLength;
   alignSelf?: React.CSSProperties["alignSelf"];
-  aspectRatio?: number | string;
+  aspectRatio?: SkeletonLength;
 };
 
 export type SkeletonContainerStyle = {
@@ -38,6 +38,16 @@ export type SkeletonContainerStyle = {
 export type SkeletonContainerStyleResponsive =
   | SkeletonContainerStyle
   | Record<string, SkeletonContainerStyle>;
+
+export type GridSkeletonNode =
+  | {
+      kind: "grid";
+      style?: SkeletonContainerStyleResponsive;
+      count?: number;
+      item: SkeletonNode;
+      itemWrapStyle?: SkeletonBaseStyle;
+    }
+  | SkeletonNode;
 
 export type SkeletonNode =
   | {
@@ -62,10 +72,9 @@ export type SkeletonNode =
       };
     };
 
-export type EntrySkeletonSpec = {
-  layout?: SkeletonNode;
-  variant?: "solid";
-  minHeight?: SkeletonLength;
+export type GridSkeletonSpec = {
+  className?: string;
+  layout?: GridSkeletonNode;
   defaults?: {
     backgroundColor?: string;
     highlightColor?: string;
@@ -74,14 +83,11 @@ export type EntrySkeletonSpec = {
   };
 };
 
-export type EntrySkeletonCardProps = {
-  spec?: EntrySkeletonSpec;
-  className?: string;
+export type GridSkeletonCardProps = {
+  count: number;
+  gridStyle?: React.CSSProperties;
+  spec?: GridSkeletonSpec;
 };
-
-function defaultSpec(): EntrySkeletonSpec {
-  return { variant: "solid", minHeight: 260 };
-}
 
 function cssLen(v: SkeletonLength | undefined): string | undefined {
   if (v == null) return undefined;
@@ -109,10 +115,10 @@ function nodeStyleVars(
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
 
-  if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio;
+  if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio as any;
 
-  if (base?.width != null) s.width = cssLen(base.width);
-  if (base?.maxWidth != null) s.maxWidth = cssLen(base.maxWidth);
+  if (base?.width != null) (s as any).inlineSize = cssLen(base.width);
+  if (base?.maxWidth != null) (s as any).maxInlineSize = cssLen(base.maxWidth);
   if (base?.height != null) s.height = cssLen(base.height);
   if (base?.maxHeight != null) s.maxHeight = cssLen(base.maxHeight);
 
@@ -174,10 +180,10 @@ function containerStyleToCssDecls(style: SkeletonContainerStyle): string {
 }
 
 function collectResponsiveCss(
-  node: SkeletonNode,
+  node: GridSkeletonNode,
   allocId: () => string,
   out: Array<{ nodeId: string; rules: Array<{ minWidth: number; css: string }> }>
-): SkeletonNode {
+): GridSkeletonNode {
   switch (node.kind) {
     case "rect":
     case "square":
@@ -219,15 +225,37 @@ function collectResponsiveCss(
           .sort((a, b) => a - b)
           .map((minWidth) => ({
             minWidth,
-            css: containerStyleToCssDecls(style[minWidth] || {}),
+            css: containerStyleToCssDecls((style as any)[String(minWidth)] || {}),
           }))
           .filter((r) => r.css.length > 0);
 
         if (rules.length) out.push({ nodeId: id, rules });
       }
 
-      const children = node.children.map((c) => collectResponsiveCss(c, allocId, out));
+      const children = node.children.map((c) => collectResponsiveCss(c, allocId, out)) as any;
       return { ...(node as any), __rmgNodeId: id, children };
+    }
+
+    case "grid": {
+      const id = allocId();
+      const style = node.style;
+
+      if (isResponsiveContainerStyle(style)) {
+        const rules = Object.keys(style)
+          .map((k) => +k)
+          .filter((n) => Number.isFinite(n) && n >= 0)
+          .sort((a, b) => a - b)
+          .map((minWidth) => ({
+            minWidth,
+            css: containerStyleToCssDecls((style as any)[String(minWidth)] || {}),
+          }))
+          .filter((r) => r.css.length > 0);
+
+        if (rules.length) out.push({ nodeId: id, rules });
+      }
+
+      const item = collectResponsiveCss(node.item, allocId, out) as SkeletonNode;
+      return { ...(node as any), __rmgNodeId: id, item };
     }
 
     default: {
@@ -243,12 +271,11 @@ function buildResponsiveCssText(
 ) {
   if (!rules.length) return "";
 
-  const scopeSel = `[data-rmg-entry-skel-scope="${escapeAttrValue(scopeId)}"]`;
+  const scopeSel = `[data-rmg-grid-skel-scope="${escapeAttrValue(scopeId)}"]`;
   const lines: string[] = [];
 
   for (const nodeRule of rules) {
     const nodeSel = `${scopeSel} [data-rmg-skel-node="${escapeAttrValue(nodeRule.nodeId)}"]`;
-
     for (const r of nodeRule.rules) {
       lines.push(`@media (min-width:${r.minWidth}px){${nodeSel}{${r.css}}}`);
     }
@@ -262,16 +289,20 @@ function ShapeNode({
   style,
   shimmer,
 }: Extract<SkeletonNode, { kind: "rect" | "square" | "circle" }>) {
-  const cls =
+  const shapeCls =
     kind === "circle"
-      ? styles.entrySkelCircle
+      ? styles.gridSkelCircle
       : kind === "square"
-      ? styles.entrySkelSquare
-      : styles.entrySkelRect;
+      ? styles.gridSkelSquare
+      : styles.gridSkelRect;
 
   return (
     <div
-      className={[styles.entrySkelTile, cls].join(" ")}
+      className={[
+        styles.gridSkelTile,
+        shapeCls,
+        styles.gridSkelShimmer,
+      ].join(" ")}
       style={{
         ...nodeStyleVars(style, shimmer),
         ...applyBoxMargins(style),
@@ -301,8 +332,8 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
         <div
           data-rmg-skel-node={nodeId}
           className={[
-            styles.entrySkelGroup,
-            dir === "row" ? styles.entrySkelRow : styles.entrySkelCol,
+            styles.gridSkelGroup,
+            dir === "row" ? styles.gridSkelRow : styles.gridSkelCol,
           ].join(" ")}
           style={plainStyle}
         >
@@ -323,10 +354,10 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
     case "col": {
       const dirCls =
         node.kind === "row"
-          ? styles.entrySkelRow
+          ? styles.gridSkelRow
           : node.kind === "col"
-          ? styles.entrySkelCol
-          : styles.entrySkelStack;
+          ? styles.gridSkelCol
+          : styles.gridSkelStack;
 
       const nodeId = (node as any).__rmgNodeId as string | undefined;
       const plainStyle = isResponsiveContainerStyle(node.style)
@@ -336,7 +367,7 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
       return (
         <div
           data-rmg-skel-node={nodeId}
-          className={[styles.entrySkelGroup, dirCls].join(" ")}
+          className={[styles.gridSkelGroup, dirCls].join(" ")}
           style={plainStyle}
         >
           {node.children.map((child, i) => (
@@ -346,18 +377,40 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
       );
     }
 
-    default: {
-      const _exhaustive: never = node;
+    default:
       return null;
-    }
   }
 }
 
-export function EntrySkeletonCard({ spec, className }: EntrySkeletonCardProps) {
-  const s = spec ?? defaultSpec();
+function defaultGridSpec(): GridSkeletonSpec {
+  const item: SkeletonNode = {
+    kind: "rect",
+    style: { width: "100%", aspectRatio: 1, borderRadius: 12 },
+  };
+
+  return {
+    layout: {
+      kind: "grid",
+      item,
+      itemWrapStyle: undefined,
+    },
+    defaults: {
+      radius: 12,
+    },
+  };
+}
+
+export function GridSkeletonCard({ count, gridStyle, spec }: GridSkeletonCardProps) {
+  const s = spec ?? defaultGridSpec();
+
+  const layoutIn: GridSkeletonNode =
+    s.layout ?? (defaultGridSpec().layout as GridSkeletonNode);
+
+  const reactId = React.useId();
+  const scopeId = React.useMemo(() => `gskel_${sanitizeIdForAttr(reactId)}`, [reactId]);
 
   const rootStyle: React.CSSProperties = {
-    ...(s.minHeight != null ? { minHeight: cssLen(s.minHeight) } : null),
+    ...(gridStyle || {}),
   };
 
   if (s.defaults?.backgroundColor) (rootStyle as any)["--rmg-skel-bg"] = s.defaults.backgroundColor;
@@ -370,51 +423,56 @@ export function EntrySkeletonCard({ spec, className }: EntrySkeletonCardProps) {
   if (sh?.bandSizePct != null) (rootStyle as any)["--rmg-skel-shimmer-band"] = `${sh.bandSizePct}%`;
   if (sh?.angleDeg != null) (rootStyle as any)["--rmg-skel-shimmer-angle"] = `${sh.angleDeg}deg`;
 
-  if (s.variant === "solid" && !s.layout) {
-    return (
-      <div
-        className={[styles.entrySkeletonTile, styles.entrySkeletonShimmer, className]
-          .filter(Boolean)
-          .join(" ")}
-        style={rootStyle}
-      />
-    );
-  }
-
-  const defaultLayout = React.useMemo<SkeletonNode>(() => ({
-    kind: "stack",
-    style: { gap: 12 },
-    children: [
-      { kind: "rect", style: { height: 18, width: "60%" } },
-      { kind: "rect", style: { height: 14, width: "90%" } },
-      { kind: "media", count: 2, direction: "row", style: { gap: 10, wrap: true } },
-    ],
-  }), []);
-
-  const layoutIn = s.layout ?? defaultLayout;
-
-  const reactId = React.useId();
-  const scopeId = React.useMemo(() => `skel_${sanitizeIdForAttr(reactId)}`, [reactId]);
-
   const { layout, responsiveCss } = React.useMemo(() => {
     let n = 0;
     const allocId = () => `n${++n}`;
     const collected: Array<{ nodeId: string; rules: Array<{ minWidth: number; css: string }> }> = [];
 
-    const withIds = collectResponsiveCss(layoutIn as SkeletonNode, allocId, collected);
+    const withIds = collectResponsiveCss(layoutIn, allocId, collected);
     const cssText = buildResponsiveCssText(scopeId, collected);
-
     return { layout: withIds, responsiveCss: cssText };
   }, [layoutIn, scopeId]);
 
+  const gridNode = layout as Extract<GridSkeletonNode, { kind: "grid" }>;
+
+  const gridNodeId = (gridNode as any).__rmgNodeId as string | undefined;
+  const plainGridStyle = isResponsiveContainerStyle(gridNode.style)
+    ? undefined
+    : containerStylesPlain(gridNode.style as SkeletonContainerStyle | undefined);
+
+  const cellCount = gridNode.count != null ? Math.max(0, gridNode.count | 0) : Math.max(0, count | 0);
+
+  const itemWrap = gridNode.itemWrapStyle;
+
   return (
     <div
-      data-rmg-entry-skel-scope={scopeId}
-      className={[styles.entrySkelRoot, className].filter(Boolean).join(" ")}
-      style={rootStyle}
+      data-rmg-grid-skel-scope={scopeId}
+      className={[styles.gridSkeletonOverlay, s.className].filter(Boolean).join(" ")}
     >
       {responsiveCss ? <style dangerouslySetInnerHTML={{ __html: responsiveCss }} /> : null}
-      <LayoutNode node={layout} />
+
+      <div
+        data-rmg-skel-node={gridNodeId}
+        className={styles.gridSkeletonGrid}
+        style={{
+          ...rootStyle,
+          ...(plainGridStyle || {}),
+          display: "grid",
+        }}
+      >
+        {Array.from({ length: cellCount }).map((_, i) => (
+          <div
+            key={`rmg-grid-skel-${i}`}
+            className={styles.gridSkeletonItem}
+            style={{
+              ...(itemWrap ? nodeStyleVars(itemWrap, undefined) : null),
+              ...(itemWrap ? applyBoxMargins(itemWrap) : null),
+            }}
+          >
+            <LayoutNode node={gridNode.item} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -2,8 +2,8 @@
 "use client";
 
 import * as React from "react";
-import styles from "../styles.module.css";
-import Slider from "./Slider";
+import styles from "./Slider.module.css";
+import SliderCore from "./Slider";
 import ThumbnailSlider from "./thumbnails/ThumbnailSlider";
 import createIndexChannel from "./sliderSub";
 import { DEFAULT_SLIDER } from "./defaults";
@@ -12,8 +12,9 @@ import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { buildScopedSkeletonCountCss } from "../shared/skeleton/buildScopedSkeletonCountCss";
 import type { BreakpointMap } from "../shared/responsive";
 import type { MediaItem } from "../shared/types/media";
-import type { SliderHandle, SliderOptions, ResponsiveHeightRule as SliderResponsiveHeightRule } from "./types";
+import type { SliderHandle, SliderLoadingOptions, SliderOptions, ResponsiveHeightRule as SliderResponsiveHeightRule } from "./types";
 import { useOptionalGalleryCore } from "../core";
+import { SliderSkeletonCard } from "./SliderSkeleton";
 
 type Props = SliderOptions & {
   children?: React.ReactNode;
@@ -21,35 +22,21 @@ type Props = SliderOptions & {
   expandableImgRefs?: React.RefObject<Array<HTMLImageElement | null>>;
 };
 
-type LoadingLike = {
-  isLoading?: boolean;
-  skeletonCount?: any;
-  renderLoading?: (args: { layout: "slider" | "thumbnails"; count: number }) => React.ReactNode;
-};
-
 function cssHeightValue(h: number | string) {
   return typeof h === "number" ? `${h}px` : h;
 }
 
-function readCssVar(el: HTMLElement, name: string): string | null {
-  const v = getComputedStyle(el).getPropertyValue(name).trim();
-  return v ? v : null;
-}
-
 function parseAspectRatio(value: unknown): number | null {
-  // Returns width/height (w/h) numeric ratio
   if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
 
   if (typeof value === "string") {
     const s = value.trim();
-    // accepts "1000/1600" or "1000 / 1600"
     const m = s.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
     if (m) {
       const w = Number(m[1]);
       const h = Number(m[2]);
       if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) return w / h;
     }
-    // also accept "0.625"
     const n = Number(s);
     if (Number.isFinite(n) && n > 0) return n;
   }
@@ -58,55 +45,47 @@ function parseAspectRatio(value: unknown): number | null {
 }
 
 function buildScopedAutoInitialHeightCssFromAspectRatio(args: {
-  scope: string;              // sliderScope
+  scope: string;
   breakpointMap: BreakpointMap;
-  aspectRatioWOverH: number;  // w/h
-  cellsPerSlide?: any;        // responsive number
-  gap?: any;                  // responsive number
+  aspectRatioWOverH: number;
+  cellsPerSlide?: any;
+  gap?: any;
   baseCells: number;
   baseGap: number;
 }) {
-  const { scope, breakpointMap, aspectRatioWOverH, cellsPerSlide, gap, baseCells, baseGap } = args;
+  const { scope, aspectRatioWOverH, cellsPerSlide, gap, baseCells, baseGap } = args;
   const rootSel = `[data-rmg-scope="${scope}"]`;
 
   const lines: string[] = [];
 
-  // base vars + formula (SSR-safe)
   lines.push(
     `${rootSel}{` +
+      `container-type:inline-size;` +
       `--rmg-slider-ar:${aspectRatioWOverH};` +
       `--rmg-slider-cells:${baseCells};` +
       `--rmg-slider-gap:${baseGap}px;` +
       `--rmg-slider-initial-height:calc(` +
-        `((100% - ((var(--rmg-slider-cells) - 1) * var(--rmg-slider-gap))) / var(--rmg-slider-cells))` +
+        `((100cqw - ((var(--rmg-slider-cells) - 1) * var(--rmg-slider-gap))) / var(--rmg-slider-cells))` +
         ` / var(--rmg-slider-ar)` +
       `);` +
     `}`
   );
 
-  // If responsive cellsPerSlide exists, emit media queries that set --rmg-slider-cells
   if (cellsPerSlide && typeof cellsPerSlide === "object") {
     Object.entries(cellsPerSlide).forEach(([k, v]) => {
       const min = Number(k);
       const cells = Math.max(1, (Number(v) | 0));
       if (!Number.isFinite(min) || !Number.isFinite(cells)) return;
-
-      lines.push(
-        `@media (min-width:${min}px){${rootSel}{--rmg-slider-cells:${cells};}}`
-      );
+      lines.push(`@media (min-width:${min}px){${rootSel}{--rmg-slider-cells:${cells};}}`);
     });
   }
 
-  // If responsive gap exists, emit media queries that set --rmg-slider-gap
   if (gap && typeof gap === "object") {
     Object.entries(gap).forEach(([k, v]) => {
       const min = Number(k);
       const g = Math.max(0, (Number(v) | 0));
       if (!Number.isFinite(min) || !Number.isFinite(g)) return;
-
-      lines.push(
-        `@media (min-width:${min}px){${rootSel}{--rmg-slider-gap:${g}px;}}`
-      );
+      lines.push(`@media (min-width:${min}px){${rootSel}{--rmg-slider-gap:${g}px;}}`);
     });
   }
 
@@ -116,8 +95,7 @@ function buildScopedAutoInitialHeightCssFromAspectRatio(args: {
 function useScopedSkeleton(args: {
   enabled: boolean;
   scopeId: string;
-  layout: "slider" | "thumbnails";
-  loading: LoadingLike;
+  loading: SliderLoadingOptions;
   fallbackCount: number;
   breakpointMap: BreakpointMap;
   maxSlots?: number;
@@ -127,7 +105,6 @@ function useScopedSkeleton(args: {
   const {
     enabled,
     scopeId,
-    layout,
     loading,
     fallbackCount,
     breakpointMap,
@@ -153,14 +130,14 @@ function useScopedSkeleton(args: {
 
   const node = showLoading
     ? loading.renderLoading
-      ? loading.renderLoading({ layout, count: ssrBaseCount })
+      ? loading.renderLoading()
       : defaultNode(maxSlots, ssrBaseCount)
     : null;
 
   return { cssText, ssrBaseCount, node, showLoading };
 }
 
-export const SliderLayout = React.forwardRef<SliderHandle, Props>(function SliderLayout(
+export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
   props,
   forwardedRef
 ) {
@@ -186,19 +163,17 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
     (inst: SliderHandle | null) => {
       localSliderApiRef.current = inst;
 
-      // publish into core if provided
       if (core?.sliderApiRef) {
         core.sliderApiRef.current = inst;
       }
 
-      // ✅ forward to caller
       if (!forwardedRef) return;
       if (typeof forwardedRef === "function") forwardedRef(inst);
       else (forwardedRef as React.RefObject<SliderHandle | null>).current = inst;
     },
     [core, forwardedRef]
   );
-  const [slideIndex, setSlideIndex] = React.useState(0);
+
   const [isReady, setIsReady] = React.useState(false);
 
   const effectiveBreakpoints = React.useMemo(
@@ -348,6 +323,8 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
       isLoading: src.isLoading,
       skeletonCount: src.skeletonCount,
       renderLoading: src.renderLoading,
+      skeleton: src.skeleton,
+      shimmer: src.shimmer
     };
   }, [sliderObject.transitions?.loading]);
 
@@ -363,33 +340,62 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
       .join("\n");
   }, [sliderObject.size?.heightRules, sliderScope]);
 
-  const columnsForSkeleton =
-    typeof sliderResponsiveColumns === "number" && sliderResponsiveColumns > 0
-      ? sliderResponsiveColumns
-      : 1;
+  function pickSsrBaseResponsiveValue(v: any, fallback: number) {
+    if (typeof v === "number") return v;
+    if (v && typeof v === "object") {
+      const entries = Object.entries(v)
+        .map(([k, val]) => [Number(k), Number(val)] as const)
+        .filter(([k, val]) => Number.isFinite(k) && Number.isFinite(val))
+        .sort((a, b) => a[0] - b[0]);
+      if (entries.length) return entries[0][1];
+    }
+    return fallback;
+  }
+
+  const ssrCellsBase = Math.max(
+    1,
+    (pickSsrBaseResponsiveValue(sliderObject.layout?.cellsPerSlide, 1) | 0)
+  );
+
+  const [cellsPerSlideLive, setCellsPerSlideLive] = React.useState(ssrCellsBase);
+
+  React.useEffect(() => {
+    if (typeof sliderResponsiveColumns === "number") {
+      setCellsPerSlideLive(sliderResponsiveColumns);
+    }
+  }, [sliderResponsiveColumns]);
 
   const sliderSkeleton = useScopedSkeleton({
     enabled: true,
     scopeId: sliderScope,
-    layout: "slider",
-    loading: sliderLoading,
-    fallbackCount: columnsForSkeleton,
+    loading: sliderLoading as any,
+    fallbackCount: ssrCellsBase,
     breakpointMap: effectiveBreakpoints,
     maxSlots: 12,
     showLoadingFallback: !isReady,
-    defaultNode: (MAX_SKELETONS) => (
-      <div className={styles.sliderSkeletonOverlay} data-rmg-skel-part="overlay">
-        <div className={styles.sliderSkeletonRow} data-rmg-skel-part="row">
-          {Array.from({ length: MAX_SKELETONS }).map((_, i) => (
-            <div
-              key={`rmg-slider-skel-${i}`}
-              className={styles.sliderSkeleton}
-              data-rmg-skel-slot={i + 1}
-            />
-          ))}
+
+    defaultNode: (MAX_SKELETONS, baseCount) => {
+      const spec = (sliderLoading as any).skeleton;
+      if (spec) {
+        return (
+          <SliderSkeletonCard
+            count={baseCount}
+            maxSlots={MAX_SKELETONS}
+            spec={spec}
+          />
+        );
+      }
+
+      return (
+        <div className={styles.sliderSkeletonOverlay} data-rmg-skel-part="overlay">
+          <div className={styles.sliderSkeletonRow} data-rmg-skel-part="row">
+            {Array.from({ length: MAX_SKELETONS }).map((_, i) => (
+              <div key={`rmg-slider-skel-${i}`} className={styles.sliderSkeleton} data-rmg-skel-slot={i + 1} />
+            ))}
+          </div>
         </div>
-      </div>
-    ),
+      );
+    },
   });
 
   const initialHeightCss = React.useMemo(() => {
@@ -400,7 +406,6 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
     const hasRules = rules.length > 0;
     const hasValue = sliderObject.size?.initialHeight != null;
 
-    // Existing manual modes (keep exactly as-is)
     if (hasRules || hasValue) {
       const rootSel = `[data-rmg-scope="${sliderScope}"]`;
 
@@ -415,25 +420,16 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
       return [base, media].filter(Boolean).join("\n");
     }
 
-    // ✅ NEW: auto initial height from shared aspect ratio + cellsPerSlide + gap
     const ar = parseAspectRatio(sliderObject.size?.aspectRatio);
     if (!ar) return "";
 
-    // Base fallback values (SSR)
-    const baseCells =
-      sliderObject.layout?.cellsPerSlide && typeof sliderObject.layout.cellsPerSlide === "object"
-        ? Math.max(1, (Number(Object.values(sliderObject.layout.cellsPerSlide)[0]) | 0))
-        : 1;
-
-    const baseGap =
-      sliderObject.layout?.gap != null && typeof sliderObject.layout.gap === "number"
-        ? Math.max(0, sliderObject.layout.gap | 0)
-        : 12;
+    const baseCells = Math.max(1, (pickSsrBaseResponsiveValue(sliderObject.layout?.cellsPerSlide, 1) | 0));
+    const baseGap = Math.max(0, (pickSsrBaseResponsiveValue(sliderObject.layout?.gap, 12) | 0));
 
     return buildScopedAutoInitialHeightCssFromAspectRatio({
       scope: sliderScope,
       breakpointMap: effectiveBreakpoints,
-      aspectRatioWOverH: ar, // w/h
+      aspectRatioWOverH: ar,
       cellsPerSlide: sliderObject.layout?.cellsPerSlide,
       gap: sliderObject.layout?.gap,
       baseCells,
@@ -469,7 +465,6 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
   const thumbsSkeleton = useScopedSkeleton({
     enabled: true,
     scopeId: thumbsScope,
-    layout: "thumbnails",
     loading: thumbsLoading,
     fallbackCount: 6,
     breakpointMap: effectiveBreakpoints,
@@ -509,7 +504,6 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
   });
 
   const sliderShellRef = React.useRef<HTMLDivElement | null>(null);
-  const resolvedInitialHeight = sliderObject.size?.initialHeight;
 
   const sliderImagesReady = true;
   const normalizedItems: MediaItem[] = core?.normalizedItems ?? [];
@@ -531,6 +525,23 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
       ...(s.timing != null ? ({ ["--rmg-shimmer-timing" as any]: s.timing } as any) : {}),
     } as React.CSSProperties;
   }, [sliderObject.transitions?.loading?.shimmer]);
+
+  const userProvidedHeight =
+    sliderOptions?.size?.height != null ||
+    (Array.isArray(sliderOptions?.size?.heightRules) && sliderOptions!.size!.heightRules!.length > 0);
+
+  const userProvidedInitialHeight =
+    sliderOptions?.size?.initialHeight != null ||
+    (Array.isArray(sliderOptions?.size?.initialHeightRules) && sliderOptions!.size!.initialHeightRules!.length > 0);
+
+  const sliderHeightProp = userProvidedHeight ? sliderObject.size?.height : undefined;
+  const responsiveHeightsProp = userProvidedHeight ? sliderObject.size?.heightRules : undefined;
+
+  const initialHeightProp = userProvidedInitialHeight ? sliderObject.size?.initialHeight : undefined;
+
+  const hasCellsPerSlideProp = sliderObject.layout.cellsPerSlide != null;
+
+  const cellsPerSlideProp = hasCellsPerSlideProp ? cellsPerSlideLive : undefined;
 
 
   return (
@@ -596,18 +607,21 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
         className={styles.sliderShell}
         style={{
           position: "relative",
-          ...(sliderObject.size?.height != null ? ({ ["--rmg-slider-height" as any]: sliderObject.size.height } as any) : {}),
-          ...(sliderObject.size?.initialHeight != null ? ({ ["--rmg-slider-initial-height" as any]: sliderObject.size.initialHeight } as any) : {}),
+          ...(userProvidedHeight && sliderObject.size?.height != null
+            ? ({ ["--rmg-slider-height" as any]: sliderObject.size.height } as any)
+            : {}),
+          ...(userProvidedInitialHeight && sliderObject.size?.initialHeight != null
+            ? ({ ["--rmg-slider-initial-height" as any]: sliderObject.size.initialHeight } as any)
+            : {}),
           ...(shimmerStyleVars ?? {}),
         }}
       >
         {sliderSkeleton.node}
-        <Slider
+        <SliderCore
           imageCount={cellsState.length}
           isClick={isClick}
           expandableImgRefs={expandableImgRefs}
           overlayDivRef={overlayDivRef}
-          setSlideIndex={setSlideIndex}
           duplicateImgRef={duplicateImgRef}
           closeButtonRef={closeButtonRef}
           counterRef={counterRef}
@@ -632,9 +646,9 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
           sliderViewportClassName={sliderObject.elements?.viewport?.className}
           sliderContainerStyles={sliderObject.elements?.container?.style}
           sliderContainerClassName={sliderObject.elements?.container?.className}
-          sliderHeight={sliderObject.size?.height}
-          responsiveHeights={sliderObject.size?.heightRules}
-          initialHeight={resolvedInitialHeight}
+          sliderHeight={sliderHeightProp}
+          responsiveHeights={responsiveHeightsProp}
+          initialHeight={initialHeightProp}
           arrowStyles={sliderObject.controls.arrows.arrow.style}
           arrowClassName={sliderObject.controls.arrows.arrow.className}
           prevArrowStyles={sliderObject.controls.arrows.prev.style}
@@ -665,7 +679,7 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
           scaleEffect={sliderObject.effects?.scale?.enabled}
           scaleAmount={sliderObject.effects?.scale?.amount}
           fadeEffect={sliderObject.effects?.fade?.enabled}
-          cellsPerSlide={sliderResponsiveColumns}
+          cellsPerSlide={cellsPerSlideProp}
           direction={sliderObject.direction.dir}
           axis={sliderObject.direction.axis}
           skipSnaps={sliderObject.scroll.skipSnaps}
@@ -690,7 +704,7 @@ export const SliderLayout = React.forwardRef<SliderHandle, Props>(function Slide
           setFullscreenOpen={core?.setFullscreenOpen!}
         >
           {renderedCells}
-        </Slider>
+        </SliderCore>
       </div>
 
       {/* thumbs bottom/right */}

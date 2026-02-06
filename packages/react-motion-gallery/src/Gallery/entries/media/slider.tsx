@@ -2,20 +2,12 @@
 "use client";
 
 import * as React from "react";
-import styles from "../../styles.module.css";
-import { SliderLayout } from "../../slider/";
+import styles from "../../slider/Slider.module.css";
+import { Slider } from "../../slider/";
 import type { EntriesMediaContainerRender } from "../index";
 import { useOptionalGalleryCore } from "../../core";
-import { BREAKPOINT_MAP, type BreakpointMap } from "../../shared/responsive";
-import type { SliderHandle } from "../../slider/types";
-
-const FALLBACK_BREAKPOINTS: BreakpointMap = {
-  xs: 0,
-  sm: 500,
-  md: 768,
-  lg: 1024,
-  xl: 1280,
-} as any;
+import { BREAKPOINT_MAP } from "../../shared/responsive";
+import type { SliderHandle, SliderOptions } from "../../slider/types";
 
 const DEFAULT_SLIDER_OBJECT: any = {
   align: 'start',
@@ -62,7 +54,7 @@ const DEFAULT_SLIDER_OBJECT: any = {
 };
 
 export type EntriesSliderMediaOptions = {
-  sliderObject?: any;
+  sliderObject?: SliderOptions;
   gap?: number;
   initialHeight?: number | string;
   columns?: number;
@@ -101,7 +93,7 @@ function EntriesSliderMediaContainer(props: {
           : null),
       }}
     >
-      <SliderLayout
+      <Slider
         {...sliderObject}
         breakpoints={effectiveBreakpoints}
         expandableImgRefs={null}
@@ -110,7 +102,7 @@ function EntriesSliderMediaContainer(props: {
         }}
       >
         {mediaNodes}
-      </SliderLayout>
+      </Slider>
     </div>
   );
 }
