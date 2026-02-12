@@ -18,7 +18,7 @@ import type { FullscreenSliderSub, FSRequest } from './fullscreenSliderSub'
 import { createDragTracker } from '../shared/input/dragTracker'
 import { Vector1D, Vector1DType } from '../shared/motion/vector1d'
 import { ScrollBody, ScrollBodyType } from '../shared/motion/scrollBody'
-import { Limit } from '../shared/motion/limit'
+import { Limit, LimitType } from '../shared/motion/limit'
 import { ScrollLooper } from '../shared/motion/scrollLooper'
 import { BaseTarget, factorAbs, mathSign, ScrollTarget, ScrollTargetType } from '../shared/motion/scrollTarget'
 import { Animations, AnimationsType } from '../shared/motion/animations'
@@ -30,6 +30,8 @@ import { FullscreenAxisType as AxisType, FullscreenAxis as Axis, FullscreenAxisL
 import { TranslateFullscreen as Translate } from '../shared/motion/translate'
 import { createBaseLimit } from '../shared/motion/baseLimit'
 import { Counter, CounterType } from '../shared/motion/counter'
+import { clamp, lerp } from '../shared/motion/utils'
+import { PercentOfView, PercentOfViewType, ScrollBounds, ScrollBoundsType } from '../shared/motion/scrollBounds'
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
@@ -198,6 +200,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const appliedYRef = useRef(0)
     type DragMode = 'none' | 'x' | 'y'
     const dragMode = useRef<DragMode>('none')
+    const limitRef = useRef<LimitType | null>(null)
+    const povRef    = useRef<PercentOfViewType | null>(null)
+    const boundsRef = useRef<ScrollBoundsType | null>(null)
 
     function useLatest<T>(value: T) {
       const r = useRef(value)
@@ -959,13 +964,73 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       const body = ScrollBody(location, offsetLocation, previousLocation, target, sliderDuration, sliderFriction)
       bodyRef.current = body
 
+      const durNowRef = { current: sliderDuration }
+      const durStartRef = { current: sliderDuration }
+      const durGoalRef = { current: sliderDuration }
+      const durTRef = { current: 1 }
+      const durActiveRef = { current: false }
+
+      if (imageCount === 1) {
+        const cw = (track as any)['clientWidth'] as number;
+        const per = track.clientWidth || 1;
+        perSlideRef.current = per;
+
+        const len = slides.current.length || 1;
+        const W   = per * len;
+        const min = -(Math.max(0, W - cw))
+        const max = 0
+        limitRef.current = Limit(isNaN(min) ? 0 : min, max)
+  
+        povRef.current    = PercentOfView(cw)
+        boundsRef.current = ScrollBounds(
+          limitRef.current,
+          locationRef.current!,
+          targetRef.current!,
+          bodyRef.current!,
+          povRef.current,
+          sliderDuration
+        )
+      } else {
+        limitRef.current = null
+        boundsRef.current = null
+        povRef.current = null
+      }
+
       const anim = Animations(
         document,
         window as WindowType,
         () => {
+          if (imageCount === 1) {
+            boundsRef.current?.constrain(pointerDownRef.current)
+          }
+          
+          if (body && durActiveRef.current && !pointerDownRef.current) {
+            const oobNow = !!boundsRef.current?.passed()
+  
+            if (!oobNow) {
+              durActiveRef.current = false
+            } else {
+              const easeMs = 260
+              const fixed = 1000 / 60
+              const step = fixed / easeMs
+              durTRef.current = clamp(durTRef.current + step, 0, 1)
+  
+              const t = easeOutCubic(durTRef.current)
+              const next = lerp(durStartRef.current, durGoalRef.current, t)
+  
+              durNowRef.current = next
+              body.useDuration(next)
+  
+              if (durTRef.current >= 1) {
+                durActiveRef.current = false
+                body.useDuration(durGoalRef.current)
+                durNowRef.current = durGoalRef.current
+              }
+            }
+          }
+          
           bodyRef.current?.seek()
 
-          const body = bodyRef.current!
           const dir  = body.direction() || Math.sign(target.get() - location.get()) || 0
           if (!suppressLoopRef.current && imageCount > 1 && W > 0) {
             looper.loop(dir);
@@ -1291,13 +1356,33 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           
           const force = allowedForce(boostedForce)
 
-          const baseSpeed = sliderDuration
           const baseFriction = sliderFriction
           const forceFactor = factorAbs(boostedForce, force)
-          const speed = baseSpeed - 10 * forceFactor
+          const speed = sliderDuration - 10 * forceFactor
           const friction = baseFriction + forceFactor / 50
 
-          body.useDuration(speed).useFriction(friction)
+          body.useFriction(friction)
+
+          const oob = !!boundsRef.current?.passed()
+
+          if (oob) {
+            const depth = Math.min(1, Math.abs(offsetLocationRef.current!.get() - limitRef.current!.constrain(offsetLocationRef.current!.get())) / 200)
+            const durStart = clamp(speed + 20 * depth, sliderDuration, 90)
+
+            const durGoal = sliderDuration
+
+            durStartRef.current = durStart
+            durGoalRef.current = durGoal
+            durTRef.current = 0
+            durActiveRef.current = true
+
+            durNowRef.current = durStart
+            body.useDuration(durStart)
+          } else {
+            durActiveRef.current = false
+            durNowRef.current = speed
+            body.useDuration(speed)
+          }
 
           fsScrollTo.distance(force, true)
         }

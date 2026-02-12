@@ -1,10 +1,11 @@
 import * as React from 'react';
 import styles from './Masonry.module.css';
 import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
-import { parseNumberLike, resolveNumberFromResponsive } from '../shared/responsive';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
-import { MasonryCore, DefaultMasonrySkeleton } from './Masonry';
+import { MasonryCore } from './Masonry';
+import { MasonrySkeletonCard } from './MasonrySkeleton';
+import { IntroOptions, LoadingOptions } from './types';
 
 type MasonryOptions = {
   columns?: ResponsiveNumber;
@@ -20,37 +21,12 @@ type MasonryOptions = {
   };
 };
 
-type IntroNormalized = {
-  renderIntro?: any;
-  staggerMs: number;
-  transform: string;
-  durationMs: number;
-  easing: string;
-};
-
-type LoadingNormalized = {
-  isLoading?: boolean;
-  renderLoading?: (args: { layout: 'masonry'; count: number }) => React.ReactNode;
-  shimmer?: {
-    paddingBottom?: string;
-    radius?: number | string;
-    c1?: string;
-    c2?: string;
-    c3?: string;
-    size?: string;
-    duration?: string;
-    timing?: string;
-  };
-  ratios?: number[];
-};
-
 export type MasonryLayoutProps = {
   items: React.ReactNode[];
   masonry: MasonryOptions;
   breakpoints?: BreakpointMap;
-  viewportWidth: number;
-  loading: LoadingNormalized;
-  intro: IntroNormalized;
+  loading: LoadingOptions;
+  intro: IntroOptions;
   skeletonCount: number;
 };
 
@@ -64,7 +40,6 @@ export function MasonryLayout({
   items,
   masonry,
   breakpoints,
-  viewportWidth,
   loading,
   intro,
   skeletonCount,
@@ -77,52 +52,35 @@ export function MasonryLayout({
   useInViewOnce(true, localRootRef as any, () => setInView(true));
   useMediaReady(true, localRootRef as any, setMediaReady);
 
-  const isLoading = loading.isLoading ?? !mediaReady;
-  const introActive = !isLoading && inView;
+  const loadingEnabledFlag = loading.enabled ?? true;
+  const loadingForced = loading.force ?? false;
+  const loadingActive = loadingEnabledFlag && (loadingForced || !mediaReady);
+  const introActive = mediaReady && inView;
 
-  const DEFAULT_MASONRY_COLUMNS = 4;
-  const DEFAULT_MASONRY_GAP_PX = 8;
-
-  const masonryColumnCount = React.useMemo(() => {
-    const raw = resolveNumberFromResponsive(
-      masonry.columns,
-      DEFAULT_MASONRY_COLUMNS,
-      viewportWidth,
-      breakpoints
-    );
-    return Math.max(1, (raw as any) | 0);
-  }, [masonry.columns, viewportWidth, breakpoints]);
-
-  const masonryGapPx = React.useMemo(() => {
-    const raw = resolveNumberFromResponsive(
-      masonry.gap,
-      DEFAULT_MASONRY_GAP_PX,
-      viewportWidth,
-      breakpoints
-    );
-    return Math.max(0, parseNumberLike(raw as any, DEFAULT_MASONRY_GAP_PX));
-  }, [masonry.gap, viewportWidth, breakpoints]);
-
-  const defaultMasonrySkeleton = (
-    <div className={styles.gridSkeletonOverlay}>
-      <DefaultMasonrySkeleton
+  const masonrySkeletonNode = (
+    <div className={styles.masonrySkeletonOverlay}>
+      <MasonrySkeletonCard
         count={skeletonCount}
-        columnCount={masonryColumnCount}
-        gapPx={masonryGapPx}
+        columns={masonry.columns}
+        gap={masonry.gap}
+        breakpoints={breakpoints}
+        ratios={loading.skeleton?.ratios}
+        heightsPx={loading.skeleton?.heightsPx}
+        placement={masonry.placement}
+        spec={loading.skeleton}
         classNames={{
-          root: styles.gridSkeletonMasonryRoot,
-          column: styles.gridSkeletonMasonryCol,
-          item: styles.gridSkeletonItem,
+          root: styles.masonrySkeletonRoot,
+          column: styles.masonrySkeletonCol,
+          item: styles.masonrySkeletonItem,
         }}
-        ratios={loading.ratios}
       />
     </div>
   );
 
-  const loadingNode = isLoading
+  const loadingNode = loadingActive
     ? loading.renderLoading
-      ? loading.renderLoading({ layout: 'masonry', count: skeletonCount })
-      : defaultMasonrySkeleton
+      ? loading.renderLoading({ count: skeletonCount })
+      : masonrySkeletonNode
     : null;
 
   const masonryRootClassName = [
@@ -139,28 +97,9 @@ export function MasonryLayout({
     assignRef(masonry.rootRef as any, node);
   }, [masonry.rootRef]);
 
-  const shimmerStyleVars = React.useMemo(() => {
-    const s = loading.shimmer;
-    if (!s) return undefined;
-
-    const px = (v: number | string | undefined) =>
-      v == null ? undefined : typeof v === 'number' ? `${v}px` : v;
-
-    return {
-      ...(s.paddingBottom != null ? ({ ["--rmg-shimmer-padding-bottom" as any]: px(s.paddingBottom) } as any) : {}),
-      ...(s.radius != null ? ({ ['--rmg-shimmer-radius' as any]: px(s.radius) } as any) : {}),
-      ...(s.c1 != null ? ({ ['--rmg-shimmer-c1' as any]: s.c1 } as any) : {}),
-      ...(s.c2 != null ? ({ ['--rmg-shimmer-c2' as any]: s.c2 } as any) : {}),
-      ...(s.c3 != null ? ({ ['--rmg-shimmer-c3' as any]: s.c3 } as any) : {}),
-      ...(s.size != null ? ({ ['--rmg-shimmer-size' as any]: s.size } as any) : {}),
-      ...(s.duration != null ? ({ ['--rmg-shimmer-duration' as any]: s.duration } as any) : {}),
-      ...(s.timing != null ? ({ ['--rmg-shimmer-timing' as any]: s.timing } as any) : {}),
-    } as React.CSSProperties;
-  }, [loading.shimmer]);
-
 
   return (
-    <div style={shimmerStyleVars}>
+    <>
       {loadingNode}
       <MasonryCore
         items={items}
@@ -183,6 +122,6 @@ export function MasonryLayout({
         masonryRootRef={mergedRootRef}
         breakpoints={breakpoints}
       />
-    </div>
+    </>
   );
 }

@@ -1,19 +1,11 @@
 import { ResponsiveNumber } from "../shared/responsive";
+import { MasonrySkeletonSpec } from "./MasonrySkeleton";
 
 export type LoadingOptions = {
-  isLoading?: boolean;
-  renderLoading?: () => React.ReactNode;
-  shimmer?: {
-    paddingBottom?: string;
-    radius?: number | string;
-    c1?: string;
-    c2?: string;
-    c3?: string;
-    size?: string;
-    duration?: string;
-    timing?: string;
-  };
-  ratios?: number[];
+  enabled?: boolean;
+  force?: boolean;
+  renderLoading?: (args: { count: number }) => React.ReactNode;
+  skeleton?: MasonrySkeletonSpec;
 };
 
 export type IntroOptions = {

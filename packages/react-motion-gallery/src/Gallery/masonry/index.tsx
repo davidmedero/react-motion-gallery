@@ -4,7 +4,6 @@
 import * as React from "react";
 import type { BreakpointMap } from "../shared/responsive";
 import { BREAKPOINT_MAP } from "../shared/responsive";
-import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { useOptionalGalleryCore } from "../core";
 import { DEFAULT_MASONRY } from "./defaults";
 import type { IntroOptions, LoadingOptions, MasonryOptions } from "./types";
@@ -122,19 +121,19 @@ export default function Masonry(props: Props) {
     [core, enableFullscreen, normalizedItems.length]
   );
 
-  const viewportWidth = useViewportWidth();
-
   function normalizeLoading(src?: LoadingOptions) {
     return {
-      isLoading: src?.isLoading,
+      enabled: src?.enabled,
+      force: src?.force,
       renderLoading: src?.renderLoading,
-      shimmer: src?.shimmer,
-      ratios: src?.ratios
+      skeleton: src?.skeleton,
     };
   }
 
   const masonryLoading = React.useMemo(() => {
-    return normalizeLoading((masonryObject as any).loading ?? (masonryObject as any).transitions?.loading);
+    return normalizeLoading(
+      (masonryObject as any).loading ?? (masonryObject as any).transitions?.loading
+    );
   }, [masonryObject]);
 
   function normalizeIntro(src?: IntroOptions) {
@@ -170,7 +169,6 @@ export default function Masonry(props: Props) {
       items={masonryChildren}
       masonry={masonryObject as any}
       breakpoints={effectiveBreakpoints}
-      viewportWidth={viewportWidth}
       loading={masonryLoading as any}
       intro={masonryIntro as any}
       skeletonCount={cellsState.length}

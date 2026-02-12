@@ -98,19 +98,11 @@ export type SliderAuto = {
 };
 
 export type SliderLoadingOptions = {
-  isLoading?: boolean;
+  enabled?: boolean;
+  force?: boolean;
   skeletonCount?: ResponsiveNumber;
-  renderLoading?: () => React.ReactNode;
+  renderLoading?: (args: { count: number }) => React.ReactNode;
   skeleton?: SliderSkeletonSpec;
-  shimmer?: {
-    radius?: number | string;
-    c1?: string;
-    c2?: string;
-    c3?: string;
-    size?: string;
-    duration?: string;
-    timing?: string;
-  };
 };
 
 export type SliderIntroOptions = {

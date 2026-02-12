@@ -33,9 +33,8 @@ export function EntryList({
   nodeFromMedia,
   renderMediaContainer,
   registerExpandableImg,
-  entrySliderRefs
+  entrySliderRefs,
 }: Props) {
-
   const DRAG_PX = 6;
 
   const downPosRef = React.useRef<{ x: number; y: number } | null>(null);
@@ -55,7 +54,7 @@ export function EntryList({
     const dx = e.clientX - p.x;
     const dy = e.clientY - p.y;
 
-    if (!draggedRef.current && (dx * dx + dy * dy) >= DRAG_PX * DRAG_PX) {
+    if (!draggedRef.current && dx * dx + dy * dy >= DRAG_PX * DRAG_PX) {
       draggedRef.current = true;
     }
   };
@@ -89,7 +88,22 @@ export function EntryList({
   const items = entries.items ?? [];
   const len = items.length;
 
+  const revealOrderRef = React.useRef<number>(0);
+  const revealOrderByEntryRef = React.useRef<number[]>([]);
+  if (revealOrderByEntryRef.current.length !== len) {
+    revealOrderByEntryRef.current = Array.from({ length: len }, () => -1);
+    revealOrderRef.current = 0;
+  }
+
   const loadingN = useNormalizedEntriesLoading(entries);
+  const introN = useNormalizedEntriesIntro(entries);
+
+  const loadingOpts = (entries as any)?.loading as { enabled?: boolean; force?: boolean } | undefined;
+  const loadingEnabled = loadingOpts?.enabled ?? true;
+  const loadingForce = loadingOpts?.force ?? false;
+
+  const loadingActive = enabled && loadingEnabled;
+  const forceLoading = loadingActive && loadingForce;
 
   const { nearView, everInView, setEntryRef } = useEntryInView(len, {
     root: null,
@@ -98,14 +112,13 @@ export function EntryList({
     threshold: loadingN.threshold,
   });
 
-  const { decodedReady } = useEntryDecodeReady(enabled, items as any, nearView, {
+  const decodeGateEnabled = loadingActive && !forceLoading;
+
+  const { decodedReady } = useEntryDecodeReady(decodeGateEnabled, items as any, nearView, {
     timeoutMs: loadingN.decodeTimeoutMs,
   });
 
-  const introN = useNormalizedEntriesIntro(entries);
-
-  const showGlobalLoading =
-    enabled && (loadingN.isLoading === true || len === 0);
+  const showGlobalLoading = loadingActive && (forceLoading || len === 0);
 
   const entryRows = !len
     ? null
@@ -115,8 +128,18 @@ export function EntryList({
         const isDecoded = decodedReady[entryIndex] ?? false;
 
         const shouldMountContent = hasEver || isNear;
-        const reveal = hasEver && (loadingN.waitForDecode ? isDecoded : true);
-        const showSkeleton = shouldMountContent && !reveal;
+
+        const reveal = forceLoading
+          ? false
+          : loadingActive
+            ? hasEver && (loadingN.waitForDecode ? isDecoded : true)
+            : shouldMountContent;
+
+        const showSkeleton = forceLoading
+          ? true
+          : loadingActive
+            ? shouldMountContent && !reveal
+            : false;
 
         let contentNode: React.ReactNode = null;
 
@@ -139,7 +162,6 @@ export function EntryList({
             const handleClick: React.MouseEventHandler<HTMLElement> = (e) => {
               e.preventDefault();
               if (!fsEnabled) return;
-
               openFullscreenAt(globalIndex, e.currentTarget as HTMLElement);
             };
 
@@ -231,8 +253,14 @@ export function EntryList({
             : null;
 
         const spec = resolveEntrySkeletonSpec(entry, entryIndex);
-
         const skelWrap = loadingN.skeletonWrap;
+
+        if (reveal && revealOrderByEntryRef.current[entryIndex] === -1) {
+          revealOrderByEntryRef.current[entryIndex] = revealOrderRef.current++;
+        }
+
+        const order = revealOrderByEntryRef.current[entryIndex];
+        const introDelayMs = order >= 0 ? order * introN.staggerMs : 0;
 
         return (
           <div
@@ -245,23 +273,21 @@ export function EntryList({
             style={{
               ["--rmg-entry-min-height" as any]: loadingN.minHeight,
               ["--rmg-entry-intro-index" as any]: delayIndex,
-              ...entries.entryRow?.style
+              ["--rmg-entry-intro-delay" as any]: `${introDelayMs}ms`,
+              ...entries.entryRow?.style,
             }}
           >
-            <div
-              className={[
-                styles.entrySkeletonWrap,
-                skelWrap?.className,
-              ].filter(Boolean).join(" ")}
-              style={skelWrap?.style}
-              aria-hidden={showSkeleton ? undefined : true}
-            >
-              {skeletonOverride ?? <EntrySkeletonCard spec={spec} />}
-            </div>
-
-            {shouldMountContent ? (
-              <div className={styles.entryInner}>{contentNode}</div>
+            {loadingActive ? (
+              <div
+                className={[styles.entrySkeletonWrap, skelWrap?.className].filter(Boolean).join(" ")}
+                style={skelWrap?.style}
+                aria-hidden={showSkeleton ? undefined : true}
+              >
+                {skeletonOverride ?? <EntrySkeletonCard spec={spec} />}
+              </div>
             ) : null}
+
+            {shouldMountContent ? <div className={styles.entryInner}>{contentNode}</div> : null}
           </div>
         );
       });
@@ -272,7 +298,7 @@ export function EntryList({
       ["--rmg-entry-intro-stagger" as any]: `${introN.staggerMs}ms`,
       ["--rmg-entry-intro-duration" as any]: `${introN.durationMs}ms`,
       ["--rmg-entry-intro-easing" as any]: introN.easing,
-      ...entries.entryList?.style
+      ...entries.entryList?.style,
     },
     "aria-busy": showGlobalLoading ? true : undefined,
   };

@@ -84,10 +84,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <Nav />
       <body
         className={`${fontBody.variable} ${tasaOrbiter.variable} ${fontMono.variable}`}
       >
+        <Nav />
         {children}
       </body>
     </html>

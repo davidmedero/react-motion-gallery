@@ -1,33 +1,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import * as React from "react";
 import { MasonryLayout } from "../../masonry/MasonryLayout";
 import type { EntriesMediaContainerRender } from "../index";
 import { BREAKPOINT_MAP } from "../../shared/responsive";
-import { useViewportWidth } from "../../shared/hooks/useViewportWidth";
 import { useOptionalGalleryCore } from "../../core";
-import { IntroOptions, LoadingOptions } from "../../masonry/types";
+import type { IntroOptions, LoadingOptions } from "../../masonry/types";
 
 export function createEntriesMasonryMedia(args: {
   masonryObject?: any;
-  viewportWidth?: number;
-  masonryLoading?: any;
-  masonryIntro?: any;
+  masonryLoading?: LoadingOptions;
+  masonryIntro?: IntroOptions;
 }): EntriesMediaContainerRender {
   const { masonryObject, masonryLoading, masonryIntro } = args;
 
-  const core = useOptionalGalleryCore();
-
   function normalizeLoading(src?: LoadingOptions) {
     return {
-      isLoading: src?.isLoading,
+      enabled: src?.enabled,
+      force: src?.force,
       renderLoading: src?.renderLoading,
-      shimmer: src?.shimmer,
-      ratios: src?.ratios
-    };
+      skeleton: src?.skeleton
+    }
   }
-
-  const normalizedLoading = normalizeLoading(masonryLoading ?? masonryObject.loading);
 
   function normalizeIntro(src?: IntroOptions) {
     return {
@@ -36,26 +31,32 @@ export function createEntriesMasonryMedia(args: {
       transform: src?.transform ?? "translateY(10px) scale(0.99)",
       durationMs: src?.durationMs ?? 300,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
-    };
+      staggerLimit: src?.staggerLimit,
+    }
   }
-  
-  const normalizedIntro = normalizeIntro(masonryIntro ?? masonryObject.intro);
 
-  const viewportWidth = useViewportWidth();
+  const normalizedLoading = normalizeLoading(masonryLoading ?? masonryObject?.loading);
+  const normalizedIntro = normalizeIntro(masonryIntro ?? masonryObject?.intro);
 
-  const breakpoints = (core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP });
+  function EntriesMasonryMediaInner(props: { mediaNodes: React.ReactNode[] }) {
+    const { mediaNodes } = props;
 
-  return ({ mediaNodes }) => {
+    if (!Array.isArray(mediaNodes) || mediaNodes.length === 0) return null;
+
+    const core = useOptionalGalleryCore();
+    const breakpoints = core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP };
+
     return (
       <MasonryLayout
         items={mediaNodes}
         masonry={masonryObject}
         breakpoints={breakpoints}
-        viewportWidth={viewportWidth}
         loading={normalizedLoading}
         intro={normalizedIntro}
         skeletonCount={mediaNodes.length}
       />
     );
-  };
+  }
+
+  return ({ mediaNodes }) => <EntriesMasonryMediaInner mediaNodes={mediaNodes} />;
 }

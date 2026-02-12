@@ -11,7 +11,6 @@ import { BREAKPOINT_MAP, resolveNumberFromResponsive, resolvePositionFromRespons
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { buildScopedSkeletonCountCss } from "../shared/skeleton/buildScopedSkeletonCountCss";
 import type { BreakpointMap } from "../shared/responsive";
-import type { MediaItem } from "../shared/types/media";
 import type { SliderHandle, SliderLoadingOptions, SliderOptions, ResponsiveHeightRule as SliderResponsiveHeightRule } from "./types";
 import { useOptionalGalleryCore } from "../core";
 import { SliderSkeletonCard } from "./SliderSkeleton";
@@ -113,26 +112,41 @@ function useScopedSkeleton(args: {
     defaultNode,
   } = args;
 
+  const loadingEnabled = loading.enabled ?? true;
+  const loadingForced = loading.force ?? false;
+
   const showLoading =
-    enabled && (loading.isLoading != null ? !!loading.isLoading : showLoadingFallback);
+    enabled && loadingEnabled && (loadingForced || showLoadingFallback);
 
   const { cssText, ssrBaseCount } = React.useMemo(() => {
-    if (!enabled) return { cssText: "", ssrBaseCount: fallbackCount };
+    if (!enabled || !loadingEnabled) return { cssText: "", ssrBaseCount: fallbackCount };
 
     return buildScopedSkeletonCountCss({
       scopeId,
-      responsiveCount: loading.skeletonCount,
+      responsiveCount: (loading as any).skeletonCount,
       fallbackCount,
       breakpointMap,
       maxSlots,
     });
-  }, [enabled, scopeId, loading.skeletonCount, fallbackCount, breakpointMap, maxSlots]);
+  }, [
+    enabled,
+    loadingEnabled,
+    scopeId,
+    (loading as any).skeletonCount,
+    fallbackCount,
+    breakpointMap,
+    maxSlots,
+  ]);
 
-  const node = showLoading
-    ? loading.renderLoading
-      ? loading.renderLoading()
-      : defaultNode(maxSlots, ssrBaseCount)
-    : null;
+  const node = React.useMemo(() => {
+    if (!showLoading) return null;
+
+    if (loading.renderLoading) {
+      return loading.renderLoading({ count: ssrBaseCount } as any);
+    }
+
+    return defaultNode(maxSlots, ssrBaseCount);
+  }, [showLoading, loading.renderLoading, defaultNode, maxSlots, ssrBaseCount]);
 
   return { cssText, ssrBaseCount, node, showLoading };
 }
@@ -320,11 +334,11 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
   const sliderLoading = React.useMemo(() => {
     const src = sliderObject.transitions?.loading ?? {};
     return {
-      isLoading: src.isLoading,
+      enabled: src.enabled ?? true,
+      force: src.force ?? false,
       skeletonCount: src.skeletonCount,
       renderLoading: src.renderLoading,
       skeleton: src.skeleton,
-      shimmer: src.shimmer
     };
   }, [sliderObject.transitions?.loading]);
 
@@ -352,30 +366,21 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
     return fallback;
   }
 
-  const ssrCellsBase = Math.max(
-    1,
-    (pickSsrBaseResponsiveValue(sliderObject.layout?.cellsPerSlide, 1) | 0)
-  );
-
-  const [cellsPerSlideLive, setCellsPerSlideLive] = React.useState(ssrCellsBase);
-
-  React.useEffect(() => {
-    if (typeof sliderResponsiveColumns === "number") {
-      setCellsPerSlideLive(sliderResponsiveColumns);
-    }
-  }, [sliderResponsiveColumns]);
+  const ssrCellsBase = React.useMemo(() => {
+    return Math.max(1, (pickSsrBaseResponsiveValue(sliderObject.layout?.cellsPerSlide, 1) | 0));
+  }, [sliderObject.layout?.cellsPerSlide]);
 
   const sliderSkeleton = useScopedSkeleton({
     enabled: true,
     scopeId: sliderScope,
-    loading: sliderLoading as any,
+    loading: sliderLoading,
     fallbackCount: ssrCellsBase,
     breakpointMap: effectiveBreakpoints,
     maxSlots: 12,
     showLoadingFallback: !isReady,
 
     defaultNode: (MAX_SKELETONS, baseCount) => {
-      const spec = (sliderLoading as any).skeleton;
+      const spec = (sliderLoading).skeleton;
       if (spec) {
         return (
           <SliderSkeletonCard
@@ -451,7 +456,8 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
   const thumbsLoading = React.useMemo(() => {
     const src = sliderObject.thumbnails.transitions?.loading ?? {};
     return {
-      isLoading: src.isLoading,
+      enabled: src.enabled ?? true,
+      force: src.force ?? false,
       skeletonCount: src.skeletonCount,
       renderLoading: src.renderLoading,
     };
@@ -504,27 +510,111 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
   });
 
   const sliderShellRef = React.useRef<HTMLDivElement | null>(null);
+  
+  function extractSrcsFromReactNode(node: React.ReactNode): string[] {
+    const out: string[] = [];
 
-  const sliderImagesReady = true;
-  const normalizedItems: MediaItem[] = core?.normalizedItems ?? [];
+    const visit = (n: React.ReactNode) => {
+      if (n == null || typeof n === "boolean") return;
 
-  const shimmerStyleVars = React.useMemo(() => {
-    const s = sliderObject.transitions?.loading?.shimmer;
-    if (!s) return undefined;
+      if (Array.isArray(n)) {
+        n.forEach(visit);
+        return;
+      }
 
-    const px = (v: number | string | undefined) =>
-      v == null ? undefined : typeof v === "number" ? `${v}px` : v;
+      if (typeof n === "string" || typeof n === "number") return;
 
-    return {
-      ...(s.radius != null ? ({ ["--rmg-shimmer-radius" as any]: px(s.radius) } as any) : {}),
-      ...(s.c1 != null ? ({ ["--rmg-shimmer-c1" as any]: s.c1 } as any) : {}),
-      ...(s.c2 != null ? ({ ["--rmg-shimmer-c2" as any]: s.c2 } as any) : {}),
-      ...(s.c3 != null ? ({ ["--rmg-shimmer-c3" as any]: s.c3 } as any) : {}),
-      ...(s.size != null ? ({ ["--rmg-shimmer-size" as any]: s.size } as any) : {}),
-      ...(s.duration != null ? ({ ["--rmg-shimmer-duration" as any]: s.duration } as any) : {}),
-      ...(s.timing != null ? ({ ["--rmg-shimmer-timing" as any]: s.timing } as any) : {}),
-    } as React.CSSProperties;
-  }, [sliderObject.transitions?.loading?.shimmer]);
+      if (React.isValidElement(n)) {
+        const anyEl = n as any;
+
+        const src = anyEl.props?.src;
+        if (typeof src === "string" && src.length) out.push(src);
+
+        const children = anyEl.props?.children;
+        if (children != null) visit(children);
+
+        return;
+      }
+    };
+
+    visit(node);
+    return out;
+  }
+
+  function usePredecodeImages(urls: string[]): boolean {
+    const [ready, setReady] = React.useState(
+      urls.length === 0
+    );
+
+    React.useEffect(() => {
+      if (!urls.length) {
+        setReady(true);
+        return;
+      }
+
+      let cancelled = false;
+      setReady(false);
+
+      const decodeUrl = (url: string) =>
+        new Promise<void>((resolve) => {
+          const img = new Image() as HTMLImageElement;
+          img.src = url;
+
+          const hasDecode =
+            typeof (img as any).decode === 'function';
+
+          if (hasDecode) {
+            (img as any)
+              .decode()
+              .catch(() => {})
+              .finally(() => {
+                if (!cancelled) resolve();
+              });
+          } else {
+            if (img.complete) {
+              if (!cancelled) resolve();
+              return;
+            }
+
+            const done = () => {
+              img.onload = null;
+              img.onerror = null;
+              if (!cancelled) resolve();
+            };
+
+            img.onload = done;
+            img.onerror = done;
+          }
+        });
+
+      (async () => {
+        for (const url of urls) {
+          if (cancelled) break;
+          await decodeUrl(url);
+        }
+        if (!cancelled) {
+          setReady(true);
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [urls]);
+
+    return ready;
+  }
+
+  const sliderImageUrls = React.useMemo(() => {
+    const urls = extractSrcsFromReactNode(renderedCells);
+    return Array.from(new Set(urls.filter(Boolean)));
+  }, [renderedCells]);
+
+  const sliderUrlsKey = React.useMemo(() => sliderImageUrls.join("|"), [sliderImageUrls]);
+
+  const sliderImagesReady = usePredecodeImages(
+    React.useMemo(() => sliderImageUrls, [sliderUrlsKey])
+  );
 
   const userProvidedHeight =
     sliderOptions?.size?.height != null ||
@@ -539,9 +629,10 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
 
   const initialHeightProp = userProvidedInitialHeight ? sliderObject.size?.initialHeight : undefined;
 
-  const hasCellsPerSlideProp = sliderObject.layout.cellsPerSlide != null;
-
-  const cellsPerSlideProp = hasCellsPerSlideProp ? cellsPerSlideLive : undefined;
+  const cellsPerSlideProp =
+    sliderObject.layout.cellsPerSlide != null
+      ? (sliderResponsiveColumns ?? ssrCellsBase)
+      : undefined;
 
 
   return (
@@ -573,7 +664,7 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
               selectDuration={sliderObject.thumbnails.motion?.selectDuration}
               freeScrollDuration={sliderObject.thumbnails.motion?.freeScrollDuration}
               sliderFriction={sliderObject.thumbnails.motion?.friction}
-              loadingOptions={sliderObject.thumbnails.transitions?.loading}
+              loadingOptions={thumbsLoading}
               introOptions={sliderObject.thumbnails.transitions?.intro}
               breakpointMap={sliderObject.thumbnails.breakpointMap}
               rippleEnabled={sliderObject.thumbnails.controls?.ripple?.enabled}
@@ -613,7 +704,6 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
           ...(userProvidedInitialHeight && sliderObject.size?.initialHeight != null
             ? ({ ["--rmg-slider-initial-height" as any]: sliderObject.size.initialHeight } as any)
             : {}),
-          ...(shimmerStyleVars ?? {}),
         }}
       >
         {sliderSkeleton.node}
@@ -691,7 +781,6 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
           lazyLoad={sliderObject.lazyLoad}
           rippleEnabled={sliderObject.controls.ripple.enabled}
           rippleClassName={sliderObject.controls.ripple.className}
-          normalizedItems={normalizedItems}
           sliderImagesReady={sliderImagesReady}
           breakpointMap={effectiveBreakpoints}
           enableFullscreen={!!core?.requestFullscreenOpen}
@@ -734,7 +823,7 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
               selectDuration={sliderObject.thumbnails.motion?.selectDuration}
               freeScrollDuration={sliderObject.thumbnails.motion?.freeScrollDuration}
               sliderFriction={sliderObject.thumbnails.motion?.friction}
-              loadingOptions={sliderObject.thumbnails.transitions?.loading}
+              loadingOptions={thumbsLoading}
               introOptions={sliderObject.thumbnails.transitions?.intro}
               breakpointMap={sliderObject.thumbnails.breakpointMap}
               rippleEnabled={sliderObject.thumbnails.controls?.ripple?.enabled}

@@ -28,7 +28,8 @@ export function useNormalizedEntriesLoading(entries: EntriesOptions) {
     const minHeight = cssLen(src.minHeight) ?? "260px";
 
     return {
-      isLoading: src.isLoading,
+      enabled: src.enabled,
+      force: src.force,
       skeleton: src.skeleton,
       minHeight,
       nearMargin,

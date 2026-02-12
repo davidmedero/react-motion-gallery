@@ -55,6 +55,7 @@ import { buildProgressNode } from './controls/progress';
 import { WindowType } from '../shared/input/pointerTypes'
 import { AXSpec } from '../shared/types/axis';
 import { Translate } from '../shared/motion/translate';
+import { clamp, easeOutCubic, lerp } from '../shared/motion/utils';
 
 function DragTracker(main: AxisKey | undefined, ownerWindow: WindowType) {
   const scroll: AxisKey = main ?? 'x'
@@ -147,7 +148,6 @@ interface SliderProps {
   rippleEnabled?: boolean;
   rippleClassName?: string;
   renderFsCaption?: (args: FsCaptionRenderArgs) => React.ReactNode;
-  normalizedItems: MediaItem[];
   sliderImagesReady?: boolean;
   breakpointMap: BreakpointMap;
   enableFullscreen?: boolean;
@@ -1742,6 +1742,12 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     const body = ScrollBody(location, offsetLocation, previousLocation, target, selectDuration, sliderFriction)
     bodyRef.current = body
 
+    const durNowRef = { current: selectDuration }
+    const durStartRef = { current: selectDuration }
+    const durGoalRef = { current: selectDuration }
+    const durTRef = { current: 1 }
+    const durActiveRef = { current: false }
+
     if (!wrap) {
       const cw = (track as any)[AX.clientKey] as number;
       const min = -(Math.max(0, sliderWidth.current - cw))
@@ -1751,7 +1757,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       povRef.current    = PercentOfView(cw)
       boundsRef.current = ScrollBounds(
         limitRef.current,
-        offsetLocationRef.current!,
+        locationRef.current!,
         targetRef.current!,
         bodyRef.current!,
         povRef.current,
@@ -1769,6 +1775,31 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       () => {
         if (!wrap) {
           boundsRef.current?.constrain(pointerDownRef.current)
+        }
+
+        if (body && durActiveRef.current && !pointerDownRef.current) {
+          const oobNow = !!boundsRef.current?.passed()
+
+          if (!oobNow) {
+            durActiveRef.current = false
+          } else {
+            const easeMs = 260
+            const fixed = 1000 / 60
+            const step = fixed / easeMs
+            durTRef.current = clamp(durTRef.current + step, 0, 1)
+
+            const t = easeOutCubic(durTRef.current)
+            const next = lerp(durStartRef.current, durGoalRef.current, t)
+
+            durNowRef.current = next
+            body.useDuration(next)
+
+            if (durTRef.current >= 1) {
+              durActiveRef.current = false
+              body.useDuration(durGoalRef.current)
+              durNowRef.current = durGoalRef.current
+            }
+          }
         }
 
         bodyRef.current?.seek()
@@ -2011,24 +2042,44 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         
         const force = allowedForce(boostedForce)
 
-        const baseSpeed = selectDuration
         const baseFriction = sliderFriction
         const forceFactor = factorAbs(boostedForce, force)
-        const speed = baseSpeed - 10 * forceFactor
+        const speed = selectDuration - 10 * forceFactor
         const friction = baseFriction + forceFactor / 50
 
-        body.useDuration(speed).useFriction(friction)
+        body.useFriction(friction)
+
+        const oob = !!boundsRef.current?.passed()
+
+        if (oob) {
+          const depth = Math.min(1, Math.abs(offsetLocationRef.current!.get() - limitRef.current!.constrain(offsetLocationRef.current!.get())) / 200)
+          const durStart = clamp(speed + 20 * depth, selectDuration, 90)
+
+          const durGoal = selectDuration
+
+          durStartRef.current = durStart
+          durGoalRef.current = durGoal
+          durTRef.current = 0
+          durActiveRef.current = true
+
+          durNowRef.current = durStart
+          body.useDuration(durStart)
+        } else {
+          durActiveRef.current = false
+          durNowRef.current = speed
+          body.useDuration(speed)
+        }
 
         baseScrollTo.distance(force, true)
       } else {
         const end = tracker.pointerUp(evt as any)
         const raw = (AX.main === 'x' ? end.fx : end.fy)
-        const boosted = forceBoost(raw)
-        const force = boosted
-        const factor = Math.min(1, Math.abs(raw) > 0 ? Math.abs((Math.abs(boosted) - Math.abs(force)) / (raw || 1)) : 0)
-        const speed = freeScrollDuration - 10 * factor
-        const friction = sliderFriction + factor / 50
-        bodyRef.current!.useDuration(speed).useFriction(friction)
+        const force = forceBoost(raw)
+        const forceFactor = factorAbs(raw, force)
+        const speed = freeScrollDuration - 10 * forceFactor
+        const friction = sliderFriction + forceFactor / 50
+
+        body.useDuration(speed).useFriction(friction)
 
         targetRef.current!.add(force)
 
@@ -2697,9 +2748,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     const src = introOptions ?? {};
     return {
       renderIntro: src.renderIntro,
-      staggerMs: src.staggerMs ?? 40,
-      transform: src.transform ?? 10,
-      durationMs: src.durationMs ?? 300,
+      staggerMs: src.staggerMs ?? 60,
+      transform: src.transform ?? 20,
+      durationMs: src.durationMs ?? 600,
       easing: src.easing ?? 'cubic-bezier(.2,.7,.2,1)',
     };
   }, [introOptions]);

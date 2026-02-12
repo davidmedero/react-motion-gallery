@@ -91,10 +91,10 @@ export default function GridLayoutRuntime(props: Props) {
 
   function normalizeLoading(src?: LoadingOptions) {
     return {
-      isLoading: src?.isLoading,
+      enabled: src?.enabled,
+      force: src?.force,
       renderLoading: src?.renderLoading,
       skeleton: src?.skeleton,
-      shimmer: src?.shimmer,
     };
   }
 

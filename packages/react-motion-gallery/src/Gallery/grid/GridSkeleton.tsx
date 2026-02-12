@@ -6,8 +6,13 @@ export type SkeletonLength = number | string;
 export type SkeletonShimmer = {
   enabled?: boolean;
   durationMs?: number;
-  bandSizePct?: number;
   angleDeg?: number;
+  opacity?: number;
+  blurPx?: number;
+  timing?: string;
+  c1?: string;
+  c2?: string;
+  c3?: string;
 };
 
 export type SkeletonBaseStyle = {
@@ -75,12 +80,9 @@ export type SkeletonNode =
 export type GridSkeletonSpec = {
   className?: string;
   layout?: GridSkeletonNode;
-  defaults?: {
-    backgroundColor?: string;
-    highlightColor?: string;
-    radius?: SkeletonLength;
-    shimmer?: SkeletonShimmer;
-  };
+  backgroundColor?: string;
+  radius?: SkeletonLength;
+  shimmer?: SkeletonShimmer;
 };
 
 export type GridSkeletonCardProps = {
@@ -116,22 +118,49 @@ function nodeStyleVars(
   const s: React.CSSProperties = {};
 
   if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio as any;
-
   if (base?.width != null) (s as any).inlineSize = cssLen(base.width);
   if (base?.maxWidth != null) (s as any).maxInlineSize = cssLen(base.maxWidth);
   if (base?.height != null) s.height = cssLen(base.height);
   if (base?.maxHeight != null) s.maxHeight = cssLen(base.maxHeight);
-
   if (base?.backgroundColor) (s as any)["--rmg-skel-bg"] = base.backgroundColor;
   if (base?.borderRadius != null) (s as any)["--rmg-skel-radius"] = cssLen(base.borderRadius);
   if (base?.alignSelf) s.alignSelf = base.alignSelf;
+  
+  if (shimmer?.enabled === false) {
+    (s as any)["--rmg-skel-shimmer-enabled"] = "0";
+  }
 
-  if (shimmer?.enabled === false) (s as any)["--rmg-skel-shimmer-enabled"] = "0";
-  if (shimmer?.durationMs != null)
+  if (shimmer?.durationMs != null) {
     (s as any)["--rmg-skel-shimmer-duration"] = `${shimmer.durationMs}ms`;
-  if (shimmer?.bandSizePct != null)
-    (s as any)["--rmg-skel-shimmer-band"] = `${shimmer.bandSizePct}%`;
-  if (shimmer?.angleDeg != null) (s as any)["--rmg-skel-shimmer-angle"] = `${shimmer.angleDeg}deg`;
+  }
+
+  if (shimmer?.angleDeg != null) {
+    (s as any)["--rmg-skel-shimmer-angle"] = `${shimmer.angleDeg}deg`;
+  }
+
+  if (shimmer?.opacity != null) {
+    (s as any)["--rmg-skel-shimmer-opacity"] = String(shimmer.opacity);
+  }
+
+  if (shimmer?.blurPx != null) {
+    (s as any)["--rmg-skel-shimmer-blur"] = `${shimmer.blurPx}px`;
+  }
+
+  if (shimmer?.timing) {
+    (s as any)["--rmg-skel-shimmer-timing"] = shimmer.timing;
+  }
+
+  if (shimmer?.c1) {
+    (s as any)["--rmg-skel-shimmer-c1"] = shimmer.c1;
+  }
+
+  if (shimmer?.c2) {
+    (s as any)["--rmg-skel-shimmer-c2"] = shimmer.c2;
+  }
+
+  if (shimmer?.c3) {
+    (s as any)["--rmg-skel-shimmer-c3"] = shimmer.c3;
+  }
 
   return s;
 }
@@ -394,9 +423,7 @@ function defaultGridSpec(): GridSkeletonSpec {
       item,
       itemWrapStyle: undefined,
     },
-    defaults: {
-      radius: 12,
-    },
+    radius: 12,
   };
 }
 
@@ -413,15 +440,23 @@ export function GridSkeletonCard({ count, gridStyle, spec }: GridSkeletonCardPro
     ...(gridStyle || {}),
   };
 
-  if (s.defaults?.backgroundColor) (rootStyle as any)["--rmg-skel-bg"] = s.defaults.backgroundColor;
-  if (s.defaults?.highlightColor) (rootStyle as any)["--rmg-skel-hi"] = s.defaults.highlightColor;
-  if (s.defaults?.radius != null) (rootStyle as any)["--rmg-skel-radius"] = cssLen(s.defaults.radius);
+  if (s.backgroundColor) (rootStyle as any)["--rmg-skel-bg"] = s.backgroundColor;
+  if (s.radius != null) (rootStyle as any)["--rmg-skel-radius"] = cssLen(s.radius);
 
-  const sh = s.defaults?.shimmer;
+  const sh = s.shimmer;
+
   if (sh?.enabled === false) (rootStyle as any)["--rmg-skel-shimmer-enabled"] = "0";
   if (sh?.durationMs != null) (rootStyle as any)["--rmg-skel-shimmer-duration"] = `${sh.durationMs}ms`;
-  if (sh?.bandSizePct != null) (rootStyle as any)["--rmg-skel-shimmer-band"] = `${sh.bandSizePct}%`;
   if (sh?.angleDeg != null) (rootStyle as any)["--rmg-skel-shimmer-angle"] = `${sh.angleDeg}deg`;
+  if ((sh as any)?.timing)
+    (rootStyle as any)["--rmg-skel-shimmer-timing"] = (sh as any).timing;
+  if ((sh as any)?.opacity != null)
+    (rootStyle as any)["--rmg-skel-shimmer-opacity"] = String((sh as any).opacity);
+  if ((sh as any)?.blur != null)
+    (rootStyle as any)["--rmg-skel-shimmer-blur"] = cssLen((sh as any).blur);
+  if ((sh as any)?.c1) (rootStyle as any)["--rmg-skel-shimmer-c1"] = (sh as any).c1;
+  if ((sh as any)?.c2) (rootStyle as any)["--rmg-skel-shimmer-c2"] = (sh as any).c2;
+  if ((sh as any)?.c3) (rootStyle as any)["--rmg-skel-shimmer-c3"] = (sh as any).c3;
 
   const { layout, responsiveCss } = React.useMemo(() => {
     let n = 0;

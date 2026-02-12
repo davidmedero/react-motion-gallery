@@ -29,14 +29,14 @@ export function Nav() {
 
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 [@media(min-width:501px)]:px-6 gap-24 [@media(max-width:500px)]:gap-3">
         {/* Left: Logo */}
-        <Link href="/">
+        <Link href="/" className="max-w-150">
           <Image
             src="https://res.cloudinary.com/dxl2ftf2d/image/upload/v1768344498/rmg-text-logo-v8_bwoh3m.png"
             alt="React Motion Gallery"
-            width={628}
-            height={36}
+            width={640}
+            height={28}
+            className="w-full aspect-640/28"
             priority
-            className='min-w-60'
           />
         </Link>
 

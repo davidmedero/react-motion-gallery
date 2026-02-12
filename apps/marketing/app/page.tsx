@@ -66,9 +66,9 @@ export function FsDiagramBasic() {
     <svg
       viewBox="0 0 960 520"
       width="100%"
-      height="auto"
       role="img"
       aria-label="Baseline fullscreen carousel: media, counter, close, and arrows"
+      style={{ height: "auto", width: "auto" }}
     >
       {/* Frame */}
       <rect
@@ -154,9 +154,9 @@ export function FsDiagramWithThumbs() {
     <svg
       viewBox="0 0 960 560"
       width="100%"
-      height="auto"
       role="img"
       aria-label="Fullscreen carousel with bottom thumbnails"
+      style={{ height: "auto", width: "auto" }}
     >
       {/* Frame */}
       <rect
@@ -304,9 +304,9 @@ export function FsDiagramWithCaptionRight() {
     <svg
       viewBox={`0 0 ${VB_W} ${VB_H}`}
       width="100%"
-      height="auto"
       role="img"
       aria-label="Fullscreen carousel with right caption panel"
+      style={{ height: "auto", width: "auto" }}
     >
       {/* Frame */}
       <rect
@@ -446,9 +446,9 @@ export function FsDiagramWithEntriesOverlayBottom() {
     <svg
       viewBox="0 0 960 560"
       width="100%"
-      height="auto"
       role="img"
       aria-label="Fullscreen carousel with bottom entries overlay"
+      style={{ height: "auto", width: "auto" }}
     >
       {/* Frame */}
       <rect
@@ -565,9 +565,9 @@ export function FsDiagramFullConfig() {
     <svg
       viewBox="0 0 960 600"
       width="100%"
-      height="auto"
       role="img"
       aria-label="Fullscreen carousel with bottom thumbnails and right caption panel"
+      style={{ height: "auto", width: "auto" }}
     >
       {/* Frame */}
       <rect
@@ -1645,7 +1645,6 @@ fullscreenCaptionHeight?: number;`}</code>
                 )
               },
               loading: {
-                isLoading: false,
                 skeletonWrap: {
                   style: {
                     backgroundColor: '#fff',

@@ -3,15 +3,25 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './MobileMenu.module.css'
+
+function useIsClient() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+}
 
 type MenuItem =
   | { type: 'link'; href: string; label: string }
   | { type: 'scroll'; targetId: string; label: string }
 
 export default function MobileMenu({ items }: { items: MenuItem[] }) {
+  const isClient = useIsClient();
+
   const router = useRouter()
   const pathname = usePathname()
 
@@ -117,15 +127,17 @@ export default function MobileMenu({ items }: { items: MenuItem[] }) {
         <span className={`${styles.burger} ${styles.bottom}`} aria-hidden />
       </button>
 
-      {typeof document !== 'undefined' &&
-        createPortal(
-          <div
-            className={`${styles.backdrop} ${open ? styles.open : styles.closed}`}
-            onClick={closeMenu}
-            aria-hidden={!open}
-          />,
-          document.body
-        )}
+      {
+        isClient &&
+          createPortal(
+            <div
+              className={`${styles.backdrop} ${open ? styles.open : styles.closed}`}
+              onClick={() => setOpen(false)}
+              aria-hidden={!open}
+            />,
+            document.body
+          )
+      }
 
       <div
         id="mobile-menu-panel"

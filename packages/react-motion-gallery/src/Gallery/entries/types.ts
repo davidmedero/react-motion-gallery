@@ -44,7 +44,8 @@ export type EntrySkeletonResolverArgs = {
 };
 
 export type EntriesLoadingOptions = {
-  isLoading?: boolean;
+  enabled?: boolean;
+  force?: boolean;
   skeleton?:
     | EntrySkeletonSpec
     | ((args: EntrySkeletonResolverArgs) => EntrySkeletonSpec | null | undefined);

@@ -5,6 +5,7 @@ import { resolveNumberFromResponsive } from '../shared/responsive';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
 import { GridSkeletonCard, GridSkeletonSpec } from './GridSkeleton';
+import { IntroOptions, LoadingOptions } from './types';
 
 type GridOptions = {
   columns?: ResponsiveNumber;
@@ -14,42 +15,13 @@ type GridOptions = {
   itemClassName?: string;
 };
 
-type IntroConfig = {
-  active: boolean;
-  containerProps: React.HTMLAttributes<HTMLDivElement>;
-};
-
-type IntroNormalized = {
-  renderIntro?: (args: IntroConfig, inner: React.ReactNode) => React.ReactNode;
-  staggerMs: number;
-  transform: string;
-  durationMs: number;
-  easing: string;
-};
-
-type LoadingNormalized = {
-  isLoading?: boolean;
-  renderLoading?: (args: { count: number }) => React.ReactNode;
-  skeleton?: GridSkeletonSpec;
-  shimmer?: {
-    paddingBottom?: string;
-    radius?: number | string;
-    c1?: string;
-    c2?: string;
-    c3?: string;
-    size?: string;
-    duration?: string;
-    timing?: string;
-  };
-};
-
 export type GridLayoutProps = {
   cells: Array<{ id: string; node: React.ReactNode }>;
   grid: GridOptions;
   breakpoints?: BreakpointMap;
   viewportWidth: number;
-  loading: LoadingNormalized;
-  intro: IntroNormalized;
+  loading: LoadingOptions;
+  intro: IntroOptions;
   enableFullscreen: boolean;
   onOpen: (index: number, originEl?: HTMLElement | null) => void;
   registerExpandableImg: (index: number, node: HTMLElement | null) => void;
@@ -75,30 +47,12 @@ export function GridLayout({
   const [mediaReady, setMediaReady] = React.useState(false);
 
   useInViewOnce(true, gridRootRef as any, () => setInView(true));
-
   useMediaReady(true, gridRootRef as any, setMediaReady);
 
-  const isLoading = loading.isLoading ?? !mediaReady;
-  const introActive = !isLoading && inView;
-
-  const shimmerStyleVars = React.useMemo(() => {
-    const s = loading.shimmer;
-    if (!s) return undefined;
-
-    const px = (v: number | string | undefined) =>
-      v == null ? undefined : typeof v === "number" ? `${v}px` : v;
-
-    return {
-      ...(s.paddingBottom != null ? ({ ["--rmg-shimmer-padding-bottom" as any]: px(s.paddingBottom) } as any) : {}),
-      ...(s.radius != null ? ({ ["--rmg-shimmer-radius" as any]: px(s.radius) } as any) : {}),
-      ...(s.c1 != null ? ({ ["--rmg-shimmer-c1" as any]: s.c1 } as any) : {}),
-      ...(s.c2 != null ? ({ ["--rmg-shimmer-c2" as any]: s.c2 } as any) : {}),
-      ...(s.c3 != null ? ({ ["--rmg-shimmer-c3" as any]: s.c3 } as any) : {}),
-      ...(s.size != null ? ({ ["--rmg-shimmer-size" as any]: s.size } as any) : {}),
-      ...(s.duration != null ? ({ ["--rmg-shimmer-duration" as any]: s.duration } as any) : {}),
-      ...(s.timing != null ? ({ ["--rmg-shimmer-timing" as any]: s.timing } as any) : {}),
-    } as React.CSSProperties;
-  }, [loading.shimmer]);
+  const loadingEnabledFlag = loading.enabled ?? true;
+  const loadingForced = loading.force ?? false;
+  const loadingActive = loadingEnabledFlag && (loadingForced || !mediaReady);
+  const introActive = mediaReady && inView;
 
   const minWidth =
     typeof grid.minColumnWidth === 'number'
@@ -145,7 +99,7 @@ export function GridLayout({
     />
   );
 
-  const loadingNode = isLoading
+  const loadingNode = loadingActive
     ? loading.renderLoading
       ? loading.renderLoading({ count: skeletonCount })
       : defaultGridSkeleton
@@ -324,7 +278,7 @@ export function GridLayout({
       ['--rmg-intro-duration' as any]: `${intro.durationMs}ms`,
       ['--rmg-intro-easing' as any]: intro.easing,
     },
-    'aria-busy': isLoading ? true : undefined,
+    'aria-busy': loadingActive ? true : undefined,
   };
 
   const inner = (
@@ -338,9 +292,9 @@ export function GridLayout({
     : inner;
 
   return (
-    <div style={shimmerStyleVars}>
+    <>
       {loadingNode}
       {introWrapped}
-    </div>
+    </>
   );
 }

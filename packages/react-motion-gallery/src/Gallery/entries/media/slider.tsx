@@ -71,6 +71,12 @@ function EntriesSliderMediaContainer(props: {
 }) {
   const { entryIndex, mediaNodes, opts, entrySliderRefs } = props;
 
+  const hasMedia = Array.isArray(mediaNodes) && mediaNodes.length > 0;
+  if (!hasMedia) {
+    if (entrySliderRefs.current) entrySliderRefs.current[entryIndex] = null;
+    return null;
+  }
+
   const core = useOptionalGalleryCore();
 
   const sliderObject = opts?.sliderObject ?? DEFAULT_SLIDER_OBJECT;

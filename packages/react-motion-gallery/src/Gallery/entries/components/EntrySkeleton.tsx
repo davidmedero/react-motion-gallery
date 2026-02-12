@@ -6,8 +6,13 @@ export type SkeletonLength = number | string;
 export type SkeletonShimmer = {
   enabled?: boolean;
   durationMs?: number;
-  bandSizePct?: number;
   angleDeg?: number;
+  opacity?: number;
+  blurPx?: number;
+  timing?: string;
+  c1?: string;
+  c2?: string;
+  c3?: string;
 };
 
 export type SkeletonBaseStyle = {
@@ -123,8 +128,6 @@ function nodeStyleVars(
   if (shimmer?.enabled === false) (s as any)["--rmg-skel-shimmer-enabled"] = "0";
   if (shimmer?.durationMs != null)
     (s as any)["--rmg-skel-shimmer-duration"] = `${shimmer.durationMs}ms`;
-  if (shimmer?.bandSizePct != null)
-    (s as any)["--rmg-skel-shimmer-band"] = `${shimmer.bandSizePct}%`;
   if (shimmer?.angleDeg != null) (s as any)["--rmg-skel-shimmer-angle"] = `${shimmer.angleDeg}deg`;
 
   return s;
@@ -361,19 +364,40 @@ export function EntrySkeletonCard({ spec, className }: EntrySkeletonCardProps) {
   };
 
   if (s.defaults?.backgroundColor) (rootStyle as any)["--rmg-skel-bg"] = s.defaults.backgroundColor;
-  if (s.defaults?.highlightColor) (rootStyle as any)["--rmg-skel-hi"] = s.defaults.highlightColor;
   if (s.defaults?.radius != null) (rootStyle as any)["--rmg-skel-radius"] = cssLen(s.defaults.radius);
 
   const sh = s.defaults?.shimmer;
+
   if (sh?.enabled === false) (rootStyle as any)["--rmg-skel-shimmer-enabled"] = "0";
-  if (sh?.durationMs != null) (rootStyle as any)["--rmg-skel-shimmer-duration"] = `${sh.durationMs}ms`;
-  if (sh?.bandSizePct != null) (rootStyle as any)["--rmg-skel-shimmer-band"] = `${sh.bandSizePct}%`;
-  if (sh?.angleDeg != null) (rootStyle as any)["--rmg-skel-shimmer-angle"] = `${sh.angleDeg}deg`;
+
+  if (sh?.durationMs != null)
+    (rootStyle as any)["--rmg-skel-shimmer-duration"] = `${sh.durationMs}ms`;
+
+  if (sh?.angleDeg != null)
+    (rootStyle as any)["--rmg-skel-shimmer-angle"] = `${sh.angleDeg}deg`;
+
+  if (sh?.opacity != null)
+    (rootStyle as any)["--rmg-skel-shimmer-opacity"] = String(sh.opacity);
+
+  if (sh?.blurPx != null)
+    (rootStyle as any)["--rmg-skel-shimmer-blur"] = `${sh.blurPx}px`;
+
+  if (sh?.timing)
+    (rootStyle as any)["--rmg-skel-shimmer-timing"] = sh.timing;
+
+  if (sh?.c1)
+    (rootStyle as any)["--rmg-skel-shimmer-c1"] = sh.c1;
+
+  if (sh?.c2)
+    (rootStyle as any)["--rmg-skel-shimmer-c2"] = sh.c2;
+
+  if (sh?.c3)
+    (rootStyle as any)["--rmg-skel-shimmer-c3"] = sh.c3;
 
   if (s.variant === "solid" && !s.layout) {
     return (
       <div
-        className={[styles.entrySkeletonTile, styles.entrySkeletonShimmer, className]
+        className={[styles.entrySkelTile, className]
           .filter(Boolean)
           .join(" ")}
         style={rootStyle}

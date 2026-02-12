@@ -80,41 +80,17 @@ function Demo() {
       <p style={{ margin: "0 0 16px", opacity: 0.8 }}>
         Click any masonry image. Fullscreen should open. Close it, and it should fully reset.
       </p>
-
-      {/* ✅ Provider wraps Masonry runtime + Fullscreen addon */}
       <GalleryCore layout="masonry" fullscreenItems={ITEMS}>
-        <div
-          style={{
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 16,
-            padding: 16,
-          }}
+        <Masonry
+          columns={{ xs: 2, md: 3, lg: 4 }}
+          gap={10}
         >
-          <Masonry
-            columns={{ xs: 2, md: 3, lg: 4 }}
-            gap={10 as any}
-            loading={{
-              // isLoading: true,
-              shimmer: {
-                radius: 14,
-                c1: "rgba(140,140,140,0.06)",
-                c2: "rgba(140,140,140,0.14)",
-                c3: "rgba(140,140,140,0.06)",
-                duration: "1.35s",
-                size: "280% 100%",
-                timing: 'linear'
-              },
-              ratios: [100, 60, 130, 80]
-            }}
-          >
-            {ITEMS.map((src, i) => (
-              <div key={src}>
-                <MasonryCell src={src} i={i} />
-              </div>
-            ))}
-          </Masonry>
-        </div>
-
+          {ITEMS.map((src, i) => (
+            <div key={src}>
+              <MasonryCell src={src} i={i} />
+            </div>
+          ))}
+        </Masonry>
         <FullscreenAddon sliderObject={sliderObject} cellsStateLength={ITEMS.length} />
       </GalleryCore>
     </div>

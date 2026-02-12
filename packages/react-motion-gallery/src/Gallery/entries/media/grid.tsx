@@ -1,32 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import * as React from "react";
 import { GridLayout } from "../../grid/GridLayout";
 import type { EntriesMediaContainerRender } from "../index";
 import { BREAKPOINT_MAP } from "../../shared/responsive";
 import { useViewportWidth } from "../../shared/hooks/useViewportWidth";
 import { useOptionalGalleryCore } from "../../core";
-import { IntroOptions, LoadingOptions } from "../../grid/types";
+import type { IntroOptions, LoadingOptions } from "../../grid/types";
 
 export function createEntriesGridMedia(args: {
   gridObject?: any;
-  gridLoading?: any;
-  gridIntro?: any;
+  gridLoading?: LoadingOptions;
+  gridIntro?: IntroOptions;
 }): EntriesMediaContainerRender {
   const { gridObject, gridLoading, gridIntro } = args;
 
-  const core = useOptionalGalleryCore();
-
   function normalizeLoading(src?: LoadingOptions) {
     return {
-      isLoading: src?.isLoading,
+      enabled: src?.enabled,
+      force: src?.force,
       renderLoading: src?.renderLoading,
       skeleton: src?.skeleton,
-      shimmer: src?.shimmer,
-    };
+    }
   }
-
-  const normalizedLoading = normalizeLoading(gridLoading ?? gridObject?.loading);
 
   function normalizeIntro(src?: IntroOptions) {
     return {
@@ -35,20 +32,30 @@ export function createEntriesGridMedia(args: {
       transform: src?.transform ?? "translateY(10px) scale(0.99)",
       durationMs: src?.durationMs ?? 300,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
-    };
+      staggerLimit: src?.staggerLimit,
+    }
   }
-  
+
+  const normalizedLoading = normalizeLoading(gridLoading ?? gridObject?.loading);
   const normalizedIntro = normalizeIntro(gridIntro ?? gridObject?.intro);
 
-  const viewportWidth = useViewportWidth();
+  function EntriesGridMediaInner(props: { entryIndex: number; mediaNodes: React.ReactNode[] }) {
+    const { entryIndex, mediaNodes } = props;
 
-  const breakpoints = (core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP });
+    if (!Array.isArray(mediaNodes) || mediaNodes.length === 0) return null;
 
-  return ({ entryIndex, mediaNodes }) => {
-    const cells = mediaNodes.map((node, i) => ({
-      id: `entry-${entryIndex}-media-${i}`,
-      node,
-    }));
+    const core = useOptionalGalleryCore();
+    const viewportWidth = useViewportWidth();
+    const breakpoints = core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP };
+
+    const cells = React.useMemo(
+      () =>
+        mediaNodes.map((node, i) => ({
+          id: `entry-${entryIndex}-media-${i}`,
+          node,
+        })),
+      [entryIndex, mediaNodes]
+    );
 
     return (
       <GridLayout
@@ -65,5 +72,9 @@ export function createEntriesGridMedia(args: {
         registerExpandableImg={() => {}}
       />
     );
-  };
+  }
+
+  return ({ entryIndex, mediaNodes }) => (
+    <EntriesGridMediaInner entryIndex={entryIndex} mediaNodes={mediaNodes} />
+  );
 }

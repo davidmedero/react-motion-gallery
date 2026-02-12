@@ -11,7 +11,8 @@ export type ResponsivePosition =
   | Record<string, ThumbnailPosition>;
 
 export type ThumbnailLoadingOptions = {
-  isLoading?: boolean;
+  enabled?: boolean;
+  force?: boolean;
   skeletonCount?: ResponsiveNumber;
   renderLoading?: () => React.ReactNode;
 };

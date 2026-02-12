@@ -4,7 +4,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
-import GridLayoutRuntime from "../../../packages/react-motion-gallery/src/Gallery/grid";
+import Grid from "../../../packages/react-motion-gallery/src/Gallery/grid";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
 
 type Product = {
@@ -42,12 +42,9 @@ function ProductCard({ product }: { product: Product }) {
         borderRadius: 16,
         border: "1px solid rgba(255,255,255,0.10)",
         background: "rgba(255,255,255,0.02)",
-
-        // ✅ IMPORTANT: let the card grow for title/price
         overflow: "visible",
       }}
     >
-      {/* ✅ image wrapper ONLY clips/crops the image */}
       <div
         style={{
           width: "100%",
@@ -68,8 +65,6 @@ function ProductCard({ product }: { product: Product }) {
           }}
         />
       </div>
-
-      {/* ✅ text is in normal flow and will not be clipped */}
       <div style={{ padding: 12 }}>
         <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.25 }}>
           {product.title}
@@ -114,26 +109,99 @@ function Demo() {
       <p style={{ margin: "0 0 16px", opacity: 0.8 }}>
         Click any product image. Fullscreen should open. Close it, and it should fully reset.
       </p>
-
       <GalleryCore layout="grid" fullscreenItems={FULLSCREEN_ITEMS}>
-        <div
-          style={{
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 16,
+        <Grid
+          columns={{ 0: 1, 500: 2, 768: 3, 1024: 4, 1280: 5 }}
+          gap={12}
+          loading={{
+            // isLoading: true,
+            skeleton: {
+              layout: {
+                kind: "grid",
+                itemWrapStyle: undefined,
+                count: 12,
+                item: {
+                  kind: "stack",
+                  style: {
+                    width: "100%",
+                    padding: 0,
+                    gap: 0,
+                  },
+                  children: [
+                    // CARD SHELL (border + bg + radius)
+                    {
+                      kind: "rect",
+                      style: {
+                        width: "100%",
+                        borderRadius: 16,
+                      },
+                    },
+
+                    // CONTENT LAYER: image + text
+                    {
+                      kind: "col",
+                      style: {
+                        width: "100%",
+                        gap: 0,
+                      },
+                      children: [
+                        // IMAGE AREA (fixed 360px, radius 16, clipped)
+                        {
+                          kind: "rect",
+                          style: {
+                            width: "100%",
+                            height: 360,
+                            borderRadius: 16,
+                            backgroundColor: "#eaeaea",
+                          },
+                        },
+
+                        // TEXT AREA (padding 12)
+                        {
+                          kind: "col",
+                          style: {
+                            width: "100%",
+                            padding: 12,
+                            gap: 8,
+                          },
+                          children: [
+                            // title line
+                            {
+                              kind: "rect",
+                              style: {
+                                width: "72%",
+                                height: 14,
+                                borderRadius: 6,
+                                backgroundColor: "#eaeaea",
+                              },
+                            },
+
+                            // price line
+                            {
+                              kind: "rect",
+                              style: {
+                                width: "44%",
+                                height: 13,
+                                borderRadius: 6,
+                                backgroundColor: "#eaeaea",
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            }
           }}
         >
-          <GridLayoutRuntime
-            columns={{ 0: 1, 500: 2, 768: 3, 1024: 4, 1280: 5 }}
-            gap={12}
-          >
-            {PRODUCTS.map((product) => (
-              <div key={product.id}>
-                <ProductCard product={product} />
-              </div>
-            ))}
-          </GridLayoutRuntime>
-        </div>
-
+          {PRODUCTS.map((product) => (
+            <div key={product.id}>
+              <ProductCard product={product} />
+            </div>
+          ))}
+        </Grid>
         <FullscreenAddon
           sliderObject={sliderObject}
           cellsStateLength={FULLSCREEN_ITEMS.length}

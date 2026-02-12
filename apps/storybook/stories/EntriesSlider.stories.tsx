@@ -202,7 +202,6 @@ function Demo() {
                 )
               },
               loading: {
-                isLoading: false,
                 skeletonWrap: {
                   style: {
                     backgroundColor: '#fff',

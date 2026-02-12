@@ -62,13 +62,11 @@ function Demo() {
       <p style={{ margin: "0 0 16px", opacity: 0.8 }}>
         Click any grid image. Fullscreen should open. Close it, and it should fully reset.
       </p>
-
       <GalleryCore layout="grid" fullscreenItems={ITEMS}>
         <Grid
           columns={{ 0: 1, 500: 2, 768: 3, 1024: 4, 1280: 5 }}
           gap={12}
           loading={{
-            // isLoading: true,
             skeleton: {
               layout: {
                 kind: "grid",
