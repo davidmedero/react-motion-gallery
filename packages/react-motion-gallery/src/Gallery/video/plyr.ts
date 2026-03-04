@@ -1,11 +1,16 @@
-import { MediaItem } from "../shared/types/media";
-import type { PlyrSourceBuilder } from "./plyrTypes";
+import type { MediaItem } from "../shared/types/media";
+import type {
+  PlyrOptions,
+  PlyrOptionsBuilder,
+  PlyrSource,
+  PlyrSourceBuilder,
+} from "./plyrTypes";
 
-export type PlyrProp = { source: Plyr.SourceInfo; options: Plyr.Options } | null;
+export type PlyrProp = { source: PlyrSource; options: PlyrOptions } | null;
 
-export const defaultPlyrOptions: Plyr.Options = {
+export const defaultPlyrOptions: PlyrOptions = {
   controls: ["play-large", "play", "progress", "current-time", "volume", "fullscreen"],
-  ratio: "16:9",
+  ratio: "",
   fullscreen: { enabled: true, fallback: true, iosNative: true },
 };
 
@@ -15,11 +20,10 @@ export const defaultPlyrSource: PlyrSourceBuilder = (item) => ({
   sources: [{ src: (item as any).src, type: "video/mp4" }],
 });
 
-export const getSource = (item: MediaItem) =>
-  ({
-    type: "video",
-    sources: [{ src: (item as any).src, type: "video/mp4" }],
-  }) as Plyr.SourceInfo;
+export const getSource = (item: MediaItem): PlyrSource => ({
+  type: "video",
+  sources: [{ src: (item as any).src, type: "video/mp4" }],
+});
 
 export const getOptions = () => defaultPlyrOptions;
 
@@ -27,8 +31,8 @@ export const isVideoItem = (m: MediaItem) => m.kind === "video";
 
 export function buildPlyrProps(
   items: MediaItem[],
-  getSource: (item: MediaItem, index: number) => Plyr.SourceInfo,
-  resolveOptions: (item: MediaItem, index: number) => Plyr.Options
+  getSource: (item: MediaItem, index: number) => PlyrSource,
+  resolveOptions: (item: MediaItem, index: number) => PlyrOptions
 ): PlyrProp[] {
   return items.map((item, index) => {
     if (!isVideoItem(item)) return null;
@@ -37,21 +41,25 @@ export function buildPlyrProps(
 }
 
 export function mergePlyrOptions(
-  base: Plyr.Options,
-  options?: Plyr.Options | ((item: MediaItem, index: number) => Plyr.Options)
+  base: PlyrOptions,
+  options?: PlyrOptionsBuilder
 ) {
-  return (item: MediaItem, index: number) => {
-    const resolved = typeof options === "function" ? options(item, index) : (options ?? base);
+  return (item: MediaItem, index: number): PlyrOptions => {
+    const resolved =
+      typeof options === "function" ? options(item, index) : (options ?? {});
+
     return { ...base, ...resolved };
   };
 }
 
-export function detectProvider(source: any): "youtube" | "vimeo" | "mp4" | "other" {
-  const provider = String(source?.sources?.[0]?.provider ?? "").toLowerCase();
+export function detectProvider(source: unknown): "youtube" | "vimeo" | "mp4" | "other" {
+  const s = source as Partial<PlyrSource> | null | undefined;
+
+  const provider = String(s?.sources?.[0]?.provider ?? "").toLowerCase();
   if (provider === "youtube") return "youtube";
   if (provider === "vimeo") return "vimeo";
 
-  const src0 = String(source?.sources?.[0]?.src ?? "").toLowerCase();
+  const src0 = String(s?.sources?.[0]?.src ?? "").toLowerCase();
   const looksMp4 = src0.endsWith(".mp4") || src0.includes(".mp4?");
   if (looksMp4) return "mp4";
 

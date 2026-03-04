@@ -20,7 +20,7 @@ type Props = {
     mediaNodes: React.ReactNode[];
     entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
   }) => React.ReactNode;
-  registerExpandableImg?: (globalIndex: number, node: HTMLElement | null) => void;
+  registerExpandableImage?: (globalIndex: number, node: HTMLImageElement | HTMLVideoElement | null) => void;
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
 };
 
@@ -32,7 +32,7 @@ export function EntryList({
   entryFlatIndexRef,
   nodeFromMedia,
   renderMediaContainer,
-  registerExpandableImg,
+  registerExpandableImage,
   entrySliderRefs,
 }: Props) {
   const DRAG_PX = 6;
@@ -155,8 +155,8 @@ export function EntryList({
                 ? entries.render.media({ entry, entryIndex, media, mediaIndex })
                 : nodeFromMedia(media);
 
-            const reg = (node: HTMLElement | null) => {
-              registerExpandableImg?.(globalIndex, node);
+            const reg = (node: HTMLImageElement | HTMLVideoElement | null) => {
+              registerExpandableImage?.(globalIndex, node);
             };
 
             const handleClick: React.MouseEventHandler<HTMLElement> = (e) => {
@@ -177,7 +177,7 @@ export function EntryList({
               };
 
               if (typeof original.type === "string") {
-                const mergedRef: React.RefCallback<HTMLElement> = (node) => {
+                const mergedRef: React.RefCallback<HTMLImageElement | HTMLVideoElement | null> = (node) => {
                   if (typeof origRef === "function") origRef(node);
                   else if (origRef && typeof origRef === "object") (origRef as any).current = node;
                   reg(node);
@@ -224,15 +224,14 @@ export function EntryList({
             }
 
             return (
-              <button
+              <div
                 key={`${entryIndex}-${mediaIndex}`}
-                type="button"
                 className={styles.entryMediaButton}
                 onClick={handleClick}
                 ref={reg as any}
               >
                 {rawContent as any}
-              </button>
+              </div>
             );
           });
 

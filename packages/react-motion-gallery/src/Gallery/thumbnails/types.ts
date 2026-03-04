@@ -1,7 +1,7 @@
 import type * as React from "react";
-import type { BreakpointMap, ResponsiveNumber } from "../../shared/responsive";
-import type { ArrowRenderArgs } from "../../shared/types/controls";
-import { ElementStyle } from "../../shared/types/elements";
+import type { BreakpointMap, ResponsiveNumber } from "../shared/responsive";
+import type { ArrowRenderArgs } from "../shared/types/controls";
+import { ElementStyle } from "../shared/types/elements";
 
 export type ThumbnailPosition = "top" | "right" | "bottom" | "left";
 
@@ -23,7 +23,7 @@ export type ThumbnailIntroOptions = {
     inner: React.ReactNode
   ) => React.ReactNode;
   staggerMs?: number;
-  transform?: number;
+  transform?: string;
   durationMs?: number;
   easing?: string;
 };

@@ -8,17 +8,24 @@ import { DEFAULT_FULLSCREEN } from "./defaults";
 import { createFullscreenSliderSub } from "./fullscreenSliderSub";
 import { createGestureShield } from "./gestureShield";
 import { handleZoomToggle } from "../zoomPan/zoom/handleZoomToggle";
-import { resolvePositionFromResponsive } from "../shared/responsive";
-import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { useWindowSize } from "../shared/hooks/useWindowSize";
 import type { MediaItem } from "../shared/types/media";
-import type { FsCaptionPlacement, FsIntroRequest, FullscreenOptions } from "./types";
+import type {
+  FsCaptionPlacement,
+  FsIntroRequest,
+  FullscreenEffectsOptions,
+  FullscreenOptions,
+} from "./types";
 import type { PanAxisType as AxisType } from "../shared/types/axis";
 import type { ScrollBodyType } from "../shared/motion/scrollBody";
 import type { AnimationsType } from "../shared/motion/animations";
 import type { ScrollBoundsType } from "../shared/motion/scrollBounds";
 import type { Vector1DType } from "../shared/motion/vector1d";
 import type { IndexMode } from "../api/types";
+import type {
+  FullscreenThumbnailBridge,
+  FullscreenThumbnailSlotLayout,
+} from "../fullscreenThumbnails/types";
 import type { SliderOptions } from "../slider/types";
 import type { FullscreenSliderHandle } from "./FullscreenSlider";
 import FullscreenRuntime from "./FullscreenRuntime";
@@ -36,6 +43,41 @@ function useOpenEpoch(open: boolean) {
   return epoch;
 }
 
+function sameStyleObject(
+  a?: React.CSSProperties,
+  b?: React.CSSProperties
+) {
+  if (a === b) return true;
+  if (!a || !b) return !a && !b;
+
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+
+  for (const key of aKeys) {
+    if (a[key as keyof React.CSSProperties] !== b[key as keyof React.CSSProperties]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function sameFullscreenThumbnailSlotLayout(
+  a: FullscreenThumbnailSlotLayout | null,
+  b: FullscreenThumbnailSlotLayout
+) {
+  if (!a) return false;
+
+  return (
+    a.position === b.position &&
+    a.className === b.className &&
+    a.fadeDurationMs === b.fadeDurationMs &&
+    a.fadeEasing === b.fadeEasing &&
+    sameStyleObject(a.style, b.style)
+  );
+}
+
 export type UseFullscreenArgs = {
   fullscreen?: FullscreenOptions;
   slider?: SliderOptions;
@@ -44,14 +86,13 @@ export type UseFullscreenArgs = {
 };
 
 export function useFullscreenController(args: UseFullscreenArgs) {
-  const { fullscreen, slider, sliderObject, cellsStateLength } = args;
+  const { fullscreen, sliderObject, cellsStateLength } = args;
 
   const core = useGalleryCore();
 
   const {
     layout,
     normalizedItems,
-    effectiveBreakpoints,
     fsOpenSub,
     setFullscreenOpen,
     sliderApiRef,
@@ -124,7 +165,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   const [showFullscreenSlider, setShowFullscreenSlider] = useState(false);
   const fullscreenSliderApi = useRef<FullscreenSliderHandle>(null);
   const isZooming = useRef(false);
-  const expandableImgRefs = core.expandableImgRefs;
+  const expandableImageRefs = core.expandableImageRefs;
   const overlayDivRef = useRef<HTMLDivElement | null>(null);
   const duplicateImgRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLElement | null>(null);
@@ -167,6 +208,10 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   const overlayCaptionRef = useRef<HTMLDivElement | null>(null);
   const overlayCaptionRootRef = useRef<ReturnType<typeof createRoot> | null>(null);
   const fsThumbContainerRef = useRef<HTMLDivElement | null>(null);
+  const [fullscreenThumbnailSlot, setFullscreenThumbnailSlot] =
+    useState<FullscreenThumbnailSlotLayout | null>(null);
+  const [fullscreenThumbnailMountEl, setFullscreenThumbnailMountElState] =
+    useState<HTMLDivElement | null>(null);
   const epoch = useOpenEpoch(showFullscreenModal);
   const suppressLoopRef = useRef(false);
   const shieldCleanupRef = useRef<null | (() => void)>(null);
@@ -185,18 +230,28 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   const requestFsCloseRef = useRef<null | (() => void)>(null);
 
   const fs = useMemo(() => {
+    const fullscreenRest = {
+      ...(fullscreen ?? {}),
+    } as FullscreenOptions & { thumbnails?: unknown };
+    delete fullscreenRest.thumbnails;
+
+    const fullscreenEffects = {
+      ...(fullscreen?.effects ?? {}),
+    } as FullscreenEffectsOptions & {
+      thumbnailsFadeDuration?: number;
+      thumbnailsFadeEasing?: string;
+    };
+    delete fullscreenEffects.thumbnailsFadeDuration;
+    delete fullscreenEffects.thumbnailsFadeEasing;
+
     return {
       ...DEFAULT_FULLSCREEN,
-      ...(fullscreen ?? {}),
+      ...fullscreenRest,
       slider: { ...DEFAULT_FULLSCREEN.slider, ...(fullscreen?.slider ?? {}) },
       zoom: { ...DEFAULT_FULLSCREEN.zoom, ...(fullscreen?.zoom ?? {}) },
-      effects: { ...DEFAULT_FULLSCREEN.effects, ...(fullscreen?.effects ?? {}) },
+      effects: { ...DEFAULT_FULLSCREEN.effects, ...fullscreenEffects },
       controls: { ...(fullscreen?.controls ?? {}) },
       caption: { ...DEFAULT_FULLSCREEN.caption, ...(fullscreen?.caption ?? {}) },
-      thumbnails: {
-        ...DEFAULT_FULLSCREEN.thumbnails,
-        ...(fullscreen?.thumbnails ?? {}),
-      },
     };
   }, [fullscreen]);
 
@@ -230,6 +285,55 @@ export function useFullscreenController(args: UseFullscreenArgs) {
     const teardown = shieldRef.current?.add(timeoutMs);
     shieldCleanupRef.current = teardown ?? null;
   }, []);
+
+  const setFullscreenThumbnailMountEl = useCallback(
+    (node: HTMLDivElement | null) => {
+      fsThumbContainerRef.current = node;
+      setFullscreenThumbnailMountElState(node);
+    },
+    []
+  );
+
+  const registerFullscreenThumbnailLayout = useCallback(
+    (nextLayout: FullscreenThumbnailSlotLayout) => {
+      setFullscreenThumbnailSlot((current) => {
+        if (sameFullscreenThumbnailSlotLayout(current, nextLayout)) {
+          return current;
+        }
+
+        return nextLayout;
+      });
+    },
+    []
+  );
+
+  const clearFullscreenThumbnailLayout = useCallback(() => {
+    setFullscreenThumbnailSlot(null);
+  }, []);
+
+  const fullscreenDirection: "ltr" | "rtl" =
+    sliderObject.direction?.dir === "rtl" ? "rtl" : "ltr";
+
+  const fullscreenThumbnailBridge = useMemo<FullscreenThumbnailBridge>(
+    () => ({
+      mountEl: fullscreenThumbnailMountEl,
+      fsSub,
+      visible: showFullscreenModal,
+      invisible: closingModal,
+      direction: fullscreenDirection,
+      registerLayout: registerFullscreenThumbnailLayout,
+      clearLayout: clearFullscreenThumbnailLayout,
+    }),
+    [
+      fullscreenThumbnailMountEl,
+      fsSub,
+      showFullscreenModal,
+      closingModal,
+      fullscreenDirection,
+      registerFullscreenThumbnailLayout,
+      clearFullscreenThumbnailLayout,
+    ]
+  );
 
   const syncFullscreenSourceFromIndex = useCallback(
     (nextIndex: number) => {
@@ -278,49 +382,54 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   );
 
   const openFullscreenAt = useCallback(
-    (source: FullscreenOpenRequest["source"], gridIndex: number, originEl?: HTMLElement | null) => {
-      if (!fs.enabled) return;
+  (source: FullscreenOpenRequest["source"], gridIndex: number, originEl?: HTMLElement | null) => {
+    if (!fs.enabled) return;
 
-      syncBeforeOpen(source, gridIndex);
+    syncBeforeOpen(source, gridIndex);
 
-      const imageCount = normalizedItems.length;
-      if (!imageCount) return;
+    const cellCount = normalizedItems.length;
+    if (!cellCount) return;
 
-      let imgEl: HTMLImageElement | null = null;
+    let mediaEl: HTMLImageElement | null = null;
 
-      if (originEl) {
-        imgEl =
-          originEl.tagName === "IMG"
-            ? (originEl as HTMLImageElement)
-            : originEl.querySelector("img");
+    if (originEl) {
+      if (originEl instanceof HTMLImageElement) {
+        mediaEl = originEl;
+      } else {
+        const img = originEl.querySelector("img") as HTMLImageElement | null;
+        if (img) {
+          mediaEl = img;
+        }
       }
+    }
 
-      if (!imgEl) {
-        imgEl = (expandableImgRefs.current[gridIndex] ?? null) as HTMLImageElement | null;
-      }
+    if (!mediaEl) {
+      mediaEl = (expandableImageRefs.current[gridIndex] ?? null) as HTMLImageElement | null;
+    }
 
-      if (!imgEl) return;
+    if (!mediaEl) return;
 
-      let fullscreenIndex = gridIndex;
-      if (layout === "grid" || layout === "masonry") fullscreenIndex = gridIndex;
+    let fullscreenIndex = gridIndex;
+    if (layout === "grid" || layout === "masonry") fullscreenIndex = gridIndex;
 
-      const sel = getClosestSelector(source);
+    const sel = getClosestSelector(source);
 
-      isClick.current = true;
+    isClick.current = true;
 
-      setFullscreenOpen(true);
+    setFullscreenOpen(true);
+    fsSub.setLocalIndex(fullscreenIndex);
 
-      setShowFullscreenModal(true);
+    setShowFullscreenModal(true);
 
-      setFsIntroReq({
-        origImg: imgEl,
-        index: fullscreenIndex,
-        closestSelector: sel
-      });
+    setFsIntroReq({
+      originalImage: mediaEl,
+      index: fullscreenIndex,
+      closestSelector: sel
+    });
 
-      setSlideIndex(fullscreenIndex);
-    },
-    [fs.enabled, normalizedItems.length, syncBeforeOpen, layout, setFullscreenOpen]
+    setSlideIndex(fullscreenIndex);
+  },
+    [fs.enabled, normalizedItems.length, syncBeforeOpen, layout, setFullscreenOpen, fsSub, expandableImageRefs, getClosestSelector]
   );
 
   const centerSliderForFullscreen = () => {
@@ -333,38 +442,12 @@ export function useFullscreenController(args: UseFullscreenArgs) {
     handle?.setIndex?.(index, mode);
   };
 
-  const vw = useViewportWidth();
-
-  const fsResolvedThumbPos = useMemo(
-    () =>
-      resolvePositionFromResponsive(
-        fs.thumbnails?.layout?.position,
-        "bottom",
-        vw,
-        effectiveBreakpoints
-      ),
-    [fs.thumbnails?.layout?.position, vw, effectiveBreakpoints]
-  );
-
-  const flexDirection =
-    fs.thumbnails?.layout?.position === "left"
-      ? "row-reverse"
-      : fs.thumbnails?.layout?.position === "right"
-      ? "row"
-      : fs.thumbnails?.layout?.position === "top"
-      ? "column-reverse"
-      : "column";
-
-  const fsThumbsOpen = showFullscreenModal && !closingModal;
-  const fsThumbFadeDuration = fs.effects.thumbnailsFadeDuration;
-  const fsThumbFadeEasing = fs.effects.thumbnailsFadeEasing;
-
   useEffect(() => {
     if (!fs.enabled) return;
 
     const unsub = fsOpenSub.subscribe((req) => {
       syncFullscreenSourceFromIndex(req.index);
-      openFullscreenAt(req.source, req.index, req.img ?? null);
+      openFullscreenAt(req.source, req.index, req.image ?? null);
       setFullscreenOpen(true);
     });
 
@@ -410,7 +493,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         centerSliderForFullscreen={centerSliderForFullscreen}
         setSliderIndexForFullscreen={setSliderIndexForFullscreen}
         layout={layout}
-        expandableImgRefs={expandableImgRefs}
+        expandableImageRefs={expandableImageRefs}
         entryMapRef={safeEntryMapRef}
         entryMediaLayout={safeEntryMediaLayout}
         introFade={fs.effects.introFade}
@@ -427,7 +510,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         isZooming={isZooming}
         wrappedModePlyrRefs={wrappedModePlyrRefs}
         singleModePlyrRefs={singleModePlyrRefs}
-        direction={sliderObject.direction.dir}
+        direction={fullscreenDirection}
         sliderDuration={fs.slider.duration}
         sliderFriction={fs.slider.friction}
         suppressLoopRef={suppressLoopRef}
@@ -436,42 +519,9 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         slideFadeDuration={fs.effects.slideFadeDuration}
         slideFadeEasing={fs.effects.slideFadeEasing}
         normalizedItems={normalizedItems}
-        flexDirection={flexDirection}
         fsThumbContainerRef={fsThumbContainerRef}
-        fsThumbFadeDuration={fsThumbFadeDuration}
-        fsThumbFadeEasing={fsThumbFadeEasing}
-        fsThumbsOpen={fsThumbsOpen}
-        fsResolvedThumbPos={fsResolvedThumbPos}
-        fsThumbnailsPositionDefined={fs.thumbnails?.layout?.position !== undefined}
-        fsThumbnailsContainerClassName={fs.thumbnails?.elements?.container?.className}
-        fsThumbnailsContainerStyle={fs.thumbnails?.elements?.container?.style}
-        fsThumbThumbnailWidth={fs.thumbnails?.layout?.thumbnail?.width}
-        fsThumbThumbnailHeight={fs.thumbnails?.layout?.thumbnail?.height}
-        fsThumbCenter={fs.thumbnails?.layout?.center}
-        fsThumbContainerWidth={fs.thumbnails?.layout?.container?.width}
-        fsThumbContainerHeight={fs.thumbnails?.layout?.container?.height}
-        fsThumbGap={fs.thumbnails?.layout?.gap}
-        fsThumbFreeScroll={fs.thumbnails?.scroll?.freeScroll}
-        fsThumbGroupCells={fs.thumbnails?.scroll?.groupCells}
-        fsThumbLoop={fs.thumbnails?.scroll?.loop}
-        fsThumbSkipSnaps={fs.thumbnails?.scroll?.skipSnaps}
-        fsThumbCenterActiveThumb={fs.thumbnails?.scroll?.centerActiveThumb}
-        fsThumbSelectDuration={fs.thumbnails?.motion?.selectDuration}
-        fsThumbFreeScrollDuration={fs.thumbnails?.motion?.freeScrollDuration}
-        fsThumbFriction={fs.thumbnails?.motion?.friction}
-        fsThumbBreakpointMap={fs.thumbnails?.breakpointMap}
-        fsThumbRippleEnabled={fs.thumbnails?.controls?.ripple?.enabled}
-        fsThumbRippleClassName={fs.thumbnails?.controls?.ripple?.className}
-        fsThumbControlsEnabled={fs.thumbnails?.controls?.enabled}
-        sliderThumbArrowStyles={slider?.thumbnails?.controls?.arrow?.style}
-        sliderThumbArrowClassName={slider?.thumbnails?.controls?.arrow?.className}
-        sliderThumbRenderArrows={slider?.thumbnails?.controls?.render}
-        fsThumbPrevArrowStyles={fs.thumbnails?.controls?.prev?.style}
-        fsThumbPrevArrowClassName={fs.thumbnails?.controls?.prev?.className}
-        fsThumbNextArrowStyles={fs.thumbnails?.controls?.next?.style}
-        fsThumbNextArrowClassName={fs.thumbnails?.controls?.next?.className}
-        fsThumbRenderPrevArrow={fs.thumbnails?.controls?.renderPrev}
-        fsThumbRenderNextArrow={fs.thumbnails?.controls?.renderNext}
+        fullscreenThumbnailSlot={fullscreenThumbnailSlot}
+        setFullscreenThumbnailMountEl={setFullscreenThumbnailMountEl}
         showFsEntryOverlayMount={showFullscreenModal && canMountEntryOverlay}
         fsIntroReq={fsIntroReq}
         clearFsIntroReq={() => setFsIntroReq(null)}
@@ -517,9 +567,10 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   return {
     fs,
     fullscreenNode,
+    fullscreenThumbnailBridge,
     openFullscreenAt,
     isClick,
-    expandableImgRefs,
+    expandableImageRefs,
     overlayDivRef,
     duplicateImgRef,
     closeButtonRef,

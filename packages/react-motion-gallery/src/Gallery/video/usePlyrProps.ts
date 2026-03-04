@@ -1,14 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { PlyrSourceBuilder } from "./plyrTypes";
-import { buildPlyrProps, defaultPlyrOptions, defaultPlyrSource, mergePlyrOptions, PlyrProp } from "./plyr";
-import { MediaItem } from "../shared/types/media";
+import type { PlyrOptionsBuilder, PlyrSourceBuilder } from "./plyrTypes";
+import {
+  buildPlyrProps,
+  defaultPlyrOptions,
+  defaultPlyrSource,
+  mergePlyrOptions,
+  type PlyrProp,
+} from "./plyr";
+import type { MediaItem } from "../shared/types/media";
 
 export type UsePlyrPropsArgs = {
   items: MediaItem[];
   source?: PlyrSourceBuilder;
-  options?: Plyr.Options | ((item: MediaItem, index: number) => Plyr.Options); 
+  options?: PlyrOptionsBuilder;
 };
 
 export function usePlyrProps(args: UsePlyrPropsArgs): PlyrProp[] {

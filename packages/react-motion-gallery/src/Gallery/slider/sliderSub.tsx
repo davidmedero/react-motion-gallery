@@ -8,7 +8,9 @@ export type IndexEvent =
 
 type EventListener = (ev: IndexEvent) => void;
 
-export default function createIndexChannel(initialIndex = 0, initialMode: IndexMode = 'animated') {
+export type SliderIndexChannel = ReturnType<typeof createSliderIndexChannel>;
+
+export function createSliderIndexChannel(initialIndex = 0, initialMode: IndexMode = 'animated') {
   let index = initialIndex;
   let mode: IndexMode = initialMode;
   let lastEvent: IndexEvent = { type: 'set', index: initialIndex, mode: initialMode };
@@ -53,3 +55,5 @@ export default function createIndexChannel(initialIndex = 0, initialMode: IndexM
     },
   };
 }
+
+export default createSliderIndexChannel;

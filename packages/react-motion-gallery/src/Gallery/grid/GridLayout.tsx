@@ -4,8 +4,10 @@ import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
 import { resolveNumberFromResponsive } from '../shared/responsive';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
-import { GridSkeletonCard, GridSkeletonSpec } from './GridSkeleton';
+import { GridSkeletonCard } from './GridSkeleton';
 import { IntroOptions, LoadingOptions } from './types';
+
+type FullscreenTrigger = 'item' | 'media';
 
 type GridOptions = {
   columns?: ResponsiveNumber;
@@ -13,6 +15,7 @@ type GridOptions = {
   gap?: ResponsiveNumber;
   rootClassName?: string;
   itemClassName?: string;
+  fullscreenTrigger?: FullscreenTrigger;
 };
 
 export type GridLayoutProps = {
@@ -24,10 +27,43 @@ export type GridLayoutProps = {
   intro: IntroOptions;
   enableFullscreen: boolean;
   onOpen: (index: number, originEl?: HTMLElement | null) => void;
-  registerExpandableImg: (index: number, node: HTMLElement | null) => void;
+  registerExpandableImage: (index: number, node: HTMLImageElement | HTMLVideoElement | null) => void;
   gridItemBaseClass?: string;
   renderMode?: 'wrap' | 'passthrough';
 };
+
+function isImgEl(el: unknown): el is HTMLImageElement {
+  return el instanceof HTMLImageElement;
+}
+
+function findImgInside(host: HTMLElement | null): HTMLImageElement | null {
+  if (!host) return null;
+  if (isImgEl(host)) return host;
+
+  const el = host.querySelector('img');
+  return isImgEl(el) ? el : null;
+}
+
+function findImgFromClickTarget(target: EventTarget | null): HTMLImageElement | null {
+  if (!(target instanceof HTMLElement)) return null;
+
+  const el = target.closest('img');
+  return isImgEl(el) ? el : null;
+}
+
+function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined>): React.RefCallback<T> {
+  return (node) => {
+    for (const ref of refs) {
+      if (!ref) continue;
+      if (typeof ref === 'function') ref(node);
+      else if (typeof ref === 'object') (ref as any).current = node;
+    }
+  };
+}
+
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(' ');
+}
 
 export function GridLayout({
   cells,
@@ -38,7 +74,7 @@ export function GridLayout({
   intro,
   enableFullscreen,
   onOpen,
-  registerExpandableImg,
+  registerExpandableImage,
   gridItemBaseClass = 'rmg__grid-item',
   renderMode,
 }: GridLayoutProps) {
@@ -48,6 +84,10 @@ export function GridLayout({
 
   useInViewOnce(true, gridRootRef as any, () => setInView(true));
   useMediaReady(true, gridRootRef as any, setMediaReady);
+
+  const renderModeProp = renderMode ?? 'wrap';
+
+  const fullscreenTrigger: FullscreenTrigger = grid.fullscreenTrigger ?? 'media';
 
   const loadingEnabledFlag = loading.enabled ?? true;
   const loadingForced = loading.force ?? false;
@@ -60,8 +100,7 @@ export function GridLayout({
       : grid.minColumnWidth ?? '160px';
 
   const gapVal = React.useMemo(() => {
-    if (typeof grid.gap === 'string' && Number.isNaN(parseFloat(grid.gap)))
-      return grid.gap;
+    if (typeof grid.gap === 'string' && Number.isNaN(parseFloat(grid.gap))) return grid.gap;
 
     const raw = resolveNumberFromResponsive(
       grid.gap,
@@ -70,8 +109,7 @@ export function GridLayout({
       breakpoints
     );
 
-    const px = Math.max(0, raw | 0);
-    return `${px}px`;
+    return `${Math.max(0, raw | 0)}px`;
   }, [grid.gap, viewportWidth, breakpoints]);
 
   const resolvedGridColumnCount = React.useMemo(() => {
@@ -80,38 +118,77 @@ export function GridLayout({
     return Math.max(1, raw | 0);
   }, [grid.columns, viewportWidth, breakpoints]);
 
-  const gridStyle: React.CSSProperties = {
-    ['--rmg-grid-min' as any]: minWidth,
-    ['--rmg-grid-gap' as any]: gapVal,
-  };
+  const gridStyle: React.CSSProperties = React.useMemo(() => {
+    const style: React.CSSProperties = {
+      ['--rmg-grid-min' as any]: minWidth,
+      ['--rmg-grid-gap' as any]: gapVal,
+    };
 
-  if (resolvedGridColumnCount && resolvedGridColumnCount > 0) {
-    gridStyle.gridTemplateColumns = `repeat(${resolvedGridColumnCount}, minmax(0, 1fr))`;
-  }
+    if (resolvedGridColumnCount && resolvedGridColumnCount > 0) {
+      style.gridTemplateColumns = `repeat(${resolvedGridColumnCount}, minmax(0, 1fr))`;
+    }
+
+    return style;
+  }, [minWidth, gapVal, resolvedGridColumnCount]);
 
   const skeletonCount = cells.length;
 
-  const defaultGridSkeleton = (
-    <GridSkeletonCard
-      count={skeletonCount}
-      gridStyle={gridStyle}
-      spec={loading.skeleton}
-    />
+  const loadingNode = React.useMemo(() => {
+    if (!loadingActive) return null;
+    if (loading.renderLoading) return loading.renderLoading({ count: skeletonCount });
+
+    return (
+      <GridSkeletonCard count={skeletonCount} gridStyle={gridStyle} spec={loading.skeleton} />
+    );
+  }, [loadingActive, loading.renderLoading, loading.skeleton, skeletonCount, gridStyle]);
+
+  const openFromEvent = React.useCallback(
+    (index: number, host: HTMLElement, e: React.SyntheticEvent) => {
+      if (!enableFullscreen) return;
+
+      const img =
+        fullscreenTrigger === 'media'
+          ? findImgFromClickTarget(e.target)
+          : findImgInside(host);
+
+      if (!img) return;
+
+      onOpen(index, img);
+    },
+    [enableFullscreen, fullscreenTrigger, onOpen]
   );
 
-  const loadingNode = loadingActive
-    ? loading.renderLoading
-      ? loading.renderLoading({ count: skeletonCount })
-      : defaultGridSkeleton
-    : null;
+  const onItemClick = React.useCallback(
+    (index: number) =>
+      (e: React.MouseEvent<HTMLElement>) => {
+        e.preventDefault();
+        openFromEvent(index, e.currentTarget, e);
+      },
+    [openFromEvent]
+  );
 
-  const renderModeProp = renderMode ?? 'wrap';
+  const onItemKeyDown = React.useCallback(
+    (index: number) =>
+      (e: React.KeyboardEvent<HTMLElement>) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        openFromEvent(index, e.currentTarget, e);
+      },
+    [openFromEvent]
+  );
 
-  const getOriginImg = (host: HTMLElement | null, fallback?: EventTarget | null) => {
-    const img = host?.querySelector("img") as HTMLImageElement | null;
-    if (img) return img;
-    return (fallback instanceof HTMLImageElement ? fallback : null);
-  };
+  const registerFromHostRef = React.useCallback(
+    (index: number) =>
+      (node: HTMLElement | null) => {
+        registerExpandableImage(index, findImgInside(node));
+      },
+    [registerExpandableImage]
+  );
+
+  const baseItemClassName = React.useMemo(
+    () => cx(gridItemBaseClass, styles.gridItem, styles.introItem, grid.itemClassName),
+    [gridItemBaseClass, grid.itemClassName]
+  );
 
   const gridChildren = React.useMemo(() => {
     return cells.map((cell, index) => {
@@ -121,21 +198,12 @@ export function GridLayout({
         ['--rmg-intro-index' as any]: index,
       };
 
-      const baseClassName = [
-        gridItemBaseClass,
-        styles.gridItem,
-        styles.introItem,
-        grid.itemClassName || '',
-      ]
-        .filter(Boolean)
-        .join(' ');
-
       if (renderModeProp === 'passthrough') {
         return (
           <div
             key={cell.id}
             data-rmg-idx={index}
-            className={baseClassName}
+            className={baseItemClassName}
             style={introStyle}
           >
             {original as any}
@@ -143,101 +211,68 @@ export function GridLayout({
         );
       }
 
-      if (!React.isValidElement(original)) {
+      if (!React.isValidElement(original) || typeof (original as any).type !== 'string') {
         return (
-          <button
+          <div
             key={cell.id}
-            type="button"
             data-rmg-idx={index}
-            className={baseClassName}
+            className={baseItemClassName}
             style={introStyle}
-            onClick={(e) => {
-              e.preventDefault();
-              const host = e.currentTarget as HTMLElement;
-              const img = getOriginImg(host, e.target);
-              if (!enableFullscreen || !img) return;
-              onOpen(index, img);
-            }}
-            ref={(node) => {
-              const img = getOriginImg(node, null);
-              registerExpandableImg(index, img ?? node);
-            }}
+            onClick={onItemClick(index)}
+            onKeyDown={onItemKeyDown(index)}
+            tabIndex={0}
+            aria-label={`View image ${index + 1}`}
+            ref={registerFromHostRef(index) as any}
           >
             {original as any}
-          </button>
+          </div>
         );
       }
 
-      const originalEl = original as React.ReactElement<any, any>;
-
-      const isDomElement = typeof originalEl.type === 'string';
-
-      if (!isDomElement) {
-        return (
-          <button
-            key={cell.id}
-            type="button"
-            data-rmg-idx={index}
-            className={baseClassName}
-            style={introStyle}
-            onClick={(e) => {
-              e.preventDefault();
-              const host = e.currentTarget as HTMLElement;
-              const img = getOriginImg(host, e.target);
-              if (!enableFullscreen || !img) return;
-              onOpen(index, img);
-            }}
-            ref={(node) => {
-              const img = getOriginImg(node, null);
-              registerExpandableImg(index, img ?? node);
-            }}
-          >
-            {originalEl}
-          </button>
-        );
-      }
+      const originalEl = original as React.ReactElement<any>;
 
       const origProps = (originalEl.props ?? {}) as {
         onClick?: React.MouseEventHandler<HTMLElement>;
+        onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
         className?: string;
         style?: React.CSSProperties;
       };
-      const origRef = (originalEl as any).ref as React.Ref<HTMLElement> | undefined;
 
-      const mergedRef: React.RefCallback<HTMLElement> = (node) => {
-        if (typeof origRef === 'function') origRef(node);
-        else if (origRef && typeof origRef === 'object') (origRef as any).current = node;
-        const img = getOriginImg(node, null);
-        registerExpandableImg(index, img ?? node);
-      };
+      const origRef = (originalEl as any).ref as React.Ref<HTMLElement> | undefined;
 
       const mergedOnClick: React.MouseEventHandler<HTMLElement> = (e) => {
         origProps.onClick?.(e);
         if (e.defaultPrevented) return;
-        if (!enableFullscreen) return;
-        const host = e.currentTarget as HTMLElement;
-        const img = getOriginImg(host, e.target);
-        if (!enableFullscreen || !img) return;
-        onOpen(index, img);
+        onItemClick(index)(e);
       };
+
+      const mergedOnKeyDown: React.KeyboardEventHandler<HTMLElement> = (e) => {
+        origProps.onKeyDown?.(e);
+        if ((e as any).defaultPrevented) return;
+        onItemKeyDown(index)(e);
+      };
+
+      const mergedRef = mergeRefs<HTMLElement>(origRef, registerFromHostRef(index));
 
       return React.cloneElement(originalEl, {
         key: cell.id,
         ref: mergedRef,
-        onClick: mergedOnClick,
         'data-rmg-idx': index,
-        className: [baseClassName, origProps.className || ''].filter(Boolean).join(' '),
+        className: cx(baseItemClassName, origProps.className),
         style: { ...(origProps.style || {}), ...introStyle },
+        onClick: mergedOnClick,
+        onKeyDown: mergedOnKeyDown,
+        tabIndex: originalEl.props?.tabIndex ?? 0,
+        'aria-label': originalEl.props?.['aria-label'] ?? `View image ${index + 1}`,
       });
     });
   }, [
     cells,
-    enableFullscreen,
-    onOpen,
-    registerExpandableImg,
-    grid.itemClassName,
-    gridItemBaseClass,
     renderModeProp,
+    baseItemClassName,
+    onItemClick,
+    onItemKeyDown,
+    registerFromHostRef,
   ]);
 
   React.useLayoutEffect(() => {
@@ -248,38 +283,42 @@ export function GridLayout({
 
     for (let i = 0; i < cells.length; i++) {
       const host = root.querySelector(`[data-rmg-idx="${i}"]`) as HTMLElement | null;
-      if (!host) {
-        registerExpandableImg(i, null);
-        continue;
-      }
-
-      const img = host.querySelector('img') as HTMLImageElement | null;
-      registerExpandableImg(i, img ?? host);
+      registerExpandableImage(i, findImgInside(host));
     }
 
     return () => {
-      for (let i = 0; i < cells.length; i++) registerExpandableImg(i, null);
+      for (let i = 0; i < cells.length; i++) registerExpandableImage(i, null);
     };
-  }, [renderModeProp, cells.length, registerExpandableImg]);
+  }, [renderModeProp, cells.length, registerExpandableImage]);
 
-  const containerProps: React.HTMLAttributes<HTMLDivElement> = {
-    className: [
-      styles.gridRoot,
-      styles.introContainer,
-      introActive ? styles.introActive : '',
-      grid.rootClassName || '',
+  const containerProps: React.HTMLAttributes<HTMLDivElement> = React.useMemo(
+    () => ({
+      className: cx(
+        styles.gridRoot,
+        styles.introContainer,
+        introActive && styles.introActive,
+        grid.rootClassName
+      ),
+      style: {
+        ...gridStyle,
+        ['--rmg-intro-stagger' as any]: `${intro.staggerMs}ms`,
+        ['--rmg-intro-transform' as any]: intro.transform,
+        ['--rmg-intro-duration' as any]: `${intro.durationMs}ms`,
+        ['--rmg-intro-easing' as any]: intro.easing,
+      },
+      'aria-busy': loadingActive ? true : undefined,
+    }),
+    [
+      grid.rootClassName,
+      gridStyle,
+      intro.staggerMs,
+      intro.transform,
+      intro.durationMs,
+      intro.easing,
+      introActive,
+      loadingActive,
     ]
-      .filter(Boolean)
-      .join(' '),
-    style: {
-      ...gridStyle,
-      ['--rmg-intro-stagger' as any]: `${intro.staggerMs}ms`,
-      ['--rmg-intro-transform' as any]: intro.transform,
-      ['--rmg-intro-duration' as any]: `${intro.durationMs}ms`,
-      ['--rmg-intro-easing' as any]: intro.easing,
-    },
-    'aria-busy': loadingActive ? true : undefined,
-  };
+  );
 
   const inner = (
     <div ref={gridRootRef} {...containerProps}>

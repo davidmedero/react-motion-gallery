@@ -15,27 +15,28 @@ import {
   useState,
 } from 'react'
 import cls from './ThumbnailSlider.module.css'
-import createIndexChannel from '../sliderSub'
-import { createDragTracker } from '../../shared/input/dragTracker'
-import { Vector1D, Vector1DType } from '../../shared/motion/vector1d'
-import { ScrollBody, ScrollBodyType } from '../../shared/motion/scrollBody'
-import { Limit, LimitType } from '../../shared/motion/limit'
-import { ScrollLooper } from '../../shared/motion/scrollLooper'
-import { ScrollBounds, ScrollBoundsType, PercentOfView, PercentOfViewType } from '../../shared/motion/scrollBounds'
-import { BaseTarget, factorAbs, mathSign, ScrollTarget, ScrollTargetType } from '../../shared/motion/scrollTarget'
-import { Animations, AnimationsType } from '../../shared/motion/animations'
-import { EventStore } from '../../shared/motion/eventStore'
+import { IndexMode } from '../api/types'
+import createIndexChannel from '../slider/sliderSub'
+import { createDragTracker } from '../shared/input/dragTracker'
+import { Vector1D, Vector1DType } from '../shared/motion/vector1d'
+import { ScrollBody, ScrollBodyType } from '../shared/motion/scrollBody'
+import { Limit, LimitType } from '../shared/motion/limit'
+import { ScrollLooper } from '../shared/motion/scrollLooper'
+import { ScrollBounds, ScrollBoundsType, PercentOfView, PercentOfViewType } from '../shared/motion/scrollBounds'
+import { BaseTarget, factorAbs, mathSign, ScrollTarget, ScrollTargetType } from '../shared/motion/scrollTarget'
+import { Animations, AnimationsType } from '../shared/motion/animations'
+import { EventStore } from '../shared/motion/eventStore'
 import { ThumbnailIntroOptions, ThumbnailLoadingOptions, ThumbnailPosition } from './types'
-import { ArrowRenderArgs } from '../../shared/types/controls'
-import { BreakpointMap } from '../../shared/responsive'
-import { Counter, CounterType } from '../../shared/motion/counter'
-import { BaseLimit, createBaseLimit } from '../../shared/motion/baseLimit'
-import { RmgArrows } from '../controls/arrows'
-import { isMouseEvent } from '../../shared/input/pointerTypes'
-import { WindowType } from '../../shared/input/pointerTypes'
-import { Axis, AxisType, AXSpec } from '../../shared/types/axis'
-import { Translate } from '../../shared/motion/translate'
-import { easeOutCubic, lerp } from '../../shared/motion/utils'
+import { ArrowRenderArgs } from '../shared/types/controls'
+import { BreakpointMap } from '../shared/responsive'
+import { Counter, CounterType } from '../shared/motion/counter'
+import { BaseLimit, createBaseLimit } from '../shared/motion/baseLimit'
+import { RmgArrows } from './controls/arrows'
+import { isMouseEvent } from '../shared/input/pointerTypes'
+import { WindowType } from '../shared/input/pointerTypes'
+import { Axis, AxisType, AXSpec } from '../shared/types/axis'
+import { Translate } from '../shared/motion/translate'
+import { useWheelLock } from '../shared/hooks/useWheelLock'
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n))
 
@@ -104,6 +105,7 @@ interface ThumbnailSliderProps {
   renderArrows?: (args: ArrowRenderArgs & { dir: "prev" | "next" }) => React.ReactNode;
   renderPrevArrow?: (args: ArrowRenderArgs) => React.ReactNode;
   renderNextArrow?: (args: ArrowRenderArgs) => React.ReactNode;
+  onReadyChange?: (ready: boolean) => void;
 }
 
 export default function ThumbnailSlider({
@@ -147,7 +149,8 @@ export default function ThumbnailSlider({
   nextArrowClassName,
   renderArrows,
   renderPrevArrow,
-  renderNextArrow
+  renderNextArrow,
+  onReadyChange,
 }: ThumbnailSliderProps) {
   const isHorizontal = position === 'top' || position === 'bottom'
   const axis = Axis(isHorizontal);
@@ -186,6 +189,8 @@ export default function ThumbnailSlider({
   const dragMoveTime = useRef<Date | null>(null)
   const sliderVelocity = useRef(0)
   const selectedIndexRef = useRef<number>(channelRef.current.get().index ?? 0)
+  const programNavRef = useRef(false)
+  const lastEmittedIndexRef = useRef<number>(-1)
   const rawKids = Children.toArray(children).filter(isValidElement) as ReactElement<ThumbnailSliderProps>[]
   const count = rawKids.length
   const baseOffsetRef = useRef(0);
@@ -247,6 +252,24 @@ export default function ThumbnailSlider({
     return { main, cross, sizeKey, clientKey, startKey, endKey, translate, place, wheelDelta };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [position]);
+
+  const {
+    wheelLockMs: WHEEL_LOCK_MS,
+    lockWheelFor,
+    unlockWheelNow,
+    markWheelSeen,
+    isWheelLocked,
+  } = useWheelLock()
+
+  useEffect(() => {
+    onReadyChange?.(isReady);
+  }, [isReady, onReadyChange]);
+  const UI_NAV_WHEEL_LOCK_MS = 300
+
+  function beginUiNavWheelTakeover() {
+    unlockWheelNow()
+    lockWheelFor(UI_NAV_WHEEL_LOCK_MS)
+  }
 
   useEffect(() => {
     const root = containerRef.current;
@@ -356,35 +379,32 @@ export default function ThumbnailSlider({
     canonicalIndex: number,
     elementIndex: number
   ) {
-    return cloneElement(child as ReactElement<any>, {
-      key,
-      ['data-rmg-thumb-index' as any]: String(canonicalIndex),
-
-      ref: (el: HTMLElement | null) => {
-        if (!el) return;
-        if (!thumbCells.current.some((c) => c.element === el)) {
-          thumbCells.current.push({ element: el, index: elementIndex });
-        }
-      },
-
-      style: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: thumbnailWidth,
-        height: thumbnailHeight,
-        cursor: 'pointer',
-        userSelect: 'none',
-        ...(thumbnailItemStyle || {}),
-        ...(child.props?.style || {}),
-      },
-
-      className: [cls.thumb, thumbnailItemClassName, child.props?.className]
-        .filter(Boolean)
-        .join(' '),
-
-      draggable: false,
-    });
+    return (
+      <div
+        key={key}
+        data-rmg-thumb-index={String(canonicalIndex)}
+        ref={(el: HTMLElement | null) => {
+          if (!el) return;
+          if (!thumbCells.current.some((c) => c.element === el)) {
+            thumbCells.current.push({ element: el, index: elementIndex });
+          }
+        }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: thumbnailWidth,
+          height: thumbnailHeight,
+          cursor: 'pointer',
+          userSelect: 'none',
+          ...(thumbnailItemStyle || {}),
+        }}
+        className={[cls.thumb, thumbnailItemClassName].filter(Boolean).join(' ')}
+        draggable={false}
+      >
+        {child}
+      </div>
+    );
   }
 
   function computeCloneSig(originals: number, per: number) {
@@ -520,11 +540,9 @@ export default function ThumbnailSlider({
   function commitThumbSelect(i: number) {
     if (i < 0 || i >= count) return;
 
+    beginUiNavWheelTakeover()
     snapModeRef.current = 'thumb'
-
-    setActiveThumb(i)
-
-    channelRef.current.set(i, 'animated')
+    commitIndex(i, 'animated')
     onSelectThumb?.(i)
   }
 
@@ -649,10 +667,35 @@ export default function ThumbnailSlider({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clonedChildren, gap, wrap, loop, AX, sign, position]);
 
+  const contentSig = useMemo(() => {
+    return rawKids
+      .map((el, i) => {
+        const k = el.key != null ? String(el.key) : `idx:${i}`;
+        const t =
+          typeof el.type === 'string'
+            ? el.type
+            : (el.type as any)?.displayName || (el.type as any)?.name || 'component';
+        return `${t}:${k}`;
+      })
+      .join('|');
+  }, [rawKids]);
+
+  const lastContentSigRef = useRef<string>('');
+
   useEffect(() => {
+    if (lastContentSigRef.current === contentSig) return;
+    lastContentSigRef.current = contentSig;
+
     readyPaintedRef.current = false;
     setIsReady(false);
 
+    if (readyRafRef.current != null) {
+      cancelAnimationFrame(readyRafRef.current);
+      readyRafRef.current = null;
+    }
+  }, [contentSig]);
+
+  useEffect(() => {
     if (readyRafRef.current != null) {
       cancelAnimationFrame(readyRafRef.current);
       readyRafRef.current = null;
@@ -671,6 +714,8 @@ export default function ThumbnailSlider({
       !!(thumbSize || thumbLong);
 
     if (!canBeReady) return;
+
+    if (isReady && readyPaintedRef.current) return;
 
     readyRafRef.current = requestAnimationFrame(() => {
       readyRafRef.current = requestAnimationFrame(() => {
@@ -698,6 +743,7 @@ export default function ThumbnailSlider({
     thumbLong,
     thumbSize,
     position,
+    isReady,
   ]);
 
   const getSnapTargets: () => number[] = () => (slidesRef.current || []).map((s) => s.target)
@@ -970,13 +1016,19 @@ export default function ThumbnailSlider({
     const ch = channelRef.current
     const unsub = ch.subscribe(() => {
       const { index, mode } = ch.get()
-      selectedIndexRef.current = clamp(index, 0, Math.max(0, count - 1))
-      setActiveThumb(selectedIndexRef.current)
+      const nextIndex = clamp(index, 0, Math.max(0, count - 1))
+      if (nextIndex === selectedIndexRef.current) return
+
+      indexCurrentRef.current?.set(nextIndex)
+      selectedIndexRef.current = nextIndex
+      channelRef.current.set(nextIndex, mode)
+      setActiveThumb(nextIndex)
+
       if (pointerDownRef.current) return
 
       snapModeRef.current = 'base'
 
-      const scroll = getScrollForIndex(selectedIndexRef.current)
+      const scroll = getScrollForIndex(nextIndex)
 
       if (mode === 'instant') {
         bodyRef.current?.useDuration(0).useFriction(1)
@@ -992,17 +1044,15 @@ export default function ThumbnailSlider({
   }, [count, thumbnailsCenter, contentLength, containerLength])
 
   useEffect(() => {
-    const track = trackRef.current
-    if (!track) return
-    const ready = !!(contentLength && containerLength && (thumbSize || thumbLong))
-    if (!ready) return
+    if (!layoutReady || !isMeasured) return;
+    if (!trackRef.current) return;
+    if (!trackRef.current.children.length) return;
 
-    const maxIndex = Math.max(0, (track.children.length || count) - 1)
-    const init = clamp(channelRef.current.get().index ?? 0, 0, maxIndex)
-    setActiveThumb(init)
-    animateToScroll(getScrollForIndex(init))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, contentLength, containerLength, thumbLong, thumbSize])
+    const i = clamp(channelRef.current.get().index ?? 0, 0, Math.max(0, count - 1));
+    setActiveThumb(i);
+
+    animateToScroll(getScrollForIndex(i));
+  }, [layoutReady, isMeasured, clonedChildren.length, geomKey, buildKey, wrap, count]);
 
   function getCenteredScroll(i: number) {
     const lay = layoutRef.current
@@ -1070,29 +1120,24 @@ export default function ThumbnailSlider({
   }
 
   function updateActiveIndexFromX(loc: number) {
-    const indexCurrent = indexCurrentRef.current
-    if (!indexCurrent) return
+    if (programNavRef.current) return
 
     const idxFromLoc = indexFromX(loc)
-    const canonical  = indexCurrent.get()
-
-    if (idxFromLoc === canonical) return
-
-    if (!pointerDownRef.current && isAnimatingRef.current) {
-      return
-    }
-
-    indexCurrent.set(idxFromLoc)
-    selectedIndexRef.current = idxFromLoc
+    if (idxFromLoc === selectedIndexRef.current) return
+    commitIndex(idxFromLoc, 'animated')
   }
 
   function scrollToIndex(
     requested: number,
-    opts: { jump?: boolean; direction?: number } = {}
+    opts: { jump?: boolean; direction?: number; programmatic?: boolean } = {}
   ) {
-    const { jump = false, direction } = opts
+    const { jump = false, direction, programmatic = false } = opts
     const indexCurrent = indexCurrentRef.current
     if (!scrollToRef.current || !bodyRef.current || !indexCurrent) return
+
+    if (programmatic) programNavRef.current = true
+
+    commitIndex(requested, 'animated')
 
     const targetIndex = indexCurrent.clone().set(requested).get()
 
@@ -1124,7 +1169,7 @@ export default function ThumbnailSlider({
       : clampIndex(cur - 1, len)
 
     body.useBaseDuration().useBaseFriction()
-    scrollToIndex(target, { direction: 1 })
+    scrollToIndex(target, { direction: 1, programmatic: true })
   }
 
   function next() {
@@ -1140,7 +1185,63 @@ export default function ThumbnailSlider({
       : clampIndex(cur + 1, len)
 
     body.useBaseDuration().useBaseFriction()
-    scrollToIndex(target, { direction: -1 })
+    scrollToIndex(target, { direction: -1, programmatic: true })
+  }
+
+  function previousFromUi() {
+    beginUiNavWheelTakeover()
+    previous()
+  }
+
+  function nextFromUi() {
+    beginUiNavWheelTakeover()
+    next()
+  }
+
+  function commitIndex(nextIdx: number, mode: IndexMode) {
+  }
+
+  function updateArrowsImperatively() {
+    const setArrow = (el: HTMLElement | null, disabled: boolean) => {
+      if (!el) return;
+      el.style.cursor = disabled ? "default" : "pointer";
+      el.style.opacity = disabled ? "0.35" : "1";
+      el.setAttribute("aria-disabled", disabled ? "true" : "false");
+    };
+
+    if (wrap) {
+      setArrow(prevButtonRef.current, false);
+      setArrow(nextButtonRef.current, false);
+      return;
+    }
+
+    const lim = limitRef.current;
+    if (!lim) return;
+
+    const x = offsetLocationRef.current?.get() ?? xRef.current ?? 0;
+    const EPS = 0.75;
+
+    const atStart = x >= lim.max - EPS;
+    const atEnd = x <= lim.min + EPS;
+
+    const prevDisabled = isRtl ? atEnd : atStart;
+    const nextDisabled = isRtl ? atStart : atEnd;
+
+    setArrow(prevButtonRef.current, prevDisabled);
+    setArrow(nextButtonRef.current, nextDisabled);
+  }
+
+  function isFromArrow(target: EventTarget | null) {
+    const t = target as HTMLElement | null
+    if (!t) return false
+
+    const prev = prevButtonRef.current
+    const next = nextButtonRef.current
+
+    return !!(
+      (prev && (t === prev || prev.contains(t))) ||
+      (next && (t === next || next.contains(t)))
+    )
   }
 
   useEffect(() => {
@@ -1253,9 +1354,8 @@ export default function ThumbnailSlider({
         indexCurrent.set(target.index)
 
         const idx = indexCurrent.get()
-        selectedIndexRef.current = idx
-
-        setActiveThumb(idx)
+        const mode = bodyRef.current?.duration() ? 'animated' : 'instant'
+        commitIndex(idx, mode)
       }
     }
 
@@ -1293,12 +1393,6 @@ export default function ThumbnailSlider({
     const body = ScrollBody(location, offsetLocation, previousLocation, target, selectDuration, sliderFriction)
     bodyRef.current = body
 
-    const durNowRef = { current: selectDuration }
-    const durStartRef = { current: selectDuration }
-    const durGoalRef = { current: selectDuration }
-    const durTRef = { current: 1 }
-    const durActiveRef = { current: false }
-
     if (!wrap) {
       const cw = (track as any)[AX.clientKey] as number;
       const min = -(Math.max(0, sliderWidth.current - cw))
@@ -1328,31 +1422,6 @@ export default function ThumbnailSlider({
           boundsRef.current?.constrain(pointerDownRef.current)
         }
 
-        if (body && durActiveRef.current && !pointerDownRef.current) {
-          const oobNow = !!boundsRef.current?.passed()
-
-          if (!oobNow) {
-            durActiveRef.current = false
-          } else {
-            const easeMs = 260
-            const fixed = 1000 / 60
-            const step = fixed / easeMs
-            durTRef.current = clamp(durTRef.current + step, 0, 1)
-
-            const t = easeOutCubic(durTRef.current)
-            const next = lerp(durStartRef.current, durGoalRef.current, t)
-
-            durNowRef.current = next
-            body.useDuration(next)
-
-            if (durTRef.current >= 1) {
-              durActiveRef.current = false
-              body.useDuration(durGoalRef.current)
-              durNowRef.current = durGoalRef.current
-            }
-          }
-        }
-
         bodyRef.current?.seek()
 
         if (wrap && W > 0) {
@@ -1366,7 +1435,8 @@ export default function ThumbnailSlider({
       (alpha) => {
         const body = bodyRef.current
         const shouldSettle = body ? body.settled() : true
-        const idle = shouldSettle && !pointerDownRef.current
+        const oob = !wrap && (boundsRef.current?.passed() ?? false)
+        const idle = shouldSettle && !pointerDownRef.current && !oob
         if (idle) {
           animRef.current?.stop()
           isAnimatingRef.current = false
@@ -1377,6 +1447,7 @@ export default function ThumbnailSlider({
         offsetLocationRef.current!.set(loc)
         xRef.current = loc
         positionSlider()
+        updateArrowsImperatively()
         updateActiveIndexFromX(loc)
       }
     )
@@ -1402,6 +1473,7 @@ export default function ThumbnailSlider({
     }
 
     function onDown(evt: PointerEvent) {
+      if (isFromArrow(evt.target)) return
       const isMouseEvt = isMouseEvent(evt as any, window as any)
       isMouse = isMouseEvt
       if (isMouseEvt && (evt as MouseEvent).button !== 0) return
@@ -1409,10 +1481,12 @@ export default function ThumbnailSlider({
       downTargetRef.current = evt.target
 
       setDragCursor(true);
+      lockWheelFor(WHEEL_LOCK_MS);
 
       pointerDownRef.current = true
       isPointerDown.current = true
       isClickRef.current = true
+      programNavRef.current = false
 
       tracker.pointerDown(evt as any)
       startMain  = tracker.readPoint(evt as any, AX.main)
@@ -1473,6 +1547,8 @@ export default function ThumbnailSlider({
       moveStore.clear()
 
       setDragCursor(false);
+      unlockWheelNow();
+      lockWheelFor(300);
 
       if (isClickRef.current) {
         const idx = getThumbIndexFromEventTarget(evt.target)
@@ -1565,41 +1641,28 @@ export default function ThumbnailSlider({
         
         const force = allowedForce(boostedForce)
 
+        const snapTarget = baseScrollTarget.byDistance(force, true);
+        commitIndex(snapTarget.index, body.duration() ? 'animated' : 'instant');
+
         const baseFriction = sliderFriction
         const forceFactor = factorAbs(boostedForce, force)
-        const speed = selectDuration - 10 * forceFactor
+        let speed = selectDuration
+        if (boundsRef.current?.passed()) {
+          speed = selectDuration + 10 * forceFactor
+        }
         const friction = baseFriction + forceFactor / 50
 
-        body.useFriction(friction)
-
-        const oob = !!boundsRef.current?.passed()
-        
-        if (oob) {
-          const depth = Math.min(1, Math.abs(offsetLocationRef.current!.get() - limitRef.current!.constrain(offsetLocationRef.current!.get())) / 200)
-          const durStart = clamp(speed + 20 * depth, selectDuration, 90)
-
-          const durGoal = selectDuration
-
-          durStartRef.current = durStart
-          durGoalRef.current = durGoal
-          durTRef.current = 0
-          durActiveRef.current = true
-
-          durNowRef.current = durStart
-          body.useDuration(durStart)
-        } else {
-          durActiveRef.current = false
-          durNowRef.current = speed
-          body.useDuration(speed)
-        }
-
+        body.useDuration(speed).useFriction(friction)
         baseScrollTo.distance(force, true)
       } else {
         const end = tracker.pointerUp(evt as any)
         const raw = (AX.main === 'x' ? end.fx : end.fy)
         const force = forceBoost(raw)
         const forceFactor = factorAbs(raw, force)
-        const speed = freeScrollDuration - 10 * forceFactor
+        let speed = freeScrollDuration
+        if (boundsRef.current?.passed()) {
+          speed = freeScrollDuration + 10 * forceFactor
+        }
         const friction = sliderFriction + forceFactor / 50
 
         body.useDuration(speed).useFriction(friction)
@@ -1619,23 +1682,48 @@ export default function ThumbnailSlider({
       .add(root, 'contextmenu', onUp as any)
 
     function onWheel(e: WheelEvent) {
-      const primary = isHorizontal ? e.deltaX : e.deltaY
-      const primaryAbs = Math.abs(primary)
-      const crossAbs = Math.abs(isHorizontal ? e.deltaY : e.deltaX)
-      if (primaryAbs <= crossAbs) return
+      const now = markWheelSeen();
 
-      if (contentLength <= containerLength) return;
+      if (pointerDownRef.current) {
+        lockWheelFor(WHEEL_LOCK_MS);
+        if ((e as any).cancelable) e.preventDefault?.();
+        return;
+      }
+
+      if (isWheelLocked(now)) {
+        lockWheelFor(40);
+        if ((e as any).cancelable) e.preventDefault?.();
+        return;
+      }
+
+      const trackEl = trackRef.current;
+      if (!trackEl) return;
+
+      const containerSize = (trackEl as any)[AX.clientKey] as number;
+      const contentSize = sliderWidth.current;
+      const canScrollMain = contentSize > containerSize;
+
+      const isMain =
+        AX.main === "x"
+          ? Math.abs(e.deltaX) > Math.abs(e.deltaY)
+          : Math.abs(e.deltaY) >= Math.abs(e.deltaX);
+
+      if (!isMain || !canScrollMain) return;
+      programNavRef.current = false;
 
       const cur = (offsetLocationRef.current?.get() ?? 0) - (AX.wheelDelta(e) * sign);
       let next = cur;
       if (!wrap && limitRef.current) next = limitRef.current.constrain(cur);
 
-      targetRef.current?.set(next);
       bodyRef.current?.useDuration(0).useFriction(1);
 
-      animRef.current?.start();
+      targetRef.current?.set(next);
       xRef.current = next;
+
       positionSlider();
+      updateActiveIndexFromX(next);
+
+      animRef.current?.start();
       if ((e as any).cancelable) e.preventDefault?.();
     }
     root.addEventListener('wheel', onWheel as any, { passive: false })
@@ -1691,7 +1779,7 @@ export default function ThumbnailSlider({
     return {
       renderIntro: src.renderIntro,
       staggerMs: src.staggerMs ?? 40,
-      transform: src.transform ?? 10,
+      transform: src.transform ?? '10px',
       durationMs: src.durationMs ?? 300,
       easing: src.easing ?? 'cubic-bezier(.2,.7,.2,1)',
     };
@@ -1788,8 +1876,8 @@ export default function ThumbnailSlider({
       slideCount={slidesRef.current?.length ?? 0}
       measureRef={trackRef}
       viewportMainSizeRef={sliderWidth}
-      previous={previous}
-      next={next}
+      previous={previousFromUi}
+      next={nextFromUi}
       prevButtonRef={prevButtonRef}
       nextButtonRef={nextButtonRef}
       createRipple={createRipple}
@@ -1829,7 +1917,7 @@ export default function ThumbnailSlider({
         ...(thumbnailsContainerStyle || {}),
         ...(baseContainerProps.style || {}),
         ['--rmg-intro-stagger' as any]: `${normalizedIntro.staggerMs}ms`,
-        ['--rmg-intro-transform' as any]: `${normalizedIntro.transform}px`,
+        ['--rmg-intro-transform' as any]: `${normalizedIntro.transform}`,
         ['--rmg-intro-duration' as any]: `${normalizedIntro.durationMs}ms`,
         ['--rmg-intro-easing' as any]: normalizedIntro.easing,
       }}

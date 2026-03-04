@@ -14,6 +14,16 @@ const ITEMS = [
   "https://picsum.photos/id/1043/1000/1600",
   "https://picsum.photos/id/1069/1000/1600",
   "https://picsum.photos/id/1074/1000/1600",
+  "https://picsum.photos/id/1080/1000/1600",
+  "https://picsum.photos/id/1001/1000/1600",
+  "https://picsum.photos/id/1003/1000/1600",
+  "https://picsum.photos/id/1004/1000/1600",
+  "https://picsum.photos/id/1005/1000/1600",
+  "https://picsum.photos/id/1008/1000/1600",
+  "https://picsum.photos/id/1020/1000/1600",
+  "https://picsum.photos/id/1024/1000/1600",
+  "https://picsum.photos/id/1028/1000/1600",
+  "https://picsum.photos/id/1029/1000/1600",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
@@ -68,8 +78,8 @@ function Demo() {
       </p>
       <GalleryCore layout="slider" fullscreenItems={ITEMS}>
         <Slider
-          size={{
-            aspectRatio: 1000/1600
+          scroll={{
+            freeScroll: true
           }}
           layout={{
             cellsPerSlide: { 0: 2, 600: 3, 900: 4 },
@@ -77,19 +87,40 @@ function Demo() {
           }}
           transitions={{
             loading: {
-              // isLoading: true,
+              // force: true,
               skeletonCount: { 0: 2, 600: 3, 900: 4 },
+              skeleton: {
+                layout: {
+                  kind: "slider",
+                  // optional: make gaps match the real slide gap if you want
+                  style: { gap: 12 },
+                  // each slot = column layout: image block + text block
+                  item: {
+                    kind: "col",
+                    children: [
+                      // image placeholder (dominant area)
+                      {
+                        kind: "rect",
+                        style: {
+                          width: "100%",
+                          aspectRatio: 1000/1600,
+                          borderRadius: 12,
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
             }
           }}
         >
           {ITEMS.map((src, i) => (
-            <div key={src} style={{ height: "100%" }}>
-              <Slide src={src} i={i} />
-            </div>
+            <Slide key={src} src={src} i={i} />
           ))}
         </Slider>
         <FullscreenAddon sliderObject={sliderObject} cellsStateLength={ITEMS.length} />
       </GalleryCore>
+      <div style={{ width: '500px', height: '500px', backgroundColor: 'red' }}>Im a block</div>
     </div>
   );
 }

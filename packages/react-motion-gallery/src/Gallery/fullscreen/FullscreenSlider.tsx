@@ -32,6 +32,8 @@ import { createBaseLimit } from '../shared/motion/baseLimit'
 import { Counter, CounterType } from '../shared/motion/counter'
 import { clamp, lerp } from '../shared/motion/utils'
 import { PercentOfView, PercentOfViewType, ScrollBounds, ScrollBoundsType } from '../shared/motion/scrollBounds'
+import { useWheelLock } from '../shared/hooks/useWheelLock'
+import type { CanonicalPlaybackSyncManager } from '../video/canonicalPlaybackSync'
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
@@ -59,7 +61,7 @@ type FsLimit = {
 interface FullscreenSliderProps {
   sub: FullscreenSliderSub
   children: ReactNode
-  imageCount: number
+  cellCount: number
   slideIndex: number
   isClick: React.RefObject<boolean>
   isZoomed: boolean
@@ -101,6 +103,7 @@ interface FullscreenSliderProps {
   introEasing?: string;
   resetAllZoomDom: () => void;
   requestFsCloseRef: React.RefObject<null | (() => void)>;
+  playbackSync?: CanonicalPlaybackSyncManager;
 }
 
 export interface FullscreenSliderHandle {
@@ -112,7 +115,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     {
       sub,
       children,
-      imageCount,
+      cellCount,
       slideIndex,
       isClick,
       isZoomed,
@@ -134,7 +137,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       closeButtonRef,
       overlayDivRef,
       direction,
-      isWrapping,
       sliderDuration,
       sliderFriction,
       suppressLoopRef,
@@ -147,7 +149,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       introDuration = 300,
       introEasing = 'cubic-bezier(.4,0,.22,1)',
       resetAllZoomDom,
-      requestFsCloseRef
+      requestFsCloseRef,
+      playbackSync,
     },
     ref
   ) => {
@@ -174,11 +177,13 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const perSlideRef = useRef(0)
     const contentSizeRef = useRef(0)
     const loopLimitRef = useRef<ReturnType<typeof Limit> | null>(null)
+    const looperRef = useRef<ReturnType<typeof ScrollLooper> | null>(null)
     const scrollSnapsRef = useRef<number[]>([])
     const scrollContentSizeRef = useRef(0)
     const scrollLimitRef = useRef<FsLimit | null>(null)
     const scrollTargetRef = useRef<ScrollTargetType | null>(null)
     const scrollToRef = useRef<FsScrollTo | null>(null)
+    const suppressLoopTransientRef = useRef(false)
     const slides = useRef<{ cells: { element: HTMLElement }[] }[]>([])
     const indexCurrentRef = useRef<CounterType | null>(null)
     const indexPreviousRef = useRef<CounterType | null>(null)
@@ -211,6 +216,57 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     }
     const isZoomedRef = useLatest(isZoomed)
 
+    const {
+      wheelLockMs: WHEEL_LOCK_MS,
+      lockWheelFor,
+      unlockWheelNow,
+      markWheelSeen,
+      isWheelLocked,
+    } = useWheelLock()
+
+    function syncLoopGeometry(per: number, len: number) {
+      const safeLen = len || 1
+      const W = per * safeLen
+
+      perSlideRef.current = per
+      contentSizeRef.current = W
+      scrollContentSizeRef.current = W
+
+      const loopLimit = Limit(-W, 0)
+      loopLimitRef.current = loopLimit
+
+      scrollLimitRef.current = createBaseLimit(-W, 0)
+
+      const snaps = Array.from({ length: safeLen }, (_, i) => -per * i)
+      scrollSnapsRef.current = snaps
+
+      const location = locationRef.current
+      const previousLocation = previousLocationRef.current
+      const offsetLocation = offsetLocationRef.current
+      const target = targetRef.current
+
+      if (!location || !previousLocation || !offsetLocation || !target) {
+        scrollTargetRef.current = null
+        looperRef.current = null
+        return
+      }
+
+      scrollTargetRef.current = ScrollTarget(
+        true,
+        snaps,
+        W,
+        loopLimit,
+        target
+      )
+
+      looperRef.current = ScrollLooper(
+        W,
+        loopLimit,
+        location,
+        [location, previousLocation, offsetLocation, target]
+      )
+    }
+
     const recenterWithAnchor = useCallback(() => {
       const track = slider.current;
       if (
@@ -224,29 +280,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       }
 
       const per = track.clientWidth || 1;
-      perSlideRef.current = per;
-
       const len = slides.current.length || 1;
-      const W   = per * len;
-
-      contentSizeRef.current = W;
-      loopLimitRef.current   = Limit(-W, 0);
-
-      const snaps = Array.from({ length: len }, (_, i) => -per * i);
-      scrollSnapsRef.current = snaps;
-
-      const fsLimit = createBaseLimit(-W, 0);
-      scrollLimitRef.current = fsLimit;
-
-      if (loopLimitRef.current) {
-        scrollTargetRef.current = ScrollTarget(
-          true,
-          snaps,
-          W,
-          loopLimitRef.current,
-          targetRef.current
-        );
-      }
+      syncLoopGeometry(per, len)
 
       const idx =
         indexCurrentRef.current?.get() ??
@@ -279,7 +314,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     useEffect(() => {
       const childrenArray = Children.toArray(children)
       slides.current = []
-      if (imageCount > 1) {
+      if (cellCount > 1) {
         for (let i = 1; i < childrenArray.length - 1; i++) {
           slides.current.push({ cells: [cells.current[i]] as any })
         }
@@ -416,6 +451,10 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     function slideCount() {
       return slides.current.length || 1
     }
+    function resolveStartIndex(requestedIndex: number, len: number) {
+      const safeLen = Math.max(1, len)
+      return ((requestedIndex % safeLen) + safeLen) % safeLen
+    }
 
     function commitXY(canonicalX: number, ny: number) {
       const nx = Math.round(canonicalX) * sign;
@@ -437,47 +476,17 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     useEffect(() => {
       if (!slider.current || hasPositioned.current) return
 
-      if (counterRef.current) {
-        counterRef.current.textContent = `${
-          !isWrapping.current ? slideIndex + 1 : slideIndex
-        } / ${imageCount}`
-      }
+      const len = Math.max(1, slides.current.length || cellCount || 1)
+      const startIndex = resolveStartIndex(slideIndex, len)
 
-      if ((slideIndex === 1 && isWrapping.current === true) || (slideIndex === 0 && !isWrapping.current)) {
-        selectedIndex.current = 0
-        sub.setLocalIndex(0)
-        setTimeout(() => {
-          if (!slider.current) return
-          const startX = 0
-          x.current = startX
-          y.current = 0
-          if (locationRef.current && previousLocationRef.current && offsetLocationRef.current && targetRef.current) {
-            locationRef.current.set(startX)
-            previousLocationRef.current.set(startX)
-            offsetLocationRef.current.set(startX)
-            targetRef.current.set(startX)
-            setTranslateX(startX, 0)
-          } else {
-            const sx = Math.round(startX) * sign
-            slider.current.style.transform = `translate3d(${sx}px, 0, 0)`
-          }
-        }, 100)
-        hasPositioned.current = true
-        return
-      }
-
-      let actualIndex = slideIndex - 1
-      actualIndex = ((actualIndex % imageCount) + imageCount) % imageCount
-      if (actualIndex === 0) actualIndex = imageCount
-      const finalIndex = isWrapping.current === true ? actualIndex : slideIndex
-
-      selectedIndex.current = finalIndex
-      sub.setLocalIndex(finalIndex)
+      selectedIndex.current = startIndex
+      sub.setLocalIndex(startIndex)
+      updateCounterFromIndex(startIndex)
 
       setTimeout(() => {
         if (!slider.current) return
         const per = perSlideRef.current || slider.current.clientWidth
-        const startX = -per * finalIndex
+        const startX = -per * startIndex
         x.current = startX
         y.current = 0
         if (locationRef.current && previousLocationRef.current && offsetLocationRef.current && targetRef.current) {
@@ -543,7 +552,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       if (
         crossesSeam &&
         isZoomedRef.current &&
-        imageCount > 1 &&
+        cellCount > 1 &&
         selectedIndex.current === 0
       ) {
         const refs = imageRefs;
@@ -552,7 +561,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           refs[1]?.current?.querySelector('img') as HTMLElement | null;
 
         const firstCloneImg =
-          refs[imageCount + 1]?.current?.querySelector('img') as HTMLElement | null;
+          refs[cellCount + 1]?.current?.querySelector('img') as HTMLElement | null;
 
         if (firstRealImg && firstCloneImg) {
           const extractScale = (el: HTMLElement | null): number => {
@@ -614,14 +623,15 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       isScrolling.current = false;
       isPinching.current = false;
       isTouchPinching.current = false;
+      suppressLoopRef.current = false;
 
-      if (isZoomedRef.current && imageCount > 1 && selectedIndex.current === 0) {
+      if (isZoomedRef.current && cellCount > 1 && selectedIndex.current === 0) {
         const refs = imageRefs;
 
         const firstRealImg =
           refs[1]?.current?.querySelector('img') as HTMLElement | null;
         const firstCloneImg =
-          refs[imageCount + 1]?.current?.querySelector('img') as HTMLElement | null;
+          refs[cellCount + 1]?.current?.querySelector('img') as HTMLElement | null;
 
         if (firstRealImg && firstCloneImg) {
           const extractScale = (el: HTMLElement | null): number => {
@@ -688,14 +698,15 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       isScrolling.current = false;
       isPinching.current = false;
       isTouchPinching.current = false;
+      suppressLoopRef.current = false;
 
-      if (isZoomedRef.current && imageCount > 1 && selectedIndex.current === 0) {
+      if (isZoomedRef.current && cellCount > 1 && selectedIndex.current === 0) {
         const refs = imageRefs;
 
         const firstRealImg =
           refs[1]?.current?.querySelector('img') as HTMLElement | null;
         const firstCloneImg =
-          refs[imageCount + 1]?.current?.querySelector('img') as HTMLElement | null;
+          refs[cellCount + 1]?.current?.querySelector('img') as HTMLElement | null;
 
         if (firstRealImg && firstCloneImg) {
           const extractScale = (el: HTMLElement | null): number => {
@@ -763,24 +774,95 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       let actualIndex = canonicalIndex + 1
       actualIndex = ((actualIndex % len) + len) % len
 
-      if (actualIndex === 0) actualIndex = imageCount
+      if (actualIndex === 0) actualIndex = cellCount
 
       if (counterRef.current) {
-        counterRef.current.textContent = `${actualIndex} / ${imageCount}`
+        counterRef.current.textContent = `${actualIndex} / ${cellCount}`
       }
     }
 
-    function toggleActiveVideoPlay() {
+    function toggleActiveVideoPlay(renderedIndex?: number | null) {
       const idx = selectedIndex.current ?? 0
 
-      const actualIndex = idx + 1
+      const canonicalWrappedIndex = idx + 1
 
-      const api = plyrRefs.current[actualIndex] || plyrRef.current[0]
-      const p = api?.plyr
-      if (!p) return
+      let resolvedRenderedIndex: number | null = null
+      let api: APITypes | null =
+        (typeof renderedIndex === 'number' ? plyrRefs.current[renderedIndex] : null) || null
 
-      if (p.playing) p.pause()
-      else p.play()
+      if (api) {
+        resolvedRenderedIndex = typeof renderedIndex === 'number' ? renderedIndex : null
+      } else {
+        api = plyrRefs.current[canonicalWrappedIndex] || null
+        if (api) {
+          resolvedRenderedIndex = canonicalWrappedIndex
+        } else {
+          api = plyrRef.current[0] || null
+          resolvedRenderedIndex = api ? 0 : null
+        }
+      }
+
+      const player: APITypes["plyr"] | null = api?.plyr ?? null
+      if (!player) return
+
+      const isPlaying = typeof player.playing === 'boolean'
+        ? player.playing
+        : !player.paused
+
+      if (isPlaying) {
+        player.pause()
+        return
+      }
+
+      const playResult = player.play()
+      if (
+        playResult &&
+        typeof (playResult as Promise<void>).catch === 'function'
+      ) {
+        (playResult as Promise<void>).catch(() => {})
+      }
+    }
+
+    function findOriginalRenderedIndexForCanonical(canonicalIndex: number): number | null {
+      const track = slider.current
+      if (!track) return null
+
+      const originalSlide = track.querySelector<HTMLElement>(
+        `[data-rmg-fs-slide="true"][data-rmg-canonical-idx="${canonicalIndex}"][data-rmg-clone="false"]`
+      )
+      if (!originalSlide) return null
+
+      const renderedAttr = originalSlide.getAttribute('data-index')
+      const renderedIndex = renderedAttr != null ? parseInt(renderedAttr, 10) : NaN
+      return Number.isFinite(renderedIndex) ? renderedIndex : null
+    }
+
+    function toggleCanonicalVideoPlayStrict(canonicalIndex: number): boolean {
+      const renderedIndex = findOriginalRenderedIndexForCanonical(canonicalIndex)
+      if (renderedIndex == null) return false
+
+      const api = plyrRefs.current[renderedIndex] || null
+      const player: APITypes["plyr"] | null = api?.plyr ?? null
+      if (!player) return false
+
+      const isPlaying = typeof player.playing === 'boolean'
+        ? player.playing
+        : !player.paused
+
+      if (isPlaying) {
+        player.pause()
+        return true
+      }
+
+      const playResult = player.play()
+      if (
+        playResult &&
+        typeof (playResult as Promise<void>).catch === 'function'
+      ) {
+        (playResult as Promise<void>).catch(() => {})
+      }
+
+      return true
     }
 
     function isPlyrControlsEl(el: HTMLElement | null) {
@@ -801,29 +883,43 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       return { x: evt.clientX, y: evt.clientY };
     }
 
-    function clickedVideoSurface(evt: any): boolean {
+    function clickedVideoSurface(
+      evt: any
+    ): { renderedIndex: number; canonicalIndex: number; isClone: boolean } | null {
       const { x, y } = getClientXY(evt);
 
       const under = document.elementFromPoint(x, y) as HTMLElement | null;
-      if (!under) return false;
+      if (!under) return null;
 
       const slide = under.closest('[data-rmg-fs-slide="true"]') as HTMLElement | null;
-      if (!slide) return false;
+      if (!slide) return null;
 
       const plyrRoot = slide.querySelector('.plyr') as HTMLElement | null;
-      if (!plyrRoot) return false;
+      if (!plyrRoot) return null;
 
       const wrap = plyrRoot.querySelector('.plyr__video-wrapper') as HTMLElement | null;
-      if (!wrap) return false;
+      if (!wrap) return null;
 
       const r = wrap.getBoundingClientRect();
       const inside =
         x >= r.left && x <= r.right &&
         y >= r.top  && y <= r.bottom;
 
-      if (under.closest('.plyr__controls')) return false;
+      if (under.closest('.plyr__controls')) return null;
 
-      return inside;
+      if (!inside) return null;
+
+      const renderedAttr = slide.getAttribute('data-index');
+      const canonicalAttr = slide.getAttribute('data-rmg-canonical-idx');
+      const renderedIndex = renderedAttr != null ? parseInt(renderedAttr, 10) : NaN;
+      const canonicalIndex = canonicalAttr != null ? parseInt(canonicalAttr, 10) : NaN;
+      if (!Number.isFinite(renderedIndex) || !Number.isFinite(canonicalIndex)) return null;
+
+      return {
+        renderedIndex,
+        canonicalIndex,
+        isClone: slide.getAttribute('data-rmg-clone') === 'true',
+      };
     }
 
     function isYouTubeVideoEvent(evt: Event): boolean {
@@ -849,10 +945,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       const per = perSlideRef.current || track.clientWidth || 1;
       const len = slides.current.length || 1;
-      const W   = per * len;
 
       const counterMax = len - 1;
-      const startIndex = selectedIndex.current || 0;
+      const startIndex = resolveStartIndex(slideIndex, len);
 
       const location         = Vector1D(0);
       const previousLocation = Vector1D(0);
@@ -864,8 +959,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       offsetLocationRef.current   = offsetLocation;
       targetRef.current           = target;
 
-      const scrollSnaps = Array.from({ length: len }, (_, i) => -per * i);
-      scrollSnapsRef.current = scrollSnaps;
+      syncLoopGeometry(per, len)
+
+      const scrollSnaps = scrollSnapsRef.current
 
       const initialSnap = scrollSnaps[startIndex] ?? 0;
 
@@ -887,23 +983,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       selectedIndex.current = startIndex;
       sub.setLocalIndex(startIndex);
       updateCounterFromIndex(startIndex);
-
-      contentSizeRef.current      = W;
-      loopLimitRef.current        = Limit(-W, 0);
-      scrollContentSizeRef.current = W;
-
-      const fsLimit = createBaseLimit(-W, 0);
-      scrollLimitRef.current = fsLimit;
-
-      if (loopLimitRef.current) {
-        scrollTargetRef.current = ScrollTarget(
-          true,
-          scrollSnaps,
-          W,
-          loopLimitRef.current,
-          target
-        );
-      }
 
       function scrollTo(target: BaseTarget): void {
         const indexCurrent  = indexCurrentRef.current;
@@ -954,23 +1033,10 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       scrollToRef.current = fsScrollTo;
 
-      const looper = ScrollLooper(
-        contentSizeRef.current,
-        loopLimitRef.current,
-        location,
-        [location, previousLocation, offsetLocation, target]
-      )
-
       const body = ScrollBody(location, offsetLocation, previousLocation, target, sliderDuration, sliderFriction)
       bodyRef.current = body
 
-      const durNowRef = { current: sliderDuration }
-      const durStartRef = { current: sliderDuration }
-      const durGoalRef = { current: sliderDuration }
-      const durTRef = { current: 1 }
-      const durActiveRef = { current: false }
-
-      if (imageCount === 1) {
+      if (cellCount === 1) {
         const cw = (track as any)['clientWidth'] as number;
         const per = track.clientWidth || 1;
         perSlideRef.current = per;
@@ -1000,40 +1066,15 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         document,
         window as WindowType,
         () => {
-          if (imageCount === 1) {
+          if (cellCount === 1) {
             boundsRef.current?.constrain(pointerDownRef.current)
-          }
-          
-          if (body && durActiveRef.current && !pointerDownRef.current) {
-            const oobNow = !!boundsRef.current?.passed()
-  
-            if (!oobNow) {
-              durActiveRef.current = false
-            } else {
-              const easeMs = 260
-              const fixed = 1000 / 60
-              const step = fixed / easeMs
-              durTRef.current = clamp(durTRef.current + step, 0, 1)
-  
-              const t = easeOutCubic(durTRef.current)
-              const next = lerp(durStartRef.current, durGoalRef.current, t)
-  
-              durNowRef.current = next
-              body.useDuration(next)
-  
-              if (durTRef.current >= 1) {
-                durActiveRef.current = false
-                body.useDuration(durGoalRef.current)
-                durNowRef.current = durGoalRef.current
-              }
-            }
           }
           
           bodyRef.current?.seek()
 
           const dir  = body.direction() || Math.sign(target.get() - location.get()) || 0
-          if (!suppressLoopRef.current && imageCount > 1 && W > 0) {
-            looper.loop(dir);
+          if (!suppressLoopRef.current && cellCount > 1 && contentSizeRef.current > 0) {
+            looperRef.current?.loop(dir);
           }
 
           x.current = location.get()
@@ -1049,7 +1090,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
           positionSlider()
 
-          const settled = bodyRef.current?.settled()
+          const oob = cellCount === 1 && (boundsRef.current?.passed() ?? false)
+          const settled = bodyRef.current?.settled() && !oob
           if (settled && !pointerDownRef.current) {
             animRef.current?.stop()
             isAnimatingRef.current = false
@@ -1099,6 +1141,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         if (isMouseEvt && (evt as MouseEvent).button !== 0) return
 
         startGrabbing();
+        lockWheelFor(WHEEL_LOCK_MS);
 
         wasPinch.current = false
         isTouchPinching.current = false
@@ -1229,6 +1272,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           yTemp.current = 0
           moveStore.clear()
           preventScroll = false
+          unlockWheelNow();
+          lockWheelFor(300);
           return
         }
 
@@ -1236,17 +1281,25 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         pointerDownRef.current = false
         moveStore.clear()
         preventScroll = false
+        unlockWheelNow();
+        lockWheelFor(300);
 
         if (isClick.current) {
           const target = evt.target as HTMLElement
-          if (clickedVideoSurface(evt) && !isYouTubeVideoEvent(evt)) {
+          const clickedVideo = clickedVideoSurface(evt);
+          if (clickedVideo != null && (clickedVideo.isClone || !isYouTubeVideoEvent(evt))) {
             evt.preventDefault?.();
             (evt as any).stopPropagation?.();
 
-            toggleActiveVideoPlay();
             dragMode.current = 'none';
-            suppressLoopRef.current = true
-            goToCanonical(selectedIndex.current)
+            if (clickedVideo.isClone) {
+              toggleCanonicalVideoPlayStrict(clickedVideo.canonicalIndex)
+              goToCanonical(clickedVideo.canonicalIndex, 'animated')
+            } else {
+              toggleActiveVideoPlay(clickedVideo.renderedIndex);
+              // suppressLoopRef.current = true
+              goToCanonical(selectedIndex.current)
+            }
             return;
           }
 
@@ -1271,7 +1324,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           const matchedRef = imageRefs[parseInt(imgIndex)]
 
           const idx = selectedIndex.current
-          if (idx === imageCount - 1 && Number(imgIndex) === imageCount + 1) {
+          if (idx === cellCount - 1 && Number(imgIndex) === cellCount + 1) {
             suppressLoopRef.current = true
             goToCanonical(0)
             return
@@ -1280,7 +1333,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             isZooming.current = true
             handleZoomToggle(evt as any, matchedRef)
           }
-          if (idx === imageCount - 1 && Number(imgIndex) === imageCount + 1) {
+          if (idx === cellCount - 1 && Number(imgIndex) === cellCount + 1) {
             isZooming.current = true
             handleZoomToggle(evt as any, matchedRef)
           }
@@ -1358,32 +1411,13 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
           const baseFriction = sliderFriction
           const forceFactor = factorAbs(boostedForce, force)
-          const speed = sliderDuration - 10 * forceFactor
+          let speed = sliderDuration
+          if (boundsRef.current?.passed()) {
+            speed = sliderDuration + 10 * forceFactor
+          }
           const friction = baseFriction + forceFactor / 50
 
-          body.useFriction(friction)
-
-          const oob = !!boundsRef.current?.passed()
-
-          if (oob) {
-            const depth = Math.min(1, Math.abs(offsetLocationRef.current!.get() - limitRef.current!.constrain(offsetLocationRef.current!.get())) / 200)
-            const durStart = clamp(speed + 20 * depth, sliderDuration, 90)
-
-            const durGoal = sliderDuration
-
-            durStartRef.current = durStart
-            durGoalRef.current = durGoal
-            durTRef.current = 0
-            durActiveRef.current = true
-
-            durNowRef.current = durStart
-            body.useDuration(durStart)
-          } else {
-            durActiveRef.current = false
-            durNowRef.current = speed
-            body.useDuration(speed)
-          }
-
+          body.useDuration(speed).useFriction(friction)
           fsScrollTo.distance(force, true)
         }
 
@@ -1403,6 +1437,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           isVerticalScroll.current = false
           yTemp.current = 0
           moveStore.clear()
+          unlockWheelNow();
+          lockWheelFor(WHEEL_LOCK_MS);
         })
         .add(root, 'contextmenu', onUp as any)
 
@@ -1412,7 +1448,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         animRef.current?.destroy()
         animRef.current = null
       }
-    }, [show, imageCount])
+    }, [show, cellCount])
 
     function goToCanonical(canonicalIdx: number, mode: 'instant' | 'animated' = 'animated') {
       scrollToIndex(canonicalIdx, { jump: mode === 'instant' })
@@ -1421,8 +1457,21 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     useEffect(() => {
       const root = viewportRef.current
       if (!root) return
-      let wheelTimer: number | null = null
       function onWheel(e: WheelEvent) {
+        const now = markWheelSeen();
+
+        if (pointerDownRef.current) {
+          lockWheelFor(WHEEL_LOCK_MS);
+          if ((e as any).cancelable) e.preventDefault?.();
+          return;
+        }
+
+        if (isWheelLocked(now)) {
+          lockWheelFor(40);
+          if ((e as any).cancelable) e.preventDefault?.();
+          return;
+        }
+
         if (isZoomed) return
         const track = slider.current
         if (!track) return
@@ -1442,9 +1491,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         x.current = next
         positionSlider()
         updateActiveIndexFromX(next)
-
-        if (wheelTimer) clearTimeout(wheelTimer as any)
-        wheelTimer = window.setTimeout(() => {}, 120)
       }
       root.addEventListener('wheel', onWheel as any, { passive: false })
       return () => root.removeEventListener('wheel', onWheel as any)
@@ -1461,10 +1507,10 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         indexCurrentRef.current?.set(idx)
 
         sub.setLocalIndex(idx)
-        let actualIndex = ((idx + 1) % imageCount + imageCount) % imageCount
-        if (actualIndex === 0) actualIndex = imageCount
+        let actualIndex = ((idx + 1) % cellCount + cellCount) % cellCount
+        if (actualIndex === 0) actualIndex = cellCount
         if (counterRef.current) {
-          counterRef.current.textContent = `${actualIndex} / ${imageCount}`
+          counterRef.current.textContent = `${actualIndex} / ${cellCount}`
         }
       }
     }
@@ -1556,8 +1602,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
                 let actual = selectedIndex.current + 1;
                 const len = slideCount();
                 actual = ((actual % len) + len) % len;
-                if (actual === 0) actual = imageCount;
-                counterRef.current.textContent = `${actual} / ${imageCount}`;
+                if (actual === 0) actual = cellCount;
+                counterRef.current.textContent = `${actual} / ${cellCount}`;
               }
             } else {
               const mode = req.mode ?? 'animated'
@@ -1610,7 +1656,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       return false;
     }
 
-    const len = normalizedItems?.length || imageCount || 1;
+    const len = normalizedItems?.length || cellCount || 1;
 
     const openingIndex =
       ((slideIndex ?? 0) % len + len) % len;

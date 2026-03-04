@@ -76,17 +76,23 @@ export type SkeletonNode =
         style?: SkeletonBaseStyle;
         shimmer?: SkeletonShimmer;
       };
+    } 
+  | { 
+      kind: "text";
+      fontSize: number;
+      lineHeight: number;
+      lines?: number;
+      style?: SkeletonBaseStyle;
+      shimmer?: SkeletonShimmer
     };
 
 export type SliderSkeletonSpec = {
+  mode?: "fit" | "peek";
   className?: string;
   layout?: SliderSkeletonNode;
-  defaults?: {
-    backgroundColor?: string;
-    highlightColor?: string;
-    radius?: SkeletonLength;
-    shimmer?: SkeletonShimmer;
-  };
+  backgroundColor?: string;
+  radius?: SkeletonLength;
+  shimmer?: SkeletonShimmer;
 };
 
 export type SliderSkeletonCardProps = {
@@ -246,6 +252,7 @@ function collectResponsiveCss(
     case "rect":
     case "square":
     case "circle":
+    case "text":
       return node;
 
     case "media": {
@@ -431,6 +438,19 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
       );
     }
 
+    case "text": {
+      const lines = Math.max(1, node.lines ?? 1);
+      const h = node.fontSize * node.lineHeight * lines;
+
+      return (
+        <ShapeNode
+          kind="rect"
+          style={{ ...(node.style || {}), height: h }}
+          shimmer={node.shimmer}
+        />
+      );
+    }
+
     default:
       return null;
   }
@@ -449,10 +469,251 @@ function defaultSliderSpec(): SliderSkeletonSpec {
       item,
       itemWrapStyle: undefined,
     },
-    defaults: {
-      radius: 12,
-    },
+    radius: 12,
   };
+}
+
+// ---------- SSR initial height inference (CSS expression) ----------
+
+function isPercent(v: string) {
+  return /%$/.test(v.trim());
+}
+
+function toCssLen(v: SkeletonLength | undefined): string | null {
+  if (v == null) return null;
+  return typeof v === "number" ? `${v}px` : String(v);
+}
+
+function parseAspectRatio(ar: SkeletonLength | undefined): number | null {
+  if (ar == null) return null;
+  if (typeof ar === "number") return ar > 0 ? ar : null;
+
+  const s = String(ar).trim();
+  // "16 / 9"
+  const m = s.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+  if (m) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (a > 0 && b > 0) return a / b;
+    return null;
+  }
+
+  // "1.777"
+  const n = Number(s);
+  if (Number.isFinite(n) && n > 0) return n;
+
+  return null;
+}
+
+function sumExpr(parts: Array<string | null | undefined>): string | null {
+  const xs = parts.filter((p): p is string => !!p && p.trim().length > 0);
+  if (!xs.length) return null;
+  if (xs.length === 1) return xs[0];
+  return `calc(${xs.join(" + ")})`;
+}
+
+function maxExpr(parts: Array<string | null | undefined>): string | null {
+  const xs = parts.filter((p): p is string => !!p && p.trim().length > 0);
+  if (!xs.length) return null;
+  if (xs.length === 1) return xs[0];
+  return `max(${xs.join(", ")})`;
+}
+
+function mulExpr(a: string, b: string): string {
+  return `calc(${a} * ${b})`;
+}
+
+function divExpr(a: string, b: string): string {
+  return `calc(${a} / ${b})`;
+}
+
+function marginsTBExpr(style?: SkeletonBaseStyle): string | null {
+  const mt = toCssLen(style?.marginTop);
+  const mb = toCssLen(style?.marginBottom);
+  if (!mt && !mb) return null;
+  return sumExpr([mt ?? "0px", mb ?? "0px"]);
+}
+
+function containerPaddingYExpr(style?: SkeletonContainerStyle): string | null {
+  // skeleton "padding" is a single value; treat it as both top+bottom
+  const p = toCssLen(style?.padding);
+  if (!p) return null;
+  return mulExpr(p, "2");
+}
+
+function containerPaddingXExpr(style?: SkeletonContainerStyle): string | null {
+  const p = toCssLen(style?.padding);
+  if (!p) return null;
+  return mulExpr(p, "2");
+}
+
+function gapExpr(style?: SkeletonContainerStyle): string | null {
+  return toCssLen(style?.gap);
+}
+
+function pickPlainStyle(style: SkeletonContainerStyleResponsive | undefined): SkeletonContainerStyle | undefined {
+  // if responsive map, SSR can't know breakpoint here; caller will wrap via media queries.
+  if (!style) return undefined;
+  if (isResponsiveContainerStyle(style)) return undefined;
+  return style as SkeletonContainerStyle;
+}
+
+/**
+ * Compute tile height expression for a SkeletonNode, given:
+ * - tileWidthExpr: CSS expression for the available width of the tile (e.g. "var(--rmg-skel-tile-w)")
+ *
+ * Returns CSS expression string (e.g. "calc(var(--rmg-skel-tile-w) / 0.666 + 32px)")
+ * or null if cannot be inferred.
+ */
+function nodeHeightExpr(node: SkeletonNode, tileWidthExpr: string): string | null {
+  // Shapes
+  if (node.kind === "rect" || node.kind === "square" || node.kind === "circle") {
+    const h = toCssLen(node.style?.height);
+    const ar = parseAspectRatio(node.style?.aspectRatio);
+
+    // explicit height wins
+    if (h) {
+      return sumExpr([h, marginsTBExpr(node.style)]);
+    }
+
+    // aspectRatio: height = width / ar
+    if (ar) {
+      // width basis:
+      const w = toCssLen(node.style?.width);
+      const baseW =
+        w && !isPercent(w) ? w
+        : tileWidthExpr; // if "100%" or undefined, treat as tile width
+
+      const arExpr = String(ar);
+      const arH = divExpr(baseW, arExpr);
+      return sumExpr([arH, marginsTBExpr(node.style)]);
+    }
+
+    // cannot infer
+    return marginsTBExpr(node.style) ?? null;
+  }
+
+  // Media group (tiles repeated)
+  if (node.kind === "media") {
+    const dir = node.direction ?? "row";
+    const gap = gapExpr(pickPlainStyle(node.style)) ?? "0px";
+    const count = Math.max(0, node.count | 0);
+
+    const tile = node.tile
+      ? ({ kind: node.tile.shape ?? "rect", style: node.tile.style, shimmer: node.tile.shimmer } as any as SkeletonNode)
+      : ({ kind: "rect", style: { width: "100%", height: "100%" } } as any as SkeletonNode);
+
+    const tileH = nodeHeightExpr(tile, tileWidthExpr);
+    if (!tileH) return null;
+
+    if (dir === "row") {
+      // side-by-side => height is max tile height
+      return tileH;
+    } else {
+      // stacked => sum tile heights + gaps
+      if (count <= 1) return tileH;
+      return sumExpr([mulExpr(tileH, String(count)), mulExpr(gap, String(count - 1))]);
+    }
+  }
+
+  // Containers
+  if (node.kind === "row" || node.kind === "col" || node.kind === "stack") {
+    const dir = node.kind === "row" ? "row" : "col";
+    const plain = pickPlainStyle(node.style);
+    const gap = gapExpr(plain) ?? "0px";
+    const padY = containerPaddingYExpr(plain) ?? "0px";
+
+    const childHeights = node.children.map((c) => nodeHeightExpr(c, tileWidthExpr));
+
+    if (dir === "row") {
+      // horizontal layout => height is max of children
+      const m = maxExpr(childHeights);
+      if (!m) return null;
+      return sumExpr([m, padY]);
+    } else {
+      // vertical/stack => sum + gaps
+      const hs = childHeights.filter((x): x is string => !!x);
+      if (!hs.length) return padY;
+
+      const gaps = hs.length > 1 ? mulExpr(gap, String(hs.length - 1)) : "0px";
+      return sumExpr([sumExpr(hs) ?? null, gaps, padY]);
+    }
+  }
+
+  if (node.kind === "text") {
+    const lines = Math.max(1, node.lines ?? 1);
+    const hPx = node.fontSize * node.lineHeight * lines;
+    return sumExpr([`${hPx}px`, marginsTBExpr(node.style)]);
+  }
+
+  return null;
+}
+
+/**
+ * Build the slider initial height expression from a SliderSkeletonNode.
+ * Uses container query width: 100cqw (requires container-type: inline-size on sliderShell)
+ */
+export function buildInitialHeightFromSkeletonSpecCssExpr(
+  layout: SliderSkeletonNode,
+  visibleCount: number,
+  mode: "fit" | "peek"
+): string | null {
+  // unwrap non-slider root (rare): treat as single tile
+  const slider = (layout as any).kind === "slider" ? (layout as Extract<SliderSkeletonNode, { kind: "slider" }>) : null;
+
+  // defaults
+  const dir = slider?.direction ?? "row";
+  const stylePlain = pickPlainStyle(slider?.style);
+
+  const gap = gapExpr(stylePlain) ?? "0px";
+  const padX = containerPaddingXExpr(stylePlain) ?? "0px";
+  const padY = containerPaddingYExpr(stylePlain) ?? "0px";
+
+  // tile width expression
+  // fit mode: divide available container width by visibleCount
+  // peek mode: if itemWrapStyle.width is fixed, use it; else fallback to fit math.
+  const itemWrapW = slider?.itemWrapStyle?.width ? toCssLen(slider.itemWrapStyle.width) : null;
+
+  let tileWExpr: string;
+  if (mode === "peek" && itemWrapW && !isPercent(itemWrapW)) {
+    tileWExpr = itemWrapW;
+  } else {
+    const count = Math.max(1, visibleCount | 0);
+    const gapsExpr = count > 1 ? mulExpr(gap, String(count - 1)) : "0px";
+    // available = 100cqw - padX - gaps
+    const avail = `calc(100cqw - ${padX} - ${gapsExpr})`;
+    tileWExpr = divExpr(avail, String(count));
+  }
+
+  // compute tile height for the item node
+  const item = slider ? slider.item : (layout as any as SkeletonNode);
+  const itemH = nodeHeightExpr(item as any, tileWExpr);
+
+  if (!itemH) return null;
+
+  // if slider has itemWrapStyle with fixed height/aspectRatio, incorporate:
+  // - explicit height wins
+  // - else aspectRatio uses tileWExpr
+  const wrap = slider?.itemWrapStyle;
+  let wrapH: string | null = null;
+  if (wrap) {
+    const h = toCssLen(wrap.height);
+    if (h) wrapH = sumExpr([h, marginsTBExpr(wrap)]);
+    else {
+      const ar = parseAspectRatio(wrap.aspectRatio);
+      if (ar) wrapH = sumExpr([divExpr(tileWExpr, String(ar)), marginsTBExpr(wrap)]);
+      else wrapH = marginsTBExpr(wrap);
+    }
+  }
+
+  const tileH = wrapH ? maxExpr([wrapH, itemH]) : itemH;
+
+  // slider row height:
+  // row direction doesn't stack tiles vertically, so height is tileH + padY
+  // col direction would stack tiles => sum, but slider skeleton "slider" is basically track; we treat as one row height.
+  const rowH = sumExpr([tileH, padY]);
+
+  return rowH;
 }
 
 export function SliderSkeletonCard({ count, maxSlots, rowStyle, spec }: SliderSkeletonCardProps) {
@@ -467,10 +728,10 @@ export function SliderSkeletonCard({ count, maxSlots, rowStyle, spec }: SliderSk
     ...(rowStyle || {}),
   };
 
-  if (s.defaults?.backgroundColor) (rootStyle as any)["--rmg-skel-bg"] = s.defaults.backgroundColor;
-  if (s.defaults?.radius != null) (rootStyle as any)["--rmg-skel-radius"] = cssLen(s.defaults.radius);
+  if (s.backgroundColor) (rootStyle as any)["--rmg-skel-bg"] = s.backgroundColor;
+  if (s.radius != null) (rootStyle as any)["--rmg-skel-radius"] = cssLen(s.radius);
 
-  const sh = s.defaults?.shimmer;
+  const sh = s.shimmer;
 
   if (sh?.enabled === false) (rootStyle as any)["--rmg-skel-shimmer-enabled"] = "0";
 
@@ -522,9 +783,12 @@ export function SliderSkeletonCard({ count, maxSlots, rowStyle, spec }: SliderSk
 
   const slotsToRender = Math.max(0, maxSlots | 0);
 
+  const mode = s.mode ?? "fit";
+
   return (
     <div
       data-rmg-slider-skel-scope={scopeId}
+      data-rmg-skel-mode={mode}
       className={[styles.sliderSkeletonOverlay, s.className].filter(Boolean).join(" ")}
       data-rmg-skel-part="overlay"
     >

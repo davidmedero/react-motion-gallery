@@ -69,7 +69,7 @@ export function createEntriesGridMedia(args: {
         intro={normalizedIntro}
         enableFullscreen={false}
         onOpen={() => {}}
-        registerExpandableImg={() => {}}
+        registerExpandableImage={() => {}}
       />
     );
   }

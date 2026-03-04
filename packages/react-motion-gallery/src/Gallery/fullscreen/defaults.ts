@@ -30,10 +30,7 @@ export const DEFAULT_FULLSCREEN = {
     slideFade: false,
     slideFadeDuration: 120,
     slideFadeEasing: "cubic-bezier(.4,0,.22,1)",
-    thumbnailsFadeDuration: 300,
-    thumbnailsFadeEasing: "cubic-bezier(.4,0,.22,1)",
   },
-  thumbnails: {},
   slider: {
     duration: 25,
     friction: 0.68,

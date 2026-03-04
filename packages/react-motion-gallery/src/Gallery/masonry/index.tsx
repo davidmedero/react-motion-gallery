@@ -17,6 +17,37 @@ type Props = MasonryOptions & {
 
 type Cell = { id: string; node: React.ReactNode };
 
+function isImgEl(el: unknown): el is HTMLImageElement {
+  return el instanceof HTMLImageElement;
+}
+
+function findImgInside(host: HTMLElement | null): HTMLImageElement | null {
+  if (!host) return null;
+  if (isImgEl(host)) return host;
+
+  const img = host.querySelector("img");
+  return isImgEl(img) ? img : null;
+}
+
+function normalizeLoading(src?: LoadingOptions) {
+  return {
+    enabled: src?.enabled,
+    force: src?.force,
+    renderLoading: src?.renderLoading,
+    skeleton: src?.skeleton,
+  };
+}
+
+function normalizeIntro(src?: IntroOptions) {
+  return {
+    renderIntro: src?.renderIntro,
+    staggerMs: src?.staggerMs ?? 40,
+    transform: src?.transform ?? "translateY(10px) scale(0.99)",
+    durationMs: src?.durationMs ?? 300,
+    easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
+  };
+}
+
 export default function Masonry(props: Props) {
   const { children, breakpoints, ...masonryOptions } = props;
 
@@ -64,23 +95,20 @@ export default function Masonry(props: Props) {
     coreCells && coreCells.length > 0 ? coreCells : localCellsState;
 
   const isClick = React.useRef(false);
-  const expandableImgRefs =
-    core?.expandableImgRefs ?? React.useRef<Array<HTMLImageElement | null>>([]);
 
-  const registerExpandableImg =
-    core?.registerExpandableImg ??
-    React.useCallback((index: number, node: HTMLElement | null) => {
-      if (!node) {
-        expandableImgRefs.current[index] = null;
-        return;
-      }
-      const img =
-        node.tagName === "IMG"
-          ? (node as HTMLImageElement)
-          : (node.querySelector("img") as HTMLImageElement | null);
+  const expandableImageRefs =
+    core?.expandableImageRefs ??
+    React.useRef<Array<HTMLImageElement | HTMLVideoElement | null>>([]);
 
-      expandableImgRefs.current[index] = img;
-  }, []);
+  const registerExpandableImage =
+    core?.registerExpandableImage ??
+    React.useCallback(
+      (index: number, node: HTMLElement | null) => {
+        const img = findImgInside(node);
+        expandableImageRefs.current[index] = img;
+      },
+      [expandableImageRefs]
+    );
 
   const normalizedItems = core?.normalizedItems ?? [];
   const enableFullscreen = !!core?.requestFullscreenOpen;
@@ -89,46 +117,39 @@ export default function Masonry(props: Props) {
     (index: number, originEl?: HTMLElement | null) => {
       if (!enableFullscreen) return;
 
-      const imageCount = normalizedItems.length;
-      if (!imageCount) return;
+      const cellCount = normalizedItems.length;
+      if (!cellCount) return;
 
       let imgEl: HTMLImageElement | null = null;
 
       if (originEl) {
-        imgEl =
-          originEl.tagName === "IMG"
-            ? (originEl as HTMLImageElement)
-            : (originEl.querySelector("img") as HTMLImageElement | null);
+        imgEl = findImgInside(originEl);
       }
 
       if (!imgEl) {
-        const slot: any = expandableImgRefs.current[index] ?? null;
+        const slot: any = expandableImageRefs.current[index] ?? null;
         const slotCurrent: any =
           slot && typeof slot === "object" && "current" in slot ? slot.current : slot;
 
-        if (slotCurrent?.tagName === "IMG") imgEl = slotCurrent as HTMLImageElement;
-        else if (slotCurrent) imgEl = (slotCurrent as HTMLElement).querySelector?.("img") ?? null;
+        if (isImgEl(slotCurrent)) {
+          imgEl = slotCurrent;
+        } else if (slotCurrent instanceof HTMLElement) {
+          imgEl = findImgInside(slotCurrent);
+        }
       }
+
+      if (!imgEl) return;
 
       isClick.current = true;
 
       core!.requestFullscreenOpen({
         source: "masonry",
         index,
-        img: imgEl ?? null,
+        image: imgEl,
       });
     },
-    [core, enableFullscreen, normalizedItems.length]
+    [core, enableFullscreen, normalizedItems.length, expandableImageRefs]
   );
-
-  function normalizeLoading(src?: LoadingOptions) {
-    return {
-      enabled: src?.enabled,
-      force: src?.force,
-      renderLoading: src?.renderLoading,
-      skeleton: src?.skeleton,
-    };
-  }
 
   const masonryLoading = React.useMemo(() => {
     return normalizeLoading(
@@ -136,18 +157,10 @@ export default function Masonry(props: Props) {
     );
   }, [masonryObject]);
 
-  function normalizeIntro(src?: IntroOptions) {
-    return {
-      renderIntro: src?.renderIntro,
-      staggerMs: src?.staggerMs ?? 40,
-      transform: src?.transform ?? "translateY(10px) scale(0.99)",
-      durationMs: src?.durationMs ?? 300,
-      easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
-    };
-  }
-
   const masonryIntro = React.useMemo(() => {
-    return normalizeIntro((masonryObject as any).intro ?? (masonryObject as any).transitions?.intro);
+    return normalizeIntro(
+      (masonryObject as any).intro ?? (masonryObject as any).transitions?.intro
+    );
   }, [masonryObject]);
 
   const itemClassName = (masonryObject as any).classNames?.item ?? "";
@@ -157,12 +170,15 @@ export default function Masonry(props: Props) {
       cells: cellsState,
       fsEnabled: enableFullscreen,
       openFullscreenAt: (i: number, originEl?: HTMLElement | null) => openFullscreenAt(i, originEl),
-      registerExpandableImg: (i: number, node: HTMLElement | null) => registerExpandableImg(i, node),
+
+      registerExpandableImage: (i: number, node: HTMLImageElement | null) =>
+        registerExpandableImage(i, (node as any) ?? null),
+
       itemBaseClass: "rmg__masonry-item",
       itemBaseStyleClass: "",
       itemClassName,
     });
-  }, [cellsState, enableFullscreen, openFullscreenAt, registerExpandableImg, itemClassName]);
+  }, [cellsState, enableFullscreen, openFullscreenAt, registerExpandableImage, itemClassName]);
 
   return (
     <MasonryLayout

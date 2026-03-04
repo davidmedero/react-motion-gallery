@@ -6,7 +6,10 @@ import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/
 import { Entries, flattenEntries } from "../../../packages/react-motion-gallery/src/Gallery/entries";
 import { createEntriesSliderMedia } from "../../../packages/react-motion-gallery/src/Gallery/entries/media/slider";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
+import { FullscreenThumbnailSlider } from "../../../packages/react-motion-gallery/src/Gallery/fullscreenThumbnails";
 import { Slider } from "../../../packages/react-motion-gallery/src/Gallery/slider";
+import createSliderIndexChannel from "../../../packages/react-motion-gallery/src/Gallery/slider/sliderSub";
+import ThumbnailSlider from "../../../packages/react-motion-gallery/src/Gallery/thumbnails";
 
 type Entry = {
   id: string;
@@ -711,6 +714,114 @@ export function FsDiagramFullConfig() {
 
 
 export default function Home() {
+
+  const SLIDES = [
+  "https://picsum.photos/id/1015/1600/900",
+  "https://picsum.photos/id/1018/1600/900",
+  "https://picsum.photos/id/1024/1600/900",
+  "https://picsum.photos/id/1035/1600/900",
+  "https://picsum.photos/id/1043/1600/900",
+  "https://picsum.photos/id/1057/1600/900",
+];
+
+const FS_SLIDES = [
+  "https://picsum.photos/id/1015/2400/1350",
+  "https://picsum.photos/id/1018/2400/1350",
+  "https://picsum.photos/id/1024/2400/1350",
+  "https://picsum.photos/id/1035/2400/1350",
+  "https://picsum.photos/id/1043/2400/1350",
+  "https://picsum.photos/id/1057/2400/1350",
+]
+
+const THUMBS = [
+  "https://picsum.photos/id/1015/320/200",
+  "https://picsum.photos/id/1018/320/200",
+  "https://picsum.photos/id/1024/320/200",
+  "https://picsum.photos/id/1035/320/200",
+  "https://picsum.photos/id/1043/320/200",
+  "https://picsum.photos/id/1057/320/200",
+];
+
+function SlideCell({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={`Slide ${i + 1}`}
+      style={{
+        width: "100%",
+        height: '400px',
+        objectFit: "contain",
+        display: "block",
+        borderRadius: 12,
+      }}
+    />
+  );
+}
+
+function ThumbCell({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={`Thumbnail ${i + 1}`}
+      style={{
+        width: "inherit",
+        height: "inherit",
+        objectFit: "contain",
+        display: "block",
+        // borderRadius: 8,
+      }}
+    />
+  );
+}
+
+  function FullscreenAddon(props: {
+  sliderObject: any;
+  cellsStateLength: number;
+}) {
+  const { sliderObject, cellsStateLength } = props;
+
+  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+    slider: undefined,
+    sliderObject,
+    cellsStateLength,
+  });
+
+  const fullscreenThumbItems = React.useMemo(
+    () =>
+      THUMBS.map((src, i) => ({
+        thumbSrc: src,
+        alt: `Thumbnail ${i + 1}`,
+      })),
+    []
+  );
+
+  return (
+    <>
+      {fullscreenNode}
+      <FullscreenThumbnailSlider
+        bridge={fullscreenThumbnailBridge}
+        items={fullscreenThumbItems}
+        position="bottom"
+        thumbnailsCenter={true}
+        containerStyle={{ width: '100dvw', height: 76 }}
+        thumbnailWidth="auto"
+        thumbnailHeight={60}
+        thumbnailItemStyle={{ borderRadius: 8 }}
+        gap={10}
+        freeScroll
+        groupCells={false}
+        loop={false}
+        skipSnaps={false}
+        centerActiveThumb
+        showArrows
+      />
+    </>
+  );
+}
+
   const entries = React.useMemo(() => ENTRIES as any, []);
   const flat = React.useMemo(() => flattenEntries(entries), [entries]);
 
@@ -837,59 +948,57 @@ export default function Home() {
   "https://picsum.photos/id/1074/1000/1500",
 ];
 
-function Slide({ src, i }: { src: string; i: number }) {
-  return (
-    <div
-      style={{
-        height: "100%",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
-      {/* image */}
-      <img
-        src={src}
-        alt={`Slide ${i + 1}`}
-        style={{
-          width: "100%",
-          flex: "1 1 auto",
-          minHeight: 0,
-          objectFit: "cover",
-          display: "block",
-          borderRadius: 12,
-        }}
-      />
+// function Slide({ src, i }: { src: string; i: number }) {
+//   return (
+//     <div
+//       style={{
+//         height: "100%",
+//         width: "100%",
+//         display: "flex",
+//         flexDirection: "column",
+//         gap: 10,
+//       }}
+//     >
+//       {/* image */}
+//       <img
+//         src={src}
+//         alt={`Slide ${i + 1}`}
+//         style={{
+//           width: "100%",
+//           flex: "1 1 auto",
+//           minHeight: 0,
+//           objectFit: "cover",
+//           display: "block",
+//           borderRadius: 12,
+//         }}
+//       />
 
-      {/* text */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 700,
-            lineHeight: 1.2,
-          }}
-        >
-          Slide title {i + 1}
-        </div>
+//       {/* text */}
+//       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+//         <div
+//           style={{
+//             fontSize: 14,
+//             fontWeight: 700,
+//             lineHeight: 1.2,
+//           }}
+//         >
+//           Slide title {i + 1}
+//         </div>
 
-        <div style={{ fontSize: 12, opacity: 0.8, lineHeight: 1.3 }}>
-          This is a short description under the image. It can wrap to two lines.
-        </div>
-      </div>
-    </div>
-  );
-}
+//         <div style={{ fontSize: 12, opacity: 0.8, lineHeight: 1.3 }}>
+//           This is a short description under the image. It can wrap to two lines.
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+const channel = React.useMemo(() => createSliderIndexChannel(), []);
+
 
   return (
     <> 
 
-        <Slider
-          size={{
-            // initialHeight: "100%",
-            aspectRatio: 2/3
-          }}
+        {/* <Slider
           scroll={{
             freeScroll: true
           }}
@@ -908,13 +1017,9 @@ function Slide({ src, i }: { src: string; i: number }) {
           }}
           transitions={{
             loading: {
-              // isLoading: true,
+              // force: true,
               skeletonCount: { 0: 2, 600: 3, 900: 4 },
               skeleton: {
-                defaults: {
-                  // these hook into your existing shimmer vars (since your sliderSkeleton uses --rmg-shimmer-*)
-                  radius: 12,
-                },
                 layout: {
                   kind: "slider",
                   // optional: make gaps match the real slide gap if you want
@@ -939,40 +1044,85 @@ function Slide({ src, i }: { src: string; i: number }) {
                         style: { gap: 6 },
                         children: [
                           // title line
-                          {
-                            kind: "rect",
-                            style: {
+                          { 
+                            kind: "text",
+                            fontSize: 14,
+                            lineHeight: 1.2,
+                            lines: 1,
+                            style: { 
                               width: "70%",
-                              height: 14,
-                              borderRadius: 6,
-                            },
+                              borderRadius: 6 
+                            } 
                           },
-                          // description line
-                          {
-                            kind: "rect",
-                            style: {
+                          { 
+                            kind: "text",
+                            fontSize: 12,
+                            lineHeight: 1.3,
+                            lines: 2,
+                            style: { 
                               width: "90%",
-                              height: 12,
                               borderRadius: 6,
-                            },
+                              maxHeight: '16.8px' 
+                            } 
                           },
                         ],
                       },
                     ],
                   },
-                  // optional: ensure the slot wrapper doesn't add padding/margins
-                  itemWrapStyle: undefined,
                 },
               },
             }
           }}
         >
           {ITEMS.map((src, i) => (
-            <div key={src} style={{ height: "100%" }}>
-              <Slide src={src} i={i} />
-            </div>
+            <Slide key={src} src={src} i={i} />
+          ))}
+        </Slider> */}
+        <GalleryCore layout="slider" fullscreenItems={FS_SLIDES}>
+        <Slider
+          indexChannel={channel}
+          scroll={{ loop: false }}
+        >
+          {SLIDES.map((src, i) => (
+            <SlideCell key={src} src={src} i={i} />
           ))}
         </Slider>
+
+        <div style={{ marginTop: 14 }}>
+          <ThumbnailSlider
+            indexChannel={channel}
+            options={{
+              layout: {
+                position: "bottom",
+                thumbnail: { width: 96, height: 60 },
+                gap: 10,
+              },
+              controls: {
+                enabled: true
+              },
+              elements: {
+                thumbnail: {
+                  style: {
+                    borderRadius: 8
+                  }
+                }
+              },
+              transitions: {
+                loading: {
+                  // force: true,
+                  // skeletonCount: 6
+                }
+              }
+            }}
+          >
+            {THUMBS.map((src, i) => (
+              <ThumbCell key={`thumb-${src}`} src={src} i={i} />
+            ))}
+          </ThumbnailSlider>
+        </div>
+
+        <FullscreenAddon sliderObject={sliderObject} cellsStateLength={FS_SLIDES.length} />
+      </GalleryCore>
 
       <p className="home-intro mt-50!">
         <span className="intro-line">

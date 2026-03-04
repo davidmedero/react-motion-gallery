@@ -4,8 +4,8 @@
 import * as React from "react";
 import type { BreakpointMap } from "../shared/responsive";
 import { BREAKPOINT_MAP } from "../shared/responsive";
-import type { MediaItem } from "../shared/types/media";
-import { toMediaItems } from "../shared/types/media";
+import type { MediaInput, MediaItem } from "../shared/types/media";
+import { normalizeItemsInput, toMediaItems } from "../shared/types/media";
 import type { SliderHandle } from "../slider/types";
 import { MediaEntryLink } from "../entries";
 
@@ -13,26 +13,28 @@ export type FullscreenOpenRequest =
   | {
       source: "slider";
       index: number;
-      img: HTMLImageElement | null;
+      image: HTMLImageElement | null;
       event?: Event;
     }
   | {
       source: "grid" | "masonry" | "entries";
       index: number;
-      img: HTMLImageElement | null;
+      image: HTMLImageElement | null;
       event?: Event;
     };
 
 function createSub<T>() {
   const subs = new Set<(v: T) => void>();
   return {
-    emit(v: T) { subs.forEach(fn => fn(v)); },
+    emit(v: T) {
+      subs.forEach((fn) => fn(v));
+    },
     subscribe(fn: (v: T) => void) {
       subs.add(fn);
       return () => {
         subs.delete(fn);
       };
-    }
+    },
   };
 }
 
@@ -42,12 +44,22 @@ type Cell = { id: string; node: React.ReactNode };
 
 export type FullscreenSource = FullscreenOpenRequest["source"];
 
+export type BaseVisibleIndexEvent = {
+  index: number;                 // canonical index in normalizedItems
+  reason?: "io";
+};
+
+export type FsVisibleIndexEvent = {
+  index: number;                 // canonical index in normalizedItems
+  reason?: "active";
+};
+
 export type FullscreenEntryContext = {
-  entryMapRef?: React.RefObject<MediaEntryLink[] | null>
+  entryMapRef?: React.RefObject<MediaEntryLink[] | null>;
   entryMediaLayout?: "slider" | "grid" | "masonry";
   entriesObject?: any;
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
-  expandableImgRefs?: React.RefObject<Array<HTMLImageElement | null>>;
+  expandableImageRefs?: React.RefObject<Array<HTMLImageElement | null>>;
 };
 
 export type FullscreenSourceAdapter = {
@@ -81,8 +93,18 @@ export type GalleryCore = {
   setFullscreenOpen: (open: boolean) => void;
   registerFullscreenAdapter: (source: FullscreenSource, a: FullscreenSourceAdapter) => void;
   getFullscreenAdapter: (source: FullscreenSource) => FullscreenSourceAdapter | null;
-  expandableImgRefs: React.RefObject<Array<HTMLImageElement | null>>;
-  registerExpandableImg: (index: number, node: HTMLElement | null) => void;
+  expandableImageRefs: React.RefObject<Array<HTMLImageElement | null>>;
+  registerExpandableImage: (index: number, node: HTMLElement | null) => void;
+  baseVisibleSub: {
+    emit(v: BaseVisibleIndexEvent): void;
+    subscribe(fn: (v: BaseVisibleIndexEvent) => void): () => void;
+  };
+  notifyBaseVisibleIndex: (index: number) => void;
+  fsVisibleSub: {
+    emit(v: FsVisibleIndexEvent): void;
+    subscribe(fn: (v: FsVisibleIndexEvent) => void): () => void;
+  };
+  notifyFsVisibleIndex: (index: number) => void;
 };
 
 export type GalleryCoreProps = {
@@ -101,15 +123,6 @@ function asArray<T>(x: T | T[]) {
   return Array.isArray(x) ? x : [x];
 }
 
-function isStringArray(v: unknown): v is string[] {
-  return Array.isArray(v) && v.every((x) => typeof x === "string");
-}
-
-function normalizeItemsInput(v: MediaItem[] | string[] | undefined): MediaItem[] {
-  if (!v || !v.length) return [];
-  return isStringArray(v) ? toMediaItems(v) : v;
-}
-
 function buildCellsFromNodes(
   nodes: React.ReactNode | React.ReactNode[] | undefined,
   newId: () => string
@@ -122,19 +135,23 @@ function buildCellsFromNodes(
 function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
   const { layout, breakpoints, fullscreenItems, nodes } = props;
 
-  const expandableImgRefs = React.useRef<Array<HTMLImageElement | null>>([]);
+  const expandableImageRefs = React.useRef<Array<HTMLImageElement | null>>([]);
 
-  const registerExpandableImg = React.useCallback((index: number, node: HTMLElement | null) => {
+  const registerExpandableImage = React.useCallback((index: number, node: HTMLElement | null) => {
+    const prev = expandableImageRefs.current[index];
+    if (prev && node === (prev as any)) return;
     if (!node) {
-      expandableImgRefs.current[index] = null;
+      expandableImageRefs.current[index] = null;
       return;
     }
-    const img =
-      node.tagName === "IMG"
-        ? (node as HTMLImageElement)
-        : (node.querySelector("img") as HTMLImageElement | null);
 
-    expandableImgRefs.current[index] = img;
+    if (node.tagName === "IMG") {
+      expandableImageRefs.current[index] = node as HTMLImageElement;
+      return;
+    }
+
+    const img = node.querySelector("img") as HTMLImageElement | null;
+    expandableImageRefs.current[index] = img;
   }, []);
 
   const effectiveBreakpoints = React.useMemo(
@@ -253,16 +270,63 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
 
   const fsOpenSub = React.useMemo(() => createSub<FullscreenOpenRequest>(), []);
 
-  const requestFullscreenOpen = React.useCallback((req: FullscreenOpenRequest) => {
-    fsOpenSub.emit(req);
-  }, [fsOpenSub]);
+  const requestFullscreenOpen = React.useCallback(
+    (req: FullscreenOpenRequest) => {
+      fsOpenSub.emit(req);
+    },
+    [fsOpenSub]
+  );
 
-  return {
+  const baseVisibleSub = React.useMemo(() => createSub<BaseVisibleIndexEvent>(), []);
+
+  const notifyBaseVisibleIndex = React.useCallback((index: number) => {
+    if (typeof index !== "number") return;
+    baseVisibleSub.emit({ index, reason: "io" });
+  }, [baseVisibleSub]);
+
+  const fsVisibleSub = React.useMemo(() => createSub<FsVisibleIndexEvent>(), []);
+
+  const notifyFsVisibleIndex = React.useCallback((index: number) => {
+    if (typeof index !== "number") return;
+    fsVisibleSub.emit({ index, reason: "active" });
+  }, [fsVisibleSub]);
+
+  const core = React.useMemo<GalleryCore>(() => {
+    return {
+      layout,
+      effectiveBreakpoints,
+      cellsState,
+      cellsRef,
+      normalizedItems,
+      setNormalizedItems,
+      sliderApiRef,
+      append,
+      prepend,
+      insert,
+      remove,
+      replace,
+      setItems,
+      requestFullscreenOpen,
+      fsOpenSub,
+      isFullscreenOpen,
+      isFullscreenOpenRef,
+      setFullscreenOpen,
+      registerFullscreenAdapter,
+      getFullscreenAdapter,
+      expandableImageRefs,
+      registerExpandableImage,
+      baseVisibleSub,
+      notifyBaseVisibleIndex,
+      fsVisibleSub,
+      notifyFsVisibleIndex,
+    };
+  }, [
     layout,
     effectiveBreakpoints,
     cellsState,
-    cellsRef,
     normalizedItems,
+    isFullscreenOpen,
+    cellsRef,
     setNormalizedItems,
     sliderApiRef,
     append,
@@ -273,25 +337,26 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     setItems,
     requestFullscreenOpen,
     fsOpenSub,
-    isFullscreenOpen,
     isFullscreenOpenRef,
     setFullscreenOpen,
     registerFullscreenAdapter,
     getFullscreenAdapter,
-    expandableImgRefs,
-    registerExpandableImg,
-  };
+    expandableImageRefs,
+    registerExpandableImage,
+    baseVisibleSub,
+    notifyBaseVisibleIndex,
+    fsVisibleSub,
+    notifyFsVisibleIndex,
+  ]);
+
+  return core;
 }
 
 const GalleryCoreContext = React.createContext<GalleryCore | null>(null);
 
 export function GalleryCoreProvider(props: GalleryCoreProps) {
   const core = useGalleryCoreInternal(props);
-  return (
-    <GalleryCoreContext.Provider value={core}>
-      {props.children}
-    </GalleryCoreContext.Provider>
-  );
+  return <GalleryCoreContext.Provider value={core}>{props.children}</GalleryCoreContext.Provider>;
 }
 
 export const GalleryCore = GalleryCoreProvider;

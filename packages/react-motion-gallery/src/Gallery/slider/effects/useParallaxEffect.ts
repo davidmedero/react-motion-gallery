@@ -10,6 +10,7 @@ type Args = {
   enabled?: boolean;
   wrap: boolean;
   axisMain: AxisMain;
+  isRtl?: boolean;
   sliderRef: React.RefObject<HTMLElement | null>;
   sliderWidthRef: React.RefObject<number>;
   offsetLocationRef: React.RefObject<Gettable | null>;
@@ -27,6 +28,7 @@ export function useParallaxEffect({
   enabled,
   wrap,
   axisMain,
+  isRtl,
   sliderRef,
   sliderWidthRef,
   offsetLocationRef,
@@ -48,15 +50,22 @@ export function useParallaxEffect({
     const snaps: number[] = [];
 
     const kids = Array.from(track.children) as HTMLElement[];
+    const offsetKey = axisMain === "x" ? "offsetLeft" : "offsetTop";
+    const sizeKey = axisMain === "x" ? "width" : "height";
+    const contentSize = axisMain === "x" ? track.scrollWidth : track.scrollHeight;
 
     for (const el of kids) {
       const layer = el.querySelector<HTMLElement>(".rmg__parallax__layer");
       if (!layer) continue;
 
-      const m = /translateX\((-?\d+(\.\d+)?)px\)/.exec(el.style.transform || "");
-      const baseX = m ? parseFloat(m[1]) : el.offsetLeft;
+      const offset = (el as any)[offsetKey] as number;
+      const size = el.getBoundingClientRect()[sizeKey];
+      const base =
+        axisMain === "x" && isRtl
+          ? contentSize - (offset + size)
+          : offset;
 
-      const n = W > 0 ? mod(baseX, W) / W : 0;
+      const n = W > 0 ? mod(base, W) / W : 0;
 
       nodes.push(layer);
       snaps.push(n);
@@ -65,7 +74,7 @@ export function useParallaxEffect({
     tweenNodesRef.current = nodes;
     parallaxNodesRef.current = nodes;
     parallaxSnapsRef.current = snaps;
-  }, [sliderRef, sliderWidthRef]);
+  }, [axisMain, isRtl, sliderRef, sliderWidthRef]);
 
   const currentTweenFactor = React.useCallback(() => {
     const count = parallaxSnapsRef.current.length || 1;

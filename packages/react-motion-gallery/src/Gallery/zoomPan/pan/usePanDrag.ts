@@ -200,8 +200,17 @@ export function usePanDrag(d: PanRuntimeDeps) {
             : 0
         );
 
-        const speedX = d.fs.zoom.panDuration - 10 * factorX;
-        const speedY = d.fs.zoom.panDuration - 10 * factorY;
+        let speedX = d.fs.zoom.panDuration;
+        let speedY = d.fs.zoom.panDuration;
+
+        if (d.boundsX.current?.passed()) {
+          speedX = d.fs.zoom.panDuration + 10 * factorX
+        }
+
+        if (d.boundsY.current?.passed()) {
+          speedY = d.fs.zoom.panDuration + 10 * factorY
+        }
+
         const frictionX = d.fs.zoom.panFriction + factorX / 50;
         const frictionY = d.fs.zoom.panFriction + factorY / 50;
 

@@ -7,6 +7,7 @@ export * from "./hooks/useEntryInView";
 export * from "./hooks/useEntryDecodeReady";
 export * from "./normalize";
 export * from "./components/EntryList";
+
 import * as React from "react";
 import { EntryList } from "./components/EntryList";
 import { DEFAULT_ENTRIES } from "./defaults";
@@ -29,6 +30,11 @@ const isStringArray = (v: unknown): v is string[] =>
 const normalizeFsItems = (v: FullscreenItemsInput | undefined): MediaItem[] => {
   if (!v || !v.length) return [];
   return isStringArray(v) ? toMediaItems(v) : v;
+};
+
+const isImageItem = (m: MediaItem | undefined | null): boolean => {
+  if (!m) return false;
+  return (m as any).kind === "image";
 };
 
 export function nodeFromMediaDefault(m: MediaItem): React.ReactNode {
@@ -84,7 +90,6 @@ export type EntriesProps = {
   entryMapRef?: React.RefObject<MediaEntryLink[] | null>;
   fsOwnersRef?: React.RefObject<SlideOwner[]>;
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
-  onOpenFullscreen?: (args: { index: number; img: HTMLImageElement; event?: Event }) => void;
 };
 
 export function Entries(props: EntriesProps) {
@@ -94,7 +99,6 @@ export function Entries(props: EntriesProps) {
     fullscreen,
     renderMediaContainer,
     nodeFromMedia = nodeFromMediaDefault,
-    onOpenFullscreen,
   } = props;
 
   const entriesObject = React.useMemo<EntriesOptions>(() => {
@@ -109,26 +113,28 @@ export function Entries(props: EntriesProps) {
   const entryFlatIndexRef = props.entryFlatIndexRef ?? React.useRef<number[][] | null>(null);
   const entryMapRef = props.entryMapRef ?? React.useRef<MediaEntryLink[] | null>(null);
   const fsOwnersRef = props.fsOwnersRef ?? React.useRef<SlideOwner[]>([]);
-  const entrySliderRefs =
-    props.entrySliderRefs ?? React.useRef<Array<SliderHandle | null>>([]);
+  const entrySliderRefs = props.entrySliderRefs ?? React.useRef<Array<SliderHandle | null>>([]);
 
-  const expandableImgRefs =
-    core?.expandableImgRefs ?? React.useRef<Array<HTMLImageElement | null>>([]);
+  const expandableImageRefs =
+    (core?.expandableImageRefs as React.RefObject<Array<HTMLImageElement | null>> | undefined) ??
+    React.useRef<Array<HTMLImageElement | null>>([]);
 
-  const registerExpandableImg =
-    core?.registerExpandableImg ??
+  const registerExpandableImage =
+    core?.registerExpandableImage ??
     React.useCallback((index: number, node: HTMLElement | null) => {
       if (!node) {
-        expandableImgRefs.current[index] = null;
+        expandableImageRefs.current[index] = null;
         return;
       }
-      const img =
-        node.tagName === "IMG"
-          ? (node as HTMLImageElement)
-          : (node.querySelector("img") as HTMLImageElement | null);
 
-      expandableImgRefs.current[index] = img;
-  }, []);
+      if (node.tagName === "IMG") {
+        expandableImageRefs.current[index] = node as HTMLImageElement;
+        return;
+      }
+
+      const img = node.querySelector("img") as HTMLImageElement | null;
+      expandableImageRefs.current[index] = img;
+    }, []);
 
   const { flattenedMedia, flattenedMap, entryFlatIndex, owners } = React.useMemo(() => {
     return flattenEntries(entriesObject.items as any);
@@ -150,7 +156,7 @@ export function Entries(props: EntriesProps) {
     if (!core) return;
 
     core.registerFullscreenAdapter("entries", {
-      closestSelector: (entriesObject.mediaLayout === "slider" ? ".rmg__slide" : ".rmg__grid-item"),
+      closestSelector: entriesObject.mediaLayout === "slider" ? ".rmg__slide" : ".rmg__grid-item",
       getOwnerSliderHandle: (globalIndex: number) => {
         const link = entryMapRef.current?.[globalIndex];
         if (!link) return null;
@@ -161,33 +167,42 @@ export function Entries(props: EntriesProps) {
         entryMediaLayout: entriesObject.mediaLayout,
         entriesObject,
         entrySliderRefs,
-        expandableImgRefs: core?.expandableImgRefs ?? expandableImgRefs,
+        expandableImageRefs: core?.expandableImageRefs ?? expandableImageRefs,
       }),
     });
   }, [core, entriesObject]);
 
+  const getOriginImage = (el: HTMLElement | null): HTMLImageElement | null => {
+    if (!el) return null;
+
+    if (el instanceof HTMLImageElement) return el;
+
+    const img = el.querySelector("img") as HTMLImageElement | null;
+    return img;
+  };
+
   const openFullscreenAt = React.useCallback(
     (globalIndex: number, originEl?: HTMLElement | null) => {
-      const fsEnabled = fullscreen?.enabled ?? true;
-      if (!fsEnabled) return;
+      if (!core?.requestFullscreenOpen) return;
 
-      let imgEl: HTMLImageElement | null = null;
-      if (originEl) {
-        imgEl = originEl.tagName === "IMG" ? (originEl as HTMLImageElement) : originEl.querySelector("img");
-      }
-      if (!imgEl) {
-        imgEl = expandableImgRefs.current[globalIndex] ?? null;
-      }
-      if (!imgEl) return;
+      const item = normalizedItems[globalIndex] ?? flattenedMedia[globalIndex];
+      if (!isImageItem(item)) return;
 
-      if (core?.requestFullscreenOpen) {
-        core.requestFullscreenOpen({ source: "entries", index: globalIndex, img: imgEl, event: undefined });
-        return;
-      }
+      const img =
+        getOriginImage(originEl ?? null) ??
+        (expandableImageRefs.current[globalIndex] as HTMLImageElement | null) ??
+        null;
 
-      onOpenFullscreen?.({ index: globalIndex, img: imgEl });
+      if (!img) return;
+
+      core.requestFullscreenOpen({
+        source: "entries",
+        index: globalIndex,
+        image: img,
+        event: undefined,
+      });
     },
-    [fullscreen?.enabled, core, onOpenFullscreen]
+    [core, expandableImageRefs, normalizedItems, flattenedMedia]
   );
 
   const fsEnabled = (fullscreen?.enabled ?? true) && normalizedItems.length > 0;
@@ -200,7 +215,7 @@ export function Entries(props: EntriesProps) {
       openFullscreenAt={openFullscreenAt}
       entryFlatIndexRef={entryFlatIndexRef}
       nodeFromMedia={nodeFromMedia}
-      registerExpandableImg={registerExpandableImg}
+      registerExpandableImage={registerExpandableImage}
       renderMediaContainer={renderMediaContainer}
       entrySliderRefs={entrySliderRefs}
     />

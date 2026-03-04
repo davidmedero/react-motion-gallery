@@ -30,8 +30,7 @@ export function resetZoomForSlideChange(args: ResetAllArgs) {
   zoomState.previousZoom.current.y = 0;
   zoomState.panRef.current = { x: 0, y: 0 };
   zoomState.scaleRef.current = 1;
-  zoomState.suppressLoopRef.current = false;
-
+  
   const transition = "transform 0.2s cubic-bezier(.4,0,.22,1)";
   const transform = "translate(0, 0) scale(1)";
 
@@ -62,8 +61,12 @@ export function resetZoomForSlideChange(args: ResetAllArgs) {
 
   resetPan?.();
 
-  const unlockDelayMs = 200;
+  const match = transition.match(/([\d.]+)s/);
+  const durationMs = match ? parseFloat(match[1]) * 1000 : 300;
+
+  const unlockDelayMs = durationMs + 50;
   setTimeout(() => {
     zoomState.changingSlides.current = false;
+    zoomState.suppressLoopRef.current = false;
   }, unlockDelayMs);
 }

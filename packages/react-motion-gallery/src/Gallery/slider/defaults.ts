@@ -1,5 +1,3 @@
-import { DEFAULT_THUMBNAILS } from "./thumbnails/defaults";
-
 export const DEFAULT_SLIDER = {
   layout: { gap: 20 },
   direction: { dir: "ltr" as const, axis: "x" as const },
@@ -12,7 +10,12 @@ export const DEFAULT_SLIDER = {
     loop: false,
   },
 
-  lazyLoad: false,
+  lazyLoad: {
+    enabled: false,
+    spinner: true,
+    spinnerClassName: "",
+    spinnerStyle: {}
+  },
 
   controls: {
     arrows: { enabled: true, arrow: {}, prev: {}, next: {} },
@@ -20,8 +23,6 @@ export const DEFAULT_SLIDER = {
     progress: { enabled: false, root: {}, bar: {} },
     ripple: { enabled: true, className: "" },
   },
-
-  thumbnails: DEFAULT_THUMBNAILS,
 
   auto: {
     play: { enabled: false, speedMs: 3000, pauseMs: 1000, pauseOnHover: true },

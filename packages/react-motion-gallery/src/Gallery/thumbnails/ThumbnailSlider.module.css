@@ -1,7 +1,5 @@
 .thumb {
   position: relative;
-  border: 1px solid rgba(0,0,0,.12);
-  border-radius: 6px;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -20,15 +18,6 @@
 
 .thumb[data-active="true"]::after {
   opacity: 1;
-}
-
-.thumb :global(img) {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  position: relative;
-  z-index: 0;
 }
 
 .fadeInStart {

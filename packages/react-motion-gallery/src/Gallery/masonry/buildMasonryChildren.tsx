@@ -8,11 +8,19 @@ export type MasonryCell = {
 export type BuildMasonryChildrenOpts = {
   cells: MasonryCell[];
   fsEnabled: boolean;
-  openFullscreenAt: (index: number) => void;
-  registerExpandableImg: (index: number, node: HTMLElement) => void;
+  openFullscreenAt: (index: number, originEl?: HTMLElement | null) => void;
+  registerExpandableImage: (index: number, node: HTMLImageElement | null) => void;
   itemBaseClass: string;
   itemBaseStyleClass: string;
   itemClassName?: string;
+};
+
+const getOriginImage = (el: HTMLElement | null): HTMLImageElement | null => {
+  if (!el) return null;
+  if (el instanceof HTMLImageElement) return el;
+
+  const img = el.querySelector("img") as HTMLImageElement | null;
+  return img;
 };
 
 export function buildMasonryChildren(opts: BuildMasonryChildrenOpts) {
@@ -20,7 +28,7 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts) {
     cells,
     fsEnabled,
     openFullscreenAt,
-    registerExpandableImg,
+    registerExpandableImage,
     itemBaseClass,
     itemBaseStyleClass,
     itemClassName,
@@ -46,17 +54,21 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts) {
 
     if (!React.isValidElement(original)) {
       return (
-        <button
-          type="button"
+        <div
           {...common}
           onClick={(e) => {
             e.preventDefault();
             if (!fsEnabled) return;
-            openFullscreenAt(index);
+            const host = e.currentTarget as HTMLElement;
+            openFullscreenAt(index, host);
+          }}
+          ref={(node) => {
+            const media = getOriginImage(node);
+            registerExpandableImage(index, media);
           }}
         >
           {original as any}
-        </button>
+        </div>
       );
     }
 
@@ -74,14 +86,16 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts) {
       if (typeof origRef === "function") origRef(node);
       else if (origRef && typeof origRef === "object") (origRef as any).current = node;
 
-      if (node) registerExpandableImg(index, node);
+      const media = getOriginImage(node);
+      registerExpandableImage(index, media);
     };
 
     const mergedOnClick: React.MouseEventHandler<HTMLElement> = (e) => {
       origProps.onClick?.(e);
       if (e.defaultPrevented) return;
       if (!fsEnabled) return;
-      openFullscreenAt(index);
+      const host = e.currentTarget as HTMLElement;
+      openFullscreenAt(index, host);
     };
 
     return React.cloneElement<any>(originalEl, {

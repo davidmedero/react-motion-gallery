@@ -30,8 +30,8 @@ export type PanRuntimeDeps = {
   renderPan: (x: number, y: number) => void;
 
   // motion refs
-  boundsX: React.RefObject<{ constrain: (pd: boolean) => void; reached: () => boolean } | null>;
-  boundsY: React.RefObject<{ constrain: (pd: boolean) => void; reached: () => boolean } | null>;
+  boundsX: React.RefObject<{ constrain: (pd: boolean) => void; reached: () => boolean; passed: () => boolean } | null>;
+  boundsY: React.RefObject<{ constrain: (pd: boolean) => void; reached: () => boolean; passed: () => boolean } | null>;
 
   bodyX: React.RefObject<ScrollBodyType | null>;
   bodyY: React.RefObject<ScrollBodyType | null>;

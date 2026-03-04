@@ -4,92 +4,24 @@
 import * as React from "react";
 import styles from "./Slider.module.css";
 import SliderCore from "./Slider";
-import ThumbnailSlider from "./thumbnails/ThumbnailSlider";
 import createIndexChannel from "./sliderSub";
 import { DEFAULT_SLIDER } from "./defaults";
-import { BREAKPOINT_MAP, resolveNumberFromResponsive, resolvePositionFromResponsive } from "../shared/responsive";
+import { BREAKPOINT_MAP, resolveNumberFromResponsive } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { buildScopedSkeletonCountCss } from "../shared/skeleton/buildScopedSkeletonCountCss";
 import type { BreakpointMap } from "../shared/responsive";
-import type { SliderHandle, SliderLoadingOptions, SliderOptions, ResponsiveHeightRule as SliderResponsiveHeightRule } from "./types";
+import type { SliderHandle, SliderLoadingOptions, SliderOptions  } from "./types";
+import type { SliderIndexChannel } from "./sliderSub";
 import { useOptionalGalleryCore } from "../core";
 import { SliderSkeletonCard } from "./SliderSkeleton";
+import { buildInitialHeightFromSkeletonSpecCssExpr } from "./SliderSkeleton";
 
 type Props = SliderOptions & {
   children?: React.ReactNode;
   breakpoints?: BreakpointMap;
-  expandableImgRefs?: React.RefObject<Array<HTMLImageElement | null>>;
+  expandableImageRefs?: React.RefObject<Array<HTMLImageElement | null>>;
+  indexChannel?: SliderIndexChannel;
 };
-
-function cssHeightValue(h: number | string) {
-  return typeof h === "number" ? `${h}px` : h;
-}
-
-function parseAspectRatio(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
-
-  if (typeof value === "string") {
-    const s = value.trim();
-    const m = s.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
-    if (m) {
-      const w = Number(m[1]);
-      const h = Number(m[2]);
-      if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) return w / h;
-    }
-    const n = Number(s);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-
-  return null;
-}
-
-function buildScopedAutoInitialHeightCssFromAspectRatio(args: {
-  scope: string;
-  breakpointMap: BreakpointMap;
-  aspectRatioWOverH: number;
-  cellsPerSlide?: any;
-  gap?: any;
-  baseCells: number;
-  baseGap: number;
-}) {
-  const { scope, aspectRatioWOverH, cellsPerSlide, gap, baseCells, baseGap } = args;
-  const rootSel = `[data-rmg-scope="${scope}"]`;
-
-  const lines: string[] = [];
-
-  lines.push(
-    `${rootSel}{` +
-      `container-type:inline-size;` +
-      `--rmg-slider-ar:${aspectRatioWOverH};` +
-      `--rmg-slider-cells:${baseCells};` +
-      `--rmg-slider-gap:${baseGap}px;` +
-      `--rmg-slider-initial-height:calc(` +
-        `((100cqw - ((var(--rmg-slider-cells) - 1) * var(--rmg-slider-gap))) / var(--rmg-slider-cells))` +
-        ` / var(--rmg-slider-ar)` +
-      `);` +
-    `}`
-  );
-
-  if (cellsPerSlide && typeof cellsPerSlide === "object") {
-    Object.entries(cellsPerSlide).forEach(([k, v]) => {
-      const min = Number(k);
-      const cells = Math.max(1, (Number(v) | 0));
-      if (!Number.isFinite(min) || !Number.isFinite(cells)) return;
-      lines.push(`@media (min-width:${min}px){${rootSel}{--rmg-slider-cells:${cells};}}`);
-    });
-  }
-
-  if (gap && typeof gap === "object") {
-    Object.entries(gap).forEach(([k, v]) => {
-      const min = Number(k);
-      const g = Math.max(0, (Number(v) | 0));
-      if (!Number.isFinite(min) || !Number.isFinite(g)) return;
-      lines.push(`@media (min-width:${min}px){${rootSel}{--rmg-slider-gap:${g}px;}}`);
-    });
-  }
-
-  return lines.join("\n");
-}
 
 function useScopedSkeleton(args: {
   enabled: boolean;
@@ -151,20 +83,76 @@ function useScopedSkeleton(args: {
   return { cssText, ssrBaseCount, node, showLoading };
 }
 
+function buildScopedInitialHeightCss(args: {
+  scopeId: string;
+  skeletonSpec: any; // SliderSkeletonSpec | undefined
+  responsiveCount: any; // loading.skeletonCount
+  fallbackCount: number;
+  breakpointMap: BreakpointMap;
+}) {
+  const { scopeId, skeletonSpec, responsiveCount, fallbackCount } = args;
+
+  const spec = skeletonSpec;
+  const layout = spec?.layout;
+  if (!layout) return "";
+
+  const mode: "fit" | "peek" = spec?.mode ?? "fit";
+
+  const scopeSel = `#${scopeId}`;
+
+  const mkRule = (count: number) => {
+    const expr = buildInitialHeightFromSkeletonSpecCssExpr(layout, count, mode);
+    if (!expr) return "";
+    // set both: a var + an explicit min-height hook (optional)
+    return `${scopeSel}{--rmg-slider-initial-height:${expr};}`;
+  };
+
+  // responsiveCount can be number or { [minWidth]: count }
+  if (typeof responsiveCount === "number") {
+    return mkRule(Math.max(1, responsiveCount | 0)) || mkRule(fallbackCount);
+  }
+
+  if (responsiveCount && typeof responsiveCount === "object") {
+    const entries = Object.entries(responsiveCount)
+      .map(([k, v]) => [Number(k), Number(v)] as const)
+      .filter(([k, v]) => Number.isFinite(k) && Number.isFinite(v))
+      .sort((a, b) => a[0] - b[0]);
+
+    const lines: string[] = [];
+    // base
+    lines.push(mkRule(entries[0]?.[1] ?? fallbackCount) || mkRule(fallbackCount));
+
+    for (const [minW, c] of entries) {
+      const rule = mkRule(Math.max(1, c | 0));
+      if (rule) lines.push(`@media (min-width:${minW}px){${rule}}`);
+    }
+
+    return lines.filter(Boolean).join("\n");
+  }
+
+  return mkRule(fallbackCount);
+}
+
 export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
   props,
   forwardedRef
 ) {
-  const { children, breakpoints, ...sliderOptions } = props;
+  const {
+    children,
+    breakpoints,
+    indexChannel: providedIndexChannel,
+    ...sliderOptions
+  } = props;
   const core = useOptionalGalleryCore();
-  const indexChannel = React.useMemo(() => createIndexChannel(), []);
+  const internalIndexChannel = React.useMemo(() => createIndexChannel(), []);
+  const resolvedIndexChannel = providedIndexChannel ?? internalIndexChannel;
   const isClick = React.useRef(false);
-  const localExpandableImgRefs = React.useRef<Array<HTMLImageElement | null>>([]);
+  const localExpandableImageRefs = React.useRef<Array<HTMLImageElement | null>>([]);
 
-  const expandableImgRefs =
-    props.expandableImgRefs !== undefined
-      ? props.expandableImgRefs
-      : (core?.expandableImgRefs ?? localExpandableImgRefs);
+  const expandableImageRefs =
+    props.expandableImageRefs !== undefined
+      ? props.expandableImageRefs
+      : (core?.expandableImageRefs ?? localExpandableImageRefs);
 
   const overlayDivRef = React.useRef<HTMLDivElement | null>(null);
   const duplicateImgRef = React.useRef<HTMLElement | null>(null);
@@ -251,7 +239,6 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
           ...(sliderOptions?.controls?.ripple ?? {}),
         },
       },
-      thumbnails: { ...DEFAULT_SLIDER.thumbnails, ...(sliderOptions?.thumbnails ?? {}) },
       lazyLoad: sliderOptions?.lazyLoad ?? DEFAULT_SLIDER.lazyLoad,
       auto: {
         ...DEFAULT_SLIDER.auto,
@@ -317,17 +304,6 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
     return Math.max(0, raw | 0);
   }, [sliderObject.layout.gap, vw, effectiveBreakpoints]);
 
-  const resolvedThumbPos = React.useMemo(() => {
-    if (!sliderOptions?.thumbnails?.layout?.position) return undefined;
-
-    return resolvePositionFromResponsive(
-      sliderOptions?.thumbnails?.layout?.position,
-      "bottom",
-      vw,
-      effectiveBreakpoints
-    );
-  }, [sliderOptions?.thumbnails?.layout?.position, vw, effectiveBreakpoints]);
-
   const sliderScopeId = React.useId();
   const sliderScope = `rmg-slider-${sliderScopeId.replace(/:/g, "")}`;
 
@@ -341,18 +317,6 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
       skeleton: src.skeleton,
     };
   }, [sliderObject.transitions?.loading]);
-
-  const responsiveCss = React.useMemo(() => {
-    const rules = Array.isArray(sliderObject.size?.heightRules)
-      ? (sliderObject.size?.heightRules as SliderResponsiveHeightRule[])
-      : [];
-    if (!rules.length) return "";
-
-    const rootSel = `[data-rmg-scope="${sliderScope}"]`;
-    return rules
-      .map((r) => `@media ${r.query} { ${rootSel} { --rmg-slider-height: ${r.height} !important; } }`)
-      .join("\n");
-  }, [sliderObject.size?.heightRules, sliderScope]);
 
   function pickSsrBaseResponsiveValue(v: any, fallback: number) {
     if (typeof v === "number") return v;
@@ -401,112 +365,6 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
         </div>
       );
     },
-  });
-
-  const initialHeightCss = React.useMemo(() => {
-    const rules: SliderResponsiveHeightRule[] = Array.isArray(sliderObject.size?.initialHeightRules)
-      ? (sliderObject.size!.initialHeightRules as any)
-      : [];
-
-    const hasRules = rules.length > 0;
-    const hasValue = sliderObject.size?.initialHeight != null;
-
-    if (hasRules || hasValue) {
-      const rootSel = `[data-rmg-scope="${sliderScope}"]`;
-
-      const base = hasValue
-        ? `${rootSel} { --rmg-slider-initial-height: ${cssHeightValue(sliderObject.size!.initialHeight!)}; }`
-        : "";
-
-      const media = rules
-        .map((r) => `@media ${r.query} { ${rootSel} { --rmg-slider-initial-height: ${cssHeightValue(r.height)} !important; } }`)
-        .join("\n");
-
-      return [base, media].filter(Boolean).join("\n");
-    }
-
-    const ar = parseAspectRatio(sliderObject.size?.aspectRatio);
-    if (!ar) return "";
-
-    const baseCells = Math.max(1, (pickSsrBaseResponsiveValue(sliderObject.layout?.cellsPerSlide, 1) | 0));
-    const baseGap = Math.max(0, (pickSsrBaseResponsiveValue(sliderObject.layout?.gap, 12) | 0));
-
-    return buildScopedAutoInitialHeightCssFromAspectRatio({
-      scope: sliderScope,
-      breakpointMap: effectiveBreakpoints,
-      aspectRatioWOverH: ar,
-      cellsPerSlide: sliderObject.layout?.cellsPerSlide,
-      gap: sliderObject.layout?.gap,
-      baseCells,
-      baseGap,
-    });
-  }, [
-    sliderObject.size?.initialHeight,
-    sliderObject.size?.initialHeightRules,
-    sliderObject.size?.aspectRatio,
-    sliderObject.layout?.cellsPerSlide,
-    sliderObject.layout?.gap,
-    sliderScope,
-    effectiveBreakpoints,
-  ]);
-
-  const thumbsScopeId = React.useId();
-  const thumbsScope = `rmg-thumbs-${thumbsScopeId.replace(/:/g, "")}`;
-
-  const thumbsLoading = React.useMemo(() => {
-    const src = sliderObject.thumbnails.transitions?.loading ?? {};
-    return {
-      enabled: src.enabled ?? true,
-      force: src.force ?? false,
-      skeletonCount: src.skeletonCount,
-      renderLoading: src.renderLoading,
-    };
-  }, [sliderObject.thumbnails.transitions?.loading]);
-
-  const isHorizontalThumbs = resolvedThumbPos === "top" || resolvedThumbPos === "bottom";
-  const thumbsGap = sliderObject.thumbnails.layout?.gap ?? 10;
-  const thumbW = sliderObject.thumbnails.layout?.thumbnail?.width ?? 64;
-  const thumbH = sliderObject.thumbnails.layout?.thumbnail?.height ?? 64;
-
-  const thumbsSkeleton = useScopedSkeleton({
-    enabled: true,
-    scopeId: thumbsScope,
-    loading: thumbsLoading,
-    fallbackCount: 6,
-    breakpointMap: effectiveBreakpoints,
-    maxSlots: 12,
-    showLoadingFallback: !isReady,
-    defaultNode: (MAX_SKELETONS) => (
-      <div
-        className={styles.thumbSkeletonOverlay}
-        data-rmg-skel-part="overlay"
-        style={{
-          height: sliderObject.thumbnails.layout?.container?.height,
-          width: sliderObject.thumbnails.layout?.container?.width,
-        }}
-      >
-        <div
-          className={styles.thumbSkeletonRow}
-          data-rmg-skel-part="row"
-          style={{
-            gap: thumbsGap,
-            flexDirection: isHorizontalThumbs ? "row" : "column",
-          }}
-        >
-          {Array.from({ length: MAX_SKELETONS }).map((_, i) => (
-            <div
-              key={`rmg-thumb-skel-${i}`}
-              className={styles.thumbSkeleton}
-              data-rmg-skel-slot={i + 1}
-              style={{
-                width: isHorizontalThumbs ? thumbW : "100%",
-                height: isHorizontalThumbs ? "100%" : thumbH,
-              }}
-            />
-          ))}
-        </div>
-      </div>
-    ),
   });
 
   const sliderShellRef = React.useRef<HTMLDivElement | null>(null);
@@ -606,89 +464,92 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
   }
 
   const sliderImageUrls = React.useMemo(() => {
+    if (sliderObject.lazyLoad.enabled === true) return;
     const urls = extractSrcsFromReactNode(renderedCells);
     return Array.from(new Set(urls.filter(Boolean)));
   }, [renderedCells]);
 
-  const sliderUrlsKey = React.useMemo(() => sliderImageUrls.join("|"), [sliderImageUrls]);
+  const sliderUrlsKey = React.useMemo(() => {
+    if (sliderObject.lazyLoad.enabled === true) return;
+    return sliderImageUrls?.join("|")
+  }, [sliderImageUrls]);
 
-  const sliderImagesReady = usePredecodeImages(
-    React.useMemo(() => sliderImageUrls, [sliderUrlsKey])
+  const sliderImagesReady = sliderObject.lazyLoad.enabled === true ? true : usePredecodeImages(
+    React.useMemo(() => sliderImageUrls!, [sliderUrlsKey])
   );
-
-  const userProvidedHeight =
-    sliderOptions?.size?.height != null ||
-    (Array.isArray(sliderOptions?.size?.heightRules) && sliderOptions!.size!.heightRules!.length > 0);
-
-  const userProvidedInitialHeight =
-    sliderOptions?.size?.initialHeight != null ||
-    (Array.isArray(sliderOptions?.size?.initialHeightRules) && sliderOptions!.size!.initialHeightRules!.length > 0);
-
-  const sliderHeightProp = userProvidedHeight ? sliderObject.size?.height : undefined;
-  const responsiveHeightsProp = userProvidedHeight ? sliderObject.size?.heightRules : undefined;
-
-  const initialHeightProp = userProvidedInitialHeight ? sliderObject.size?.initialHeight : undefined;
 
   const cellsPerSlideProp =
     sliderObject.layout.cellsPerSlide != null
       ? (sliderResponsiveColumns ?? ssrCellsBase)
       : undefined;
 
+  const initialHeightCss = React.useMemo(() => {
+    const skelSpec = (sliderLoading as any).skeleton;
+    const responsiveCount = (sliderLoading as any).skeletonCount;
+    return buildScopedInitialHeightCss({
+      scopeId: sliderScope,
+      skeletonSpec: skelSpec,
+      responsiveCount,
+      fallbackCount: ssrCellsBase,
+      breakpointMap: effectiveBreakpoints,
+    });
+  }, [sliderScope, sliderLoading, ssrCellsBase, effectiveBreakpoints]);
+
+  const freezeDoneRef = React.useRef(false);
+
+  React.useLayoutEffect(() => {
+    if (freezeDoneRef.current) return;
+    const shell = sliderShellRef.current;
+    if (!shell) return;
+
+    // measure the skeleton row if present (best), else use computed shell height
+    const row = shell.querySelector<HTMLElement>('[data-rmg-skel-part="row"]');
+    const h = row?.getBoundingClientRect().height || shell.getBoundingClientRect().height;
+
+    if (h && h > 1) {
+      shell.style.height = `${h}px`;        // freeze exact pixel height
+      shell.style.maxHeight = `${h}px`;     // optional, prevents weird transitions
+      shell.style.overflow = "hidden";      // optional; helps if things poke during init
+      freezeDoneRef.current = true;
+    }
+  }, []);
+
+  React.useLayoutEffect(() => {
+    const shell = sliderShellRef.current;
+    if (!shell) return;
+
+    if (!isReady) return;
+
+    // once SliderCore is ready, measure the real viewport height
+    // (this is the "true height")
+    const viewport =
+      shell.querySelector<HTMLElement>(`[data-rmg-part="viewport"]`) ||
+      shell.querySelector<HTMLElement>(`.${styles.viewport}`);
+
+    const realH = viewport?.getBoundingClientRect().height;
+
+    if (realH && realH > 1) {
+      // snap freeze to real height first (prevents jump)
+      shell.style.height = `${realH}px`;
+      shell.style.maxHeight = `${realH}px`;
+
+      // then release to auto next frame
+      requestAnimationFrame(() => {
+        shell.style.height = "";
+        shell.style.maxHeight = "";
+        shell.style.overflow = "";
+      });
+    } else {
+      // if we couldn't measure, still release
+      shell.style.height = "";
+      shell.style.maxHeight = "";
+      shell.style.overflow = "";
+    }
+  }, [isReady]);
 
   return (
     <>
-      {/* thumbs top/left */}
-      {(resolvedThumbPos === "top" || resolvedThumbPos === "left") && (
-        <>
-          {thumbsSkeleton.cssText && <style dangerouslySetInnerHTML={{ __html: thumbsSkeleton.cssText }} />}
-          <div id={thumbsScope} data-rmg-scope={thumbsScope} style={{ position: "relative" }}>
-            {thumbsSkeleton.node}
-            <ThumbnailSlider
-              indexChannel={indexChannel}
-              position={resolvedThumbPos}
-              thumbnailWidth={sliderObject.thumbnails.layout?.thumbnail?.width}
-              thumbnailHeight={sliderObject.thumbnails.layout?.thumbnail?.height}
-              thumbnailsCenter={sliderObject.thumbnails.layout?.center}
-              thumbnailsContainerWidth={sliderObject.thumbnails.layout?.container?.width}
-              thumbnailsContainerHeight={sliderObject.thumbnails.layout?.container?.height}
-              thumbnailsContainerStyle={sliderObject.thumbnails.elements?.container?.style}
-              thumbnailsContainerClassName={sliderObject.thumbnails.elements?.container?.className}
-              thumbnailItemStyle={sliderObject.thumbnails.elements?.thumbnail?.style}
-              thumbnailItemClassName={sliderObject.thumbnails.elements?.thumbnail?.className}
-              gap={sliderObject.thumbnails.layout?.gap}
-              freeScroll={sliderObject.thumbnails.scroll?.freeScroll}
-              groupCells={sliderObject.thumbnails.scroll?.groupCells}
-              loop={sliderObject.thumbnails.scroll?.loop}
-              skipSnaps={sliderObject.thumbnails.scroll?.skipSnaps}
-              centerActiveThumb={sliderObject.thumbnails.scroll?.centerActiveThumb}
-              selectDuration={sliderObject.thumbnails.motion?.selectDuration}
-              freeScrollDuration={sliderObject.thumbnails.motion?.freeScrollDuration}
-              sliderFriction={sliderObject.thumbnails.motion?.friction}
-              loadingOptions={thumbsLoading}
-              introOptions={sliderObject.thumbnails.transitions?.intro}
-              breakpointMap={sliderObject.thumbnails.breakpointMap}
-              rippleEnabled={sliderObject.thumbnails.controls?.ripple?.enabled}
-              rippleClassName={sliderObject.thumbnails.controls?.ripple?.className}
-              showArrows={sliderObject.thumbnails.controls?.enabled}
-              arrowStyles={sliderObject.thumbnails.controls?.arrow?.style}
-              arrowClassName={sliderObject.thumbnails.controls?.arrow?.className}
-              prevArrowStyles={sliderObject.thumbnails.controls?.prev?.style}
-              prevArrowClassName={sliderObject.thumbnails.controls?.prev?.className}
-              nextArrowStyles={sliderObject.thumbnails.controls?.next?.style}
-              nextArrowClassName={sliderObject.thumbnails.controls?.next?.className}
-              renderArrows={sliderObject.thumbnails.controls?.render}
-              renderPrevArrow={sliderObject.thumbnails.controls?.renderPrev}
-              renderNextArrow={sliderObject.thumbnails.controls?.renderNext}
-            >
-              {sliderObject.thumbnails.children}
-            </ThumbnailSlider>
-          </div>
-        </>
-      )}
-
-      {/* slider */}
       {sliderSkeleton.cssText && <style dangerouslySetInnerHTML={{ __html: sliderSkeleton.cssText }} />}
-      {responsiveCss && <style dangerouslySetInnerHTML={{ __html: responsiveCss }} />}
       {initialHeightCss && <style dangerouslySetInnerHTML={{ __html: initialHeightCss }} />}
 
       <div
@@ -696,21 +557,15 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
         ref={sliderShellRef}
         data-rmg-scope={sliderScope}
         className={styles.sliderShell}
-        style={{
-          position: "relative",
-          ...(userProvidedHeight && sliderObject.size?.height != null
-            ? ({ ["--rmg-slider-height" as any]: sliderObject.size.height } as any)
-            : {}),
-          ...(userProvidedInitialHeight && sliderObject.size?.initialHeight != null
-            ? ({ ["--rmg-slider-initial-height" as any]: sliderObject.size.initialHeight } as any)
-            : {}),
+        style={{ 
+          minHeight: "var(--rmg-slider-initial-height, var(--rmg-slider-height))" 
         }}
       >
         {sliderSkeleton.node}
         <SliderCore
-          imageCount={cellsState.length}
+          cellCount={cellsState.length}
           isClick={isClick}
-          expandableImgRefs={expandableImgRefs}
+          expandableImageRefs={expandableImageRefs}
           overlayDivRef={overlayDivRef}
           duplicateImgRef={duplicateImgRef}
           closeButtonRef={closeButtonRef}
@@ -736,9 +591,6 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
           sliderViewportClassName={sliderObject.elements?.viewport?.className}
           sliderContainerStyles={sliderObject.elements?.container?.style}
           sliderContainerClassName={sliderObject.elements?.container?.className}
-          sliderHeight={sliderHeightProp}
-          responsiveHeights={responsiveHeightsProp}
-          initialHeight={initialHeightProp}
           arrowStyles={sliderObject.controls.arrows.arrow.style}
           arrowClassName={sliderObject.controls.arrows.arrow.className}
           prevArrowStyles={sliderObject.controls.arrows.prev.style}
@@ -776,7 +628,7 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
           selectDuration={sliderObject.motion.selectDuration}
           freeScrollDuration={sliderObject.motion.freeScrollDuration}
           sliderFriction={sliderObject.motion.friction}
-          indexChannel={indexChannel}
+          indexChannel={resolvedIndexChannel}
           introOptions={sliderObject.transitions?.intro}
           lazyLoad={sliderObject.lazyLoad}
           rippleEnabled={sliderObject.controls.ripple.enabled}
@@ -786,7 +638,7 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
           enableFullscreen={!!core?.requestFullscreenOpen}
           requestFullscreenOpen={
             core
-              ? ({ index, img, event }) => core.requestFullscreenOpen({ source: "slider", index, img, event })
+              ? ({ index, image, event }) => core.requestFullscreenOpen({ source: "slider", index, image, event })
               : undefined
           }
           isFullscreenOpen={!!core?.isFullscreenOpen}
@@ -795,55 +647,6 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
           {renderedCells}
         </SliderCore>
       </div>
-
-      {/* thumbs bottom/right */}
-      {(resolvedThumbPos === "bottom" || resolvedThumbPos === "right") && (
-        <>
-          {thumbsSkeleton.cssText && <style dangerouslySetInnerHTML={{ __html: thumbsSkeleton.cssText }} />}
-          <div id={thumbsScope} data-rmg-scope={thumbsScope} style={{ position: "relative" }}>
-            {thumbsSkeleton.node}
-            <ThumbnailSlider
-              indexChannel={indexChannel}
-              position={resolvedThumbPos}
-              thumbnailWidth={sliderObject.thumbnails.layout?.thumbnail?.width}
-              thumbnailHeight={sliderObject.thumbnails.layout?.thumbnail?.height}
-              thumbnailsCenter={sliderObject.thumbnails.layout?.center}
-              thumbnailsContainerWidth={sliderObject.thumbnails.layout?.container?.width}
-              thumbnailsContainerHeight={sliderObject.thumbnails.layout?.container?.height}
-              thumbnailsContainerStyle={sliderObject.thumbnails.elements?.container?.style}
-              thumbnailsContainerClassName={sliderObject.thumbnails.elements?.container?.className}
-              thumbnailItemStyle={sliderObject.thumbnails.elements?.thumbnail?.style}
-              thumbnailItemClassName={sliderObject.thumbnails.elements?.thumbnail?.className}
-              gap={sliderObject.thumbnails.layout?.gap}
-              freeScroll={sliderObject.thumbnails.scroll?.freeScroll}
-              groupCells={sliderObject.thumbnails.scroll?.groupCells}
-              loop={sliderObject.thumbnails.scroll?.loop}
-              skipSnaps={sliderObject.thumbnails.scroll?.skipSnaps}
-              centerActiveThumb={sliderObject.thumbnails.scroll?.centerActiveThumb}
-              selectDuration={sliderObject.thumbnails.motion?.selectDuration}
-              freeScrollDuration={sliderObject.thumbnails.motion?.freeScrollDuration}
-              sliderFriction={sliderObject.thumbnails.motion?.friction}
-              loadingOptions={thumbsLoading}
-              introOptions={sliderObject.thumbnails.transitions?.intro}
-              breakpointMap={sliderObject.thumbnails.breakpointMap}
-              rippleEnabled={sliderObject.thumbnails.controls?.ripple?.enabled}
-              rippleClassName={sliderObject.thumbnails.controls?.ripple?.className}
-              showArrows={sliderObject.thumbnails.controls?.enabled}
-              arrowStyles={sliderObject.thumbnails.controls?.arrow?.style}
-              arrowClassName={sliderObject.thumbnails.controls?.arrow?.className}
-              prevArrowStyles={sliderObject.thumbnails.controls?.prev?.style}
-              prevArrowClassName={sliderObject.thumbnails.controls?.prev?.className}
-              nextArrowStyles={sliderObject.thumbnails.controls?.next?.style}
-              nextArrowClassName={sliderObject.thumbnails.controls?.next?.className}
-              renderArrows={sliderObject.thumbnails.controls?.render}
-              renderPrevArrow={sliderObject.thumbnails.controls?.renderPrev}
-              renderNextArrow={sliderObject.thumbnails.controls?.renderNext}
-            >
-              {sliderObject.thumbnails.children}
-            </ThumbnailSlider>
-          </div>
-        </>
-      )}
     </>
   );
 })

@@ -32,7 +32,7 @@ interface FullscreenModalProps {
   children: React.ReactNode
   cells: RefObject<{ element: HTMLElement; index: number }[]>
   setShowFullscreenSlider: Dispatch<SetStateAction<boolean>>
-  imageCount: number
+  cellCount: number
   setClosingModal: Dispatch<SetStateAction<boolean>>
   slides: RefObject<{ cells: { element: HTMLElement; index: number }[]; target: number }[]>
   slider: RefObject<HTMLDivElement | null>
@@ -47,7 +47,7 @@ interface FullscreenModalProps {
   setSliderIndex: (i: number, mode: IndexMode) => void;
   onForceResetZoom: () => void;
   layout?: 'slider' | 'grid' | 'masonry' | 'entries';
-  expandableImgRefs: RefObject<RefObject<HTMLImageElement | null>[]>
+  expandableImageRefs: RefObject<RefObject<HTMLImageElement | null>[]>
   entryMapRef?: RefObject<MediaEntryLink[] | null>;
   entryMediaLayout?: string;
   introFade?: boolean;
@@ -73,15 +73,40 @@ function getViewportEl(track: HTMLDivElement | null): HTMLElement | null {
   return (track.parentElement as HTMLElement) ?? track
 }
 
-function getTotalCellsWidth(slides: { cells: { element: HTMLElement; index: number }[] }[] | undefined): number {
-  if (!slides) return 0
-  let totalWidth = 0
-  slides.forEach(slide => {
-    slide.cells.forEach(cell => {
-      totalWidth += cell.element.offsetWidth
-    })
-  })
-  return totalWidth
+function findSlideIndexForCell(
+  wrapIndex: number,
+  slides: { cells: { element: HTMLElement; index: number }[]; target: number }[] | undefined
+) {
+  if (!slides?.length) return -1
+  const matchSlide = slides.find((slide) => slide.cells.some((cell) => cell.index === wrapIndex))
+  return matchSlide ? slides.indexOf(matchSlide) : -1
+}
+
+function findRenderedCellForIndex(
+  track: HTMLDivElement,
+  viewportEl: HTMLElement,
+  wrapIndex: number
+): HTMLElement | null {
+  const all = Array.from(
+    track.querySelectorAll<HTMLElement>(
+      `:scope > [data-rmg-slide="true"][data-rmg-idx="${wrapIndex}"]`
+    )
+  );
+
+  if (!all.length) return null;
+
+  const matches = all.sort((a, b) => {
+    const ac = a.getAttribute("data-rmg-clone") === "true" ? 1 : 0;
+    const bc = b.getAttribute("data-rmg-clone") === "true" ? 1 : 0;
+    return ac - bc;
+  });
+
+  return (
+    matches.find((el) => isCellVisible(el, viewportEl, false)) ??
+    matches.find((el) => isCellVisible(el, viewportEl, true)) ??
+    matches[0] ??
+    null
+  );
 }
 
 function isCellVisible(
@@ -130,56 +155,35 @@ function insetForRect(r: DOMRect): string {
 
 function findThumbInfoEnsuringVisible(
   wrapIndex: number,
-  centerAlign: boolean,
   sliderRef: RefObject<HTMLDivElement | null>,
   slidesRef: RefObject<{ cells: { element: HTMLElement; index: number }[]; target: number }[]>,
-  selectedIndex: RefObject<number>,
-  sliderX: RefObject<number>,
-  sliderVelocity: RefObject<number>,
   centerSlider: (() => void) | undefined,
-  isWrappingRef: RefObject<boolean>,
-  visibleImagesRef: RefObject<number>,
   setSliderIndex: (i: number, mode: IndexMode) => void
 ): ThumbInfo | null {
   const slider = sliderRef.current
-  const slides = slidesRef.current
-  if (!slider || !slides?.length) return null
-
-  const matchSlide = slides.find(s => s.cells.some(c => c.index === wrapIndex))
-  if (!matchSlide) return null
-
-  const slideIdx = slides.indexOf(matchSlide)
-  const targetCell =
-    matchSlide.cells.find(c => c.index === wrapIndex)?.element ??
-    matchSlide.cells[0]?.element ??
-    null
-  if (!targetCell) return null
+  if (!slider || !slidesRef.current?.length) return null
 
   const viewport = getViewportEl(slider)
   if (!viewport) return null
 
+  let targetCell = findRenderedCellForIndex(slider, viewport, wrapIndex)
+  if (!targetCell) return null
+
   const fullyVisible = isCellVisible(targetCell, viewport, /*allowPartial*/ false)
 
   if (!fullyVisible) {
-    moveBaseSliderToSlide(
-      centerAlign,
-      sliderRef,
+    const moved = moveBaseSliderToSlide(
+      wrapIndex,
       slidesRef,
-      selectedIndex,
-      sliderX,
-      sliderVelocity,
       centerSlider,
-      slideIdx,
       setSliderIndex
     )
 
-    void slider.offsetWidth
+    if (moved) {
+      void slider.offsetWidth
+      targetCell = findRenderedCellForIndex(slider, viewport, wrapIndex) ?? targetCell
+    }
   }
-
-  const isWrapping = !!isWrappingRef.current
-  const visibleImages = visibleImagesRef.current
-  const cloneOffset = isWrapping ? (visibleImages || 0) : 0
-  const domSlideIdx = isWrapping ? (slideIdx + cloneOffset) : slideIdx
 
   const cropRect = targetCell.getBoundingClientRect()
 
@@ -191,8 +195,6 @@ function findThumbInfoEnsuringVisible(
   const renderedH = renderedRect ? renderedRect.height : 0
 
   return {
-    slideIdx,
-    domSlideIdx,
     cropRect,
     imgEl,
     objPos,
@@ -203,8 +205,6 @@ function findThumbInfoEnsuringVisible(
 }
 
 type ThumbInfo = {
-  slideIdx: number
-  domSlideIdx: number
   cropRect: DOMRect
   imgEl: HTMLImageElement | null
   objPos: { x: number; y: number }
@@ -214,37 +214,19 @@ type ThumbInfo = {
 }
 
 function moveBaseSliderToSlide(
-  centerAlign: boolean,
-  sliderRef: RefObject<HTMLDivElement | null>,
+  wrapIndex: number,
   slidesRef: RefObject<{ cells: { element: HTMLElement; index: number }[]; target: number }[]>,
-  selectedIndex: RefObject<number>,
-  sliderX: RefObject<number>,
-  sliderVelocity: RefObject<number>,
   centerSlider: (() => void) | undefined,
-  newIndex: number,
   setSliderIndex: (i: number, mode: IndexMode) => void
 ) {
-  const slider = sliderRef.current
   const slides = slidesRef.current
-  if (!slider || !slides) return
-  const viewport = getViewportEl(slider)
-  if (!viewport) return
+  const newIndex = findSlideIndexForCell(wrapIndex, slides)
+  if (newIndex < 0) return false
 
-  const totalWidth = getTotalCellsWidth(slides)
-  const containerWidth = viewport.clientWidth
-  const firstCellWidthOfSlide = slides[newIndex].cells[0].element.clientWidth
-  const center = centerAlign ? (containerWidth - firstCellWidthOfSlide) / 2 : 0
-
-  const matchSlide = slides[newIndex]
-  selectedIndex.current = newIndex
-  setSliderIndex(newIndex, 'instant');
-
-  sliderX.current = totalWidth <= containerWidth ? 0 : -matchSlide.target + center
-
-  sliderVelocity.current = 0
-  slider.style.transform = `translate3d(${px(sliderX.current)},0,0)`
+  setSliderIndex(newIndex, 'instant')
 
   centerSlider?.()
+  return true
 }
 
 async function captureVideoFrame(video: HTMLVideoElement): Promise<HTMLImageElement | null> {
@@ -534,22 +516,16 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   rightChevronRef,
   cells,
   setShowFullscreenSlider,
-  imageCount,
+  cellCount,
   setClosingModal,
   slides,
   slider,
-  visibleImagesRef,
-  selectedIndex,
-  sliderX,
-  sliderVelocity,
-  isWrapping,
   wrappedItems,
-  centerAlign,
   centerSlider,
   setSliderIndex,
   onForceResetZoom,
   layout,
-  expandableImgRefs,
+  expandableImageRefs,
   entryMapRef,
   entryMediaLayout,
   introFade,
@@ -561,6 +537,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   direction,
   setFullscreenOpen
 }) => {
+
   const DURATION_MS = introDuration
   const EASING = introEasing
 
@@ -653,6 +630,11 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     return root ? (root.querySelector(sel) as T | null) : null;
   }
 
+  function normalizeFsIndex(fsIdx: number, count: number) {
+    const len = Math.max(1, count);
+    return ((fsIdx % len) + len) % len;
+  }
+
   useEffect(() => {
     if (!open) return;
 
@@ -668,22 +650,46 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  function nodeIdxFromFs(fsIdx: number, imageCount: number) {
-    const fsSlider = withinFs<HTMLElement>('.fullscreen_slider');
-    if (!fsSlider) return Math.max(0, Math.min(imageCount + 1, fsIdx + 1));
+  function nodeIdxFromFs(fsIdx: number, cellCount: number) {
+    if (cellCount <= 1) return 0;
 
-    let currentTranslateX = 0;
-    const transform = getComputedStyle(fsSlider).transform;
-    if (transform !== 'none') {
-      const matrix = new DOMMatrixReadOnly(transform);
-      currentTranslateX = matrix.m41;
+    const canonicalIdx = normalizeFsIndex(fsIdx, cellCount);
+    const fallback = canonicalIdx + 1;
+    const fsSlider = withinFs<HTMLElement>('.fullscreen_slider');
+    if (!fsSlider) return fallback;
+
+    const matches = Array.from(
+      fsSlider.querySelectorAll<HTMLElement>(
+        `[data-rmg-fs-slide="true"][data-rmg-canonical-idx="${canonicalIdx}"]`
+      )
+    );
+    if (!matches.length) return fallback;
+
+    const viewport = modalRef.current ?? fsSlider;
+    const viewportRect = viewport.getBoundingClientRect();
+    const centerX = (viewportRect.left + viewportRect.right) / 2;
+    const centerY = (viewportRect.top + viewportRect.bottom) / 2;
+
+    let bestMatch: HTMLElement | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (const slide of matches) {
+      const rect = slide.getBoundingClientRect();
+      const slideCenterX = (rect.left + rect.right) / 2;
+      const slideCenterY = (rect.top + rect.bottom) / 2;
+      const distance =
+        Math.abs(slideCenterX - centerX) +
+        Math.abs(slideCenterY - centerY);
+
+      if (distance < bestDistance) {
+        bestMatch = slide;
+        bestDistance = distance;
+      }
     }
 
-    if (imageCount === 1) return 0;
-    if (fsIdx === 0 && Math.abs(currentTranslateX) >= fsSlider.getBoundingClientRect().width) return imageCount + 1;
-    if (fsIdx === 0) return 1;
-    if (fsIdx === imageCount + 1) return imageCount + 1;
-    return Math.max(1, Math.min(imageCount, fsIdx + 1));
+    const renderedAttr = bestMatch?.getAttribute('data-index');
+    const renderedIndex = renderedAttr != null ? parseInt(renderedAttr, 10) : NaN;
+    return Number.isFinite(renderedIndex) ? renderedIndex : fallback;
   }
 
   function cloneFsCaptionForNode(
@@ -809,6 +815,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     }
 
     const fsIdx = fsSub.get();
+    const normalizedFsIndex = normalizeFsIndex(fsIdx, originals.length);
 
     const isGridish =
       layout === "grid" ||
@@ -841,7 +848,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         return;
       }
 
-      const nodeIdx = nodeIdxFromFs(fsSub.get(), imageCount);
+      const nodeIdx = nodeIdxFromFs(normalizedFsIndex, cellCount);
 
       const targetImg =
         !args.isVideoSlide
@@ -877,24 +884,15 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         return;
       }
 
-      // image path
-      const movingEl = targetImg as unknown as HTMLElement;
-      if (!movingEl) {
-        safeTeardown();
-        return;
-      }
+      // image path (PROXY: do NOT move the real img)
+      const realImg = targetImg!;
+      const fsCS = getComputedStyle(realImg);
+      const fsObjPos = parseObjectPosition(fsCS?.objectPosition ?? null) ?? { x: 0.5, y: 0.5 };
+      const fsFit = ((fsCS?.objectFit || "contain") as "contain" | "cover");
 
-      const restoreIntoParent = movingEl.parentNode || null;
-      const restoreNextSibling = movingEl.nextSibling || null;
-
-      const fsCS = targetImg ? getComputedStyle(targetImg) : null;
-      const fsObjPos = parseObjectPosition(fsCS?.objectPosition ?? null);
-
-      const imgEl = movingEl as HTMLImageElement;
-      const fsFit = ((getComputedStyle(targetImg!).objectFit || "contain") as "contain" | "cover");
-      const curRect = movingEl.getBoundingClientRect();
-      const natW = imgEl.naturalWidth || curRect.width || 1;
-      const natH = imgEl.naturalHeight || curRect.height || 1;
+      const curRect = realImg.getBoundingClientRect();
+      const natW = Math.max(1, realImg.naturalWidth || Math.round(curRect.width) || 1);
+      const natH = Math.max(1, realImg.naturalHeight || Math.round(curRect.height) || 1);
 
       const startT =
         fsFit === "contain"
@@ -903,25 +901,23 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
       const endT = coverTransformForRect(natW, natH, args.thumbCropRect, args.endObjPos);
 
-      const clipper = createClipper({ DURATION_MS, EASING });
+      const proxy = realImg.cloneNode(true) as HTMLImageElement;
+      proxy.decoding = "async";
+      (proxy as any).loading = "eager";
+      proxy.draggable = false;
 
-      const previous = {
-        position: movingEl.style.position,
-        left: movingEl.style.left,
-        top: movingEl.style.top,
-        width: movingEl.style.width,
-        height: movingEl.style.height,
-        maxWidth: movingEl.style.maxWidth,
-        maxHeight: movingEl.style.maxHeight,
-        transformOrigin: movingEl.style.transformOrigin,
-        transform: movingEl.style.transform,
-        transition: movingEl.style.transition,
-        willChange: movingEl.style.willChange,
-        zIndex: (movingEl.style as any).zIndex,
-        opacity: movingEl.style.opacity,
+      const realPrev = {
+        visibility: realImg.style.visibility,
+        opacity: realImg.style.opacity,
+        transition: realImg.style.transition,
+        willChange: realImg.style.willChange,
       };
+      realImg.style.transition = "none";
+      realImg.style.willChange = "opacity";
+      realImg.style.visibility = "hidden";
+      realImg.style.opacity = "0";
 
-      Object.assign(movingEl.style, {
+      Object.assign(proxy.style, {
         position: "fixed",
         left: "0",
         top: "0",
@@ -931,48 +927,39 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         maxHeight: "none",
         transformOrigin: "50% 50%",
         willChange: "transform",
-        zIndex: "1",
-        opacity: "1",
+        zIndex: "2147483601",
+        pointerEvents: "none",
         transition: "none",
+        opacity: "1",
       } as CSSStyleDeclaration);
 
-      movingEl.style.transform =
+      proxy.style.transform =
         `translate3d(${startT.cx}px, ${startT.cy}px, 0)` +
         ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
         ` scale(${startT.scale})`;
 
-      clipper.appendChild(movingEl);
+      const clipper = createClipper({ DURATION_MS, EASING });
+      clipper.appendChild(proxy);
 
-      void movingEl.offsetWidth;
+      void proxy.offsetWidth;
       void clipper.offsetWidth;
 
-      const targetInset = insetForRect(args.thumbCropRect);
-      requestAnimationFrame(() => {
-        clipper.style.clipPath = targetInset;
-        movingEl.style.transition = `transform ${DURATION_MS}ms ${EASING}`;
-        movingEl.style.transform =
-          `translate3d(${endT.cx}px, ${endT.cy}px, 0)` +
-          ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
-          ` scale(${endT.scale})`;
-      });
+      let finished = false;
 
       const finish = () => {
+        if (finished) return;
+        finished = true;
+
         if (captionClone) {
           try { captionClone.remove(); } catch {}
           captionClone = null;
         }
 
-        movingEl.removeEventListener("transitionend", onEnd as any);
-
-        try {
-          if (restoreIntoParent) {
-            if (restoreNextSibling) (restoreIntoParent as Node).insertBefore(movingEl, restoreNextSibling);
-            else (restoreIntoParent as Node).appendChild(movingEl);
-          }
-        } catch {}
+        proxy.removeEventListener("transitionend", onEnd as any);
 
         try { document.body.removeChild(clipper); } catch {}
-        Object.assign(movingEl.style, previous);
+        try { proxy.remove(); } catch {}
+
         safeTeardown();
       };
 
@@ -981,46 +968,48 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         finish();
       };
 
-      movingEl.addEventListener("transitionend", onEnd as any, { once: true });
-      window.setTimeout(() => finish(), DURATION_MS + 80);
+      requestAnimationFrame(() => {
+        clipper.style.clipPath = insetForRect(args.thumbCropRect);
+        proxy.style.transition = `transform ${DURATION_MS}ms ${EASING}`;
+        proxy.style.transform =
+          `translate3d(${endT.cx}px, ${endT.cy}px, 0)` +
+          ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
+          ` scale(${endT.scale})`;
+
+        proxy.addEventListener("transitionend", onEnd as any, { once: true });
+
+        window.setTimeout(() => finish(), DURATION_MS + 80);
+      });
     };
 
-    let canonicalIdx = 0;
-    let localSlideIdx = 0;
+    let canonicalIdx = normalizedFsIndex;
+    let localSlideIdx = normalizedFsIndex;
+
+    async function syncBaseToCanonical() {
+      if (!slider.current || !slides.current?.length) return;
+
+      if (!moveBaseSliderToSlide(
+        localSlideIdx,
+        slides,
+        centerSlider,
+        setSliderIndex
+      )) return;
+
+      // let layout settle (helps when you immediately tear down FS)
+      void slider.current.offsetWidth;
+    }
 
     if (!isGridish) {
       if (!slider.current || !slides.current?.length) return;
 
-      const fsIndex = fsIdx;
-      if (isWrapping.current) {
-        if (
-          slider.current &&
-          fsIndex >= slider.current.children.length - (visibleImagesRef.current || 0) * 2 &&
-          layout !== "entries"
-        ) {
-          canonicalIdx = 0;
-        } else {
-          canonicalIdx = fsIndex;
-        }
-      } else {
-        const maxMedia = Math.max(0, originals.length - 1);
-        canonicalIdx = Math.min(Math.max(0, fsIndex), maxMedia);
-      }
-
-      localSlideIdx = canonicalIdx;
-
       if (layout === "entries" && entryMapRef?.current) {
         const link = entryMapRef.current[canonicalIdx];
-        console.log('link', link)
         if (link) {
           localSlideIdx = link.mediaIndex;
           await scrollEntrySectionIntoView(link.entryIndex);
         }
       }
     } else {
-      canonicalIdx = Math.max(0, Math.min(originals.length - 1, fsIdx));
-      localSlideIdx = canonicalIdx;
-
       const el = document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`);
       await scrollElementIntoCenterView(el);
 
@@ -1036,6 +1025,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     const isVideoSlide = isVideoItem(url);
 
     if (introFade || isVideoSlide) {
+      await syncBaseToCanonical();
       fadeCloseAndTeardown();
       return;
     }
@@ -1055,39 +1045,20 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         return;
       }
 
-      const slideArr = slides.current!;
-      let matchSlide = slideArr.find((s) => s.cells.some((c) => c.index === localSlideIdx));
-      let newIndex = matchSlide ? slideArr.indexOf(matchSlide) : -1;
-
-      if (newIndex < 0) {
-        newIndex = slideArr.length - 1;
-        matchSlide = slideArr[slideArr.length - 1];
-      }
-
-      if (!matchSlide) {
+      const targetCellEl = findRenderedCellForIndex(slider.current, viewport, localSlideIdx);
+      if (!targetCellEl) {
         safeTeardown();
         return;
       }
 
-      const targetCellEl =
-        matchSlide.cells.find((c) => c.index === localSlideIdx)?.element ??
-        matchSlide.cells[0]?.element ??
-        null;
-
-      const shouldMove = !!(viewport && targetCellEl) && !isCellVisible(targetCellEl!, viewport, true);
+      const shouldMove = !isCellVisible(targetCellEl, viewport, true);
 
       const measureAndAnimate = async () => {
         const thumbInfo = findThumbInfoEnsuringVisible(
           localSlideIdx,
-          centerAlign,
           slider,
           slides,
-          selectedIndex,
-          sliderX,
-          sliderVelocity,
           centerSlider,
-          isWrapping,
-          visibleImagesRef,
           setSliderIndex
         );
 
@@ -1113,17 +1084,15 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       };
 
       if (shouldMove) {
-        moveBaseSliderToSlide(
-          centerAlign,
-          slider,
+        if (!moveBaseSliderToSlide(
+          localSlideIdx,
           slides,
-          selectedIndex,
-          sliderX,
-          sliderVelocity,
           centerSlider,
-          newIndex,
           setSliderIndex
-        );
+        )) {
+          safeTeardown();
+          return;
+        }
 
         requestAnimationFrame(() => {
           requestAnimationFrame(() => { void measureAndAnimate(); });
@@ -1135,12 +1104,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       return;
     }
 
-    if (!expandableImgRefs?.current) {
+    if (!expandableImageRefs?.current) {
       safeTeardown();
       return;
     }
 
-    const slot: any = (expandableImgRefs.current as any)[canonicalIdx] ?? null;
+    const slot: any = (expandableImageRefs.current as any)[canonicalIdx] ?? null;
 
     const slotCurrent: any =
       slot && typeof slot === "object" && "current" in slot ? slot.current : slot;
@@ -1216,7 +1185,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       : null;
 
   const allowFsArrows =
-    fs?.controls?.arrows?.enabled !== false && imageCount > 1;
+    fs?.controls?.arrows?.enabled !== false && cellCount > 1;
 
   const isRtl = direction === "rtl" || false;
 
@@ -1239,18 +1208,18 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   };
 
   function canonicalFromFsIndex(fsIndex: number, originalsLen: number) {
-    return Math.max(0, Math.min(originalsLen - 1, fsIndex));
+    return normalizeFsIndex(fsIndex, originalsLen);
   }
 
   const originalsLen = Math.max(0, wrappedItems.length - 2);
   const canonicalIdx = canonicalFromFsIndex(fsSub.get(), Math.max(1, originalsLen));
 
   const counterEnabled = fs?.controls?.counter?.enabled !== false;
-  const showCounter = counterEnabled && imageCount > 1;
+  const showCounter = counterEnabled && cellCount > 1;
 
   const userCounterNode =
     typeof fs?.controls?.counter?.render === "function"
-      ? fs.controls.counter.render({ index: canonicalIdx, count: imageCount })
+      ? fs.controls.counter.render({ index: canonicalIdx, count: cellCount })
       : null;
 
 
@@ -1351,7 +1320,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           }}
         >
           {userCounterNode ?? (
-            <DefaultCounterText index={canonicalIdx} count={imageCount} />
+            <DefaultCounterText index={canonicalIdx} count={cellCount} />
           )}
         </div>
       )}

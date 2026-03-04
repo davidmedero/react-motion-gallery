@@ -19,7 +19,6 @@
 .gridItem {
   position: relative;
   display: block;
-  cursor: pointer;
 }
 
 .gridItem img,
@@ -121,7 +120,7 @@
     transparent 100%
   );
   animation: rmgShimmer var(--rmg-skel-shimmer-duration, 1200ms)
-    var(--rmg-skel-shimmer-timing, linear) infinite;
+    var(--rmg-skel-shimmer-timing, ease-in-out) infinite;
   will-change: transform;
 }
 
@@ -156,4 +155,10 @@
 .introContainer.introActive [data-rmg-idx] {
   opacity: 1;
   transform: none;
+}
+
+.gridItem:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+  border-radius: 4px;
 }

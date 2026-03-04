@@ -1,10 +1,10 @@
 import type * as React from "react";
 import { MediaItem } from "../shared/types/media";
 import { ElementStyle } from "../shared/types/elements";
-import { ThumbnailsOptions } from "../slider/thumbnails/types";
 import { BreakpointMap } from "../shared/responsive";
 import { SliderHandle } from "../slider/types";
 import { EntriesOptions, MediaEntryLink, SlideOwner } from "../entries";
+import { PlyrOptionsBuilder, PlyrSourceBuilder } from "../video/plyrTypes";
 
 export type FsCounterArgs = { index: number; count: number };
 export type FsCaptionPlacement = "top" | "right" | "bottom" | "left";
@@ -23,7 +23,7 @@ export type FullscreenBridge = {
 };
 
 export type FsIntroRequest = null | {
-  origImg: HTMLImageElement;
+  originalImage: HTMLImageElement;
   index: number;
   closestSelector?: string;
 };
@@ -35,11 +35,6 @@ export type FSImageRender = (args: {
   className: string;
   baseStyle: React.CSSProperties;
 }) => React.ReactNode;
-
-export type PlyrSourceBuilder = (item: MediaItem, index: number) => Plyr.SourceInfo;
-export type PlyrOptionsResolver =
-  | Plyr.Options
-  | ((item: MediaItem, index: number) => Plyr.Options);
 
 export type FullscreenArrows = {
   enabled?: boolean;
@@ -94,8 +89,6 @@ export type FullscreenEffectsOptions = {
   slideFade?: boolean;
   slideFadeDuration?: number;
   slideFadeEasing?: string;
-  thumbnailsFadeDuration?: number;
-  thumbnailsFadeEasing?: string;
 };
 
 export type FullscreenSliderOptions = {
@@ -112,9 +105,28 @@ export type FullscreenZoomPanOptions = {
 
 export type FullscreenVideoOptions = {
   source?: PlyrSourceBuilder;
-  options?: PlyrOptionsResolver;
+  options?: PlyrOptionsBuilder;
   style?: React.CSSProperties;
   className?: string;
+};
+
+export type FullscreenLazyLoadKind = "image" | "video";
+
+export type FullscreenLazyLoadArgs = {
+  kind: FullscreenLazyLoadKind;
+  isClone?: boolean;
+};
+
+export type FullscreenLazyLoadConfig = {
+  enabled?: boolean;
+  spinner?: boolean | React.ReactNode | ((args: FullscreenLazyLoadArgs) => React.ReactNode);
+  spinnerClassName?: string;
+  spinnerStyle?: React.CSSProperties;
+};
+
+export type FullscreenLazyLoadOptions = {
+  images?: FullscreenLazyLoadConfig;
+  videos?: FullscreenLazyLoadConfig;
 };
 
 export type FullscreenOptions = {
@@ -122,10 +134,10 @@ export type FullscreenOptions = {
   items?: MediaItem[] | string[];
   renderImage?: FSImageRender;
   video?: FullscreenVideoOptions;
-  thumbnails?: ThumbnailsOptions;
   controls?: FullscreenControlsOptions;
   caption?: FullscreenCaptionOptions;
   slider?: FullscreenSliderOptions;
   zoom?: FullscreenZoomPanOptions;
   effects?: FullscreenEffectsOptions;
+  lazyLoad?: FullscreenLazyLoadOptions;
 };

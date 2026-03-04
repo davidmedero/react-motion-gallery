@@ -1,0 +1,356 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import * as React from "react";
+import styles from "./Thumbnails.module.css";
+import ThumbnailSliderCore from "./ThumbnailSlider";
+import { createSliderIndexChannel, SliderIndexChannel } from "../slider/sliderSub";
+import { DEFAULT_THUMBNAILS } from "./defaults";
+import { BREAKPOINT_MAP, resolvePositionFromResponsive } from "../shared/responsive";
+import { useViewportWidth } from "../shared/hooks/useViewportWidth";
+import { buildScopedSkeletonCountCss } from "../shared/skeleton/buildScopedSkeletonCountCss";
+import type { BreakpointMap } from "../shared/responsive";
+import type { ThumbnailLoadingOptions, ThumbnailsOptions } from "./types";
+import { createThumbnailSyncBridge } from "./syncBridge";
+
+type Props = {
+  options?: ThumbnailsOptions;
+  children?: React.ReactNode;
+  indexChannel?: SliderIndexChannel;
+  breakpoints?: BreakpointMap;
+  onThumbnailClick?: (index: number) => void;
+  onReadyChange?: (ready: boolean) => void;
+  direction?: "ltr" | "rtl";
+};
+
+type UseScopedSkeletonArgs = {
+  enabled: boolean;
+  scopeId: string;
+  loading: ThumbnailLoadingOptions;
+  fallbackCount: number;
+  breakpointMap: BreakpointMap;
+  maxSlots?: number;
+  showLoadingFallback: boolean;
+  defaultNode: (maxSlots: number, baseCount: number) => React.ReactNode;
+};
+
+function useScopedSkeleton(args: UseScopedSkeletonArgs) {
+  const {
+    enabled,
+    scopeId,
+    loading,
+    fallbackCount,
+    breakpointMap,
+    maxSlots = 12,
+    showLoadingFallback,
+    defaultNode,
+  } = args;
+
+  const loadingEnabled = loading.enabled ?? true;
+  const loadingForced = loading.force ?? false;
+
+  const showLoading =
+    enabled && loadingEnabled && (loadingForced || showLoadingFallback);
+
+  const { cssText, ssrBaseCount } = React.useMemo(() => {
+    if (!enabled || !loadingEnabled) {
+      return { cssText: "", ssrBaseCount: fallbackCount };
+    }
+
+    return buildScopedSkeletonCountCss({
+      scopeId,
+      responsiveCount: loading.skeletonCount,
+      fallbackCount,
+      breakpointMap,
+      maxSlots,
+    });
+  }, [
+    enabled,
+    loadingEnabled,
+    scopeId,
+    loading.skeletonCount,
+    fallbackCount,
+    breakpointMap,
+    maxSlots,
+  ]);
+
+  const node = React.useMemo(() => {
+    if (!showLoading) return null;
+
+    if (loading.renderLoading) {
+      return loading.renderLoading();
+    }
+
+    return defaultNode(maxSlots, ssrBaseCount);
+  }, [showLoading, loading.renderLoading, defaultNode, maxSlots, ssrBaseCount]);
+
+  return { cssText, ssrBaseCount, node, showLoading };
+}
+
+function resolveThumbnailsObject(options?: ThumbnailsOptions): ThumbnailsOptions {
+  return {
+    ...DEFAULT_THUMBNAILS,
+    ...(options ?? {}),
+    layout: {
+      ...DEFAULT_THUMBNAILS.layout,
+      ...(options?.layout ?? {}),
+    },
+    scroll: {
+      ...DEFAULT_THUMBNAILS.scroll,
+      ...(options?.scroll ?? {}),
+    },
+    motion: {
+      ...DEFAULT_THUMBNAILS.motion,
+      ...(options?.motion ?? {}),
+    },
+    elements: {
+      ...(options?.elements ?? {}),
+    },
+    controls: {
+      ...(options?.controls ?? {}),
+    },
+    transitions: {
+      ...(options?.transitions ?? {}),
+    },
+  };
+}
+
+function normalizeInitialChannelState(
+  indexChannel: SliderIndexChannel | undefined,
+  clampIndex: (index: number) => number
+) {
+  const state = indexChannel?.get?.();
+  const rawIndex = state?.index;
+  const safeIndex = typeof rawIndex === "number" && Number.isFinite(rawIndex)
+    ? clampIndex(Math.trunc(rawIndex))
+    : 0;
+  const safeMode = state?.mode === "instant" ? "instant" : "animated";
+  return { index: safeIndex, mode: safeMode } as const;
+}
+
+export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
+  function ThumbnailSlider(
+    { options, children, indexChannel, breakpoints, onThumbnailClick, onReadyChange, direction },
+    forwardedRef
+  ) {
+    const thumbsObject = React.useMemo(
+      () => resolveThumbnailsObject(options),
+      [options]
+    );
+
+    const effectiveBreakpoints = React.useMemo(
+      () => ({ ...BREAKPOINT_MAP, ...(breakpoints || {}) }),
+      [breakpoints]
+    );
+
+    const vw = useViewportWidth();
+
+    const resolvedThumbPos = React.useMemo(
+      () =>
+        resolvePositionFromResponsive(
+          thumbsObject.layout?.position,
+          "bottom",
+          vw,
+          effectiveBreakpoints
+        ),
+      [thumbsObject.layout?.position, vw, effectiveBreakpoints]
+    );
+
+    const thumbsScopeId = React.useId();
+    const thumbsScope = `rmg-thumbs-${thumbsScopeId.replace(/:/g, "")}`;
+
+    const thumbsLoading = React.useMemo(() => {
+      const src = thumbsObject.transitions?.loading ?? {};
+      return {
+        enabled: src.enabled ?? true,
+        force: src.force ?? false,
+        skeletonCount: src.skeletonCount,
+        renderLoading: src.renderLoading,
+      } satisfies ThumbnailLoadingOptions;
+    }, [thumbsObject.transitions?.loading]);
+
+    const [thumbsReady, setThumbsReady] = React.useState(false);
+
+    const thumbChildren = children ?? thumbsObject.children;
+    const thumbChildArray = React.useMemo(
+      () => React.Children.toArray(thumbChildren),
+      [thumbChildren]
+    );
+
+    const contentSignature = React.useMemo(
+      () =>
+        thumbChildArray
+          .map((node, idx) => {
+            if (React.isValidElement(node)) {
+              return `el:${node.key != null ? String(node.key) : `idx:${idx}`}`;
+            }
+            if (node == null || typeof node === "boolean") return `nil:${idx}`;
+            if (typeof node === "string" || typeof node === "number") {
+              return `txt:${idx}:${String(node)}`;
+            }
+            return `node:${idx}`;
+          })
+          .join("|"),
+      [thumbChildArray]
+    );
+
+    React.useEffect(() => {
+      setThumbsReady(false);
+    }, [contentSignature]);
+
+    const isHorizontalThumbs =
+      resolvedThumbPos === "top" || resolvedThumbPos === "bottom";
+
+    const thumbsGap = thumbsObject.layout?.gap ?? 8;
+    const thumbW = thumbsObject.layout?.thumbnail?.width ?? 64;
+    const thumbH = thumbsObject.layout?.thumbnail?.height ?? 64;
+
+    const thumbsSkeleton = useScopedSkeleton({
+      enabled: true,
+      scopeId: thumbsScope,
+      loading: thumbsLoading,
+      fallbackCount: 6,
+      breakpointMap: effectiveBreakpoints,
+      maxSlots: 12,
+      showLoadingFallback: !thumbsReady,
+      defaultNode: (MAX_SKELETONS) => (
+        <div
+          className={styles.thumbSkeletonOverlay}
+          data-rmg-skel-part="overlay"
+          style={{
+            height: thumbsObject.layout?.container?.height,
+            width: thumbsObject.layout?.container?.width,
+          }}
+        >
+          <div
+            className={styles.thumbSkeletonRow}
+            data-rmg-skel-part="row"
+            style={{
+              gap: thumbsGap,
+              flexDirection: isHorizontalThumbs ? "row" : "column",
+            }}
+          >
+            {Array.from({ length: MAX_SKELETONS }).map((_, i) => (
+              <div
+                key={`rmg-thumb-skel-${i}`}
+                className={styles.thumbSkeleton}
+                data-rmg-skel-slot={i + 1}
+                style={{
+                  width: isHorizontalThumbs ? thumbW : "100%",
+                  height: isHorizontalThumbs ? "100%" : thumbH,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      ),
+    });
+
+    const childCount = thumbChildArray.filter(Boolean).length;
+
+    const clampIndex = React.useCallback(
+      (index: number) => {
+        if (childCount <= 0) return 0;
+        return Math.max(0, Math.min(childCount - 1, index));
+      },
+      [childCount]
+    );
+
+    const localChannelRef = React.useRef<SliderIndexChannel | null>(null);
+    if (!localChannelRef.current) {
+      const initial = normalizeInitialChannelState(indexChannel, clampIndex);
+      localChannelRef.current = createSliderIndexChannel(
+        initial.index,
+        initial.mode
+      );
+    }
+    const localChannel = localChannelRef.current;
+
+    const bridgeRef = React.useRef(
+      createThumbnailSyncBridge({
+        localChannel,
+        externalChannel: indexChannel,
+        clampIndex,
+      })
+    );
+
+    React.useEffect(() => {
+      bridgeRef.current = createThumbnailSyncBridge({
+        localChannel,
+        externalChannel: indexChannel,
+        clampIndex,
+      });
+
+      const cleanup = bridgeRef.current.start();
+      return () => cleanup();
+    }, [indexChannel, clampIndex, localChannel]);
+
+    return (
+      <>
+        {thumbsSkeleton.cssText && (
+          <style dangerouslySetInnerHTML={{ __html: thumbsSkeleton.cssText }} />
+        )}
+
+        <div
+          id={thumbsScope}
+          ref={forwardedRef}
+          data-rmg-scope={thumbsScope}
+          style={{ position: "relative" }}
+        >
+          {thumbsSkeleton.node}
+
+          <ThumbnailSliderCore
+            indexChannel={localChannel}
+            position={resolvedThumbPos}
+            direction={direction}
+            thumbnailWidth={thumbsObject.layout?.thumbnail?.width}
+            thumbnailHeight={thumbsObject.layout?.thumbnail?.height}
+            thumbnailsCenter={thumbsObject.layout?.center}
+            thumbnailsContainerWidth={thumbsObject.layout?.container?.width}
+            thumbnailsContainerHeight={thumbsObject.layout?.container?.height}
+            thumbnailsContainerStyle={thumbsObject.elements?.container?.style}
+            thumbnailsContainerClassName={thumbsObject.elements?.container?.className}
+            thumbnailItemStyle={thumbsObject.elements?.thumbnail?.style}
+            thumbnailItemClassName={thumbsObject.elements?.thumbnail?.className}
+            gap={thumbsObject.layout?.gap}
+            freeScroll={thumbsObject.scroll?.freeScroll}
+            groupCells={thumbsObject.scroll?.groupCells}
+            loop={thumbsObject.scroll?.loop}
+            skipSnaps={thumbsObject.scroll?.skipSnaps}
+            centerActiveThumb={thumbsObject.scroll?.centerActiveThumb}
+            selectDuration={thumbsObject.motion?.selectDuration}
+            freeScrollDuration={thumbsObject.motion?.freeScrollDuration}
+            sliderFriction={thumbsObject.motion?.friction}
+            loadingOptions={thumbsLoading}
+            introOptions={thumbsObject.transitions?.intro}
+            breakpointMap={thumbsObject.breakpointMap ?? effectiveBreakpoints}
+            rippleEnabled={thumbsObject.controls?.ripple?.enabled}
+            rippleClassName={thumbsObject.controls?.ripple?.className}
+            showArrows={thumbsObject.controls?.enabled}
+            arrowStyles={thumbsObject.controls?.arrow?.style}
+            arrowClassName={thumbsObject.controls?.arrow?.className}
+            prevArrowStyles={thumbsObject.controls?.prev?.style}
+            prevArrowClassName={thumbsObject.controls?.prev?.className}
+            nextArrowStyles={thumbsObject.controls?.next?.style}
+            nextArrowClassName={thumbsObject.controls?.next?.className}
+            renderArrows={thumbsObject.controls?.render}
+            renderPrevArrow={thumbsObject.controls?.renderPrev}
+            renderNextArrow={thumbsObject.controls?.renderNext}
+            onReadyChange={(ready) => {
+              setThumbsReady(ready);
+              onReadyChange?.(ready);
+            }}
+            onSelectThumb={(index) => {
+              bridgeRef.current.publishThumbnailClick(index, "animated");
+              onThumbnailClick?.(index);
+            }}
+          >
+            {thumbChildren}
+          </ThumbnailSliderCore>
+        </div>
+      </>
+    );
+  }
+);
+
+export default ThumbnailSlider;

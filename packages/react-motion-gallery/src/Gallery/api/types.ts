@@ -1,8 +1,9 @@
-export type IndexMode = "instant" | "animated";
+export type IndexMode = "animated" | "instant";
 
 export interface GalleryApi {
   rootNode(): HTMLElement | null;
   containerNode(): HTMLElement | null;
+  getViewportNode: () => HTMLDivElement | null;
   slideNodes(): HTMLElement[];
   onReady?(cb: (nodes: HTMLElement[]) => void): () => void;
   whenReady?(): Promise<HTMLElement[]>;

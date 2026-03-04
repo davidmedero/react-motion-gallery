@@ -114,7 +114,6 @@ function Demo() {
           columns={{ 0: 1, 500: 2, 768: 3, 1024: 4, 1280: 5 }}
           gap={12}
           loading={{
-            // isLoading: true,
             skeleton: {
               layout: {
                 kind: "grid",

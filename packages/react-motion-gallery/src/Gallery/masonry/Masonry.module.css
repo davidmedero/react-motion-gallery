@@ -15,7 +15,6 @@
 .masonryItem {
   position: relative;
   display: block;
-  cursor: pointer;
 }
 
 .masonryItem img,
@@ -108,7 +107,7 @@
     transparent 100%
   );
   animation: rmgShimmer var(--rmg-skel-shimmer-duration, 1200ms)
-    var(--rmg-skel-shimmer-timing, linear) infinite;
+    var(--rmg-skel-shimmer-timing, ease-in-out) infinite;
   will-change: transform;
 }
 

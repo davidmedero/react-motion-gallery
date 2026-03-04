@@ -20,7 +20,6 @@ export function TranslateFullscreen(container: HTMLElement) {
   let lockY = false
   let lockedY = 0
   let suspended = false
-  const round2 = (n: number) => Math.round(n * 100) / 100
 
   function write(nx: number, ny: number) {
     if (nx === prevX && ny === prevY) return
@@ -32,7 +31,7 @@ export function TranslateFullscreen(container: HTMLElement) {
   return {
     to(targetX: number, targetY = 0) {
       if (suspended) return
-      const nx = round2(targetX)
+      const nx = targetX
       const ny = lockY ? lockedY : targetY
       write(nx, ny)
     },

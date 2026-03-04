@@ -12,9 +12,7 @@ export type BreakpointMap = Record<string, number>;
 
 export type ResponsiveNumber =
   | number
-  | string
-  | Array<number | string>
-  | Record<string, number | string>;
+  | Record<string, number>;
 
 export type ResponsivePosition =
   | ThumbnailPosition

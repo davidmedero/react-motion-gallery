@@ -8,6 +8,7 @@ import {
   coverTransformForRect,
   objectFitContentRect,
 } from "../shared/transitions/objectFitTransform";
+import type { FullscreenThumbnailSlotLayout } from "../fullscreenThumbnails/types";
 import type {
   FsCaptionPlacement,
   FullscreenOptions,
@@ -17,7 +18,7 @@ import type {
 type RefEl<T extends HTMLElement> = React.RefObject<T | null>;
 
 export type FullscreenIntroArgs = {
-  origImg: HTMLImageElement;
+  originalImage: HTMLImageElement;
   index: number;
   normalizedItems: any[];
   styles: Record<string, string>;
@@ -27,6 +28,7 @@ export type FullscreenIntroArgs = {
   overlayCaptionRef: RefEl<HTMLDivElement>;
   overlayCaptionRootRef: React.RefObject<Root | null>;
   fsThumbContainerRef?: RefEl<HTMLElement>;
+  fullscreenThumbnailPosition?: FullscreenThumbnailSlotLayout["position"] | null;
   setShowFullscreenSlider: (v: boolean) => void;
   setFsFadeOpening: (v: boolean) => void;
   addShield?: (timeoutMs?: number) => void;
@@ -50,9 +52,14 @@ function detectVideoSlide(item: any, slideEl: HTMLElement) {
   );
 }
 
+function mountOverlayOnce(overlay: HTMLDivElement) {
+  if (overlay.isConnected) return;
+  document.body.appendChild(overlay);
+}
+
 export function runFullscreenIntro(args: FullscreenIntroArgs) {
   const {
-    origImg,
+    originalImage,
     index,
     normalizedItems,
     styles,
@@ -62,6 +69,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     overlayCaptionRef,
     overlayCaptionRootRef,
     fsThumbContainerRef,
+    fullscreenThumbnailPosition,
     setShowFullscreenSlider,
     setFsFadeOpening,
     addShield,
@@ -69,10 +77,11 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     closestSelector,
   } = args;
 
-  if (!origImg) return;
+  if (!originalImage) return;
 
   const DURATION_MS = fs.effects?.introDuration ?? 300;
   const EASING = fs.effects?.introEasing ?? "cubic-bezier(.4,0,.22,1)";
+  const INTRO_START_MAX_WAIT_MS = 120;
 
   addShield?.(400);
 
@@ -80,17 +89,17 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
   const vh = window.innerHeight;
 
   const slideEl =
-    (origImg.closest(
+    (originalImage.closest(
       closestSelector ??
         (closestSelector === undefined ? ".rmg__grid-item, .rmg__slide" : "")
     ) as HTMLElement) ||
-    (origImg.parentElement as HTMLElement) ||
-    origImg;
+    (originalImage.parentElement as HTMLElement) ||
+    originalImage;
 
-  const imgRect = origImg.getBoundingClientRect();
+  const imgRect = originalImage.getBoundingClientRect();
 
-  const natW = Math.max(1, origImg.naturalWidth || 0);
-  const natH = Math.max(1, origImg.naturalHeight || 0);
+  const natW = Math.max(1, originalImage.naturalWidth || 0);
+  const natH = Math.max(1, originalImage.naturalHeight || 0);
 
   const insetForRect = (r: DOMRect) => {
     const top = r.top;
@@ -100,8 +109,8 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     return `inset(${top}px ${right}px ${bottom}px ${left}px)`;
   };
 
-  const fit = getComputedStyle(origImg).objectFit || "cover";
-  const cs0 = getComputedStyle(origImg);
+  const fit = getComputedStyle(originalImage).objectFit || "cover";
+  const cs0 = getComputedStyle(originalImage);
   const startObjPos = parseObjectPosition(cs0?.objectPosition ?? null);
 
   const visibleImgRect =
@@ -149,7 +158,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     contentBottom = Math.max(0, vh - topBottomHeight);
   }
 
-  const thumbPos = fs.thumbnails?.layout?.position;
+  const thumbPos = fullscreenThumbnailPosition;
   if (fsThumbContainerRef?.current && thumbPos) {
     const H = fsThumbContainerRef.current.offsetHeight;
     const W = fsThumbContainerRef.current.offsetWidth;
@@ -272,7 +281,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     } as CSSStyleDeclaration);
 
     dup = document.createElement("img");
-    dup.src = (origImg as HTMLImageElement).currentSrc || origImg.src;
+    dup.src = originalImage.currentSrc || originalImage.src;
 
     Object.assign(dup.style, {
       position: "fixed",
@@ -352,15 +361,43 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
       });
     }
 
-    const ready = (dup as any).decode
-      ? (dup as HTMLImageElement).decode().catch(() => {})
-      : new Promise<void>((resolve) => {
-          if (dup!.complete) return resolve();
-          dup!.addEventListener("load", () => resolve(), { once: true });
-          dup!.addEventListener("error", () => resolve(), { once: true });
-        });
+    let started = false;
+    let startWaitTimer: number | null = null;
+    const startAnimationOnce = () => {
+      if (started) return;
+      started = true;
+      if (startWaitTimer !== null) {
+        window.clearTimeout(startWaitTimer);
+        startWaitTimer = null;
+      }
+      startAnimation();
+    };
 
-    ready.then(() => startAnimation());
+    if (dup!.complete && dup!.naturalWidth > 0) {
+      startAnimationOnce();
+    } else {
+      const decodePromise =
+        typeof dup!.decode === "function"
+          ? dup!.decode().catch(() => {})
+          : new Promise<void>(() => {});
+
+      const loadOrErrorPromise = new Promise<void>((resolve) => {
+        if (dup!.complete) return resolve();
+        dup!.addEventListener("load", () => resolve(), { once: true });
+        dup!.addEventListener("error", () => resolve(), { once: true });
+      });
+
+      const timeoutPromise = new Promise<void>((resolve) => {
+        startWaitTimer = window.setTimeout(() => {
+          resolve();
+          startAnimationOnce();
+        }, INTRO_START_MAX_WAIT_MS);
+      });
+
+      Promise.race([decodePromise, loadOrErrorPromise, timeoutPromise]).then(() =>
+        startAnimationOnce()
+      );
+    }
 
     requestAnimationFrame(() => {
       overlay.style.opacity = "1";
@@ -370,6 +407,10 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     const onEnd = async (ev: TransitionEvent) => {
       if (ev.propertyName !== "transform") return;
       dup!.removeEventListener("transitionend", onEnd);
+      if (startWaitTimer !== null) {
+        window.clearTimeout(startWaitTimer);
+        startWaitTimer = null;
+      }
 
       await new Promise((r) =>
         requestAnimationFrame(() => requestAnimationFrame(r))
@@ -395,6 +436,8 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     dup.addEventListener("transitionend", onEnd, { once: true });
     return;
   }
+
+  mountOverlayOnce(overlay);
 
   requestAnimationFrame(() => {
     overlay.style.opacity = "1";
@@ -427,19 +470,19 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
 
 export function createSliderFullscreenIntroRunner(deps: Omit<
   FullscreenIntroArgs,
-  "origImg" | "index"
+  "originalImage" | "index"
 >) {
   return function runFromSliderEvent(
     _e: React.PointerEvent<any>,
     imgRef: React.RefObject<HTMLImageElement | null>,
     index: number
   ) {
-    const origImg = imgRef.current;
-    if (!origImg) return;
+    const originalImage = imgRef.current;
+    if (!originalImage) return;
 
     runFullscreenIntro({
       ...deps,
-      origImg,
+      originalImage,
       index,
       closestSelector: deps.closestSelector ?? ".rmg__slide",
     });

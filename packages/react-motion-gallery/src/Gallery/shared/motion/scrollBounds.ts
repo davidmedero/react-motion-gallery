@@ -33,10 +33,9 @@ export function ScrollBounds(
       const distToEdge   = Math.abs(limit[edge] - location.get())
       const distToTarget = target.get() - location.get()
       const f = fricLim.constrain(distToEdge / edgeTol)
-
       target.set(target.get() - distToTarget * f)
-
-      if (!pointerDown && Math.abs(distToTarget) < pullBack) {
+      const distAfter = target.get() - location.get()
+      if (!pointerDown && Math.abs(distAfter) < pullBack) {
         target.set(limit.constrain(target.get()))
         body.useDuration(selectDuration).useBaseFriction()
       }

@@ -12,7 +12,6 @@ import type { SliderHandle, SliderOptions } from "../../slider/types";
 const DEFAULT_SLIDER_OBJECT: any = {
   align: 'start',
   direction: { dir: "ltr", axis: "x" },
-  size: { height: '320px' },
   scroll: { loop: false, freeScroll: false, groupCells: false, skipSnaps: false },
   motion: { selectDuration: 25, freeScrollDuration: 43, friction: 0.68 },
   controls: {
@@ -50,7 +49,12 @@ const DEFAULT_SLIDER_OBJECT: any = {
   },
   elements: { container: {}, viewport: {} },
   transitions: { intro: undefined },
-  lazyLoad: false,
+  lazyLoad: {
+    enabled: false,
+    spinner: true,
+    spinnerClassName: "",
+    spinnerStyle: {},
+  },
 };
 
 export type EntriesSliderMediaOptions = {
@@ -89,20 +93,14 @@ function EntriesSliderMediaContainer(props: {
   return (
     <div
       className={styles.sliderShell}
-      style={{
-        position: "relative",
-        ...(sliderObject?.size?.height != null
-          ? ({ ["--rmg-slider-height" as any]: sliderObject.size.height } as any)
-          : null),
-        ...(resolvedInitialHeight != null
-          ? ({ ["--rmg-slider-initial-height" as any]: resolvedInitialHeight } as any)
-          : null),
+      style={{ 
+        minHeight: "var(--rmg-slider-initial-height, var(--rmg-slider-height))" 
       }}
     >
       <Slider
         {...sliderObject}
         breakpoints={effectiveBreakpoints}
-        expandableImgRefs={null}
+        expandableImageRefs={null}
         ref={(node: any) => {
           entrySliderRefs.current[entryIndex] = (node as SliderHandle) ?? null;
         }}

@@ -4,11 +4,11 @@ import type {
   DotsRenderArgs,
   ProgressRenderArgs,
 } from "../shared/types/controls";
-import type { ThumbnailsOptions } from "./thumbnails/types";
 import { ElementStyle } from "../shared/types/elements";
 import { IndexMode } from "../api/types";
 import { RefObject } from "react";
 import { SliderSkeletonSpec } from "./SliderSkeleton";
+import type { SliderIndexChannel } from "./sliderSub";
 
 export type ResponsiveHeightRule = { query: string; height: string };
 
@@ -20,14 +20,6 @@ export type SliderLayout = {
 export type SliderDirection = {
   dir?: "ltr" | "rtl";
   axis?: "x" | "y";
-};
-
-export type SliderSize = {
-  height?: string;
-  heightRules?: ResponsiveHeightRule[];
-  initialHeight?: number | string;
-  initialHeightRules?: ResponsiveHeightRule[];
-  aspectRatio?: number | `${number}/${number}` | `${number} / ${number}`;
 };
 
 export type SliderElements = {
@@ -149,20 +141,26 @@ export type SliderMotion = {
   friction?: number;
 };
 
+export type SliderLazyLoadOptions = {
+  enabled?: boolean;
+  spinner?: boolean | React.ReactNode | ((args: { kind: "image" | "video"; isClone: boolean }) => React.ReactNode);
+  spinnerClassName?: string;
+  spinnerStyle?: React.CSSProperties;
+};
+
 export type SliderOptions = {
   layout?: SliderLayout;
   direction?: SliderDirection;
-  size?: SliderSize;
   align?: "start" | "center";
   scroll?: SliderScroll;
   elements?: SliderElements;
-  lazyLoad?: boolean;
+  lazyLoad?: SliderLazyLoadOptions;
   controls?: SliderControls;
-  thumbnails?: ThumbnailsOptions;
   auto?: SliderAuto;
   transitions?: SliderTransitions;
   motion?: SliderMotion;
   effects?: SliderEffects;
+  indexChannel?: SliderIndexChannel;
 };
 
 export interface SliderHandle {
@@ -174,6 +172,7 @@ export interface SliderHandle {
   getRootNode(): HTMLElement | null;
   getContainerNode(): HTMLElement | null;
   getSlideNodes(): HTMLElement[];
+  getViewportNode: () => HTMLDivElement | null;
   onSlidesBuilt(cb: (nodes: HTMLElement[]) => void): () => void;
   whenSlidesBuilt(): Promise<HTMLElement[]>;
   isSlidesBuilt(): boolean;
