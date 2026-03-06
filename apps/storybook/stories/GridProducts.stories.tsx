@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
+import { GalleryCore, useGalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
 import Grid from "../../../packages/react-motion-gallery/src/Gallery/grid";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
 
@@ -32,8 +32,17 @@ const PRODUCTS: Product[] = Array.from({ length: 12 }).map((_, i) => {
 
 const FULLSCREEN_ITEMS = PRODUCTS.map((p) => p.image);
 
-function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product, index }: { product: Product; index: number }) {
+  const core = useGalleryCore();
+
   const IMAGE_HEIGHT = 360;
+
+  const onTitleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    core.openFullscreenAt({ index, method: "fade" });
+  };
 
   return (
     <div
@@ -66,7 +75,7 @@ function ProductCard({ product }: { product: Product }) {
         />
       </div>
       <div style={{ padding: 12 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.25 }}>
+        <div onClick={onTitleClick} style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.25 }}>
           {product.title}
         </div>
         <div style={{ marginTop: 6, fontSize: 13, opacity: 0.85 }}>
@@ -195,9 +204,9 @@ function Demo() {
             }
           }}
         >
-          {PRODUCTS.map((product) => (
+          {PRODUCTS.map((product, i) => (
             <div key={product.id}>
-              <ProductCard product={product} />
+              <ProductCard product={product} index={i} />
             </div>
           ))}
         </Grid>

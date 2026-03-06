@@ -1,5 +1,24 @@
 export type IndexMode = "animated" | "instant";
 
+export type FullscreenOpenMethod = "fade" | "scale";
+
+export type OpenFullscreenAtArgs = {
+  index: number;
+  method?: FullscreenOpenMethod;
+  event?: Event;
+};
+
+export type FullscreenOpenSource = "slider" | "grid" | "masonry" | "entries" | "api";
+
+export type FullscreenOpenRequest = {
+  source: FullscreenOpenSource;
+  index: number;
+  image: HTMLImageElement | null;
+  method?: FullscreenOpenMethod;
+  requestedMethod?: FullscreenOpenMethod;
+  event?: Event;
+};
+
 export interface GalleryApi {
   rootNode(): HTMLElement | null;
   containerNode(): HTMLElement | null;
@@ -24,4 +43,5 @@ export interface GalleryApi {
   replace(index: number, node: React.ReactNode): void;
   setItems(nodes: React.ReactNode[]): number;
   onIndexChange(cb: (i: number, meta: { mode: IndexMode }) => void): () => void;
+  openFullscreenAt: (args: OpenFullscreenAtArgs) => void;
 }

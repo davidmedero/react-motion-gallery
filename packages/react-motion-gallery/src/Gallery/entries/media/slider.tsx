@@ -85,9 +85,6 @@ function EntriesSliderMediaContainer(props: {
 
   const sliderObject = opts?.sliderObject ?? DEFAULT_SLIDER_OBJECT;
 
-  const resolvedInitialHeight =
-    opts?.initialHeight ?? sliderObject?.size?.initialHeight ?? 320;
-
   const effectiveBreakpoints = (core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP });
 
   return (

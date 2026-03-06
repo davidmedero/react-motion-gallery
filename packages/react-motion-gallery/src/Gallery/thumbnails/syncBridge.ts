@@ -10,6 +10,8 @@ export type SliderIndexChannelLike = {
   bump: (delta: number, mode?: IndexMode, opts?: { silent?: boolean }) => void;
   onEvent?: (fn: (event: SliderIndexEvent) => void) => () => void;
   subscribe?: (fn: () => void) => () => void;
+  onBasePointerDown?: (fn: () => void) => () => void;
+  emitBasePointerDown?: () => void;
 };
 
 type CreateThumbnailSyncBridgeArgs = {
@@ -92,40 +94,53 @@ export function createThumbnailSyncBridge(
 
     if (!externalChannel) return stop;
 
-    // Seed local channel immediately from current external index before listening.
     applyExternalStateToLocal();
 
-    const onEvent = externalChannel.onEvent;
-    if (typeof onEvent === "function") {
-      unsubscribe = onEvent((event) => {
-        if (!event || typeof event !== "object") return;
+    const unsubs: Array<() => void> = [];
 
-        const mode = normalizeMode((event as SliderIndexEvent).mode);
-        if ((event as SliderIndexEvent).type === "set") {
-          const nextIndexRaw = normalizeFiniteInt((event as any).index);
-          if (nextIndexRaw == null) return;
-          const nextIndex = maybeClampIndex(nextIndexRaw, clampIndex);
-          if (nextIndex == null) return;
-          setLocalIfChanged(nextIndex, mode);
-          return;
-        }
-
-        if ((event as SliderIndexEvent).type === "bump") {
-          const delta = normalizeFiniteInt((event as any).delta);
-          if (delta == null || delta === 0) return;
-          localChannel.bump(delta, mode);
-        }
-      });
-      return stop;
+    if (typeof externalChannel.onBasePointerDown === "function" &&
+        typeof localChannel.emitBasePointerDown === "function") {
+      unsubs.push(
+        externalChannel.onBasePointerDown(() => {
+          localChannel.emitBasePointerDown?.();
+        })
+      );
     }
 
-    // Defensive fallback for channels that only expose subscribe/get.
-    if (typeof externalChannel.subscribe === "function") {
-      unsubscribe = externalChannel.subscribe(() => {
-        applyExternalStateToLocal();
-      });
-      return stop;
+    if (typeof externalChannel.onEvent === "function") {
+      unsubs.push(
+        externalChannel.onEvent((event) => {
+          if (!event || typeof event !== "object") return;
+
+          const mode = normalizeMode((event as SliderIndexEvent).mode);
+
+          if ((event as SliderIndexEvent).type === "set") {
+            const nextIndexRaw = normalizeFiniteInt((event as any).index);
+            if (nextIndexRaw == null) return;
+            const nextIndex = maybeClampIndex(nextIndexRaw, clampIndex);
+            if (nextIndex == null) return;
+            setLocalIfChanged(nextIndex, mode);
+            return;
+          }
+
+          if ((event as SliderIndexEvent).type === "bump") {
+            const delta = normalizeFiniteInt((event as any).delta);
+            if (delta == null || delta === 0) return;
+            localChannel.bump(delta, mode);
+          }
+        })
+      );
+    } else if (typeof externalChannel.subscribe === "function") {
+      unsubs.push(
+        externalChannel.subscribe(() => {
+          applyExternalStateToLocal();
+        })
+      );
     }
+
+    unsubscribe = () => {
+      unsubs.forEach((fn) => fn());
+    };
 
     return stop;
   };

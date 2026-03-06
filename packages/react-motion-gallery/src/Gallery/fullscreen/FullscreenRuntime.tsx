@@ -38,6 +38,12 @@ import {
   createCanonicalPlaybackSyncManager,
   type CanonicalPlaybackRegistration,
 } from '../video/canonicalPlaybackSync';
+import { FullscreenOpenMethod } from '../api/types';
+import {
+  isEntryOwnerReady,
+  scrollEntrySectionIntoView,
+  waitForEntryOwnerReady,
+} from './entryOwnerReady';
 
 export type FullscreenRuntimeProps = {
   fsEnabled: boolean;
@@ -275,7 +281,14 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const fsPreparedVideosRef = React.useRef(new Set<string>()); // video "prepare" cache
   const fsForceMountVideosRef = React.useRef<Set<number>>(new Set());
 
+  const [latchedIntroMethod, setLatchedIntroMethod] =
+    React.useState<FullscreenOpenMethod | null>(null);
+
+  const [latchedIntroIndex, setLatchedIntroIndex] =
+    React.useState<number>(0);
+
   const canonicalLen = normalizedItems.length || 0;
+  const entryPrimeSeqRef = React.useRef(0);
 
   function notifyFsLazyImages() {
     fsLazyImageListenersRef.current.forEach((fn) => fn());
@@ -305,7 +318,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     [canonicalLen, fsLazyImagesEnabled, fsLazyVideosEnabled]
   );
 
-  // Keep allowed sets in sync with fsSub
   React.useEffect(() => {
     if ((!fsLazyImagesEnabled && !fsLazyVideosEnabled) || !fsSub) return;
 
@@ -338,17 +350,37 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     }
   }, [fsLazyImagesEnabled, fsLazyVideosEnabled, fsSub, showFullscreenModal, recomputeAllowedAndNotify]);
 
+  function nextZ() {
+    const w = window as any;
+    if (!w.__rmgZ) w.__rmgZ = 9999;
+    w.__rmgZ += 1;
+    return w.__rmgZ;
+  }
+
+  const fsZRef = React.useRef<number>(9999);
+
+  React.useEffect(() => {
+    if (showFullscreenModal) {
+      fsZRef.current = nextZ();
+    }
+  }, [showFullscreenModal]);
+
   // -------------------------
   // Fullscreen intro
   // -------------------------
   React.useEffect(() => {
     if (!fsIntroReq) return;
 
-    const { originalImage, index, closestSelector } = fsIntroReq;
+    const { originalImage, index, closestSelector, method } = fsIntroReq;
+
+    setLatchedIntroMethod(method ?? null);
+    setLatchedIntroIndex(index);
+
     const fullscreenThumbnailPosition = fullscreenThumbnailSlot?.position ?? null;
 
     runFullscreenIntro({
       originalImage,
+      method,
       index,
       normalizedItems,
       styles,
@@ -364,6 +396,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       addShield,
       resolveFsCaptionPlacement,
       closestSelector,
+      baseZ: fsZRef.current,
     });
 
     clearFsIntroReq();
@@ -489,7 +522,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       ScrollBody,
       ScrollBounds,
       boundsForCurrent,
-      // functions are stable in this file, but still safe to include
       renderPan,
     ]
   );
@@ -563,6 +595,83 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     syncFullscreenSourceFromIndex(start);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFullscreenModal, fsSub]);
+
+  React.useEffect(() => {
+    if (!showFullscreenModal) return;
+    if (layout !== 'entries') return;
+    if (closingModal) return;
+    if (!fsSub) return;
+    if (!canonicalLen) return;
+    if (!entryMapRef.current?.length) return;
+
+    let cancelled = false;
+
+    const primeEntryOwnerForFsIndex = async (value: number) => {
+      if (typeof value !== 'number') return;
+
+      const canonicalIndex = canonicalIndexOf(value, canonicalLen);
+      const link = entryMapRef.current?.[canonicalIndex];
+      if (!link) return;
+
+      const seq = ++entryPrimeSeqRef.current;
+
+      if (!isEntryOwnerReady(link.entryIndex)) {
+        await scrollEntrySectionIntoView(link.entryIndex);
+      }
+      await waitForEntryOwnerReady(link.entryIndex);
+
+      if (cancelled) return;
+      if (seq !== entryPrimeSeqRef.current) return;
+
+      syncFullscreenSourceFromIndex(canonicalIndex);
+    };
+
+    const cur = fsSub.get?.();
+    if (typeof cur === 'number') {
+      void primeEntryOwnerForFsIndex(cur);
+    }
+
+    if (typeof fsSub.subscribe === 'function') {
+      const off = fsSub.subscribe((v: number) => {
+        void primeEntryOwnerForFsIndex(v);
+      });
+      return () => {
+        cancelled = true;
+        entryPrimeSeqRef.current += 1;
+        off?.();
+      };
+    }
+
+    if (typeof fsSub.onEvent === 'function') {
+      const off = fsSub.onEvent((evt: any) => {
+        if (typeof evt === 'number') {
+          void primeEntryOwnerForFsIndex(evt);
+          return;
+        }
+        if (typeof evt?.index === 'number') {
+          void primeEntryOwnerForFsIndex(evt.index);
+        }
+      });
+      return () => {
+        cancelled = true;
+        entryPrimeSeqRef.current += 1;
+        off?.();
+      };
+    }
+
+    return () => {
+      cancelled = true;
+      entryPrimeSeqRef.current += 1;
+    };
+  }, [
+    showFullscreenModal,
+    layout,
+    closingModal,
+    fsSub,
+    canonicalLen,
+    entryMapRef,
+    syncFullscreenSourceFromIndex,
+  ]);
 
   const { setMountEl: setFsEntryOverlayMountEl, setOpacity: setFsEntryOverlayOpacity } =
     useFsEntryOverlay({
@@ -1060,6 +1169,11 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           styles={styles}
           direction={direction}
           setFullscreenOpen={setFullscreenOpen}
+          syncFullscreenSourceFromIndex={syncFullscreenSourceFromIndex}
+          baseZ={fsZRef.current}
+          introMethod={latchedIntroMethod}
+          setLatchedIntroMethod={setLatchedIntroMethod}
+          latchedIntroIndex={latchedIntroIndex}
         >
           <div
             style={{
@@ -1120,6 +1234,9 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                 resetAllZoomDom={() => resetZoomForSlideChange()}
                 requestFsCloseRef={requestFsCloseRef}
                 playbackSync={fullscreenPlaybackSync}
+                introMethod={latchedIntroMethod}
+                fs={fs}
+                chromeStyles={styles}
               >
                 {normalizedItems.length > 1 ? wrappedFullscreenSlides : oneFullscreenSlide}
               </FullscreenSlider>
@@ -1134,11 +1251,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding:
-                    fullscreenThumbnailPosition === 'top' ||
-                    fullscreenThumbnailPosition === 'bottom'
-                      ? '0.75rem 1rem'
-                      : '0.75rem 0.5rem',
                   transition:
                     `background-color ${fullscreenThumbnailFadeDuration}ms ${fullscreenThumbnailFadeEasing}`,
                   backgroundColor: fullscreenThumbnailOpen

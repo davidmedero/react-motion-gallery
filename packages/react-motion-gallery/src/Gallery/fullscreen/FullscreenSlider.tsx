@@ -30,10 +30,11 @@ import { FullscreenAxisType as AxisType, FullscreenAxis as Axis, FullscreenAxisL
 import { TranslateFullscreen as Translate } from '../shared/motion/translate'
 import { createBaseLimit } from '../shared/motion/baseLimit'
 import { Counter, CounterType } from '../shared/motion/counter'
-import { clamp, lerp } from '../shared/motion/utils'
 import { PercentOfView, PercentOfViewType, ScrollBounds, ScrollBoundsType } from '../shared/motion/scrollBounds'
 import { useWheelLock } from '../shared/hooks/useWheelLock'
 import type { CanonicalPlaybackSyncManager } from '../video/canonicalPlaybackSync'
+import { DefaultChevronIcon } from './DefaultChevronIcon'
+import { FullscreenOptions } from './types'
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
@@ -104,6 +105,9 @@ interface FullscreenSliderProps {
   resetAllZoomDom: () => void;
   requestFsCloseRef: React.RefObject<null | (() => void)>;
   playbackSync?: CanonicalPlaybackSyncManager;
+  introMethod?: "fade" | "scale" | null;
+  fs: FullscreenOptions;
+  chromeStyles: Record<string, string>;
 }
 
 export interface FullscreenSliderHandle {
@@ -151,6 +155,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       resetAllZoomDom,
       requestFsCloseRef,
       playbackSync,
+      introMethod,
+      fs,
+      chromeStyles
     },
     ref
   ) => {
@@ -208,6 +215,46 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const limitRef = useRef<LimitType | null>(null)
     const povRef    = useRef<PercentOfViewType | null>(null)
     const boundsRef = useRef<ScrollBoundsType | null>(null)
+
+        type ElementStyleLike = { className?: string; style?: React.CSSProperties } | null | undefined;
+
+    function mergeClassNames(...parts: Array<string | undefined | null | false>) {
+      return parts.filter(Boolean).join(' ');
+    }
+
+    function styleFromElementStyle(es?: ElementStyleLike) {
+      return (es?.style ?? undefined) as React.CSSProperties | undefined;
+    }
+
+    function classFromElementStyle(es?: ElementStyleLike) {
+      return es?.className ?? '';
+    }
+
+    function getArrowAction(side: 'left' | 'right', isRtl: boolean): 'prev' | 'next' {
+      if (side === 'left') return isRtl ? 'next' : 'prev';
+      return isRtl ? 'prev' : 'next';
+    }
+
+    const allowFsArrows =
+      fs?.controls?.arrows?.enabled !== false && cellCount > 1;
+
+    const arrows = fs?.controls?.arrows;
+
+    const renderArrowNode = (dir: 'prev' | 'next', side: 'left' | 'right') => {
+      const explicit =
+        dir === 'prev'
+          ? typeof arrows?.renderPrev === 'function' ? arrows.renderPrev() : null
+          : typeof arrows?.renderNext === 'function' ? arrows.renderNext() : null;
+
+      if (explicit != null) return explicit;
+
+      if (typeof arrows?.render === 'function') {
+        const node = arrows.render({ dir });
+        if (node != null) return node;
+      }
+
+      return <DefaultChevronIcon side={side} />;
+    };
 
     function useLatest<T>(value: T) {
       const r = useRef(value)
@@ -691,6 +738,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       body.useBaseDuration().useBaseFriction();
       fsScrollTo.distance(step, true);
+      sub.emitBasePointerDown?.();
     }
 
     function next() {
@@ -766,6 +814,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       body.useBaseDuration().useBaseFriction();
       fsScrollTo.distance(-step, true);
+      sub.emitBasePointerDown?.();
     }
 
     function updateCounterFromIndex(canonicalIndex: number) {
@@ -1135,7 +1184,15 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         const targetEl = evt.target as HTMLElement;
         if (isPlyrControlsEl(targetEl)) return;
 
+        const hit = (evt.target as Node)
+
+        if (leftChevronRef.current?.contains(hit)) return
+        if (rightChevronRef.current?.contains(hit)) return
+
         if (isZoomedRef.current || closingModal) return
+
+        sub.emitBasePointerDown?.();
+        
         const isMouseEvt = isMouseEvent(evt as any, window as any)
         isMouse = isMouseEvt
         if (isMouseEvt && (evt as MouseEvent).button !== 0) return
@@ -1472,6 +1529,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           return;
         }
 
+        sub.emitBasePointerDown?.();
+
         if (isZoomed) return
         const track = slider.current
         if (!track) return
@@ -1532,26 +1591,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     function positionSlider() {
       setTranslateX(x.current, y.current)
     }
-
-    useEffect(() => {
-      const left  = leftChevronRef.current;
-      const right = rightChevronRef.current;
-
-      const onClick = (ev: Event) => {
-        const target = ev.currentTarget as HTMLButtonElement | null;
-        const action = target?.dataset.action;
-        if (action === 'prev') previous();
-        else if (action === 'next') next();
-      };
-
-      if (left)  left.addEventListener('click', onClick);
-      if (right) right.addEventListener('click', onClick);
-
-      return () => {
-        if (left)  left.removeEventListener('click', onClick);
-        if (right) right.removeEventListener('click', onClick);
-      };
-    }, [leftChevronRef.current, rightChevronRef.current, showFullscreenSlider, isRtl]);
 
     function setAllX(nx: number) {
       locationRef.current?.set(nx);
@@ -1664,6 +1703,38 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const isVideoSlide =
       isVideoItem(normalizedItems?.[openingIndex]);
 
+    const shouldFadeIntro = introMethod === "fade" || introFade || isVideoSlide;
+
+    function setChevronOpen(open: boolean) {
+      const cls = chromeStyles?.open;
+      if (!cls) return;
+
+      leftChevronRef.current?.classList.toggle(cls, open);
+      rightChevronRef.current?.classList.toggle(cls, open);
+    }
+
+    useEffect(() => {
+      let raf1 = 0;
+      let raf2 = 0;
+
+      if (!show || closingModal) {
+        setChevronOpen(false);
+        return;
+      }
+
+      setChevronOpen(false);
+
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => {
+          setChevronOpen(true);
+        });
+      });
+
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    }, [show, closingModal, chromeStyles]);
 
     return (
       <div
@@ -1676,6 +1747,61 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           overflow: 'hidden',
         }}
       >
+        {allowFsArrows && (
+          <>
+            <button
+              ref={leftChevronRef as any}
+              type="button"
+              aria-label={getArrowAction('left', isRtl) === 'prev' ? 'Previous' : 'Next'}
+              onClick={() => {
+                if (getArrowAction('left', isRtl) === 'prev') previous();
+                else next();
+              }}
+              className={mergeClassNames(
+                chromeStyles?.leftChevron,
+                classFromElementStyle(arrows?.arrow as any),
+                classFromElementStyle(arrows?.prev as any),
+              )}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '16px',
+                transform: 'translateY(-50%) rotate(180deg)',
+                zIndex: 3,
+                ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
+                ...(styleFromElementStyle(arrows?.prev as any) ?? {}),
+              }}
+            >
+              {renderArrowNode(getArrowAction('left', isRtl), 'left')}
+            </button>
+
+            <button
+              ref={rightChevronRef as any}
+              type="button"
+              aria-label={getArrowAction('right', isRtl) === 'prev' ? 'Previous' : 'Next'}
+              onClick={() => {
+                if (getArrowAction('right', isRtl) === 'prev') previous();
+                else next();
+              }}
+              className={mergeClassNames(
+                chromeStyles?.rightChevron,
+                classFromElementStyle(arrows?.arrow as any),
+                classFromElementStyle(arrows?.next as any),
+              )}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: '16px',
+                transform: 'translateY(-50%)',
+                zIndex: 3,
+                ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
+                ...(styleFromElementStyle(arrows?.next as any) ?? {}),
+              }}
+            >
+              {renderArrowNode(getArrowAction('right', isRtl), 'right')}
+            </button>
+          </>
+        )}
         <div
           ref={slider}
           className={`fullscreen_slider ${rtlCls}`}
@@ -1687,11 +1813,11 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             userSelect: 'none',
             willChange: 'opacity, transform',
             backfaceVisibility: 'hidden',
-            transition: introFade || isVideoSlide
+            transition: shouldFadeIntro
               ? `opacity ${introDuration}ms ${introEasing}`
               : undefined,
             opacity: showFullscreenSlider
-              ? introFade || isVideoSlide
+              ? shouldFadeIntro
                 ? (fadeOpening ? 0 : 1)
                 : 1
               : 0,

@@ -390,10 +390,57 @@ export function Video(props: VideoProps) {
 
   const effectiveOptions = React.useMemo(() => {
     if (!isClone) return options;
-    return withForcedCloneMuteOptions(options);
+
+    return {
+      ...withForcedCloneMuteOptions(options),
+      preload: 'auto',
+      autoplay: false,
+    } as PlyrOptions;
   }, [isClone, options]);
 
   const provider = React.useMemo(() => detectProvider(source), [source]);
+
+  React.useEffect(() => {
+    if (!isClone) return;
+    if (!props.src) return;
+
+    if (provider === 'mp4') {
+      try {
+        const v = document.createElement('video');
+        v.preload = 'auto';
+        v.muted = true;
+        v.playsInline = true;
+        if (props.poster) v.poster = props.poster;
+        v.src = props.src;
+        v.load();
+
+        const timer = window.setTimeout(() => {
+          try {
+            v.removeAttribute('src');
+            v.load();
+          } catch {}
+        }, 1500);
+
+        return () => {
+          window.clearTimeout(timer);
+          try {
+            v.removeAttribute('src');
+            v.load();
+          } catch {}
+        };
+      } catch {}
+    }
+
+    if ((provider === 'youtube' || provider === 'vimeo') && props.poster) {
+      try {
+        const img = new Image();
+        img.decoding = 'async';
+        (img as any).fetchPriority = 'high';
+        img.src = props.poster;
+        void img.decode().catch(() => {});
+      } catch {}
+    }
+  }, [isClone, provider, props.src, props.poster]);
 
   // Helper that always targets the spinner under THIS gate (avoids wrong-node issues)
   const getSpinnerEl = React.useCallback(() => {
@@ -423,8 +470,14 @@ export function Video(props: VideoProps) {
     });
   }, [syncSpinner]);
 
+  const readyCleanupRef = React.useRef<(() => void) | null>(null);
+
   const handlePlyrRef = React.useCallback(
     (api: any) => {
+      // cleanup previous listeners first
+      readyCleanupRef.current?.();
+      readyCleanupRef.current = null;
+
       const apiOrNull = (api ?? null) as APITypes | null;
       apiRef.current = apiOrNull;
 
@@ -439,16 +492,48 @@ export function Video(props: VideoProps) {
         syncSpinner(!readyRef.current);
       });
 
-      const plyr = (api as any)?.plyr ?? api;
-      try {
-        plyr?.on?.('ready', markReady);
+      if (!api) return;
 
+      const plyr = (api as any)?.plyr ?? api;
+      const provider = detectProvider(source);
+
+      try {
+        // YOUTUBE / VIMEO:
+        // rely on Plyr's own ready event
+        if (provider === 'youtube' || provider === 'vimeo') {
+          const onReady = () => markReady();
+
+          plyr?.on?.('ready', onReady);
+
+          readyCleanupRef.current = () => {
+            try {
+              plyr?.off?.('ready', onReady);
+            } catch {}
+          };
+
+          return;
+        }
+
+        // HTML5:
         const media: HTMLMediaElement | undefined = plyr?.media;
         if (media) {
           const onCanPlay = () => markReady();
+
           media.addEventListener('loadedmetadata', onCanPlay, { once: true });
           media.addEventListener('loadeddata', onCanPlay, { once: true });
           media.addEventListener('canplay', onCanPlay, { once: true });
+
+          readyCleanupRef.current = () => {
+            try {
+              media.removeEventListener('loadedmetadata', onCanPlay);
+            } catch {}
+            try {
+              media.removeEventListener('loadeddata', onCanPlay);
+            } catch {}
+            try {
+              media.removeEventListener('canplay', onCanPlay);
+            } catch {}
+          };
 
           try {
             const rs = media.readyState ?? 0;
@@ -459,8 +544,22 @@ export function Video(props: VideoProps) {
         }
       } catch {}
     },
-    [ctx, index, props.onApi, props.registerApiByIndex, markReady, syncSpinner]
+    [ctx, index, props.onApi, props.registerApiByIndex, markReady, syncSpinner, source]
   );
+
+  React.useEffect(() => {
+    return () => {
+      readyCleanupRef.current?.();
+      readyCleanupRef.current = null;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!isClone) return;
+
+    mountedRef.current = true;
+    setEverMounted(true);
+  }, [isClone]);
 
   // ✅ DEFAULT STATE:
   // Spinner visible by default (if enabled), player hidden by default,
@@ -473,6 +572,16 @@ export function Video(props: VideoProps) {
   }, [shouldRenderSpinner, lazyEnabled]);
 
   React.useEffect(() => {
+    if (!isClone) return;
+
+    setPlayerVisible(playerWrapRef.current, false);
+    syncSpinner(true);
+
+    mountedRef.current = true;
+    setEverMounted(true);
+  }, [isClone, syncSpinner]);
+
+  React.useEffect(() => {
     readyRef.current = false;
 
     requestAnimationFrame(() => {
@@ -483,6 +592,8 @@ export function Video(props: VideoProps) {
   }, [props.src, syncSpinner]);
 
   React.useEffect(() => {
+    if (isClone) return;
+
     const el = gateRef.current as HTMLElement | null;
     if (!el) return;
 
@@ -570,6 +681,7 @@ export function Video(props: VideoProps) {
   }, [gateRef, viewportRootRef, revealed, isClone, syncSpinner, lazyEnabled, core]);
 
   React.useEffect(() => {
+    if (isClone) return;
     if (!revealed) return;
 
     if (!lazyEnabled) {
@@ -666,7 +778,7 @@ export function Video(props: VideoProps) {
           background: 'transparent',
         }}
       >
-        {revealed && everMounted ? (
+        {(isClone || (revealed && everMounted)) ? (
           <Plyr ref={handlePlyrRef as any} source={source} options={effectiveOptions} />
         ) : null}
       </div>

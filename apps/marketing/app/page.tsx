@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 import Image from "next/image";
@@ -822,6 +823,54 @@ function ThumbCell({ src, i }: { src: string; i: number }) {
   );
 }
 
+function FullscreenAddon2(props: {
+  sliderObject: any;
+  cellsStateLength: number;
+}) {
+  const { sliderObject, cellsStateLength } = props;
+
+  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+    slider: undefined,
+    sliderObject,
+    cellsStateLength,
+  });
+
+  const fullscreenThumbItems = React.useMemo(
+    () =>
+      THUMBS.map((src, i) => ({
+        thumbSrc: src,
+        alt: `Thumbnail ${i + 1}`,
+      })),
+    []
+  );
+
+  return (
+    <>
+      {fullscreenNode}
+      <FullscreenThumbnailSlider
+        bridge={fullscreenThumbnailBridge}
+        items={fullscreenThumbItems}
+        position="bottom"
+        thumbnailsCenter={true}
+        containerStyle={{ width: '100dvw', height: 76 }}
+        thumbnailWidth="auto"
+        thumbnailHeight={60}
+        thumbnailItemStyle={{ borderRadius: 8 }}
+        gap={10}
+        freeScroll
+        groupCells={false}
+        loop={false}
+        skipSnaps={false}
+        centerActiveThumb
+        showArrows
+      />
+    </>
+  );
+}
+
   const entries = React.useMemo(() => ENTRIES as any, []);
   const flat = React.useMemo(() => flattenEntries(entries), [entries]);
 
@@ -1096,6 +1145,9 @@ const channel = React.useMemo(() => createSliderIndexChannel(), []);
                 position: "bottom",
                 thumbnail: { width: 96, height: 60 },
                 gap: 10,
+              },
+              scroll: {
+                centerActiveThumb: true
               },
               controls: {
                 enabled: true
@@ -1780,8 +1832,8 @@ fullscreenCaptionHeight?: number;`}</code>
                 overlay: renderOverlay,
                 media: ({ media, entryIndex, mediaIndex }) => (
                   <img
-                    src={media.src}
-                    alt={media.alt ?? ""}
+                    src={media.kind === 'image' ? media.src : ''}
+                    alt={media.kind === 'image' ? media.alt : ''}
                     style={{
                       width: "100%",
                       height: "320px",
@@ -1835,7 +1887,7 @@ fullscreenCaptionHeight?: number;`}</code>
           />
         </div>
 
-        <FullscreenAddon sliderObject={sliderObject} cellsStateLength={fullscreenItems.length} />
+        <FullscreenAddon2 sliderObject={sliderObject} cellsStateLength={fullscreenItems.length} />
       </GalleryCore>
     </div>
       <div className="mb-600"></div>

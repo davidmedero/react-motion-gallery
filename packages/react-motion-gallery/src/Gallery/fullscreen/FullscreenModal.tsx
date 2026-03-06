@@ -11,12 +11,12 @@ import type { FullscreenSliderSub } from './fullscreenSliderSub'
 import { parseObjectPosition } from '../shared/transitions/objectPosition';
 import { containTransformForRect, coverTransformForRect, objectFitContentRect } from '../shared/transitions/objectFitTransform';
 import { MediaItem } from '../shared/types/media';
-import { IndexMode } from '../api/types';
+import { FullscreenOpenMethod, IndexMode } from '../api/types';
 import { MediaEntryLink } from '../entries';
 import { FullscreenOptions } from './types';
 import { DefaultCloseIcon } from './DefaultCloseIcon';
-import { DefaultChevronIcon } from './DefaultChevronIcon';
 import { DefaultCounterText } from './DefaultCounterText';
+import { scrollEntrySectionIntoView, waitForEntryOwnerReady } from './entryOwnerReady';
 
 interface FullscreenModalProps {
   fsSub: FullscreenSliderSub
@@ -58,6 +58,11 @@ interface FullscreenModalProps {
   styles: Record<string, string>;
   direction: 'ltr' | 'rtl';
   setFullscreenOpen: (open: boolean) => void;
+  syncFullscreenSourceFromIndex: (nextIndex: number) => void;
+  baseZ?: number;
+  introMethod?: "fade" | "scale" | null;
+  setLatchedIntroMethod: React.Dispatch<React.SetStateAction<FullscreenOpenMethod | null>>;
+  latchedIntroIndex: number;
 }
 
 function freezeRect(el: HTMLElement) {
@@ -316,30 +321,6 @@ function isElementOnScreen(el: HTMLElement, visibleThreshold = 0.4): boolean {
   return visibleHeight >= rect.height * visibleThreshold
 }
 
-async function scrollEntrySectionIntoView(entryIndex: number): Promise<void> {
-  if (typeof window === 'undefined') return
-
-  const section = document.querySelector<HTMLElement>(
-    `[data-rmg-entry-owner="${entryIndex}"]`
-  )
-
-  if (!section) return
-
-  if (isElementOnScreen(section, 0.5)) return
-
-  const rect = section.getBoundingClientRect()
-  const currentScroll = window.scrollY || document.documentElement.scrollTop || 0
-
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight || rect.height
-  const targetTop =
-    rect.top + currentScroll - (viewportHeight - rect.height) / 2
-
-  window.scrollTo({
-    top: targetTop,
-    behavior: 'instant',
-  })
-}
-
 async function scrollElementIntoCenterView(el: HTMLElement | null): Promise<void> {
   if (!el) return;
 
@@ -535,7 +516,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   fs,
   styles,
   direction,
-  setFullscreenOpen
+  setFullscreenOpen,
+  syncFullscreenSourceFromIndex,
+  baseZ,
+  introMethod,
+  setLatchedIntroMethod,
+  latchedIntroIndex
 }) => {
 
   const DURATION_MS = introDuration
@@ -544,6 +530,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const modalRef = React.useRef<HTMLDivElement | null>(null);
   const pointerDownX = React.useRef<number>(0)
   const pointerDownY = React.useRef<number>(0)
+
+  const computedBaseZ = baseZ ?? 9999;
 
   const shieldRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -556,7 +544,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     Object.assign(shield.style, {
       position: 'fixed',
       inset: '0',
-      zIndex: '2147483606',
+      zIndex: String(computedBaseZ + 5),
       background: 'transparent',
       pointerEvents: 'auto',
       touchAction: 'none',
@@ -999,32 +987,34 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       void slider.current.offsetWidth;
     }
 
-    if (!isGridish) {
-      if (!slider.current || !slides.current?.length) return;
+    const waitForEntriesOwnerReady = async () => {
+      if (layout !== "entries" || !entryMapRef?.current) return;
 
-      if (layout === "entries" && entryMapRef?.current) {
-        const link = entryMapRef.current[canonicalIdx];
-        if (link) {
-          localSlideIdx = link.mediaIndex;
-          await scrollEntrySectionIntoView(link.entryIndex);
-        }
+      const link = entryMapRef.current[canonicalIdx];
+      if (!link) return;
+
+      localSlideIdx = link.mediaIndex;
+      await scrollEntrySectionIntoView(link.entryIndex);
+      await waitForEntryOwnerReady(link.entryIndex);
+      syncFullscreenSourceFromIndex(canonicalIdx);
+    };
+
+    if (!isGridish) {
+      await waitForEntriesOwnerReady();
+      if (!slider.current || !slides.current?.length) {
+        safeTeardown();
+        return;
       }
     } else {
       const el = document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`);
       await scrollElementIntoCenterView(el);
-
-      if (layout === "entries" && entryMapRef?.current) {
-        const link = entryMapRef.current[canonicalIdx];
-        if (link) {
-          await scrollEntrySectionIntoView(link.entryIndex);
-        }
-      }
+      await waitForEntriesOwnerReady();
     }
 
     const url = originals[canonicalIdx];
     const isVideoSlide = isVideoItem(url);
 
-    if (introFade || isVideoSlide) {
+    if (introFade || isVideoSlide || (introMethod === 'fade' && latchedIntroIndex === canonicalIdx)) {
       await syncBaseToCanonical();
       fadeCloseAndTeardown();
       return;
@@ -1173,6 +1163,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     onClose()
     setShowFullscreenSlider(false)
     setClosingModal(false)
+    setLatchedIntroMethod(null)
   }
 
   const closeEnabled = fs?.controls?.close?.enabled !== false;
@@ -1183,29 +1174,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     typeof fs?.controls?.close?.render === "function"
       ? fs?.controls?.close.render()
       : null;
-
-  const allowFsArrows =
-    fs?.controls?.arrows?.enabled !== false && cellCount > 1;
-
-  const isRtl = direction === "rtl" || false;
-
-  const arrows = fs?.controls?.arrows;
-
-  const renderArrowNode = (dir: "prev" | "next", side: "left" | "right") => {
-    const explicit =
-      dir === "prev"
-        ? typeof arrows?.renderPrev === "function" ? arrows.renderPrev() : null
-        : typeof arrows?.renderNext === "function" ? arrows.renderNext() : null;
-
-    if (explicit != null) return explicit;
-
-    if (typeof arrows?.render === "function") {
-      const node = arrows.render({ dir });
-      if (node != null) return node;
-    }
-
-    return <DefaultChevronIcon side={side} />;
-  };
 
   function canonicalFromFsIndex(fsIndex: number, originalsLen: number) {
     return normalizeFsIndex(fsIndex, originalsLen);
@@ -1221,7 +1189,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     typeof fs?.controls?.counter?.render === "function"
       ? fs.controls.counter.render({ index: canonicalIdx, count: cellCount })
       : null;
-
 
   return (
     <div
@@ -1239,7 +1206,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         height: '100%',
         opacity: open ? 1 : 0,
         pointerEvents: open ? 'auto' : 'none',
-        zIndex: 9999,
+        zIndex: computedBaseZ,
+        ['--rmg-fs-z' as any]: computedBaseZ,
         display: 'block',
         touchAction: 'none',
         contain: 'layout style size',
@@ -1263,49 +1231,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         >
           {userNode ?? <DefaultCloseIcon />}
         </button>
-      )}
-      {allowFsArrows && (
-        <>
-          {/* LEFT */}
-          <button
-            ref={leftChevronRef as any}
-            type="button"
-            aria-label={getArrowAction("left", isRtl) === "prev" ? "Previous" : "Next"}
-            onClick={() => runArrowAction(fsSub as any, getArrowAction("left", isRtl))}
-            className={mergeClassNames(
-              styles?.leftChevron,
-              classFromElementStyle(arrows?.arrow as any),
-              classFromElementStyle(arrows?.prev as any),
-              open ? styles.open : ""
-            )}
-            style={{
-              ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
-              ...(styleFromElementStyle(arrows?.prev as any) ?? {}),
-            }}
-          >
-            {renderArrowNode(getArrowAction("left", isRtl), "left")}
-          </button>
-
-          {/* RIGHT */}
-          <button
-            ref={rightChevronRef as any}
-            type="button"
-            aria-label={getArrowAction("right", isRtl) === "prev" ? "Previous" : "Next"}
-            onClick={() => runArrowAction(fsSub as any, getArrowAction("right", isRtl))}
-            className={mergeClassNames(
-              styles?.rightChevron,
-              classFromElementStyle(arrows?.arrow as any),
-              classFromElementStyle(arrows?.next as any),
-              open ? styles.open : ""
-            )}
-            style={{
-              ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
-              ...(styleFromElementStyle(arrows?.next as any) ?? {}),
-            }}
-          >
-            {renderArrowNode(getArrowAction("right", isRtl), "right")}
-          </button>
-        </>
       )}
       {showCounter && (
         <div

@@ -4,24 +4,29 @@
 import * as React from "react";
 import type { BreakpointMap } from "../shared/responsive";
 import { BREAKPOINT_MAP } from "../shared/responsive";
-import type { MediaInput, MediaItem } from "../shared/types/media";
-import { normalizeItemsInput, toMediaItems } from "../shared/types/media";
+import type { MediaItem } from "../shared/types/media";
+import { normalizeItemsInput } from "../shared/types/media";
 import type { SliderHandle } from "../slider/types";
 import { MediaEntryLink } from "../entries";
+import { FullscreenOpenMethod, FullscreenOpenRequest, OpenFullscreenAtArgs } from "../api/types";
 
-export type FullscreenOpenRequest =
-  | {
-      source: "slider";
-      index: number;
-      image: HTMLImageElement | null;
-      event?: Event;
-    }
-  | {
-      source: "grid" | "masonry" | "entries";
-      index: number;
-      image: HTMLImageElement | null;
-      event?: Event;
-    };
+function isImageItem(item: MediaItem | undefined | null): item is Extract<MediaItem, { kind: "image" }> {
+  return !!item && (item as any).kind === "image";
+}
+
+function isScalePossible(item: MediaItem | undefined | null, img: HTMLImageElement | null) {
+  return isImageItem(item) && !!img;
+}
+
+function resolveOpenMethod(
+  item: MediaItem | undefined | null,
+  img: HTMLImageElement | null,
+  requested: FullscreenOpenMethod | undefined
+): FullscreenOpenMethod {
+  const want = requested ?? "scale";
+  if (want === "fade") return "fade";
+  return isScalePossible(item, img) ? "scale" : "fade";
+}
 
 function createSub<T>() {
   const subs = new Set<(v: T) => void>();
@@ -45,12 +50,12 @@ type Cell = { id: string; node: React.ReactNode };
 export type FullscreenSource = FullscreenOpenRequest["source"];
 
 export type BaseVisibleIndexEvent = {
-  index: number;                 // canonical index in normalizedItems
+  index: number;
   reason?: "io";
 };
 
 export type FsVisibleIndexEvent = {
-  index: number;                 // canonical index in normalizedItems
+  index: number;
   reason?: "active";
 };
 
@@ -105,6 +110,7 @@ export type GalleryCore = {
     subscribe(fn: (v: FsVisibleIndexEvent) => void): () => void;
   };
   notifyFsVisibleIndex: (index: number) => void;
+  openFullscreenAt: (args: OpenFullscreenAtArgs) => void;
 };
 
 export type GalleryCoreProps = {
@@ -277,6 +283,39 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     [fsOpenSub]
   );
 
+  const openFullscreenAt = React.useCallback(
+    (args: OpenFullscreenAtArgs) => {
+      const index = clamp(args.index | 0, 0, Math.max(0, normalizedItems.length - 1));
+      const item = normalizedItems[index] ?? null;
+
+      const img = expandableImageRefs.current[index] ?? null;
+
+      const requestedMethod = args.method;
+      const method = resolveOpenMethod(item, img, requestedMethod);
+
+      const effectiveImage = method === "scale" ? img : null;
+
+      const sourceForLayout: FullscreenSource =
+        layout === "slider" ? "slider" :
+        layout === "grid" ? "grid" :
+        layout === "masonry" ? "masonry" :
+        "entries";
+
+      const adapter = getFullscreenAdapter(sourceForLayout);
+      adapter?.syncBeforeOpen?.(index);
+
+      requestFullscreenOpen({
+        source: "api",
+        index,
+        image: effectiveImage,
+        method,
+        requestedMethod,
+        event: args.event,
+      });
+    },
+    [normalizedItems, expandableImageRefs, layout, getFullscreenAdapter, requestFullscreenOpen]
+  );
+
   const baseVisibleSub = React.useMemo(() => createSub<BaseVisibleIndexEvent>(), []);
 
   const notifyBaseVisibleIndex = React.useCallback((index: number) => {
@@ -307,6 +346,7 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
       replace,
       setItems,
       requestFullscreenOpen,
+      openFullscreenAt,
       fsOpenSub,
       isFullscreenOpen,
       isFullscreenOpenRef,
@@ -336,6 +376,7 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     replace,
     setItems,
     requestFullscreenOpen,
+    openFullscreenAt,
     fsOpenSub,
     isFullscreenOpenRef,
     setFullscreenOpen,

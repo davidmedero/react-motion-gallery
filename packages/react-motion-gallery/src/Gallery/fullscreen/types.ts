@@ -5,6 +5,7 @@ import { BreakpointMap } from "../shared/responsive";
 import { SliderHandle } from "../slider/types";
 import { EntriesOptions, MediaEntryLink, SlideOwner } from "../entries";
 import { PlyrOptionsBuilder, PlyrSourceBuilder } from "../video/plyrTypes";
+import { FullscreenOpenMethod } from "../api/types";
 
 export type FsCounterArgs = { index: number; count: number };
 export type FsCaptionPlacement = "top" | "right" | "bottom" | "left";
@@ -23,8 +24,9 @@ export type FullscreenBridge = {
 };
 
 export type FsIntroRequest = null | {
-  originalImage: HTMLImageElement;
+  originalImage: HTMLImageElement | null;
   index: number;
+  method: FullscreenOpenMethod;
   closestSelector?: string;
 };
 

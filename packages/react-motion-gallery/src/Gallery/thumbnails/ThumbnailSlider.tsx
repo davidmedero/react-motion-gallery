@@ -188,9 +188,9 @@ export default function ThumbnailSlider({
   const previousDragX = useRef(0)
   const dragMoveTime = useRef<Date | null>(null)
   const sliderVelocity = useRef(0)
-  const selectedIndexRef = useRef<number>(channelRef.current.get().index ?? 0)
+  const selectedSlideIndexRef = useRef<number>(0);
+  const activeThumbIndexRef = useRef<number>(channelRef.current.get().index ?? 0);
   const programNavRef = useRef(false)
-  const lastEmittedIndexRef = useRef<number>(-1)
   const rawKids = Children.toArray(children).filter(isValidElement) as ReactElement<ThumbnailSliderProps>[]
   const count = rawKids.length
   const baseOffsetRef = useRef(0);
@@ -230,6 +230,7 @@ export default function ThumbnailSlider({
   const draggingAttr = 'data-rmg-drag';
   const activePointerIdRef = useRef<number | null>(null);
   const guardsStoreRef = useRef<ReturnType<typeof EventStore> | null>(null);
+  const muteChannelRef = useRef(false);
 
   const AX: AXSpec = useMemo(() => {
     const main = isHorizontal ? 'x' : 'y';
@@ -537,13 +538,26 @@ export default function ThumbnailSlider({
     return Number.isFinite(idx) ? idx : -1
   }
 
-  function commitThumbSelect(i: number) {
-    if (i < 0 || i >= count) return;
+  function commitThumbSelect(canonicalIndex: number) {
+    if (canonicalIndex < 0 || canonicalIndex >= count) return;
 
-    beginUiNavWheelTakeover()
-    snapModeRef.current = 'thumb'
-    commitIndex(i, 'animated')
-    onSelectThumb?.(i)
+    beginUiNavWheelTakeover();
+
+    const thumbSlideIndex = findThumbSlideIndexForBaseIndex(canonicalIndex);
+
+    snapModeRef.current = "thumb";
+    muteChannelRef.current = true;
+
+    activeThumbIndexRef.current = canonicalIndex;
+    selectedSlideIndexRef.current = thumbSlideIndex;
+    indexCurrentRef.current?.set(thumbSlideIndex);
+
+    setActiveThumb(canonicalIndex);
+
+    const scroll = slidesRef.current[thumbSlideIndex]?.target ?? 0;
+    animateToScroll(scroll);
+
+    onSelectThumb?.(canonicalIndex);
   }
 
   useEffect(() => {
@@ -1012,36 +1026,72 @@ export default function ThumbnailSlider({
     };
   }, []);
 
+  function findThumbSlideIndexForBaseIndex(baseIndex: number) {
+    const slides = slidesRef.current;
+    if (!slides.length) return 0;
+
+    const matched = slides.findIndex((slide) =>
+      slide.cells.some((cell) => cell.index === baseIndex)
+    );
+
+    return matched >= 0 ? matched : 0;
+  }
+
   useEffect(() => {
-    const ch = channelRef.current
+    const ch = channelRef.current;
+
     const unsub = ch.subscribe(() => {
-      const { index, mode } = ch.get()
-      const nextIndex = clamp(index, 0, Math.max(0, count - 1))
-      if (nextIndex === selectedIndexRef.current) return
+      const { index, mode } = ch.get();
+      const canonicalIndex = clamp(index, 0, Math.max(0, count - 1));
+      const thumbSlideIndex = findThumbSlideIndexForBaseIndex(canonicalIndex);
 
-      indexCurrentRef.current?.set(nextIndex)
-      selectedIndexRef.current = nextIndex
-      channelRef.current.set(nextIndex, mode)
-      setActiveThumb(nextIndex)
-
-      if (pointerDownRef.current) return
-
-      snapModeRef.current = 'base'
-
-      const scroll = getScrollForIndex(nextIndex)
-
-      if (mode === 'instant') {
-        bodyRef.current?.useDuration(0).useFriction(1)
-        setTargetToScroll(scroll)
-        animRef.current?.start()
-      } else {
-        animateToScroll(scroll)
+      if (snapModeRef.current === "thumb" || muteChannelRef.current) {
+        return;
       }
 
-    })
-    return unsub
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, thumbnailsCenter, contentLength, containerLength])
+      const sameSlide = thumbSlideIndex === selectedSlideIndexRef.current;
+      const sameThumb = canonicalIndex === activeThumbIndexRef.current;
+
+      if (sameSlide && sameThumb) {
+        setActiveThumb(canonicalIndex);
+        return;
+      }
+
+      activeThumbIndexRef.current = canonicalIndex;
+      selectedSlideIndexRef.current = thumbSlideIndex;
+      indexCurrentRef.current?.set(thumbSlideIndex);
+
+      setActiveThumb(canonicalIndex);
+
+      if (pointerDownRef.current) return;
+
+      snapModeRef.current = "base";
+
+      const scroll = slidesRef.current[thumbSlideIndex]?.target ?? 0;
+
+      if (mode === "instant") {
+        bodyRef.current?.useDuration(0).useFriction(1);
+        setTargetToScroll(scroll);
+        animRef.current?.start();
+      } else {
+        console.log('running')
+        animateToScroll(scroll);
+      }
+    });
+
+    return unsub;
+  }, [count, thumbnailsCenter, contentLength, containerLength]);
+
+  useEffect(() => {
+    const ch = channelRef.current;
+
+    return ch.onBasePointerDown(() => {
+      if (snapModeRef.current === "thumb") {
+        muteChannelRef.current = false;
+        snapModeRef.current = "base";
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (!layoutReady || !isMeasured) return;
@@ -1120,11 +1170,13 @@ export default function ThumbnailSlider({
   }
 
   function updateActiveIndexFromX(loc: number) {
-    if (programNavRef.current) return
+    if (programNavRef.current) return;
 
-    const idxFromLoc = indexFromX(loc)
-    if (idxFromLoc === selectedIndexRef.current) return
-    commitIndex(idxFromLoc, 'animated')
+    const slideIndex = indexFromX(loc);
+    if (slideIndex === selectedSlideIndexRef.current) return;
+
+    indexCurrentRef.current?.set(slideIndex);
+    selectedSlideIndexRef.current = slideIndex;
   }
 
   function scrollToIndex(
@@ -1136,8 +1188,6 @@ export default function ThumbnailSlider({
     if (!scrollToRef.current || !bodyRef.current || !indexCurrent) return
 
     if (programmatic) programNavRef.current = true
-
-    commitIndex(requested, 'animated')
 
     const targetIndex = indexCurrent.clone().set(requested).get()
 
@@ -1199,6 +1249,17 @@ export default function ThumbnailSlider({
   }
 
   function commitIndex(nextIdx: number, mode: IndexMode) {
+    setActiveThumb(nextIdx)
+
+    const scroll = getScrollForIndex(nextIdx)
+
+    if (mode === 'instant') {
+      bodyRef.current?.useDuration(0).useFriction(1)
+      setTargetToScroll(scroll)
+      animRef.current?.start()
+    } else {
+      animateToScroll(scroll)
+    }
   }
 
   function updateArrowsImperatively() {
@@ -1266,7 +1327,7 @@ export default function ThumbnailSlider({
 
     baseOffsetRef.current = base
 
-    const startIdx = selectedIndexRef.current || 0;
+    const startIdx = selectedSlideIndexRef.current || 0;
 
     const location = Vector1D(0);
     const previousLocation = Vector1D(0);
@@ -1282,7 +1343,7 @@ export default function ThumbnailSlider({
 
     const len = slidesRef.current.length || 1
     const counterMax = len - 1
-    const startIndex = selectedIndexRef.current || 0
+    const startIndex = selectedSlideIndexRef.current || 0
 
     const indexCurrent = Counter(counterMax, startIndex, true)
     const indexPrevious = Counter(counterMax, startIndex, true)
@@ -1309,7 +1370,7 @@ export default function ThumbnailSlider({
     translateRef.current = Translate(track, AX);
     translateRef.current?.to((initialSnap + base) * sign)
 
-    selectedIndexRef.current = startIdx;
+    selectedSlideIndexRef.current = startIdx;
 
     const minSnap = Math.min(...scrollSnaps)
     const maxSnap = Math.max(...scrollSnaps)
@@ -1352,10 +1413,6 @@ export default function ThumbnailSlider({
       if (indexDiff) {
         indexPrevious.set(indexCurrent.get())
         indexCurrent.set(target.index)
-
-        const idx = indexCurrent.get()
-        const mode = bodyRef.current?.duration() ? 'animated' : 'instant'
-        commitIndex(idx, mode)
       }
     }
 
@@ -1438,8 +1495,8 @@ export default function ThumbnailSlider({
         const oob = !wrap && (boundsRef.current?.passed() ?? false)
         const idle = shouldSettle && !pointerDownRef.current && !oob
         if (idle) {
-          animRef.current?.stop()
-          isAnimatingRef.current = false
+          animRef.current?.stop();
+          isAnimatingRef.current = false;
         }
         const cur = locationRef.current!.get()
         const prev = previousLocationRef.current!.get()
@@ -1584,7 +1641,7 @@ export default function ThumbnailSlider({
           const len = slidesRef.current.length || 1
           if (!len || !baseScrollTarget) return 0
 
-          const curIndex = selectedIndexRef.current || 0
+          const curIndex = selectedSlideIndexRef.current || 0
           const dir = mathSign(force)
 
           if (dir === 0) return 0
@@ -1640,9 +1697,6 @@ export default function ThumbnailSlider({
         }
         
         const force = allowedForce(boostedForce)
-
-        const snapTarget = baseScrollTarget.byDistance(force, true);
-        commitIndex(snapTarget.index, body.duration() ? 'animated' : 'instant');
 
         const baseFriction = sliderFriction
         const forceFactor = factorAbs(boostedForce, force)
@@ -1872,7 +1926,7 @@ export default function ThumbnailSlider({
       wrap={wrap}
       isRtl={isRtl}
       showArrows={showArrows}
-      selectedIndex={selectedIndexRef.current}
+      selectedIndex={selectedSlideIndexRef.current}
       slideCount={slidesRef.current?.length ?? 0}
       measureRef={trackRef}
       viewportMainSizeRef={sliderWidth}

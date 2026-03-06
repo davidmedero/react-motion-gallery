@@ -190,8 +190,8 @@ function Demo() {
                 overlay: renderOverlay,
                 media: ({ media, entryIndex, mediaIndex }) => (
                   <img
-                    src={media.src}
-                    alt={media.alt ?? ""}
+                    src={media.kind === 'image' ? media.src : ''}
+                    alt={media.kind === 'image' ? media.alt : ''}
                     style={{
                       borderRadius: 12,
                     }}

@@ -187,8 +187,8 @@ function Demo() {
                 overlay: renderOverlay,
                 media: ({ media, entryIndex, mediaIndex }) => (
                   <img
-                    src={media.src}
-                    alt={media.alt ?? ""}
+                    src={media.kind === 'image' ? media.src : ''}
+                    alt={media.kind === 'image' ? media.alt : ''}
                     style={{
                       width: "100%",
                       height: "320px",

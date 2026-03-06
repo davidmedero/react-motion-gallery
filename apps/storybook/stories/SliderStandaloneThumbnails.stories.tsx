@@ -34,9 +34,9 @@ function SlideCell({ src, i }: { src: string; i: number }) {
       src={src}
       alt={`Slide ${i + 1}`}
       style={{
-        width: "80dvw",
-        aspectRatio: '16 / 9',
-        objectFit: "cover",
+        width: "100%",
+        height: '400px',
+        objectFit: "contain",
         display: "block",
         borderRadius: 12,
       }}
@@ -91,8 +91,9 @@ function FullscreenAddon(props: {
         bridge={fullscreenThumbnailBridge}
         items={fullscreenThumbItems}
         position="bottom"
-        containerStyle={{ width: 760, height: 76 }}
-        thumbnailWidth="auto"
+        thumbnailsCenter={true}
+        containerStyle={{ width: 'calc(100dvw - 24px)', padding: '6px 12px', overflow: 'visible' }}
+        thumbnailWidth='auto'
         thumbnailHeight={60}
         thumbnailItemStyle={{ borderRadius: 8 }}
         gap={10}
@@ -143,8 +144,8 @@ function Demo() {
             options={{
               layout: {
                 position: "bottom",
-                thumbnail: { width: 'auto', height: 60 },
-                container: { width: 760, height: 76 },
+                thumbnail: { width: 96, height: 60 },
+                // container: { width: '100dvw', height: 76 },
                 gap: 10,
               },
               elements: {

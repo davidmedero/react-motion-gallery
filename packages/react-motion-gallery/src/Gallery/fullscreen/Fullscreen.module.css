@@ -6,7 +6,7 @@
   background-color: rgba(0,0,0,0.8);
   transition: opacity 300ms cubic-bezier(.4,0,.22,1);
   will-change: opacity;
-  z-index: 8999;
+  z-index: calc(var(--rmg-fs-z, 9999) - 1);
   transform: translateZ(0);
   backface-visibility: hidden;
   contain: paint;
@@ -22,7 +22,7 @@
   display: none;
   transform-origin: top left;
   transition: transform 0.3s cubic-bezier(.4,0,.22,1);
-  z-index: 9998;
+  z-index: calc(var(--rmg-fs-z, 9999) + 1);
   will-change: transform;
 }
 
@@ -33,8 +33,8 @@
   position: fixed;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(.4,0,.22,1);
-  z-index: 2147483602;
+  transition: opacity 0.36s cubic-bezier(.4,0,.22,1);
+  z-index: calc(var(--rmg-fs-z, 9999) + 2);
 }
 
 .closeBtn.open,
@@ -90,7 +90,7 @@
   transition:
     opacity 300ms cubic-bezier(.4,0,.22,1),
     transform 300ms cubic-bezier(.4,0,.22,1);
-  z-index: 9999;
+  z-index: calc(var(--rmg-fs-z, 9999) + 1);
 }
 
 .fsOverlayCaption.open {

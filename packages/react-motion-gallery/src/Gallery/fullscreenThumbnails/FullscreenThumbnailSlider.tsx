@@ -190,6 +190,10 @@ export default function FullscreenThumbnailSlider({
           className: thumbnailItemClassName,
           style: thumbnailItemStyle,
         },
+        container: {
+          style: containerStyle,
+          className: containerClassName,
+        },
       },
       controls: {
         enabled: showArrows,
@@ -241,6 +245,8 @@ export default function FullscreenThumbnailSlider({
       selectDuration,
       freeScrollDuration,
       sliderFriction,
+      containerStyle,
+      containerClassName,
       thumbnailItemClassName,
       thumbnailItemStyle,
       showArrows,

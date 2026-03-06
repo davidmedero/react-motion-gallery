@@ -32,7 +32,7 @@ type MediaInput =
     };
 
 const URLS: MediaInput[] = [
-  { src: VIDEO_SRC, poster: VIDEO_POSTER, alt: "Beach video" },
+  // { src: VIDEO_SRC, poster: VIDEO_POSTER, alt: "Beach video" },
   "https://picsum.photos/id/1020/1600/900",
   "https://picsum.photos/id/1029/1600/900",
   "https://picsum.photos/id/1039/1600/900",
@@ -43,7 +43,7 @@ const URLS: MediaInput[] = [
 ];
 
 const FS_URLS: MediaInput[] = [
-  { src: VIDEO_SRC_2, poster: VIDEO_POSTER_2, alt: "Flower video" },
+  // { src: VIDEO_SRC_2, poster: VIDEO_POSTER_2, alt: "Flower video" },
   "https://picsum.photos/id/1021/2600/1900",
   "https://picsum.photos/id/1028/2600/1900",
   "https://picsum.photos/id/1040/2600/1900",
@@ -106,8 +106,11 @@ function SlideVideoCell({
     <Video
       src={src}
       poster={poster}
+      // lazyLoad={{
+      //   enabled: false
+      // }}
       alt={`Video ${i + 1}`}
-      style={{ width: "70dvw", aspectRatio: '16 / 9', borderRadius: '12px' }}
+      style={{ width: "70dvw", borderRadius: '12px' }}
       // options={{
       //   ratio: '16:9'
       // }}
@@ -203,7 +206,7 @@ function Demo() {
             }
 
             return (
-              <Slide key={`img-${m.src}-${i}`} src={m.src} i={i} />
+              <Slide key={`img-${m.kind === 'image' ? m.src : ''}-${i}`} src={m.kind === 'image' ? m.src : ''} i={i} />
             );
           })}
         </Slider>

@@ -21,7 +21,7 @@ import type { ScrollBodyType } from "../shared/motion/scrollBody";
 import type { AnimationsType } from "../shared/motion/animations";
 import type { ScrollBoundsType } from "../shared/motion/scrollBounds";
 import type { Vector1DType } from "../shared/motion/vector1d";
-import type { IndexMode } from "../api/types";
+import type { FullscreenOpenRequest, IndexMode } from "../api/types";
 import type {
   FullscreenThumbnailBridge,
   FullscreenThumbnailSlotLayout,
@@ -30,8 +30,23 @@ import type { SliderOptions } from "../slider/types";
 import type { FullscreenSliderHandle } from "./FullscreenSlider";
 import FullscreenRuntime from "./FullscreenRuntime";
 import styles from './Fullscreen.module.css'
+import { useGalleryCore } from "../core";
 
-import { FullscreenOpenRequest, useGalleryCore } from "../core";
+type FullscreenOpenMethod = "fade" | "scale";
+
+function resolveOpenMethod(
+  item: MediaItem | undefined,
+  requested: FullscreenOpenMethod | undefined,
+  originImg: HTMLImageElement | null
+): FullscreenOpenMethod {
+  const req: FullscreenOpenMethod = requested ?? "scale";
+
+  if (!item || item.kind !== "image") return "fade";
+
+  if (!originImg) return "fade";
+
+  return req;
+}
 
 function useOpenEpoch(open: boolean) {
   const [epoch, setEpoch] = useState(0);
@@ -100,19 +115,19 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   } = core;
 
   const adapterFor = useCallback(
-    (source: "slider" | "grid" | "masonry" | "entries") => getFullscreenAdapter(source),
+    (source: "slider" | "grid" | "masonry" | "entries" | "api") => getFullscreenAdapter(source),
     [getFullscreenAdapter]
   );
 
   const syncBeforeOpen = useCallback(
-    (source: "slider" | "grid" | "masonry" | "entries", index: number) => {
+    (source: "slider" | "grid" | "masonry" | "entries" | "api", index: number) => {
       adapterFor(source)?.syncBeforeOpen?.(index);
     },
     [adapterFor]
   );
 
   const getClosestSelector = useCallback(
-    (source: "slider" | "grid" | "masonry" | "entries") => {
+    (source: "slider" | "grid" | "masonry" | "entries" | "api") => {
       return adapterFor(source)?.closestSelector ?? (source === "slider" ? ".rmg__slide" : ".rmg__grid-item");
     },
     [adapterFor]
@@ -382,54 +397,70 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   );
 
   const openFullscreenAt = useCallback(
-  (source: FullscreenOpenRequest["source"], gridIndex: number, originEl?: HTMLElement | null) => {
-    if (!fs.enabled) return;
+    (
+      source: FullscreenOpenRequest["source"],
+      gridIndex: number,
+      originEl?: HTMLElement | null,
+      requestedMethod?: FullscreenOpenMethod
+    ) => {
+      if (!fs.enabled) return;
 
-    syncBeforeOpen(source, gridIndex);
+      syncBeforeOpen(source, gridIndex);
 
-    const cellCount = normalizedItems.length;
-    if (!cellCount) return;
+      const cellCount = normalizedItems.length;
+      if (!cellCount) return;
 
-    let mediaEl: HTMLImageElement | null = null;
+      let fullscreenIndex = gridIndex;
 
-    if (originEl) {
-      if (originEl instanceof HTMLImageElement) {
-        mediaEl = originEl;
-      } else {
-        const img = originEl.querySelector("img") as HTMLImageElement | null;
-        if (img) {
-          mediaEl = img;
+      if (layout === "grid" || layout === "masonry") fullscreenIndex = gridIndex;
+
+      const item = normalizedItems[fullscreenIndex];
+
+      let originImg: HTMLImageElement | null = null;
+
+      if (originEl) {
+        if (originEl instanceof HTMLImageElement) {
+          originImg = originEl;
+        } else {
+          originImg = originEl.querySelector("img") as HTMLImageElement | null;
         }
       }
-    }
 
-    if (!mediaEl) {
-      mediaEl = (expandableImageRefs.current[gridIndex] ?? null) as HTMLImageElement | null;
-    }
+      if (!originImg) {
+        originImg = (expandableImageRefs.current[gridIndex] ?? null) as HTMLImageElement | null;
+      }
 
-    if (!mediaEl) return;
+      const method = resolveOpenMethod(item, requestedMethod, originImg);
 
-    let fullscreenIndex = gridIndex;
-    if (layout === "grid" || layout === "masonry") fullscreenIndex = gridIndex;
+      const introImg = method === "scale" ? originImg : null;
 
-    const sel = getClosestSelector(source);
+      const sel = getClosestSelector(source);
 
-    isClick.current = true;
+      isClick.current = true;
 
-    setFullscreenOpen(true);
-    fsSub.setLocalIndex(fullscreenIndex);
+      setFullscreenOpen(true);
+      fsSub.setLocalIndex(fullscreenIndex);
+      setShowFullscreenModal(true);
 
-    setShowFullscreenModal(true);
+      setFsIntroReq({
+        originalImage: introImg,
+        index: fullscreenIndex,
+        method,
+        closestSelector: sel,
+      });
 
-    setFsIntroReq({
-      originalImage: mediaEl,
-      index: fullscreenIndex,
-      closestSelector: sel
-    });
-
-    setSlideIndex(fullscreenIndex);
-  },
-    [fs.enabled, normalizedItems.length, syncBeforeOpen, layout, setFullscreenOpen, fsSub, expandableImageRefs, getClosestSelector]
+      setSlideIndex(fullscreenIndex);
+    },
+    [
+      fs.enabled,
+      normalizedItems,
+      syncBeforeOpen,
+      layout,
+      setFullscreenOpen,
+      fsSub,
+      expandableImageRefs,
+      getClosestSelector,
+    ]
   );
 
   const centerSliderForFullscreen = () => {
@@ -447,7 +478,16 @@ export function useFullscreenController(args: UseFullscreenArgs) {
 
     const unsub = fsOpenSub.subscribe((req) => {
       syncFullscreenSourceFromIndex(req.index);
-      openFullscreenAt(req.source, req.index, req.image ?? null);
+
+      const requested = req.requestedMethod;
+      const resolved = req.method;
+
+      if (resolved) {
+        openFullscreenAt(req.source, req.index, req.image ?? null, resolved);
+      } else {
+        openFullscreenAt(req.source, req.index, req.image ?? null, requested);
+      }
+
       setFullscreenOpen(true);
     });
 

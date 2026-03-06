@@ -23,10 +23,7 @@ function normalizeFiniteInt(value: unknown): number | null {
   return value | 0;
 }
 
-function maybeClampIndex(
-  index: number,
-  clampIndex?: (index: number) => number
-): number | null {
+function maybeClampIndex(index: number, clampIndex?: (index: number) => number): number | null {
   if (!clampIndex) return index;
   const clamped = clampIndex(index);
   return normalizeFiniteInt(clamped);
@@ -38,7 +35,7 @@ export function createFullscreenThumbnailSyncBridge(
   const { localChannel, fsSub, clampIndex } = args;
 
   let started = false;
-  let unsubscribe: (() => void) | null = null;
+  let cleanup: Array<() => void> = [];
 
   const setLocalIfChanged = (index: number, mode: IndexMode) => {
     const cur = localChannel.get();
@@ -47,7 +44,7 @@ export function createFullscreenThumbnailSyncBridge(
   };
 
   const applyFsStateToLocal = () => {
-    const nextIndexRaw = normalizeFiniteInt(fsSub.get?.());
+    const nextIndexRaw = normalizeFiniteInt(fsSub.get());
     if (nextIndexRaw == null) return;
 
     const nextIndex = maybeClampIndex(nextIndexRaw, clampIndex);
@@ -57,10 +54,8 @@ export function createFullscreenThumbnailSyncBridge(
   };
 
   const stop = () => {
-    if (unsubscribe) {
-      unsubscribe();
-      unsubscribe = null;
-    }
+    cleanup.forEach((fn) => fn());
+    cleanup = [];
     started = false;
   };
 
@@ -70,18 +65,31 @@ export function createFullscreenThumbnailSyncBridge(
 
     applyFsStateToLocal();
 
-    unsubscribe = fsSub.onEvent((event) => {
-      if (!event || typeof event !== "object") return;
-      if (event.type !== "internalIndex") return;
+    if (
+      typeof fsSub.onBasePointerDown === "function" &&
+      typeof localChannel.emitBasePointerDown === "function"
+    ) {
+      cleanup.push(
+        fsSub.onBasePointerDown(() => {
+          localChannel.emitBasePointerDown?.();
+        })
+      );
+    }
 
-      const nextIndexRaw = normalizeFiniteInt(event.index);
-      if (nextIndexRaw == null) return;
+    cleanup.push(
+      fsSub.onEvent((event) => {
+        if (!event || typeof event !== "object") return;
+        if (event.type !== "internalIndex") return;
 
-      const nextIndex = maybeClampIndex(nextIndexRaw, clampIndex);
-      if (nextIndex == null) return;
+        const nextIndexRaw = normalizeFiniteInt((event as any).index);
+        if (nextIndexRaw == null) return;
 
-      setLocalIfChanged(nextIndex, "animated");
-    });
+        const nextIndex = maybeClampIndex(nextIndexRaw, clampIndex);
+        if (nextIndex == null) return;
+
+        setLocalIfChanged(nextIndex, "animated");
+      })
+    );
 
     return stop;
   };
@@ -96,11 +104,7 @@ export function createFullscreenThumbnailSyncBridge(
     fsSub.requestSet(nextIndex, normalizeMode(mode));
   };
 
-  return {
-    start,
-    stop,
-    publishThumbnailClick,
-  };
+  return { start, stop, publishThumbnailClick };
 }
 
 export default createFullscreenThumbnailSyncBridge;

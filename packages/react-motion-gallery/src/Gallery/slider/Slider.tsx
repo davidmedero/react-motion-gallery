@@ -172,6 +172,40 @@ const RMG_BLANK =
 
 const LAZY_ATTR = "data-rmg-lazy-src";
 
+function getSlidesForCanonicalIndex(track: HTMLElement, canonicalIndex: number): HTMLElement[] {
+  return Array.from(
+    track.querySelectorAll<HTMLElement>(
+      `[data-rmg-slide="true"][data-rmg-idx="${canonicalIndex}"]`
+    )
+  );
+}
+
+async function revealCanonicalSlides(track: HTMLElement, canonicalIndex: number) {
+  const slides = getSlidesForCanonicalIndex(track, canonicalIndex);
+  if (!slides.length) return;
+
+  const pending = slides.filter(
+    (slideEl) =>
+      slideEl.hasAttribute("data-rmg-lazyload") &&
+      slideEl.getAttribute("data-rmg-lazyloaded") !== "true"
+  );
+
+  if (!pending.length) return;
+
+  await Promise.all(
+    pending.map(async (slideEl) => {
+      if (slideEl.getAttribute("data-rmg-lazyloading") === "true") return;
+
+      slideEl.setAttribute("data-rmg-lazyloading", "true");
+      try {
+        await revealSlide(slideEl);
+      } finally {
+        slideEl.removeAttribute("data-rmg-lazyloading");
+      }
+    })
+  );
+}
+
 function markLazyShell(slideEl: HTMLElement) {
   slideEl.setAttribute("data-rmg-lazyload", "");
   slideEl.setAttribute("aria-busy", "true");
@@ -890,6 +924,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       if (!slideEl) return;
 
       fsPreloadSeenRef.current.add(idx);
+      preloadCanonicalIndex(idx);
 
       if (!slideEl.hasAttribute('data-rmg-lazyload')) return;
       if (slideEl.getAttribute('data-rmg-lazyloaded') === 'true') return;
@@ -1342,6 +1377,27 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     () => normalizeLazyLoad(lazyLoad),
     [lazyLoad]
   );
+
+  const preloadCanonicalIndex = useCallback(
+    (canonicalIndex: number) => {
+      if (!normalizedLazy.enabled) return;
+
+      const track = slider.current;
+      if (!track) return;
+      if (canonicalIndex < 0 || canonicalIndex >= cellCount) return;
+
+      void revealCanonicalSlides(track, canonicalIndex);
+    },
+    [normalizedLazy.enabled, cellCount]
+  );
+
+  useEffect(() => {
+    if (!normalizedLazy.enabled) return;
+    if (!layoutReady) return;
+    if (!clonedChildren.length) return;
+
+    preloadCanonicalIndex(selectedIndex.current);
+  }, [normalizedLazy.enabled, layoutReady, clonedChildren.length, preloadCanonicalIndex]);
 
   useEffect(() => {
     const el = slider.current;
@@ -1829,18 +1885,19 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
           }
 
           if (ent.isIntersecting && ent.intersectionRatio >= 0.25) {
+            const idxAttr = slideEl.getAttribute("data-rmg-idx");
+            const idx = idxAttr != null ? parseInt(idxAttr, 10) : NaN;
 
-            // prevent double reveal while decoding
-            if (slideEl.getAttribute("data-rmg-lazyloading") === "true") {
-              continue;
+            if (Number.isFinite(idx)) {
+              void revealCanonicalSlides(track, idx);
+            } else {
+              if (slideEl.getAttribute("data-rmg-lazyloading") !== "true") {
+                slideEl.setAttribute("data-rmg-lazyloading", "true");
+                void revealSlide(slideEl).finally(() => {
+                  slideEl.removeAttribute("data-rmg-lazyloading");
+                });
+              }
             }
-
-            slideEl.setAttribute("data-rmg-lazyloading", "true");
-
-            revealSlide(slideEl)
-              .finally(() => {
-                slideEl.removeAttribute("data-rmg-lazyloading");
-              });
 
             io.unobserve(slideEl);
           }
@@ -1949,6 +2006,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
     body.useBaseDuration().useBaseFriction();
     scrollToIndex(target, { direction: 1, programmatic: true });
+    const ch: any = indexChannel;
+
+    ch.emitBasePointerDown?.();
   }
 
   function next() {
@@ -1963,6 +2023,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
     body.useBaseDuration().useBaseFriction();
     scrollToIndex(target, { direction: -1, programmatic: true });
+    const ch: any = indexChannel;
+
+    ch.emitBasePointerDown?.();
   }
 
   function indexFromX(loc: number) {
@@ -2045,6 +2108,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     indexChannel.set(nextIdx, mode);
 
     updateDotsOnly(prev, nextIdx);
+
+    if (normalizedLazy.enabled) {
+      preloadCanonicalIndex(nextIdx);
+    }
   }
 
   function updateActiveIndexFromX(loc: number) {
@@ -2062,6 +2129,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     if (fromUi) beginUiNavWheelTakeover();
     if (!preserveTiming) bodyRef.current.useBaseDuration().useBaseFriction()
     scrollToIndex(idx)
+    const ch: any = indexChannel;
+
+    ch.emitBasePointerDown?.();
   }
 
   function previousFromUi() {
@@ -2399,6 +2469,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
       setDragCursor(true);
 
+      const ch: any = indexChannel;
+
+      ch.emitBasePointerDown?.();
+
       lockWheelFor(WHEEL_LOCK_MS);
 
       pointerDownRef.current = true
@@ -2634,6 +2708,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         if ((e as any).cancelable) e.preventDefault?.();
         return;
       }
+
+      const ch: any = indexChannel;
+
+      ch.emitBasePointerDown?.();
 
       const trackEl = slider.current;
       if (!trackEl) return;

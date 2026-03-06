@@ -20,6 +20,8 @@ export type FullscreenSliderSub = {
   onRequest: (fn: (req: FSRequest) => void) => () => void;
   setLocalIndex: (index: number) => void;
   destroy: () => void;
+  onBasePointerDown: (fn: () => void) => () => void;
+  emitBasePointerDown: () => void;
 };
 
 export function createFullscreenSliderSub(initialIndex = 0): FullscreenSliderSub {
@@ -27,6 +29,8 @@ export function createFullscreenSliderSub(initialIndex = 0): FullscreenSliderSub
 
   const reqSubs = new Set<(r: FSRequest) => void>();
   const evtSubs = new Set<(e: FSEvent) => void>();
+
+  const baseDownSubs = new Set<() => void>();
 
   const api: FullscreenSliderSub = {
     get: () => curIndex,
@@ -58,9 +62,19 @@ export function createFullscreenSliderSub(initialIndex = 0): FullscreenSliderSub
       evtSubs.forEach((fn) => fn({ type: 'internalIndex', index }));
     },
 
+    onBasePointerDown(fn) {
+      baseDownSubs.add(fn);
+      return () => baseDownSubs.delete(fn);
+    },
+
+    emitBasePointerDown() {
+      baseDownSubs.forEach((fn) => fn());
+    },
+
     destroy() {
       reqSubs.clear();
       evtSubs.clear();
+      baseDownSubs.clear();
     },
   };
 
