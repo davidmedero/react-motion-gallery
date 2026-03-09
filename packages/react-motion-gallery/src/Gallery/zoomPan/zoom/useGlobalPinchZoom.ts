@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import { getPrimaryImgEl } from '../core/dom';
 
 type Point = { x: number; y: number };
 
@@ -58,8 +59,8 @@ export type UseGlobalPinchZoomArgs = {
   bodyY: React.RefObject<any>;
   animRef: React.RefObject<{ start: () => void } | null>;
   panDuration: number;
-  findImgAtPoint: (doc: Document, x: number, y: number) => HTMLDivElement | null;
-  readDataIndex: (el: HTMLDivElement) => number | null;
+  findImgAtPoint: (doc: Document, x: number, y: number) => HTMLImageElement | null;
+  readDataIndex: (el: HTMLElement | null) => number | null;
   distance: (t0: Touch, t1: Touch) => number;
   midpoint: (t0: Touch, t1: Touch) => Point;
 };
@@ -158,12 +159,10 @@ export function useGlobalPinchZoom(args: UseGlobalPinchZoomArgs) {
       const rect = container.getBoundingClientRect();
       const containerW = rect.width;
       const containerH = rect.height;
+      const imgEl = getPrimaryImgEl(container);
+      if (!imgEl) return;
 
-      const { baseW, baseH } = baseFitSize(
-        container.children[0] as HTMLImageElement,
-        containerW,
-        containerH
-      );
+      const { baseW, baseH } = baseFitSize(imgEl, containerW, containerH);
 
       const { x: limX, y: limY, povX, povY } = boundsForCurrent(
         scaleRef.current,

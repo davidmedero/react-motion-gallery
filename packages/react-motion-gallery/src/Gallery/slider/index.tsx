@@ -8,6 +8,7 @@ import createIndexChannel from "./sliderSub";
 import { DEFAULT_SLIDER } from "./defaults";
 import { BREAKPOINT_MAP, resolveNumberFromResponsive } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
+import { usePrefersReducedMotion } from "../shared/hooks/usePrefersReducedMotion";
 import { buildScopedSkeletonCountCss } from "../shared/skeleton/buildScopedSkeletonCountCss";
 import type { BreakpointMap } from "../shared/responsive";
 import type { SliderHandle, SliderLoadingOptions, SliderOptions  } from "./types";
@@ -22,6 +23,9 @@ type Props = SliderOptions & {
   expandableImageRefs?: React.RefObject<Array<HTMLImageElement | null>>;
   indexChannel?: SliderIndexChannel;
 };
+
+const SKELETON_EXIT_MS = 220;
+const INTRO_OVERLAP_MS = 220;
 
 function useScopedSkeleton(args: {
   enabled: boolean;
@@ -177,6 +181,7 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
   );
 
   const [isReady, setIsReady] = React.useState(false);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const effectiveBreakpoints = React.useMemo(
     () => core?.effectiveBreakpoints ?? ({ ...BREAKPOINT_MAP, ...(breakpoints || {}) }),
@@ -368,6 +373,54 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
   });
 
   const sliderShellRef = React.useRef<HTMLDivElement | null>(null);
+  const persistedLoadingNodeRef = React.useRef<React.ReactNode>(sliderSkeleton.node);
+
+  if (sliderSkeleton.node) {
+    persistedLoadingNodeRef.current = sliderSkeleton.node;
+  }
+
+  const resolvedSkeletonExitMs = prefersReducedMotion ? 0 : SKELETON_EXIT_MS;
+  const introUnlockDelayMs = Math.max(0, resolvedSkeletonExitMs - INTRO_OVERLAP_MS);
+  const [showLoadingLayer, setShowLoadingLayer] = React.useState(() => sliderSkeleton.showLoading);
+  const [loadingExiting, setLoadingExiting] = React.useState(false);
+  const [introUnlocked, setIntroUnlocked] = React.useState(() => !sliderSkeleton.showLoading);
+
+  React.useEffect(() => {
+    if (sliderSkeleton.showLoading) {
+      setShowLoadingLayer(true);
+      setLoadingExiting(false);
+      setIntroUnlocked(false);
+      return;
+    }
+
+    if (!showLoadingLayer) {
+      setIntroUnlocked(true);
+      return;
+    }
+
+    if (resolvedSkeletonExitMs === 0) {
+      setLoadingExiting(false);
+      setShowLoadingLayer(false);
+      setIntroUnlocked(true);
+      return;
+    }
+
+    setLoadingExiting(true);
+
+    const introTimeoutId = window.setTimeout(() => {
+      setIntroUnlocked(true);
+    }, introUnlockDelayMs);
+
+    const exitTimeoutId = window.setTimeout(() => {
+      setShowLoadingLayer(false);
+      setLoadingExiting(false);
+    }, resolvedSkeletonExitMs);
+
+    return () => {
+      window.clearTimeout(introTimeoutId);
+      window.clearTimeout(exitTimeoutId);
+    };
+  }, [introUnlockDelayMs, resolvedSkeletonExitMs, showLoadingLayer, sliderSkeleton.showLoading]);
   
   function extractSrcsFromReactNode(node: React.ReactNode): string[] {
     const out: string[] = [];
@@ -561,91 +614,109 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
           minHeight: "var(--rmg-slider-initial-height, var(--rmg-slider-height))" 
         }}
       >
-        {sliderSkeleton.node}
-        <SliderCore
-          cellCount={cellsState.length}
-          isClick={isClick}
-          expandableImageRefs={expandableImageRefs}
-          overlayDivRef={overlayDivRef}
-          duplicateImgRef={duplicateImgRef}
-          closeButtonRef={closeButtonRef}
-          counterRef={counterRef}
-          leftChevronRef={leftChevronRef}
-          rightChevronRef={rightChevronRef}
-          isReady={isReady}
-          setIsReady={setIsReady}
-          loop={sliderObject.scroll.loop}
-          freeScroll={sliderObject.scroll.freeScroll}
-          autoPlay={sliderObject.auto.play.enabled}
-          autoPlaySpeed={sliderObject.auto.play.speedMs}
-          autoPlayPause={sliderObject.auto.play.pauseMs}
-          autoScroll={sliderObject.auto.scroll.enabled}
-          autoScrollSpeed={sliderObject.auto.scroll.speedMs}
-          autoScrollPause={sliderObject.auto.scroll.pauseMs}
-          pauseAutoPlayOnHover={sliderObject.auto.play.pauseOnHover}
-          pauseAutoScrollOnHover={sliderObject.auto.scroll.pauseOnHover}
-          groupCells={sliderObject.scroll.groupCells}
-          centerAlign={sliderObject.align === "center"}
-          gap={resolvedGap}
-          sliderViewportStyles={sliderObject.elements?.viewport?.style}
-          sliderViewportClassName={sliderObject.elements?.viewport?.className}
-          sliderContainerStyles={sliderObject.elements?.container?.style}
-          sliderContainerClassName={sliderObject.elements?.container?.className}
-          arrowStyles={sliderObject.controls.arrows.arrow.style}
-          arrowClassName={sliderObject.controls.arrows.arrow.className}
-          prevArrowStyles={sliderObject.controls.arrows.prev.style}
-          prevArrowClassName={sliderObject.controls.arrows.prev.className}
-          nextArrowStyles={sliderObject.controls.arrows.next.style}
-          nextArrowClassName={sliderObject.controls.arrows.next.className}
-          dotsContainerStyles={sliderObject.controls.dots.root.style}
-          dotsContainerClassName={sliderObject.controls.dots.root.className}
-          dotsStyles={sliderObject.controls.dots.dot.style}
-          dotsClassName={sliderObject.controls.dots.dot.className}
-          renderArrows={sliderObject.controls.arrows.render}
-          renderPrevArrow={sliderObject.controls.arrows.renderPrev}
-          renderNextArrow={sliderObject.controls.arrows.renderNext}
-          renderDots={sliderObject.controls.dots.render}
-          showArrows={sliderObject.controls.arrows.enabled}
-          showDots={sliderObject.controls.dots.enabled}
-          showProgress={sliderObject.controls.progress.enabled}
-          progressClassName={sliderObject.controls.progress.root.className}
-          progressStyle={sliderObject.controls.progress.root.style}
-          progressInnerClassName={sliderObject.controls.progress.bar.className}
-          progressInnerStyle={sliderObject.controls.progress.bar.style}
-          renderProgress={sliderObject.controls.progress.render}
-          parallax={sliderObject.effects?.parallax?.enabled}
-          parallaxBleedPct={sliderObject.effects?.parallax?.bleedPct}
-          parallaxBorderRadius={sliderObject.effects?.parallax?.borderRadius}
-          parallaxSideWidth={sliderObject.effects?.parallax?.sideWidth}
-          ref={setSliderHandle}
-          scaleEffect={sliderObject.effects?.scale?.enabled}
-          scaleAmount={sliderObject.effects?.scale?.amount}
-          fadeEffect={sliderObject.effects?.fade?.enabled}
-          cellsPerSlide={cellsPerSlideProp}
-          direction={sliderObject.direction.dir}
-          axis={sliderObject.direction.axis}
-          skipSnaps={sliderObject.scroll.skipSnaps}
-          selectDuration={sliderObject.motion.selectDuration}
-          freeScrollDuration={sliderObject.motion.freeScrollDuration}
-          sliderFriction={sliderObject.motion.friction}
-          indexChannel={resolvedIndexChannel}
-          introOptions={sliderObject.transitions?.intro}
-          lazyLoad={sliderObject.lazyLoad}
-          rippleEnabled={sliderObject.controls.ripple.enabled}
-          rippleClassName={sliderObject.controls.ripple.className}
-          sliderImagesReady={sliderImagesReady}
-          breakpointMap={effectiveBreakpoints}
-          enableFullscreen={!!core?.requestFullscreenOpen}
-          requestFullscreenOpen={
-            core
-              ? ({ index, image, event }) => core.requestFullscreenOpen({ source: "slider", index, image, event })
-              : undefined
-          }
-          isFullscreenOpen={!!core?.isFullscreenOpen}
-          setFullscreenOpen={core?.setFullscreenOpen!}
+        <div
+          className={[
+            styles.contentLayer,
+            showLoadingLayer ? styles.contentBlocked : "",
+          ].filter(Boolean).join(" ")}
         >
-          {renderedCells}
-        </SliderCore>
+          <SliderCore
+            cellCount={cellsState.length}
+            isClick={isClick}
+            expandableImageRefs={expandableImageRefs}
+            overlayDivRef={overlayDivRef}
+            duplicateImgRef={duplicateImgRef}
+            closeButtonRef={closeButtonRef}
+            counterRef={counterRef}
+            leftChevronRef={leftChevronRef}
+            rightChevronRef={rightChevronRef}
+            isReady={isReady}
+            setIsReady={setIsReady}
+            loop={sliderObject.scroll.loop}
+            freeScroll={sliderObject.scroll.freeScroll}
+            autoPlay={sliderObject.auto.play.enabled}
+            autoPlaySpeed={sliderObject.auto.play.speedMs}
+            autoPlayPause={sliderObject.auto.play.pauseMs}
+            autoScroll={sliderObject.auto.scroll.enabled}
+            autoScrollSpeed={sliderObject.auto.scroll.speedMs}
+            autoScrollPause={sliderObject.auto.scroll.pauseMs}
+            pauseAutoPlayOnHover={sliderObject.auto.play.pauseOnHover}
+            pauseAutoScrollOnHover={sliderObject.auto.scroll.pauseOnHover}
+            groupCells={sliderObject.scroll.groupCells}
+            centerAlign={sliderObject.align === "center"}
+            gap={resolvedGap}
+            sliderViewportStyles={sliderObject.elements?.viewport?.style}
+            sliderViewportClassName={sliderObject.elements?.viewport?.className}
+            sliderContainerStyles={sliderObject.elements?.container?.style}
+            sliderContainerClassName={sliderObject.elements?.container?.className}
+            arrowStyles={sliderObject.controls.arrows.arrow.style}
+            arrowClassName={sliderObject.controls.arrows.arrow.className}
+            prevArrowStyles={sliderObject.controls.arrows.prev.style}
+            prevArrowClassName={sliderObject.controls.arrows.prev.className}
+            nextArrowStyles={sliderObject.controls.arrows.next.style}
+            nextArrowClassName={sliderObject.controls.arrows.next.className}
+            dotsContainerStyles={sliderObject.controls.dots.root.style}
+            dotsContainerClassName={sliderObject.controls.dots.root.className}
+            dotsStyles={sliderObject.controls.dots.dot.style}
+            dotsClassName={sliderObject.controls.dots.dot.className}
+            renderArrows={sliderObject.controls.arrows.render}
+            renderPrevArrow={sliderObject.controls.arrows.renderPrev}
+            renderNextArrow={sliderObject.controls.arrows.renderNext}
+            renderDots={sliderObject.controls.dots.render}
+            showArrows={sliderObject.controls.arrows.enabled}
+            showDots={sliderObject.controls.dots.enabled}
+            showProgress={sliderObject.controls.progress.enabled}
+            progressClassName={sliderObject.controls.progress.root.className}
+            progressStyle={sliderObject.controls.progress.root.style}
+            progressInnerClassName={sliderObject.controls.progress.bar.className}
+            progressInnerStyle={sliderObject.controls.progress.bar.style}
+            renderProgress={sliderObject.controls.progress.render}
+            parallax={sliderObject.effects?.parallax?.enabled}
+            parallaxBleedPct={sliderObject.effects?.parallax?.bleedPct}
+            parallaxBorderRadius={sliderObject.effects?.parallax?.borderRadius}
+            parallaxSideWidth={sliderObject.effects?.parallax?.sideWidth}
+            ref={setSliderHandle}
+            scaleEffect={sliderObject.effects?.scale?.enabled}
+            scaleAmount={sliderObject.effects?.scale?.amount}
+            fadeEffect={sliderObject.effects?.fade?.enabled}
+            cellsPerSlide={cellsPerSlideProp}
+            direction={sliderObject.direction.dir}
+            axis={sliderObject.direction.axis}
+            skipSnaps={sliderObject.scroll.skipSnaps}
+            selectDuration={sliderObject.motion.selectDuration}
+            freeScrollDuration={sliderObject.motion.freeScrollDuration}
+            sliderFriction={sliderObject.motion.friction}
+            indexChannel={resolvedIndexChannel}
+            introOptions={sliderObject.transitions?.intro}
+            introUnlocked={introUnlocked}
+            lazyLoad={sliderObject.lazyLoad}
+            rippleEnabled={sliderObject.controls.ripple.enabled}
+            rippleClassName={sliderObject.controls.ripple.className}
+            sliderImagesReady={sliderImagesReady}
+            breakpointMap={effectiveBreakpoints}
+            enableFullscreen={!!core?.requestFullscreenOpen}
+            requestFullscreenOpen={
+              core
+                ? ({ index, image, event }) => core.requestFullscreenOpen({ source: "slider", index, image, event })
+                : undefined
+            }
+            isFullscreenOpen={!!core?.isFullscreenOpen}
+            setFullscreenOpen={core?.setFullscreenOpen!}
+          >
+            {renderedCells}
+          </SliderCore>
+        </div>
+        {showLoadingLayer && (sliderSkeleton.node ?? persistedLoadingNodeRef.current) ? (
+          <div
+            className={[
+              styles.loadingLayer,
+              loadingExiting ? styles.loadingLayerExit : "",
+            ].filter(Boolean).join(" ")}
+            aria-hidden="true"
+          >
+            {sliderSkeleton.node ?? persistedLoadingNodeRef.current}
+          </div>
+        ) : null}
       </div>
     </>
   );

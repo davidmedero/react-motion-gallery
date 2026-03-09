@@ -65,6 +65,14 @@ export type SkeletonNode =
         style?: SkeletonBaseStyle;
         shimmer?: SkeletonShimmer;
       };
+    }
+  | {
+      kind: "text";
+      fontSize: number;
+      lineHeight: number;
+      lines?: number;
+      style?: SkeletonBaseStyle;
+      shimmer?: SkeletonShimmer;
     };
 
 export type EntrySkeletonSpec = {
@@ -185,6 +193,7 @@ function collectResponsiveCss(
     case "rect":
     case "square":
     case "circle":
+    case "text":
       return node;
 
     case "media": {
@@ -346,6 +355,19 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
             <LayoutNode key={i} node={child} />
           ))}
         </div>
+      );
+    }
+
+    case "text": {
+      const lines = Math.max(1, node.lines ?? 1);
+      const h = node.fontSize * node.lineHeight * lines;
+
+      return (
+        <ShapeNode
+          kind="rect"
+          style={{ ...(node.style || {}), height: h }}
+          shimmer={node.shimmer}
+        />
       );
     }
 

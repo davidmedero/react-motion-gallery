@@ -4,8 +4,11 @@ import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
 import { resolveNumberFromResponsive } from '../shared/responsive';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
+import { usePrefersReducedMotion } from '../shared/hooks/usePrefersReducedMotion';
+import { LazyItemHost, normalizeLazyLoad } from '../shared/lazy/LazyItemHost';
 import { GridSkeletonCard } from './GridSkeleton';
-import { IntroOptions, LoadingOptions } from './types';
+import { useOptionalGalleryCore } from '../core';
+import { GridLazyLoadOptions, IntroOptions, LoadingOptions } from './types';
 
 type FullscreenTrigger = 'item' | 'media';
 
@@ -16,6 +19,7 @@ type GridOptions = {
   rootClassName?: string;
   itemClassName?: string;
   fullscreenTrigger?: FullscreenTrigger;
+  lazyLoad?: GridLazyLoadOptions;
 };
 
 export type GridLayoutProps = {
@@ -65,6 +69,9 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ');
 }
 
+const SKELETON_EXIT_MS = 220;
+const INTRO_OVERLAP_MS = 220;
+
 export function GridLayout({
   cells,
   grid,
@@ -78,21 +85,79 @@ export function GridLayout({
   gridItemBaseClass = 'rmg__grid-item',
   renderMode,
 }: GridLayoutProps) {
+  const core = useOptionalGalleryCore();
   const gridRootRef = React.useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = React.useState(false);
   const [mediaReady, setMediaReady] = React.useState(false);
+  const visibleSeenRef = React.useRef(new Set<number>());
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  const normalizedLazy = React.useMemo(() => normalizeLazyLoad(grid.lazyLoad), [grid.lazyLoad]);
+  const lazyEnabled = normalizedLazy.enabled;
 
   useInViewOnce(true, gridRootRef as any, () => setInView(true));
-  useMediaReady(true, gridRootRef as any, setMediaReady);
+  useMediaReady(!lazyEnabled, gridRootRef as any, setMediaReady);
 
   const renderModeProp = renderMode ?? 'wrap';
 
   const fullscreenTrigger: FullscreenTrigger = grid.fullscreenTrigger ?? 'media';
 
+  const [clientReady, setClientReady] = React.useState(false);
+
+  React.useEffect(() => {
+    setClientReady(true);
+  }, []);
+
   const loadingEnabledFlag = loading.enabled ?? true;
   const loadingForced = loading.force ?? false;
-  const loadingActive = loadingEnabledFlag && (loadingForced || !mediaReady);
-  const introActive = mediaReady && inView;
+  const contentReady = lazyEnabled ? clientReady : mediaReady;
+  const loadingActive = loadingEnabledFlag && (loadingForced || !contentReady);
+  const resolvedSkeletonExitMs = prefersReducedMotion ? 0 : SKELETON_EXIT_MS;
+  const introUnlockDelayMs = Math.max(0, resolvedSkeletonExitMs - INTRO_OVERLAP_MS);
+  const [showLoadingLayer, setShowLoadingLayer] = React.useState(() => loadingActive);
+  const [loadingExiting, setLoadingExiting] = React.useState(false);
+  const [introUnlocked, setIntroUnlocked] = React.useState(() => !loadingActive);
+  const introActive = contentReady && inView && introUnlocked;
+
+  React.useEffect(() => {
+    if (loadingActive) {
+      setShowLoadingLayer(true);
+      setLoadingExiting(false);
+      setIntroUnlocked(false);
+      return;
+    }
+
+    if (!showLoadingLayer) {
+      setIntroUnlocked(true);
+      return;
+    }
+
+    if (resolvedSkeletonExitMs === 0) {
+      setLoadingExiting(false);
+      setShowLoadingLayer(false);
+      setIntroUnlocked(true);
+      return;
+    }
+
+    setLoadingExiting(true);
+    const introTimeoutId = window.setTimeout(() => {
+      setIntroUnlocked(true);
+    }, introUnlockDelayMs);
+
+    const exitTimeoutId = window.setTimeout(() => {
+      setShowLoadingLayer(false);
+      setLoadingExiting(false);
+    }, resolvedSkeletonExitMs);
+
+    return () => {
+      window.clearTimeout(introTimeoutId);
+      window.clearTimeout(exitTimeoutId);
+    };
+  }, [introUnlockDelayMs, loadingActive, resolvedSkeletonExitMs, showLoadingLayer]);
+
+  React.useEffect(() => {
+    visibleSeenRef.current.clear();
+  }, [cells.length]);
 
   const minWidth =
     typeof grid.minColumnWidth === 'number'
@@ -134,13 +199,13 @@ export function GridLayout({
   const skeletonCount = cells.length;
 
   const loadingNode = React.useMemo(() => {
-    if (!loadingActive) return null;
+    if (!loadingEnabledFlag || !showLoadingLayer) return null;
     if (loading.renderLoading) return loading.renderLoading({ count: skeletonCount });
 
     return (
       <GridSkeletonCard count={skeletonCount} gridStyle={gridStyle} spec={loading.skeleton} />
     );
-  }, [loadingActive, loading.renderLoading, loading.skeleton, skeletonCount, gridStyle]);
+  }, [loadingEnabledFlag, showLoadingLayer, loading.renderLoading, loading.skeleton, skeletonCount, gridStyle]);
 
   const openFromEvent = React.useCallback(
     (index: number, host: HTMLElement, e: React.SyntheticEvent) => {
@@ -185,6 +250,15 @@ export function GridLayout({
     [registerExpandableImage]
   );
 
+  const onVisibleIndex = React.useCallback(
+    (index: number) => {
+      if (visibleSeenRef.current.has(index)) return;
+      visibleSeenRef.current.add(index);
+      core?.notifyBaseVisibleIndex(index);
+    },
+    [core]
+  );
+
   const baseItemClassName = React.useMemo(
     () => cx(gridItemBaseClass, styles.gridItem, styles.introItem, grid.itemClassName),
     [gridItemBaseClass, grid.itemClassName]
@@ -197,6 +271,56 @@ export function GridLayout({
       const introStyle: React.CSSProperties & Record<string, any> = {
         ['--rmg-intro-index' as any]: index,
       };
+
+      if (lazyEnabled) {
+        const originalEl = React.isValidElement(original)
+          ? (original as React.ReactElement<any>)
+          : null;
+
+        const origProps = (originalEl?.props ?? {}) as {
+          onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+          tabIndex?: number;
+          ['aria-label']?: string;
+        };
+
+        const mergedOnClick: React.MouseEventHandler<HTMLElement> | undefined = enableFullscreen
+          ? (e) => {
+              if (e.defaultPrevented) return;
+              onItemClick(index)(e);
+            }
+          : undefined;
+
+        const mergedOnKeyDown: React.KeyboardEventHandler<HTMLElement> | undefined = enableFullscreen
+          ? (e) => {
+              origProps.onKeyDown?.(e);
+              if ((e as any).defaultPrevented) return;
+              onItemKeyDown(index)(e);
+            }
+          : undefined;
+
+        return (
+          <LazyItemHost
+            key={cell.id}
+            index={index}
+            data-rmg-idx={index}
+            className={baseItemClassName}
+            style={introStyle}
+            lazyLoad={grid.lazyLoad}
+            onVisibleIndex={onVisibleIndex}
+            registerExpandableImage={registerExpandableImage as any}
+            onClick={mergedOnClick}
+            onKeyDown={mergedOnKeyDown}
+            tabIndex={enableFullscreen ? (origProps.tabIndex ?? 0) : undefined}
+            aria-label={
+              enableFullscreen
+                ? (origProps['aria-label'] ?? `View image ${index + 1}`)
+                : undefined
+            }
+          >
+            {original as any}
+          </LazyItemHost>
+        );
+      }
 
       if (renderModeProp === 'passthrough') {
         return (
@@ -268,15 +392,20 @@ export function GridLayout({
     });
   }, [
     cells,
+    lazyEnabled,
+    grid.lazyLoad,
     renderModeProp,
     baseItemClassName,
+    enableFullscreen,
     onItemClick,
     onItemKeyDown,
+    onVisibleIndex,
+    registerExpandableImage,
     registerFromHostRef,
   ]);
 
   React.useLayoutEffect(() => {
-    if (renderModeProp !== 'passthrough') return;
+    if (renderModeProp !== 'passthrough' || lazyEnabled) return;
 
     const root = gridRootRef.current;
     if (!root) return;
@@ -289,7 +418,7 @@ export function GridLayout({
     return () => {
       for (let i = 0; i < cells.length; i++) registerExpandableImage(i, null);
     };
-  }, [renderModeProp, cells.length, registerExpandableImage]);
+  }, [renderModeProp, lazyEnabled, cells.length, registerExpandableImage]);
 
   const containerProps: React.HTMLAttributes<HTMLDivElement> = React.useMemo(
     () => ({
@@ -306,7 +435,7 @@ export function GridLayout({
         ['--rmg-intro-duration' as any]: `${intro.durationMs}ms`,
         ['--rmg-intro-easing' as any]: intro.easing,
       },
-      'aria-busy': loadingActive ? true : undefined,
+      'aria-busy': showLoadingLayer ? true : undefined,
     }),
     [
       grid.rootClassName,
@@ -316,7 +445,7 @@ export function GridLayout({
       intro.durationMs,
       intro.easing,
       introActive,
-      loadingActive,
+      showLoadingLayer,
     ]
   );
 
@@ -331,9 +460,18 @@ export function GridLayout({
     : inner;
 
   return (
-    <>
-      {loadingNode}
-      {introWrapped}
-    </>
+    <div className={styles.gridShell}>
+      <div className={cx(styles.gridContentLayer, showLoadingLayer && styles.gridContentBlocked)}>
+        {introWrapped}
+      </div>
+      {showLoadingLayer && loadingNode ? (
+        <div
+          className={cx(styles.gridLoadingLayer, loadingExiting && styles.gridLoadingLayerExit)}
+          aria-hidden="true"
+        >
+          {loadingNode}
+        </div>
+      ) : null}
+    </div>
   );
 }

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { APITypes } from 'plyr-react';
 import { Plyr } from './LazyPlyr';
+import { VideoCloneSnapshot } from './VideoCloneSnapshot';
 import { useRmgSlide } from '../shared/slideContext';
 import { installDblclickGuardWhenReady } from './plyrGuards';
 import { detectProvider } from './plyr';
@@ -133,32 +134,41 @@ function useViewportRoot(ref: React.RefObject<HTMLElement | null>) {
 
 function resolveOptions(
   options: VideoProps['options'],
-  args: { src: string; index: number }
+  args: { src: string; index: number; forceCrossorigin?: boolean }
 ): PlyrOptions | undefined {
   const resolved = typeof options === 'function' ? options(args) : options;
-  if (!resolved) return resolved;
+  if (!resolved) {
+    return args.forceCrossorigin
+      ? ({
+          crossorigin: true,
+          autoplay: false,
+          preload: 'none',
+        } as any)
+      : resolved;
+  }
 
-  return {
+  const next = {
     ...(resolved as any),
     autoplay: (resolved as any).autoplay ?? false,
     preload: (resolved as any).preload ?? 'none',
   } as any;
+
+  if (args.forceCrossorigin && next.crossorigin == null) {
+    next.crossorigin = true;
+  }
+
+  return next as any;
 }
 
-function withForcedCloneMuteOptions(options: PlyrOptions | undefined): PlyrOptions {
-  const base = (options ?? {}) as any;
-  const storage =
-    typeof base.storage === 'object' && base.storage != null ? { ...base.storage } : {};
+function isCrossOriginMediaUrl(src: string) {
+  if (typeof window === 'undefined') return false;
 
-  return {
-    ...base,
-    muted: true,
-    volume: 0,
-    storage: {
-      ...storage,
-      enabled: false,
-    },
-  } as any;
+  try {
+    const url = new URL(src, window.location.href);
+    return url.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -384,63 +394,55 @@ export function Video(props: VideoProps) {
     );
   }, [props.source, props.sourceBuilder, props.src, props.poster]);
 
-  const options = React.useMemo(() => {
-    return resolveOptions(props.options, { src: props.src, index });
-  }, [props.options, props.src, index]);
-
-  const effectiveOptions = React.useMemo(() => {
-    if (!isClone) return options;
-
-    return {
-      ...withForcedCloneMuteOptions(options),
-      preload: 'auto',
-      autoplay: false,
-    } as PlyrOptions;
-  }, [isClone, options]);
-
   const provider = React.useMemo(() => detectProvider(source), [source]);
+  const shouldForceSnapshotCrossorigin = React.useMemo(() => {
+    if (isClone) return false;
+    if (!ctx?.registerVideoRuntime) return false;
+    if (provider !== 'mp4') return false;
+    return isCrossOriginMediaUrl(props.src);
+  }, [ctx, isClone, props.src, provider]);
+
+  const options = React.useMemo(() => {
+    return resolveOptions(props.options, {
+      src: props.src,
+      index,
+      forceCrossorigin: shouldForceSnapshotCrossorigin,
+    });
+  }, [index, props.options, props.src, shouldForceSnapshotCrossorigin]);
+
+  const ratio = React.useMemo(() => parsePlyrRatio((options as any)?.ratio ?? null), [options]);
+
+  const syncRuntimeRegistration = React.useCallback(
+    (api: APITypes | null) => {
+      if (!ctx?.registerVideoRuntime) return;
+      if (isClone) return;
+
+      const hostEl = gateRef.current;
+      if (!api || !hostEl) {
+        ctx.registerVideoRuntime(null);
+        return;
+      }
+
+      ctx.registerVideoRuntime({
+        canonicalIndex: index,
+        api,
+        hostEl,
+        provider,
+        src: props.src,
+        poster: props.poster,
+        ratio,
+      });
+    },
+    [ctx, gateRef, index, isClone, props.poster, props.src, provider, ratio]
+  );
 
   React.useEffect(() => {
-    if (!isClone) return;
-    if (!props.src) return;
+    syncRuntimeRegistration(apiRef.current);
 
-    if (provider === 'mp4') {
-      try {
-        const v = document.createElement('video');
-        v.preload = 'auto';
-        v.muted = true;
-        v.playsInline = true;
-        if (props.poster) v.poster = props.poster;
-        v.src = props.src;
-        v.load();
-
-        const timer = window.setTimeout(() => {
-          try {
-            v.removeAttribute('src');
-            v.load();
-          } catch {}
-        }, 1500);
-
-        return () => {
-          window.clearTimeout(timer);
-          try {
-            v.removeAttribute('src');
-            v.load();
-          } catch {}
-        };
-      } catch {}
-    }
-
-    if ((provider === 'youtube' || provider === 'vimeo') && props.poster) {
-      try {
-        const img = new Image();
-        img.decoding = 'async';
-        (img as any).fetchPriority = 'high';
-        img.src = props.poster;
-        void img.decode().catch(() => {});
-      } catch {}
-    }
-  }, [isClone, provider, props.src, props.poster]);
+    return () => {
+      syncRuntimeRegistration(null);
+    };
+  }, [syncRuntimeRegistration]);
 
   // Helper that always targets the spinner under THIS gate (avoids wrong-node issues)
   const getSpinnerEl = React.useCallback(() => {
@@ -480,8 +482,8 @@ export function Video(props: VideoProps) {
 
       const apiOrNull = (api ?? null) as APITypes | null;
       apiRef.current = apiOrNull;
+      syncRuntimeRegistration(apiOrNull);
 
-      ctx?.registerPlyr?.(apiOrNull);
       props.onApi?.(apiOrNull);
       props.registerApiByIndex?.(index, apiOrNull);
 
@@ -544,7 +546,7 @@ export function Video(props: VideoProps) {
         }
       } catch {}
     },
-    [ctx, index, props.onApi, props.registerApiByIndex, markReady, syncSpinner, source]
+    [index, props.onApi, props.registerApiByIndex, markReady, syncRuntimeRegistration, syncSpinner, source]
   );
 
   React.useEffect(() => {
@@ -553,13 +555,6 @@ export function Video(props: VideoProps) {
       readyCleanupRef.current = null;
     };
   }, []);
-
-  React.useEffect(() => {
-    if (!isClone) return;
-
-    mountedRef.current = true;
-    setEverMounted(true);
-  }, [isClone]);
 
   // ✅ DEFAULT STATE:
   // Spinner visible by default (if enabled), player hidden by default,
@@ -570,16 +565,6 @@ export function Video(props: VideoProps) {
     // only run on mount / when spinner enablement changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldRenderSpinner, lazyEnabled]);
-
-  React.useEffect(() => {
-    if (!isClone) return;
-
-    setPlayerVisible(playerWrapRef.current, false);
-    syncSpinner(true);
-
-    mountedRef.current = true;
-    setEverMounted(true);
-  }, [isClone, syncSpinner]);
 
   React.useEffect(() => {
     readyRef.current = false;
@@ -731,19 +716,32 @@ export function Video(props: VideoProps) {
     const el = gateRef.current as HTMLElement | null;
     if (!el) return;
 
-    // pull ratio from options (effectiveOptions already includes clone muting etc)
-    const rawRatio = (effectiveOptions as any)?.ratio ?? (options as any)?.ratio;
-
-    const wh = parsePlyrRatio(rawRatio); // width/height
-    if (!wh) return;
+    if (!ratio) return;
 
     // Slider wants intrinsic dimensions; easiest is to store ratio directly
     // We'll store width/height ratio as data-rmg-wh
-    el.setAttribute("data-rmg-wh", String(wh));
+    el.setAttribute("data-rmg-wh", String(ratio));
 
     // bubble event so Slider hook re-measures
     el.dispatchEvent(new Event("loadedmetadata", { bubbles: true }));
-  }, [effectiveOptions, options]);
+  }, [ratio]);
+
+  if (isClone && ctx?.videoSnapshotStore) {
+    return (
+      <VideoCloneSnapshot
+        canonicalIndex={index}
+        store={ctx.videoSnapshotStore}
+        src={props.src}
+        poster={props.poster}
+        source={props.source}
+        sourceBuilder={props.sourceBuilder}
+        options={props.options}
+        className={props.className}
+        style={props.style}
+        lazyLoad={props.lazyLoad}
+      />
+    );
+  }
 
   return (
     <div
@@ -771,15 +769,15 @@ export function Video(props: VideoProps) {
           zIndex: 2,
           width: '100%',
           height: '100%',
-          pointerEvents: isClone ? 'none' : 'auto',
+          pointerEvents: 'auto',
           opacity: 0,
           transition: 'opacity 220ms ease',
           willChange: 'opacity',
           background: 'transparent',
         }}
       >
-        {(isClone || (revealed && everMounted)) ? (
-          <Plyr ref={handlePlyrRef as any} source={source} options={effectiveOptions} />
+        {revealed && everMounted ? (
+          <Plyr ref={handlePlyrRef as any} source={source} options={options} />
         ) : null}
       </div>
     </div>

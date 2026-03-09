@@ -57,10 +57,14 @@ import { Translate } from '../shared/motion/translate';
 import { clamp, easeOutCubic, lerp } from '../shared/motion/utils';
 import { useOptionalGalleryCore } from '../core';
 import { useWheelLock } from '../shared/hooks/useWheelLock';
+import { useInViewOnce } from '../shared/hooks/useInViewOnce';
+import { Video } from '../video';
+import { VideoCloneSnapshot } from '../video/VideoCloneSnapshot';
 import {
-  createCanonicalPlaybackSyncManager,
-  type CanonicalPlaybackRegistration,
-} from '../video/canonicalPlaybackSync';
+  createVideoSnapshotStore,
+  type VideoRuntimeRegistration,
+  type VideoSnapshotStore,
+} from '../video/videoSnapshotStore';
 
 function DragTracker(main: AxisKey | undefined, ownerWindow: WindowType) {
   const scroll: AxisKey = main ?? 'x'
@@ -146,6 +150,7 @@ interface SliderProps {
   sliderFriction: number;
   indexChannel?: ReturnType<typeof createIndexChannel>;
   introOptions?: SliderIntroOptions;
+  introUnlocked?: boolean;
   lazyLoad?: SliderLazyLoadOptions;
   rippleEnabled?: boolean;
   rippleClassName?: string;
@@ -180,7 +185,24 @@ function getSlidesForCanonicalIndex(track: HTMLElement, canonicalIndex: number):
   );
 }
 
-async function revealCanonicalSlides(track: HTMLElement, canonicalIndex: number) {
+function getCanonicalIndexFromSlide(slideEl: HTMLElement): number | null {
+  const idxAttr = slideEl.getAttribute("data-rmg-idx");
+  const idx = idxAttr != null ? parseInt(idxAttr, 10) : NaN;
+  return Number.isFinite(idx) ? idx : null;
+}
+
+function rememberRevealedCanonical(slideEl: HTMLElement, revealedCanonicals?: Set<number>) {
+  if (!revealedCanonicals) return;
+  const idx = getCanonicalIndexFromSlide(slideEl);
+  if (idx == null) return;
+  revealedCanonicals.add(idx);
+}
+
+async function revealCanonicalSlides(
+  track: HTMLElement,
+  canonicalIndex: number,
+  revealedCanonicals?: Set<number>
+) {
   const slides = getSlidesForCanonicalIndex(track, canonicalIndex);
   if (!slides.length) return;
 
@@ -198,7 +220,7 @@ async function revealCanonicalSlides(track: HTMLElement, canonicalIndex: number)
 
       slideEl.setAttribute("data-rmg-lazyloading", "true");
       try {
-        await revealSlide(slideEl);
+        await revealSlide(slideEl, revealedCanonicals);
       } finally {
         slideEl.removeAttribute("data-rmg-lazyloading");
       }
@@ -235,6 +257,40 @@ function markLazyShell(slideEl: HTMLElement) {
   });
 }
 
+function hydrateRevealedShell(slideEl: HTMLElement, revealedCanonicals?: Set<number>) {
+  slideEl.setAttribute("data-rmg-lazyload", "");
+  slideEl.setAttribute("data-rmg-lazyloaded", "true");
+  slideEl.removeAttribute("data-rmg-lazyloading");
+  slideEl.removeAttribute("aria-busy");
+
+  const targets = Array.from(slideEl.querySelectorAll<HTMLElement>(`[${LAZY_ATTR}]`));
+  for (const t of targets) {
+    const src = t.getAttribute(LAZY_ATTR);
+    if (!src) continue;
+
+    if (t instanceof HTMLImageElement) {
+      t.src = src;
+      t.style.opacity = "1";
+      t.style.transition = t.style.transition || "opacity 220ms ease";
+    } else {
+      (t.style as any).backgroundImage = `url("${src}")`;
+      t.style.opacity = "1";
+    }
+
+    t.removeAttribute(LAZY_ATTR);
+  }
+
+  slideEl.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+    if (img.getAttribute("src") && img.getAttribute("src") !== RMG_BLANK) {
+      img.style.opacity = "1";
+      img.style.transition = img.style.transition || "opacity 220ms ease";
+    }
+  });
+
+  hideSpinnerEl(slideEl.querySelector<HTMLElement>("[data-rmg-spinner]"));
+  rememberRevealedCanonical(slideEl, revealedCanonicals);
+}
+
 function nextFrame(): Promise<void> {
   return new Promise((r) => requestAnimationFrame(() => r()));
 }
@@ -263,7 +319,7 @@ async function decodeImage(img: HTMLImageElement): Promise<void> {
   });
 }
 
-async function revealSlide(slideEl: HTMLElement) {
+async function revealSlide(slideEl: HTMLElement, revealedCanonicals?: Set<number>) {
   // Don’t double-run
   if (slideEl.getAttribute("data-rmg-lazyloaded") === "true") return;
 
@@ -315,6 +371,7 @@ async function revealSlide(slideEl: HTMLElement) {
   }
 
   slideEl.setAttribute("data-rmg-lazyloaded", "true");
+  rememberRevealedCanonical(slideEl, revealedCanonicals);
   slideEl.removeAttribute("aria-busy");
 
   if (sp) hideSpinnerEl(sp);
@@ -323,6 +380,8 @@ async function revealSlide(slideEl: HTMLElement) {
 function detectKindFromDom(slideEl: HTMLElement): 'video' | 'image' {
   // Plyr root
   if (slideEl.querySelector('.plyr')) return 'video';
+
+  if (slideEl.querySelector('[data-rmg-video-snapshot="true"]')) return 'video';
 
   // Native video
   if (slideEl.querySelector('video')) return 'video';
@@ -336,7 +395,13 @@ function detectKindFromDom(slideEl: HTMLElement): 'video' | 'image' {
   return 'image';
 }
 
+function isRmgVideoElement(child: ReactElement<any>) {
+  return child.type === Video;
+}
+
 function detectKindFromChild(child: ReactElement<any>): 'video' | 'image' {
+  if (isRmgVideoElement(child)) return 'video';
+
   if (typeof child.type === 'string') {
     const tagName = child.type.toLowerCase();
     return tagName === 'video' || tagName === 'iframe' ? 'video' : 'image';
@@ -396,7 +461,6 @@ type PlyrApi = APITypes | null;
 
 type PlyrRefsByIndex = React.RefObject<Record<number, PlyrApi>>;
 type PlyrRefsByRenderedIndex = React.RefObject<Record<number, PlyrApi>>;
-type RegisterCanonicalVideoApi = (args: CanonicalPlaybackRegistration) => void;
 
 function cloneSlide(
   child: ReactElement<any>,
@@ -410,34 +474,37 @@ function cloneSlide(
   isClone?: boolean,
   plyrRefsByIdx?: PlyrRefsByIndex,
   plyrRefsByRenderedIdx?: PlyrRefsByRenderedIndex,
-  registerCanonicalVideoApi?: RegisterCanonicalVideoApi
+  videoSnapshotStore?: VideoSnapshotStore,
+  revealedCanonicals?: Set<number>
 ): ReactElement<CarouselChildProps> {
   const normIdx =
     cellCountForIdx != null
       ? ((elementIndex % cellCountForIdx) + cellCountForIdx) % cellCountForIdx
       : elementIndex;
   const kind = detectKindFromChild(child);
+  const isCanonicallyRevealed = revealedCanonicals?.has(normIdx) ?? false;
 
   const ctxVal = {
     normIdx,
     isClone: !!isClone,
-    registerPlyr: (api: APITypes | null) => {
+    videoSnapshotStore,
+    registerVideoRuntime: (runtime: VideoRuntimeRegistration | null) => {
       if (plyrRefsByRenderedIdx) {
-        if (api) plyrRefsByRenderedIdx.current[elementIndex] = api;
-        else delete plyrRefsByRenderedIdx.current[elementIndex];
+        if (runtime?.api) plyrRefsByRenderedIdx.current[elementIndex] = runtime.api
+        else delete plyrRefsByRenderedIdx.current[elementIndex]
       }
 
-      if (!isClone && plyrRefsByIdx) {
-        if (api) plyrRefsByIdx.current[normIdx] = api;
-        else delete plyrRefsByIdx.current[normIdx];
+      if (plyrRefsByIdx) {
+        if (runtime?.api) plyrRefsByIdx.current[normIdx] = runtime.api
+        else delete plyrRefsByIdx.current[normIdx]
       }
 
-      registerCanonicalVideoApi?.({
-        renderedIndex: elementIndex,
-        canonicalIndex: normIdx,
-        isClone: !!isClone,
-        api,
-      })
+      if (runtime?.api) {
+        videoSnapshotStore?.registerOriginal(runtime)
+        return
+      }
+
+      videoSnapshotStore?.unregisterOriginal(normIdx)
     },
   };
 
@@ -481,7 +548,10 @@ function cloneSlide(
       if (el && !cells.current.some((c) => c.element === el)) {
         cells.current.push({ element: el, index: elementIndex });
       }
-      if (el && lazyLoad?.enabled) markLazyShell(el);
+      if (el && lazyLoad?.enabled) {
+        if (isCanonicallyRevealed) hydrateRevealedShell(el, revealedCanonicals);
+        else markLazyShell(el);
+      }
 
       if (el) {
         const kind = detectKindFromDom(el);
@@ -504,8 +574,25 @@ function cloneSlide(
 
   const LAZY_ATTR = "data-rmg-lazy-src";
 
-  if (
+  if (isClone && isRmgVideoElement(child) && videoSnapshotStore) {
+    const videoProps = child.props ?? {};
+    contentNode = (
+      <VideoCloneSnapshot
+        canonicalIndex={normIdx}
+        store={videoSnapshotStore}
+        src={videoProps.src}
+        poster={videoProps.poster}
+        source={videoProps.source}
+        sourceBuilder={videoProps.sourceBuilder}
+        options={videoProps.options}
+        className={videoProps.className}
+        style={videoProps.style}
+        lazyLoad={videoProps.lazyLoad}
+      />
+    );
+  } else if (
     lazyLoad?.enabled &&
+    !isCanonicallyRevealed &&
     typeof child.type === "string" &&
     child.type.toLowerCase() === "img"
   ) {
@@ -614,6 +701,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     sliderFriction,
     indexChannel: externalIndexChannel,
     introOptions,
+    introUnlocked,
     lazyLoad,
     rippleEnabled,
     rippleClassName,
@@ -704,9 +792,11 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   const lastGeomSigRef = useRef<string>("");
   const plyrRefsByIdx = useRef<Record<number, any>>({});
   const plyrRefsByRenderedIdx = useRef<Record<number, any>>({});
-  const playbackSync = useMemo(() => createCanonicalPlaybackSyncManager(), [buildKey]);
+  // Video loop clones use DOM snapshots instead of duplicate live players.
+  const videoSnapshotStore = useMemo(() => createVideoSnapshotStore(), [buildKey]);
   const lastCloneSigRef = useRef<string>("");
   const shieldRef = useRef<ReturnType<typeof createGestureShield> | null>(null);
+  const revealedCanonicalIndicesRef = useRef<Set<number>>(new Set());
   const internalIndexChannel = useMemo(() => createIndexChannel(), []);
   const indexChannel = externalIndexChannel ?? internalIndexChannel;
   const isRtl = direction === 'rtl' ? true : false
@@ -810,26 +900,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
   useEffect(() => {
     return () => {
-      playbackSync.destroy()
+      videoSnapshotStore.destroy()
     }
-  }, [playbackSync]);
-
-  const registerCanonicalVideoApi = useCallback(
-    (args: CanonicalPlaybackRegistration) => {
-      const { renderedIndex, canonicalIndex, isClone, api } = args
-      if (api) {
-        playbackSync.register({
-          renderedIndex,
-          canonicalIndex,
-          isClone,
-          api,
-        })
-        return
-      }
-      playbackSync.unregister(renderedIndex)
-    },
-    [playbackSync]
-  )
+  }, [videoSnapshotStore]);
 
   // fire once per canonical index (prevents spam while scrolling)
   const ioSeenRef = useRef<Set<number>>(new Set());
@@ -879,7 +952,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       {
         root,
         rootMargin: "0px", // preload slightly before fully visible
-        threshold: 0.6,
+        threshold: 0.1,
       }
     );
 
@@ -931,7 +1004,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       if (slideEl.getAttribute('data-rmg-lazyloading') === 'true') return;
 
       slideEl.setAttribute('data-rmg-lazyloading', 'true');
-      void revealSlide(slideEl).finally(() => {
+      void revealSlide(slideEl, revealedCanonicalIndicesRef.current).finally(() => {
         slideEl.removeAttribute('data-rmg-lazyloading');
       });
     });
@@ -967,6 +1040,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   useEffect(() => {
     ioSeenRef.current.clear();
     fsPreloadSeenRef.current.clear();
+    revealedCanonicalIndicesRef.current.clear();
   }, [cellCount, childrenKey]);
 
   useEffect(() => {
@@ -1369,8 +1443,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     };
   }
 
-  function computeCloneSig(originals: number, per: number, useCols: boolean, cellSize?: number) {
-    return `${originals}|per=${per}|cols=${useCols ? cellsPerSlide : 0}|cell=${cellSize ?? 0}|wrap=${wrap ? 1 : 0}`;
+  function computeCloneSig(originals: number, per: number, useCols: boolean) {
+    return `${originals}|per=${per}|cols=${useCols ? cellsPerSlide : 0}|wrap=${wrap ? 1 : 0}`;
   }
 
   const normalizedLazy = useMemo(
@@ -1386,7 +1460,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       if (!track) return;
       if (canonicalIndex < 0 || canonicalIndex >= cellCount) return;
 
-      void revealCanonicalSlides(track, canonicalIndex);
+      void revealCanonicalSlides(track, canonicalIndex, revealedCanonicalIndicesRef.current);
     },
     [normalizedLazy.enabled, cellCount]
   );
@@ -1400,6 +1474,33 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   }, [normalizedLazy.enabled, layoutReady, clonedChildren.length, preloadCanonicalIndex]);
 
   useEffect(() => {
+    if (!normalizedLazy.enabled) return;
+    if (!layoutReady) return;
+    if (!clonedChildren.length) return;
+
+    let cancelled = false;
+    const frameId = requestAnimationFrame(() => {
+      if (cancelled) return;
+      const track = slider.current;
+      if (!track) return;
+
+      const next = new Set<number>([selectedIndex.current]);
+      cellsInViewInternal().forEach((idx) => next.add(idx));
+
+      next.forEach((idx) => {
+        if (idx >= 0 && idx < cellCount) {
+          void revealCanonicalSlides(track, idx, revealedCanonicalIndicesRef.current);
+        }
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frameId);
+    };
+  }, [normalizedLazy.enabled, layoutReady, clonedChildren.length, cellCount]);
+
+  useEffect(() => {
     const el = slider.current;
     if (!el) return;
 
@@ -1410,6 +1511,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
       const originals = rawKids.length;
       if (originals < 1) {
+        el.style.removeProperty("--rmg-slide-main-size");
         clonesCountRef.current = 0;
         loopRenderOffsetRef.current = 0;
         cells.current = [];
@@ -1444,6 +1546,12 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         cellSize = (cw - totalGap) / cols;
       }
 
+      if (useCols && cellSize != null) {
+        el.style.setProperty("--rmg-slide-main-size", `${cellSize}px`);
+      } else {
+        el.style.removeProperty("--rmg-slide-main-size");
+      }
+
       let sum = 0;
       let count = 0;
       for (const slot of originalEls) {
@@ -1473,7 +1581,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         visibleImagesRef.current = per;
       }
 
-      const sig = computeCloneSig(originals, per, useCols, cellSize);
+      const sig = computeCloneSig(originals, per, useCols);
       if (sig === lastCloneSigRef.current) return;
       lastCloneSigRef.current = sig;
 
@@ -1485,7 +1593,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         useCols && cellSize != null
           ? {
               flex: '0 0 auto',
-              [AX.sizeKey]: `${cellSize}px`,
+              [AX.sizeKey]: 'var(--rmg-slide-main-size)',
             } as any
           : undefined;
 
@@ -1506,7 +1614,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
                 true,
                 plyrRefsByIdx,
                 plyrRefsByRenderedIdx,
-                registerCanonicalVideoApi
+                videoSnapshotStore,
+                revealedCanonicalIndicesRef.current
               )
             )
         );
@@ -1526,7 +1635,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
             false,
             plyrRefsByIdx,
             plyrRefsByRenderedIdx,
-            registerCanonicalVideoApi
+            videoSnapshotStore,
+            revealedCanonicalIndicesRef.current
           )
         )
       );
@@ -1548,7 +1658,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
                 true,
                 plyrRefsByIdx,
                 plyrRefsByRenderedIdx,
-                registerCanonicalVideoApi
+                videoSnapshotStore,
+                revealedCanonicalIndicesRef.current
               )
             )
         );
@@ -1567,7 +1678,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     cellsPerSlide,
     buildKey,
     wrap,
-    registerCanonicalVideoApi,
+    videoSnapshotStore,
   ]);
 
   useEffect(() => {
@@ -1889,11 +2000,11 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
             const idx = idxAttr != null ? parseInt(idxAttr, 10) : NaN;
 
             if (Number.isFinite(idx)) {
-              void revealCanonicalSlides(track, idx);
+              void revealCanonicalSlides(track, idx, revealedCanonicalIndicesRef.current);
             } else {
               if (slideEl.getAttribute("data-rmg-lazyloading") !== "true") {
                 slideEl.setAttribute("data-rmg-lazyloading", "true");
-                void revealSlide(slideEl).finally(() => {
+                void revealSlide(slideEl, revealedCanonicalIndicesRef.current).finally(() => {
                   slideEl.removeAttribute("data-rmg-lazyloading");
                 });
               }
@@ -1950,25 +2061,12 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (inView) return;
-    if (!sliderContainer.current || !layoutReady || !engineReady || !isReady || !isMeasured) return;
-
-    const el = sliderContainer.current;
-
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    io.observe(el);
-    return () => io.disconnect();
-  }, [layoutReady, engineReady, isReady, isMeasured, inView]);
+  useInViewOnce(
+    layoutReady && engineReady && isReady && isMeasured,
+    sliderContainer,
+    () => setInView(true),
+    { threshold: 0.2 }
+  );
 
   const programNavRef = useRef(false);
 
@@ -3363,7 +3461,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     className: [
       styles.fade_container,
       rtlCls,
-      (isReady && inView) ? styles.fadeInActive : styles.fadeInStart,
+      (isReady && inView && (introUnlocked ?? true)) ? styles.fadeInActive : styles.fadeInStart,
     ].join(' '),
     style: {
       position: 'relative',
@@ -3375,7 +3473,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     ? (
         <div {...baseContainerProps}>
           {normalizedIntro.renderIntro(
-            { active: isReady && inView, containerProps: baseContainerProps },
+            { active: isReady && inView && (introUnlocked ?? true), containerProps: baseContainerProps },
             inner
           )}
         </div>

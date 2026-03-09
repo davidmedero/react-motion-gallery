@@ -3,10 +3,14 @@ import styles from "../Entries.module.css";
 import type { EntriesOptions } from "../types";
 import { useEntryInView } from "../hooks/useEntryInView";
 import { useEntryDecodeReady } from "../hooks/useEntryDecodeReady";
+import { usePrefersReducedMotion } from "../../shared/hooks/usePrefersReducedMotion";
 import { EntrySkeletonCard, EntrySkeletonSpec } from "./EntrySkeleton";
 import { useNormalizedEntriesIntro, useNormalizedEntriesLoading } from "../normalize";
 import { MediaItem } from "../../shared/types/media";
 import { SliderHandle } from "../../slider/types";
+
+const SKELETON_EXIT_MS = 220;
+const INTRO_OVERLAP_MS = 220;
 
 type Props = {
   enabled: boolean;
@@ -101,6 +105,7 @@ export function EntryList({
   const loadingOpts = (entries as any)?.loading as { enabled?: boolean; force?: boolean } | undefined;
   const loadingEnabled = loadingOpts?.enabled ?? true;
   const loadingForce = loadingOpts?.force ?? false;
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const loadingActive = enabled && loadingEnabled;
   const forceLoading = loadingActive && loadingForce;
@@ -119,6 +124,11 @@ export function EntryList({
   });
 
   const showGlobalLoading = loadingActive && (forceLoading || len === 0);
+  const resolvedSkeletonExitMs = prefersReducedMotion ? 0 : SKELETON_EXIT_MS;
+  const introUnlockDelayMs = Math.max(0, resolvedSkeletonExitMs - INTRO_OVERLAP_MS);
+  const [introUnlocked, setIntroUnlocked] = React.useState(() => !showGlobalLoading);
+
+  let anyReveal = false;
 
   const entryRows = !len
     ? null
@@ -134,6 +144,10 @@ export function EntryList({
           : loadingActive
             ? hasEver && (loadingN.waitForDecode ? isDecoded : true)
             : shouldMountContent;
+
+        if (reveal) {
+          anyReveal = true;
+        }
 
         const showSkeleton = forceLoading
           ? true
@@ -291,6 +305,26 @@ export function EntryList({
         );
       });
 
+  React.useEffect(() => {
+    if (showGlobalLoading) {
+      setIntroUnlocked(false);
+      return;
+    }
+
+    if (!loadingActive || prefersReducedMotion || introUnlockDelayMs === 0) {
+      setIntroUnlocked(loadingActive ? anyReveal : true);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIntroUnlocked(anyReveal);
+    }, introUnlockDelayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [anyReveal, introUnlockDelayMs, loadingActive, prefersReducedMotion, showGlobalLoading]);
+
   const containerProps: React.HTMLAttributes<HTMLDivElement> = {
     className: [styles.entryList, entries.entryList?.className].filter(Boolean).join(" "),
     style: {
@@ -305,6 +339,6 @@ export function EntryList({
   const inner = <div {...containerProps}>{entryRows}</div>;
 
   return introN.renderIntro
-    ? introN.renderIntro({ active: !showGlobalLoading, containerProps }, inner)
+    ? introN.renderIntro({ active: !showGlobalLoading && introUnlocked, containerProps }, inner)
     : inner;
 }

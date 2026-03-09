@@ -162,6 +162,69 @@ function Demo() {
   );
 }
 
+function LazyLoadDemo() {
+  return (
+    <div style={{ padding: 24, maxWidth: 1100 }}>
+      <h3 style={{ margin: "0 0 12px" }}>Grid lazyLoad</h3>
+      <p style={{ margin: "0 0 16px", opacity: 0.8 }}>
+        Grid owns image lazy loading and per-item spinners. Mixed text remains visible immediately.
+      </p>
+
+      <Grid
+        columns={{ 0: 1, 640: 2, 960: 3, 1280: 4 }}
+        gap={12}
+        lazyLoad={{
+          enabled: true,
+        }}
+        loading={{
+          // force: true,
+          skeleton: {
+              layout: {
+                kind: "grid",
+                item: { kind: "rect", style: { aspectRatio: "4/5" } },
+              },
+            },
+        }}
+        intro={{
+          durationMs: 1000,
+          staggerMs: 100
+        }}
+      >
+        {IMG_ITEMS.slice(0, 8).map((src, i) => (
+          <article
+            key={`lazy-grid-${src}`}
+            style={{
+              borderRadius: 16,
+              overflow: "hidden",
+              background: "#fff",
+              boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
+            }}
+          >
+            <img
+              src={src}
+              alt={`Lazy grid ${i + 1}`}
+              style={{
+                width: "100%",
+                aspectRatio: "4 / 5",
+                display: "block",
+                objectFit: "cover",
+              }}
+            />
+            <div style={{ padding: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#10253d" }}>
+                Card {i + 1}
+              </div>
+              <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.4, color: "#526173" }}>
+                Copy stays visible while the image loads.
+              </div>
+            </div>
+          </article>
+        ))}
+      </Grid>
+    </div>
+  );
+}
+
 const meta: Meta = {
   title: "RMG/Tests/Grid + Fullscreen Connection",
   component: Demo,
@@ -174,4 +237,8 @@ type Story = StoryObj;
 
 export const Connection: Story = {
   render: () => <Demo />,
+};
+
+export const LazyLoad: Story = {
+  render: () => <LazyLoadDemo />,
 };

@@ -9,6 +9,11 @@ export function getPrimaryImgEl(container: HTMLElement | null): HTMLImageElement
   return container.querySelector("img");
 }
 
+export function getFsMediaContainer(el: HTMLElement | null): HTMLElement | null {
+  if (!el) return null;
+  return el.closest?.('[data-rmg-fs-media="true"]') as HTMLElement | null;
+}
+
 export function getClientXY(evt: any): { clientX: number; clientY: number } {
   const clientX =
     evt?.touches?.[0]?.clientX ??
@@ -33,15 +38,27 @@ export function findImgAtPoint(
   const el = doc.elementFromPoint(x, y) as HTMLElement | null;
   if (!el) return null;
 
-  if (el.tagName?.toLowerCase() === "img") return el as any;
+  if (el.tagName?.toLowerCase() === "img") {
+    const mediaContainer = getFsMediaContainer(el);
+    return mediaContainer ? getPrimaryImgEl(mediaContainer) : (el as any);
+  }
+
+  const mediaContainer = getFsMediaContainer(el);
+  if (mediaContainer) {
+    return getPrimaryImgEl(mediaContainer);
+  }
 
   const img = el.querySelector?.("img");
   return (img as HTMLImageElement) || null;
 }
 
-export function readDataIndex(img: HTMLDivElement | null): number | null {
-  if (!img) return null;
-  const v = img.dataset.index;
+export function readDataIndex(el: HTMLElement | null): number | null {
+  if (!el) return null;
+
+  const v =
+    el.dataset.index ??
+    el.closest?.('[data-rmg-fs-slide="true"]')?.getAttribute("data-index") ??
+    null;
   if (v == null) return null;
   const n = parseInt(v, 10);
   return Number.isFinite(n) ? n : null;

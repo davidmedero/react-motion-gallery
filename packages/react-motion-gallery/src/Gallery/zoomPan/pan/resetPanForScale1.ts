@@ -4,6 +4,7 @@ import { Vector1DType } from "../../shared/motion/vector1d";
 import { LimitType } from "../../shared/motion/limit";
 import { ScrollBodyType } from "../../shared/motion/scrollBody";
 import { PercentOfViewType, ScrollBoundsType } from "../../shared/motion/scrollBounds";
+import { getPrimaryImgEl } from "../core/dom";
 
 type AnimationsLike = {
   resetBlend: () => void;
@@ -95,7 +96,8 @@ export function resetPanForScale1(args: ResetZoomArgs) {
   const firstChild = container.children[0] as HTMLElement | undefined;
   if (isVideoSlideElement(firstChild)) return;
 
-  const imgEl = firstChild as HTMLImageElement;
+  const imgEl = getPrimaryImgEl(container);
+  if (!imgEl) return;
 
   const rect = container.getBoundingClientRect();
   const containerW = rect.width;

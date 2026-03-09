@@ -2,6 +2,7 @@ import * as React from "react";
 import { EventStore } from "../../shared/motion/eventStore";
 import { createDragTracker } from "../../shared/input/dragTracker";
 import type { PanRuntimeDeps, WindowType, ImageRef } from "./types";
+import { getPrimaryImgEl } from "../core/dom";
 
 function Axis() {
   return {
@@ -145,8 +146,7 @@ export function usePanDrag(d: PanRuntimeDeps) {
 
         if (isClick) {
           const current = d.currentImage.current as any;
-          const imgEl =
-            (current?.querySelector?.("img") ?? current?.children?.[0]) as HTMLImageElement | null;
+          const imgEl = getPrimaryImgEl(current);
 
           if (imgEl) {
             const upAny = evt as any;

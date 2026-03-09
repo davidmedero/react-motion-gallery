@@ -24,6 +24,40 @@
   object-fit: cover;
 }
 
+.masonryShell {
+  display: grid;
+  position: relative;
+  width: 100%;
+}
+
+.masonryContentLayer,
+.masonryLoadingLayer {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.masonryContentLayer {
+  position: relative;
+  z-index: 1;
+}
+
+.masonryContentBlocked {
+  pointer-events: none;
+}
+
+.masonryLoadingLayer {
+  position: relative;
+  z-index: 2;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+  will-change: opacity;
+}
+
+.masonryLoadingLayerExit {
+  opacity: 0;
+}
+
 .introContainer {
   opacity: 0;
 }
@@ -114,4 +148,10 @@
 @keyframes rmgShimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .masonryLoadingLayer {
+    transition: none;
+  }
 }

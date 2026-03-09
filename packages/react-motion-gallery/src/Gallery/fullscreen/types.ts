@@ -30,6 +30,24 @@ export type FsIntroRequest = null | {
   closestSelector?: string;
 };
 
+/**
+ * Custom fullscreen image renderers must output a real DOM `<img>` somewhere in
+ * the returned tree so zoom, pinch, pan, and close transitions can resolve the
+ * primary active image element. Wrapped renderers such as `next/image` are
+ * supported, but the wrapper should act as layout scaffolding instead of
+ * shrinking the fullscreen media surface on both axes or forcing the inner
+ * image itself to behave like a full-bleed fill box.
+ *
+ * When this callback is provided and `fullscreen.lazyLoad.images.enabled` is
+ * `false`, the renderer owns loading, placeholders, and image optimization
+ * behavior exactly as usual.
+ *
+ * When this callback is provided and `fullscreen.lazyLoad.images.enabled` is
+ * `true`, the built-in fullscreen lazy/decode/spinner pipeline waits on the
+ * primary descendant DOM `<img>`. Custom placeholders or spinners inside the
+ * renderer may still be visible beneath the built-in fullscreen spinner once
+ * the renderer mounts.
+ */
 export type FSImageRender = (args: {
   item: Extract<MediaItem, { kind: "image" }>;
   index: number;

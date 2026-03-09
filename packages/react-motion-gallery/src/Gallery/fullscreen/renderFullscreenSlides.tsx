@@ -3,6 +3,7 @@
 import * as React from "react";
 import type { APITypes } from "plyr-react";
 import { detectProvider, PlyrProp } from "../video/plyr";
+import { VideoCloneSnapshot } from "../video/VideoCloneSnapshot";
 import { installDblclickGuardWhenReady } from "../video/plyrGuards";
 import { Plyr } from "../video/LazyPlyr";
 import { MediaItem } from "../shared/types/media";
@@ -13,7 +14,17 @@ import {
   FullscreenLazyLoadConfig,
 } from "./types";
 import styles from "./renderFullscreenSlides.module.css";
-import type { CanonicalPlaybackRegistration } from "../video/canonicalPlaybackSync";
+import type { VideoSnapshotStore } from "../video/videoSnapshotStore";
+import {
+  applyImageHints,
+  findPrimaryTrackableImage,
+  nextFrame,
+  prepareImage,
+  readResolvedImageSrc,
+  restorePreparedImage,
+  revealPreparedImage,
+  waitForImageDecode,
+} from "../shared/lazy/imageLifecycle";
 
 type ResolvedPlyrOptions = NonNullable<PlyrProp>["options"];
 
@@ -71,13 +82,18 @@ type RenderFullscreenSlidesArgs = {
   fsLazyListenersVideosRef?: React.RefObject<Set<() => void>>;
 
   canonicalLength?: number;
+  openingCanonicalIndex?: number | null;
+  openingInProgress?: boolean;
+  deferLiveVideoUntilVisible?: boolean;
 
   // ✅ separate caches
   fsDecodedImagesRef: React.RefObject<Set<string>>;
+  fsCustomDecodedImagesRef: React.RefObject<Set<string>>;
+  fsCustomResolvedSrcByKeyRef: React.RefObject<Map<string, string>>;
   fsPreparedVideosRef: React.RefObject<Set<string>>;
+  videoSnapshotStore?: VideoSnapshotStore;
 
   getMediaKey: (item: MediaItem) => string;
-  onRegisterVideoApi?: (args: CanonicalPlaybackRegistration) => void;
 };
 
 function isWrappedItems(itemsLen: number, canonicalLen: number) {
@@ -147,26 +163,6 @@ function hideSpinnerEl(spinnerEl: HTMLElement | null) {
   spinnerEl.style.setProperty("pointer-events", "none", "important");
 }
 
-function withForcedCloneMuteOptions(
-  options: ResolvedPlyrOptions | undefined
-): ResolvedPlyrOptions {
-  const base = (options ?? {}) as any;
-  const storage =
-    typeof base.storage === "object" && base.storage != null
-      ? { ...base.storage }
-      : {};
-
-  return {
-    ...base,
-    muted: true,
-    volume: 0,
-    storage: {
-      ...storage,
-      enabled: false,
-    },
-  } as any;
-}
-
 function pauseApi(api: APITypes | null) {
   if (!api) return;
 
@@ -186,12 +182,81 @@ function pauseApi(api: APITypes | null) {
   } catch {}
 }
 
+function parsePlyrRatio(r: unknown): number | null {
+  if (typeof r === "number" && Number.isFinite(r) && r > 0) return r;
+
+  if (typeof r === "string") {
+    const s = r.trim();
+    const mColon = s.match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+    if (mColon) {
+      const w = parseFloat(mColon[1]);
+      const h = parseFloat(mColon[2]);
+      if (w > 0 && h > 0) return w / h;
+    }
+
+    const mSlash = s.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+    if (mSlash) {
+      const w = parseFloat(mSlash[1]);
+      const h = parseFloat(mSlash[2]);
+      if (w > 0 && h > 0) return w / h;
+    }
+
+    const asNum = Number(s);
+    if (Number.isFinite(asNum) && asNum > 0) return asNum;
+  }
+
+  if (typeof r === "object" && r) {
+    const w = (r as any).w ?? (r as any).width;
+    const h = (r as any).h ?? (r as any).height;
+    if (typeof w === "number" && typeof h === "number" && w > 0 && h > 0) {
+      return w / h;
+    }
+  }
+
+  return null;
+}
+
+function resolveVideoPoster(item: Extract<MediaItem, { kind: "video" }>, plyr: PlyrProp): string | undefined {
+  const poster = (plyr?.source as any)?.poster ?? (item as any).poster ?? (item as any).thumb;
+  return typeof poster === "string" && poster ? poster : undefined;
+}
+
+function resolveVideoSrc(item: Extract<MediaItem, { kind: "video" }>, plyr: PlyrProp): string {
+  const sourceSrc = (plyr?.source as any)?.sources?.[0]?.src;
+  const src = sourceSrc ?? (item as any).src ?? "";
+  return typeof src === "string" ? src : String(src ?? "");
+}
+
+function isCrossOriginMediaUrl(src: string) {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const url = new URL(src, window.location.href);
+    return url.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function withSnapshotCrossoriginOptions(
+  options: ResolvedPlyrOptions | undefined,
+  forceCrossorigin: boolean
+): ResolvedPlyrOptions | undefined {
+  if (!forceCrossorigin) return options;
+  const base = (options ?? {}) as any;
+  if (base.crossorigin != null) return base;
+  return {
+    ...base,
+    crossorigin: true,
+  } as any;
+}
+
 /**
  * IMAGE FLOW
  * - gates only on fsLazy.images + fsLazyAllowedImagesRef + fsLazyListenersImagesRef
  * - caches only in fsDecodedImagesRef
  */
-function FsImageContent(props: {
+function FsLazyCustomImageContent(props: {
   item: Extract<MediaItem, { kind: "image" }>;
   renderedIndex: number;
   canonicalIndex: number;
@@ -199,13 +264,14 @@ function FsImageContent(props: {
   isZoomed: boolean;
   className: string;
   baseStyle: React.CSSProperties;
-  renderImage?: RenderFullscreenSlidesArgs["renderImage"];
+  renderImage: NonNullable<RenderFullscreenSlidesArgs["renderImage"]>;
 
-  fsLazy?: FullscreenLazyLoadConfig;
+  fsLazy: FullscreenLazyLoadConfig;
   fsLazyAllowedRef?: React.RefObject<Set<number>>;
   fsLazyListenersRef?: React.RefObject<Set<() => void>>;
 
-  fsDecodedImagesRef: React.RefObject<Set<string>>;
+  fsCustomDecodedImagesRef: React.RefObject<Set<string>>;
+  fsCustomResolvedSrcByKeyRef: React.RefObject<Map<string, string>>;
   getMediaKey: (item: MediaItem) => string;
 }) {
   const {
@@ -220,12 +286,273 @@ function FsImageContent(props: {
     fsLazy,
     fsLazyAllowedRef,
     fsLazyListenersRef,
-    fsDecodedImagesRef,
+    fsCustomDecodedImagesRef,
+    fsCustomResolvedSrcByKeyRef,
     getMediaKey,
   } = props;
 
-  // If user provided renderImage, keep behavior unchanged.
-  if (renderImage) {
+  const key = React.useMemo(() => getMediaKey(item), [
+    getMediaKey,
+    item,
+    (item as any).src,
+    (item as any).srcSet,
+    (item as any).sizes,
+  ]);
+
+  const seenBefore = fsCustomDecodedImagesRef.current.has(key);
+  const cachedResolvedSrc = fsCustomResolvedSrcByKeyRef.current.get(key) ?? "";
+
+  const computeAllowed = React.useCallback(() => {
+    if (seenBefore) return true;
+    return !!fsLazyAllowedRef?.current?.has(canonicalIndex);
+  }, [seenBefore, fsLazyAllowedRef, canonicalIndex]);
+
+  const [mountRenderer, setMountRenderer] = React.useState<boolean>(() => computeAllowed());
+
+  const hostRef = React.useRef<HTMLSpanElement | null>(null);
+  const spinnerRef = React.useRef<HTMLDivElement | null>(null);
+
+  const showSpinner = React.useCallback((show: boolean) => {
+    const sp = spinnerRef.current;
+    if (!sp) return;
+    if (show) showSpinnerEl(sp);
+    else hideSpinnerEl(sp);
+  }, []);
+
+  const spinnerResolved = React.useMemo(() => {
+    return resolveFsSpinnerNode(fsLazy.spinner, { kind: "image", isClone });
+  }, [fsLazy.spinner, isClone]);
+
+  const spinnerClassName = React.useMemo(() => {
+    return [
+      spinnerResolved.isCustom ? styles.spinnerWrap : styles.spinner,
+      fsLazy.spinnerClassName,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }, [spinnerResolved.isCustom, fsLazy.spinnerClassName]);
+
+  const spinnerEl = spinnerResolved.render ? (
+    spinnerResolved.isCustom ? (
+      <div
+        ref={spinnerRef}
+        className={spinnerClassName}
+        style={fsLazy.spinnerStyle}
+        data-rmg-image-spinner
+      >
+        {spinnerResolved.node}
+      </div>
+    ) : (
+      <div
+        ref={spinnerRef}
+        className={spinnerClassName}
+        style={fsLazy.spinnerStyle}
+        data-rmg-image-spinner
+      />
+    )
+  ) : null;
+
+  React.useEffect(() => {
+    if (computeAllowed()) {
+      setMountRenderer(true);
+      return;
+    }
+
+    setMountRenderer(false);
+
+    const cb = () => {
+      if (!computeAllowed()) return;
+      setMountRenderer(true);
+      fsLazyListenersRef?.current?.delete(cb);
+    };
+
+    fsLazyListenersRef?.current?.add(cb);
+
+    return () => {
+      fsLazyListenersRef?.current?.delete(cb);
+    };
+  }, [computeAllowed, fsLazyListenersRef, key]);
+
+  React.useLayoutEffect(() => {
+    if (!mountRenderer) {
+      showSpinner(true);
+      return;
+    }
+
+    const host = hostRef.current;
+    if (!host) return;
+
+    let cancelled = false;
+    let revealed = false;
+    let timedOut = false;
+    let observer: MutationObserver | null = null;
+    let timeoutId = 0;
+    let activeImg: HTMLImageElement | null = null;
+    let prepared: ReturnType<typeof prepareImage> | null = null;
+
+    const cleanupPrepared = () => {
+      if (!prepared || revealed) return;
+      restorePreparedImage(prepared);
+      prepared = null;
+    };
+
+    const finish = (img: HTMLImageElement | null, markReady: boolean) => {
+      if (cancelled) return;
+
+      cleanupPrepared();
+      showSpinner(false);
+
+      if (markReady && img?.naturalWidth) {
+        fsCustomDecodedImagesRef.current.add(key);
+        const resolvedSrc = readResolvedImageSrc(img);
+        if (resolvedSrc) {
+          fsCustomResolvedSrcByKeyRef.current.set(key, resolvedSrc);
+        }
+      }
+    };
+
+    const manageImage = async (img: HTMLImageElement) => {
+      if (cancelled || timedOut) return;
+      if (activeImg === img) return;
+
+      activeImg = img;
+      applyImageHints(img);
+
+      const resolvedSrc = readResolvedImageSrc(img);
+      const reuseDecodedImage =
+        seenBefore &&
+        !!cachedResolvedSrc &&
+        resolvedSrc === cachedResolvedSrc &&
+        img.complete &&
+        img.naturalWidth > 0;
+
+      if (reuseDecodedImage) {
+        finish(img, false);
+        return;
+      }
+
+      prepared = prepareImage(img);
+      showSpinner(true);
+
+      await waitForImageDecode(img).catch(() => {});
+      await nextFrame();
+
+      if (cancelled || timedOut || !prepared) return;
+
+      revealPreparedImage(prepared);
+      revealed = true;
+      prepared = null;
+
+      finish(img, img.naturalWidth > 0);
+    };
+
+    const tryFindPrimaryImage = () => {
+      const primaryImg = findPrimaryTrackableImage(host);
+      if (!primaryImg) return false;
+
+      observer?.disconnect();
+      observer = null;
+      if (timeoutId) window.clearTimeout(timeoutId);
+      void manageImage(primaryImg);
+      return true;
+    };
+
+    showSpinner(true);
+
+    if (!tryFindPrimaryImage()) {
+      observer = new MutationObserver(() => {
+        tryFindPrimaryImage();
+      });
+      observer.observe(host, { childList: true, subtree: true });
+
+      timeoutId = window.setTimeout(() => {
+        timedOut = true;
+        observer?.disconnect();
+        observer = null;
+        cleanupPrepared();
+        showSpinner(false);
+      }, 1000);
+    }
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+      observer?.disconnect();
+      cleanupPrepared();
+    };
+  }, [
+    mountRenderer,
+    showSpinner,
+    key,
+    seenBefore,
+    cachedResolvedSrc,
+    fsCustomDecodedImagesRef,
+    fsCustomResolvedSrcByKeyRef,
+  ]);
+
+  return (
+    <>
+      {mountRenderer ? (
+        <span ref={hostRef} style={{ display: "contents" }} data-rmg-fs-custom-image-host="true">
+          {renderImage({
+            item,
+            index: renderedIndex,
+            isZoomed,
+            className,
+            baseStyle,
+          }) as any}
+        </span>
+      ) : null}
+      {spinnerEl}
+    </>
+  );
+}
+
+function FsImageContent(props: {
+  item: Extract<MediaItem, { kind: "image" }>;
+  renderedIndex: number;
+  canonicalIndex: number;
+  isClone: boolean;
+  openingCanonicalIndex?: number | null;
+  openingInProgress?: boolean;
+  isZoomed: boolean;
+  className: string;
+  baseStyle: React.CSSProperties;
+  renderImage?: RenderFullscreenSlidesArgs["renderImage"];
+
+  fsLazy?: FullscreenLazyLoadConfig;
+  fsLazyAllowedRef?: React.RefObject<Set<number>>;
+  fsLazyListenersRef?: React.RefObject<Set<() => void>>;
+
+  fsDecodedImagesRef: React.RefObject<Set<string>>;
+  fsCustomDecodedImagesRef: React.RefObject<Set<string>>;
+  fsCustomResolvedSrcByKeyRef: React.RefObject<Map<string, string>>;
+  getMediaKey: (item: MediaItem) => string;
+}) {
+  const {
+    item,
+    renderedIndex,
+    canonicalIndex,
+    isClone,
+    openingCanonicalIndex,
+    openingInProgress,
+    isZoomed,
+    className,
+    baseStyle,
+    renderImage,
+    fsLazy,
+    fsLazyAllowedRef,
+    fsLazyListenersRef,
+    fsDecodedImagesRef,
+    fsCustomDecodedImagesRef,
+    fsCustomResolvedSrcByKeyRef,
+    getMediaKey,
+  } = props;
+
+  const lazyEnabled = !!fsLazy?.enabled;
+
+  // If user provided renderImage without fullscreen image lazy loading, keep behavior unchanged.
+  if (renderImage && !lazyEnabled) {
     return renderImage({
       item,
       index: renderedIndex,
@@ -235,7 +562,26 @@ function FsImageContent(props: {
     }) as any;
   }
 
-  const lazyEnabled = !!fsLazy?.enabled;
+  if (renderImage && fsLazy) {
+    return (
+      <FsLazyCustomImageContent
+        item={item}
+        renderedIndex={renderedIndex}
+        canonicalIndex={canonicalIndex}
+        isClone={isClone}
+        isZoomed={isZoomed}
+        className={className}
+        baseStyle={baseStyle}
+        renderImage={renderImage}
+        fsLazy={fsLazy}
+        fsLazyAllowedRef={fsLazyAllowedRef}
+        fsLazyListenersRef={fsLazyListenersRef}
+        fsCustomDecodedImagesRef={fsCustomDecodedImagesRef}
+        fsCustomResolvedSrcByKeyRef={fsCustomResolvedSrcByKeyRef}
+        getMediaKey={getMediaKey}
+      />
+    );
+  }
 
   const key = React.useMemo(() => getMediaKey(item), [
     getMediaKey,
@@ -254,13 +600,18 @@ function FsImageContent(props: {
   const didRevealRef = React.useRef(false);
 
   const any = item as any;
+  const isOpeningTarget =
+    !!openingInProgress &&
+    !isClone &&
+    openingCanonicalIndex === canonicalIndex;
 
   const computeAllowed = React.useCallback(() => {
+    if (isOpeningTarget) return true;
     // Once revealed before, never gate again
     if (seenBefore) return true;
     if (!lazyEnabled) return true;
     return !!fsLazyAllowedRef?.current?.has(canonicalIndex);
-  }, [seenBefore, lazyEnabled, fsLazyAllowedRef, canonicalIndex]);
+  }, [isOpeningTarget, seenBefore, lazyEnabled, fsLazyAllowedRef, canonicalIndex]);
 
   const showSpinner = React.useCallback((show: boolean) => {
     const sp = spinnerRef.current;
@@ -320,6 +671,19 @@ function FsImageContent(props: {
     if (nextSizes) img.sizes = nextSizes;
   }, [any.src, any.srcSet, any.sizes, item.src]);
 
+  const primeOpeningImage = React.useCallback(() => {
+    if (!isOpeningTarget) return;
+
+    const img = imgRef.current;
+    if (!img) return;
+
+    applySrc();
+
+    if (typeof img.decode === "function") {
+      void img.decode().catch(() => {});
+    }
+  }, [applySrc, isOpeningTarget]);
+
   const fadeIn = React.useCallback(() => {
     const img = imgRef.current;
     if (!img) return;
@@ -334,7 +698,7 @@ function FsImageContent(props: {
       const liveImg = imgRef.current;
       if (!liveImg) return;
 
-      liveImg.style.transition = "opacity 180ms ease";
+      liveImg.style.transition = "opacity 300ms ease";
       liveImg.style.opacity = "1";
 
       if (!didRevealRef.current) {
@@ -342,21 +706,47 @@ function FsImageContent(props: {
         fsDecodedImagesRef.current.add(key);
       }
 
-      const clear = () => {
+      let cleared = false;
+      const clear = (ev?: TransitionEvent) => {
+        if (ev?.propertyName && ev.propertyName !== "opacity") return;
+        if (cleared) return;
+        cleared = true;
         liveImg.style.willChange = "";
+        liveImg.style.removeProperty("transition");
+        liveImg.removeEventListener("transitionend", clear);
       };
 
-      liveImg.addEventListener("transitionend", clear, { once: true });
+      liveImg.addEventListener("transitionend", clear);
+      window.setTimeout(() => clear(), 360);
     });
-  }, [fsDecodedImagesRef, key, seenBefore, showSpinner]);
+  }, [fsDecodedImagesRef, key, showSpinner]);
 
   React.useLayoutEffect(() => {
     const img = imgRef.current;
     if (!img) return;
 
+    if (isOpeningTarget) {
+      applySrc();
+      primeOpeningImage();
+
+      if (seenBefore) {
+        img.style.opacity = "1";
+        img.style.removeProperty("transition");
+        img.style.willChange = "";
+        showSpinner(false);
+        return;
+      }
+
+      img.style.opacity = "0";
+      img.style.transition = "none";
+      img.style.willChange = "opacity";
+      showSpinner(true);
+      return;
+    }
+
     if (seenBefore) {
       img.style.opacity = "1";
-      img.style.transition = "none";
+      img.style.removeProperty("transition");
       showSpinner(false);
       applySrc();
       return;
@@ -373,7 +763,7 @@ function FsImageContent(props: {
 
     showSpinner(true);
     applySrc();
-  }, [seenBefore, computeAllowed, applySrc, showSpinner]);
+  }, [isOpeningTarget, seenBefore, computeAllowed, applySrc, primeOpeningImage, showSpinner]);
 
   React.useEffect(() => {
     cleanupRef.current?.();
@@ -414,6 +804,8 @@ function FsImageContent(props: {
         }
 
         if (cancelled) return;
+        await nextFrame();
+        if (cancelled) return;
 
         fadeIn();
       } catch {
@@ -434,11 +826,38 @@ function FsImageContent(props: {
       return false;
     };
 
+    if (isOpeningTarget) {
+      primeOpeningImage();
+
+      if (seenBefore) {
+        applySrc();
+        showSpinner(false);
+
+        img.style.removeProperty("transition");
+        img.style.opacity = "1";
+        img.style.willChange = "";
+
+        cleanupRef.current = () => {
+          cancelled = true;
+        };
+        return cleanupRef.current;
+      }
+
+      applySrc();
+      showSpinner(true);
+      void revealAfterDecode();
+
+      cleanupRef.current = () => {
+        cancelled = true;
+      };
+      return cleanupRef.current;
+    }
+
     if (seenBefore) {
       applySrc();
       showSpinner(false);
 
-      img.style.transition = "none";
+      img.style.removeProperty("transition");
       img.style.opacity = "1";
       img.style.willChange = "";
 
@@ -474,12 +893,14 @@ function FsImageContent(props: {
 
     return cleanupRef.current;
   }, [
+    isOpeningTarget,
     seenBefore,
     lazyEnabled,
     fsLazyListenersRef,
     computeAllowed,
     applySrc,
     fadeIn,
+    primeOpeningImage,
     showSpinner,
   ]);
 
@@ -492,8 +913,8 @@ function FsImageContent(props: {
         className={className}
         draggable="false"
         decoding="async"
-        loading="lazy"
-        fetchPriority="low"
+        loading={isOpeningTarget ? "eager" : "lazy"}
+        fetchPriority={isOpeningTarget ? "high" : "low"}
         style={{
           ...baseStyle,
           display: "block",
@@ -512,34 +933,89 @@ function FsImageContent(props: {
  * "prepared" here means: we’ve mounted and/or reached a ready state at least once.
  * If you want stricter semantics ("poster warmed" vs "player ready"), split this into two sets later.
  */
-function FsVideoContent(props: {
+function FsCloneVideoPreview(props: {
   item: Extract<MediaItem, { kind: "video" }>;
   renderedIndex: number;
   canonicalIndex: number;
-  isClone: boolean;
   plyr: PlyrProp;
-
+  videoSnapshotStore?: VideoSnapshotStore;
   playerRefs: React.RefObject<(APITypes | null)[]>;
   defaultPlayerStyle: React.CSSProperties;
   fsVideoStyle?: React.CSSProperties;
   fsVideoClassName?: string;
-
   fsLazy?: FullscreenLazyLoadConfig;
-  fsLazyAllowedRef?: React.RefObject<Set<number>>;
-  fsLazyListenersRef?: React.RefObject<Set<() => void>>;
-
-  fsPreparedVideosRef: React.RefObject<Set<string>>;
-  getMediaKey: (item: MediaItem) => string;
-  onRegisterVideoApi?: (args: CanonicalPlaybackRegistration) => void;
-
   showFullscreenSlider: boolean;
 }) {
   const {
     item,
     renderedIndex,
     canonicalIndex,
-    isClone,
     plyr,
+    videoSnapshotStore,
+    playerRefs,
+    defaultPlayerStyle,
+    fsVideoStyle,
+    fsVideoClassName,
+    fsLazy,
+    showFullscreenSlider,
+  } = props;
+
+  React.useEffect(() => {
+      playerRefs.current[renderedIndex] = null;
+    return () => {
+      playerRefs.current[renderedIndex] = null;
+    };
+  }, [playerRefs, renderedIndex]);
+
+  if (!videoSnapshotStore) return null;
+
+  return (
+    <VideoCloneSnapshot
+      canonicalIndex={canonicalIndex}
+      store={videoSnapshotStore}
+      src={resolveVideoSrc(item, plyr)}
+      poster={resolveVideoPoster(item, plyr)}
+      source={plyr?.source ?? undefined}
+      options={plyr?.options ?? undefined}
+      className={["rmg__player", fsVideoClassName].filter(Boolean).join(" ")}
+      style={{
+        ...defaultPlayerStyle,
+        ...(fsVideoStyle ?? {}),
+        zIndex: 2,
+        pointerEvents: "none",
+        visibility: showFullscreenSlider ? "visible" : "hidden",
+        opacity: showFullscreenSlider ? 1 : 0,
+        transition: "opacity 220ms ease",
+        willChange: "opacity",
+      }}
+      lazyLoad={fsLazy}
+    />
+  );
+}
+
+function FsLiveVideoContent(props: {
+  item: Extract<MediaItem, { kind: "video" }>;
+  renderedIndex: number;
+  canonicalIndex: number;
+  plyr: PlyrProp;
+  videoSnapshotStore?: VideoSnapshotStore;
+  playerRefs: React.RefObject<(APITypes | null)[]>;
+  defaultPlayerStyle: React.CSSProperties;
+  fsVideoStyle?: React.CSSProperties;
+  fsVideoClassName?: string;
+  fsLazy?: FullscreenLazyLoadConfig;
+  fsLazyAllowedRef?: React.RefObject<Set<number>>;
+  fsLazyListenersRef?: React.RefObject<Set<() => void>>;
+  fsPreparedVideosRef: React.RefObject<Set<string>>;
+  getMediaKey: (item: MediaItem) => string;
+  showFullscreenSlider: boolean;
+}) {
+  const {
+    item,
+    renderedIndex,
+    canonicalIndex,
+    plyr,
+    videoSnapshotStore,
     playerRefs,
     defaultPlayerStyle,
     fsVideoStyle,
@@ -549,29 +1025,32 @@ function FsVideoContent(props: {
     fsLazyListenersRef,
     fsPreparedVideosRef,
     getMediaKey,
-    onRegisterVideoApi,
-    showFullscreenSlider
+    showFullscreenSlider,
   } = props;
 
   const lazyEnabled = !!fsLazy?.enabled;
-
   const key = React.useMemo(() => `video:${getMediaKey(item)}`, [
     getMediaKey,
     item,
     (item as any).src,
     (item as any).poster,
   ]);
-
   const seenBefore = fsPreparedVideosRef.current.has(key);
-
-  const provider = React.useMemo(
-    () => detectProvider(plyr?.source),
-    [plyr?.source]
+  const provider = React.useMemo(() => detectProvider(plyr?.source), [plyr?.source]);
+  const src = React.useMemo(() => resolveVideoSrc(item, plyr), [item, plyr]);
+  const poster = React.useMemo(() => resolveVideoPoster(item, plyr), [item, plyr]);
+  const shouldForceSnapshotCrossorigin = React.useMemo(() => {
+    if (provider !== "mp4") return false;
+    return isCrossOriginMediaUrl(src);
+  }, [provider, src]);
+  const effectivePlyrOptions = React.useMemo(
+    () => withSnapshotCrossoriginOptions(plyr?.options, shouldForceSnapshotCrossorigin),
+    [plyr?.options, shouldForceSnapshotCrossorigin]
   );
-  const effectivePlyrOptions = React.useMemo(() => {
-    if (!isClone) return plyr?.options;
-    return withForcedCloneMuteOptions(plyr?.options);
-  }, [isClone, plyr?.options]);
+  const ratio = React.useMemo(
+    () => parsePlyrRatio((effectivePlyrOptions as any)?.ratio ?? null),
+    [effectivePlyrOptions]
+  );
 
   const spinnerRef = React.useRef<HTMLDivElement | null>(null);
   const playerWrapRef = React.useRef<HTMLDivElement | null>(null);
@@ -580,11 +1059,8 @@ function FsVideoContent(props: {
   const mountedRef = React.useRef(false);
   const readyRef = React.useRef(false);
   const revealedRef = React.useRef(false);
-
-  // Keep state minimal: only used to actually mount Plyr & show content.
   const [revealed, setRevealed] = React.useState(false);
   const [everMounted, setEverMounted] = React.useState(false);
-
   const gateRef = React.useRef<HTMLDivElement | null>(null);
   const visibleRef = React.useRef(false);
 
@@ -621,8 +1097,8 @@ function FsVideoContent(props: {
   }, []);
 
   const spinnerResolved = React.useMemo(() => {
-    return resolveFsSpinnerNode(fsLazy?.spinner, { kind: "video", isClone });
-  }, [fsLazy?.spinner, isClone]);
+    return resolveFsSpinnerNode(fsLazy?.spinner, { kind: "video", isClone: false });
+  }, [fsLazy?.spinner]);
 
   const shouldRenderSpinner = (fsLazy?.enabled ?? false) && spinnerResolved.render;
 
@@ -637,12 +1113,34 @@ function FsVideoContent(props: {
 
   const setWrapVisible = React.useCallback(
     (visible: boolean) => {
-      setPlayerVisible(playerWrapRef.current, showFullscreenSlider && visible, showFullscreenSlider && visible && !isClone);
+      setPlayerVisible(playerWrapRef.current, showFullscreenSlider && visible, showFullscreenSlider && visible);
     },
-    [isClone, showFullscreenSlider]
+    [showFullscreenSlider]
   );
 
-  // Baseline: no flicker
+  const syncRuntimeRegistration = React.useCallback(
+    (api: APITypes | null) => {
+      if (!videoSnapshotStore) return;
+
+      const hostEl = playerWrapRef.current;
+      if (!api || !hostEl || !readyRef.current) {
+        videoSnapshotStore.unregisterOriginal(canonicalIndex);
+        return;
+      }
+
+      videoSnapshotStore.registerOriginal({
+        canonicalIndex,
+        api,
+        hostEl,
+        provider,
+        src,
+        poster,
+        ratio,
+      });
+    },
+    [canonicalIndex, poster, provider, ratio, src, videoSnapshotStore]
+  );
+
   React.useLayoutEffect(() => {
     if (seenBefore) {
       setWrapVisible(true);
@@ -657,7 +1155,6 @@ function FsVideoContent(props: {
     syncSpinner(true);
   }, [seenBefore, setWrapVisible, syncSpinner, everMounted]);
 
-  // Reveal gate (no React re-render until it flips true)
   React.useEffect(() => {
     if (seenBefore) return;
 
@@ -685,22 +1182,14 @@ function FsVideoContent(props: {
     };
   }, [seenBefore, lazyEnabled, computeAllowed, fsLazyListenersRef]);
 
-  // Once revealed, mount exactly once
   React.useEffect(() => {
     if (!revealed) return;
     if (mountedRef.current) return;
 
     mountedRef.current = true;
-
-    // keep hidden until ready
     setWrapVisible(false);
-
-    // spinner behavior:
-    // - if lazy enabled: show spinner until ready
-    // - if lazy disabled: usually you'd NOT show spinner; keep consistent with your file
     syncSpinner(lazyEnabled);
     if (!lazyEnabled) syncSpinner(false);
-
     setEverMounted(true);
   }, [revealed, lazyEnabled, setWrapVisible, syncSpinner]);
 
@@ -711,26 +1200,22 @@ function FsVideoContent(props: {
     requestAnimationFrame(() => {
       syncSpinner(false);
       setWrapVisible(true);
-
-      // mark prepared once we are actually ready
       fsPreparedVideosRef.current.add(key);
+      syncRuntimeRegistration(apiRef.current);
     });
-  }, [fsPreparedVideosRef, key, setWrapVisible, syncSpinner]);
+  }, [fsPreparedVideosRef, key, setWrapVisible, syncRuntimeRegistration, syncSpinner]);
 
   const readyCleanupRef = React.useRef<(() => void) | null>(null);
 
   const handlePlyrRef = React.useCallback(
     (api: any) => {
+      readyCleanupRef.current?.();
+      readyCleanupRef.current = null;
+
       const apiOrNull = (api ?? null) as APITypes | null;
       apiRef.current = apiOrNull;
-
       playerRefs.current[renderedIndex] = apiOrNull;
-      onRegisterVideoApi?.({
-        renderedIndex,
-        canonicalIndex,
-        isClone,
-        api: apiOrNull,
-      });
+      syncRuntimeRegistration(apiOrNull);
 
       installDblclickGuardWhenReady(api);
 
@@ -739,43 +1224,42 @@ function FsVideoContent(props: {
         syncSpinner(!(readyRef.current || seenBefore));
       });
 
+      if (!api) return;
+
       const plyrInstance = (api as any)?.plyr ?? api;
 
       try {
-        // YOUTUBE / VIMEO:
-        // rely on Plyr's own ready event
-        if (provider === 'youtube' || provider === 'vimeo') {
+        if (provider === "youtube" || provider === "vimeo") {
           const onReady = () => markReady();
 
-          plyrInstance?.on?.('ready', onReady);
+          plyrInstance?.on?.("ready", onReady);
 
           readyCleanupRef.current = () => {
             try {
-              plyrInstance?.off?.('ready', onReady);
+              plyrInstance?.off?.("ready", onReady);
             } catch {}
           };
 
           return;
         }
 
-        // HTML5:
         const media: HTMLMediaElement | undefined = plyrInstance?.media;
         if (media) {
           const onCanPlay = () => markReady();
 
-          media.addEventListener('loadedmetadata', onCanPlay, { once: true });
-          media.addEventListener('loadeddata', onCanPlay, { once: true });
-          media.addEventListener('canplay', onCanPlay, { once: true });
+          media.addEventListener("loadedmetadata", onCanPlay, { once: true });
+          media.addEventListener("loadeddata", onCanPlay, { once: true });
+          media.addEventListener("canplay", onCanPlay, { once: true });
 
           readyCleanupRef.current = () => {
             try {
-              media.removeEventListener('loadedmetadata', onCanPlay);
+              media.removeEventListener("loadedmetadata", onCanPlay);
             } catch {}
             try {
-              media.removeEventListener('loadeddata', onCanPlay);
+              media.removeEventListener("loadeddata", onCanPlay);
             } catch {}
             try {
-              media.removeEventListener('canplay', onCanPlay);
+              media.removeEventListener("canplay", onCanPlay);
             } catch {}
           };
 
@@ -789,17 +1273,24 @@ function FsVideoContent(props: {
       } catch {}
     },
     [
-      canonicalIndex,
-      isClone,
       markReady,
-      onRegisterVideoApi,
       playerRefs,
+      provider,
       renderedIndex,
       seenBefore,
       setWrapVisible,
+      syncRuntimeRegistration,
       syncSpinner,
     ]
   );
+
+  React.useEffect(() => {
+    syncRuntimeRegistration(apiRef.current);
+
+    return () => {
+      syncRuntimeRegistration(null);
+    };
+  }, [syncRuntimeRegistration]);
 
   React.useEffect(() => {
     return () => {
@@ -808,22 +1299,15 @@ function FsVideoContent(props: {
     };
   }, []);
 
-  // Cleanup: pause & clear refs
   React.useEffect(() => {
     return () => {
       pauseApi(apiRef.current);
       apiRef.current = null;
       playerRefs.current[renderedIndex] = null;
-      onRegisterVideoApi?.({
-        renderedIndex,
-        canonicalIndex,
-        isClone,
-        api: null,
-      });
+      syncRuntimeRegistration(null);
     };
-  }, [playerRefs, renderedIndex, canonicalIndex, isClone, onRegisterVideoApi]);
+  }, [playerRefs, renderedIndex, syncRuntimeRegistration]);
 
-  // Pause video when out of view (IO)
   React.useEffect(() => {
     const gateEl = gateRef.current;
     if (!gateEl) return;
@@ -869,7 +1353,7 @@ function FsVideoContent(props: {
 
     io.observe(gateEl);
     return () => io.disconnect();
-  }, [setWrapVisible, syncSpinner, seenBefore, promoteCanonicalWhenVisible]);
+  }, [promoteCanonicalWhenVisible, seenBefore, setWrapVisible, syncSpinner]);
 
   const spinnerEl = shouldRenderSpinner ? (
     spinnerResolved.isCustom ? (
@@ -933,6 +1417,9 @@ function FsSlide(props: {
   index: number;
   canonicalIndex: number;
   isClone: boolean;
+  openingCanonicalIndex?: number | null;
+  openingInProgress?: boolean;
+  deferLiveVideoUntilVisible?: boolean;
   plyr?: PlyrProp;
   imageRef: React.RefObject<HTMLDivElement | null>;
   playerRefs: React.RefObject<(APITypes | null)[]>;
@@ -970,15 +1457,20 @@ function FsSlide(props: {
   fsLazyListenersVideosRef?: React.RefObject<Set<() => void>>;
 
   fsDecodedImagesRef: React.RefObject<Set<string>>;
+  fsCustomDecodedImagesRef: React.RefObject<Set<string>>;
+  fsCustomResolvedSrcByKeyRef: React.RefObject<Map<string, string>>;
   fsPreparedVideosRef: React.RefObject<Set<string>>;
+  videoSnapshotStore?: VideoSnapshotStore;
   getMediaKey: (item: MediaItem) => string;
-  onRegisterVideoApi?: (args: CanonicalPlaybackRegistration) => void;
 }) {
   const {
     item,
     index,
     canonicalIndex,
     isClone,
+    openingCanonicalIndex,
+    openingInProgress,
+    deferLiveVideoUntilVisible,
     plyr,
     imageRef,
     playerRefs,
@@ -1007,12 +1499,15 @@ function FsSlide(props: {
     fsLazyAllowedVideosRef,
     fsLazyListenersVideosRef,
     fsDecodedImagesRef,
+    fsCustomDecodedImagesRef,
+    fsCustomResolvedSrcByKeyRef,
     fsPreparedVideosRef,
+    videoSnapshotStore,
     getMediaKey,
-    onRegisterVideoApi,
   } = props;
 
   const isNode = item.kind === "node";
+  const shouldDeferLiveVideo = !!deferLiveVideoUntilVisible && !showFullscreenSlider;
 
   const baseImgStyle: React.CSSProperties = {
     maxWidth: "100%",
@@ -1088,6 +1583,7 @@ function FsSlide(props: {
 
         <div
           ref={imageRef}
+          data-rmg-fs-media="true"
           onPointerDown={isNode ? undefined : (e) => onPanPointerDown(e, imageRef)}
           onClickCapture={onSuppressNextClickCapture as any}
           style={{
@@ -1118,30 +1614,49 @@ function FsSlide(props: {
               {(item as any).node}
             </div>
           ) : item.kind === "video" ? (
-            <FsVideoContent
-              item={item as any}
-              renderedIndex={index}
-              canonicalIndex={canonicalIndex}
-              isClone={isClone}
-              plyr={plyr!}
-              playerRefs={playerRefs}
-              defaultPlayerStyle={defaultPlayerStyle}
-              fsVideoStyle={fsVideoStyle}
-              fsVideoClassName={fsVideoClassName}
-              fsLazy={fsLazy?.videos}
-              fsLazyAllowedRef={fsLazyAllowedVideosRef}
-              fsLazyListenersRef={fsLazyListenersVideosRef}
-              fsPreparedVideosRef={fsPreparedVideosRef}
-              getMediaKey={getMediaKey}
-              onRegisterVideoApi={onRegisterVideoApi}
-              showFullscreenSlider={showFullscreenSlider}
-            />
+            isClone ? (
+              <FsCloneVideoPreview
+                item={item as any}
+                renderedIndex={index}
+                canonicalIndex={canonicalIndex}
+                plyr={plyr!}
+                videoSnapshotStore={videoSnapshotStore}
+                playerRefs={playerRefs}
+                defaultPlayerStyle={defaultPlayerStyle}
+                fsVideoStyle={fsVideoStyle}
+                fsVideoClassName={fsVideoClassName}
+                fsLazy={fsLazy?.videos}
+                showFullscreenSlider={showFullscreenSlider}
+              />
+            ) : (
+              shouldDeferLiveVideo ? null : (
+                <FsLiveVideoContent
+                  item={item as any}
+                  renderedIndex={index}
+                  canonicalIndex={canonicalIndex}
+                  plyr={plyr!}
+                  videoSnapshotStore={videoSnapshotStore}
+                  playerRefs={playerRefs}
+                  defaultPlayerStyle={defaultPlayerStyle}
+                  fsVideoStyle={fsVideoStyle}
+                  fsVideoClassName={fsVideoClassName}
+                  fsLazy={fsLazy?.videos}
+                  fsLazyAllowedRef={fsLazyAllowedVideosRef}
+                  fsLazyListenersRef={fsLazyListenersVideosRef}
+                  fsPreparedVideosRef={fsPreparedVideosRef}
+                  getMediaKey={getMediaKey}
+                  showFullscreenSlider={showFullscreenSlider}
+                />
+              )
+            )
           ) : (
             <FsImageContent
               item={item as any}
               renderedIndex={index}
               canonicalIndex={canonicalIndex}
               isClone={isClone}
+              openingCanonicalIndex={openingCanonicalIndex}
+              openingInProgress={openingInProgress}
               isZoomed={isZoomed}
               className={styles.fullscreenImages}
               baseStyle={baseImgStyle}
@@ -1150,6 +1665,8 @@ function FsSlide(props: {
               fsLazyAllowedRef={fsLazyAllowedImagesRef}
               fsLazyListenersRef={fsLazyListenersImagesRef}
               fsDecodedImagesRef={fsDecodedImagesRef}
+              fsCustomDecodedImagesRef={fsCustomDecodedImagesRef}
+              fsCustomResolvedSrcByKeyRef={fsCustomResolvedSrcByKeyRef}
               getMediaKey={getMediaKey}
             />
           )}
@@ -1217,12 +1734,17 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
     fsLazyListenersVideosRef,
 
     canonicalLength,
+    openingCanonicalIndex,
+    openingInProgress,
+    deferLiveVideoUntilVisible,
 
     fsDecodedImagesRef,
+    fsCustomDecodedImagesRef,
+    fsCustomResolvedSrcByKeyRef,
     fsPreparedVideosRef,
+    videoSnapshotStore,
 
     getMediaKey,
-    onRegisterVideoApi,
   } = opts;
 
   const vw =
@@ -1268,6 +1790,9 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
         index={index}
         canonicalIndex={canonicalIndex}
         isClone={isClone}
+        openingCanonicalIndex={openingCanonicalIndex}
+        openingInProgress={openingInProgress}
+        deferLiveVideoUntilVisible={deferLiveVideoUntilVisible}
         plyr={plyr}
         imageRef={imageRef}
         playerRefs={playerRefs}
@@ -1296,9 +1821,11 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
         fsLazyAllowedVideosRef={fsLazyAllowedVideosRef}
         fsLazyListenersVideosRef={fsLazyListenersVideosRef}
         fsDecodedImagesRef={fsDecodedImagesRef}
+        fsCustomDecodedImagesRef={fsCustomDecodedImagesRef}
+        fsCustomResolvedSrcByKeyRef={fsCustomResolvedSrcByKeyRef}
         fsPreparedVideosRef={fsPreparedVideosRef}
+        videoSnapshotStore={videoSnapshotStore}
         getMediaKey={getMediaKey}
-        onRegisterVideoApi={onRegisterVideoApi}
       />
     );
   });

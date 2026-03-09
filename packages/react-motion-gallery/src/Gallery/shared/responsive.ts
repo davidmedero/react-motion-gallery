@@ -1,4 +1,4 @@
-import { ThumbnailPosition } from "../slider/thumbnails/types";
+import type { ThumbnailPosition } from "../thumbnails/types";
 
 export const BREAKPOINT_MAP: Record<string, number> = {
   xs: 0,

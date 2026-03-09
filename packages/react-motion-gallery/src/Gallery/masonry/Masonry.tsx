@@ -2,7 +2,9 @@
 
 import * as React from 'react';
 import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
+import { LazyItemHost } from '../shared/lazy/LazyItemHost';
 import { parseNumberLike, resolveNumberFromResponsive } from '../shared/responsive';
+import type { MasonryLazyLoadOptions } from './types';
 
 export type MasonryClassNames = {
   root?: string;
@@ -23,6 +25,8 @@ export type MasonryProps = {
   masonryAs?: React.ElementType;
   masonryRootRef?: React.Ref<any>;
   breakpoints?: BreakpointMap;
+  masonryLazyLoad?: MasonryLazyLoadOptions;
+  onVisibleIndex?: (index: number) => void;
 };
 
 export const MasonryCore: React.FC<MasonryProps> = ({
@@ -36,6 +40,8 @@ export const MasonryCore: React.FC<MasonryProps> = ({
   masonryAs: RootComponent = 'div',
   masonryRootRef,
   breakpoints,
+  masonryLazyLoad,
+  onVisibleIndex,
 }) => {
   const DEFAULT_MASONRY_COLUMNS = 4;
   const DEFAULT_MASONRY_GAP_PX = 8;
@@ -158,6 +164,8 @@ export const MasonryCore: React.FC<MasonryProps> = ({
           onHeight={handleHeight}
           className={masonryClassNames?.item}
           gapPx={gapPx}
+          lazyLoad={masonryLazyLoad}
+          onVisibleIndex={onVisibleIndex}
         >
           {child}
         </MasonryItem>
@@ -172,7 +180,9 @@ export const MasonryCore: React.FC<MasonryProps> = ({
     masonryPlacement,
     handleHeight,
     gapPx,
+    masonryLazyLoad,
     masonryClassNames?.item,
+    onVisibleIndex,
   ]);
 
   return (
@@ -211,6 +221,8 @@ type MasonryItemProps = {
   onHeight: (index: number, height: number) => void;
   className?: string;
   gapPx: number;
+  lazyLoad?: MasonryLazyLoadOptions;
+  onVisibleIndex?: (index: number) => void;
   children: React.ReactNode;
 };
 
@@ -219,6 +231,8 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
   onHeight,
   className,
   gapPx,
+  lazyLoad,
+  onVisibleIndex,
   children,
 }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
@@ -244,8 +258,11 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
   }, [index, onHeight]);
 
   return (
-    <div
+    <LazyItemHost
       ref={ref}
+      index={index}
+      lazyLoad={lazyLoad}
+      onVisibleIndex={onVisibleIndex}
       className={className}
       data-rmg-idx={index}
       style={{
@@ -254,6 +271,6 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
       }}
     >
       {children}
-    </div>
+    </LazyItemHost>
   );
 };

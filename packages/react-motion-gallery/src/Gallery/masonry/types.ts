@@ -1,4 +1,5 @@
 import { ResponsiveNumber } from "../shared/responsive";
+import type { GalleryLazyLoadOptions } from "../shared/types/lazy";
 import { MasonrySkeletonSpec } from "./MasonrySkeleton";
 
 export type LoadingOptions = {
@@ -20,6 +21,8 @@ export type IntroOptions = {
   staggerLimit?: number;
 };
 
+export type MasonryLazyLoadOptions = GalleryLazyLoadOptions;
+
 export type MasonryOptions = {
   columns?: ResponsiveNumber;
   gap?: ResponsiveNumber;
@@ -32,6 +35,7 @@ export type MasonryOptions = {
     column?: string;
     item?: string;
   };
+  lazyLoad?: MasonryLazyLoadOptions;
   loading?: LoadingOptions;
   intro?: IntroOptions;
 };

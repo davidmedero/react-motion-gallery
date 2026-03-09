@@ -32,9 +32,9 @@ import { createBaseLimit } from '../shared/motion/baseLimit'
 import { Counter, CounterType } from '../shared/motion/counter'
 import { PercentOfView, PercentOfViewType, ScrollBounds, ScrollBoundsType } from '../shared/motion/scrollBounds'
 import { useWheelLock } from '../shared/hooks/useWheelLock'
-import type { CanonicalPlaybackSyncManager } from '../video/canonicalPlaybackSync'
 import { DefaultChevronIcon } from './DefaultChevronIcon'
 import { FullscreenOptions } from './types'
+import { getFsMediaContainer, getPrimaryImgEl } from '../zoomPan/core/dom'
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
@@ -104,7 +104,6 @@ interface FullscreenSliderProps {
   introEasing?: string;
   resetAllZoomDom: () => void;
   requestFsCloseRef: React.RefObject<null | (() => void)>;
-  playbackSync?: CanonicalPlaybackSyncManager;
   introMethod?: "fade" | "scale" | null;
   fs: FullscreenOptions;
   chromeStyles: Record<string, string>;
@@ -154,7 +153,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       introEasing = 'cubic-bezier(.4,0,.22,1)',
       resetAllZoomDom,
       requestFsCloseRef,
-      playbackSync,
       introMethod,
       fs,
       chromeStyles
@@ -943,11 +941,14 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       const slide = under.closest('[data-rmg-fs-slide="true"]') as HTMLElement | null;
       if (!slide) return null;
 
-      const plyrRoot = slide.querySelector('.plyr') as HTMLElement | null;
-      if (!plyrRoot) return null;
+      const videoSurface =
+        (slide.querySelector('[data-rmg-video-snapshot="true"]') as HTMLElement | null) ??
+        (slide.querySelector('[data-rmg-plyr="true"]') as HTMLElement | null);
+      if (!videoSurface) return null;
 
-      const wrap = plyrRoot.querySelector('.plyr__video-wrapper') as HTMLElement | null;
-      if (!wrap) return null;
+      const wrap =
+        (videoSurface.querySelector('.plyr__video-wrapper') as HTMLElement | null) ??
+        videoSurface;
 
       const r = wrap.getBoundingClientRect();
       const inside =
@@ -982,6 +983,46 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       if (!plyrRoot) return false;
 
       return plyrRoot.getAttribute('data-rmg-plyr-provider') === 'youtube';
+    }
+
+    function resolveClickedImageTarget(
+      target: HTMLElement | null,
+      evt: MouseEvent | TouchEvent
+    ): {
+      clickedImg: HTMLImageElement | null;
+      renderedIndex: number | null;
+    } {
+      if (!target) return { clickedImg: null, renderedIndex: null };
+
+      const slide = target.closest('[data-rmg-fs-slide="true"]') as HTMLElement | null;
+      const mediaContainer = getFsMediaContainer(target);
+      const clickedImg = mediaContainer ? getPrimaryImgEl(mediaContainer) : null;
+      if (!clickedImg) {
+        return { clickedImg: null, renderedIndex: null };
+      }
+
+      const { x, y } = getClientXY(evt);
+      const rect = clickedImg.getBoundingClientRect();
+      const insideImage =
+        x >= rect.left &&
+        x <= rect.right &&
+        y >= rect.top &&
+        y <= rect.bottom;
+
+      if (!insideImage) {
+        return { clickedImg: null, renderedIndex: null };
+      }
+
+      const renderedAttr =
+        slide?.getAttribute('data-index') ??
+        clickedImg?.dataset.index ??
+        null;
+      const renderedIndex = renderedAttr != null ? parseInt(renderedAttr, 10) : NaN;
+
+      return {
+        clickedImg,
+        renderedIndex: Number.isFinite(renderedIndex) ? renderedIndex : null,
+      };
     }
 
     useEffect(() => {
@@ -1363,7 +1404,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           if (target.closest("[class*='plyr__']")) return
 
           const t = evt as unknown as TouchEvent
-          const clickedImg = target.closest('img')
+          const { clickedImg, renderedIndex } = resolveClickedImageTarget(target, t)
 
           if (!clickedImg) {
             restoreOverlayTransition()
@@ -1376,21 +1417,22 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             return
           }
 
-          const imgIndex = (clickedImg as HTMLImageElement).dataset.index
-          if (imgIndex == null) return
-          const matchedRef = imageRefs[parseInt(imgIndex)]
+          if (renderedIndex == null) return
+
+          const matchedRef = imageRefs[renderedIndex]
+          if (!matchedRef) return
 
           const idx = selectedIndex.current
-          if (idx === cellCount - 1 && Number(imgIndex) === cellCount + 1) {
+          if (idx === cellCount - 1 && renderedIndex === cellCount + 1) {
             suppressLoopRef.current = true
             goToCanonical(0)
             return
           }
-          if (idx !== Number(imgIndex) && Number(imgIndex) !== idx + 2) {
+          if (idx !== renderedIndex && renderedIndex !== idx + 2) {
             isZooming.current = true
             handleZoomToggle(evt as any, matchedRef)
           }
-          if (idx === cellCount - 1 && Number(imgIndex) === cellCount + 1) {
+          if (idx === cellCount - 1 && renderedIndex === cellCount + 1) {
             isZooming.current = true
             handleZoomToggle(evt as any, matchedRef)
           }

@@ -32,12 +32,11 @@ import { resetPanForScale1 as resetPanForScale1Fn } from '../zoomPan/pan/resetPa
 import { useFsEntryOverlay } from '../entries/overlay/useFsEntryOverlay';
 import { baseFitSize, distance, midpoint } from '../zoomPan/core/utils';
 import { zoomTo } from '../zoomPan/zoom/zoomTo';
-import { findImgAtPoint, readDataIndex } from '../zoomPan/core/dom';
+import { findImgAtPoint, getPrimaryImgEl, readDataIndex } from '../zoomPan/core/dom';
 import { useOptionalGalleryCore } from '../core';
 import {
-  createCanonicalPlaybackSyncManager,
-  type CanonicalPlaybackRegistration,
-} from '../video/canonicalPlaybackSync';
+  createVideoSnapshotStore,
+} from '../video/videoSnapshotStore';
 import { FullscreenOpenMethod } from '../api/types';
 import {
   isEntryOwnerReady,
@@ -278,6 +277,8 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
 
   // Cache keys for "already prepared" work
   const fsDecodedImagesRef = React.useRef(new Set<string>()); // image decode cache
+  const fsCustomDecodedImagesRef = React.useRef(new Set<string>()); // custom render image decode cache
+  const fsCustomResolvedSrcByKeyRef = React.useRef(new Map<string, string>());
   const fsPreparedVideosRef = React.useRef(new Set<string>()); // video "prepare" cache
   const fsForceMountVideosRef = React.useRef<Set<number>>(new Set());
 
@@ -428,7 +429,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
 
   function renderPan(xPx: number, yPx: number) {
     if (!currentImage.current) return;
-    const img = currentImage.current.children[0] as HTMLElement | null;
+    const img = getPrimaryImgEl(currentImage.current);
     if (!img) return;
     img.style.transform = `translate3d(${xPx}px, ${yPx}px, 0) scale(${scaleRef.current})`;
   }
@@ -744,33 +745,27 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     return `${item.kind}|${any.src ?? ''}|${any.srcSet ?? ''}|${any.sizes ?? ''}|${any.poster ?? ''}`;
   }
 
-  const fullscreenPlaybackSync = React.useMemo(
-    () => createCanonicalPlaybackSyncManager(),
+  const fullscreenVideoSnapshotStore = React.useMemo(
+    () => createVideoSnapshotStore(),
     [epoch]
   );
 
   React.useEffect(() => {
     return () => {
-      fullscreenPlaybackSync.destroy();
+      fullscreenVideoSnapshotStore.destroy();
     };
-  }, [fullscreenPlaybackSync]);
+  }, [fullscreenVideoSnapshotStore]);
 
-  const registerFullscreenVideoApi = React.useCallback(
-    (args: CanonicalPlaybackRegistration) => {
-      const { renderedIndex, canonicalIndex, isClone, api } = args;
-      if (api) {
-        fullscreenPlaybackSync.register({
-          renderedIndex,
-          canonicalIndex,
-          isClone,
-          api,
-        });
-        return;
-      }
-      fullscreenPlaybackSync.unregister(renderedIndex);
-    },
-    [fullscreenPlaybackSync]
-  );
+  const openingInProgress = showFullscreenModal && !showFullscreenSlider;
+  const openingCanonicalIndex = canonicalLen
+    ? canonicalIndexOf(latchedIntroIndex, canonicalLen)
+    : null;
+  const openingTargetKind =
+    openingCanonicalIndex != null
+      ? normalizedItems[openingCanonicalIndex]?.kind ?? null
+      : null;
+  const deferLiveVideoUntilVisible =
+    !!openingInProgress && openingTargetKind !== "video";
 
   const wrappedFullscreenSlides = renderFullscreenSlides({
     items: wrappedItems,
@@ -821,11 +816,16 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fsLazyListenersVideosRef: fsLazyVideoListenersRef,
 
     fsDecodedImagesRef: fsDecodedImagesRef,
+    fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
+    fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
     fsPreparedVideosRef: fsPreparedVideosRef,
+    videoSnapshotStore: fullscreenVideoSnapshotStore,
 
     canonicalLength: canonicalLen,
+    openingCanonicalIndex,
+    openingInProgress,
+    deferLiveVideoUntilVisible,
     getMediaKey: mediaKey,
-    onRegisterVideoApi: registerFullscreenVideoApi,
   });
 
   const oneFullscreenSlide = renderFullscreenSlides({
@@ -877,11 +877,16 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fsLazyListenersVideosRef: fsLazyVideoListenersRef,
 
     fsDecodedImagesRef: fsDecodedImagesRef,
+    fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
+    fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
     fsPreparedVideosRef: fsPreparedVideosRef,
+    videoSnapshotStore: fullscreenVideoSnapshotStore,
 
     canonicalLength: canonicalLen,
+    openingCanonicalIndex,
+    openingInProgress,
+    deferLiveVideoUntilVisible,
     getMediaKey: mediaKey,
-    onRegisterVideoApi: registerFullscreenVideoApi,
   });
 
   // Reset zoom state on close
@@ -1191,7 +1196,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
               }}
             >
               <FullscreenSlider
-                key={epoch}
+                // key={epoch}
                 sub={fsSub}
                 ref={fullscreenSliderApi}
                 cellCount={cellsStateLength}
@@ -1233,7 +1238,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                 introEasing={introEasing}
                 resetAllZoomDom={() => resetZoomForSlideChange()}
                 requestFsCloseRef={requestFsCloseRef}
-                playbackSync={fullscreenPlaybackSync}
                 introMethod={latchedIntroMethod}
                 fs={fs}
                 chromeStyles={styles}

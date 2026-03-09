@@ -11,6 +11,8 @@ import { FullscreenThumbnailSlider } from "../../../packages/react-motion-galler
 import { Slider } from "../../../packages/react-motion-gallery/src/Gallery/slider";
 import createSliderIndexChannel from "../../../packages/react-motion-gallery/src/Gallery/slider/sliderSub";
 import ThumbnailSlider from "../../../packages/react-motion-gallery/src/Gallery/thumbnails";
+import Grid from "../../../packages/react-motion-gallery/src/Gallery/grid";
+import type { MediaItem } from "../../../packages/react-motion-gallery/src/Gallery/shared/types/media";
 
 type Entry = {
   id: string;
@@ -711,7 +713,111 @@ export function FsDiagramFullConfig() {
     </svg>
   );
 }
+const NEXT_IMAGE_TEST_IDS = [1015, 1018, 1024, 1035, 1043, 1057];
+const NEXT_IMAGE_TEST_SLIDES = NEXT_IMAGE_TEST_IDS.map(
+  (id) => `https://picsum.photos/id/${id}/1200/900`
+);
+const NEXT_IMAGE_TEST_FULLSCREEN_ITEMS: MediaItem[] = NEXT_IMAGE_TEST_IDS.map((id, index) => ({
+  kind: "image",
+  src: `https://picsum.photos/id/${id}/3200/2400`,
+  alt: `Next image fullscreen test slide ${index + 1}`,
+  width: 3200,
+  height: 2400,
+}));
 
+type MarketingSliderConfig = {
+  align: "center";
+  direction: { dir: "ltr" };
+};
+
+function MarketingNextImageFullscreenAddon(props: {
+  sliderObject: MarketingSliderConfig;
+  cellsStateLength: number;
+}) {
+  const { sliderObject, cellsStateLength } = props;
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+      lazyLoad: {
+        images: {
+          enabled: true,
+        },
+      },
+      renderImage: ({ item, className, baseStyle }) => (
+        <Image
+          data-testid="marketing-next-image-img"
+          src={item.src}
+          alt={item.alt ?? ""}
+          width={item.width ?? 1600}
+          height={item.height ?? 1200}
+          sizes="100vw"
+          className={className}
+          draggable={false}
+          style={{
+            ...baseStyle,
+            position: "static",
+            width: "auto",
+            height: "auto",
+            display: "block",
+          }}
+        />
+      ),
+    },
+    slider: undefined,
+    sliderObject,
+    cellsStateLength,
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+function MarketingNextImageFullscreenDemo() {
+  const sliderObject = React.useMemo<MarketingSliderConfig>(
+    () => ({
+      align: "center",
+      direction: { dir: "ltr" },
+    }),
+    []
+  );
+
+  return (
+    <div className="max-w-3xl rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+      <p className="mb-4 text-sm leading-relaxed text-slate-600">
+        Live Next.js fullscreen render test. Open fullscreen, click the wrapped
+        image to zoom, pan with the wheel or trackpad, then close.
+      </p>
+
+      <GalleryCore
+        layout="slider"
+        fullscreenItems={NEXT_IMAGE_TEST_FULLSCREEN_ITEMS}
+      >
+        <Slider scroll={{ loop: false }}>
+          {NEXT_IMAGE_TEST_SLIDES.map((src, index) => (
+            <img
+              key={src}
+              src={src}
+              alt={`Next image fullscreen test base slide ${index + 1}`}
+              style={{
+                width: "min(100%, 760px)",
+                aspectRatio: "4 / 3",
+                objectFit: "cover",
+                display: "block",
+                borderRadius: 12,
+                margin: "0 auto",
+              }}
+            />
+          ))}
+        </Slider>
+
+        <MarketingNextImageFullscreenAddon
+          sliderObject={sliderObject}
+          cellsStateLength={NEXT_IMAGE_TEST_FULLSCREEN_ITEMS.length}
+        />
+      </GalleryCore>
+    </div>
+  );
+}
 
 
 export default function Home() {
@@ -989,67 +1095,123 @@ function FullscreenAddon2(props: {
   ];
 
   const ITEMS = [
-  "https://picsum.photos/id/1018/1000/1500",
-  "https://picsum.photos/id/1025/1000/1500",
-  "https://picsum.photos/id/1035/1000/1500",
-  "https://picsum.photos/id/1043/1000/1500",
-  "https://picsum.photos/id/1069/1000/1500",
-  "https://picsum.photos/id/1074/1000/1500",
+  "https://picsum.photos/id/1018/2006/3006",
+  "https://picsum.photos/id/1025/2006/3006",
+  "https://picsum.photos/id/1040/2006/3006",
+  "https://picsum.photos/id/1043/2006/3006",
+  "https://picsum.photos/id/1069/2006/3006",
+  "https://picsum.photos/id/1074/2006/3006",
 ];
 
-// function Slide({ src, i }: { src: string; i: number }) {
-//   return (
-//     <div
-//       style={{
-//         height: "100%",
-//         width: "100%",
-//         display: "flex",
-//         flexDirection: "column",
-//         gap: 10,
-//       }}
-//     >
-//       {/* image */}
-//       <img
-//         src={src}
-//         alt={`Slide ${i + 1}`}
-//         style={{
-//           width: "100%",
-//           flex: "1 1 auto",
-//           minHeight: 0,
-//           objectFit: "cover",
-//           display: "block",
-//           borderRadius: 12,
-//         }}
-//       />
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <div
+      style={{
+        aspectRatio: "2 / 3",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
+      {/* image */}
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100%",
+          flex: "1 1 auto",
+          aspectRatio: "2 / 3",
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
 
-//       {/* text */}
-//       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-//         <div
-//           style={{
-//             fontSize: 14,
-//             fontWeight: 700,
-//             lineHeight: 1.2,
-//           }}
-//         >
-//           Slide title {i + 1}
-//         </div>
+      {/* text */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            lineHeight: 1.2,
+          }}
+        >
+          Slide title {i + 1}
+        </div>
 
-//         <div style={{ fontSize: 12, opacity: 0.8, lineHeight: 1.3 }}>
-//           This is a short description under the image. It can wrap to two lines.
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
+        <div style={{ fontSize: 12, opacity: 0.8, lineHeight: 1.3 }}>
+          This is a short description under the image. It can wrap to two lines.
+        </div>
+      </div>
+    </div>
+  );
+}
 const channel = React.useMemo(() => createSliderIndexChannel(), []);
-
+const IMG_ITEMS = Array.from({ length: 12 }).map(
+  (_, i) => `https://picsum.photos/seed/grid-${i}/2200/3200`
+);
 
   return (
     <> 
+     <Grid
+        columns={{ 0: 1, 640: 2, 960: 3, 1280: 4 }}
+        gap={12}
+        // lazyLoad={{
+        //   enabled: true,
+        // }}
+        loading={{
+          // force: true,
+          skeleton: {
+              layout: {
+                kind: "grid",
+                item: { kind: "rect", style: { aspectRatio: "4/5" } },
+              },
+            },
+        }}
+        // intro={{
+        //   durationMs: 1800,
+        //   staggerMs: 180
+        // }}
+      >
+        {IMG_ITEMS.slice(0, 8).map((src, i) => (
+          <article
+            key={`lazy-grid-${src}`}
+            style={{
+              borderRadius: 16,
+              overflow: "hidden",
+              background: "#fff",
+              boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
+            }}
+          >
+            <img
+              src={src}
+              alt={`Lazy grid ${i + 1}`}
+              style={{
+                width: "100%",
+                aspectRatio: "4 / 5",
+                display: "block",
+                objectFit: "cover",
+              }}
+            />
+            <div style={{ padding: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#10253d" }}>
+                Card {i + 1}
+              </div>
+              <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.4, color: "#526173" }}>
+                Copy stays visible while the image loads.
+              </div>
+            </div>
+          </article>
+        ))}
+      </Grid>
 
-        {/* <Slider
+        <Slider
           scroll={{
             freeScroll: true
+          }}
+          lazyLoad={{
+            enabled: true
           }}
           controls={{
             dots: {
@@ -1126,7 +1288,8 @@ const channel = React.useMemo(() => createSliderIndexChannel(), []);
           {ITEMS.map((src, i) => (
             <Slide key={src} src={src} i={i} />
           ))}
-        </Slider> */}
+        </Slider>
+        <div style={{ marginTop: 100 }}></div>
         <GalleryCore layout="slider" fullscreenItems={FS_SLIDES}>
         <Slider
           indexChannel={channel}
@@ -1554,7 +1717,74 @@ fullscreenCaptionHeight?: number;`}</code>
               </p>
 
               <p className="leading-relaxed max-w-3xl">
-                For image optimization, you can add your own <strong>srcset</strong> and <strong>sizes</strong> via the <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreenRenderImage</code> prop.
+                If you want Next.js image optimization in fullscreen, render your
+                own <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">Image</code> via{" "}
+                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreen.renderImage</code>.
+                To opt custom renders into the built-in fullscreen spinner and
+                decode flow, also enable{" "}
+                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreen.lazyLoad.images.enabled</code>.
+              </p>
+
+              <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
+                <code>{`import Image from "next/image";
+
+fullscreen: {
+  lazyLoad: {
+    images: {
+      enabled: true,
+    },
+  },
+  renderImage: ({ item, className, baseStyle }) => (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Image
+        src={item.src}
+        alt={item.alt ?? ""}
+        width={item.width ?? 1600}
+        height={item.height ?? 1200}
+        sizes="100vw"
+        className={className}
+        style={{
+          ...baseStyle,
+          position: "static",
+          width: "auto",
+          height: "auto",
+          display: "block",
+        }}
+      />
+    </div>
+  ),
+}`}</code>
+              </pre>
+
+              <p className="leading-relaxed max-w-3xl">
+                The live demo below mirrors the wrapped fullscreen Storybook
+                regression case, but uses a real{" "}
+                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">next/image</code>{" "}
+                renderer inside the marketing app.
+              </p>
+
+              <MarketingNextImageFullscreenDemo />
+
+              <p className="leading-relaxed max-w-3xl">
+                Custom fullscreen renderers still need to output a real DOM{" "}
+                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">&lt;img&gt;</code>{" "}
+                somewhere in the tree, and the wrapper should be layout-only
+                rather than shrinking the fullscreen image surface. When{" "}
+                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreen.renderImage</code>{" "}
+                is provided, the built-in fullscreen image lazy loading, decode,
+                and spinner flow only apply when{" "}
+                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreen.lazyLoad.images.enabled</code>{" "}
+                is true. Otherwise, loading and placeholder behavior come from
+                your renderer.
               </p>
             </div>
           </section>

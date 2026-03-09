@@ -1,4 +1,5 @@
 import { ResponsiveNumber } from "../shared/responsive";
+import type { GalleryLazyLoadOptions } from "../shared/types/lazy";
 import type { GridSkeletonSpec } from "./GridSkeleton";
 
 export type LoadingOptions = {
@@ -22,6 +23,8 @@ export type IntroOptions = {
 
 type FullscreenTrigger = 'item' | 'media';
 
+export type GridLazyLoadOptions = GalleryLazyLoadOptions;
+
 export type GridOptions = {
   columns?: ResponsiveNumber;
   minColumnWidth?: number | string;
@@ -29,6 +32,7 @@ export type GridOptions = {
   rootClassName?: string;
   itemClassName?: string;
   fullscreenTrigger?: FullscreenTrigger;
+  lazyLoad?: GridLazyLoadOptions;
   loading?: LoadingOptions;
   intro?: IntroOptions;
 };

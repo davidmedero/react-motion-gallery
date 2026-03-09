@@ -65,7 +65,7 @@ export function applySmoothTransform(
   const container = ctx.currentImage.current;
   if (!container) return;
 
-  const primary = container.children[0] as HTMLElement | null;
+  const primary = getPrimaryImgEl(container);
   if (!primary) return;
 
   const transition = `transform ${durationMs}ms cubic-bezier(.4,0,.22,1)`;

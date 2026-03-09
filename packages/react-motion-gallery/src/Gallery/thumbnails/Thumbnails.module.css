@@ -1,3 +1,30 @@
+.thumbShell {
+  position: relative;
+}
+
+.thumbContentLayer {
+  position: relative;
+  z-index: 1;
+}
+
+.thumbContentBlocked {
+  pointer-events: none;
+}
+
+.thumbLoadingLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+  will-change: opacity;
+}
+
+.thumbLoadingLayerExit {
+  opacity: 0;
+}
+
 .thumbSkeletonOverlay {
   position: absolute;
   inset: 0;
@@ -36,5 +63,11 @@
 
   100% {
     background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thumbLoadingLayer {
+    transition: none;
   }
 }

@@ -29,6 +29,40 @@
   object-fit: cover;
 }
 
+.gridShell {
+  display: grid;
+  position: relative;
+  width: 100%;
+}
+
+.gridContentLayer,
+.gridLoadingLayer {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.gridContentLayer {
+  position: relative;
+  z-index: 1;
+}
+
+.gridContentBlocked {
+  pointer-events: none;
+}
+
+.gridLoadingLayer {
+  position: relative;
+  z-index: 2;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+  will-change: opacity;
+}
+
+.gridLoadingLayerExit {
+  opacity: 0;
+}
+
 .gridSkeletonOverlay {
   position: relative;
   width: 100%;
@@ -60,6 +94,10 @@
 @media (prefers-reduced-motion: reduce) {
   .gridSkeletonItem {
     animation: none;
+  }
+
+  .gridLoadingLayer {
+    transition: none;
   }
 }
 

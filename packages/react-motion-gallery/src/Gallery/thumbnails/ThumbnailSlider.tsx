@@ -37,6 +37,7 @@ import { WindowType } from '../shared/input/pointerTypes'
 import { Axis, AxisType, AXSpec } from '../shared/types/axis'
 import { Translate } from '../shared/motion/translate'
 import { useWheelLock } from '../shared/hooks/useWheelLock'
+import { useInViewOnce } from '../shared/hooks/useInViewOnce'
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n))
 
@@ -92,6 +93,7 @@ interface ThumbnailSliderProps {
   sliderFriction?: number;
   loadingOptions?: ThumbnailLoadingOptions;
   introOptions?: ThumbnailIntroOptions;
+  introUnlocked?: boolean;
   breakpointMap?: BreakpointMap;
   rippleEnabled?: boolean;
   rippleClassName?: string;
@@ -137,6 +139,7 @@ export default function ThumbnailSlider({
   sliderFriction = 0.68,
   loadingOptions,
   introOptions,
+  introUnlocked,
   breakpointMap = { xs: 0, sm: 640, md: 768, lg: 1024, xl: 1280 },
   rippleEnabled,
   rippleClassName,
@@ -272,37 +275,16 @@ export default function ThumbnailSlider({
     lockWheelFor(UI_NAV_WHEEL_LOCK_MS)
   }
 
-  useEffect(() => {
-    const root = containerRef.current;
-    if (!root) return;
-
-    let canceled = false;
-
-    if (typeof IntersectionObserver === 'undefined') {
-      setInView(true);
-      return;
+  useInViewOnce(
+    true,
+    containerRef,
+    () => setInView(true),
+    {
+      root: null,
+      rootMargin: '200px 0px 200px 0px',
+      threshold: 0.01,
     }
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (canceled) return;
-        const ent = entries[0];
-        setInView(!!ent?.isIntersecting);
-      },
-      {
-        root: null,
-        rootMargin: '200px 0px 200px 0px',
-        threshold: 0.01,
-      }
-    );
-
-    io.observe(root);
-
-    return () => {
-      canceled = true;
-      io.disconnect();
-    };
-  }, []);
+  );
 
   function setWrapSafe(next: boolean) {
     if (loopStableRef.current === next) return
@@ -1862,7 +1844,7 @@ export default function ThumbnailSlider({
     });
   }, [renderedThumbs]);
 
-  const fadeClass = (isReady && inView)
+  const fadeClass = (isReady && inView && (introUnlocked ?? true))
     ? cls.fadeInActive
     : cls.fadeInStart;
 
@@ -1978,7 +1960,7 @@ export default function ThumbnailSlider({
     >
       {normalizedIntro.renderIntro
         ? normalizedIntro.renderIntro(
-            { active: isReady && inView, containerProps: baseContainerProps },
+            { active: isReady && inView && (introUnlocked ?? true), containerProps: baseContainerProps },
             inner
           )
         : inner}

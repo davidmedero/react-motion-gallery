@@ -1,5 +1,6 @@
 import * as React from "react";
 import { isVideoSlideElement } from "../../video/plyr";
+import { getPrimaryImgEl } from "../core/dom";
 
 type ZoomStateRefs = {
   previousZoom: React.RefObject<{ x: number; y: number }>;
@@ -38,24 +39,23 @@ export function resetZoomForSlideChange(args: ResetAllArgs) {
     const element = ref.current;
     if (!element) return;
 
-    const child = element.children[0] as HTMLElement | undefined;
-    if (isVideoSlideElement(child)) return;
+    const firstChild = element.children[0] as HTMLElement | undefined;
+    if (isVideoSlideElement(firstChild)) return;
+    const imgEl = getPrimaryImgEl(element);
+    if (!imgEl) return;
 
     const match = transition.match(/([\d.]+)s/);
     const durationMs = match ? parseFloat(match[1]) * 1000 : 300;
 
-    element.style.transition = transition;
-    if (child) child.style.transition = transition;
+    imgEl.style.transition = transition;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    (element as any).offsetWidth;
+    (imgEl as any).offsetWidth;
 
-    element.style.transform = transform;
-    if (child) child.style.transform = transform;
+    imgEl.style.transform = transform;
 
     setTimeout(() => {
-      element.style.transition = "";
-      if (child) child.style.transition = "";
+      imgEl.style.transition = "";
     }, durationMs + 50);
   });
 

@@ -14,7 +14,7 @@
   position: relative;
   display: block;
   opacity: 1;
-  transition: opacity 150ms linear;
+  transition: opacity 220ms ease;
   transition-delay: 0ms;
   pointer-events: none;
   z-index: 0;

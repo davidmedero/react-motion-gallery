@@ -8,6 +8,7 @@ import { createSliderIndexChannel, SliderIndexChannel } from "../slider/sliderSu
 import { DEFAULT_THUMBNAILS } from "./defaults";
 import { BREAKPOINT_MAP, resolvePositionFromResponsive } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
+import { usePrefersReducedMotion } from "../shared/hooks/usePrefersReducedMotion";
 import { buildScopedSkeletonCountCss } from "../shared/skeleton/buildScopedSkeletonCountCss";
 import type { BreakpointMap } from "../shared/responsive";
 import type { ThumbnailLoadingOptions, ThumbnailsOptions } from "./types";
@@ -22,6 +23,9 @@ type Props = {
   onReadyChange?: (ready: boolean) => void;
   direction?: "ltr" | "rtl";
 };
+
+const SKELETON_EXIT_MS = 220;
+const INTRO_OVERLAP_MS = 220;
 
 type UseScopedSkeletonArgs = {
   enabled: boolean;
@@ -170,6 +174,7 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
     }, [thumbsObject.transitions?.loading]);
 
     const [thumbsReady, setThumbsReady] = React.useState(false);
+    const prefersReducedMotion = usePrefersReducedMotion();
 
     const thumbChildren = children ?? thumbsObject.children;
     const thumbChildArray = React.useMemo(
@@ -247,6 +252,54 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
     });
 
     const childCount = thumbChildArray.filter(Boolean).length;
+    const persistedLoadingNodeRef = React.useRef<React.ReactNode>(thumbsSkeleton.node);
+
+    if (thumbsSkeleton.node) {
+      persistedLoadingNodeRef.current = thumbsSkeleton.node;
+    }
+
+    const resolvedSkeletonExitMs = prefersReducedMotion ? 0 : SKELETON_EXIT_MS;
+    const introUnlockDelayMs = Math.max(0, resolvedSkeletonExitMs - INTRO_OVERLAP_MS);
+    const [showLoadingLayer, setShowLoadingLayer] = React.useState(() => thumbsSkeleton.showLoading);
+    const [loadingExiting, setLoadingExiting] = React.useState(false);
+    const [introUnlocked, setIntroUnlocked] = React.useState(() => !thumbsSkeleton.showLoading);
+
+    React.useEffect(() => {
+      if (thumbsSkeleton.showLoading) {
+        setShowLoadingLayer(true);
+        setLoadingExiting(false);
+        setIntroUnlocked(false);
+        return;
+      }
+
+      if (!showLoadingLayer) {
+        setIntroUnlocked(true);
+        return;
+      }
+
+      if (resolvedSkeletonExitMs === 0) {
+        setLoadingExiting(false);
+        setShowLoadingLayer(false);
+        setIntroUnlocked(true);
+        return;
+      }
+
+      setLoadingExiting(true);
+
+      const introTimeoutId = window.setTimeout(() => {
+        setIntroUnlocked(true);
+      }, introUnlockDelayMs);
+
+      const exitTimeoutId = window.setTimeout(() => {
+        setShowLoadingLayer(false);
+        setLoadingExiting(false);
+      }, resolvedSkeletonExitMs);
+
+      return () => {
+        window.clearTimeout(introTimeoutId);
+        window.clearTimeout(exitTimeoutId);
+      };
+    }, [introUnlockDelayMs, resolvedSkeletonExitMs, showLoadingLayer, thumbsSkeleton.showLoading]);
 
     const clampIndex = React.useCallback(
       (index: number) => {
@@ -295,58 +348,75 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
           id={thumbsScope}
           ref={forwardedRef}
           data-rmg-scope={thumbsScope}
-          style={{ position: "relative" }}
+          className={styles.thumbShell}
         >
-          {thumbsSkeleton.node}
-
-          <ThumbnailSliderCore
-            indexChannel={localChannel}
-            position={resolvedThumbPos}
-            direction={direction}
-            thumbnailWidth={thumbsObject.layout?.thumbnail?.width}
-            thumbnailHeight={thumbsObject.layout?.thumbnail?.height}
-            thumbnailsCenter={thumbsObject.layout?.center}
-            thumbnailsContainerWidth={thumbsObject.layout?.container?.width}
-            thumbnailsContainerHeight={thumbsObject.layout?.container?.height}
-            thumbnailsContainerStyle={thumbsObject.elements?.container?.style}
-            thumbnailsContainerClassName={thumbsObject.elements?.container?.className}
-            thumbnailItemStyle={thumbsObject.elements?.thumbnail?.style}
-            thumbnailItemClassName={thumbsObject.elements?.thumbnail?.className}
-            gap={thumbsObject.layout?.gap}
-            freeScroll={thumbsObject.scroll?.freeScroll}
-            groupCells={thumbsObject.scroll?.groupCells}
-            loop={thumbsObject.scroll?.loop}
-            skipSnaps={thumbsObject.scroll?.skipSnaps}
-            centerActiveThumb={thumbsObject.scroll?.centerActiveThumb}
-            selectDuration={thumbsObject.motion?.selectDuration}
-            freeScrollDuration={thumbsObject.motion?.freeScrollDuration}
-            sliderFriction={thumbsObject.motion?.friction}
-            loadingOptions={thumbsLoading}
-            introOptions={thumbsObject.transitions?.intro}
-            breakpointMap={thumbsObject.breakpointMap ?? effectiveBreakpoints}
-            rippleEnabled={thumbsObject.controls?.ripple?.enabled}
-            rippleClassName={thumbsObject.controls?.ripple?.className}
-            showArrows={thumbsObject.controls?.enabled}
-            arrowStyles={thumbsObject.controls?.arrow?.style}
-            arrowClassName={thumbsObject.controls?.arrow?.className}
-            prevArrowStyles={thumbsObject.controls?.prev?.style}
-            prevArrowClassName={thumbsObject.controls?.prev?.className}
-            nextArrowStyles={thumbsObject.controls?.next?.style}
-            nextArrowClassName={thumbsObject.controls?.next?.className}
-            renderArrows={thumbsObject.controls?.render}
-            renderPrevArrow={thumbsObject.controls?.renderPrev}
-            renderNextArrow={thumbsObject.controls?.renderNext}
-            onReadyChange={(ready) => {
-              setThumbsReady(ready);
-              onReadyChange?.(ready);
-            }}
-            onSelectThumb={(index) => {
-              bridgeRef.current.publishThumbnailClick(index, "animated");
-              onThumbnailClick?.(index);
-            }}
+          <div
+            className={[
+              styles.thumbContentLayer,
+              showLoadingLayer ? styles.thumbContentBlocked : "",
+            ].filter(Boolean).join(" ")}
           >
-            {thumbChildren}
-          </ThumbnailSliderCore>
+            <ThumbnailSliderCore
+              indexChannel={localChannel}
+              position={resolvedThumbPos}
+              direction={direction}
+              thumbnailWidth={thumbsObject.layout?.thumbnail?.width}
+              thumbnailHeight={thumbsObject.layout?.thumbnail?.height}
+              thumbnailsCenter={thumbsObject.layout?.center}
+              thumbnailsContainerWidth={thumbsObject.layout?.container?.width}
+              thumbnailsContainerHeight={thumbsObject.layout?.container?.height}
+              thumbnailsContainerStyle={thumbsObject.elements?.container?.style}
+              thumbnailsContainerClassName={thumbsObject.elements?.container?.className}
+              thumbnailItemStyle={thumbsObject.elements?.thumbnail?.style}
+              thumbnailItemClassName={thumbsObject.elements?.thumbnail?.className}
+              gap={thumbsObject.layout?.gap}
+              freeScroll={thumbsObject.scroll?.freeScroll}
+              groupCells={thumbsObject.scroll?.groupCells}
+              loop={thumbsObject.scroll?.loop}
+              skipSnaps={thumbsObject.scroll?.skipSnaps}
+              centerActiveThumb={thumbsObject.scroll?.centerActiveThumb}
+              selectDuration={thumbsObject.motion?.selectDuration}
+              freeScrollDuration={thumbsObject.motion?.freeScrollDuration}
+              sliderFriction={thumbsObject.motion?.friction}
+              loadingOptions={thumbsLoading}
+              introOptions={thumbsObject.transitions?.intro}
+              introUnlocked={introUnlocked}
+              breakpointMap={thumbsObject.breakpointMap ?? effectiveBreakpoints}
+              rippleEnabled={thumbsObject.controls?.ripple?.enabled}
+              rippleClassName={thumbsObject.controls?.ripple?.className}
+              showArrows={thumbsObject.controls?.enabled}
+              arrowStyles={thumbsObject.controls?.arrow?.style}
+              arrowClassName={thumbsObject.controls?.arrow?.className}
+              prevArrowStyles={thumbsObject.controls?.prev?.style}
+              prevArrowClassName={thumbsObject.controls?.prev?.className}
+              nextArrowStyles={thumbsObject.controls?.next?.style}
+              nextArrowClassName={thumbsObject.controls?.next?.className}
+              renderArrows={thumbsObject.controls?.render}
+              renderPrevArrow={thumbsObject.controls?.renderPrev}
+              renderNextArrow={thumbsObject.controls?.renderNext}
+              onReadyChange={(ready) => {
+                setThumbsReady(ready);
+                onReadyChange?.(ready);
+              }}
+              onSelectThumb={(index) => {
+                bridgeRef.current.publishThumbnailClick(index, "animated");
+                onThumbnailClick?.(index);
+              }}
+            >
+              {thumbChildren}
+            </ThumbnailSliderCore>
+          </div>
+          {showLoadingLayer && (thumbsSkeleton.node ?? persistedLoadingNodeRef.current) ? (
+            <div
+              className={[
+                styles.thumbLoadingLayer,
+                loadingExiting ? styles.thumbLoadingLayerExit : "",
+              ].filter(Boolean).join(" ")}
+              aria-hidden="true"
+            >
+              {thumbsSkeleton.node ?? persistedLoadingNodeRef.current}
+            </div>
+          ) : null}
         </div>
       </>
     );

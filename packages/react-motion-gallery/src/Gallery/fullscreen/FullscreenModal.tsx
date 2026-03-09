@@ -6,6 +6,7 @@ import React, {
   RefObject,
   SetStateAction,
   useEffect,
+  useLayoutEffect,
 } from 'react'
 import type { FullscreenSliderSub } from './fullscreenSliderSub'
 import { parseObjectPosition } from '../shared/transitions/objectPosition';
@@ -17,6 +18,7 @@ import { FullscreenOptions } from './types';
 import { DefaultCloseIcon } from './DefaultCloseIcon';
 import { DefaultCounterText } from './DefaultCounterText';
 import { scrollEntrySectionIntoView, waitForEntryOwnerReady } from './entryOwnerReady';
+import { getPrimaryImgEl } from '../zoomPan/core/dom';
 
 interface FullscreenModalProps {
   fsSub: FullscreenSliderSub
@@ -65,10 +67,27 @@ interface FullscreenModalProps {
   latchedIntroIndex: number;
 }
 
-function freezeRect(el: HTMLElement) {
+type TrackedStyleProp =
+  | 'opacity'
+  | 'visibility'
+  | 'transition'
+  | 'pointerEvents'
+  | 'willChange'
+  | 'width'
+  | 'height'
+
+type TrackStyleMutation = (
+  el: HTMLElement | null,
+  prop: TrackedStyleProp,
+  value: string
+) => void
+
+type TrackMutedMutation = (el: HTMLMediaElement | null, value: boolean) => void
+
+function freezeRect(el: HTMLElement, trackStyleMutation: TrackStyleMutation) {
   const r = el.getBoundingClientRect()
-  el.style.width = `${Math.max(1, Math.round(r.width))}px`
-  el.style.height = `${Math.max(1, Math.round(r.height))}px`
+  trackStyleMutation(el, 'width', `${Math.max(1, Math.round(r.width))}px`)
+  trackStyleMutation(el, 'height', `${Math.max(1, Math.round(r.height))}px`)
 }
 
 const px = (n: number) => `${Math.round(n)}px`
@@ -352,6 +371,8 @@ type VideoProxyCloseArgs = {
   thumbCropRect: DOMRect;
   endObjPos: { x: number; y: number };
   captionClone: HTMLElement | null;
+  trackStyleMutation: TrackStyleMutation;
+  trackMutedMutation: TrackMutedMutation;
 
   safeTeardown: () => void;
   onCaptionCloneGone?: () => void;
@@ -365,6 +386,8 @@ async function animateVideoCloseProxy({
   thumbCropRect,
   endObjPos,
   captionClone,
+  trackStyleMutation,
+  trackMutedMutation,
   safeTeardown,
   onCaptionCloneGone,
   DURATION_MS,
@@ -387,18 +410,18 @@ async function animateVideoCloseProxy({
   }
 
   if (wrapperEl) {
-    freezeRect(wrapperEl);
-    wrapperEl.style.visibility = 'hidden';
-    wrapperEl.style.opacity = '0';
+    freezeRect(wrapperEl, trackStyleMutation);
+    trackStyleMutation(wrapperEl, 'visibility', 'hidden');
+    trackStyleMutation(wrapperEl, 'opacity', '0');
     const poster = wrapperEl.querySelector('.plyr__poster') as HTMLElement | null;
-    if (poster) poster.style.opacity = '0';
+    trackStyleMutation(poster, 'opacity', '0');
     const controls = wrapperEl.querySelector('.plyr__controls') as HTMLElement | null;
-    if (controls) controls.style.opacity = '0';
+    trackStyleMutation(controls, 'opacity', '0');
   }
 
   if (fsVideo) {
     try { fsVideo.pause(); } catch {}
-    fsVideo.muted = true;
+    trackMutedMutation(fsVideo, true);
   }
 
   const vidForProxy =
@@ -534,6 +557,27 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const computedBaseZ = baseZ ?? 9999;
 
   const shieldRef = React.useRef<HTMLDivElement | null>(null);
+  const trackedCloseMutationsRef = React.useRef<
+    Array<
+      | { kind: 'style'; el: HTMLElement; prop: TrackedStyleProp; prevValue: string }
+      | { kind: 'muted'; el: HTMLMediaElement; prevValue: boolean }
+    >
+  >([]);
+  const trackedCloseKeysRef = React.useRef<WeakMap<object, Set<string>>>(new WeakMap());
+
+  const restoreTrackedCloseMutations = React.useCallback(() => {
+    for (let i = trackedCloseMutationsRef.current.length - 1; i >= 0; i -= 1) {
+      const mutation = trackedCloseMutationsRef.current[i];
+      if (mutation.kind === 'style') {
+        (mutation.el.style as any)[mutation.prop] = mutation.prevValue;
+        continue;
+      }
+      mutation.el.muted = mutation.prevValue;
+    }
+
+    trackedCloseMutationsRef.current = [];
+    trackedCloseKeysRef.current = new WeakMap();
+  }, []);
 
   function mountShield() {
     if (shieldRef.current) return;
@@ -618,6 +662,67 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     return root ? (root.querySelector(sel) as T | null) : null;
   }
 
+  function trackStyleMutation(el: HTMLElement | null, prop: TrackedStyleProp, value: string) {
+    if (!el) return;
+
+    let keys = trackedCloseKeysRef.current.get(el);
+    if (!keys) {
+      keys = new Set<string>();
+      trackedCloseKeysRef.current.set(el, keys);
+    }
+
+    const key = `style:${prop}`;
+    if (!keys.has(key)) {
+      keys.add(key);
+      trackedCloseMutationsRef.current.push({
+        kind: 'style',
+        el,
+        prop,
+        prevValue: ((el.style as any)[prop] ?? '') as string,
+      });
+    }
+
+    if (((el.style as any)[prop] ?? '') === value) return;
+    (el.style as any)[prop] = value;
+  }
+
+  function trackMutedMutation(el: HTMLMediaElement | null, value: boolean) {
+    if (!el) return;
+
+    let keys = trackedCloseKeysRef.current.get(el);
+    if (!keys) {
+      keys = new Set<string>();
+      trackedCloseKeysRef.current.set(el, keys);
+    }
+
+    const key = 'media:muted';
+    if (!keys.has(key)) {
+      keys.add(key);
+      trackedCloseMutationsRef.current.push({
+        kind: 'muted',
+        el,
+        prevValue: el.muted,
+      });
+    }
+
+    if (el.muted === value) return;
+    el.muted = value;
+  }
+
+  const clearRootCloseStyles = React.useCallback(() => {
+    const modal = modalRef.current;
+    if (modal) {
+      modal.style.transition = '';
+      modal.style.willChange = '';
+    }
+
+    const fsSlider = modal?.querySelector<HTMLElement>('.fullscreen_slider') ?? null;
+    if (fsSlider) {
+      fsSlider.style.transition = '';
+      fsSlider.style.willChange = '';
+    }
+  }, []);
+
   function normalizeFsIndex(fsIdx: number, count: number) {
     const len = Math.max(1, count);
     return ((fsIdx % len) + len) % len;
@@ -637,6 +742,13 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     return () => window.removeEventListener("keydown", onKeyDown, { capture: true } as any);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  useLayoutEffect(() => {
+    restoreTrackedCloseMutations();
+    if (!open) {
+      clearRootCloseStyles();
+    }
+  }, [open, restoreTrackedCloseMutations, clearRootCloseStyles]);
 
   function nodeIdxFromFs(fsIdx: number, cellCount: number) {
     if (cellCount <= 1) return 0;
@@ -715,7 +827,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     document.body.appendChild(captionClone)
 
-    activeCaptionEl.style.visibility = 'hidden'
+    trackStyleMutation(activeCaptionEl, 'visibility', 'hidden')
 
     return captionClone
   }
@@ -738,16 +850,16 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     if (isVideoSlide) {
       fsSlider.querySelectorAll<HTMLElement>('[data-index]').forEach(el => {
         if (el.dataset.index === String(nodeIdx)) return;
-        el.style.transition = 'opacity 0.3s cubic-bezier(.4,0,.22,1)';
-        el.style.opacity = '0';
+        trackStyleMutation(el, 'transition', 'opacity 0.3s cubic-bezier(.4,0,.22,1)');
+        trackStyleMutation(el, 'opacity', '0');
       });
       return;
     }
 
     fsSlider.querySelectorAll<HTMLElement>('[data-rmg-fs-slide="true"]').forEach(slide => {
       if (targetImg && slide.contains(targetImg)) return;
-      slide.style.transition = 'opacity 0.3s cubic-bezier(.4,0,.22,1)';
-      slide.style.opacity = '0';
+      trackStyleMutation(slide, 'transition', 'opacity 0.3s cubic-bezier(.4,0,.22,1)');
+      trackStyleMutation(slide, 'opacity', '0');
     });
   }
 
@@ -775,7 +887,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       fsSlider.style.opacity = '0';
     }
 
-    const modal = withinFs<HTMLElement>('.fs_modal');
+    const modal = modalRef.current;
     if (modal) {
       modal.style.transition = `opacity ${DURATION_MS}ms ${EASING}`;
       modal.style.opacity = '0';
@@ -837,10 +949,20 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       }
 
       const nodeIdx = nodeIdxFromFs(normalizedFsIndex, cellCount);
+      const targetSlide =
+        !args.isVideoSlide
+          ? fsSlider.querySelector<HTMLElement>(
+              `[data-rmg-fs-slide="true"][data-index="${nodeIdx}"]`
+            ) ?? null
+          : null;
+      const targetMedia =
+        !args.isVideoSlide
+          ? targetSlide?.querySelector<HTMLElement>('[data-rmg-fs-media="true"]') ?? null
+          : null;
 
       const targetImg =
         !args.isVideoSlide
-          ? fsSlider.querySelector<HTMLImageElement>(`img[data-index="${nodeIdx}"]`) ?? null
+          ? getPrimaryImgEl(targetMedia)
           : null;
 
       if (!targetImg && !args.isVideoSlide) {
@@ -865,6 +987,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           thumbCropRect: args.thumbCropRect,
           endObjPos: args.endObjPos ?? { x: 0.5, y: 0.5 },
           captionClone,
+          trackStyleMutation,
+          trackMutedMutation,
           safeTeardown,
           DURATION_MS,
           EASING,
@@ -894,16 +1018,10 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       (proxy as any).loading = "eager";
       proxy.draggable = false;
 
-      const realPrev = {
-        visibility: realImg.style.visibility,
-        opacity: realImg.style.opacity,
-        transition: realImg.style.transition,
-        willChange: realImg.style.willChange,
-      };
-      realImg.style.transition = "none";
-      realImg.style.willChange = "opacity";
-      realImg.style.visibility = "hidden";
-      realImg.style.opacity = "0";
+      trackStyleMutation(realImg, 'transition', 'none');
+      trackStyleMutation(realImg, 'willChange', 'opacity');
+      trackStyleMutation(realImg, 'visibility', 'hidden');
+      trackStyleMutation(realImg, 'opacity', '0');
 
       Object.assign(proxy.style, {
         position: "fixed",
@@ -1149,7 +1267,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       const fsSlider = withinFs<HTMLElement>('.fullscreen_slider');
       if (fsSlider) fsSlider.style.opacity = '0';
 
-      const modal = withinFs<HTMLElement>('.fs_modal');
+      const modal = modalRef.current;
       if (modal) {
         modal.style.opacity = '0';
         modal.style.pointerEvents = 'none';

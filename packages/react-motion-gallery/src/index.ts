@@ -15,8 +15,8 @@ export type { PanAxisType } from "./Gallery/shared/types/axis";
 
 export type { SliderOptions, SliderHandle, ResponsiveHeightRule } from "./Gallery/slider/types";
 export type { SliderIndexChannel } from "./Gallery/slider/sliderSub";
-export type { GridOptions } from "./Gallery/grid/types";
-export type { MasonryOptions } from "./Gallery/masonry/types";
+export type { GridOptions, GridLazyLoadOptions } from "./Gallery/grid/types";
+export type { MasonryOptions, MasonryLazyLoadOptions } from "./Gallery/masonry/types";
 export type { EntriesOptions, MediaEntryLink, SlideOwner } from "./Gallery/entries";
 export type { FullscreenOptions, FsCaptionPlacement, FsIntroRequest } from "./Gallery/fullscreen/types";
 export type {
