@@ -13,7 +13,7 @@ npm install plyr plyr-react
 
 Import the package stylesheet once. The published bundle ships CSS separately and does not side-effect import it for you.
 
-```tsx
+```typescript
 import "react-motion-gallery/dist/index.css";
 ```
 
@@ -32,7 +32,7 @@ Mental model:
 
 `toMediaItems()` accepts string URLs, image/video objects, and node objects, then normalizes them into `MediaItem[]`. String URLs infer `kind` from the file extension.
 
-```tsx
+```typescript
 import "react-motion-gallery/dist/index.css";
 import { Slider, toMediaItems, type MediaItem } from "react-motion-gallery";
 
@@ -68,7 +68,7 @@ The package root now exports the primary public components, helper functions, an
 
 ## Slider
 
-```tsx
+```typescript
 import { Slider } from "react-motion-gallery";
 
 const slides = [
@@ -249,7 +249,7 @@ export function BasicSlider() {
 
 ### `createSliderIndexChannel`
 
-```tsx
+```typescript
 import { Slider, createSliderIndexChannel } from "react-motion-gallery";
 
 const channel = createSliderIndexChannel();
@@ -280,7 +280,7 @@ export function SharedIndexSlider() {
 
 Use `ThumbnailSlider` when you want a synced thumbnail rail for a base `Slider`. In the common case, share one `createSliderIndexChannel()` instance and pass it to both components.
 
-```tsx
+```typescript
 import {
   Slider,
   ThumbnailSlider,
@@ -406,7 +406,7 @@ The component forwards a ref to its outer thumbnail shell. The explicit `layout`
 
 ## Grid
 
-```tsx
+```typescript
 import { Grid } from "react-motion-gallery";
 
 const images = Array.from({ length: 6 }, (_, index) => ({
@@ -463,7 +463,7 @@ Grid fullscreen behavior is provided by `GalleryCore` and `useFullscreenControll
 
 ## Masonry
 
-```tsx
+```typescript
 import { Masonry } from "react-motion-gallery";
 
 const cards = [280, 360, 220, 420, 300, 340];
@@ -523,7 +523,7 @@ export function BasicMasonry() {
 
 `Entries` is the structured-data surface. You pass entry objects, render each media item however you want, and provide a `renderMediaContainer` function that decides whether an entry’s media should be laid out as a slider, grid, or masonry block.
 
-```tsx
+```typescript
 import * as React from "react";
 import {
   Entries,
@@ -704,7 +704,7 @@ export function EntryGallery() {
 
 Fullscreen is compositional. `GalleryCore` owns the normalized fullscreen item list, your layout opens slides through that core, and `useFullscreenController` renders the portal UI.
 
-```tsx
+```typescript
 import * as React from "react";
 import { GalleryCore, Slider, useFullscreenController } from "react-motion-gallery";
 
@@ -740,7 +740,7 @@ export function SliderWithFullscreen() {
 
 Add fullscreen thumbnails by rendering `FullscreenThumbnailSlider` with the bridge returned from `useFullscreenController`.
 
-```tsx
+```typescript
 import { FullscreenThumbnailSlider, useFullscreenController } from "react-motion-gallery";
 
 function FullscreenWithThumbs({ thumbs }: { thumbs: string[] }) {
@@ -995,7 +995,7 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 
 `Video` is the gallery-aware video primitive. It mounts Plyr lazily, syncs with gallery visibility, and can be used inside `Slider`, `Grid`, `Masonry`, `Entries`, and fullscreen flows.
 
-```tsx
+```typescript
 import { Video } from "react-motion-gallery";
 
 export function BasicVideo() {

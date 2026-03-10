@@ -1,8 +1,8 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "React Motion Gallery - smooth, customizable media gallery components",
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "author": "React Motion Gallery",
   "homepage": "https://react-motion-gallery.com",
   "repository": {
