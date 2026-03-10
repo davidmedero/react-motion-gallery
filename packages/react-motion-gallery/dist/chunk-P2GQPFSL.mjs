@@ -1,0 +1,1 @@
+function n(e){return {scroll:e?"x":"y",cross:e?"y":"x",measureSize(t){return e?t.width:t.height}}}function i(){return {scroll:"x",cross:"y",direction(e){return e},measureSize(e){return e.width}}}function c(){return {scroll:"x",cross:"y",direction(e){return e}}}export{n as a,i as b,c};

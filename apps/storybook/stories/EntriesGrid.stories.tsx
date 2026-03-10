@@ -3,7 +3,8 @@
 
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
+import { expect, userEvent, waitFor, within } from "storybook/test";
+import { GalleryCore, useGalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
 import { Entries, flattenEntries } from "../../../packages/react-motion-gallery/src/Gallery/entries";
 import { createEntriesGridMedia } from "../../../packages/react-motion-gallery/src/Gallery/entries/media/grid";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
@@ -13,6 +14,8 @@ type Entry = {
   title?: string;
   media: Array<{ kind: "image" | "video"; src: string; alt?: string }>;
 };
+
+const ENTRIES_GRID_PROBE = "entries-grid-base-visible";
 
 const ENTRIES: Entry[] = [
   {
@@ -44,6 +47,121 @@ const ENTRIES: Entry[] = [
   },
 ];
 
+function BaseVisibleProbe({ testId }: { testId: string }) {
+  const core = useGalleryCore();
+  const [seen, setSeen] = React.useState<number[]>([]);
+
+  React.useEffect(() => {
+    const off = core.baseVisibleSub.subscribe((evt) => {
+      const idx = evt?.index;
+      if (typeof idx !== "number" || !Number.isFinite(idx)) return;
+
+      setSeen((prev) => (prev.includes(idx) ? prev : [...prev, idx]));
+    });
+
+    return () => off?.();
+  }, [core]);
+
+  return (
+    <output data-testid={testId} style={{ display: "none" }}>
+      {seen.join(",")}
+    </output>
+  );
+}
+
+function pickClosestToViewportCenter<T extends HTMLElement>(elements: T[]): T | null {
+  if (!elements.length) return null;
+
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+  let best: T | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (const el of elements) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) continue;
+
+    const distance =
+      Math.abs(rect.left + rect.width / 2 - centerX) +
+      Math.abs(rect.top + rect.height / 2 - centerY);
+
+    if (distance < bestDistance) {
+      best = el;
+      bestDistance = distance;
+    }
+  }
+
+  return best ?? elements[0] ?? null;
+}
+
+function getSeenIndices(canvasElement: HTMLElement, testId: string) {
+  const probe = canvasElement.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+  if (!probe) return [];
+
+  return (probe.textContent ?? "")
+    .split(",")
+    .map((part) => parseInt(part, 10))
+    .filter((value) => Number.isFinite(value));
+}
+
+async function waitForProbeIndex(canvasElement: HTMLElement, testId: string, index: number) {
+  await waitFor(() => {
+    expect(getSeenIndices(canvasElement, testId)).toContain(index);
+  });
+}
+
+function getFullscreenSlide(doc: Document, canonicalIndex: number): HTMLElement | null {
+  return pickClosestToViewportCenter(
+    Array.from(
+      doc.body.querySelectorAll<HTMLElement>(
+        `[data-rmg-fs-slide="true"][data-rmg-canonical-idx="${canonicalIndex}"]`
+      )
+    )
+  );
+}
+
+function assertFullscreenRootsVisible(doc: Document) {
+  const modal = doc.body.querySelector<HTMLElement>(".fs_modal");
+  const slider = doc.body.querySelector<HTMLElement>(".fullscreen_slider");
+
+  expect(modal).not.toBeNull();
+  expect(slider).not.toBeNull();
+  expect(getComputedStyle(modal!).opacity).not.toBe("0");
+  expect(getComputedStyle(modal!).pointerEvents).not.toBe("none");
+  expect(getComputedStyle(slider!).opacity).not.toBe("0");
+}
+
+async function waitForVisibleFullscreenImage(doc: Document, canonicalIndex: number) {
+  await waitFor(() => {
+    assertFullscreenRootsVisible(doc);
+
+    const slide = getFullscreenSlide(doc, canonicalIndex);
+    expect(slide).not.toBeNull();
+
+    const image = slide!.querySelector<HTMLImageElement>('[data-rmg-fs-media="true"] img');
+    expect(image).not.toBeNull();
+
+    const style = getComputedStyle(image!);
+    expect(style.visibility).not.toBe("hidden");
+    expect(style.opacity).not.toBe("0");
+  });
+}
+
+async function closeFullscreen(doc: Document) {
+  await userEvent.click(await within(doc.body).findByRole("button", { name: "Close" }));
+
+  await waitFor(() => {
+    const modal = doc.body.querySelector<HTMLElement>(".fs_modal");
+    const slider = doc.body.querySelector<HTMLElement>(".fullscreen_slider");
+
+    expect(modal).not.toBeNull();
+    expect(slider).not.toBeNull();
+    expect(getComputedStyle(modal!).opacity).toBe("0");
+    expect(getComputedStyle(modal!).pointerEvents).toBe("none");
+    expect(getComputedStyle(slider!).opacity).toBe("0");
+  });
+}
+
 function FullscreenAddon(props: {
   fullscreenEnabled?: boolean;
   sliderObject: any;
@@ -52,7 +170,13 @@ function FullscreenAddon(props: {
   const { fullscreenEnabled = true, sliderObject, cellsStateLength } = props;
 
   const { fullscreenNode } = useFullscreenController({
-    fullscreen: { enabled: fullscreenEnabled } as any,
+    fullscreen: {
+      enabled: fullscreenEnabled,
+      lazyLoad: {
+        images: { enabled: true },
+        videos: { enabled: true },
+      },
+    } as any,
     slider: undefined,
     sliderObject,
     cellsStateLength,
@@ -175,6 +299,7 @@ function Demo() {
   return (
     <div style={{ padding: 16, background: "#f6f7f9", minHeight: "100vh" }}>
       <GalleryCore layout="entries" fullscreenItems={fullscreenItems}>
+        <BaseVisibleProbe testId={ENTRIES_GRID_PROBE} />
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <h3 style={{ margin: "0 0 12px" }}>Entries (Grid media) ↔ Fullscreen overlay</h3>
           <p style={{ margin: "0 0 16px", opacity: 0.8 }}>
@@ -188,21 +313,32 @@ function Demo() {
               render: {
                 card: renderCard,
                 overlay: renderOverlay,
-                media: ({ media, entryIndex, mediaIndex }) => (
-                  <img
-                    src={media.src}
-                    alt={media.alt ?? ""}
-                    style={{
-                      width: "100%",
-                      height: "320px",
-                      display: "block",
-                      objectFit: "cover",
-                      borderRadius: 12,
-                    }}
-                    data-entry={entryIndex}
-                    data-media={mediaIndex}
-                  />
-                )
+                media: ({ media, entryIndex, mediaIndex }) => {
+                  const src =
+                    media.kind === "image" || media.kind === "video"
+                      ? media.src
+                      : "";
+                  const alt =
+                    media.kind === "image" || media.kind === "video"
+                      ? media.alt ?? ""
+                      : "";
+
+                  return (
+                    <img
+                      src={src}
+                      alt={alt}
+                      style={{
+                        width: "100%",
+                        height: "320px",
+                        display: "block",
+                        objectFit: "cover",
+                        borderRadius: 12,
+                      }}
+                      data-entry={entryIndex}
+                      data-media={mediaIndex}
+                    />
+                  );
+                }
               },
             }}
             fullscreen={{ enabled: true }}
@@ -230,4 +366,21 @@ type Story = StoryObj;
 
 export const Entries_GridMedia_WithFsOverlay: Story = {
   render: () => <Demo />,
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument;
+    const targetIndex = 8;
+
+    let target: HTMLImageElement | null = null;
+    await waitFor(() => {
+      target = canvasElement.querySelector<HTMLImageElement>('[data-entry="2"][data-media="3"]');
+      expect(target).not.toBeNull();
+    });
+
+    target!.scrollIntoView({ block: "center" });
+    await waitForProbeIndex(canvasElement, ENTRIES_GRID_PROBE, targetIndex);
+
+    await userEvent.click(target!);
+    await waitForVisibleFullscreenImage(doc, targetIndex);
+    await closeFullscreen(doc);
+  },
 };

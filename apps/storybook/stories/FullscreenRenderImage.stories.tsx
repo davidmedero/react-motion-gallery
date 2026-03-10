@@ -104,6 +104,8 @@ type DelayedWrappedImageProps = WrappedImageProps & {
 function DelayedWrappedImage(props: DelayedWrappedImageProps) {
   const { delayMs = 150, ...rest } = props;
   const [showImage, setShowImage] = React.useState(false);
+  const [mountedSliderOpacity, setMountedSliderOpacity] = React.useState<string>("");
+  const frameRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -115,9 +117,18 @@ function DelayedWrappedImage(props: DelayedWrappedImageProps) {
     };
   }, [delayMs, rest.src]);
 
+  React.useLayoutEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const slider = frame.closest(".fullscreen_slider") as HTMLElement | null;
+    setMountedSliderOpacity(slider ? getComputedStyle(slider).opacity : "");
+  }, []);
+
   return (
     <div
+      ref={frameRef}
       data-testid={rest.frameTestId}
+      data-mounted-slider-opacity={mountedSliderOpacity}
       style={{
         position: "relative",
         width: "100%",
@@ -465,6 +476,52 @@ export const WrappedImgLazyClosesBeforeReveal: Story = {
       ).toBeNull();
       expect(
         doc.body.querySelector('[data-testid="delayed-next-image-frame"]')
+      ).toBeNull();
+      expect(doc.body.querySelector('[data-rmg-fs-slide="true"]')).toBeNull();
+    });
+  },
+};
+
+export const WrappedImgLazyMountsDuringIntroTransition: Story = {
+  render: () => <LazyWrappedDemo delayMs={450} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const doc = canvasElement.ownerDocument;
+
+    await userEvent.click(await canvas.findByRole("img", { name: "Lazy base slide 1" }));
+
+    let frame: HTMLDivElement | null = null;
+    let spinner: HTMLDivElement | null = null;
+    let slider: HTMLDivElement | null = null;
+    await waitFor(() => {
+      frame = doc.body.querySelector<HTMLDivElement>('[data-testid="delayed-next-image-frame"]');
+      spinner = doc.body.querySelector<HTMLDivElement>('[data-rmg-image-spinner]');
+      slider = doc.body.querySelector<HTMLDivElement>(".fullscreen_slider");
+      expect(frame).not.toBeNull();
+      expect(spinner).not.toBeNull();
+      expect(slider).not.toBeNull();
+      expect(frame!.getAttribute("data-mounted-slider-opacity")).toBe("0");
+      expect(getComputedStyle(slider!).opacity).toBe("0");
+      expect(spinner!.style.visibility).toBe("visible");
+    });
+
+    expect(
+      doc.body.querySelector('[data-testid="delayed-next-image-img"]')
+    ).toBeNull();
+
+    await waitFor(() => {
+      const wrappedImg = doc.body.querySelector<HTMLImageElement>('[data-testid="delayed-next-image-img"]');
+      expect(wrappedImg).not.toBeNull();
+      expect(spinner!.style.visibility).toBe("hidden");
+    });
+
+    await userEvent.click(
+      await within(doc.body).findByRole("button", { name: "Close" })
+    );
+
+    await waitFor(() => {
+      expect(
+        doc.body.querySelector('[data-testid="delayed-next-image-img"]')
       ).toBeNull();
       expect(doc.body.querySelector('[data-rmg-fs-slide="true"]')).toBeNull();
     });

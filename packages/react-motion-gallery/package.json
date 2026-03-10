@@ -24,37 +24,57 @@
 
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
 
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
 
+    "./core": {
+      "types": "./dist/core.d.mts",
+      "import": "./dist/core.mjs"
+    },
+
     "./slider": {
-      "types": "./dist/slider/index.d.ts",
-      "import": "./dist/slider/index.mjs"
+      "types": "./dist/slider.d.mts",
+      "import": "./dist/slider.mjs"
     },
 
     "./grid": {
-      "types": "./dist/grid/index.d.ts",
-      "import": "./dist/grid/index.mjs"
+      "types": "./dist/grid.d.mts",
+      "import": "./dist/grid.mjs"
     },
 
     "./masonry": {
-      "types": "./dist/masonry/index.d.ts",
-      "import": "./dist/masonry/index.mjs"
+      "types": "./dist/masonry.d.mts",
+      "import": "./dist/masonry.mjs"
     },
 
     "./entries": {
-      "types": "./dist/entries/index.d.ts",
-      "import": "./dist/entries/index.mjs"
+      "types": "./dist/entries.d.mts",
+      "import": "./dist/entries.mjs"
     },
 
     "./fullscreen": {
-      "types": "./dist/fullscreen/index.d.ts",
-      "import": "./dist/fullscreen/index.mjs"
+      "types": "./dist/fullscreen.d.mts",
+      "import": "./dist/fullscreen.mjs"
+    },
+
+    "./thumbnails": {
+      "types": "./dist/thumbnails.d.mts",
+      "import": "./dist/thumbnails.mjs"
+    },
+
+    "./fullscreenThumbnails": {
+      "types": "./dist/fullscreenThumbnails.d.mts",
+      "import": "./dist/fullscreenThumbnails.mjs"
+    },
+
+    "./video": {
+      "types": "./dist/video.d.mts",
+      "import": "./dist/video.mjs"
     }
   },
 

@@ -137,7 +137,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
         };
       }
 
-      images.forEach(applyImageHints);
+      images.forEach((img) => applyImageHints(img));
 
       setReady(false);
       let cancelled = false;

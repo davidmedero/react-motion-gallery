@@ -1,7 +1,18 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  entry: [
+    "src/core.ts",
+    "src/index.ts",
+    "src/slider.ts",
+    "src/grid.ts",
+    "src/masonry.ts",
+    "src/entries.ts",
+    "src/fullscreen.ts",
+    "src/thumbnails.ts",
+    "src/fullscreenThumbnails.ts",
+    "src/video.ts",
+  ],
   format: ["esm"],
   splitting: true,
   treeshake: true,

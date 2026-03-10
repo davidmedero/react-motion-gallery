@@ -3,7 +3,8 @@
 
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
+import { expect, userEvent, waitFor, within } from "storybook/test";
+import { GalleryCore, useGalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
 import Grid from "../../../packages/react-motion-gallery/src/Gallery/grid";
 import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
 
@@ -21,6 +22,8 @@ const IMG_ITEMS = Array.from({ length: 12 }).map(
 // ✅ sample mp4 + poster
 const VIDEO_SRC = "https://cdn.plyr.io/static/blank.mp4";
 const VIDEO_POSTER = "https://picsum.photos/seed/grid-video-poster/1000/1500";
+const GRID_CONNECTION_PROBE = "grid-base-visible-connection";
+const GRID_LAZY_PROBE = "grid-base-visible-lazy";
 
 function GridImageCell({ src, i }: { src: string; i: number }) {
   return (
@@ -65,6 +68,121 @@ function GridVideoCell() {
   );
 }
 
+function BaseVisibleProbe({ testId }: { testId: string }) {
+  const core = useGalleryCore();
+  const [seen, setSeen] = React.useState<number[]>([]);
+
+  React.useEffect(() => {
+    const off = core.baseVisibleSub.subscribe((evt) => {
+      const idx = evt?.index;
+      if (typeof idx !== "number" || !Number.isFinite(idx)) return;
+
+      setSeen((prev) => (prev.includes(idx) ? prev : [...prev, idx]));
+    });
+
+    return () => off?.();
+  }, [core]);
+
+  return (
+    <output data-testid={testId} style={{ display: "none" }}>
+      {seen.join(",")}
+    </output>
+  );
+}
+
+function pickClosestToViewportCenter<T extends HTMLElement>(elements: T[]): T | null {
+  if (!elements.length) return null;
+
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+  let best: T | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (const el of elements) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) continue;
+
+    const distance =
+      Math.abs(rect.left + rect.width / 2 - centerX) +
+      Math.abs(rect.top + rect.height / 2 - centerY);
+
+    if (distance < bestDistance) {
+      best = el;
+      bestDistance = distance;
+    }
+  }
+
+  return best ?? elements[0] ?? null;
+}
+
+function getSeenIndices(canvasElement: HTMLElement, testId: string) {
+  const probe = canvasElement.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+  if (!probe) return [];
+
+  return (probe.textContent ?? "")
+    .split(",")
+    .map((part) => parseInt(part, 10))
+    .filter((value) => Number.isFinite(value));
+}
+
+async function waitForProbeIndex(canvasElement: HTMLElement, testId: string, index: number) {
+  await waitFor(() => {
+    expect(getSeenIndices(canvasElement, testId)).toContain(index);
+  });
+}
+
+function getFullscreenSlide(doc: Document, canonicalIndex: number): HTMLElement | null {
+  return pickClosestToViewportCenter(
+    Array.from(
+      doc.body.querySelectorAll<HTMLElement>(
+        `[data-rmg-fs-slide="true"][data-rmg-canonical-idx="${canonicalIndex}"]`
+      )
+    )
+  );
+}
+
+function assertFullscreenRootsVisible(doc: Document) {
+  const modal = doc.body.querySelector<HTMLElement>(".fs_modal");
+  const slider = doc.body.querySelector<HTMLElement>(".fullscreen_slider");
+
+  expect(modal).not.toBeNull();
+  expect(slider).not.toBeNull();
+  expect(getComputedStyle(modal!).opacity).not.toBe("0");
+  expect(getComputedStyle(modal!).pointerEvents).not.toBe("none");
+  expect(getComputedStyle(slider!).opacity).not.toBe("0");
+}
+
+async function waitForVisibleFullscreenImage(doc: Document, canonicalIndex: number) {
+  await waitFor(() => {
+    assertFullscreenRootsVisible(doc);
+
+    const slide = getFullscreenSlide(doc, canonicalIndex);
+    expect(slide).not.toBeNull();
+
+    const image = slide!.querySelector<HTMLImageElement>('[data-rmg-fs-media="true"] img');
+    expect(image).not.toBeNull();
+
+    const style = getComputedStyle(image!);
+    expect(style.visibility).not.toBe("hidden");
+    expect(style.opacity).not.toBe("0");
+  });
+}
+
+async function closeFullscreen(doc: Document) {
+  await userEvent.click(await within(doc.body).findByRole("button", { name: "Close" }));
+
+  await waitFor(() => {
+    const modal = doc.body.querySelector<HTMLElement>(".fs_modal");
+    const slider = doc.body.querySelector<HTMLElement>(".fullscreen_slider");
+
+    expect(modal).not.toBeNull();
+    expect(slider).not.toBeNull();
+    expect(getComputedStyle(modal!).opacity).toBe("0");
+    expect(getComputedStyle(modal!).pointerEvents).toBe("none");
+    expect(getComputedStyle(slider!).opacity).toBe("0");
+  });
+}
+
 function FullscreenAddon(props: {
   fullscreenEnabled?: boolean;
   sliderObject: any;
@@ -73,7 +191,13 @@ function FullscreenAddon(props: {
   const { fullscreenEnabled = true, sliderObject, cellsStateLength } = props;
 
   const { fullscreenNode } = useFullscreenController({
-    fullscreen: { enabled: fullscreenEnabled } as any,
+    fullscreen: {
+      enabled: fullscreenEnabled,
+      lazyLoad: {
+        images: { enabled: true },
+        videos: { enabled: true },
+      },
+    } as any,
     slider: undefined,
     sliderObject,
     cellsStateLength,
@@ -123,6 +247,7 @@ function Demo() {
 
       {/* ✅ fullscreenItems now includes videos too */}
       <GalleryCore layout="grid" fullscreenItems={FULLSCREEN_ITEMS as any}>
+        <BaseVisibleProbe testId={GRID_CONNECTION_PROBE} />
         <Grid
           columns={{ 0: 1, 500: 2, 768: 3, 1024: 4, 1280: 5 }}
           gap={12}
@@ -170,57 +295,63 @@ function LazyLoadDemo() {
         Grid owns image lazy loading and per-item spinners. Mixed text remains visible immediately.
       </p>
 
-      <Grid
-        columns={{ 0: 1, 640: 2, 960: 3, 1280: 4 }}
-        gap={12}
-        lazyLoad={{
-          enabled: true,
-        }}
-        loading={{
-          // force: true,
-          skeleton: {
+      <GalleryCore layout="grid" fullscreenItems={IMG_ITEMS.slice(0, 8) as any}>
+        <BaseVisibleProbe testId={GRID_LAZY_PROBE} />
+        <Grid
+          columns={{ 0: 1, 640: 2, 960: 3, 1280: 4 }}
+          gap={12}
+          lazyLoad={{
+            enabled: true,
+          }}
+          loading={{
+            skeleton: {
               layout: {
                 kind: "grid",
                 item: { kind: "rect", style: { aspectRatio: "4/5" } },
               },
             },
-        }}
-        intro={{
-          durationMs: 1000,
-          staggerMs: 100
-        }}
-      >
-        {IMG_ITEMS.slice(0, 8).map((src, i) => (
-          <article
-            key={`lazy-grid-${src}`}
-            style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              background: "#fff",
-              boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
-            }}
-          >
-            <img
-              src={src}
-              alt={`Lazy grid ${i + 1}`}
+          }}
+          intro={{
+            durationMs: 1000,
+            staggerMs: 100,
+          }}
+        >
+          {IMG_ITEMS.slice(0, 8).map((src, i) => (
+            <article
+              key={`lazy-grid-${src}`}
               style={{
-                width: "100%",
-                aspectRatio: "4 / 5",
-                display: "block",
-                objectFit: "cover",
+                borderRadius: 16,
+                overflow: "hidden",
+                background: "#fff",
+                boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
               }}
-            />
-            <div style={{ padding: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#10253d" }}>
-                Card {i + 1}
+            >
+              <img
+                src={src}
+                alt={`Lazy grid ${i + 1}`}
+                style={{
+                  width: "100%",
+                  aspectRatio: "4 / 5",
+                  display: "block",
+                  objectFit: "cover",
+                }}
+              />
+              <div style={{ padding: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#10253d" }}>
+                  Card {i + 1}
+                </div>
+                <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.4, color: "#526173" }}>
+                  Copy stays visible while the image loads.
+                </div>
               </div>
-              <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.4, color: "#526173" }}>
-                Copy stays visible while the image loads.
-              </div>
-            </div>
-          </article>
-        ))}
-      </Grid>
+            </article>
+          ))}
+        </Grid>
+        <FullscreenAddon
+          sliderObject={{ align: "center", direction: { dir: "ltr" } }}
+          cellsStateLength={8}
+        />
+      </GalleryCore>
     </div>
   );
 }
@@ -237,8 +368,38 @@ type Story = StoryObj;
 
 export const Connection: Story = {
   render: () => <Demo />,
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument;
+    const targetIndex = 11;
+
+    let target: HTMLElement | null = null;
+    await waitFor(() => {
+      target = canvasElement.querySelector<HTMLElement>(`[data-rmg-idx="${targetIndex}"]`);
+      expect(target).not.toBeNull();
+    });
+
+    target!.scrollIntoView({ block: "center" });
+    await waitForProbeIndex(canvasElement, GRID_CONNECTION_PROBE, targetIndex);
+
+    await userEvent.click(target!);
+    await waitForVisibleFullscreenImage(doc, targetIndex);
+    await closeFullscreen(doc);
+  },
 };
 
 export const LazyLoad: Story = {
   render: () => <LazyLoadDemo />,
+  play: async ({ canvasElement }) => {
+    const targetIndex = 6;
+
+    let target: HTMLElement | null = null;
+    await waitFor(() => {
+      target = canvasElement.querySelector<HTMLElement>(`[data-rmg-idx="${targetIndex}"]`);
+      expect(target).not.toBeNull();
+    });
+
+    target!.scrollIntoView({ block: "center" });
+    await waitForProbeIndex(canvasElement, GRID_LAZY_PROBE, targetIndex);
+    expect(getSeenIndices(canvasElement, GRID_LAZY_PROBE).filter((idx) => idx === targetIndex)).toHaveLength(1);
+  },
 };

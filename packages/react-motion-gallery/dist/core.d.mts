@@ -1,0 +1,86 @@
+import * as react_jsx_runtime from 'react/jsx-runtime';
+import * as React from 'react';
+import { a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
+import { M as MediaItem } from './media-moIXOhT1.mjs';
+import { a as SliderHandle } from './types-Dqm2ynv2.mjs';
+import { M as MediaEntryLink } from './types-ChjyCquV.mjs';
+import { F as FullscreenOpenRequest, O as OpenFullscreenAtArgs } from './sliderSub-DNikv2lm.mjs';
+import './elements-Bd1vm4Uk.mjs';
+
+type CoreLayout = "slider" | "grid" | "masonry" | "entries";
+type Cell = {
+    id: string;
+    node: React.ReactNode;
+};
+type FullscreenSource = FullscreenOpenRequest["source"];
+type BaseVisibleIndexEvent = {
+    index: number;
+    reason?: "io";
+};
+type FsVisibleIndexEvent = {
+    index: number;
+    reason?: "active";
+};
+type FullscreenEntryContext = {
+    entryMapRef?: React.RefObject<MediaEntryLink[] | null>;
+    entryMediaLayout?: "slider" | "grid" | "masonry";
+    entriesObject?: any;
+    entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
+    expandableImageRefs?: React.RefObject<Array<HTMLImageElement | null>>;
+};
+type FullscreenSourceAdapter = {
+    getOwnerSliderHandle?: (index: number) => SliderHandle | null;
+    syncBeforeOpen?: (index: number) => void;
+    closestSelector?: string;
+    getEntryContext?: () => FullscreenEntryContext;
+};
+type GalleryCoreProps = {
+    children?: React.ReactNode;
+    layout: CoreLayout;
+    breakpoints?: BreakpointMap;
+    fullscreenItems?: MediaItem[] | string[];
+    nodes?: React.ReactNode | React.ReactNode[];
+};
+declare function GalleryCoreProvider(props: GalleryCoreProps): react_jsx_runtime.JSX.Element;
+type GalleryCore = {
+    layout: CoreLayout;
+    effectiveBreakpoints: BreakpointMap;
+    cellsState: Cell[];
+    cellsRef: React.RefObject<Cell[]>;
+    normalizedItems: MediaItem[];
+    setNormalizedItems: React.Dispatch<React.SetStateAction<MediaItem[]>>;
+    sliderApiRef: React.RefObject<SliderHandle | null>;
+    append: (nodes: React.ReactNode | React.ReactNode[]) => number;
+    prepend: (nodes: React.ReactNode | React.ReactNode[]) => number;
+    insert: (index: number, nodes: React.ReactNode | React.ReactNode[]) => number;
+    remove: (index: number) => number;
+    replace: (index: number, node: React.ReactNode) => void;
+    setItems: (nodes: React.ReactNode[]) => number;
+    requestFullscreenOpen: (req: FullscreenOpenRequest) => void;
+    fsOpenSub: {
+        emit(v: FullscreenOpenRequest): void;
+        subscribe(fn: (v: FullscreenOpenRequest) => void): () => void;
+    };
+    isFullscreenOpen: boolean;
+    isFullscreenOpenRef: React.RefObject<boolean>;
+    setFullscreenOpen: (open: boolean) => void;
+    registerFullscreenAdapter: (source: FullscreenSource, a: FullscreenSourceAdapter) => void;
+    getFullscreenAdapter: (source: FullscreenSource) => FullscreenSourceAdapter | null;
+    expandableImageRefs: React.RefObject<Array<HTMLImageElement | null>>;
+    registerExpandableImage: (index: number, node: HTMLElement | null) => void;
+    baseVisibleSub: {
+        emit(v: BaseVisibleIndexEvent): void;
+        subscribe(fn: (v: BaseVisibleIndexEvent) => void): () => void;
+    };
+    notifyBaseVisibleIndex: (index: number) => void;
+    fsVisibleSub: {
+        emit(v: FsVisibleIndexEvent): void;
+        subscribe(fn: (v: FsVisibleIndexEvent) => void): () => void;
+    };
+    notifyFsVisibleIndex: (index: number) => void;
+    openFullscreenAt: (args: OpenFullscreenAtArgs) => void;
+};
+declare const GalleryCore: typeof GalleryCoreProvider;
+declare function useGalleryCore(): GalleryCore;
+
+export { type BaseVisibleIndexEvent, type CoreLayout, type FsVisibleIndexEvent, type FullscreenSource, GalleryCore, type GalleryCoreProps, GalleryCoreProvider, useGalleryCore };

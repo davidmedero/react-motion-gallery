@@ -261,6 +261,8 @@ function FsLazyCustomImageContent(props: {
   renderedIndex: number;
   canonicalIndex: number;
   isClone: boolean;
+  openingCanonicalIndex?: number | null;
+  openingInProgress?: boolean;
   isZoomed: boolean;
   className: string;
   baseStyle: React.CSSProperties;
@@ -279,6 +281,8 @@ function FsLazyCustomImageContent(props: {
     renderedIndex,
     canonicalIndex,
     isClone,
+    openingCanonicalIndex,
+    openingInProgress,
     isZoomed,
     className,
     baseStyle,
@@ -301,11 +305,16 @@ function FsLazyCustomImageContent(props: {
 
   const seenBefore = fsCustomDecodedImagesRef.current.has(key);
   const cachedResolvedSrc = fsCustomResolvedSrcByKeyRef.current.get(key) ?? "";
+  const isOpeningTarget =
+    !!openingInProgress &&
+    !isClone &&
+    openingCanonicalIndex === canonicalIndex;
 
   const computeAllowed = React.useCallback(() => {
+    if (isOpeningTarget) return true;
     if (seenBefore) return true;
     return !!fsLazyAllowedRef?.current?.has(canonicalIndex);
-  }, [seenBefore, fsLazyAllowedRef, canonicalIndex]);
+  }, [isOpeningTarget, seenBefore, fsLazyAllowedRef, canonicalIndex]);
 
   const [mountRenderer, setMountRenderer] = React.useState<boolean>(() => computeAllowed());
 
@@ -416,7 +425,7 @@ function FsLazyCustomImageContent(props: {
       if (activeImg === img) return;
 
       activeImg = img;
-      applyImageHints(img);
+      applyImageHints(img, { eager: isOpeningTarget });
 
       const resolvedSrc = readResolvedImageSrc(img);
       const reuseDecodedImage =
@@ -484,6 +493,7 @@ function FsLazyCustomImageContent(props: {
     mountRenderer,
     showSpinner,
     key,
+    isOpeningTarget,
     seenBefore,
     cachedResolvedSrc,
     fsCustomDecodedImagesRef,
@@ -569,6 +579,8 @@ function FsImageContent(props: {
         renderedIndex={renderedIndex}
         canonicalIndex={canonicalIndex}
         isClone={isClone}
+        openingCanonicalIndex={openingCanonicalIndex}
+        openingInProgress={openingInProgress}
         isZoomed={isZoomed}
         className={className}
         baseStyle={baseStyle}

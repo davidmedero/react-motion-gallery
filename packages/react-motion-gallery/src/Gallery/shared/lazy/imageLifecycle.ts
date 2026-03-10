@@ -11,10 +11,17 @@ export function findPrimaryTrackableImage(host: ParentNode | null): HTMLImageEle
   return findTrackableImages(host)[0] ?? null;
 }
 
-export function applyImageHints(img: HTMLImageElement) {
-  if (!img.hasAttribute("loading")) img.setAttribute("loading", "lazy");
+export function applyImageHints(
+  img: HTMLImageElement,
+  opts?: { eager?: boolean }
+) {
+  if (!img.hasAttribute("loading")) {
+    img.setAttribute("loading", opts?.eager ? "eager" : "lazy");
+  }
   if (!img.hasAttribute("decoding")) img.setAttribute("decoding", "async");
-  if (!img.hasAttribute("fetchpriority")) img.setAttribute("fetchpriority", "low");
+  if (!img.hasAttribute("fetchpriority")) {
+    img.setAttribute("fetchpriority", opts?.eager ? "high" : "low");
+  }
 }
 
 export function nextFrame(): Promise<void> {

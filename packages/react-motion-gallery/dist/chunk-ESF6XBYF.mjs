@@ -1,0 +1,1 @@
+import*as e from'react';function r(){let[t,i]=e.useState(()=>typeof window>"u"?0:window.innerWidth);return e.useEffect(()=>{if(typeof window>"u")return;let n=()=>i(window.innerWidth);return window.addEventListener("resize",n),()=>window.removeEventListener("resize",n)},[]),t}export{r as a};
