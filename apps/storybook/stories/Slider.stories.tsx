@@ -18,6 +18,11 @@ const VIDEO_SRC =
 const VIDEO_POSTER =
   "https://res.cloudinary.com/dxl2ftf2d/image/upload/v1760239118/beach-video-thumb-landscape_saopv3.jpg";
 
+  const VIDEO_SRC_2 =
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+  const VIDEO_POSTER_2 =
+  "https://images.unsplash.com/photo-1491975474562-1f4e30bc9468?q=80&w=1600&auto=format&fit=crop";
+
 // ✅ This is the realistic “user input” you want to support
 type MediaInput =
   | string
@@ -28,22 +33,24 @@ type MediaInput =
     };
 
 const URLS: MediaInput[] = [
-  
+  { src: VIDEO_SRC, poster: VIDEO_POSTER, alt: "Beach video" },
   "https://picsum.photos/id/1020/1600/900",
   "https://picsum.photos/id/1029/1600/900",
   "https://picsum.photos/id/1039/1600/900",
-  { src: VIDEO_SRC, poster: VIDEO_POSTER, alt: "Beach video" },
+  
+  { src: VIDEO_SRC_2, poster: VIDEO_POSTER_2, alt: "Flower video" },
   "https://picsum.photos/id/1049/1600/900",
   "https://picsum.photos/id/1079/1600/900",
   "https://picsum.photos/id/1076/1600/900",
 ];
 
 const FS_URLS: MediaInput[] = [
-  
+  { src: VIDEO_SRC, poster: VIDEO_POSTER, alt: "Beach video" },
   "https://picsum.photos/id/1020/3200/1800",
   "https://picsum.photos/id/1029/3200/1800",
   "https://picsum.photos/id/1039/3200/1800",
-  { src: VIDEO_SRC, poster: VIDEO_POSTER, alt: "Beach video" },
+  
+  { src: VIDEO_SRC_2, poster: VIDEO_POSTER_2, alt: "Flower video" },
   "https://picsum.photos/id/1049/3200/1800",
   "https://picsum.photos/id/1079/3200/1800",
   "https://picsum.photos/id/1076/3200/1800",
@@ -187,6 +194,129 @@ function createCloseRootMutationGuard(doc: Document) {
   };
 }
 
+function getFullscreenOverlay(doc: Document): HTMLElement | null {
+  return doc.body.querySelector<HTMLElement>('div[class*="fullscreenOverlay"]');
+}
+
+function readElementOpacity(el: HTMLElement): number {
+  const opacity = Number.parseFloat(getComputedStyle(el).opacity);
+  return Number.isFinite(opacity) ? opacity : 1;
+}
+
+function createOverlayOpacityMutationGuard(overlay: HTMLElement) {
+  const samples: number[] = [];
+  const badMutations: string[] = [];
+  let active = false;
+  let lastOpacity = readElementOpacity(overlay);
+
+  const record = (label: string) => {
+    const nextOpacity = readElementOpacity(overlay);
+    samples.push(nextOpacity);
+
+    if (active && nextOpacity > lastOpacity + 0.02) {
+      badMutations.push(
+        `${label}: opacity increased from ${lastOpacity.toFixed(3)} to ${nextOpacity.toFixed(3)}`
+      );
+    }
+
+    if (active && nextOpacity >= 0.98 && lastOpacity < 0.98) {
+      badMutations.push(
+        `${label}: opacity reset to base from ${lastOpacity.toFixed(3)} to ${nextOpacity.toFixed(3)}`
+      );
+    }
+
+    lastOpacity = nextOpacity;
+    return nextOpacity;
+  };
+
+  const observer = new MutationObserver(() => {
+    record("mutation");
+  });
+
+  observer.observe(overlay, {
+    attributes: true,
+    attributeFilter: ["style"],
+  });
+
+  return {
+    samples,
+    badMutations,
+    start() {
+      active = true;
+      lastOpacity = readElementOpacity(overlay);
+      samples.push(lastOpacity);
+    },
+    sample(label: string) {
+      return record(label);
+    },
+    disconnect() {
+      observer.disconnect();
+    },
+  };
+}
+
+function nextFrame(doc: Document) {
+  const win = doc.defaultView;
+  if (!win) return Promise.resolve();
+
+  return new Promise<void>((resolve) => {
+    win.requestAnimationFrame(() => resolve());
+  });
+}
+
+async function dragElementVertically(
+  doc: Document,
+  target: HTMLElement,
+  distance: number,
+  steps = 6
+) {
+  const win = doc.defaultView;
+  if (!win) throw new Error("Missing owner window for drag simulation");
+
+  const rect = target.getBoundingClientRect();
+  const startX = rect.left + rect.width / 2;
+  const startY = rect.top + rect.height / 2;
+
+  target.dispatchEvent(
+    new win.MouseEvent("mousedown", {
+      bubbles: true,
+      cancelable: true,
+      clientX: startX,
+      clientY: startY,
+      button: 0,
+      buttons: 1,
+    })
+  );
+  await nextFrame(doc);
+
+  for (let step = 1; step <= steps; step += 1) {
+    const clientY = startY + (distance * step) / steps;
+    doc.dispatchEvent(
+      new win.MouseEvent("mousemove", {
+        bubbles: true,
+        cancelable: true,
+        clientX: startX,
+        clientY,
+        button: 0,
+        buttons: 1,
+      })
+    );
+    await nextFrame(doc);
+  }
+
+  doc.dispatchEvent(
+    new win.MouseEvent("mouseup", {
+      bubbles: true,
+      cancelable: true,
+      clientX: startX,
+      clientY: startY + distance,
+      button: 0,
+      buttons: 0,
+    })
+  );
+  await nextFrame(doc);
+}
+
 function Slide({ src, i }: { src: string; i: number }) {
   return (
     <img
@@ -324,6 +454,18 @@ function Demo() {
 
         <FullscreenAddon sliderObject={sliderObject} cellsStateLength={FS_MEDIA.length} />
       </GalleryCore>
+      <Video
+        src={VIDEO_SRC}
+        poster={VIDEO_POSTER}
+        // lazyLoad={{
+        //   enabled: false
+        // }}
+        alt={`Video 1`}
+        style={{ width: "70dvw", aspectRatio: '16 / 9', borderRadius: '12px' }}
+        options={{
+          ratio: '16:9'
+        }}
+      />
     </div>
   );
 }
@@ -502,5 +644,60 @@ export const FullscreenReopenRegression: Story = {
     expect(reopenedVideoState.wrapper.style.width).toBe(initialWidth);
     expect(reopenedVideoState.wrapper.style.height).toBe(initialHeight);
     expect(reopenedVideoState.video.muted).toBe(initialMuted);
+  },
+};
+
+export const FullscreenVerticalCloseOverlayRegression: Story = {
+  render: () => <Demo />,
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument;
+    const win = doc.defaultView;
+    if (!win) throw new Error("Missing owner window for fullscreen drag regression");
+
+    let baseSlide: HTMLElement | null = null;
+    await waitFor(() => {
+      baseSlide = getBaseSlide(canvasElement, 1);
+      expect(baseSlide).not.toBeNull();
+    });
+
+    await userEvent.click(baseSlide!);
+
+    let overlay: HTMLElement | null = null;
+    let fullscreenSlide: HTMLElement | null = null;
+
+    await waitFor(() => {
+      assertFullscreenRootsVisible(doc);
+      overlay = getFullscreenOverlay(doc);
+      fullscreenSlide = getFullscreenSlide(doc, 1);
+
+      expect(overlay).not.toBeNull();
+      expect(fullscreenSlide).not.toBeNull();
+    });
+
+    const overlayGuard = createOverlayOpacityMutationGuard(overlay!);
+    overlayGuard.start();
+
+    const distance = Math.max(240, Math.round(win.innerHeight * 0.42));
+    await dragElementVertically(doc, fullscreenSlide!, distance, 7);
+    overlayGuard.sample("post-drag");
+
+    await waitFor(() => {
+      const modal = doc.body.querySelector<HTMLElement>(".fs_modal");
+      const slider = doc.body.querySelector<HTMLElement>(".fullscreen_slider");
+
+      expect(modal).not.toBeNull();
+      expect(slider).not.toBeNull();
+      expect(getComputedStyle(modal!).opacity).toBe("0");
+      expect(getComputedStyle(modal!).pointerEvents).toBe("none");
+      expect(getComputedStyle(slider!).opacity).toBe("0");
+    });
+
+    if (overlay!.isConnected) {
+      overlayGuard.sample("post-close");
+    }
+    overlayGuard.disconnect();
+
+    expect(overlayGuard.samples.some((value) => value < 0.98)).toBe(true);
+    expect(overlayGuard.badMutations).toEqual([]);
   },
 };
