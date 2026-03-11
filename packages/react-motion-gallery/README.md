@@ -9,14 +9,14 @@ This table reports local gzip measurements for each exported runtime surface. Th
 <!-- bundle-size:start -->
 | Export | JS gzip |
 | --- | --- |
-| `Entries` | 6.7kB |
+| `Entries` | 6.8kB |
 | `FullscreenThumbnailSlider` | 16.9kB |
 | `GalleryCore` | 1.8kB |
-| `Grid` | 7.3kB |
-| `Masonry` | 7.1kB |
-| `Slider` | 28.4kB |
-| `ThumbnailSlider` | 15.7kB |
-| `useFullscreenController` | 41.6kB |
+| `Grid` | 7.4kB |
+| `Masonry` | 7.2kB |
+| `Slider` | 28.6kB |
+| `ThumbnailSlider` | 15.8kB |
+| `useFullscreenController` | 41.7kB |
 | `Video` | 8.8kB |
 <!-- bundle-size:end -->
 

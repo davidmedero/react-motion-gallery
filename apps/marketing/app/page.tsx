@@ -1,1354 +1,19 @@
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
-import Image from "next/image";
-import * as React from "react";
-import { GalleryCore } from "../../../packages/react-motion-gallery/src/Gallery/core";
-import { Entries, flattenEntries } from "../../../packages/react-motion-gallery/src/Gallery/entries";
-import { createEntriesSliderMedia } from "../../../packages/react-motion-gallery/src/Gallery/entries/media/slider";
-import { useFullscreenController } from "../../../packages/react-motion-gallery/src/Gallery/fullscreen";
-import { FullscreenThumbnailSlider } from "../../../packages/react-motion-gallery/src/Gallery/fullscreenThumbnails";
-import { Slider } from "../../../packages/react-motion-gallery/src/Gallery/slider";
-import createSliderIndexChannel from "../../../packages/react-motion-gallery/src/Gallery/slider/sliderSub";
-import ThumbnailSlider from "../../../packages/react-motion-gallery/src/Gallery/thumbnails";
-import Grid from "../../../packages/react-motion-gallery/src/Gallery/grid";
-import type { MediaItem } from "../../../packages/react-motion-gallery/src/Gallery/shared/types/media";
 
-type Entry = {
-  id: string;
-  title?: string;
-  media: Array<{ kind: "image" | "video"; src: string; alt?: string }>;
-};
-
-const ENTRIES: Entry[] = [
-  {
-    id: "entry-1",
-    title: "Entry 1",
-    media: [
-      { kind: "image", src: "https://picsum.photos/seed/e1-1/1400/1100", alt: "" },
-      { kind: "image", src: "https://picsum.photos/seed/e1-2/1400/1100", alt: "" },
-      { kind: "image", src: "https://picsum.photos/seed/e1-3/1400/1100", alt: "" },
-    ],
-  },
-  {
-    id: "entry-2",
-    title: "Entry 2",
-    media: [
-      { kind: "image", src: "https://picsum.photos/seed/e2-1/1400/1100", alt: "" },
-      { kind: "image", src: "https://picsum.photos/seed/e2-2/1400/1100", alt: "" },
-    ],
-  },
-  {
-    id: "entry-3",
-    title: "Entry 3",
-    media: [
-      { kind: "image", src: "https://picsum.photos/seed/e3-1/1400/1100", alt: "" },
-      { kind: "image", src: "https://picsum.photos/seed/e3-2/1400/1100", alt: "" },
-      { kind: "image", src: "https://picsum.photos/seed/e3-3/1400/1100", alt: "" },
-      { kind: "image", src: "https://picsum.photos/seed/e3-4/1400/1100", alt: "" },
-    ],
-  },
-];
-
-function FullscreenAddon(props: {
-  fullscreenEnabled?: boolean;
-  sliderObject: any;
-  cellsStateLength: number;
-}) {
-  const { fullscreenEnabled = true, sliderObject, cellsStateLength } = props;
-
-  const { fullscreenNode } = useFullscreenController({
-    fullscreen: { enabled: fullscreenEnabled } as any,
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
-  });
-
-  return <>{fullscreenNode}</>;
-}
-
-export function FsDiagramBasic() {
-  return (
-    <svg
-      viewBox="0 0 960 520"
-      width="100%"
-      role="img"
-      aria-label="Baseline fullscreen carousel: media, counter, close, and arrows"
-      style={{ height: "auto", width: "auto" }}
-    >
-      {/* Frame */}
-      <rect
-        x="10"
-        y="10"
-        width="940"
-        height="500"
-        rx="18"
-        fill="#ffffff"
-        stroke="rgba(11,18,32,0.18)"
-        strokeWidth="2"
-      />
-
-      {/* Media tile */}
-      <rect
-        x="110"
-        y="70"
-        width="740"
-        height="380"
-        rx="16"
-        fill="rgb(79,184,229)"
-        opacity="0.9"
-      />
-
-      {/* Counter pill (top-left) */}
-      <rect x="36" y="28" width="78" height="28" rx="14" fill="rgba(11,18,32,0.88)" />
-      <text
-        x="75"
-        y="47"
-        textAnchor="middle"
-        fontSize="13"
-        fill="#ffffff"
-        fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-      >
-        3 / 12
-      </text>
-
-      {/* Close button (top-right) */}
-      <circle cx="924" cy="42" r="14" fill="rgba(11,18,32,0.88)" />
-      <line x1="917" y1="35" x2="931" y2="49" stroke="#ffffff" strokeWidth="2" />
-      <line x1="931" y1="35" x2="917" y2="49" stroke="#ffffff" strokeWidth="2" />
-
-      {/* Left arrow */}
-      <g opacity="0.9">
-        <circle cx="60" cy="245" r="22" fill="rgba(11,18,32,0.10)" stroke="rgba(11,18,32,0.20)" />
-        <polygon points="66,233 52,245 66,257" fill="rgba(11,18,32,0.70)" />
-      </g>
-
-      {/* Right arrow */}
-      <g opacity="0.9">
-        <circle cx="900" cy="245" r="22" fill="rgba(11,18,32,0.10)" stroke="rgba(11,18,32,0.20)" />
-        <polygon points="894,233 908,245 894,257" fill="rgba(11,18,32,0.70)" />
-      </g>
-
-      {/* Subtle inner outline around media (adds “UI” feel) */}
-      <rect
-        x="110"
-        y="70"
-        width="740"
-        height="380"
-        rx="16"
-        fill="transparent"
-        stroke="rgba(255,255,255,0.55)"
-        strokeWidth="1.5"
-        opacity="0.8"
-      />
-
-      {/* Soft highlight (optional, very subtle) */}
-      <ellipse cx="270" cy="150" rx="210" ry="120" fill="rgba(255,255,255,0.16)" />
-    </svg>
-  );
-}
-
-export function FsDiagramWithThumbs() {
-  const VB_H = 560;
-  const ARROW_CY = VB_H / 2; // true 50% of the whole SVG (280)
-
-  const ARROW_R = 22;
-  const TRI_DX = 14; // left/right triangle horizontal offset
-  const TRI_DY = 12; // triangle half-height
-
-  return (
-    <svg
-      viewBox="0 0 960 560"
-      width="100%"
-      role="img"
-      aria-label="Fullscreen carousel with bottom thumbnails"
-      style={{ height: "auto", width: "auto" }}
-    >
-      {/* Frame */}
-      <rect
-        x="10"
-        y="10"
-        width="940"
-        height="540"
-        rx="18"
-        fill="#ffffff"
-        stroke="rgba(11,18,32,0.18)"
-        strokeWidth="2"
-      />
-
-      {/* Media tile */}
-      <rect
-        x="110"
-        y="70"
-        width="740"
-        height="350"
-        rx="16"
-        fill="rgb(79,184,229)"
-        opacity="0.9"
-      />
-
-      {/* Inner media outline */}
-      <rect
-        x="110"
-        y="70"
-        width="740"
-        height="350"
-        rx="16"
-        fill="transparent"
-        stroke="rgba(255,255,255,0.55)"
-        strokeWidth="1.5"
-        opacity="0.8"
-      />
-
-      {/* Counter */}
-      <rect x="36" y="28" width="78" height="28" rx="14" fill="rgba(11,18,32,0.88)" />
-      <text
-        x="75"
-        y="47"
-        textAnchor="middle"
-        fontSize="13"
-        fill="#ffffff"
-        fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-      >
-        3 / 12
-      </text>
-
-      {/* Close button */}
-      <circle cx="924" cy="42" r="14" fill="rgba(11,18,32,0.88)" />
-      <line x1="917" y1="35" x2="931" y2="49" stroke="#ffffff" strokeWidth="2" />
-      <line x1="931" y1="35" x2="917" y2="49" stroke="#ffffff" strokeWidth="2" />
-
-      {/* Left arrow (centered at 50% of SVG height) */}
-      <g opacity="0.9">
-        <circle
-          cx="60"
-          cy={ARROW_CY}
-          r={ARROW_R}
-          fill="rgba(11,18,32,0.10)"
-          stroke="rgba(11,18,32,0.20)"
-        />
-        <polygon
-          points={`${60 + 6},${ARROW_CY - TRI_DY} ${60 - (TRI_DX - 2)},${ARROW_CY} ${60 + 6},${ARROW_CY + TRI_DY}`}
-          fill="rgba(11,18,32,0.70)"
-        />
-      </g>
-
-      {/* Right arrow (centered at 50% of SVG height) */}
-      <g opacity="0.9">
-        <circle
-          cx="900"
-          cy={ARROW_CY}
-          r={ARROW_R}
-          fill="rgba(11,18,32,0.10)"
-          stroke="rgba(11,18,32,0.20)"
-        />
-        <polygon
-          points={`${900 - 6},${ARROW_CY - TRI_DY} ${900 + (TRI_DX - 2)},${ARROW_CY} ${900 - 6},${ARROW_CY + TRI_DY}`}
-          fill="rgba(11,18,32,0.70)"
-        />
-      </g>
-
-      {/* Thumbnails rail */}
-      <rect
-        x="110"
-        y="440"
-        width="740"
-        height="88"
-        rx="14"
-        fill="rgba(11,18,32,0.04)"
-        stroke="rgba(11,18,32,0.12)"
-      />
-
-      {/* Square thumbnails */}
-      {Array.from({ length: 7 }).map((_, i) => (
-        <rect
-          key={i}
-          x={130 + i * 100}
-          y="452"
-          width="64"
-          height="64"
-          rx="10"
-          fill={i === 2 ? "rgb(79,184,229)" : "rgba(11,18,32,0.18)"}
-          stroke={i === 2 ? "rgba(79,184,229,0.9)" : "rgba(11,18,32,0.18)"}
-          strokeWidth="1.5"
-        />
-      ))}
-
-      {/* Soft highlight (optional, very subtle) */}
-      <ellipse cx="270" cy="150" rx="210" ry="120" fill="rgba(255,255,255,0.16)" />
-    </svg>
-  );
-}
-
-
-export function FsDiagramWithCaptionRight() {
-  // Shared fullscreen diagram tokens (match Entries diagram)
-  const VB_W = 960;
-  const VB_H = 560;
-
-  const FRAME = { x: 10, y: 10, w: 940, h: 540, rx: 18 };
-
-  // Match Entries media height (420) + same top inset (70)
-  const MEDIA = { x: 60, y: 70, w: 560, h: 420, rx: 16 };
-
-  // Make caption panel match MEDIA height so content scale feels identical
-  const CAPTION = { x: 640, y: 70, w: 260, h: 420, rx: 16 };
-
-  // Center arrows at 50% of the whole SVG height (like FsDiagramWithThumbs)
-  const ARROW_CY = VB_H / 2;
-
-  // Arrow + chevron sizing tokens (same idea as FsDiagramWithThumbs)
-  const ARROW_R = 20;
-  const TRI_DX = 14;
-  const TRI_DY = 12;
-
-  // Caption content tuned to a 420px tall panel (roomier like Entries)
-  const PAD_X = 28; // inner padding inside caption panel
-  const cx = CAPTION.x + PAD_X;
-
-  return (
-    <svg
-      viewBox={`0 0 ${VB_W} ${VB_H}`}
-      width="100%"
-      role="img"
-      aria-label="Fullscreen carousel with right caption panel"
-      style={{ height: "auto", width: "auto" }}
-    >
-      {/* Frame */}
-      <rect
-        x={FRAME.x}
-        y={FRAME.y}
-        width={FRAME.w}
-        height={FRAME.h}
-        rx={FRAME.rx}
-        fill="#ffffff"
-        stroke="rgba(11,18,32,0.18)"
-        strokeWidth="2"
-      />
-
-      {/* Media tile */}
-      <rect
-        x={MEDIA.x}
-        y={MEDIA.y}
-        width={MEDIA.w}
-        height={MEDIA.h}
-        rx={MEDIA.rx}
-        fill="rgb(79,184,229)"
-        opacity="0.9"
-      />
-
-      {/* Media outline */}
-      <rect
-        x={MEDIA.x}
-        y={MEDIA.y}
-        width={MEDIA.w}
-        height={MEDIA.h}
-        rx={MEDIA.rx}
-        fill="transparent"
-        stroke="rgba(255,255,255,0.55)"
-        strokeWidth="1.5"
-        opacity="0.8"
-      />
-
-      {/* Caption panel (right) */}
-      <rect
-        x={CAPTION.x}
-        y={CAPTION.y}
-        width={CAPTION.w}
-        height={CAPTION.h}
-        rx={CAPTION.rx}
-        fill="rgba(11,18,32,0.03)"
-        stroke="rgba(11,18,32,0.14)"
-      />
-
-      {/* Caption header (slightly larger / roomier) */}
-      <rect
-        x={cx}
-        y={CAPTION.y + 34}
-        width={178}
-        height={24}
-        rx={12}
-        fill="rgba(11,18,32,0.14)"
-      />
-
-      {/* Caption text (more breathing room) */}
-      <rect x={cx} y={CAPTION.y + 82} width={212} height={12} rx={6} fill="rgba(11,18,32,0.18)" />
-      <rect x={cx} y={CAPTION.y + 106} width={196} height={12} rx={6} fill="rgba(11,18,32,0.18)" />
-      <rect x={cx} y={CAPTION.y + 130} width={174} height={12} rx={6} fill="rgba(11,18,32,0.18)" />
-
-      {/* Caption meta */}
-      <rect x={cx} y={CAPTION.y + 170} width={108} height={22} rx={11} fill="rgba(79,184,229,0.35)" />
-      <rect x={cx + 116} y={CAPTION.y + 170} width={96} height={22} rx={11} fill="rgba(11,18,32,0.10)" />
-
-      {/* Caption block */}
-      <rect x={cx} y={CAPTION.y + 222} width={212} height={12} rx={6} fill="rgba(11,18,32,0.18)" />
-      <rect x={cx} y={CAPTION.y + 246} width={212} height={12} rx={6} fill="rgba(11,18,32,0.18)" />
-      <rect x={cx} y={CAPTION.y + 270} width={182} height={12} rx={6} fill="rgba(11,18,32,0.18)" />
-
-      {/* Counter (top-left UI rail) */}
-      <rect x="36" y="28" width="78" height="28" rx="14" fill="rgba(11,18,32,0.88)" />
-      <text
-        x="75"
-        y="47"
-        textAnchor="middle"
-        fontSize="13"
-        fill="#ffffff"
-        fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-      >
-        3 / 12
-      </text>
-
-      {/* Close button (top-right UI rail) */}
-      <circle cx="924" cy="42" r="14" fill="rgba(11,18,32,0.88)" />
-      <line x1="917" y1="35" x2="931" y2="49" stroke="#ffffff" strokeWidth="2" />
-      <line x1="931" y1="35" x2="917" y2="49" stroke="#ffffff" strokeWidth="2" />
-
-      {/* Left arrow (centered at 50% of SVG height) */}
-      <g opacity="0.9">
-        <circle
-          cx="60"
-          cy={ARROW_CY}
-          r={ARROW_R}
-          fill="rgba(11,18,32,0.10)"
-          stroke="rgba(11,18,32,0.20)"
-        />
-        <polygon
-          points={`${60 + 6},${ARROW_CY - TRI_DY} ${60 - (TRI_DX - 2)},${ARROW_CY} ${60 + 6},${ARROW_CY + TRI_DY}`}
-          fill="rgba(11,18,32,0.70)"
-        />
-      </g>
-
-      {/* Right arrow (centered at 50% of SVG height) */}
-      <g opacity="0.9">
-        <circle
-          cx="900"
-          cy={ARROW_CY}
-          r={ARROW_R}
-          fill="rgba(11,18,32,0.10)"
-          stroke="rgba(11,18,32,0.20)"
-        />
-        <polygon
-          points={`${900 - 6},${ARROW_CY - TRI_DY} ${900 + (TRI_DX - 2)},${ARROW_CY} ${900 - 6},${ARROW_CY + TRI_DY}`}
-          fill="rgba(11,18,32,0.70)"
-        />
-      </g>
-
-      {/* Soft highlight */}
-      <ellipse cx="220" cy="160" rx="210" ry="120" fill="rgba(255,255,255,0.16)" />
-    </svg>
-  );
-}
-
-
-export function FsDiagramWithEntriesOverlayBottom() {
-  const VB_H = 560;
-  const ARROW_CY = VB_H / 2; // true 50% of the whole SVG (280)
-
-  const ARROW_R = 20;
-  const TRI_DX = 14;
-  const TRI_DY = 12;
-
-  return (
-    <svg
-      viewBox="0 0 960 560"
-      width="100%"
-      role="img"
-      aria-label="Fullscreen carousel with bottom entries overlay"
-      style={{ height: "auto", width: "auto" }}
-    >
-      {/* Frame */}
-      <rect
-        x="10"
-        y="10"
-        width="940"
-        height="540"
-        rx="18"
-        fill="#ffffff"
-        stroke="rgba(11,18,32,0.18)"
-        strokeWidth="2"
-      />
-
-      {/* Media tile */}
-      <rect
-        x="110"
-        y="70"
-        width="740"
-        height="420"
-        rx="16"
-        fill="rgb(79,184,229)"
-        opacity="0.9"
-      />
-
-      {/* Media outline */}
-      <rect
-        x="110"
-        y="70"
-        width="740"
-        height="420"
-        rx="16"
-        fill="transparent"
-        stroke="rgba(255,255,255,0.55)"
-        strokeWidth="1.5"
-        opacity="0.8"
-      />
-
-      {/* Counter (top-left UI rail) */}
-      <rect x="36" y="28" width="78" height="28" rx="14" fill="rgba(11,18,32,0.88)" />
-      <text
-        x="75"
-        y="47"
-        textAnchor="middle"
-        fontSize="13"
-        fill="#ffffff"
-        fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-      >
-        3 / 12
-      </text>
-
-      {/* Close button (top-right UI rail) */}
-      <circle cx="924" cy="42" r="14" fill="rgba(11,18,32,0.88)" />
-      <line x1="917" y1="35" x2="931" y2="49" stroke="#ffffff" strokeWidth="2" />
-      <line x1="931" y1="35" x2="917" y2="49" stroke="#ffffff" strokeWidth="2" />
-
-      {/* Left arrow (centered at 50% of SVG height) */}
-      <g opacity="0.9">
-        <circle
-          cx="60"
-          cy={ARROW_CY}
-          r={ARROW_R}
-          fill="rgba(11,18,32,0.10)"
-          stroke="rgba(11,18,32,0.20)"
-        />
-        <polygon
-          points={`${60 + 6},${ARROW_CY - TRI_DY} ${60 - (TRI_DX - 2)},${ARROW_CY} ${60 + 6},${ARROW_CY + TRI_DY}`}
-          fill="rgba(11,18,32,0.70)"
-        />
-      </g>
-
-      {/* Right arrow (centered at 50% of SVG height) */}
-      <g opacity="0.9">
-        <circle
-          cx="900"
-          cy={ARROW_CY}
-          r={ARROW_R}
-          fill="rgba(11,18,32,0.10)"
-          stroke="rgba(11,18,32,0.20)"
-        />
-        <polygon
-          points={`${900 - 6},${ARROW_CY - TRI_DY} ${900 + (TRI_DX - 2)},${ARROW_CY} ${900 - 6},${ARROW_CY + TRI_DY}`}
-          fill="rgba(11,18,32,0.70)"
-        />
-      </g>
-
-      {/* Bottom entries overlay (sheet) */}
-      <rect
-        x="60"
-        y="390"
-        width="840"
-        height="140"
-        rx="16"
-        fill="rgba(255,255,255,0.82)"
-        stroke="rgba(11,18,32,0.14)"
-      />
-
-      {/* Overlay grabber */}
-      <rect x="440" y="404" width="80" height="8" rx="4" fill="rgba(11,18,32,0.14)" />
-
-      {/* Entry row 1 */}
-      <circle cx="92" cy="444" r="16" fill="rgba(11,18,32,0.14)" />
-      <rect x="118" y="432" width="260" height="12" rx="6" fill="rgba(11,18,32,0.18)" />
-      <rect x="118" y="452" width="200" height="12" rx="6" fill="rgba(11,18,32,0.14)" />
-
-      {/* Soft highlight (optional, very subtle) */}
-      <ellipse cx="270" cy="150" rx="210" ry="120" fill="rgba(255,255,255,0.16)" />
-    </svg>
-  );
-}
-
-
-export function FsDiagramFullConfig() {
-  return (
-    <svg
-      viewBox="0 0 960 600"
-      width="100%"
-      role="img"
-      aria-label="Fullscreen carousel with bottom thumbnails and right caption panel"
-      style={{ height: "auto", width: "auto" }}
-    >
-      {/* Frame */}
-      <rect
-        x="10"
-        y="10"
-        width="940"
-        height="580"
-        rx="18"
-        fill="#ffffff"
-        stroke="rgba(11,18,32,0.18)"
-        strokeWidth="2"
-      />
-
-      {/* Media tile (left content area) */}
-      <rect
-        x="60"
-        y="70"
-        width="560"
-        height="400"
-        rx="16"
-        fill="rgb(79,184,229)"
-        opacity="0.9"
-      />
-
-      {/* Media outline */}
-      <rect
-        x="60"
-        y="70"
-        width="560"
-        height="400"
-        rx="16"
-        fill="transparent"
-        stroke="rgba(255,255,255,0.55)"
-        strokeWidth="1.5"
-        opacity="0.8"
-      />
-
-      {/* Caption panel (right) */}
-      <rect
-        x="640"
-        y="70"
-        width="260"
-        height="400"
-        rx="16"
-        fill="rgba(11,18,32,0.03)"
-        stroke="rgba(11,18,32,0.14)"
-      />
-
-      {/* Caption header */}
-      <rect x="668" y="96" width="170" height="22" rx="11" fill="rgba(11,18,32,0.14)" />
-
-      {/* Caption lines */}
-      <rect x="668" y="132" width="212" height="12" rx="6" fill="rgba(11,18,32,0.18)" />
-      <rect x="668" y="156" width="196" height="12" rx="6" fill="rgba(11,18,32,0.18)" />
-      <rect x="668" y="180" width="174" height="12" rx="6" fill="rgba(11,18,32,0.18)" />
-
-      {/* Caption meta pills */}
-      <rect x="668" y="218" width="92" height="22" rx="11" fill="rgba(79,184,229,0.35)" />
-      <rect x="768" y="218" width="88" height="22" rx="11" fill="rgba(11,18,32,0.10)" />
-
-      {/* Caption block */}
-      <rect x="668" y="260" width="212" height="12" rx="6" fill="rgba(11,18,32,0.18)" />
-      <rect x="668" y="284" width="212" height="12" rx="6" fill="rgba(11,18,32,0.18)" />
-      <rect x="668" y="308" width="182" height="12" rx="6" fill="rgba(11,18,32,0.18)" />
-      <rect x="668" y="332" width="212" height="12" rx="6" fill="rgba(11,18,32,0.18)" />
-
-      {/* Counter (top-left UI rail) */}
-      <rect x="36" y="28" width="78" height="28" rx="14" fill="rgba(11,18,32,0.88)" />
-      <text
-        x="75"
-        y="47"
-        textAnchor="middle"
-        fontSize="13"
-        fill="#ffffff"
-        fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-      >
-        3 / 12
-      </text>
-
-      {/* Close button (top-right UI rail) */}
-      <circle cx="924" cy="42" r="14" fill="rgba(11,18,32,0.88)" />
-      <line x1="917" y1="35" x2="931" y2="49" stroke="#ffffff" strokeWidth="2" />
-      <line x1="931" y1="35" x2="917" y2="49" stroke="#ffffff" strokeWidth="2" />
-
-      {/* Left arrow (inset, viewport UI rail) */}
-      <g opacity="0.9">
-        <circle
-          cx="64"
-          cy="270"
-          r="20"
-          fill="rgba(11,18,32,0.10)"
-          stroke="rgba(11,18,32,0.20)"
-        />
-        <polygon points="70,258 56,270 70,282" fill="rgba(11,18,32,0.70)" />
-      </g>
-
-      {/* Right arrow (inset, viewport UI rail) */}
-      <g opacity="0.9">
-        <circle
-          cx="896"
-          cy="270"
-          r="20"
-          fill="rgba(11,18,32,0.10)"
-          stroke="rgba(11,18,32,0.20)"
-        />
-        <polygon points="890,258 904,270 890,282" fill="rgba(11,18,32,0.70)" />
-      </g>
-
-      {/* Bottom thumbnails rail */}
-      <rect
-        x="60"
-        y="490"
-        width="840"
-        height="86"
-        rx="16"
-        fill="rgba(11,18,32,0.04)"
-        stroke="rgba(11,18,32,0.12)"
-      />
-
-      {/* Square thumbnails */}
-      {Array.from({ length: 9 }).map((_, i) => (
-        <rect
-          key={i}
-          x={80 + i * 90}
-          y="503"
-          width="60"
-          height="60"
-          rx="10"
-          fill={i === 2 ? "rgb(79,184,229)" : "rgba(11,18,32,0.18)"}
-          stroke={i === 2 ? "rgba(79,184,229,0.95)" : "rgba(11,18,32,0.18)"}
-          strokeWidth="1.5"
-        />
-      ))}
-
-      {/* Soft highlight (optional, very subtle) */}
-      <ellipse cx="220" cy="150" rx="210" ry="120" fill="rgba(255,255,255,0.16)" />
-    </svg>
-  );
-}
-const NEXT_IMAGE_TEST_IDS = [1015, 1018, 1024, 1035, 1043, 1057];
-const NEXT_IMAGE_TEST_SLIDES = NEXT_IMAGE_TEST_IDS.map(
-  (id) => `https://picsum.photos/id/${id}/1200/900`
-);
-const NEXT_IMAGE_TEST_FULLSCREEN_ITEMS: MediaItem[] = NEXT_IMAGE_TEST_IDS.map((id, index) => ({
-  kind: "image",
-  src: `https://picsum.photos/id/${id}/3200/2400`,
-  alt: `Next image fullscreen test slide ${index + 1}`,
-  width: 3200,
-  height: 2400,
-}));
-
-type MarketingSliderConfig = {
-  align: "center";
-  direction: { dir: "ltr" };
-};
-
-function MarketingNextImageFullscreenAddon(props: {
-  sliderObject: MarketingSliderConfig;
-  cellsStateLength: number;
-}) {
-  const { sliderObject, cellsStateLength } = props;
-
-  const { fullscreenNode } = useFullscreenController({
-    fullscreen: {
-      enabled: true,
-      lazyLoad: {
-        images: {
-          enabled: true,
-        },
-      },
-      renderImage: ({ item, className, baseStyle }) => (
-        <Image
-          data-testid="marketing-next-image-img"
-          src={item.src}
-          alt={item.alt ?? ""}
-          width={item.width ?? 1600}
-          height={item.height ?? 1200}
-          sizes="100vw"
-          className={className}
-          draggable={false}
-          style={{
-            ...baseStyle,
-            position: "static",
-            width: "auto",
-            height: "auto",
-            display: "block",
-          }}
-        />
-      ),
-    },
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
-  });
-
-  return <>{fullscreenNode}</>;
-}
-
-function MarketingNextImageFullscreenDemo() {
-  const sliderObject = React.useMemo<MarketingSliderConfig>(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
-  );
-
-  return (
-    <div className="max-w-3xl rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-      <p className="mb-4 text-sm leading-relaxed text-slate-600">
-        Live Next.js fullscreen render test. Open fullscreen, click the wrapped
-        image to zoom, pan with the wheel or trackpad, then close.
-      </p>
-
-      <GalleryCore
-        layout="slider"
-        fullscreenItems={NEXT_IMAGE_TEST_FULLSCREEN_ITEMS}
-      >
-        <Slider scroll={{ loop: false }}>
-          {NEXT_IMAGE_TEST_SLIDES.map((src, index) => (
-            <img
-              key={src}
-              src={src}
-              alt={`Next image fullscreen test base slide ${index + 1}`}
-              style={{
-                width: "min(100%, 760px)",
-                aspectRatio: "4 / 3",
-                objectFit: "cover",
-                display: "block",
-                borderRadius: 12,
-                margin: "0 auto",
-              }}
-            />
-          ))}
-        </Slider>
-
-        <MarketingNextImageFullscreenAddon
-          sliderObject={sliderObject}
-          cellsStateLength={NEXT_IMAGE_TEST_FULLSCREEN_ITEMS.length}
-        />
-      </GalleryCore>
-    </div>
-  );
-}
-
+import { FsDiagramWithCaptionRight, FsDiagramWithEntriesOverlayBottom, FsDiagramWithThumbs } from "./components/svgDiagrams";
 
 export default function Home() {
 
-  const SLIDES = [
-  "https://picsum.photos/id/1015/1600/900",
-  "https://picsum.photos/id/1018/1600/900",
-  "https://picsum.photos/id/1024/1600/900",
-  "https://picsum.photos/id/1035/1600/900",
-  "https://picsum.photos/id/1043/1600/900",
-  "https://picsum.photos/id/1057/1600/900",
-];
-
-const FS_SLIDES = [
-  "https://picsum.photos/id/1015/2400/1350",
-  "https://picsum.photos/id/1018/2400/1350",
-  "https://picsum.photos/id/1024/2400/1350",
-  "https://picsum.photos/id/1035/2400/1350",
-  "https://picsum.photos/id/1043/2400/1350",
-  "https://picsum.photos/id/1057/2400/1350",
-]
-
-const THUMBS = [
-  "https://picsum.photos/id/1015/320/200",
-  "https://picsum.photos/id/1018/320/200",
-  "https://picsum.photos/id/1024/320/200",
-  "https://picsum.photos/id/1035/320/200",
-  "https://picsum.photos/id/1043/320/200",
-  "https://picsum.photos/id/1057/320/200",
-];
-
-function SlideCell({ src, i }: { src: string; i: number }) {
-  return (
-    <img
-      src={src}
-      alt={`Slide ${i + 1}`}
-      style={{
-        width: "100%",
-        height: '400px',
-        objectFit: "contain",
-        display: "block",
-        borderRadius: 12,
-      }}
-    />
-  );
-}
-
-function ThumbCell({ src, i }: { src: string; i: number }) {
-  return (
-    <img
-      src={src}
-      alt={`Thumbnail ${i + 1}`}
-      style={{
-        width: "inherit",
-        height: "inherit",
-        objectFit: "contain",
-        display: "block",
-        // borderRadius: 8,
-      }}
-    />
-  );
-}
-
-  function FullscreenAddon(props: {
-  sliderObject: any;
-  cellsStateLength: number;
-}) {
-  const { sliderObject, cellsStateLength } = props;
-
-  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
-    fullscreen: {
-      enabled: true,
-    },
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
-  });
-
-  const fullscreenThumbItems = React.useMemo(
-    () =>
-      THUMBS.map((src, i) => ({
-        thumbSrc: src,
-        alt: `Thumbnail ${i + 1}`,
-      })),
-    []
-  );
-
-  return (
-    <>
-      {fullscreenNode}
-      <FullscreenThumbnailSlider
-        bridge={fullscreenThumbnailBridge}
-        items={fullscreenThumbItems}
-        position="bottom"
-        thumbnailsCenter={true}
-        containerStyle={{ width: '100dvw', height: 76 }}
-        thumbnailWidth="auto"
-        thumbnailHeight={60}
-        thumbnailItemStyle={{ borderRadius: 8 }}
-        gap={10}
-        freeScroll
-        groupCells={false}
-        loop={false}
-        skipSnaps={false}
-        centerActiveThumb
-        showArrows
-      />
-    </>
-  );
-}
-
-function FullscreenAddon2(props: {
-  sliderObject: any;
-  cellsStateLength: number;
-}) {
-  const { sliderObject, cellsStateLength } = props;
-
-  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
-    fullscreen: {
-      enabled: true,
-    },
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
-  });
-
-  const fullscreenThumbItems = React.useMemo(
-    () =>
-      THUMBS.map((src, i) => ({
-        thumbSrc: src,
-        alt: `Thumbnail ${i + 1}`,
-      })),
-    []
-  );
-
-  return (
-    <>
-      {fullscreenNode}
-      <FullscreenThumbnailSlider
-        bridge={fullscreenThumbnailBridge}
-        items={fullscreenThumbItems}
-        position="bottom"
-        thumbnailsCenter={true}
-        containerStyle={{ width: '100dvw', height: 76 }}
-        thumbnailWidth="auto"
-        thumbnailHeight={60}
-        thumbnailItemStyle={{ borderRadius: 8 }}
-        gap={10}
-        freeScroll
-        groupCells={false}
-        loop={false}
-        skipSnaps={false}
-        centerActiveThumb
-        showArrows
-      />
-    </>
-  );
-}
-
-  const entries = React.useMemo(() => ENTRIES as any, []);
-  const flat = React.useMemo(() => flattenEntries(entries), [entries]);
-
-  const fullscreenItems = React.useMemo(
-    () => flat.flattenedMedia.map((m: any) => m.src),
-    [flat]
-  );
-
-  const sliderObject = React.useMemo(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
-  );
-
-  const renderCard = React.useCallback(({ entry, media }: any) => {
-    return (
-      <article
-        style={{
-          border: "1px solid rgba(0,0,0,0.12)",
-          borderRadius: 12,
-          padding: 12,
-          background: "#fff",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ fontWeight: 700 }}>{entry.title ?? entry.id}</div>
-          <div style={{ opacity: 0.6, fontSize: 12 }}>{(entry.media?.length ?? 0)} media</div>
-        </div>
-
-        <div style={{ marginTop: 10 }}>{media}</div>
-      </article>
-    );
-  }, []);
-
-  const renderOverlay = React.useCallback(
-    ({ entry, entryIndex, mediaIndex, opacity, style }: any) => {
-      const title = entry?.title ?? entry?.id ?? `Entry ${entryIndex + 1}`;
-
-      return (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            zIndex: 9999,
-            ...style,
-            opacity,
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: 16,
-              top: 16,
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 10px",
-                borderRadius: 999,
-                color: "#fff",
-                fontSize: 12,
-                lineHeight: 1,
-              }}
-            >
-              <span style={{ fontWeight: 700 }}>{title}</span>
-              <span style={{ opacity: 0.8 }}>•</span>
-              <span style={{ opacity: 0.95 }}>
-                {typeof mediaIndex === "number" ? `Media ${mediaIndex + 1}` : "Media"}
-              </span>
-            </div>
-
-            <div
-              style={{
-                padding: "10px 12px",
-                borderRadius: 12,
-                background: "rgba(0,0,0,0.35)",
-                color: "#fff",
-                maxWidth: 320,
-                fontSize: 13,
-                lineHeight: 1.3,
-                backdropFilter: "blur(6px)",
-                WebkitBackdropFilter: "blur(6px)",
-              }}
-            >
-              This is <b>entries.render.overlay</b> in fullscreen.
-              <div style={{ marginTop: 6, opacity: 0.9 }}>
-                entryIndex={entryIndex}, mediaIndex={String(mediaIndex)}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    },
-    []
-  );
-
-  const mediaRenderer = React.useMemo(() => createEntriesSliderMedia(), []);
-
-  const items = [
-    { id: "img-1", src: "https://picsum.photos/seed/1/900/500" },
-    { id: "img-2", src: "https://picsum.photos/seed/2/900/500" },
-    { id: "img-3", src: "https://picsum.photos/seed/3/900/500" },
-    { id: "img-4", src: "https://picsum.photos/seed/4/900/500" },
-    { id: "img-5", src: "https://picsum.photos/seed/5/900/500" },
-    { id: "img-6", src: "https://picsum.photos/seed/6/900/500" },
-    { id: "img-7", src: "https://picsum.photos/seed/7/900/500" }
-  ];
-
-  const ITEMS = [
-  "https://picsum.photos/id/1018/2006/3006",
-  "https://picsum.photos/id/1025/2006/3006",
-  "https://picsum.photos/id/1040/2006/3006",
-  "https://picsum.photos/id/1043/2006/3006",
-  "https://picsum.photos/id/1069/2006/3006",
-  "https://picsum.photos/id/1074/2006/3006",
-];
-
-function Slide({ src, i }: { src: string; i: number }) {
-  return (
-    <div
-      style={{
-        aspectRatio: "2 / 3",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
-      {/* image */}
-      <img
-        src={src}
-        alt={`Slide ${i + 1}`}
-        style={{
-          width: "100%",
-          flex: "1 1 auto",
-          aspectRatio: "2 / 3",
-          objectFit: "cover",
-          display: "block",
-          borderRadius: 12,
-        }}
-      />
-
-      {/* text */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 700,
-            lineHeight: 1.2,
-          }}
-        >
-          Slide title {i + 1}
-        </div>
-
-        <div style={{ fontSize: 12, opacity: 0.8, lineHeight: 1.3 }}>
-          This is a short description under the image. It can wrap to two lines.
-        </div>
-      </div>
-    </div>
-  );
-}
-const channel = React.useMemo(() => createSliderIndexChannel(), []);
-const IMG_ITEMS = Array.from({ length: 12 }).map(
-  (_, i) => `https://picsum.photos/seed/grid-${i}/2200/3200`
-);
-
   return (
     <> 
-     <Grid
-        columns={{ 0: 1, 640: 2, 960: 3, 1280: 4 }}
-        gap={12}
-        // lazyLoad={{
-        //   enabled: true,
-        // }}
-        loading={{
-          // force: true,
-          skeleton: {
-              layout: {
-                kind: "grid",
-                item: { kind: "rect", style: { aspectRatio: "4/5" } },
-              },
-            },
-        }}
-        // intro={{
-        //   durationMs: 1800,
-        //   staggerMs: 180
-        // }}
-      >
-        {IMG_ITEMS.slice(0, 8).map((src, i) => (
-          <article
-            key={`lazy-grid-${src}`}
-            style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              background: "#fff",
-              boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
-            }}
-          >
-            <img
-              src={src}
-              alt={`Lazy grid ${i + 1}`}
-              style={{
-                width: "100%",
-                aspectRatio: "4 / 5",
-                display: "block",
-                objectFit: "cover",
-              }}
-            />
-            <div style={{ padding: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#10253d" }}>
-                Card {i + 1}
-              </div>
-              <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.4, color: "#526173" }}>
-                Copy stays visible while the image loads.
-              </div>
-            </div>
-          </article>
-        ))}
-      </Grid>
-
-        <Slider
-          scroll={{
-            freeScroll: true
-          }}
-          lazyLoad={{
-            enabled: true
-          }}
-          controls={{
-            dots: {
-              root: {
-                style: {
-                  bottom: '-45px'
-                }
-              }
-            }
-          }}
-          layout={{
-            cellsPerSlide: { 0: 2, 600: 3, 900: 4 },
-            gap: 12,
-          }}
-          transitions={{
-            loading: {
-              // force: true,
-              skeletonCount: { 0: 2, 600: 3, 900: 4 },
-              skeleton: {
-                layout: {
-                  kind: "slider",
-                  // optional: make gaps match the real slide gap if you want
-                  style: { gap: 12 },
-                  // each slot = column layout: image block + text block
-                  item: {
-                    kind: "col",
-                    style: { gap: 10 },
-                    children: [
-                      // image placeholder (dominant area)
-                      {
-                        kind: "rect",
-                        style: {
-                          width: "100%",
-                          aspectRatio: 2/3,
-                          borderRadius: 12,
-                        },
-                      },
-                      // text placeholders (fixed heights)
-                      {
-                        kind: "col",
-                        style: { gap: 6 },
-                        children: [
-                          // title line
-                          { 
-                            kind: "text",
-                            fontSize: 14,
-                            lineHeight: 1.2,
-                            lines: 1,
-                            style: { 
-                              width: "70%",
-                              borderRadius: 6 
-                            } 
-                          },
-                          { 
-                            kind: "text",
-                            fontSize: 12,
-                            lineHeight: 1.3,
-                            lines: 2,
-                            style: { 
-                              width: "90%",
-                              borderRadius: 6,
-                              maxHeight: '16.8px' 
-                            } 
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                },
-              },
-            }
-          }}
-        >
-          {ITEMS.map((src, i) => (
-            <Slide key={src} src={src} i={i} />
-          ))}
-        </Slider>
-        <div style={{ marginTop: 100 }}></div>
-        <GalleryCore layout="slider" fullscreenItems={FS_SLIDES}>
-        <Slider
-          indexChannel={channel}
-          scroll={{ loop: false }}
-        >
-          {SLIDES.map((src, i) => (
-            <SlideCell key={src} src={src} i={i} />
-          ))}
-        </Slider>
-
-        <div style={{ marginTop: 14 }}>
-          <ThumbnailSlider
-            indexChannel={channel}
-            options={{
-              layout: {
-                position: "bottom",
-                thumbnail: { width: 96, height: 60 },
-                gap: 10,
-              },
-              scroll: {
-                centerActiveThumb: true
-              },
-              controls: {
-                enabled: true
-              },
-              elements: {
-                thumbnail: {
-                  style: {
-                    borderRadius: 8
-                  }
-                }
-              },
-              transitions: {
-                loading: {
-                  // force: true,
-                  // skeletonCount: 6
-                }
-              }
-            }}
-          >
-            {THUMBS.map((src, i) => (
-              <ThumbCell key={`thumb-${src}`} src={src} i={i} />
-            ))}
-          </ThumbnailSlider>
-        </div>
-
-        <FullscreenAddon sliderObject={sliderObject} cellsStateLength={FS_SLIDES.length} />
-      </GalleryCore>
-
-      <p className="home-intro mt-50!">
+      <p className="home-intro">
         <span className="intro-line">
-          A high-performance image and video gallery library with fluid motion,
-          responsive layouts, seamless transitions, and immersive fullscreen
-          experiences.
+          A high-performance gallery library with fluid motion,
+          responsive layouts, seamless transitions, and immersive fullscreen experiences.
         </span>
 
         <span className="intro-subline">
-          Engineered to be modular, feature-rich, and production-ready — yet
-          remarkably easy to use, even for first-time developers.
+          Engineered to be modular, feature-rich, and production-ready — yet remarkably easy to use.
         </span>
       </p>
       <section className="rmgLayouts" aria-labelledby="rmg-layouts-title">
@@ -1357,7 +22,7 @@ const IMG_ITEMS = Array.from({ length: 12 }).map(
             <h2 className="rmgLayouts__title" id="rmg-layouts-title">
               Four Primary Layouts
             </h2>
-            <p className="rmgCard__desc max-w-[500px]">
+            <p className="rmgCard__desc max-w-125">
               All layouts share fully customizable breakpoints, loading states, intro animations and fullscreen transitions.
             </p>
           </header>
@@ -1450,7 +115,7 @@ const IMG_ITEMS = Array.from({ length: 12 }).map(
               <div className="rmgCard__top">
                 <h3 className="rmgCard__title">Entries</h3>
                 <p className="rmgCard__desc">
-                  Content blocks with arbitrary markup and embedded media (slider, grid or masonry).
+                  Content blocks for arbitrary markup and embedded media (slider, grid or masonry).
                 </p>
               </div>
 
@@ -1508,8 +173,8 @@ const IMG_ITEMS = Array.from({ length: 12 }).map(
             <h2 className="rmgLayouts__title" id="rmg-fs-title">
               Fullscreen Mode
             </h2>
-            <p className="rmgCard__desc max-w-[560px]">
-              A fullscreen carousel featuring transform-based interactions, universal gesture support, composable UI layers, and shared context with the base layout.
+            <p className="rmgCard__desc max-w-140">
+              A fullscreen carousel featuring composable UI layers and shared context with the base layout.
             </p>
           </header>
           <div style={{ marginBottom: '20px' }}></div>
@@ -1523,11 +188,11 @@ const IMG_ITEMS = Array.from({ length: 12 }).map(
                   <div className="rmgCard__top">
                     <h4 className="rmgCard__title">Captions</h4>
                     <p className="rmgCard__desc">
-                      Slide-bound UI regions that participate in slide layout. Can render any type of markup.
+                      Slide-bound UI regions that participate in slide layout.
                     </p>
                   </div>
 
-                  <div className="w-full max-w-[500px] mx-auto pt-6">
+                  <div className="w-full max-w-125 mx-auto pt-6">
                     {FsDiagramWithCaptionRight()}
                   </div>
                 </div>
@@ -1541,7 +206,7 @@ const IMG_ITEMS = Array.from({ length: 12 }).map(
                     </p>
                   </div>
 
-                  <div className="w-full max-w-[500px] mx-auto pt-6">
+                  <div className="w-full max-w-125 mx-auto pt-6">
                     {FsDiagramWithThumbs()}
                   </div>
                 </div>
@@ -1551,11 +216,11 @@ const IMG_ITEMS = Array.from({ length: 12 }).map(
                   <div className="rmgCard__top">
                     <h4 className="rmgCard__title">Entry Overlays</h4>
                     <p className="rmgCard__desc">
-                      Overlay-based UI regions that sit above the carousel. Can render any type of markup.
+                      Overlay-based UI regions that sit above the carousel.
                     </p>
                   </div>
 
-                  <div className="w-full max-w-[500px] mx-auto pt-6">
+                  <div className="w-full max-w-125 mx-auto pt-6">
                     {FsDiagramWithEntriesOverlayBottom()}
                   </div>
                 </div>
@@ -1690,7 +355,7 @@ fullscreenCaptionHeight?: number;`}</code>
 
               <h4 className="rmgLayouts__h4">Pinch</h4>
               <p className="leading-relaxed max-w-3xl">
-                Driven by tracking two active pointers with a highly native, predictable feel, and stable scaling that stays locked to the user&apos;s intent. If a pinch is triggered during an active carousel animation or when a slide isn&apos;t centered, the carousel will automatically <strong>snap</strong> the slide towards the center of the viewport.
+                Driven by tracking two active pointers with a highly native, predictable feel, and stable scaling that stays locked to the user&apos;s intent. If a pinch is triggered during an active carousel animation or when a slide isn&apos;t centered, the carousel will automatically <strong>animate</strong> the slide towards the center of the viewport.
               </p>
               <p className="leading-relaxed max-w-3xl">
                 Pinch also includes built-in wheel and touchpad support, so the same high-quality zoom behavior translates across devices and input methods.
@@ -1735,65 +400,32 @@ fullscreen: {
     },
   },
   renderImage: ({ item, className, baseStyle }) => (
-    <div
+    <Image
+      src={item.src}
+      alt={item.alt ?? ""}
+      width={item.width ?? 1600}
+      height={item.height ?? 1200}
+      sizes="100vw"
+      className={className}
       style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        ...baseStyle,
+        position: "static",
+        width: "auto",
+        height: "auto",
+        display: "block",
       }}
-    >
-      <Image
-        src={item.src}
-        alt={item.alt ?? ""}
-        width={item.width ?? 1600}
-        height={item.height ?? 1200}
-        sizes="100vw"
-        className={className}
-        style={{
-          ...baseStyle,
-          position: "static",
-          width: "auto",
-          height: "auto",
-          display: "block",
-        }}
-      />
-    </div>
+    />
   ),
 }`}</code>
               </pre>
-
-              <p className="leading-relaxed max-w-3xl">
-                The live demo below mirrors the wrapped fullscreen Storybook
-                regression case, but uses a real{" "}
-                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">next/image</code>{" "}
-                renderer inside the marketing app.
-              </p>
-
-              <MarketingNextImageFullscreenDemo />
-
-              <p className="leading-relaxed max-w-3xl">
-                Custom fullscreen renderers still need to output a real DOM{" "}
-                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">&lt;img&gt;</code>{" "}
-                somewhere in the tree, and the wrapper should be layout-only
-                rather than shrinking the fullscreen image surface. When{" "}
-                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreen.renderImage</code>{" "}
-                is provided, the built-in fullscreen image lazy loading, decode,
-                and spinner flow only apply when{" "}
-                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreen.lazyLoad.images.enabled</code>{" "}
-                is true. Otherwise, loading and placeholder behavior come from
-                your renderer.
-              </p>
             </div>
           </section>
         </div>
       </section>
-      <section className="rmgLayouts" aria-labelledby="rmg-fs-title">
+      <section className="rmgLayouts" aria-labelledby="rmg-sliders-title">
         <div className="rmgLayouts__inner">
           <header className="rmgLayouts__header">
-            <h2 className="rmgLayouts__title" id="rmg-fs-title">
+            <h2 className="rmgLayouts__title" id="rmg-sliders-title">
               Sliders
             </h2>
           </header>
@@ -1820,6 +452,10 @@ fullscreen: {
             </p>
 
             <p className="leading-relaxed max-w-3xl">
+              Video slide clones are non-interactive snapshots of their original slides rather than second live players. Each snapshot is refreshed from the original player whenever it becomes ready or changes media state, including play, pause, seek, end, and media load events.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
               Loop is automatically disabled if the content width is less than or equal to the viewport width or if there is only one item in the slider.
             </p>
           </div>
@@ -1833,9 +469,7 @@ fullscreen: {
               Many layout and presentation props support responsive customization out of the box. Properties like{" "}
               <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">cellsPerSlide</code>,{" "}
               <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">gap</code>, and{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">skeletonCount</code> accept breakpoint-aware values. Slider height can also be controlled with explicit media queries via{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">sliderResponsiveHeights</code>, making it easy to define different
-              aspect ratios or layouts for mobile, tablet, and desktop.
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">skeletonCount</code> accept breakpoint-aware values.
             </p>
 
             <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
@@ -1896,11 +530,11 @@ fullscreen: {
           <h3 className="rmgLayouts__subheader !mt-6">Thumbnails Slider</h3>
             <div className="space-y-4 mt-4">
               <p className="leading-relaxed max-w-3xl">
-                The Thumbnails Slider is a purpose-built, lightweight companion to the Base Slider. It reuses the same core motion engine, but strips everything down to what thumbnails actually need — keeping bundle size and runtime overhead low.
+                The Thumbnails Slider is a purpose-built, lightweight companion to the Base Slider. It reuses the same core motion engine and is <strong>free-scroll by default</strong>. Free-scroll can be disabled for normal snap behavior.
               </p>
 
               <p className="leading-relaxed max-w-3xl">
-                It&apos;s <strong>free-scroll by default</strong>.
+                Even though it&apos;s light, thumbnails slider still offers options for groupCells, loop and skipSnaps.
                 Clicking a thumbnail triggers the Base Slider to animate to the selected index, and centers the active thumb when appropriate.
               </p>
 
@@ -1927,7 +561,7 @@ fullscreen: {
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Looping is default behavior and it&apos;s only disabled when there is one image/video.
+              Looping is default behavior and it&apos;s only disabled when there is one slide.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
@@ -1954,173 +588,342 @@ fullscreen: {
           <h3 className="rmgLayouts__subheader !mt-6">Fullscreen Thumbnails Slider</h3>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              The Fullscreen Thumbnails Slider is a lightweight <strong>wrapper around the Thumbnails Slider</strong>. It reuses the
-              exact same small, free-scroll thumbnail engine (to avoid duplicating slider logic), but wires it directly into the
+              The Fullscreen Thumbnails Slider is a lightweight <strong>wrapper around the Thumbnails Slider</strong>. It reuses the exact same small, thumbnail engine (to avoid duplicating slider logic), but wires it directly into the
               fullscreen index system so thumbnails always stay in sync with the active fullscreen slide.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Under the hood it creates a dedicated <strong>index channel</strong> that listens to fullscreen events and instantly
-              updates the thumbnail highlight/scroll position. Clicking a thumbnail then calls{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fsSub.requestSet(idx, &apos;animated&apos;)</code> so fullscreen
-              navigates with the normal snap animation.
+              Under the hood it creates a dedicated <strong>index channel</strong> that listens to fullscreen events and instantly updates the thumbnail highlight/scroll position. Clicking a thumbnail then calls{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fsSub.requestSet(idx, &apos;animated&apos;)</code> so fullscreen navigates with the normal snap animation.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
               It also includes a built-in “polish layer” for UI: the entire strip can be faded and slightly translated in/out via{" "}
               <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">visible</code> /{" "}
               <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">invisible</code>, with{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">pointerEvents</code> automatically disabled while hidden so it
-              never blocks the fullscreen media.
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">pointerEvents</code> automatically disabled while hidden so it never blocks the fullscreen media.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Like the base thumbnail strip, it can be positioned on any side (<strong>top / right / bottom / left</strong>), supports
-              centering for “short” thumbnail rows, and exposes styling hooks for spacing, dimensions, and per-thumb className/style.
+              Like the base thumbnail strip, it can be positioned on any side (<strong>top / right / bottom / left</strong>), supports centering for “short” thumbnail rows, and exposes styling hooks for spacing, dimensions, and per-thumb className/style.
             </p>
           </div>
         </div>
       </section>
-      {/* <Gallery 
-        fullscreen={{ enabled: false }}
-        root={{
-          style: {
-            maxWidth: 900,
-            margin: '0 auto'
-          }
-        }}
-        container={{
-          style: {
-            marginLeft: '164px',
-          }
-        }}
-        slider={{ 
-          size: {
-            // height: '500px'
-            // initialHeight: '500px'
-          },
-          transitions: {
-            loading: {
-              isLoading: false
-            }
-          },
-          thumbnails: {
-            children: items.map((item) => (
-              <div key={item.id}>
-                <img src={item.src} alt="" />
-              </div>
-            )),
-            layout: {
-              position: 'left',
-              container: {
-                height: '500px',
-                width: 164
-              },
-              thumbnail: {
-                width: 164
-              }
-            },
-            elements: {
-              container: {
-                style: {
-                  position: 'absolute',
-                  left: 0
-                }
-              }
-            },
-            transitions: {
-              loading: {
-                skeletonCount: 3
-              }
-            }
-          }
-        }}
-      >
-        {items.map((item) => (
-          <div key={item.id}>
-            
-              <Image src={item.src} alt="" width={500} height={900} style={{ aspectRatio: '5/9', objectFit: 'cover' }} />
+      <section className="rmgLayouts" aria-labelledby="rmg-layout-details-title">
+        <div className="rmgLayouts__inner">
+          <header className="rmgLayouts__header">
+            <h2 className="rmgLayouts__title" id="rmg-layout-details-title">
+              Grid, Masonry, and Entries
+            </h2>
+            <p className="rmgCard__desc max-w-140">
+              Three non-slider surfaces cover clean grids, waterfall layouts, and structured editorial feeds while still plugging into the same fullscreen and transition system.
+            </p>
+          </header>
 
-            
+          <h3 className="rmgLayouts__subheader">Grid</h3>
+          <div className="space-y-4 mt-4">
+            <p className="leading-relaxed max-w-3xl">
+              <strong>Grid</strong> is the simplest direct-child layout. Render your items in order, let the component auto-fit with{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">minColumnWidth</code>, or lock in explicit column counts per breakpoint with{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">columns</code>.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              It stays very close to native CSS Grid behavior, which makes it ideal for product walls, image boards, lookbooks, and any gallery where consistent rows matter more than scroll physics.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              When Grid is used inside <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">GalleryCore</code>, every item can still open fullscreen. You can decide whether the trigger should come from the clicked media node or the full item shell via{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreenTrigger=&quot;media&quot; | &quot;item&quot;</code>.
+            </p>
+
+            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
+              <code>{`<Grid
+  minColumnWidth={220}
+  gap={{ 0: 10, 900: 18 }}
+  fullscreenTrigger="item"
+  lazyLoad={{ enabled: true }}
+  loading={{
+    enabled: true,
+    skeleton: {
+      radius: 14,
+      layout: {
+        kind: "grid",
+        count: 6,
+        item: {
+          kind: "rect",
+          style: { aspectRatio: "4 / 5" },
+        },
+      },
+    },
+  }}
+>
+  {images.map((image) => (
+    <img key={image.src} src={image.src} alt={image.alt} />
+  ))}
+</Grid>`}</code>
+            </pre>
           </div>
-        ))}
-      </Gallery> */}
-      <div style={{ padding: 16, background: "#f6f7f9", minHeight: "100vh" }}>
-      <GalleryCore layout="entries" fullscreenItems={fullscreenItems}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <h3 style={{ margin: "0 0 12px" }}>Entries (Slider media) ↔ Fullscreen overlay</h3>
-          <p style={{ margin: "0 0 16px", opacity: 0.8 }}>
-            Click any entry media item. Fullscreen should open. Overlay should render.
-          </p>
 
-          <Entries
-            entries={{
-              items: entries,
-              mediaLayout: "slider",
-              render: {
-                card: renderCard,
-                overlay: renderOverlay,
-                media: ({ media, entryIndex, mediaIndex }) => (
-                  <img
-                    src={media.kind === 'image' ? media.src : ''}
-                    alt={media.kind === 'image' ? media.alt : ''}
-                    style={{
-                      width: "100%",
-                      height: "320px",
-                      display: "block",
-                      objectFit: "cover",
-                      borderRadius: 12,
-                    }}
-                    data-entry={entryIndex}
-                    data-media={mediaIndex}
-                  />
-                )
-              },
-              loading: {
-                skeletonWrap: {
-                  style: {
-                    backgroundColor: '#fff',
-                    height: 380,
-                    border: '1px solid rgba(0, 0, 0, 0.12)'
-                  }
-                },
-                skeleton: ({ entry }: any) => ({
-                  layout: {
-                    kind: "stack",
-                    style: { padding: '12px' },
-                    children: [
-                      {
-                        kind: "row",
-                        style: { justify: "space-between", align: "center", width: "100%", gap: 12, padding: '6px 0 6px 0' },
-                        children: [
-                          { kind: "rect", style: { height: 12, width: 60 } },
-                          { kind: "rect", style: { height: 12, width: 60 } },
-                        ],
-                      },
-                      {
-                        kind: "media",
-                        count: Math.min(3, entry?.media?.length ?? 2),
-                        direction: "row",
-                        style: {
-                          0: { gap: 20, justify: "", padding: '10px 0 0 0' },
-                          925: { justify: `${entry?.media?.length === 2 ? 'center' : ''}`, align: "center" },
-                        },
-                        tile: { shape: "rect", style: { width: 407, height: 320 } },
-                      },
-                    ],
-                  },
-                }),
-              }
-            }}
-            fullscreen={{ enabled: true }}
-            renderMediaContainer={mediaRenderer}
-          />
+          <h3 className="rmgLayouts__subheader !mt-6">Masonry</h3>
+          <div className="space-y-4 mt-4">
+            <p className="leading-relaxed max-w-3xl">
+              <strong>Masonry</strong> is the waterfall layout for uneven media. It uses measured item heights rather than pure CSS columns, so it can keep columns balanced as images settle and aspect ratios vary.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Use <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">placement=&quot;balanced&quot;</code> when you want visually even columns, or switch to{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">roundRobin</code> when preserving a simple left-to-right distribution matters more than balance.{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">estimatedItemHeight</code> gives the layout a better first guess before measurements settle.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              The component also exposes root, column, and item class hooks, a custom root element via{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">as</code>, and the same lazy-load, loading, intro, and fullscreen integration used by the other layouts.
+            </p>
+
+            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
+              <code>{`<Masonry
+  columns={{ 0: 1, 700: 2, 1100: 3 }}
+  gap={{ 0: 12, 1100: 20 }}
+  placement="balanced"
+  estimatedItemHeight={280}
+  lazyLoad={{ enabled: true }}
+  loading={{
+    enabled: true,
+    skeleton: {
+      ratios: [55, 90, 130, 75],
+      radius: 12,
+    },
+  }}
+>
+  {cards.map((card) => (
+    <img key={card.id} src={card.src} alt={card.alt} />
+  ))}
+</Masonry>`}</code>
+            </pre>
+          </div>
+
+          <h3 className="rmgLayouts__subheader !mt-6">Entries</h3>
+          <div className="space-y-4 mt-4">
+            <p className="leading-relaxed max-w-3xl">
+              <strong>Entries</strong> is the structured-data surface. Instead of rendering anonymous children, you pass records with arbitrary fields plus a{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">media</code> array, then decide how each entry should render through{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">render.card</code>,{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">render.media</code>, and{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">render.overlay</code>.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Each entry&apos;s media can be laid out as a slider, grid, or masonry block through{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">renderMediaContainer</code>. Under the hood, the runtime flattens entry media into one fullscreen index space while still preserving which entry owns each slide.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              That ownership model is what makes fullscreen overlays, close-to-origin scrolling, and per-entry slider synchronization all work without forcing your base UI into a rigid schema.
+            </p>
+
+            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
+              <code>{`const flat = flattenEntries(entries);
+
+<GalleryCore layout="entries" fullscreenItems={flat.flattenedMedia}>
+  <Entries
+    entries={{
+      items: entries,
+      mediaLayout: "grid",
+      render: {
+        card: ({ entry, media }) => (
+          <article className="entryCard">
+            <h3>{entry.title}</h3>
+            <p>{entry.excerpt}</p>
+            {media}
+          </article>
+        ),
+        overlay: ({ entry, opacity, style, containerProps }) => (
+          <div {...containerProps} style={{ ...style, opacity }}>
+            <strong>{entry.title}</strong>
+          </div>
+        ),
+      },
+      loading: {
+        enabled: true,
+        waitForDecode: true,
+      },
+    }}
+    renderMediaContainer={({ mediaNodes }) => (
+      <Grid columns={{ 0: 1, 800: 2 }} gap={12}>
+        {mediaNodes}
+      </Grid>
+    )}
+  />
+</GalleryCore>`}</code>
+            </pre>
+          </div>
         </div>
+      </section>
+      <section className="rmgLayouts" aria-labelledby="rmg-video-title">
+        <div className="rmgLayouts__inner">
+          <header className="rmgLayouts__header">
+            <h2 className="rmgLayouts__title" id="rmg-video-title">
+              Video
+            </h2>
+            <p className="rmgCard__desc max-w-140">
+              Video is treated as a first-class gallery primitive, not a bolted-on iframe or an afterthought inside image-only sliders.
+            </p>
+          </header>
 
-        <FullscreenAddon2 sliderObject={sliderObject} cellsStateLength={fullscreenItems.length} />
-      </GalleryCore>
-    </div>
-      <div className="mb-600"></div>
+          <div className="space-y-4 mt-4">
+            <p className="leading-relaxed max-w-3xl">
+              <strong>Video</strong> is a Plyr-backed component that can live inside <strong>Slider</strong>, <strong>Grid</strong>, <strong>Masonry</strong>, <strong>Entries</strong>, and fullscreen flows. You can pass a direct Plyr source, build one from{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">src</code>, or resolve player options per index.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              In looping sliders, cloned video slides are rendered as synchronized snapshots instead of duplicate live players. That keeps the seam visually continuous while avoiding multiple active players fighting over controls, playback state, or network work.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              In fullscreen, nearby inactive players are automatically paused, drag gestures are guarded so they do not leak into Plyr controls, and image/video lazy-loading can be configured independently.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Video support is optional. If you never render <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">Video</code>, you do not need the <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">plyr</code> or{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">plyr-react</code> peer dependencies at all.
+            </p>
+
+            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
+              <code>{`<div style={{ width: "100%", aspectRatio: "16 / 9" }}>
+  <Video
+    src="/trailers/lookbook.mp4"
+    poster="/trailers/lookbook-poster.jpg"
+    options={({ index }) => ({
+      controls: ["play", "progress", "mute", "fullscreen"],
+      ratio: "16:9",
+    })}
+    lazyLoad={{
+      enabled: true,
+      spinner: ({ kind }) => <Spinner label={kind} />,
+    }}
+  />
+</div>`}</code>
+            </pre>
+          </div>
+        </div>
+      </section>
+      <section className="rmgLayouts" aria-labelledby="rmg-loading-title">
+        <div className="rmgLayouts__inner">
+          <header className="rmgLayouts__header">
+            <h2 className="rmgLayouts__title" id="rmg-loading-title">
+              Loading, Skeletons, and Lazy Media
+            </h2>
+            <p className="rmgCard__desc max-w-140">
+              The library does not treat loading as one generic spinner. Each surface has a loading model that matches how that layout actually appears on screen.
+            </p>
+          </header>
+
+          <h3 className="rmgLayouts__subheader">Skeleton Layers</h3>
+          <div className="space-y-4 mt-4">
+            <p className="leading-relaxed max-w-3xl">
+              <strong>Slider</strong>, <strong>Grid</strong>, <strong>Masonry</strong>, <strong>entries</strong>, and <strong>thumbnails</strong> each expose a dedicated loading layer. You can replace the whole thing with{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">renderLoading</code>, or use the built-in skeleton systems to describe placeholders that actually resemble your finished UI.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Slider and Grid skeletons use a small composable node DSL with shapes like{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">rect</code>,{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">circle</code>,{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">text</code>,{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">row</code>, and{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">stack</code>. Masonry uses a purpose-built skeleton spec based on ratios, explicit heights, placement mode, border radius, and shimmer settings so the placeholder already reads like a masonry wall.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Entry loading is intentionally different. Entry rows can reserve a minimum height, resolve a different skeleton per entry, preload before they enter view, and wait for image decode before revealing the real content. That makes feed-like UIs feel much more deliberate than a simple fade-in-on-load.
+            </p>
+
+            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
+              <code>{`<Slider
+  transitions={{
+    loading: {
+      enabled: true,
+      skeletonCount: { 0: 1, 900: 3 },
+      skeleton: {
+        mode: "fit",
+        layout: {
+          kind: "slider",
+          count: 3,
+          item: {
+            kind: "stack",
+            children: [
+              { kind: "rect", style: { aspectRatio: "4 / 5" } },
+              { kind: "text", fontSize: 16, lineHeight: 24, lines: 2 },
+            ],
+          },
+        },
+      },
+    },
+  }}
+/>
+
+<Entries
+  entries={{
+    items: entries,
+    loading: {
+      enabled: true,
+      minHeight: 320,
+      nearMargin: "700px 0px",
+      waitForDecode: true,
+    },
+  }}
+  renderMediaContainer={({ mediaNodes }) => <Grid>{mediaNodes}</Grid>}
+/>`}</code>
+            </pre>
+          </div>
+
+          <h3 className="rmgLayouts__subheader !mt-6">Shared Lazy Loading</h3>
+          <div className="space-y-4 mt-4">
+            <p className="leading-relaxed max-w-3xl">
+              The shared <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">lazyLoad</code> API stays intentionally small: enable it, keep the built-in spinner, or replace that spinner with your own React node or resolver based on{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">{`{ kind, isClone }`}</code>.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              That same shape is used by Slider, Grid, Masonry, and Video. Fullscreen splits the configuration into{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">lazyLoad.images</code> and{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">lazyLoad.videos</code> so you can tune each media type independently.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Entries does not expose a top-level lazy media prop because entry rows already have viewport/decode gating. If you want per-media lazy behavior inside an entry, apply{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">lazyLoad</code> to the embedded Grid, Masonry, Slider, or Video components you render inside that entry.
+            </p>
+
+            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
+              <code>{`<Slider lazyLoad={{ enabled: true, spinner: true }} />
+
+<Grid
+  lazyLoad={{
+    enabled: true,
+    spinner: ({ kind }) => <Spinner label={kind} />,
+  }}
+/>
+
+<Video lazyLoad={{ enabled: true }} />
+
+useFullscreenController({
+  fullscreen: {
+    enabled: true,
+    lazyLoad: {
+      images: { enabled: true },
+      videos: { enabled: true, spinner: false },
+    },
+  },
+});`}</code>
+            </pre>
+          </div>
+        </div>
+      </section>
     </>
   );
 }

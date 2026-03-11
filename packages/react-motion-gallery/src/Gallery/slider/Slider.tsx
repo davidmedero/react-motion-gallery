@@ -2525,8 +2525,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       (alpha) => {
         const body = bodyRef.current
         const shouldSettle = body ? body.settled() : true
-        const oob = !wrap && (boundsRef.current?.passed() ?? false)
-        const idle = shouldSettle && !pointerDownRef.current && !oob
+        const recoveringOob = !wrap && (boundsRef.current?.reached() ?? false)
+        const idle = shouldSettle && !pointerDownRef.current && !recoveringOob
         if (idle) {
           animRef.current?.stop()
           isAnimatingRef.current = false

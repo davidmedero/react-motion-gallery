@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import "react-motion-gallery/styles.css";
 import { Nav } from "./components/Nav";
 
 /* -----------------------------------------------------

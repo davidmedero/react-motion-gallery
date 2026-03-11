@@ -1237,7 +1237,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
           positionSlider()
 
-          const oob = cellCount === 1 && (boundsRef.current?.passed() ?? false)
+          const oob = cellCount === 1 && (boundsRef.current?.reached() ?? false)
           const settled = bodyRef.current?.settled() && !oob
           if (settled && !pointerDownRef.current) {
             animRef.current?.stop()

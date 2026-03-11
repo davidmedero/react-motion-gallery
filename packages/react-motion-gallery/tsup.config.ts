@@ -14,6 +14,9 @@ export default defineConfig({
     "src/video.ts",
   ],
   format: ["esm"],
+  loader: {
+    ".css": "local-css",
+  },
   splitting: true,
   treeshake: true,
   dts: true,
