@@ -2,6 +2,24 @@
 
 Simple, motion-first React gallery primitives for sliders, grids, masonry layouts, fullscreen media, structured entries, and video. The package stays composable: `Slider`, `Grid`, and `Masonry` render children directly, `Entries` renders structured data, `GalleryCore` coordinates fullscreen state, and `Video` handles Plyr-backed video media.
 
+## BundlePhobia-Style Export Size
+
+This table approximates BundlePhobia's export analysis. It rebundles one runtime export at a time from the published root entry, minifies it, and reports the compressed result as the primary `Size` column. Run `npm run build && npm run size:readme` in `packages/react-motion-gallery` to refresh it.
+
+<!-- bundle-size:start -->
+| Export | Size |
+| --- | --- |
+| `Entries` | 6.1kB |
+| `FullscreenThumbnailSlider` | 15.3kB |
+| `GalleryCore` | 1.6kB |
+| `Grid` | 6.6kB |
+| `Masonry` | 6.4kB |
+| `Slider` | 25.2kB |
+| `ThumbnailSlider` | 14.3kB |
+| `useFullscreenController` | 35.6kB |
+| `Video` | 7.9kB |
+<!-- bundle-size:end -->
+
 ## Overview
 
 Install the package, then add the optional video peers only if you use `Video`.

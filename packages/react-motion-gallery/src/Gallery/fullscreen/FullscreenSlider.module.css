@@ -2,8 +2,3 @@
 
 .track { position: relative; left: 0; }
 .rtl .track { left: auto; right: 0; }
-
-[data-rmg-plyr-provider='mp4'] :global(.plyr__video-wrapper),
-[data-rmg-plyr-provider='vimeo'] :global(.plyr__video-wrapper) {
-  pointer-events: none !important;
-}

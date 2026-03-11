@@ -866,9 +866,18 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   function fadeOverlay() {
     const ov = overlayDivRef.current;
     if (!ov) return;
+    const computedOpacity = Number.parseFloat(getComputedStyle(ov).opacity);
+    const startOpacity = Number.isFinite(computedOpacity) ? computedOpacity : 1;
+
+    ov.style.transition = 'none';
+    ov.style.opacity = String(startOpacity);
+    void ov.offsetWidth;
     ov.style.transition = `opacity ${DURATION_MS}ms ${EASING}`;
-    ov.style.opacity = '0';
-    ov.style.pointerEvents = 'none';
+
+    requestAnimationFrame(() => {
+      ov.style.opacity = '0';
+      ov.style.pointerEvents = 'none';
+    });
   }
 
   function isVideoItem(m: MediaItem | null | undefined): boolean {

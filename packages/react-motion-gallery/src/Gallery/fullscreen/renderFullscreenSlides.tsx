@@ -4,7 +4,6 @@ import * as React from "react";
 import type { APITypes } from "plyr-react";
 import { detectProvider, PlyrProp } from "../video/plyr";
 import { VideoCloneSnapshot } from "../video/VideoCloneSnapshot";
-import { installDblclickGuardWhenReady } from "../video/plyrGuards";
 import { Plyr } from "../video/LazyPlyr";
 import { MediaItem } from "../shared/types/media";
 import {
@@ -15,6 +14,7 @@ import {
 } from "./types";
 import styles from "./renderFullscreenSlides.module.css";
 import type { VideoSnapshotStore } from "../video/videoSnapshotStore";
+import { installDragClickSwallower } from "../video/plyrGuards";
 import {
   applyImageHints,
   findPrimaryTrackableImage,
@@ -1218,6 +1218,18 @@ function FsLiveVideoContent(props: {
   }, [fsPreparedVideosRef, key, setWrapVisible, syncRuntimeRegistration, syncSpinner]);
 
   const readyCleanupRef = React.useRef<(() => void) | null>(null);
+  const guardedPlyrRef = React.useRef<any>(null);
+
+  const cleanupDragSwallowGuard = React.useCallback(() => {
+    const guardedPlyr = guardedPlyrRef.current;
+    if (!guardedPlyr) return;
+
+    try {
+      guardedPlyr.__rmgDragSwallowCleanup?.();
+    } catch {}
+
+    guardedPlyrRef.current = null;
+  }, []);
 
   const handlePlyrRef = React.useCallback(
     (api: any) => {
@@ -1229,16 +1241,22 @@ function FsLiveVideoContent(props: {
       playerRefs.current[renderedIndex] = apiOrNull;
       syncRuntimeRegistration(apiOrNull);
 
-      installDblclickGuardWhenReady(api);
-
       requestAnimationFrame(() => {
         setWrapVisible(readyRef.current || seenBefore);
         syncSpinner(!(readyRef.current || seenBefore));
       });
 
-      if (!api) return;
+      if (!api) {
+        cleanupDragSwallowGuard();
+        return;
+      }
 
       const plyrInstance = (api as any)?.plyr ?? api;
+      if (guardedPlyrRef.current !== plyrInstance) {
+        cleanupDragSwallowGuard();
+        installDragClickSwallower(plyrInstance);
+        guardedPlyrRef.current = plyrInstance;
+      }
 
       try {
         if (provider === "youtube" || provider === "vimeo") {
@@ -1285,6 +1303,7 @@ function FsLiveVideoContent(props: {
       } catch {}
     },
     [
+      cleanupDragSwallowGuard,
       markReady,
       playerRefs,
       provider,
@@ -1308,8 +1327,9 @@ function FsLiveVideoContent(props: {
     return () => {
       readyCleanupRef.current?.();
       readyCleanupRef.current = null;
+      cleanupDragSwallowGuard();
     };
-  }, []);
+  }, [cleanupDragSwallowGuard]);
 
   React.useEffect(() => {
     return () => {
@@ -1391,7 +1411,7 @@ function FsLiveVideoContent(props: {
     <>
       <div
         ref={gateRef}
-        style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+        style={{ position: "absolute", inset: 0, pointerEvents: showFullscreenSlider ? "auto" : "none" }}
       />
       {spinnerEl}
       <div
@@ -1401,7 +1421,7 @@ function FsLiveVideoContent(props: {
           ...defaultPlayerStyle,
           ...(fsVideoStyle ?? {}),
           zIndex: 2,
-          pointerEvents: "none",
+          pointerEvents: showFullscreenSlider ? "auto" : "none",
           visibility: "hidden",
           opacity: 0,
           transition: "opacity 220ms ease",

@@ -1196,7 +1196,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
               }}
             >
               <FullscreenSlider
-                // key={epoch}
                 sub={fsSub}
                 ref={fullscreenSliderApi}
                 cellCount={cellsStateLength}
@@ -1218,7 +1217,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                 plyrRefs={wrappedModePlyrRefs}
                 plyrRef={singleModePlyrRefs}
                 closingModal={closingModal}
-                closeButtonRef={closeButtonRef}
                 counterRef={counterRef}
                 leftChevronRef={leftChevronRef}
                 rightChevronRef={rightChevronRef}

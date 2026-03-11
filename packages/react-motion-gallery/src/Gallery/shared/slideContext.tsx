@@ -1,16 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import type {
-  VideoRuntimeRegistration,
-  VideoSnapshotStore,
-} from '../video/videoSnapshotStore';
+import type { APITypes } from 'plyr-react';
+import type { RmgSlideStoreBag } from './slideStoreBag';
 
 export type RmgSlideContextValue = {
   normIdx: number;
   isClone: boolean;
-  registerVideoRuntime?: (runtime: VideoRuntimeRegistration | null) => void;
-  videoSnapshotStore?: VideoSnapshotStore;
+  storeBag?: RmgSlideStoreBag;
+  registerApiByIndex?: (index: number, api: APITypes | null) => void;
 };
 
 const RmgSlideContext = React.createContext<RmgSlideContextValue | null>(null);

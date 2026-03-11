@@ -37,7 +37,7 @@ import { EventStore } from '../shared/motion/eventStore';
 import { Animations, AnimationsType } from '../shared/motion/animations';
 import type { APITypes } from 'plyr-react';
 import { RmgSlideProvider } from '../shared/slideContext';
-import { ResponsiveHeightRule, SliderHandle, SliderIntroOptions, SliderLazyLoadOptions } from './types';
+import { SliderHandle, SliderIntroOptions, SliderLazyLoadOptions } from './types';
 import { ArrowRenderArgs, DotsRenderArgs, ProgressRenderArgs } from '../shared/types/controls';
 import { FsCaptionRenderArgs } from '../fullscreen/types';
 import { BreakpointMap } from '../shared/responsive';
@@ -54,17 +54,10 @@ import { buildProgressNode } from './controls/progress';
 import { WindowType } from '../shared/input/pointerTypes'
 import { AXSpec } from '../shared/types/axis';
 import { Translate } from '../shared/motion/translate';
-import { clamp, easeOutCubic, lerp } from '../shared/motion/utils';
 import { useOptionalGalleryCore } from '../core';
 import { useWheelLock } from '../shared/hooks/useWheelLock';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
-import { Video } from '../video';
-import { VideoCloneSnapshot } from '../video/VideoCloneSnapshot';
-import {
-  createVideoSnapshotStore,
-  type VideoRuntimeRegistration,
-  type VideoSnapshotStore,
-} from '../video/videoSnapshotStore';
+import { createRmgSlideStoreBag, type RmgSlideStoreBag } from '../shared/slideStoreBag';
 
 function DragTracker(main: AxisKey | undefined, ownerWindow: WindowType) {
   const scroll: AxisKey = main ?? 'x'
@@ -396,7 +389,7 @@ function detectKindFromDom(slideEl: HTMLElement): 'video' | 'image' {
 }
 
 function isRmgVideoElement(child: ReactElement<any>) {
-  return child.type === Video;
+  return (child.type as { rmgMediaKind?: string } | undefined)?.rmgMediaKind === 'video';
 }
 
 function detectKindFromChild(child: ReactElement<any>): 'video' | 'image' {
@@ -460,7 +453,13 @@ function resolveLazySpinnerNode(args: {
 type PlyrApi = APITypes | null;
 
 type PlyrRefsByIndex = React.RefObject<Record<number, PlyrApi>>;
-type PlyrRefsByRenderedIndex = React.RefObject<Record<number, PlyrApi>>;
+
+type PendingCloneToggleState = {
+  canonicalIndex: number;
+  observer: IntersectionObserver | null;
+  rafId: number | null;
+  deadlineTs: number;
+};
 
 function cloneSlide(
   child: ReactElement<any>,
@@ -473,8 +472,7 @@ function cloneSlide(
   extraStyle?: React.CSSProperties,
   isClone?: boolean,
   plyrRefsByIdx?: PlyrRefsByIndex,
-  plyrRefsByRenderedIdx?: PlyrRefsByRenderedIndex,
-  videoSnapshotStore?: VideoSnapshotStore,
+  slideStoreBag?: RmgSlideStoreBag,
   revealedCanonicals?: Set<number>
 ): ReactElement<CarouselChildProps> {
   const normIdx =
@@ -482,30 +480,20 @@ function cloneSlide(
       ? ((elementIndex % cellCountForIdx) + cellCountForIdx) % cellCountForIdx
       : elementIndex;
   const kind = detectKindFromChild(child);
+  const isRmgVideo = isRmgVideoElement(child);
   const isCanonicallyRevealed = revealedCanonicals?.has(normIdx) ?? false;
+  const registerCanonicalApi = (index: number, api: APITypes | null) => {
+    if (!plyrRefsByIdx) return;
+
+    if (api) plyrRefsByIdx.current[normIdx] = api;
+    else delete plyrRefsByIdx.current[normIdx];
+  };
 
   const ctxVal = {
     normIdx,
     isClone: !!isClone,
-    videoSnapshotStore,
-    registerVideoRuntime: (runtime: VideoRuntimeRegistration | null) => {
-      if (plyrRefsByRenderedIdx) {
-        if (runtime?.api) plyrRefsByRenderedIdx.current[elementIndex] = runtime.api
-        else delete plyrRefsByRenderedIdx.current[elementIndex]
-      }
-
-      if (plyrRefsByIdx) {
-        if (runtime?.api) plyrRefsByIdx.current[normIdx] = runtime.api
-        else delete plyrRefsByIdx.current[normIdx]
-      }
-
-      if (runtime?.api) {
-        videoSnapshotStore?.registerOriginal(runtime)
-        return
-      }
-
-      videoSnapshotStore?.unregisterOriginal(normIdx)
-    },
+    storeBag: slideStoreBag,
+    registerApiByIndex: registerCanonicalApi,
   };
 
   const spinnerResolved = lazyLoad
@@ -574,22 +562,15 @@ function cloneSlide(
 
   const LAZY_ATTR = "data-rmg-lazy-src";
 
-  if (isClone && isRmgVideoElement(child) && videoSnapshotStore) {
+  if (isRmgVideo) {
     const videoProps = child.props ?? {};
-    contentNode = (
-      <VideoCloneSnapshot
-        canonicalIndex={normIdx}
-        store={videoSnapshotStore}
-        src={videoProps.src}
-        poster={videoProps.poster}
-        source={videoProps.source}
-        sourceBuilder={videoProps.sourceBuilder}
-        options={videoProps.options}
-        className={videoProps.className}
-        style={videoProps.style}
-        lazyLoad={videoProps.lazyLoad}
-      />
-    );
+    const existingRegisterApiByIndex = videoProps.registerApiByIndex;
+    contentNode = cloneElement(child, {
+      registerApiByIndex: (index: number, api: APITypes | null) => {
+        registerCanonicalApi(index, api);
+        existingRegisterApiByIndex?.(index, api);
+      },
+    });
   } else if (
     lazyLoad?.enabled &&
     !isCanonicallyRevealed &&
@@ -791,12 +772,11 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   const [geomKey, setGeomKey] = useState(0);
   const lastGeomSigRef = useRef<string>("");
   const plyrRefsByIdx = useRef<Record<number, any>>({});
-  const plyrRefsByRenderedIdx = useRef<Record<number, any>>({});
-  // Video loop clones use DOM snapshots instead of duplicate live players.
-  const videoSnapshotStore = useMemo(() => createVideoSnapshotStore(), [buildKey]);
+  const slideStoreBag = useMemo(() => createRmgSlideStoreBag(), [buildKey]);
   const lastCloneSigRef = useRef<string>("");
   const shieldRef = useRef<ReturnType<typeof createGestureShield> | null>(null);
   const revealedCanonicalIndicesRef = useRef<Set<number>>(new Set());
+  const pendingCloneToggleRef = useRef<PendingCloneToggleState | null>(null);
   const internalIndexChannel = useMemo(() => createIndexChannel(), []);
   const indexChannel = externalIndexChannel ?? internalIndexChannel;
   const isRtl = direction === 'rtl' ? true : false
@@ -900,9 +880,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
   useEffect(() => {
     return () => {
-      videoSnapshotStore.destroy()
+      slideStoreBag.destroyAll()
     }
-  }, [videoSnapshotStore]);
+  }, [slideStoreBag]);
 
   // fire once per canonical index (prevents spam while scrolling)
   const ioSeenRef = useRef<Set<number>>(new Set());
@@ -1309,86 +1289,6 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     setBuildKey(k => k + 1);
   }
 
-  function getPlyrPlayer(api: PlyrApi): APITypes['plyr'] | null {
-    return api?.plyr ?? null
-  }
-
-  function findRenderedIndexForApi(api: PlyrApi): number | null {
-    if (!api) return null
-    for (const [key, value] of Object.entries(plyrRefsByRenderedIdx.current)) {
-      if (value !== api) continue
-      const renderedIndex = parseInt(key, 10)
-      if (Number.isFinite(renderedIndex)) return renderedIndex
-    }
-    return null
-  }
-
-  function resolveVideoToggleTarget(renderedIndex?: number | null) {
-    if (typeof renderedIndex === 'number') {
-      const clickedApi = plyrRefsByRenderedIdx.current[renderedIndex] ?? null
-      if (clickedApi) {
-        return {
-          api: clickedApi as PlyrApi,
-          renderedIndex,
-        }
-      }
-    }
-
-    const active = selectedIndex.current
-    const canonicalApi = (plyrRefsByIdx.current[active] ?? null) as PlyrApi
-    if (!canonicalApi) return null
-
-    return {
-      api: canonicalApi,
-      renderedIndex: findRenderedIndexForApi(canonicalApi),
-    }
-  }
-
-  function toggleActiveVideoPlay(renderedIndex?: number | null) {
-    const target = resolveVideoToggleTarget(renderedIndex)
-    if (!target) return
-
-    const player = getPlyrPlayer(target.api)
-    if (!player) return
-
-    const isPlaying =
-      typeof player.playing === 'boolean'
-        ? player.playing
-        : !player.paused
-
-    if (isPlaying) {
-      player.pause()
-      return
-    }
-
-    const playResult = player.play()
-    if (playResult && typeof (playResult as Promise<void>).catch === 'function') {
-      (playResult as Promise<void>).catch(() => {})
-    }
-  }
-
-  function toggleCanonicalVideoPlayStrict(canonicalIndex: number): boolean {
-    const api = (plyrRefsByIdx.current[canonicalIndex] ?? null) as PlyrApi
-    const player = getPlyrPlayer(api)
-    if (!player) return false
-
-    const isPlaying =
-      typeof player.playing === 'boolean'
-        ? player.playing
-        : !player.paused
-
-    if (isPlaying) {
-      player.pause()
-      return true
-    }
-
-    const playResult = player.play()
-    if (playResult && typeof (playResult as Promise<void>).catch === 'function') {
-      (playResult as Promise<void>).catch(() => {})
-    }
-    return true
-  }
-
   function isPlyrControlsEl(el: HTMLElement | null) {
     return !!el?.closest?.(
       [
@@ -1443,6 +1343,122 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     };
   }
 
+  function togglePlayerApi(api: PlyrApi): boolean {
+    const player = api?.plyr ?? null;
+    if (!player) return false;
+
+    const isPlaying = typeof player.playing === 'boolean' ? player.playing : !player.paused;
+
+    if (isPlaying) {
+      player.pause();
+      return true;
+    }
+
+    const playResult = player.play();
+    if (playResult && typeof (playResult as Promise<void>).catch === 'function') {
+      (playResult as Promise<void>).catch(() => {});
+    }
+
+    return true;
+  }
+
+  function toggleCanonicalVideoPlay(canonicalIndex: number): boolean {
+    const api = plyrRefsByIdx.current[canonicalIndex] ?? null;
+    return togglePlayerApi(api);
+  }
+
+  function findOriginalSlideForCanonical(canonicalIndex: number): HTMLElement | null {
+    const track = slider.current;
+    if (!track) return null;
+
+    return track.querySelector<HTMLElement>(
+      `[data-rmg-slide="true"][data-rmg-clone="false"][data-rmg-idx="${canonicalIndex}"]`
+    );
+  }
+
+  function cancelPendingCloneToggle() {
+    const pending = pendingCloneToggleRef.current;
+    if (!pending) return;
+
+    pending.observer?.disconnect();
+    if (pending.rafId != null) cancelAnimationFrame(pending.rafId);
+
+    pendingCloneToggleRef.current = null;
+  }
+
+  function startPendingCloneToggleRetry(canonicalIndex: number) {
+    const pending = pendingCloneToggleRef.current;
+    if (!pending || pending.canonicalIndex !== canonicalIndex) return;
+
+    pending.deadlineTs = performance.now() + 1200;
+    let lastHasApi: boolean | null = null;
+
+    const tick = () => {
+      const current = pendingCloneToggleRef.current;
+      if (current !== pending) return;
+
+      const hasApi = !!plyrRefsByIdx.current[canonicalIndex];
+      if (hasApi !== lastHasApi) {
+        lastHasApi = hasApi;
+      }
+
+      if (toggleCanonicalVideoPlay(canonicalIndex)) {
+        cancelPendingCloneToggle();
+        return;
+      }
+
+      if (performance.now() >= pending.deadlineTs) {
+        cancelPendingCloneToggle();
+        return;
+      }
+
+      pending.rafId = requestAnimationFrame(tick);
+    };
+
+    pending.rafId = requestAnimationFrame(tick);
+  }
+
+  function armCloneToggleOnVisibility(canonicalIndex: number) {
+    cancelPendingCloneToggle();
+    scrollToIndex(canonicalIndex, { programmatic: true });
+
+    const slideEl = findOriginalSlideForCanonical(canonicalIndex);
+    const root = viewportRef.current;
+    if (!slideEl || !root) return;
+
+    const pending: PendingCloneToggleState = {
+      canonicalIndex,
+      observer: null,
+      rafId: null,
+      deadlineTs: 0,
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const current = pendingCloneToggleRef.current;
+        if (current !== pending) return;
+
+        for (const entry of entries) {
+          if (!entry.isIntersecting || (entry.intersectionRatio ?? 0) < 0.1) continue;
+
+          pending.observer?.disconnect();
+          pending.observer = null;
+          startPendingCloneToggleRetry(canonicalIndex);
+          return;
+        }
+      },
+      {
+        root,
+        rootMargin: '0px',
+        threshold: [0, 0.1],
+      }
+    );
+
+    pending.observer = observer;
+    pendingCloneToggleRef.current = pending;
+    observer.observe(slideEl);
+  }
+
   function computeCloneSig(originals: number, per: number, useCols: boolean) {
     return `${originals}|per=${per}|cols=${useCols ? cellsPerSlide : 0}|wrap=${wrap ? 1 : 0}`;
   }
@@ -1472,6 +1488,15 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
     preloadCanonicalIndex(selectedIndex.current);
   }, [normalizedLazy.enabled, layoutReady, clonedChildren.length, preloadCanonicalIndex]);
+
+  useEffect(() => {
+    return () => {
+      const pending = pendingCloneToggleRef.current;
+      pending?.observer?.disconnect();
+      if (pending?.rafId != null) cancelAnimationFrame(pending.rafId);
+      pendingCloneToggleRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!normalizedLazy.enabled) return;
@@ -1613,8 +1638,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
                 extraStyle,
                 true,
                 plyrRefsByIdx,
-                plyrRefsByRenderedIdx,
-                videoSnapshotStore,
+                slideStoreBag,
                 revealedCanonicalIndicesRef.current
               )
             )
@@ -1634,8 +1658,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
             extraStyle,
             false,
             plyrRefsByIdx,
-            plyrRefsByRenderedIdx,
-            videoSnapshotStore,
+            slideStoreBag,
             revealedCanonicalIndicesRef.current
           )
         )
@@ -1657,8 +1680,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
                 extraStyle,
                 true,
                 plyrRefsByIdx,
-                plyrRefsByRenderedIdx,
-                videoSnapshotStore,
+                slideStoreBag,
                 revealedCanonicalIndicesRef.current
               )
             )
@@ -1678,7 +1700,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     cellsPerSlide,
     buildKey,
     wrap,
-    videoSnapshotStore,
+    slideStoreBag,
   ]);
 
   useEffect(() => {
@@ -2655,14 +2677,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         }
         const clickedVideo = clickedVideoSurface(evt);
         if (clickedVideo != null && (clickedVideo.isClone || !isYouTubeVideoEvent(evt))) {
-          evt.preventDefault?.();
-          (evt as any).stopPropagation?.();
 
           if (clickedVideo.isClone) {
-            toggleCanonicalVideoPlayStrict(clickedVideo.canonicalIndex);
-            scrollToIndex(clickedVideo.canonicalIndex, { programmatic: true });
+            armCloneToggleOnVisibility(clickedVideo.canonicalIndex);
           } else {
-            toggleActiveVideoPlay(clickedVideo.renderedIndex);
             scrollToIndex(selectedIndex.current);
           }
           return;

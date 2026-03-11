@@ -5,9 +5,10 @@ import type { APITypes } from 'plyr-react';
 import { Plyr } from './LazyPlyr';
 import { VideoCloneSnapshot } from './VideoCloneSnapshot';
 import { useRmgSlide } from '../shared/slideContext';
-import { installDblclickGuardWhenReady } from './plyrGuards';
 import { detectProvider } from './plyr';
 import type { PlyrOptions, PlyrSource } from './plyrTypes';
+import { createVideoSnapshotStore } from './videoSnapshotStore';
+import { installDragClickSwallower } from './plyrGuards';
 import styles from './index.module.css';
 import { useOptionalGalleryCore } from '../core';
 
@@ -238,6 +239,19 @@ export function Video(props: VideoProps) {
   const ctx = useRmgSlide();
   const isClone = ctx?.isClone ?? false;
   const index = ctx?.normIdx ?? 0;
+  const storeBag = ctx?.storeBag;
+  const registerApiByIndex = props.registerApiByIndex ?? ctx?.registerApiByIndex;
+  const videoSnapshotStore = React.useMemo(() => {
+    if (!storeBag) return null;
+
+    return storeBag.getOrCreate(
+      'rmg-video-snapshot-store',
+      createVideoSnapshotStore,
+      (store) => {
+        store.destroy();
+      }
+    );
+  }, [storeBag]);
 
   const apiRef = React.useRef<APITypes | null>(null);
 
@@ -374,6 +388,12 @@ export function Video(props: VideoProps) {
       if (typeof idx !== 'number' || !Number.isFinite(idx)) return;
       if (idx !== baseIdxRef.current) return;
 
+      console.log('[RMG base clone debug] video baseVisibleSub', {
+        index,
+        baseIdx: baseIdxRef.current,
+        eventIndex: idx,
+      });
+
       promoteLazyVideoShell();
       setFsPrewarmIntent(true);
     });
@@ -397,10 +417,10 @@ export function Video(props: VideoProps) {
   const provider = React.useMemo(() => detectProvider(source), [source]);
   const shouldForceSnapshotCrossorigin = React.useMemo(() => {
     if (isClone) return false;
-    if (!ctx?.registerVideoRuntime) return false;
+    if (!videoSnapshotStore) return false;
     if (provider !== 'mp4') return false;
     return isCrossOriginMediaUrl(props.src);
-  }, [ctx, isClone, props.src, provider]);
+  }, [isClone, props.src, provider, videoSnapshotStore]);
 
   const options = React.useMemo(() => {
     return resolveOptions(props.options, {
@@ -414,16 +434,16 @@ export function Video(props: VideoProps) {
 
   const syncRuntimeRegistration = React.useCallback(
     (api: APITypes | null) => {
-      if (!ctx?.registerVideoRuntime) return;
+      if (!videoSnapshotStore) return;
       if (isClone) return;
 
       const hostEl = gateRef.current;
       if (!api || !hostEl) {
-        ctx.registerVideoRuntime(null);
+        videoSnapshotStore.unregisterOriginal(index);
         return;
       }
 
-      ctx.registerVideoRuntime({
+      videoSnapshotStore.registerOriginal({
         canonicalIndex: index,
         api,
         hostEl,
@@ -433,7 +453,7 @@ export function Video(props: VideoProps) {
         ratio,
       });
     },
-    [ctx, gateRef, index, isClone, props.poster, props.src, provider, ratio]
+    [gateRef, index, isClone, props.poster, props.src, provider, ratio, videoSnapshotStore]
   );
 
   React.useEffect(() => {
@@ -473,6 +493,18 @@ export function Video(props: VideoProps) {
   }, [syncSpinner]);
 
   const readyCleanupRef = React.useRef<(() => void) | null>(null);
+  const guardedPlyrRef = React.useRef<any>(null);
+
+  const cleanupDragSwallowGuard = React.useCallback(() => {
+    const guardedPlyr = guardedPlyrRef.current;
+    if (!guardedPlyr) return;
+
+    try {
+      guardedPlyr.__rmgDragSwallowCleanup?.();
+    } catch {}
+
+    guardedPlyrRef.current = null;
+  }, []);
 
   const handlePlyrRef = React.useCallback(
     (api: any) => {
@@ -484,19 +516,36 @@ export function Video(props: VideoProps) {
       apiRef.current = apiOrNull;
       syncRuntimeRegistration(apiOrNull);
 
-      props.onApi?.(apiOrNull);
-      props.registerApiByIndex?.(index, apiOrNull);
+      if (!isClone) {
+        console.log('[RMG base clone debug] video handlePlyrRef', {
+          index,
+          hasApi: !!apiOrNull,
+          revealed,
+          everMounted,
+          visible: visibleRef.current,
+        });
+      }
 
-      installDblclickGuardWhenReady(api);
+      props.onApi?.(apiOrNull);
+      registerApiByIndex?.(index, apiOrNull);
 
       requestAnimationFrame(() => {
         setPlayerVisible(playerWrapRef.current, readyRef.current);
         syncSpinner(!readyRef.current);
       });
 
-      if (!api) return;
+      if (!api) {
+        cleanupDragSwallowGuard();
+        return;
+      }
 
       const plyr = (api as any)?.plyr ?? api;
+      if (guardedPlyrRef.current !== plyr) {
+        cleanupDragSwallowGuard();
+        installDragClickSwallower(plyr);
+        guardedPlyrRef.current = plyr;
+      }
+
       const provider = detectProvider(source);
 
       try {
@@ -546,15 +595,25 @@ export function Video(props: VideoProps) {
         }
       } catch {}
     },
-    [index, props.onApi, props.registerApiByIndex, markReady, syncRuntimeRegistration, syncSpinner, source]
+    [
+      cleanupDragSwallowGuard,
+      index,
+      markReady,
+      props.onApi,
+      registerApiByIndex,
+      syncRuntimeRegistration,
+      syncSpinner,
+      source,
+    ]
   );
 
   React.useEffect(() => {
     return () => {
       readyCleanupRef.current?.();
       readyCleanupRef.current = null;
+      cleanupDragSwallowGuard();
     };
-  }, []);
+  }, [cleanupDragSwallowGuard]);
 
   // ✅ DEFAULT STATE:
   // Spinner visible by default (if enabled), player hidden by default,
@@ -598,6 +657,15 @@ export function Video(props: VideoProps) {
         if (nowVisible === visibleRef.current) return;
         visibleRef.current = nowVisible;
 
+        console.log('[RMG base clone debug] video visibility', {
+          index,
+          ratio,
+          nowVisible,
+          revealed,
+          mounted: mountedRef.current,
+          lazyEnabled,
+        });
+
         if (nowVisible) {
           const idx = baseIdxRef.current;
           if (typeof idx === 'number' && Number.isFinite(idx) && core) {
@@ -621,6 +689,11 @@ export function Video(props: VideoProps) {
         // If lazy is disabled: mount as soon as revealed, and never show spinner.
         if (!lazyEnabled) {
           if (!mountedRef.current && revealed) {
+            console.log('[RMG base clone debug] video mount from visibility', {
+              index,
+              lazyEnabled,
+              revealed,
+            });
             mountedRef.current = true;
 
             setPlayerVisible(playerWrapRef.current, false);
@@ -639,6 +712,11 @@ export function Video(props: VideoProps) {
 
         // lazy enabled:
         if (!mountedRef.current && revealed) {
+          console.log('[RMG base clone debug] video lazy mount from visibility', {
+            index,
+            revealed,
+            fsPrewarmIntent,
+          });
           mountedRef.current = true;
 
           // Spinner already visible by default; keep it visible until ready
@@ -683,6 +761,12 @@ export function Video(props: VideoProps) {
     if (!visibleRef.current && !fsPrewarmIntent) return;
     if (mountedRef.current) return;
 
+    console.log('[RMG base clone debug] video lazy mount from effect', {
+      index,
+      revealed,
+      fsPrewarmIntent,
+      visible: visibleRef.current,
+    });
     mountedRef.current = true;
 
     setPlayerVisible(playerWrapRef.current, false);
@@ -726,11 +810,11 @@ export function Video(props: VideoProps) {
     el.dispatchEvent(new Event("loadedmetadata", { bubbles: true }));
   }, [ratio]);
 
-  if (isClone && ctx?.videoSnapshotStore) {
+  if (isClone && videoSnapshotStore) {
     return (
       <VideoCloneSnapshot
         canonicalIndex={index}
-        store={ctx.videoSnapshotStore}
+        store={videoSnapshotStore}
         src={props.src}
         poster={props.poster}
         source={props.source}
@@ -783,3 +867,5 @@ export function Video(props: VideoProps) {
     </div>
   );
 }
+
+(Video as typeof Video & { rmgMediaKind?: string }).rmgMediaKind = 'video';

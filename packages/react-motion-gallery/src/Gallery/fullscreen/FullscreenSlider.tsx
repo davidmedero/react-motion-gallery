@@ -59,6 +59,13 @@ type FsLimit = {
   removeOffset: (n: number) => number
 }
 
+type PendingCloneToggleState = {
+  canonicalIndex: number
+  observer: IntersectionObserver | null
+  rafId: number | null
+  deadlineTs: number
+}
+
 interface FullscreenSliderProps {
   sub: FullscreenSliderSub
   children: ReactNode
@@ -87,7 +94,6 @@ interface FullscreenSliderProps {
   counterRef: RefObject<HTMLElement | null>
   leftChevronRef: RefObject<HTMLElement | null>
   rightChevronRef: RefObject<HTMLElement | null>
-  closeButtonRef: RefObject<HTMLElement | null>
   overlayDivRef: RefObject<HTMLDivElement | null>
   direction?: 'ltr' | 'rtl';
   isWrapping: RefObject<boolean>
@@ -132,12 +138,10 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       showFullscreenSlider,
       isZooming,
       plyrRefs,
-      plyrRef,
       closingModal,
       counterRef,
       leftChevronRef,
       rightChevronRef,
-      closeButtonRef,
       overlayDivRef,
       direction,
       sliderDuration,
@@ -188,7 +192,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const scrollLimitRef = useRef<FsLimit | null>(null)
     const scrollTargetRef = useRef<ScrollTargetType | null>(null)
     const scrollToRef = useRef<FsScrollTo | null>(null)
-    const suppressLoopTransientRef = useRef(false)
     const slides = useRef<{ cells: { element: HTMLElement }[] }[]>([])
     const indexCurrentRef = useRef<CounterType | null>(null)
     const indexPreviousRef = useRef<CounterType | null>(null)
@@ -208,11 +211,13 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const activeTouchCount = useRef(0)
     const wasPinch = useRef(false)
     const appliedYRef = useRef(0)
+    const overlayOpacityRef = useRef(1)
     type DragMode = 'none' | 'x' | 'y'
     const dragMode = useRef<DragMode>('none')
     const limitRef = useRef<LimitType | null>(null)
     const povRef    = useRef<PercentOfViewType | null>(null)
     const boundsRef = useRef<ScrollBoundsType | null>(null)
+    const pendingCloneToggleRef = useRef<PendingCloneToggleState | null>(null)
 
         type ElementStyleLike = { className?: string; style?: React.CSSProperties } | null | undefined;
 
@@ -504,10 +509,18 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     function commitXY(canonicalX: number, ny: number) {
       const nx = Math.round(canonicalX) * sign;
       translateRef.current?.to(nx, ny)
+    }
+
+    function getOverlayOpacityFromDrag(dyPx: number) {
+      return 1 - clamp01(Math.abs(dyPx) / FADE_DISTANCE)
+    }
+
+    function setOverlayOpacity(next: number) {
+      const clamped = clamp01(next)
+      if (Math.abs(overlayOpacityRef.current - clamped) < 0.001) return
+      overlayOpacityRef.current = clamped
       if (overlayDivRef.current) {
-        const progress = clamp01(Math.abs(ny) / FADE_DISTANCE)
-        const o = 1 - easeOutCubic(progress)
-        overlayDivRef.current.style.opacity = String(o)
+        overlayDivRef.current.style.opacity = String(clamped)
       }
     }
 
@@ -562,6 +575,15 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         const xNow = offsetLocationRef.current!.get()
         y.current = yTemp.current
         commitXY(xNow, y.current)
+        setOverlayOpacity(getOverlayOpacityFromDrag(y.current * 2))
+        if (t >= 1) {
+          y.current = 0
+          yTemp.current = 0
+          appliedYRef.current = 0
+          setOverlayOpacity(1)
+          restoreOverlayTransition()
+          return
+        }
         if (t < 1) requestAnimationFrame(step)
       }
       requestAnimationFrame(step)
@@ -573,6 +595,20 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     function restoreOverlayTransition() {
       if (overlayDivRef.current) overlayDivRef.current.style.transition = ''
     }
+
+    useEffect(() => {
+      if (!show) {
+        overlayOpacityRef.current = 1
+        return
+      }
+
+      if (!showFullscreenSlider || closingModal) return
+
+      overlayOpacityRef.current = 1
+      if (overlayDivRef.current) {
+        overlayDivRef.current.style.opacity = '1'
+      }
+    }, [show, showFullscreenSlider, closingModal])
 
     function scrollToIndex(
       requested: number,
@@ -828,55 +864,17 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       }
     }
 
-    function toggleActiveVideoPlay(renderedIndex?: number | null) {
-      const idx = selectedIndex.current ?? 0
-
-      const canonicalWrappedIndex = idx + 1
-
-      let resolvedRenderedIndex: number | null = null
-      let api: APITypes | null =
-        (typeof renderedIndex === 'number' ? plyrRefs.current[renderedIndex] : null) || null
-
-      if (api) {
-        resolvedRenderedIndex = typeof renderedIndex === 'number' ? renderedIndex : null
-      } else {
-        api = plyrRefs.current[canonicalWrappedIndex] || null
-        if (api) {
-          resolvedRenderedIndex = canonicalWrappedIndex
-        } else {
-          api = plyrRef.current[0] || null
-          resolvedRenderedIndex = api ? 0 : null
-        }
-      }
-
-      const player: APITypes["plyr"] | null = api?.plyr ?? null
-      if (!player) return
-
-      const isPlaying = typeof player.playing === 'boolean'
-        ? player.playing
-        : !player.paused
-
-      if (isPlaying) {
-        player.pause()
-        return
-      }
-
-      const playResult = player.play()
-      if (
-        playResult &&
-        typeof (playResult as Promise<void>).catch === 'function'
-      ) {
-        (playResult as Promise<void>).catch(() => {})
-      }
-    }
-
-    function findOriginalRenderedIndexForCanonical(canonicalIndex: number): number | null {
+    function findOriginalFsSlideForCanonical(canonicalIndex: number): HTMLElement | null {
       const track = slider.current
       if (!track) return null
 
-      const originalSlide = track.querySelector<HTMLElement>(
+      return track.querySelector<HTMLElement>(
         `[data-rmg-fs-slide="true"][data-rmg-canonical-idx="${canonicalIndex}"][data-rmg-clone="false"]`
       )
+    }
+
+    function findOriginalRenderedIndexForCanonical(canonicalIndex: number): number | null {
+      const originalSlide = findOriginalFsSlideForCanonical(canonicalIndex)
       if (!originalSlide) return null
 
       const renderedAttr = originalSlide.getAttribute('data-index')
@@ -908,8 +906,84 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       ) {
         (playResult as Promise<void>).catch(() => {})
       }
-
       return true
+    }
+
+    function cancelPendingCloneToggle() {
+      const pending = pendingCloneToggleRef.current
+      if (!pending) return
+
+      pending.observer?.disconnect()
+      if (pending.rafId != null) cancelAnimationFrame(pending.rafId)
+
+      pendingCloneToggleRef.current = null
+    }
+
+    function startPendingCloneToggleRetry(canonicalIndex: number) {
+      const pending = pendingCloneToggleRef.current
+      if (!pending || pending.canonicalIndex !== canonicalIndex) return
+
+      pending.deadlineTs = performance.now() + 1200
+
+      const tick = () => {
+        const current = pendingCloneToggleRef.current
+        if (current !== pending) return
+
+        if (toggleCanonicalVideoPlayStrict(canonicalIndex)) {
+          cancelPendingCloneToggle()
+          return
+        }
+
+        if (performance.now() >= pending.deadlineTs) {
+          cancelPendingCloneToggle()
+          return
+        }
+
+        pending.rafId = requestAnimationFrame(tick)
+      }
+
+      pending.rafId = requestAnimationFrame(tick)
+    }
+
+    function armCloneToggleOnVisibility(canonicalIndex: number) {
+      cancelPendingCloneToggle()
+      scrollToIndex(canonicalIndex)
+
+      const slideEl = findOriginalFsSlideForCanonical(canonicalIndex)
+      const root = viewportRef.current
+      if (!slideEl || !root) return
+
+      const pending: PendingCloneToggleState = {
+        canonicalIndex,
+        observer: null,
+        rafId: null,
+        deadlineTs: 0,
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const current = pendingCloneToggleRef.current
+          if (current !== pending) return
+
+          for (const entry of entries) {
+            if (!entry.isIntersecting || (entry.intersectionRatio ?? 0) < 0.1) continue
+
+            pending.observer?.disconnect()
+            pending.observer = null
+            startPendingCloneToggleRetry(canonicalIndex)
+            return
+          }
+        },
+        {
+          root,
+          rootMargin: '0px',
+          threshold: [0, 0.1],
+        }
+      )
+
+      pending.observer = observer
+      pendingCloneToggleRef.current = pending
+      observer.observe(slideEl)
     }
 
     function isPlyrControlsEl(el: HTMLElement | null) {
@@ -970,19 +1044,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         canonicalIndex,
         isClone: slide.getAttribute('data-rmg-clone') === 'true',
       };
-    }
-
-    function isYouTubeVideoEvent(evt: Event): boolean {
-      const target = evt.target as HTMLElement | null;
-      if (!target) return false;
-
-      const slide = target.closest('[data-rmg-fs-slide="true"]') as HTMLElement | null;
-      if (!slide) return false;
-
-      const plyrRoot = slide.querySelector('.rmg__player') as HTMLElement | null;
-      if (!plyrRoot) return false;
-
-      return plyrRoot.getAttribute('data-rmg-plyr-provider') === 'youtube';
     }
 
     function resolveClickedImageTarget(
@@ -1330,11 +1391,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           y.current = yTemp.current
           const xNow = offsetLocationRef.current!.get()
           commitXY(xNow, y.current)
-
-          if (overlayDivRef.current) {
-            const progress = clamp01(Math.abs(dy) / FADE_DISTANCE)
-            overlayDivRef.current.style.opacity = String(1 - progress)
-          }
+          setOverlayOpacity(getOverlayOpacityFromDrag(dy))
 
           evt.preventDefault?.()
           return
@@ -1385,18 +1442,13 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         if (isClick.current) {
           const target = evt.target as HTMLElement
           const clickedVideo = clickedVideoSurface(evt);
-          if (clickedVideo != null && (clickedVideo.isClone || !isYouTubeVideoEvent(evt))) {
-            evt.preventDefault?.();
-            (evt as any).stopPropagation?.();
-
+          if (clickedVideo != null) {
             dragMode.current = 'none';
+
             if (clickedVideo.isClone) {
-              toggleCanonicalVideoPlayStrict(clickedVideo.canonicalIndex)
-              goToCanonical(clickedVideo.canonicalIndex, 'animated')
+              armCloneToggleOnVisibility(clickedVideo.canonicalIndex);
             } else {
-              toggleActiveVideoPlay(clickedVideo.renderedIndex);
-              // suppressLoopRef.current = true
-              goToCanonical(selectedIndex.current)
+              scrollToIndex(selectedIndex.current);
             }
             return;
           }
@@ -1451,7 +1503,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           if (tinyFlick) {
             anim?.stop()
             translateRef.current?.lockY(yTemp.current)
-            restoreOverlayTransition()
             isClosing.current = true
             requestFsCloseRef.current?.();
             yTemp.current = 0
@@ -1463,7 +1514,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           if (Math.abs(dy) > distanceThreshold) {
             anim?.stop()
             translateRef.current?.lockY(yTemp.current)
-            restoreOverlayTransition()
             isClosing.current = true
             requestFsCloseRef.current?.();
             yTemp.current = 0
@@ -1712,6 +1762,15 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         offEvt();
       };
     }, [sub]);
+
+    useEffect(() => {
+      return () => {
+        const pending = pendingCloneToggleRef.current
+        pending?.observer?.disconnect()
+        if (pending?.rafId != null) cancelAnimationFrame(pending.rafId)
+        pendingCloneToggleRef.current = null
+      }
+    }, [])
 
     function centerSlider() {
       scrollToIndex(selectedIndex.current, { jump: false })

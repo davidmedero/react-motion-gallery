@@ -1,9 +1,3 @@
-import type { APITypes } from "plyr-react";
-
-/**
- * Prevents "click after drag" from toggling play/pause or triggering other click handlers
- * when the user was actually panning/dragging on the player surface.
- */
 export function installDragClickSwallower(plyr: any) {
   const container: HTMLElement | undefined = plyr?.elements?.container;
   const controls: HTMLElement | undefined = plyr?.elements?.controls;
@@ -11,7 +5,7 @@ export function installDragClickSwallower(plyr: any) {
 
   if ((plyr as any).__rmgDragSwallowCleanup) return;
 
-  const THRESH_PX = 6;
+  const THRESH_PX = 5;
 
   let downX = 0;
   let downY = 0;
@@ -81,90 +75,4 @@ export function installDragClickSwallower(plyr: any) {
     container.removeEventListener('touchend', onTouchEndCapture, { capture: true } as any);
     delete (plyr as any).__rmgDragSwallowCleanup;
   };
-}
-
-/**
- * Adds a transparent shield layer over Plyr to:
- * - block dblclick (avoid browser fullscreen / zoom weirdness)
- * - prevent accidental "dbl-tap zoom"
- * - optionally toggle play/pause on single click (your current behavior)
- * - installs the drag-click swallower
- */
-export function installDblclickGuardWhenReady(player: APITypes | null) {
-  if (!player) return;
-  const inst: any = player;
-  const plyr = inst?.plyr;
-  if (!plyr) return;
-
-  const attach = () => {
-    const container: HTMLElement | undefined = plyr?.elements?.container;
-    const controls:  HTMLElement | undefined = plyr?.elements?.controls;
-    if (!container) { requestAnimationFrame(attach); return; }
-
-    (plyr as any).__rmgGuardCleanup?.();
-
-    if (getComputedStyle(container).position === 'static') {
-      container.style.position = 'relative';
-    }
-
-    let shield = container.querySelector<HTMLElement>('.rmg-plyr-gesture-shield');
-    if (!shield) {
-      shield = document.createElement('div');
-      shield.className = 'rmg-plyr-gesture-shield';
-      Object.assign(shield.style, {
-        position: 'absolute',
-        inset: '0',
-        zIndex: '2',
-        background: 'transparent',
-        pointerEvents: 'none',
-      });
-      container.appendChild(shield);
-    }
-
-    if (controls) {
-      const currentZ = getComputedStyle(controls).zIndex;
-      if (!currentZ || currentZ === 'auto' || Number(currentZ) < 3) {
-        (controls.style as any).zIndex = '3';
-      }
-    }
-
-    const stop = (e: Event) => { e.stopImmediatePropagation(); e.preventDefault(); };
-
-    const onDbl = (e: MouseEvent) => stop(e);
-    shield.addEventListener('dblclick', onDbl, { capture: true });
-
-    let lastTap = 0;
-    const onTouchEnd = (e: TouchEvent) => {
-      const now = Date.now();
-      if (now - lastTap < 320) stop(e);
-      lastTap = now;
-    };
-    shield.addEventListener('touchend', onTouchEnd, { capture: true, passive: false });
-
-    const onClick = (e: MouseEvent) => {
-      const p = plyr;
-      if (p?.paused) p.play(); else p?.pause();
-      e.stopPropagation();
-      e.preventDefault();
-    };
-    shield.addEventListener('click', onClick, { capture: true });
-
-    const onContainerDbl = (e: MouseEvent) => {
-      if (!controls || !(controls.contains(e.target as Node))) stop(e);
-    };
-    container.addEventListener('dblclick', onContainerDbl, { capture: true });
-
-    installDragClickSwallower(plyr);
-
-    (plyr as any).__rmgGuardCleanup = () => {
-      shield.removeEventListener('dblclick', onDbl as any, { capture: true } as any);
-      shield.removeEventListener('touchend', onTouchEnd as any, { capture: true } as any);
-      shield.removeEventListener('click', onClick as any, { capture: true } as any);
-      container.removeEventListener('dblclick', onContainerDbl as any, { capture: true } as any);
-    };
-  };
-
-  plyr.on?.('ready', attach);
-  requestAnimationFrame(attach);
-  plyr.on?.('destroyed', () => (plyr as any).__rmgGuardCleanup?.());
 }
