@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
-import { flushSync } from "react-dom";
 import { createRoot, Root } from "react-dom/client";
 import { parseObjectPosition } from "../shared/transitions/objectPosition";
 import {
@@ -69,16 +68,12 @@ function resolveIntroMethod(args: {
 }): "fade" | "scale" {
   const { requested, item, fs, originImg, isVideoSlide } = args;
 
-  // explicit config wins
   if (fs.effects?.introFade) return "fade";
 
-  // slide is video -> fade
   if (isVideoSlide) return "fade";
 
-  // if request says fade, always fade
   if (requested === "fade") return "fade";
 
-  // if slide isn't image or no origin img, you can’t scale
   if (!originImg) return "fade";
   if (item?.kind !== "image" && item?.type !== "image") return "fade";
 
@@ -99,7 +94,6 @@ function createOverlay(
   overlay.style.pointerEvents = "none";
   overlay.style.transition = "none";
 
-  // void overlay.offsetWidth;
   overlay.style.transition = `opacity ${durationMs}ms ${easing}`;
 
   return overlay;
@@ -226,7 +220,6 @@ function mountOverlayCaption(args: {
       zIndex: String(introZ + 1),
     };
 
-    // Keep your original placement math
     const contentLeft = contentRect.x;
     const contentRight = contentRect.x + contentRect.width;
     const contentTop = contentRect.y;
@@ -324,28 +317,22 @@ function runFadeIntro(args: {
     easing,
   } = args;
 
-  // 1) mount first
   mountOverlayOnce(overlay);
 
-  // 2) arm transition AFTER mount + reflow
   overlay.style.transition = "none";
-  void overlay.offsetWidth; // <- real reflow now that it's connected
+  void overlay.offsetWidth;
   overlay.style.transition = `opacity ${durationMs}ms ${easing}`;
 
-  // 3) start fade next frame
   requestAnimationFrame(() => {
     overlay.style.opacity = "1";
     overlay.style.pointerEvents = "auto";
     overlayCaptionRef.current?.classList.add(styles.open);
   });
 
-  // 4) schedule state updates OUTSIDE render/lifecycle (no flushSync)
-  //    Microtask is enough to avoid the flushSync warning.
   queueMicrotask(() => {
     setFsFadeOpening(true);
     setShowFullscreenSlider(true);
 
-    // clear opening flag next frame (lets CSS transition run)
     requestAnimationFrame(() => setFsFadeOpening(false));
   });
 
@@ -399,8 +386,8 @@ function runScaleIntro(args: {
     (originalImage.parentElement as HTMLElement) ||
     originalImage;
 
-  // note: slideEl is only used for your detectVideoSlide in the old code;
-  // we keep it here in case you later reintroduce a scale-to-video guard.
+  // note: slideEl is only used for detectVideoSlide in the old code;
+  // we keep it here in case we later reintroduce a scale-to-video guard.
   void slideEl;
 
   const imgRect = originalImage.getBoundingClientRect();
@@ -493,7 +480,6 @@ function runScaleIntro(args: {
     ` scale(${endT.scale})`;
 
   function startAnimation() {
-    // reset to start before enabling transitions (avoids weird mid-states)
     dup.style.transform =
       `translate3d(${startT.cx}px, ${startT.cy}px, 0)` +
       ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
@@ -619,7 +605,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
   const vw = document.documentElement.clientWidth;
   const vh = window.innerHeight;
 
-  // video detection: only run if we have a slide element to inspect; otherwise fallback to item-only
   let isVideoSlide = false;
   if (originalImage) {
     const slideEl =
@@ -632,7 +617,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
 
     isVideoSlide = detectVideoSlide(item, slideEl);
   } else {
-    // conservative: if item looks like video, treat as video
     isVideoSlide =
       item?.type === "video" || item?.kind === "video" || item?.mediaType === "video";
   }
@@ -693,7 +677,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     return;
   }
 
-  // scale requires image; if missing, fall back to fade-ish behavior (safe)
   if (!originalImage) {
     runFadeIntro({
       overlay,
@@ -738,7 +721,7 @@ export function createSliderFullscreenIntroRunner(
   ) {
     runFullscreenIntro({
       ...deps,
-      originalImage: imgRef.current, // can be null now; runFullscreenIntro will choose fade if needed
+      originalImage: imgRef.current,
       index,
       closestSelector: deps.closestSelector ?? ".rmg__slide",
     });

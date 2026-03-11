@@ -1,23 +1,23 @@
-# react-motion-gallery
+# React Motion Gallery
 
 Simple, motion-first React gallery primitives for sliders, grids, masonry layouts, fullscreen media, structured entries, and video. The package stays composable: `Slider`, `Grid`, and `Masonry` render children directly, `Entries` renders structured data, `GalleryCore` coordinates fullscreen state, and `Video` handles Plyr-backed video media.
 
-## BundlePhobia-Style Export Size
+## Export Gzip Sizes
 
-This table approximates BundlePhobia's export analysis. It rebundles one runtime export at a time from the published root entry, minifies it, and reports the compressed result as the primary `Size` column. Run `npm run build && npm run size:readme` in `packages/react-motion-gallery` to refresh it.
+This table reports local gzip measurements for each exported runtime surface. The script rebundles one runtime export at a time from the published root entry, excludes peer and runtime externals, and gzips the resulting JS bundle. Run `npm run build && npm run size:readme` in `packages/react-motion-gallery` to refresh it.
 
 <!-- bundle-size:start -->
-| Export | Size |
+| Export | JS gzip |
 | --- | --- |
-| `Entries` | 6.1kB |
-| `FullscreenThumbnailSlider` | 15.3kB |
-| `GalleryCore` | 1.6kB |
-| `Grid` | 6.6kB |
-| `Masonry` | 6.4kB |
-| `Slider` | 25.2kB |
-| `ThumbnailSlider` | 14.3kB |
-| `useFullscreenController` | 35.6kB |
-| `Video` | 7.9kB |
+| `Entries` | 6.7kB |
+| `FullscreenThumbnailSlider` | 16.9kB |
+| `GalleryCore` | 1.8kB |
+| `Grid` | 7.3kB |
+| `Masonry` | 7.1kB |
+| `Slider` | 28.4kB |
+| `ThumbnailSlider` | 15.7kB |
+| `useFullscreenController` | 41.6kB |
+| `Video` | 8.8kB |
 <!-- bundle-size:end -->
 
 ## Overview
@@ -29,10 +29,10 @@ npm install react-motion-gallery
 npm install plyr plyr-react
 ```
 
-Import the package stylesheet once. The published bundle ships CSS separately and does not side-effect import it for you.
+Import the stylesheet. The package uses CSS Modules internally, but consumers only load the compiled plain CSS file, so no CSS Modules setup is required in your app.
 
 ```typescript
-import "react-motion-gallery/dist/index.css";
+import "react-motion-gallery/styles.css";
 ```
 
 Mental model:
@@ -51,7 +51,7 @@ Mental model:
 `toMediaItems()` accepts string URLs, image/video objects, and node objects, then normalizes them into `MediaItem[]`. String URLs infer `kind` from the file extension.
 
 ```typescript
-import "react-motion-gallery/dist/index.css";
+import "react-motion-gallery/styles.css";
 import { Slider, toMediaItems, type MediaItem } from "react-motion-gallery";
 
 const items: MediaItem[] = toMediaItems([

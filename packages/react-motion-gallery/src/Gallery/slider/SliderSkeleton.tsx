@@ -473,8 +473,6 @@ function defaultSliderSpec(): SliderSkeletonSpec {
   };
 }
 
-// ---------- SSR initial height inference (CSS expression) ----------
-
 function isPercent(v: string) {
   return /%$/.test(v.trim());
 }
@@ -489,7 +487,7 @@ function parseAspectRatio(ar: SkeletonLength | undefined): number | null {
   if (typeof ar === "number") return ar > 0 ? ar : null;
 
   const s = String(ar).trim();
-  // "16 / 9"
+
   const m = s.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
   if (m) {
     const a = Number(m[1]);
@@ -498,7 +496,6 @@ function parseAspectRatio(ar: SkeletonLength | undefined): number | null {
     return null;
   }
 
-  // "1.777"
   const n = Number(s);
   if (Number.isFinite(n) && n > 0) return n;
 
@@ -535,7 +532,6 @@ function marginsTBExpr(style?: SkeletonBaseStyle): string | null {
 }
 
 function containerPaddingYExpr(style?: SkeletonContainerStyle): string | null {
-  // skeleton "padding" is a single value; treat it as both top+bottom
   const p = toCssLen(style?.padding);
   if (!p) return null;
   return mulExpr(p, "2");
@@ -552,48 +548,34 @@ function gapExpr(style?: SkeletonContainerStyle): string | null {
 }
 
 function pickPlainStyle(style: SkeletonContainerStyleResponsive | undefined): SkeletonContainerStyle | undefined {
-  // if responsive map, SSR can't know breakpoint here; caller will wrap via media queries.
   if (!style) return undefined;
   if (isResponsiveContainerStyle(style)) return undefined;
   return style as SkeletonContainerStyle;
 }
 
-/**
- * Compute tile height expression for a SkeletonNode, given:
- * - tileWidthExpr: CSS expression for the available width of the tile (e.g. "var(--rmg-skel-tile-w)")
- *
- * Returns CSS expression string (e.g. "calc(var(--rmg-skel-tile-w) / 0.666 + 32px)")
- * or null if cannot be inferred.
- */
 function nodeHeightExpr(node: SkeletonNode, tileWidthExpr: string): string | null {
-  // Shapes
   if (node.kind === "rect" || node.kind === "square" || node.kind === "circle") {
     const h = toCssLen(node.style?.height);
     const ar = parseAspectRatio(node.style?.aspectRatio);
 
-    // explicit height wins
     if (h) {
       return sumExpr([h, marginsTBExpr(node.style)]);
     }
 
-    // aspectRatio: height = width / ar
     if (ar) {
-      // width basis:
       const w = toCssLen(node.style?.width);
       const baseW =
         w && !isPercent(w) ? w
-        : tileWidthExpr; // if "100%" or undefined, treat as tile width
+        : tileWidthExpr;
 
       const arExpr = String(ar);
       const arH = divExpr(baseW, arExpr);
       return sumExpr([arH, marginsTBExpr(node.style)]);
     }
 
-    // cannot infer
     return marginsTBExpr(node.style) ?? null;
   }
 
-  // Media group (tiles repeated)
   if (node.kind === "media") {
     const dir = node.direction ?? "row";
     const gap = gapExpr(pickPlainStyle(node.style)) ?? "0px";
@@ -607,16 +589,13 @@ function nodeHeightExpr(node: SkeletonNode, tileWidthExpr: string): string | nul
     if (!tileH) return null;
 
     if (dir === "row") {
-      // side-by-side => height is max tile height
       return tileH;
     } else {
-      // stacked => sum tile heights + gaps
       if (count <= 1) return tileH;
       return sumExpr([mulExpr(tileH, String(count)), mulExpr(gap, String(count - 1))]);
     }
   }
 
-  // Containers
   if (node.kind === "row" || node.kind === "col" || node.kind === "stack") {
     const dir = node.kind === "row" ? "row" : "col";
     const plain = pickPlainStyle(node.style);
@@ -626,12 +605,10 @@ function nodeHeightExpr(node: SkeletonNode, tileWidthExpr: string): string | nul
     const childHeights = node.children.map((c) => nodeHeightExpr(c, tileWidthExpr));
 
     if (dir === "row") {
-      // horizontal layout => height is max of children
       const m = maxExpr(childHeights);
       if (!m) return null;
       return sumExpr([m, padY]);
     } else {
-      // vertical/stack => sum + gaps
       const hs = childHeights.filter((x): x is string => !!x);
       if (!hs.length) return padY;
 
@@ -649,19 +626,13 @@ function nodeHeightExpr(node: SkeletonNode, tileWidthExpr: string): string | nul
   return null;
 }
 
-/**
- * Build the slider initial height expression from a SliderSkeletonNode.
- * Uses container query width: 100cqw (requires container-type: inline-size on sliderShell)
- */
 export function buildInitialHeightFromSkeletonSpecCssExpr(
   layout: SliderSkeletonNode,
   visibleCount: number,
   mode: "fit" | "peek"
 ): string | null {
-  // unwrap non-slider root (rare): treat as single tile
   const slider = (layout as any).kind === "slider" ? (layout as Extract<SliderSkeletonNode, { kind: "slider" }>) : null;
 
-  // defaults
   const dir = slider?.direction ?? "row";
   const stylePlain = pickPlainStyle(slider?.style);
 
@@ -669,9 +640,6 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
   const padX = containerPaddingXExpr(stylePlain) ?? "0px";
   const padY = containerPaddingYExpr(stylePlain) ?? "0px";
 
-  // tile width expression
-  // fit mode: divide available container width by visibleCount
-  // peek mode: if itemWrapStyle.width is fixed, use it; else fallback to fit math.
   const itemWrapW = slider?.itemWrapStyle?.width ? toCssLen(slider.itemWrapStyle.width) : null;
 
   let tileWExpr: string;
@@ -680,20 +648,15 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
   } else {
     const count = Math.max(1, visibleCount | 0);
     const gapsExpr = count > 1 ? mulExpr(gap, String(count - 1)) : "0px";
-    // available = 100cqw - padX - gaps
     const avail = `calc(100cqw - ${padX} - ${gapsExpr})`;
     tileWExpr = divExpr(avail, String(count));
   }
 
-  // compute tile height for the item node
   const item = slider ? slider.item : (layout as any as SkeletonNode);
   const itemH = nodeHeightExpr(item as any, tileWExpr);
 
   if (!itemH) return null;
 
-  // if slider has itemWrapStyle with fixed height/aspectRatio, incorporate:
-  // - explicit height wins
-  // - else aspectRatio uses tileWExpr
   const wrap = slider?.itemWrapStyle;
   let wrapH: string | null = null;
   if (wrap) {
@@ -708,9 +671,6 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
 
   const tileH = wrapH ? maxExpr([wrapH, itemH]) : itemH;
 
-  // slider row height:
-  // row direction doesn't stack tiles vertically, so height is tileH + padY
-  // col direction would stack tiles => sum, but slider skeleton "slider" is basically track; we treat as one row height.
   const rowH = sumExpr([tileH, padY]);
 
   return rowH;

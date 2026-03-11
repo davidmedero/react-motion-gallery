@@ -30,20 +30,15 @@ export type RmgVideoLazyLoadOptions = {
 
 export type VideoProps = {
   src: string;
-  // kept in props for backwards compat; used only for Plyr's native poster attr in source
   poster?: string;
   alt?: string;
-
   source?: PlyrSource;
   sourceBuilder?: RmgPlyrSourceBuilder;
   options?: RmgPlyrOptionsResolver;
-
   className?: string;
   style?: React.CSSProperties;
-
   onApi?: (api: APITypes | null) => void;
   registerApiByIndex?: (index: number, api: APITypes | null) => void;
-
   lazyLoad?: RmgVideoLazyLoadOptions;
 };
 
@@ -96,14 +91,14 @@ function parsePlyrRatio(r: unknown): number | null {
     if (mColon) {
       const w = parseFloat(mColon[1]);
       const h = parseFloat(mColon[2]);
-      if (w > 0 && h > 0) return w / h; // width/height
+      if (w > 0 && h > 0) return w / h;
     }
 
     const mSlash = s.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
     if (mSlash) {
       const w = parseFloat(mSlash[1]);
       const h = parseFloat(mSlash[2]);
-      if (w > 0 && h > 0) return w / h; // width/height
+      if (w > 0 && h > 0) return w / h;
     }
 
     const asNum = Number(s);
@@ -172,18 +167,11 @@ function isCrossOriginMediaUrl(src: string) {
   }
 }
 
-/**
- * Imperative player fade control
- */
 function setPlayerVisible(playerEl: HTMLElement | null, visible: boolean) {
   if (!playerEl) return;
   playerEl.style.opacity = visible ? '1' : '0';
 }
 
-/**
- * Spinner visibility that can defeat external `!important` rules.
- * (element.style.opacity loses to stylesheet `opacity: 1 !important`)
- */
 function showSpinner(spinnerEl: HTMLElement | null) {
   if (!spinnerEl) return;
   spinnerEl.style.setProperty('opacity', '1', 'important');
@@ -198,27 +186,19 @@ function hideSpinner(spinnerEl: HTMLElement | null) {
   spinnerEl.style.setProperty('pointer-events', 'none', 'important');
 }
 
-/**
- * Pause safely (Plyr API shape varies depending on wrapper)
- * - works for wrapper shapes: api.pause(), api.plyr.pause()
- * - also pauses underlying HTMLMediaElement (api.plyr.media) when present
- */
 function pauseApi(api: APITypes | null) {
   if (!api) return;
 
   try {
-    // 1) Some wrappers expose pause directly
     (api as any)?.pause?.();
   } catch {}
 
-  // 2) plyr-react often exposes the Plyr instance on `.plyr`
   const plyr = (api as any)?.plyr ?? null;
 
   try {
     plyr?.pause?.();
   } catch {}
 
-  // 3) If we can reach the native media element, pause it too
   try {
     const media: HTMLMediaElement | undefined = plyr?.media;
     media?.pause?.();
@@ -231,8 +211,8 @@ function resolveSpinnerNode(
 ): { render: boolean; node: React.ReactNode | null; isCustom: boolean } {
   if (spinner === false) return { render: false, node: null, isCustom: false };
   if (typeof spinner === 'function') return { render: true, node: spinner(args), isCustom: true };
-  if (spinner === true || spinner == null) return { render: true, node: null, isCustom: false }; // default spinner
-  return { render: true, node: spinner, isCustom: true }; // ReactNode
+  if (spinner === true || spinner == null) return { render: true, node: null, isCustom: false };
+  return { render: true, node: spinner, isCustom: true };
 }
 
 export function Video(props: VideoProps) {
@@ -254,23 +234,14 @@ export function Video(props: VideoProps) {
   }, [storeBag]);
 
   const apiRef = React.useRef<APITypes | null>(null);
-
-  // Wrap that contains Plyr. We fade THIS in when ready.
   const playerWrapRef = React.useRef<HTMLDivElement | null>(null);
-
   const visibleRef = React.useRef(false);
   const mountedRef = React.useRef(false);
-
-  // once true, we keep player visible (unless src changes)
   const readyRef = React.useRef(false);
-
   const { ref: gateRef, revealed } = useSlideRevealedGate();
   const viewportRootRef = useViewportRoot(gateRef as any);
-
-  // Mount Plyr once, either when visible or when fullscreen prewarm targets this slide.
   const [everMounted, setEverMounted] = React.useState(false);
   const [fsPrewarmIntent, setFsPrewarmIntent] = React.useState(false);
-
   const lazy = props.lazyLoad;
   const lazyEnabled = lazy?.enabled !== false; // default true
 
@@ -401,7 +372,6 @@ export function Video(props: VideoProps) {
     return () => off?.();
   }, [core, lazyEnabled, promoteLazyVideoShell]);
 
-  // Memoize source/options so Plyr doesn't rebuild on unrelated renders
   const source: PlyrSource = React.useMemo(() => {
     return (
       props.source ??
@@ -464,7 +434,6 @@ export function Video(props: VideoProps) {
     };
   }, [syncRuntimeRegistration]);
 
-  // Helper that always targets the spinner under THIS gate (avoids wrong-node issues)
   const getSpinnerEl = React.useCallback(() => {
     if (!shouldRenderSpinner) return null;
     const gateEl = gateRef.current as HTMLElement | null;
@@ -508,7 +477,6 @@ export function Video(props: VideoProps) {
 
   const handlePlyrRef = React.useCallback(
     (api: any) => {
-      // cleanup previous listeners first
       readyCleanupRef.current?.();
       readyCleanupRef.current = null;
 
@@ -615,13 +583,9 @@ export function Video(props: VideoProps) {
     };
   }, [cleanupDragSwallowGuard]);
 
-  // ✅ DEFAULT STATE:
-  // Spinner visible by default (if enabled), player hidden by default,
-  // regardless of visibility/IO. This avoids "late spinner" entirely.
   React.useLayoutEffect(() => {
     setPlayerVisible(playerWrapRef.current, false);
     syncSpinner(true);
-    // only run on mount / when spinner enablement changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldRenderSpinner, lazyEnabled]);
 
@@ -630,7 +594,6 @@ export function Video(props: VideoProps) {
 
     requestAnimationFrame(() => {
       setPlayerVisible(playerWrapRef.current, false);
-      // show spinner again on src change (until ready)
       syncSpinner(true);
     });
   }, [props.src, syncSpinner]);
@@ -681,12 +644,10 @@ export function Video(props: VideoProps) {
         if (!nowVisible) {
           pauseApi(apiRef.current);
 
-          // If not ready: keep player hidden. Spinner stays visible (default state).
           if (!readyRef.current) setPlayerVisible(playerWrapRef.current, false);
           return;
         }
 
-        // If lazy is disabled: mount as soon as revealed, and never show spinner.
         if (!lazyEnabled) {
           if (!mountedRef.current && revealed) {
             console.log('[RMG base clone debug] video mount from visibility', {
@@ -710,7 +671,6 @@ export function Video(props: VideoProps) {
           return;
         }
 
-        // lazy enabled:
         if (!mountedRef.current && revealed) {
           console.log('[RMG base clone debug] video lazy mount from visibility', {
             index,
@@ -719,7 +679,6 @@ export function Video(props: VideoProps) {
           });
           mountedRef.current = true;
 
-          // Spinner already visible by default; keep it visible until ready
           setPlayerVisible(playerWrapRef.current, false);
           syncSpinner(true);
 
@@ -802,11 +761,8 @@ export function Video(props: VideoProps) {
 
     if (!ratio) return;
 
-    // Slider wants intrinsic dimensions; easiest is to store ratio directly
-    // We'll store width/height ratio as data-rmg-wh
     el.setAttribute("data-rmg-wh", String(ratio));
 
-    // bubble event so Slider hook re-measures
     el.dispatchEvent(new Event("loadedmetadata", { bubbles: true }));
   }, [ratio]);
 

@@ -15,8 +15,8 @@ import { MediaItem } from '../shared/types/media';
 import { FullscreenOpenMethod, IndexMode } from '../api/types';
 import { MediaEntryLink } from '../entries';
 import { FullscreenOptions } from './types';
-import { DefaultCloseIcon } from './DefaultCloseIcon';
-import { DefaultCounterText } from './DefaultCounterText';
+import { DefaultCloseIcon } from './controls/DefaultCloseIcon';
+import { DefaultCounterText } from './controls/DefaultCounterText';
 import { scrollEntrySectionIntoView, waitForEntryOwnerReady } from './entryOwnerReady';
 import { getPrimaryImgEl } from '../zoomPan/core/dom';
 
@@ -58,8 +58,6 @@ interface FullscreenModalProps {
   requestFsCloseRef: React.RefObject<null | (() => void)>;
   fs: FullscreenOptions;
   styles: Record<string, string>;
-  direction: 'ltr' | 'rtl';
-  setFullscreenOpen: (open: boolean) => void;
   syncFullscreenSourceFromIndex: (nextIndex: number) => void;
   baseZ?: number;
   introMethod?: "fade" | "scale" | null;
@@ -538,8 +536,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   requestFsCloseRef,
   fs,
   styles,
-  direction,
-  setFullscreenOpen,
   syncFullscreenSourceFromIndex,
   baseZ,
   introMethod,
@@ -740,7 +736,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     window.addEventListener("keydown", onKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", onKeyDown, { capture: true } as any);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useLayoutEffect(() => {

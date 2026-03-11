@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 
 import { build } from "esbuild";
-import {
-  constants as zlibConstants,
-  brotliCompressSync,
-  gzipSync,
-} from "node:zlib";
+import { gzipSync } from "node:zlib";
 import {
   mkdtempSync,
   readFileSync,
@@ -38,7 +34,7 @@ const EXTERNALS = [
   "plyr-react",
 ];
 
-function formatBundlephobiaSize(bytes) {
+function formatSize(bytes) {
   if (bytes < 1_000) return `${bytes.toFixed(1)}B`;
   if (bytes < 1_000_000) return `${(bytes / 1_000).toFixed(1)}kB`;
   return `${(bytes / 1_000_000).toFixed(1)}MB`;
@@ -65,6 +61,10 @@ function selectReportedExports(availableExports, sourcePath) {
   }
 
   return REPORTED_EXPORTS;
+}
+
+function gzipSize(contents) {
+  return gzipSync(contents, { level: 9, mtime: 0 }).length;
 }
 
 async function measureExportSizes(packageRoot, exportNames) {
@@ -101,19 +101,12 @@ async function measureExportSizes(packageRoot, exportNames) {
         throw new Error(`No output file generated for export "${exportName}"`);
       }
 
-      const gzip = gzipSync(bundle, { level: 9, mtime: 0 });
-      const brotli = brotliCompressSync(bundle, {
-        params: {
-          [zlibConstants.BROTLI_PARAM_QUALITY]: 11,
-        },
-      });
+      const jsGzipBytes = gzipSize(bundle);
 
       rows.push({
         export: exportName,
-        size: formatBundlephobiaSize(brotli.length),
-        minified: formatBundlephobiaSize(bundle.length),
-        gzip: formatBundlephobiaSize(gzip.length),
-        brotli: formatBundlephobiaSize(brotli.length),
+        jsGzipBytes,
+        jsGzip: formatSize(jsGzipBytes),
       });
     }
 
@@ -124,13 +117,10 @@ async function measureExportSizes(packageRoot, exportNames) {
 }
 
 function renderMarkdownTable(rows) {
-  const lines = [
-    "| Export | Size |",
-    "| --- | --- |",
-  ];
+  const lines = ["| Export | JS gzip |", "| --- | --- |"];
 
   for (const row of rows) {
-    lines.push(`| \`${row.export}\` | ${row.size} |`);
+    lines.push(`| \`${row.export}\` | ${row.jsGzip} |`);
   }
 
   return lines.join("\n");

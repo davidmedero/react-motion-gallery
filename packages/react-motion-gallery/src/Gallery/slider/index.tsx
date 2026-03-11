@@ -555,14 +555,13 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
     const shell = sliderShellRef.current;
     if (!shell) return;
 
-    // measure the skeleton row if present (best), else use computed shell height
     const row = shell.querySelector<HTMLElement>('[data-rmg-skel-part="row"]');
     const h = row?.getBoundingClientRect().height || shell.getBoundingClientRect().height;
 
     if (h && h > 1) {
-      shell.style.height = `${h}px`;        // freeze exact pixel height
-      shell.style.maxHeight = `${h}px`;     // optional, prevents weird transitions
-      shell.style.overflow = "hidden";      // optional; helps if things poke during init
+      shell.style.height = `${h}px`;
+      shell.style.maxHeight = `${h}px`;
+      shell.style.overflow = "hidden";
       freezeDoneRef.current = true;
     }
   }, []);
@@ -573,8 +572,6 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
 
     if (!isReady) return;
 
-    // once SliderCore is ready, measure the real viewport height
-    // (this is the "true height")
     const viewport =
       shell.querySelector<HTMLElement>(`[data-rmg-part="viewport"]`) ||
       shell.querySelector<HTMLElement>(`.${styles.viewport}`);
@@ -582,18 +579,15 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
     const realH = viewport?.getBoundingClientRect().height;
 
     if (realH && realH > 1) {
-      // snap freeze to real height first (prevents jump)
       shell.style.height = `${realH}px`;
       shell.style.maxHeight = `${realH}px`;
 
-      // then release to auto next frame
       requestAnimationFrame(() => {
         shell.style.height = "";
         shell.style.maxHeight = "";
         shell.style.overflow = "";
       });
     } else {
-      // if we couldn't measure, still release
       shell.style.height = "";
       shell.style.maxHeight = "";
       shell.style.overflow = "";

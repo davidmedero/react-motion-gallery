@@ -1,4 +1,0 @@
-.rtl {}
-
-.track { position: relative; left: 0; }
-.rtl .track { left: auto; right: 0; }

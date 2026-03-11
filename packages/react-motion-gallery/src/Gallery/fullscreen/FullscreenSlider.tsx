@@ -13,7 +13,7 @@ import {
   forwardRef
 } from 'react'
 import type { APITypes } from 'plyr-react'
-import styles from './FullscreenSlider.module.css'
+import styles from './Fullscreen.module.css'
 import type { FullscreenSliderSub, FSRequest } from './fullscreenSliderSub'
 import { createDragTracker } from '../shared/input/dragTracker'
 import { Vector1D, Vector1DType } from '../shared/motion/vector1d'
@@ -32,7 +32,7 @@ import { createBaseLimit } from '../shared/motion/baseLimit'
 import { Counter, CounterType } from '../shared/motion/counter'
 import { PercentOfView, PercentOfViewType, ScrollBounds, ScrollBoundsType } from '../shared/motion/scrollBounds'
 import { useWheelLock } from '../shared/hooks/useWheelLock'
-import { DefaultChevronIcon } from './DefaultChevronIcon'
+import { DefaultChevronIcon } from './controls/DefaultChevronIcon'
 import { FullscreenOptions } from './types'
 import { getFsMediaContainer, getPrimaryImgEl } from '../zoomPan/core/dom'
 
@@ -219,7 +219,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const boundsRef = useRef<ScrollBoundsType | null>(null)
     const pendingCloneToggleRef = useRef<PendingCloneToggleState | null>(null)
 
-        type ElementStyleLike = { className?: string; style?: React.CSSProperties } | null | undefined;
+    type ElementStyleLike = { className?: string; style?: React.CSSProperties } | null | undefined;
 
     function mergeClassNames(...parts: Array<string | undefined | null | false>) {
       return parts.filter(Boolean).join(' ');
@@ -469,7 +469,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       const computed = window.getComputedStyle(track).opacity;
       track.style.opacity = computed;
-      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+
       (track as any).offsetWidth;
 
       track.style.opacity = '0';
@@ -478,7 +478,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
         jumpToIndexInstant(idx);
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         (track as any).offsetWidth;
 
         track.style.opacity = '1';
@@ -671,17 +670,14 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             firstCloneImg.style.transition = 'none';
             firstCloneImg.style.transform  = transform;
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
             (firstCloneImg as any).offsetWidth;
           }
 
-          // Copy clone -> real if clone is zoomed but real isn't
           if (cloneScale > 1.01 && realScale <= 1.01) {
             const transform = readTransform(firstCloneImg);
             firstRealImg.style.transition = 'none';
             firstRealImg.style.transform  = transform;
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
             (firstRealImg as any).offsetWidth;
           }
         }

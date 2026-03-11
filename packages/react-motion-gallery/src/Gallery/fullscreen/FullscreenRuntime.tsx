@@ -153,7 +153,6 @@ export type FullscreenRuntimeProps = {
 };
 
 function canonicalIndexOf(active: number, len: number) {
-  // stable modulo for negative
   return ((active % len) + len) % len;
 }
 
@@ -260,34 +259,22 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     setFullscreenOpen,
   } = props;
 
-  // -------------------------
-  // Lazy-load feature gates
-  // -------------------------
   const fsLazyImagesEnabled = !!fs.lazyLoad?.images?.enabled;
   const fsLazyVideosEnabled = !!fs.lazyLoad?.videos?.enabled;
-
-  // Separate allowed sets + listeners so images and videos can evolve independently.
-  // (Right now both are "only active index", but videos might become "active +/- 1" later.)
   const fsAllowedImagesRef = React.useRef<Set<number>>(new Set());
   const fsAllowedVideosRef = React.useRef<Set<number>>(new Set());
   const fsLazyImageListenersRef = React.useRef(new Set<() => void>());
   const fsLazyVideoListenersRef = React.useRef(new Set<() => void>());
-
   const fsActiveIndexRef = React.useRef<number>(0);
-
-  // Cache keys for "already prepared" work
-  const fsDecodedImagesRef = React.useRef(new Set<string>()); // image decode cache
-  const fsCustomDecodedImagesRef = React.useRef(new Set<string>()); // custom render image decode cache
+  const fsDecodedImagesRef = React.useRef(new Set<string>());
+  const fsCustomDecodedImagesRef = React.useRef(new Set<string>());
   const fsCustomResolvedSrcByKeyRef = React.useRef(new Map<string, string>());
-  const fsPreparedVideosRef = React.useRef(new Set<string>()); // video "prepare" cache
+  const fsPreparedVideosRef = React.useRef(new Set<string>());
   const fsForceMountVideosRef = React.useRef<Set<number>>(new Set());
-
   const [latchedIntroMethod, setLatchedIntroMethod] =
     React.useState<FullscreenOpenMethod | null>(null);
-
   const [latchedIntroIndex, setLatchedIntroIndex] =
     React.useState<number>(0);
-
   const canonicalLen = normalizedItems.length || 0;
   const entryPrimeSeqRef = React.useRef(0);
 
@@ -366,9 +353,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     }
   }, [showFullscreenModal]);
 
-  // -------------------------
-  // Fullscreen intro
-  // -------------------------
   React.useEffect(() => {
     if (!fsIntroReq) return;
 
@@ -403,9 +387,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     clearFsIntroReq();
   }, [fsIntroReq, fullscreenThumbnailSlot]);
 
-  // -------------------------
-  // Zoom / Pan plumbing
-  // -------------------------
   function boundsForCurrent(
     scaleNum: number,
     imgW: number,
@@ -586,15 +567,11 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     midpoint,
   });
 
-  // -------------------------
-  // Keep source in sync on open
-  // -------------------------
   React.useEffect(() => {
     if (!showFullscreenModal) return;
     const start = fsSub.get();
     fsIndexRef.current = start;
     syncFullscreenSourceFromIndex(start);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFullscreenModal, fsSub]);
 
   React.useEffect(() => {
@@ -685,9 +662,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       closing: !!closingModal,
     });
 
-  // -------------------------
-  // Plyr props + transforms
-  // -------------------------
   const isRtl = direction === 'rtl';
   const sign = isRtl ? -1 : 1;
 
@@ -737,9 +711,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     animRef,
   });
 
-  // -------------------------
-  // Slide render (pass separate lazy plumbing)
-  // -------------------------
   function mediaKey(item: MediaItem) {
     const any = item as any;
     return `${item.kind}|${any.src ?? ''}|${any.srcSet ?? ''}|${any.sizes ?? ''}|${any.poster ?? ''}`;
@@ -779,12 +750,10 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     defaultPlayerStyle,
     fsVideoStyle: fs.video?.style,
     fsVideoClassName: fs.video?.className,
-
     onPanPointerDown: (
       e: React.PointerEvent<HTMLDivElement>,
       imageRef: React.RefObject<HTMLDivElement | null>
     ) => pan.handlePanPointerStart(e, imageRef),
-
     onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
       if (suppressNextClickRef.current) {
         suppressNextClickRef.current = false;
@@ -792,7 +761,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
         e.stopPropagation();
       }
     },
-
     renderCaption: fs.caption?.render,
     captionClassName: fs.caption?.className,
     captionStyle: fs.caption?.style,
@@ -801,26 +769,21 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fsCaptionHeight: fs.caption?.height,
     fsCaptionBreakpoint: fs.caption?.breakpoint,
     resolveFsCaptionPlacement,
-
     styles: {
       imgMargin: styles.imgMargin,
       fullscreenImages: styles.fullscreenImages,
     },
-
     renderImage: fs.renderImage as any,
     fsLazy: fs.lazyLoad,
-
     fsLazyAllowedImagesRef: fsAllowedImagesRef,
     fsLazyListenersImagesRef: fsLazyImageListenersRef,
     fsLazyAllowedVideosRef: fsAllowedVideosRef,
     fsLazyListenersVideosRef: fsLazyVideoListenersRef,
-
     fsDecodedImagesRef: fsDecodedImagesRef,
     fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
     fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
     fsPreparedVideosRef: fsPreparedVideosRef,
     videoSnapshotStore: fullscreenVideoSnapshotStore,
-
     canonicalLength: canonicalLen,
     openingCanonicalIndex,
     openingInProgress,
@@ -840,12 +803,10 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     defaultPlayerStyle,
     fsVideoStyle: fs.video?.style,
     fsVideoClassName: fs.video?.className,
-
     onPanPointerDown: (
       e: React.PointerEvent<HTMLDivElement>,
       imageRef: React.RefObject<HTMLDivElement | null>
     ) => pan.handlePanPointerStart(e, imageRef),
-
     onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
       if (suppressNextClickRef.current) {
         suppressNextClickRef.current = false;
@@ -853,7 +814,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
         e.stopPropagation();
       }
     },
-
     renderCaption: fs.caption?.render,
     captionClassName: fs.caption?.className,
     captionStyle: fs.caption?.style,
@@ -862,26 +822,21 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fsCaptionHeight: fs.caption?.height,
     fsCaptionBreakpoint: fs.caption?.breakpoint,
     resolveFsCaptionPlacement,
-
     styles: {
       imgMargin: styles.imgMargin,
       fullscreenImages: styles.fullscreenImages,
     },
-
     renderImage: fs.renderImage as any,
     fsLazy: fs.lazyLoad,
-
     fsLazyAllowedImagesRef: fsAllowedImagesRef,
     fsLazyListenersImagesRef: fsLazyImageListenersRef,
     fsLazyAllowedVideosRef: fsAllowedVideosRef,
     fsLazyListenersVideosRef: fsLazyVideoListenersRef,
-
     fsDecodedImagesRef: fsDecodedImagesRef,
     fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
     fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
     fsPreparedVideosRef: fsPreparedVideosRef,
     videoSnapshotStore: fullscreenVideoSnapshotStore,
-
     canonicalLength: canonicalLen,
     openingCanonicalIndex,
     openingInProgress,
@@ -889,7 +844,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     getMediaKey: mediaKey,
   });
 
-  // Reset zoom state on close
   React.useEffect(() => {
     if (animRef.current) {
       animRef.current.stop();
@@ -900,12 +854,8 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       scaleRef.current = 1;
       setFsEntryOverlayOpacity(0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closingModal]);
 
-  // -------------------------
-  // Idle preload (non-lazy mode)
-  // -------------------------
   const idlePreloadedImagesRef = React.useRef(new Set<string>());
 
   function preloadFsImagesIdle(items: MediaItem[], concurrency = 3) {
@@ -944,7 +894,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const didPreloadKeyRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
-    // In non-lazy mode, preload images in idle time for snappy FS open
     if (fsLazyImagesEnabled) return;
     if (showFullscreenModal) return;
 
@@ -962,9 +911,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     }
   }, [fsLazyImagesEnabled, showFullscreenModal, preloadKey, normalizedItems]);
 
-  // -------------------------
-  // Preload-on-base-visible (lazy mode)
-  // -------------------------
   const core = useOptionalGalleryCore();
 
   React.useEffect(() => {
@@ -1018,16 +964,10 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       try {
         await img.decode();
         fsDecodedImagesRef.current.add(key);
-      } catch {
-        // don’t mark decoded on failure
-      }
+      } catch {}
     },
     [normalizedItems]
   );
-
-  /**
-   * Video "preload" / "prepare" flow.
-   */
 
   const preloadFsVideoAtIndex = React.useCallback(
     async (canonicalIndex: number) => {
@@ -1039,7 +979,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
 
       const poster = (item as any).poster ?? (item as any).thumbSrc ?? null;
 
-      // 1) poster warm-up
       if (poster) {
         try {
           const img = new Image();
@@ -1050,8 +989,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
         } catch {}
       }
 
-      // 2) mp4 warm-up
-      // try to derive the mp4 url from your MediaItem shape
       const mp4 =
         (item as any).src ||
         (item as any).videoSrc ||
@@ -1068,10 +1005,8 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           if (poster) v.poster = poster;
           v.src = mp4;
 
-          // touch the pipeline
           v.load();
 
-          // give it a moment to start requests then release
           setTimeout(() => {
             try {
               v.removeAttribute('src');
@@ -1081,11 +1016,9 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
         } catch {}
       }
 
-      // 3) force FS plyr mount (by allowing this index for FS lazy videos)
       fsForceMountVideosRef.current.add(canonicalIndex);
       notifyFsLazyVideos();
 
-      // Mark prepared so we don't repeat heavy work
       fsPreparedVideosRef.current.add(key);
     },
     [normalizedItems]
@@ -1172,8 +1105,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           requestFsCloseRef={requestFsCloseRef}
           fs={fs}
           styles={styles}
-          direction={direction}
-          setFullscreenOpen={setFullscreenOpen}
           syncFullscreenSourceFromIndex={syncFullscreenSourceFromIndex}
           baseZ={fsZRef.current}
           introMethod={latchedIntroMethod}

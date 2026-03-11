@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.10",
+  "version": "2.0.12",
   "description": "React Motion Gallery - smooth, customizable media gallery components",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "React Motion Gallery",
@@ -31,6 +31,8 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
+
+    "./styles.css": "./dist/index.css",
 
     "./core": {
       "types": "./dist/core.d.mts",

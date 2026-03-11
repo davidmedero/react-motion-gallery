@@ -51,16 +51,6 @@ type ThumbnailSyncBridge = {
     stop: () => void;
     publishThumbnailClick: (index: number, mode?: IndexMode) => void;
 };
-/**
- * Bridge local thumbnails index state with an optional external slider channel.
- *
- * Intended integration pattern:
- * - Create/own a local channel for ThumbnailSlider internals.
- * - Create this bridge with { localChannel, externalChannel }.
- * - Call bridge.start() inside an effect and clean it up on unmount.
- * - Call bridge.publishThumbnailClick(index) from thumbnail click handler only.
- * - Keep wheel/drag/arrows local by never publishing them externally.
- */
 declare function createThumbnailSyncBridge(args: CreateThumbnailSyncBridgeArgs): ThumbnailSyncBridge;
 
 declare const DEFAULT_THUMBNAILS: Required<Pick<ThumbnailsOptions, "layout" | "scroll" | "motion">>;

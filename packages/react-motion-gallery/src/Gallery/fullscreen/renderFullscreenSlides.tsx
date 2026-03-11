@@ -12,7 +12,7 @@ import {
   FullscreenLazyLoadOptions,
   FullscreenLazyLoadConfig,
 } from "./types";
-import styles from "./renderFullscreenSlides.module.css";
+import styles from "./Fullscreen.module.css";
 import type { VideoSnapshotStore } from "../video/videoSnapshotStore";
 import { installDragClickSwallower } from "../video/plyrGuards";
 import {
@@ -45,7 +45,6 @@ type RenderFullscreenSlidesArgs = {
     imageRef: React.RefObject<HTMLDivElement | null>
   ) => void;
   onSuppressNextClickCapture: (e: React.SyntheticEvent) => void;
-
   renderCaption?: (args: FsCaptionRenderArgs) => React.ReactNode;
   captionClassName?: string;
   captionStyle?: React.CSSProperties;
@@ -58,12 +57,10 @@ type RenderFullscreenSlidesArgs = {
     breakpoint: number | undefined,
     viewportWidth: number
   ) => FsCaptionPlacement | null;
-
   styles: {
     imgMargin: string;
     fullscreenImages: string;
   };
-
   renderImage?: (args: {
     item: Extract<MediaItem, { kind: "image" }>;
     index: number;
@@ -71,28 +68,20 @@ type RenderFullscreenSlidesArgs = {
     className: string;
     baseStyle: React.CSSProperties;
   }) => React.ReactNode;
-
-  // ✅ lazy-load config (still one object)
   fsLazy?: FullscreenLazyLoadOptions;
-
-  // ✅ separate lazy flows
   fsLazyAllowedImagesRef?: React.RefObject<Set<number>>;
   fsLazyListenersImagesRef?: React.RefObject<Set<() => void>>;
   fsLazyAllowedVideosRef?: React.RefObject<Set<number>>;
   fsLazyListenersVideosRef?: React.RefObject<Set<() => void>>;
-
   canonicalLength?: number;
   openingCanonicalIndex?: number | null;
   openingInProgress?: boolean;
   deferLiveVideoUntilVisible?: boolean;
-
-  // ✅ separate caches
   fsDecodedImagesRef: React.RefObject<Set<string>>;
   fsCustomDecodedImagesRef: React.RefObject<Set<string>>;
   fsCustomResolvedSrcByKeyRef: React.RefObject<Map<string, string>>;
   fsPreparedVideosRef: React.RefObject<Set<string>>;
   videoSnapshotStore?: VideoSnapshotStore;
-
   getMediaKey: (item: MediaItem) => string;
 };
 
@@ -251,11 +240,6 @@ function withSnapshotCrossoriginOptions(
   } as any;
 }
 
-/**
- * IMAGE FLOW
- * - gates only on fsLazy.images + fsLazyAllowedImagesRef + fsLazyListenersImagesRef
- * - caches only in fsDecodedImagesRef
- */
 function FsLazyCustomImageContent(props: {
   item: Extract<MediaItem, { kind: "image" }>;
   renderedIndex: number;
@@ -267,11 +251,9 @@ function FsLazyCustomImageContent(props: {
   className: string;
   baseStyle: React.CSSProperties;
   renderImage: NonNullable<RenderFullscreenSlidesArgs["renderImage"]>;
-
   fsLazy: FullscreenLazyLoadConfig;
   fsLazyAllowedRef?: React.RefObject<Set<number>>;
   fsLazyListenersRef?: React.RefObject<Set<() => void>>;
-
   fsCustomDecodedImagesRef: React.RefObject<Set<string>>;
   fsCustomResolvedSrcByKeyRef: React.RefObject<Map<string, string>>;
   getMediaKey: (item: MediaItem) => string;
@@ -529,11 +511,9 @@ function FsImageContent(props: {
   className: string;
   baseStyle: React.CSSProperties;
   renderImage?: RenderFullscreenSlidesArgs["renderImage"];
-
   fsLazy?: FullscreenLazyLoadConfig;
   fsLazyAllowedRef?: React.RefObject<Set<number>>;
   fsLazyListenersRef?: React.RefObject<Set<() => void>>;
-
   fsDecodedImagesRef: React.RefObject<Set<string>>;
   fsCustomDecodedImagesRef: React.RefObject<Set<string>>;
   fsCustomResolvedSrcByKeyRef: React.RefObject<Map<string, string>>;
@@ -561,7 +541,6 @@ function FsImageContent(props: {
 
   const lazyEnabled = !!fsLazy?.enabled;
 
-  // If user provided renderImage without fullscreen image lazy loading, keep behavior unchanged.
   if (renderImage && !lazyEnabled) {
     return renderImage({
       item,
@@ -619,7 +598,6 @@ function FsImageContent(props: {
 
   const computeAllowed = React.useCallback(() => {
     if (isOpeningTarget) return true;
-    // Once revealed before, never gate again
     if (seenBefore) return true;
     if (!lazyEnabled) return true;
     return !!fsLazyAllowedRef?.current?.has(canonicalIndex);
@@ -790,10 +768,8 @@ function FsImageContent(props: {
       if (cancelled) return;
 
       try {
-        // If source has not been applied yet, nothing to decode.
         if (img.getAttribute("data-rmg-src-applied") !== "true") return;
 
-        // Wait until loaded enough to decode.
         if (!img.complete || img.naturalWidth === 0) {
           await new Promise<void>((resolve) => {
             const done = () => {
@@ -808,7 +784,6 @@ function FsImageContent(props: {
 
         if (cancelled) return;
 
-        // Explicit decode wait.
         if (typeof img.decode === "function") {
           try {
             await img.decode();
@@ -937,14 +912,6 @@ function FsImageContent(props: {
   );
 }
 
-/**
- * VIDEO FLOW
- * - gates only on fsLazy.videos + fsLazyAllowedVideosRef + fsLazyListenersVideosRef
- * - caches only in fsPreparedVideosRef (NOT the image decoded set)
- *
- * "prepared" here means: we’ve mounted and/or reached a ready state at least once.
- * If you want stricter semantics ("poster warmed" vs "player ready"), split this into two sets later.
- */
 function FsCloneVideoPreview(props: {
   item: Extract<MediaItem, { kind: "video" }>;
   renderedIndex: number;
@@ -1466,7 +1433,6 @@ function FsSlide(props: {
     imageRef: React.RefObject<HTMLDivElement | null>
   ) => void;
   onSuppressNextClickCapture: (e: React.SyntheticEvent) => void;
-
   captionNode: React.ReactNode;
   captionFirst: boolean;
   captionClassName?: string;
@@ -1475,19 +1441,14 @@ function FsSlide(props: {
   isVertical: boolean;
   sideWidth: number;
   topBottomHeight: number;
-
   getTransform: (index: number) => string;
   styles: { imgMargin: string; fullscreenImages: string };
-
   renderImage?: RenderFullscreenSlidesArgs["renderImage"];
-
   fsLazy?: FullscreenLazyLoadOptions;
-
   fsLazyAllowedImagesRef?: React.RefObject<Set<number>>;
   fsLazyListenersImagesRef?: React.RefObject<Set<() => void>>;
   fsLazyAllowedVideosRef?: React.RefObject<Set<number>>;
   fsLazyListenersVideosRef?: React.RefObject<Set<() => void>>;
-
   fsDecodedImagesRef: React.RefObject<Set<string>>;
   fsCustomDecodedImagesRef: React.RefObject<Set<string>>;
   fsCustomResolvedSrcByKeyRef: React.RefObject<Map<string, string>>;
@@ -1759,23 +1720,19 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
     styles,
     renderImage,
     fsLazy,
-
     fsLazyAllowedImagesRef,
     fsLazyListenersImagesRef,
     fsLazyAllowedVideosRef,
     fsLazyListenersVideosRef,
-
     canonicalLength,
     openingCanonicalIndex,
     openingInProgress,
     deferLiveVideoUntilVisible,
-
     fsDecodedImagesRef,
     fsCustomDecodedImagesRef,
     fsCustomResolvedSrcByKeyRef,
     fsPreparedVideosRef,
     videoSnapshotStore,
-
     getMediaKey,
   } = opts;
 
