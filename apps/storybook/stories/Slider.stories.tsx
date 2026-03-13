@@ -361,10 +361,8 @@ function SlideVideoCell({
 
 function FullscreenAddon(props: {
   fullscreenEnabled?: boolean;
-  sliderObject: any;
-  cellsStateLength: number;
 }) {
-  const { fullscreenEnabled = true, sliderObject, cellsStateLength } = props;
+  const { fullscreenEnabled = true } = props;
 
   const { fullscreenNode } = useFullscreenController({
     fullscreen: { 
@@ -378,23 +376,12 @@ function FullscreenAddon(props: {
         }
       } 
     },
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
   });
 
   return <>{fullscreenNode}</>;
 }
 
 function Demo() {
-  const sliderObject = React.useMemo(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
-  );
-
   // ✅ One normalized list drives both base + fullscreen
   const MEDIA = React.useMemo(() => normalizeMediaInput(URLS), []);
 
@@ -452,7 +439,7 @@ function Demo() {
           })}
         </Slider>
 
-        <FullscreenAddon sliderObject={sliderObject} cellsStateLength={FS_MEDIA.length} />
+        <FullscreenAddon />
       </GalleryCore>
       <Video
         src={VIDEO_SRC}

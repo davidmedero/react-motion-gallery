@@ -185,10 +185,8 @@ async function closeFullscreen(doc: Document) {
 
 function FullscreenAddon(props: {
   fullscreenEnabled?: boolean;
-  sliderObject: any;
-  cellsStateLength: number;
 }) {
-  const { fullscreenEnabled = true, sliderObject, cellsStateLength } = props;
+  const { fullscreenEnabled = true } = props;
 
   const { fullscreenNode } = useFullscreenController({
     fullscreen: {
@@ -198,23 +196,12 @@ function FullscreenAddon(props: {
         videos: { enabled: true },
       },
     } as any,
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
   });
 
   return <>{fullscreenNode}</>;
 }
 
 function Demo() {
-  const sliderObject = React.useMemo(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
-  );
-
   // ✅ Build fullscreen items that include BOTH images and video(s)
   const FULLSCREEN_ITEMS = React.useMemo(() => {
     // Choose where the video appears in the global list
@@ -277,11 +264,7 @@ function Demo() {
           })}
         </Grid>
 
-        {/* ✅ length must match fullscreenItems length */}
-        <FullscreenAddon
-          sliderObject={sliderObject}
-          cellsStateLength={FULLSCREEN_ITEMS.length}
-        />
+        <FullscreenAddon />
       </GalleryCore>
     </div>
   );
@@ -347,10 +330,7 @@ function LazyLoadDemo() {
             </article>
           ))}
         </Grid>
-        <FullscreenAddon
-          sliderObject={{ align: "center", direction: { dir: "ltr" } }}
-          cellsStateLength={8}
-        />
+        <FullscreenAddon />
       </GalleryCore>
     </div>
   );

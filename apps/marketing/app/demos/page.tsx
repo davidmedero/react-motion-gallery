@@ -4,7 +4,7 @@ import DemosPageClient from "./DemosPageClient";
 export const metadata: Metadata = {
   title: "Demos",
   description:
-    "Interactive React Motion Gallery demos with a sticky sidebar for browsing layouts, sync patterns, and fullscreen flows.",
+    "Editable React Motion Gallery demo slots with a sticky sidebar for browsing planned layouts and patterns.",
 };
 
 export default function DemosPage() {

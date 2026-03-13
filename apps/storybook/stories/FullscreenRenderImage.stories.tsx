@@ -169,11 +169,6 @@ function DelayedWrappedImage(props: DelayedWrappedImageProps) {
   );
 }
 
-type SliderConfig = {
-  align: "center";
-  direction: { dir: "ltr" };
-};
-
 type ImageRenderArgs = {
   item: Extract<MediaItem, { kind: "image" }>;
   className: string;
@@ -181,12 +176,10 @@ type ImageRenderArgs = {
 };
 
 function FullscreenAddon(props: {
-  sliderObject: SliderConfig;
-  cellsStateLength: number;
   lazyEnabled?: boolean;
   renderImage: (args: ImageRenderArgs) => React.ReactNode;
 }) {
-  const { sliderObject, cellsStateLength, lazyEnabled = false, renderImage } = props;
+  const { lazyEnabled = false, renderImage } = props;
 
   const { fullscreenNode } = useFullscreenController({
     fullscreen: {
@@ -201,23 +194,12 @@ function FullscreenAddon(props: {
       renderImage: ({ item, className, baseStyle }) =>
         renderImage({ item, className, baseStyle }),
     },
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
   });
 
   return <>{fullscreenNode}</>;
 }
 
 function WrappedDemo() {
-  const sliderObject = React.useMemo<SliderConfig>(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
-  );
-
   return (
     <div style={{ padding: 24 }}>
       <h3 style={{ margin: "0 0 12px" }}>Wrapped fullscreen renderImage</h3>
@@ -244,8 +226,6 @@ function WrappedDemo() {
         </Slider>
 
         <FullscreenAddon
-          sliderObject={sliderObject}
-          cellsStateLength={FULLSCREEN_ITEMS.length}
           renderImage={({ item, className, baseStyle }) => (
             <WrappedImage
               src={item.src}
@@ -264,13 +244,6 @@ function WrappedDemo() {
 
 function LazyWrappedDemo(props: { delayMs?: number }) {
   const { delayMs = 150 } = props;
-  const sliderObject = React.useMemo<SliderConfig>(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
-  );
 
   return (
     <div style={{ padding: 24 }}>
@@ -298,8 +271,6 @@ function LazyWrappedDemo(props: { delayMs?: number }) {
         </Slider>
 
         <FullscreenAddon
-          sliderObject={sliderObject}
-          cellsStateLength={LAZY_FULLSCREEN_ITEMS.length}
           lazyEnabled
           renderImage={({ item, className, baseStyle }) => (
             <DelayedWrappedImage

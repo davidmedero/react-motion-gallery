@@ -46,16 +46,11 @@ const ENTRIES: Entry[] = [
 
 function FullscreenAddon(props: {
   fullscreenEnabled?: boolean;
-  sliderObject: any;
-  cellsStateLength: number;
 }) {
-  const { fullscreenEnabled = true, sliderObject, cellsStateLength } = props;
+  const { fullscreenEnabled = true } = props;
 
   const { fullscreenNode } = useFullscreenController({
     fullscreen: { enabled: fullscreenEnabled } as any,
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
   });
 
   return <>{fullscreenNode}</>;
@@ -68,14 +63,6 @@ function Demo() {
   const fullscreenItems = React.useMemo(
     () => flat.flattenedMedia.map((m: any) => m.src),
     [flat]
-  );
-
-  const sliderObject = React.useMemo(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
   );
 
   const renderCard = React.useCallback(({ entry, media }: any) => {
@@ -242,7 +229,7 @@ function Demo() {
           />
         </div>
 
-        <FullscreenAddon sliderObject={sliderObject} cellsStateLength={fullscreenItems.length} />
+        <FullscreenAddon />
       </GalleryCore>
     </div>
   );

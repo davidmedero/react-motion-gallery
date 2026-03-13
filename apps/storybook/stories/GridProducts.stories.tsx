@@ -88,30 +88,17 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
 
 function FullscreenAddon(props: {
   fullscreenEnabled?: boolean;
-  sliderObject: any;
-  cellsStateLength: number;
 }) {
-  const { fullscreenEnabled = true, sliderObject, cellsStateLength } = props;
+  const { fullscreenEnabled = true } = props;
 
   const { fullscreenNode } = useFullscreenController({
     fullscreen: { enabled: fullscreenEnabled } as any,
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
   });
 
   return <>{fullscreenNode}</>;
 }
 
 function Demo() {
-  const sliderObject = React.useMemo(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
-  );
-
   return (
     <div style={{ padding: 24, maxWidth: 1100 }}>
       <h3 style={{ margin: "0 0 12px" }}>Grid Products ↔ Fullscreen connection test</h3>
@@ -210,10 +197,7 @@ function Demo() {
             </div>
           ))}
         </Grid>
-        <FullscreenAddon
-          sliderObject={sliderObject}
-          cellsStateLength={FULLSCREEN_ITEMS.length}
-        />
+        <FullscreenAddon />
       </GalleryCore>
     </div>
   );

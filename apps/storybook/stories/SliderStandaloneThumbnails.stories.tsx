@@ -60,19 +60,11 @@ function ThumbCell({ src, i }: { src: string; i: number }) {
   );
 }
 
-function FullscreenAddon(props: {
-  sliderObject: any;
-  cellsStateLength: number;
-}) {
-  const { sliderObject, cellsStateLength } = props;
-
+function FullscreenAddon() {
   const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
     fullscreen: {
       enabled: true,
     },
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
   });
 
   const fullscreenThumbItems = React.useMemo(
@@ -110,14 +102,6 @@ function FullscreenAddon(props: {
 
 function Demo() {
   const channel = React.useMemo(() => createSliderIndexChannel(), []);
-  const sliderObject = React.useMemo(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
-  );
-
   return (
     <div style={{ padding: 24, maxWidth: '100%' }}>
       <h3 style={{ margin: "0 0 12px" }}>
@@ -163,7 +147,7 @@ function Demo() {
           </ThumbnailSlider>
         </div>
 
-        <FullscreenAddon sliderObject={sliderObject} cellsStateLength={SLIDES.length} />
+        <FullscreenAddon />
       </GalleryCore>
     </div>
   );

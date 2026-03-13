@@ -193,10 +193,8 @@ async function closeFullscreen(doc: Document) {
 
 function FullscreenAddon(props: {
   fullscreenEnabled?: boolean;
-  sliderObject: any;
-  cellsStateLength: number;
 }) {
-  const { fullscreenEnabled = true, sliderObject, cellsStateLength } = props;
+  const { fullscreenEnabled = true } = props;
 
   const { fullscreenNode } = useFullscreenController({
     fullscreen: {
@@ -206,23 +204,12 @@ function FullscreenAddon(props: {
         videos: { enabled: true },
       },
     } as any,
-    slider: undefined,
-    sliderObject,
-    cellsStateLength,
   });
 
   return <>{fullscreenNode}</>;
 }
 
 function Demo() {
-  const sliderObject = React.useMemo(
-    () => ({
-      align: "center",
-      direction: { dir: "ltr" },
-    }),
-    []
-  );
-
   return (
     <div style={{ padding: 24, maxWidth: 1100 }}>
       <h3 style={{ margin: "0 0 12px" }}>Masonry ↔ Fullscreen connection test</h3>
@@ -241,7 +228,7 @@ function Demo() {
             </div>
           ))}
         </Masonry>
-        <FullscreenAddon sliderObject={sliderObject} cellsStateLength={ITEMS.length} />
+        <FullscreenAddon />
       </GalleryCore>
     </div>
   );
