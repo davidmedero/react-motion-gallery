@@ -16,7 +16,7 @@ This table reports local gzip measurements for each exported runtime surface. Th
 | `Masonry` | 7.2kB |
 | `Slider` | 28.6kB |
 | `ThumbnailSlider` | 15.8kB |
-| `useFullscreenController` | 41.7kB |
+| `useFullscreenController` | 41.6kB |
 | `Video` | 8.8kB |
 <!-- bundle-size:end -->
 
@@ -732,11 +732,9 @@ const slides = [
   "https://picsum.photos/id/1024/1600/900",
 ];
 
-function FullscreenAddon({ count }: { count: number }) {
+function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
     fullscreen: { enabled: true },
-    sliderObject: { align: "start", direction: { dir: "ltr" } },
-    cellsStateLength: count,
   });
 
   return <>{fullscreenNode}</>;
@@ -750,7 +748,7 @@ export function SliderWithFullscreen() {
           <img key={src} src={src} alt={`Slide ${index + 1}`} style={{ width: "100%" }} />
         ))}
       </Slider>
-      <FullscreenAddon count={slides.length} />
+      <FullscreenAddon />
     </GalleryCore>
   );
 }
@@ -763,9 +761,12 @@ import { FullscreenThumbnailSlider, useFullscreenController } from "react-motion
 
 function FullscreenWithThumbs({ thumbs }: { thumbs: string[] }) {
   const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
-    fullscreen: { enabled: true },
-    sliderObject: { align: "start", direction: { dir: "ltr" } },
-    cellsStateLength: thumbs.length,
+    fullscreen: {
+      enabled: true,
+      slider: {
+        direction: "rtl",
+      },
+    },
   });
 
   return (
@@ -783,6 +784,19 @@ function FullscreenWithThumbs({ thumbs }: { thumbs: string[] }) {
 }
 ```
 
+Set `fullscreen.slider.direction` when fullscreen should mirror RTL interaction:
+
+```typescript
+useFullscreenController({
+  fullscreen: {
+    enabled: true,
+    slider: {
+      direction: "rtl",
+    },
+  },
+});
+```
+
 ### `GalleryCore` props
 
 | Option | Type | Default | Notes |
@@ -798,9 +812,6 @@ function FullscreenWithThumbs({ thumbs }: { thumbs: string[] }) {
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `fullscreen` | `FullscreenOptions` | `—` | Fullscreen behavior and rendering options. |
-| `sliderObject` | `any` | `—` | The controller reads `align` and `direction.dir` to mirror the base slider. |
-| `cellsStateLength` | `number` | `—` | Number of base cells used by the fullscreen runtime. |
-| `slider` | `SliderOptions` | `—` | Present in the hook args type, but currently unused by the implementation. |
 
 ### Recommended `useFullscreenController` return values
 
@@ -851,6 +862,7 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `caption.render` | `({ item, index, isZoomed }) => ReactNode` | `—` | Custom caption renderer. |
 | `slider.duration` | `number` | `25` | Fullscreen slider motion duration. |
 | `slider.friction` | `number` | `0.68` | Fullscreen slider friction. |
+| `slider.direction` | `"ltr" \| "rtl"` | `"ltr"` | Fullscreen slider interaction direction. |
 | `zoom.clickZoomLevel` | `number` | `2.5` | Zoom level used for click-to-zoom. |
 | `zoom.maxZoomLevel` | `number` | `3` | Maximum allowed zoom level. |
 | `zoom.panDuration` | `number` | `43` | Pan settling duration. |

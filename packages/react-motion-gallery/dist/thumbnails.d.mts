@@ -1,8 +1,9 @@
 import * as React from 'react';
-import { S as SliderIndexChannel, I as IndexMode } from './sliderSub-DNikv2lm.mjs';
+import { S as SliderIndexChannel } from './sliderSub-DDPjywVp.mjs';
 import { a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
 import { a as ThumbnailsOptions } from './types-Bi2iBbyG.mjs';
 export { R as ResponsivePosition, e as ThumbnailContainerLayout, c as ThumbnailIntroOptions, d as ThumbnailLayout, b as ThumbnailLoadingOptions, T as ThumbnailPosition, k as ThumbnailsControls, g as ThumbnailsElements, f as ThumbnailsLayout, i as ThumbnailsMotion, j as ThumbnailsRipple, h as ThumbnailsScroll, l as ThumbnailsTransitions } from './types-Bi2iBbyG.mjs';
+import { I as IndexMode } from './types-tb9Qf2Mj.mjs';
 import './elements-Bd1vm4Uk.mjs';
 
 type Props = {

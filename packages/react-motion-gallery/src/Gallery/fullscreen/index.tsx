@@ -26,7 +26,6 @@ import type {
   FullscreenThumbnailBridge,
   FullscreenThumbnailSlotLayout,
 } from "../fullscreenThumbnails/types";
-import type { SliderOptions } from "../slider/types";
 import type { FullscreenSliderHandle } from "./FullscreenSlider";
 import FullscreenRuntime from "./FullscreenRuntime";
 import styles from './Fullscreen.module.css'
@@ -95,13 +94,10 @@ function sameFullscreenThumbnailSlotLayout(
 
 export type UseFullscreenArgs = {
   fullscreen?: FullscreenOptions;
-  slider?: SliderOptions;
-  sliderObject: any;
-  cellsStateLength: number;
 };
 
 export function useFullscreenController(args: UseFullscreenArgs) {
-  const { fullscreen, sliderObject, cellsStateLength } = args;
+  const { fullscreen } = args;
 
   const core = useGalleryCore();
 
@@ -326,8 +322,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
     setFullscreenThumbnailSlot(null);
   }, []);
 
-  const fullscreenDirection: "ltr" | "rtl" =
-    sliderObject.direction?.dir === "rtl" ? "rtl" : "ltr";
+  const fullscreenDirection = fs.slider.direction ?? "ltr";
 
   const fullscreenThumbnailBridge = useMemo<FullscreenThumbnailBridge>(
     () => ({
@@ -514,7 +509,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         overlayDivRef={overlayDivRef}
         duplicateImgRef={duplicateImgRef}
         cells={cells}
-        cellsStateLength={cellsStateLength}
         slidesForFullscreen={slidesForFullscreen}
         sliderForFullscreen={sliderForFullscreen}
         visibleImagesForFullscreen={visibleImagesForFullscreen}
@@ -529,7 +523,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         counterRef={counterRef}
         leftChevronRef={leftChevronRef}
         rightChevronRef={rightChevronRef}
-        centerAlign={sliderObject.align === "center"}
         centerSliderForFullscreen={centerSliderForFullscreen}
         setSliderIndexForFullscreen={setSliderIndexForFullscreen}
         layout={layout}

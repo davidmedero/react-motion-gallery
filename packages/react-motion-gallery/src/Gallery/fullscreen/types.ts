@@ -96,6 +96,7 @@ export type FullscreenEffectsOptions = {
 export type FullscreenSliderOptions = {
   duration?: number;
   friction?: number;
+  direction?: "ltr" | "rtl";
 };
 
 export type FullscreenZoomPanOptions = {

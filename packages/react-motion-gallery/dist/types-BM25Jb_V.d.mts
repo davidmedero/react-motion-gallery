@@ -1,8 +1,9 @@
 import { R as ResponsiveNumber } from './responsive-CvE5dTnP.mjs';
 import { E as ElementStyle, A as ArrowRenderArgs, D as DotsRenderArgs, P as ProgressRenderArgs } from './elements-Bd1vm4Uk.mjs';
-import { I as IndexMode, S as SliderIndexChannel } from './sliderSub-DNikv2lm.mjs';
+import { I as IndexMode } from './types-tb9Qf2Mj.mjs';
 import * as React$1 from 'react';
 import { RefObject } from 'react';
+import { S as SliderIndexChannel } from './sliderSub-DDPjywVp.mjs';
 
 type SkeletonLength = number | string;
 type SkeletonShimmer = {

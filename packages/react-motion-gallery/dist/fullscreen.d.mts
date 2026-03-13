@@ -3,11 +3,10 @@ import * as React from 'react';
 import React__default from 'react';
 import { M as MediaItem } from './media-moIXOhT1.mjs';
 import { E as ElementStyle } from './elements-Bd1vm4Uk.mjs';
-import { a as FullscreenOpenMethod$1, F as FullscreenOpenRequest } from './sliderSub-DNikv2lm.mjs';
-export { G as GalleryApi, I as IndexMode } from './sliderSub-DNikv2lm.mjs';
+import { a as FullscreenOpenMethod$1, F as FullscreenOpenRequest } from './types-tb9Qf2Mj.mjs';
+export { G as GalleryApi, I as IndexMode } from './types-tb9Qf2Mj.mjs';
 import { P as PlyrSourceBuilder, a as PlyrOptionsBuilder } from './plyrTypes-CmP9NWvX.mjs';
 import { a as FullscreenThumbnailBridge } from './types-CQ6I3EfZ.mjs';
-import { S as SliderOptions } from './types-Dqm2ynv2.mjs';
 import './responsive-CvE5dTnP.mjs';
 import './types-Bi2iBbyG.mjs';
 
@@ -84,6 +83,7 @@ type FullscreenEffectsOptions = {
 type FullscreenSliderOptions = {
     duration?: number;
     friction?: number;
+    direction?: "ltr" | "rtl";
 };
 type FullscreenZoomPanOptions = {
     clickZoomLevel?: number;
@@ -128,15 +128,13 @@ type FullscreenOptions = {
 type FullscreenOpenMethod = "fade" | "scale";
 type UseFullscreenArgs = {
     fullscreen?: FullscreenOptions;
-    slider?: SliderOptions;
-    sliderObject: any;
-    cellsStateLength: number;
 };
 declare function useFullscreenController(args: UseFullscreenArgs): {
     fs: {
         slider: {
             duration: number;
             friction: number;
+            direction: "ltr" | "rtl";
         };
         zoom: {
             clickZoomLevel: number;
@@ -250,6 +248,7 @@ declare const DEFAULT_FULLSCREEN: {
     readonly slider: {
         readonly duration: 25;
         readonly friction: 0.68;
+        readonly direction: "ltr";
     };
     readonly zoom: {
         readonly clickZoomLevel: 2.5;

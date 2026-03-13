@@ -34,6 +34,7 @@ export const DEFAULT_FULLSCREEN = {
   slider: {
     duration: 25,
     friction: 0.68,
+    direction: "ltr",
   },
   zoom: {
     clickZoomLevel: 2.5,

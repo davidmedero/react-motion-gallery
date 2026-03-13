@@ -44,7 +44,6 @@ interface FullscreenModalProps {
   sliderVelocity: RefObject<number>
   isWrapping: RefObject<boolean>
   wrappedItems: MediaItem[]
-  centerAlign: boolean
   centerSlider?: () => void;
   setSliderIndex: (i: number, mode: IndexMode) => void;
   onForceResetZoom: () => void;

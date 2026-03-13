@@ -57,7 +57,6 @@ export type FullscreenRuntimeProps = {
   overlayDivRef: React.RefObject<HTMLDivElement | null>;
   duplicateImgRef: React.RefObject<HTMLElement | null>;
   cells: React.RefObject<{ element: HTMLElement; index: number }[]>;
-  cellsStateLength: number;
   slidesForFullscreen: React.RefObject<
     { cells: { element: HTMLElement; index: number }[]; target: number }[]
   >;
@@ -74,7 +73,6 @@ export type FullscreenRuntimeProps = {
   counterRef: React.RefObject<HTMLElement | null>;
   leftChevronRef: React.RefObject<HTMLElement | null>;
   rightChevronRef: React.RefObject<HTMLElement | null>;
-  centerAlign: boolean;
   centerSliderForFullscreen: () => void;
   setSliderIndexForFullscreen: (index: number, mode?: any) => void;
   layout: 'slider' | 'grid' | 'masonry' | 'entries';
@@ -167,7 +165,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     overlayDivRef,
     cells,
     setShowFullscreenSlider,
-    cellsStateLength,
     slidesForFullscreen,
     sliderForFullscreen,
     visibleImagesForFullscreen,
@@ -181,7 +178,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     counterRef,
     leftChevronRef,
     rightChevronRef,
-    centerAlign,
     centerSliderForFullscreen,
     setSliderIndexForFullscreen,
     layout,
@@ -1064,6 +1060,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const fullscreenThumbnailFadeEasing =
     fullscreenThumbnailSlot?.fadeEasing ?? 'cubic-bezier(.4,0,.22,1)';
   const fullscreenThumbnailOpen = showFullscreenModal && !closingModal;
+  const cellCount = normalizedItems.length;
 
   return (
     <>
@@ -1077,7 +1074,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           overlayDivRef={overlayDivRef}
           cells={cells}
           setShowFullscreenSlider={setShowFullscreenSlider}
-          cellCount={cellsStateLength}
+          cellCount={cellCount}
           slides={slidesForFullscreen}
           slider={sliderForFullscreen}
           visibleImagesRef={visibleImagesForFullscreen}
@@ -1091,7 +1088,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           counterRef={counterRef}
           leftChevronRef={leftChevronRef}
           rightChevronRef={rightChevronRef}
-          centerAlign={centerAlign}
           centerSlider={centerSliderForFullscreen}
           setSliderIndex={setSliderIndexForFullscreen}
           onForceResetZoom={() => onForceResetZoom()}
@@ -1129,7 +1125,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
               <FullscreenSlider
                 sub={fsSub}
                 ref={fullscreenSliderApi}
-                cellCount={cellsStateLength}
+                cellCount={cellCount}
                 slideIndex={slideIndex}
                 isClick={isZoomClick}
                 isZoomed={isZoomed}

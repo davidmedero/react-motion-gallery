@@ -43,34 +43,4 @@ interface GalleryApi {
     openFullscreenAt: (args: OpenFullscreenAtArgs) => void;
 }
 
-type IndexListener = () => void;
-type IndexEvent = {
-    type: "set";
-    index: number;
-    mode: IndexMode;
-} | {
-    type: "bump";
-    delta: number;
-    mode: IndexMode;
-};
-type EventListener = (ev: IndexEvent) => void;
-type BasePointerDownListener = () => void;
-type SliderIndexChannel = ReturnType<typeof createSliderIndexChannel>;
-declare function createSliderIndexChannel(initialIndex?: number, initialMode?: IndexMode): {
-    get(): {
-        index: number;
-        mode: IndexMode;
-    };
-    set(next: number, m?: IndexMode, opts?: {
-        silent?: boolean;
-    }): void;
-    bump(delta: number, m?: IndexMode, opts?: {
-        silent?: boolean;
-    }): void;
-    subscribe(fn: IndexListener): () => void;
-    onEvent(fn: EventListener): () => void;
-    onBasePointerDown(fn: BasePointerDownListener): () => void;
-    emitBasePointerDown: () => void;
-};
-
-export { type FullscreenOpenRequest as F, type GalleryApi as G, type IndexMode as I, type OpenFullscreenAtArgs as O, type SliderIndexChannel as S, type FullscreenOpenMethod as a, createSliderIndexChannel as c };
+export type { FullscreenOpenRequest as F, GalleryApi as G, IndexMode as I, OpenFullscreenAtArgs as O, FullscreenOpenMethod as a };
