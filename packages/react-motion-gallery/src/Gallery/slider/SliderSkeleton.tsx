@@ -516,12 +516,28 @@ function maxExpr(parts: Array<string | null | undefined>): string | null {
   return `max(${xs.join(", ")})`;
 }
 
+function minExpr(parts: Array<string | null | undefined>): string | null {
+  const xs = parts.filter((p): p is string => !!p && p.trim().length > 0);
+  if (!xs.length) return null;
+  if (xs.length === 1) return xs[0];
+  return `min(${xs.join(", ")})`;
+}
+
 function mulExpr(a: string, b: string): string {
   return `calc(${a} * ${b})`;
 }
 
 function divExpr(a: string, b: string): string {
   return `calc(${a} / ${b})`;
+}
+
+function clampMaxSizeExpr(
+  value: string | null,
+  maxSize: SkeletonLength | undefined
+): string | null {
+  const max = toCssLen(maxSize);
+  if (!value || !max) return value;
+  return minExpr([value, max]);
 }
 
 function marginsTBExpr(style?: SkeletonBaseStyle): string | null {
@@ -567,9 +583,10 @@ function nodeHeightExpr(node: SkeletonNode, tileWidthExpr: string): string | nul
       const baseW =
         w && !isPercent(w) ? w
         : tileWidthExpr;
+      const constrainedW = clampMaxSizeExpr(baseW, node.style?.maxWidth) ?? baseW;
 
       const arExpr = String(ar);
-      const arH = divExpr(baseW, arExpr);
+      const arH = divExpr(constrainedW, arExpr);
       return sumExpr([arH, marginsTBExpr(node.style)]);
     }
 
@@ -651,6 +668,8 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
     const avail = `calc(100cqw - ${padX} - ${gapsExpr})`;
     tileWExpr = divExpr(avail, String(count));
   }
+
+  tileWExpr = clampMaxSizeExpr(tileWExpr, slider?.itemWrapStyle?.maxWidth) ?? tileWExpr;
 
   const item = slider ? slider.item : (layout as any as SkeletonNode);
   const itemH = nodeHeightExpr(item as any, tileWExpr);

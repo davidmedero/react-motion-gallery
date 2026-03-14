@@ -3,15 +3,13 @@
   --demos-muted: rgba(11, 18, 32, 0.7);
   --demos-line: rgba(11, 18, 32, 0.12);
   --demos-line-strong: rgba(11, 18, 32, 0.2);
-  --demos-card: rgba(255, 255, 255, 0.82);
-  --demos-sidebar: rgba(246, 248, 252, 0.9);
+  --demos-card: #ffffff;
+  --demos-sidebar: #f6f8fc;
   --demos-accent: #67bee5;
-  --demos-accent-soft: rgba(103, 190, 229, 0.16);
+  --demos-accent-soft: rgba(103, 190, 229, 0.12);
   --demos-accent-deep: #155e75;
   min-height: calc(100vh - 64px);
-  background:
-    radial-gradient(circle at top left, rgba(103, 190, 229, 0.22), transparent 30%),
-    linear-gradient(180deg, #f8fbff 0%, #f3f5f8 55%, #ffffff 100%);
+  background: #ffffff;
   color: var(--demos-ink);
 }
 
@@ -71,12 +69,9 @@
   display: grid;
   gap: 14px;
   padding: 18px;
-  border-radius: 28px;
+  border-radius: 12px;
   background: var(--demos-sidebar);
   border: 1px solid rgba(255, 255, 255, 0.72);
-  box-shadow:
-    0 24px 60px rgba(11, 18, 32, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .sidebarIntro {
@@ -185,7 +180,7 @@
   display: grid;
   gap: 4px;
   padding: 12px 14px;
-  border-radius: 18px;
+  border-radius: 12px;
   border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.64);
   text-align: left;
@@ -206,8 +201,7 @@
 
 .demoLinkActive {
   border-color: rgba(21, 94, 117, 0.2);
-  background: linear-gradient(180deg, rgba(103, 190, 229, 0.18), rgba(255, 255, 255, 0.94));
-  box-shadow: 0 14px 28px rgba(11, 18, 32, 0.08);
+  background: rgba(103, 190, 229, 0.12);
 }
 
 .demoLinkEyebrow {
@@ -229,12 +223,9 @@
 
 .demoCard {
   padding: clamp(18px, 2.4vw, 28px);
-  border-radius: 34px;
+  border-radius: 12px;
   background: var(--demos-card);
   border: 1px solid rgba(255, 255, 255, 0.74);
-  box-shadow:
-    0 24px 60px rgba(11, 18, 32, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
 .demoHeader {
@@ -286,23 +277,101 @@
 
 .demoCanvas {
   margin-top: 24px;
-  min-height: clamp(280px, 42vw, 520px);
   padding: clamp(14px, 2vw, 20px);
-  border-radius: 28px;
   border: 1px solid var(--demos-line);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 248, 252, 0.94)),
-    linear-gradient(135deg, rgba(103, 190, 229, 0.06), transparent 50%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 16px 32px rgba(11, 18, 32, 0.05);
-  overflow: hidden;
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+.demoCanvasSliderDefault {
 }
 
 .demoFooter {
   margin-top: 18px;
   padding-top: 18px;
   border-top: 1px solid rgba(11, 18, 32, 0.08);
+}
+
+.codePanel {
+  margin-top: 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #111827;
+  color: #e2e8f0;
+}
+
+.codePanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 18px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.codePanelCopy {
+  display: grid;
+  gap: 4px;
+}
+
+.codePanelEyebrow {
+  color: rgba(148, 163, 184, 0.84);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.codePanelTitle {
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+}
+
+.codeCopyButton {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  padding: 9px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(15, 23, 42, 0.36);
+  color: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease
+}
+
+.codeCopyButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(103, 190, 229, 0.5);
+  background: rgba(30, 41, 59, 0.72);
+}
+
+.codeCopyButtonCopied {
+  border-color: rgba(103, 190, 229, 0.68);
+  background: rgba(103, 190, 229, 0.18);
+  color: #c4f1ff;
+}
+
+.codePre {
+  margin: 0;
+  padding: 0 18px 18px;
+  overflow-x: auto;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.86rem;
+  line-height: 1.7;
+  tab-size: 2;
+}
+
+.codePre code {
+  display: block;
+  min-width: max-content;
+  color: inherit;
 }
 
 .demoFooterLabel {
@@ -326,10 +395,8 @@
   width: 100%;
   max-width: 500px;
   aspect-ratio: 5 / 3;
-  border-radius: 24px;
-  overflow: hidden;
+  border-radius: 12px;
   background: #dfe7f1;
-  box-shadow: 0 14px 28px rgba(11, 18, 32, 0.12);
 }
 
 .mediaImage {
@@ -342,8 +409,7 @@
 .mediaShade {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(11, 18, 32, 0.04) 0%, rgba(11, 18, 32, 0.12) 40%, rgba(11, 18, 32, 0.74) 100%);
+  background: rgba(11, 18, 32, 0.12);
 }
 
 .mediaCaption {
@@ -386,8 +452,7 @@
   width: 100%;
   aspect-ratio: 4 / 5;
   object-fit: cover;
-  border-radius: 22px;
-  box-shadow: 0 14px 28px rgba(11, 18, 32, 0.1);
+  border-radius: 12px;
 }
 
 .gridCopy {
@@ -423,9 +488,8 @@
 .masonryImage {
   width: 100%;
   object-fit: cover;
-  border-radius: 22px;
+  border-radius: 12px;
   display: block;
-  box-shadow: 0 14px 28px rgba(11, 18, 32, 0.1);
 }
 
 .masonryInfo {
@@ -450,10 +514,9 @@
   display: grid;
   gap: 14px;
   padding: 18px;
-  border-radius: 24px;
+  border-radius: 12px;
   border: 1px solid var(--demos-line);
   background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 12px 28px rgba(11, 18, 32, 0.06);
 }
 
 .entryMeta {
@@ -490,7 +553,7 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: 18px;
+  border-radius: 12px;
 }
 
 .entryOverlay {
@@ -502,7 +565,7 @@
   gap: 4px;
   min-width: 220px;
   padding: 14px 16px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: rgba(11, 18, 32, 0.78);
   color: white;
 }
@@ -533,10 +596,9 @@
   justify-content: space-between;
   gap: 14px;
   padding: 16px 18px;
-  border-radius: 20px;
+  border-radius: 12px;
   border: 1px solid var(--demos-line);
   background: rgba(255, 255, 255, 0.76);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .sliderToolbarCopy {
@@ -575,14 +637,12 @@
     transform 160ms ease,
     border-color 160ms ease,
     background 160ms ease,
-    box-shadow 160ms ease;
 }
 
 .inlineAction:hover {
   transform: translateY(-1px);
   border-color: rgba(21, 94, 117, 0.28);
   background: rgba(255, 255, 255, 1);
-  box-shadow: 0 10px 24px rgba(11, 18, 32, 0.08);
 }
 
 .thumbnailImage {
@@ -636,10 +696,9 @@
   gap: 12px;
   max-width: 420px;
   padding: 16px;
-  border-radius: 24px;
+  border-radius: 12px;
   border: 1px solid var(--demos-line);
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 12px 28px rgba(11, 18, 32, 0.08);
 }
 
 .cardSlideImage {
@@ -647,7 +706,7 @@
   width: 100%;
   aspect-ratio: 4 / 5;
   object-fit: cover;
-  border-radius: 18px;
+  border-radius: 12px;
 }
 
 .cardSlideCopy {
@@ -668,19 +727,17 @@
   gap: 14px;
   width: min(100%, 760px);
   padding: 16px;
-  border-radius: 24px;
+  border-radius: 12px;
   border: 1px solid var(--demos-line);
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 12px 28px rgba(11, 18, 32, 0.08);
 }
 
 .videoFrame {
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 12px;
   background: #0f172a;
-  box-shadow: 0 14px 28px rgba(11, 18, 32, 0.12);
 }
 
 .videoFrame > * {
@@ -742,10 +799,8 @@
   display: grid;
   gap: 8px;
   padding: 18px 20px;
-  border-radius: 22px;
+  border-radius: 12px;
   background: rgba(11, 18, 32, 0.76);
-  box-shadow: 0 18px 42px rgba(11, 18, 32, 0.24);
-  backdrop-filter: blur(16px);
 }
 
 .fullscreenOverlayCard .fullscreenCaptionEyebrow {
@@ -791,12 +846,22 @@
 
   .sidebarInner,
   .demoCard {
-    border-radius: 24px;
+    border-radius: 12px;
   }
 
   .demoCanvas {
     padding: 12px;
-    border-radius: 22px;
+    border-radius: 12px;
+  }
+
+  .codePanel {
+    border-radius: 12px;
+  }
+
+  .codePanelHeader,
+  .codePre {
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
   .entryOverlay {

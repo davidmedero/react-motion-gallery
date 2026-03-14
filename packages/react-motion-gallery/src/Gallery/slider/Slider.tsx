@@ -1151,23 +1151,26 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     return centerAlign ? (containerSize - cellSize) / 2 : 0;
   }
 
-  function reanchorToCurrentIndex() {
-    const track = slider.current;
+  function snapToIndex(requested: number) {
     const len = slides.current?.length ?? 0;
-    if (!track || !len) return;
+    if (!len) return;
 
-    const requested = indexChannel.get().index ?? selectedIndex.current ?? 0;
     const idx = clampIndex(requested, len);
     const slide = slides.current?.[idx];
     if (!slide) return;
 
     const next = -(slide.target ?? 0) + getCenterOffsetForIndex(idx);
 
+    animRef.current?.stop();
+    isAnimatingRef.current = false;
+
     locationRef.current?.set(next);
     previousLocationRef.current?.set(next);
     offsetLocationRef.current?.set(next);
     targetRef.current?.set(next);
     xRef.current = next;
+
+    bodyRef.current?.useDuration(0).useFriction(1).sync().resetVelocity();
 
     selectedIndex.current = idx;
     lastEmittedIndexRef.current = idx;
@@ -1180,6 +1183,11 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     if (scaleEffect) applyPairScaleTween();
     if (fadeEffect) applyFadeTween();
     updateControlsImperatively();
+  }
+
+  function reanchorToCurrentIndex() {
+    const requested = indexChannel.get().index ?? selectedIndex.current ?? 0;
+    snapToIndex(requested);
   }
 
   useEffect(() => {
@@ -1420,7 +1428,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
   function armCloneToggleOnVisibility(canonicalIndex: number) {
     cancelPendingCloneToggle();
-    scrollToIndex(canonicalIndex, { programmatic: true });
+    snapToIndex(canonicalIndex);
 
     const slideEl = findOriginalSlideForCanonical(canonicalIndex);
     const root = viewportRef.current;
@@ -1778,7 +1786,17 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       vv?.removeEventListener("resize", schedule);
       window.removeEventListener("resize", schedule);
     };
-  }, [cellCount, clonedChildren, visibleImages, cellsPerSlide, gap, wrap, loop, AX, isRtl]);
+  }, [
+    cellCount,
+    clonedChildren,
+    visibleImages,
+    cellsPerSlide,
+    gap,
+    wrap,
+    loop,
+    AX,
+    isRtl,
+  ]);
 
   useEffect(() => {
     if (isReady) return;
@@ -2665,13 +2683,13 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         const img = target.closest('img') as HTMLImageElement | null
         if (img && enableFullscreen) {
           if (!expandableImageRefs) {
-            scrollToIndex(selectedIndex.current);
+            snapToIndex(selectedIndex.current);
             return;
           };
           const index = expandableImageRefs.current.findIndex((el) => el === img);
           if (index >= 0) handleImageClick(evt as any, index);
           setTimeout(() => {
-            scrollToIndex(selectedIndex.current);
+            snapToIndex(selectedIndex.current);
           }, 300)
           return;
         }
@@ -2681,7 +2699,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
           if (clickedVideo.isClone) {
             armCloneToggleOnVisibility(clickedVideo.canonicalIndex);
           } else {
-            scrollToIndex(selectedIndex.current);
+            snapToIndex(clickedVideo.canonicalIndex);
           }
           return;
         }

@@ -2,12 +2,13 @@
 'use client';
 
 import { ChevronDown } from "lucide-react";
-import { startTransition, useState, type ReactElement } from "react";
+import { startTransition, useEffect, useState, type ReactElement } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import styles from "./demos.module.css";
-import { GalleryCore, Slider, toMediaItems, useFullscreenController } from "react-motion-gallery";
+import { GalleryCore, Slider, toMediaItems, useFullscreenController } from "../../../../packages/react-motion-gallery/src";
 
 type DemoComponent = () => ReactElement | null;
+type DemoCategoryId = "slider" | "grid" | "masonry" | "entries" | "fullscreen";
 
 type DemoNavItem =
   | {
@@ -22,7 +23,7 @@ type DemoNavItem =
     };
 
 type DemoCategory = {
-  id: string;
+  id: DemoCategoryId;
   label: string;
   description: string;
   items: DemoNavItem[];
@@ -35,12 +36,208 @@ type DemoDefinition = {
   summary: string;
   focus: string;
   tags: string[];
-  categoryId: string;
+  categoryId: DemoCategoryId;
   Component: DemoComponent;
+  source?: string;
 };
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
+}
+
+function toPascalCase(value: string) {
+  return value
+    .split("-")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join("");
+}
+
+const STARTER_IMPORTS_BY_CATEGORY: Record<DemoCategoryId, string> = {
+  slider: 'import { GalleryCore, Slider } from "react-motion-gallery";',
+  grid: 'import { GalleryCore, Grid } from "react-motion-gallery";',
+  masonry: 'import { GalleryCore, Masonry } from "react-motion-gallery";',
+  entries: 'import { GalleryCore, Entries } from "react-motion-gallery";',
+  fullscreen:
+    'import { GalleryCore, Slider, useFullscreenController } from "react-motion-gallery";',
+};
+
+const SLIDER_DEFAULT_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+
+const URLS = [
+  "https://picsum.photos/id/1020/1600/900",
+  "https://picsum.photos/id/1029/1600/900",
+  "https://picsum.photos/id/1039/1600/900",
+  "https://picsum.photos/id/1049/1600/900",
+  "https://picsum.photos/id/1079/1600/900",
+  "https://picsum.photos/id/1076/1600/900",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/1020/3200/1800",
+  "https://picsum.photos/id/1029/3200/1800",
+  "https://picsum.photos/id/1039/3200/1800",
+  "https://picsum.photos/id/1049/3200/1800",
+  "https://picsum.photos/id/1079/3200/1800",
+  "https://picsum.photos/id/1076/3200/1800",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      style={{
+        width: "100cqw",
+        maxWidth: "550px",
+        aspectRatio: "16 / 9",
+        objectFit: "cover",
+        display: "block",
+        borderRadius: 12,
+      }}
+    />
+  );
+}
+
+function FullscreenAddon(props: { fullscreenEnabled?: boolean }) {
+  const { fullscreenEnabled = true } = props;
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: fullscreenEnabled,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderDefaultDemo() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+function toDemoFunctionName(demoId: string) {
+  return `${toPascalCase(demoId)}Demo`;
+}
+
+function toDemoCanvasClassName(demoId: string) {
+  return `demoCanvas${toPascalCase(demoId)}`;
+}
+
+function createPlaceholderDemoSource(demo: DemoDefinition) {
+  return [
+    '"use client";',
+    "",
+    'import "react-motion-gallery/styles.css";',
+    STARTER_IMPORTS_BY_CATEGORY[demo.categoryId],
+    "",
+    `export function ${toDemoFunctionName(demo.id)}() {`,
+    "  return null;",
+    "}",
+  ].join("\n");
+}
+
+function DemoCodeBlock(props: { code: string; demoTitle: string }) {
+  const { code, demoTitle } = props;
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+
+  useEffect(() => {
+    if (copyState !== "copied") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCopyState("idle");
+    }, 1800);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [copyState]);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+  }
+
+  const buttonLabel =
+    copyState === "copied" ? "Copied" : copyState === "error" ? "Retry copy" : "Copy";
+
+  return (
+    <section className={styles.codePanel} aria-label={`${demoTitle} code example`}>
+      <div className={styles.codePanelHeader}>
+        <div className={styles.codePanelCopy}>
+          <span className={styles.codePanelEyebrow}>Code</span>
+          <strong className={styles.codePanelTitle}>{demoTitle} source</strong>
+        </div>
+        <button
+          type="button"
+          className={cx(
+            styles.codeCopyButton,
+            copyState === "copied" && styles.codeCopyButtonCopied
+          )}
+          onClick={() => {
+            void handleCopy();
+          }}
+          aria-label={`Copy ${demoTitle} code`}
+        >
+          {buttonLabel}
+        </button>
+      </div>
+      <pre className={styles.codePre}>
+        <code>{code}</code>
+      </pre>
+    </section>
+  );
 }
 
 function SliderDefaultDemo() {
@@ -68,9 +265,9 @@ function SliderDefaultDemo() {
         src={src}
         alt={`Slide ${i + 1}`}
         style={{
-          width: "100%",
+          width: "100cqw",
           maxWidth: "550px",
-          height: "100%",
+          aspectRatio: '16 / 9',
           objectFit: "cover",
           display: "block",
           borderRadius: 12,
@@ -115,8 +312,9 @@ function SliderDefaultDemo() {
                 item: {
                   kind: "rect",
                   style: {
-                    width: "550px",
-                    height: "309px",
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
                     borderRadius: 12,
                   },
                 },
@@ -318,6 +516,7 @@ const SLIDER_DEMOS: DemoDefinition[] = [
     tags: ["slider", "default", "fullscreen"],
     categoryId: "slider",
     Component: SliderDefaultDemo,
+    source: SLIDER_DEFAULT_SOURCE,
   },
   {
     id: "slider-loop",
@@ -878,7 +1077,7 @@ export default function DemosPageClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<DemoCategoryId[]>([]);
   const fallbackDemo = DEMOS[0];
   const fallbackCategory = DEMO_CATEGORIES[0];
 
@@ -893,8 +1092,10 @@ export default function DemosPageClient() {
     fallbackCategory;
 
   const SelectedDemoComponent = selectedDemo.Component;
+  const selectedDemoCanvasClassName = styles[toDemoCanvasClassName(selectedDemo.id)];
+  const selectedDemoSource = selectedDemo.source ?? createPlaceholderDemoSource(selectedDemo);
 
-  function toggleCategory(categoryId: string) {
+  function toggleCategory(categoryId: DemoCategoryId) {
     if (categoryId === selectedCategory.id) {
       return;
     }
@@ -1070,9 +1271,15 @@ export default function DemosPageClient() {
                 </div>
               </div>
 
-              <div className={styles.demoCanvas}>
+              <div className={cx(styles.demoCanvas, selectedDemoCanvasClassName)}>
                 <SelectedDemoComponent />
               </div>
+
+              <DemoCodeBlock
+                key={selectedDemo.id}
+                code={selectedDemoSource}
+                demoTitle={selectedDemo.title}
+              />
 
               <div className={styles.demoFooter}>
                 <span className={styles.demoFooterLabel}>Planned focus</span>
