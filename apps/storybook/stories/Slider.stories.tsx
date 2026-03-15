@@ -63,6 +63,36 @@ const CLONE_SYNC_URLS: MediaInput[] = [
   "https://picsum.photos/id/1039/1600/900",
 ];
 
+const HEIGHT_PARITY_STAGE_WIDTHS = [700, 520] as const;
+
+function createHeightParitySlideSrc(label: string, fill: string) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+      <rect width="1600" height="900" fill="${fill}" />
+      <text
+        x="50%"
+        y="50%"
+        dominant-baseline="middle"
+        text-anchor="middle"
+        fill="white"
+        font-family="sans-serif"
+        font-size="120"
+        font-weight="700"
+      >
+        ${label}
+      </text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+const HEIGHT_PARITY_SRCS = [
+  createHeightParitySlideSrc("One", "#0f766e"),
+  createHeightParitySlideSrc("Two", "#1d4ed8"),
+  createHeightParitySlideSrc("Three", "#be123c"),
+];
+
 // ✅ Story-local normalizer (matches the normalizer we discussed)
 // If you already export normalizeItemsInput/toMediaItems from your package,
 // use that instead of duplicating this in the story.
@@ -381,6 +411,135 @@ function FullscreenAddon(props: {
   return <>{fullscreenNode}</>;
 }
 
+function HeightParitySlide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={`Parity slide ${i + 1}`}
+      style={{
+        width: "100cqw",
+        maxWidth: "550px",
+        aspectRatio: "16 / 9",
+        objectFit: "cover",
+        display: "block",
+        borderRadius: 12,
+      }}
+    />
+  );
+}
+
+function SkeletonHeightClampRegressionDemo() {
+  const [width, setWidth] = React.useState<number>(HEIGHT_PARITY_STAGE_WIDTHS[0]);
+
+  return (
+    <div style={{ padding: 24, maxWidth: "100%" }}>
+      <h3 style={{ margin: "0 0 12px" }}>Skeleton cqw clamp parity</h3>
+      <p style={{ margin: "0 0 16px", opacity: 0.8, maxWidth: 760 }}>
+        The forced skeleton shell should stay height-aligned with a matching live slider
+        above and below the 550px max-width clamp.
+      </p>
+
+      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+        {HEIGHT_PARITY_STAGE_WIDTHS.map((value) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setWidth(value)}
+            style={{
+              borderRadius: 999,
+              border: "1px solid #cbd5e1",
+              background: width === value ? "#dbeafe" : "#ffffff",
+              color: "#0f172a",
+              cursor: "pointer",
+              fontWeight: 700,
+              padding: "8px 12px",
+            }}
+          >
+            {value}px
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gap: 24 }}>
+        <section>
+          <h4 style={{ margin: "0 0 8px" }}>Forced skeleton</h4>
+          <div
+            data-testid="height-parity-skeleton-stage"
+            style={{ width: `${width}px`, maxWidth: "100%" }}
+          >
+            <Slider
+              controls={{
+                arrows: { enabled: false },
+                dots: { enabled: false },
+                progress: { enabled: false },
+              }}
+              transitions={{
+                loading: {
+                  force: true,
+                  skeletonCount: 2,
+                  skeleton: {
+                    mode: "peek",
+                    layout: {
+                      kind: "slider",
+                      direction: "row",
+                      style: {
+                        gap: 20,
+                      },
+                      item: {
+                        kind: "rect",
+                        style: {
+                          width: "100cqw",
+                          maxWidth: "550px",
+                          aspectRatio: "16 / 9",
+                          borderRadius: 12,
+                        },
+                      },
+                    },
+                  },
+                },
+              }}
+            >
+              {HEIGHT_PARITY_SRCS.map((src, i) => (
+                <HeightParitySlide key={`height-parity-skeleton-${i}`} src={src} i={i} />
+              ))}
+            </Slider>
+          </div>
+        </section>
+
+        <section>
+          <h4 style={{ margin: "0 0 8px" }}>Live slider</h4>
+          <div
+            data-testid="height-parity-live-stage"
+            style={{ width: `${width}px`, maxWidth: "100%" }}
+          >
+            <Slider
+              controls={{
+                arrows: { enabled: false },
+                dots: { enabled: false },
+                progress: { enabled: false },
+              }}
+              transitions={{
+                loading: {
+                  enabled: false,
+                },
+              }}
+              elements={{
+                viewport: {
+                  className: "height-parity-live-viewport",
+                },
+              }}
+            >
+              {HEIGHT_PARITY_SRCS.map((src, i) => (
+                <HeightParitySlide key={`height-parity-live-${i}`} src={src} i={i} />
+              ))}
+            </Slider>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function Demo() {
   // ✅ One normalized list drives both base + fullscreen
   const MEDIA = React.useMemo(() => normalizeMediaInput(URLS), []);
@@ -686,5 +845,50 @@ export const FullscreenVerticalCloseOverlayRegression: Story = {
 
     expect(overlayGuard.samples.some((value) => value < 0.98)).toBe(true);
     expect(overlayGuard.badMutations).toEqual([]);
+  },
+};
+
+export const SkeletonHeightClampRegression: Story = {
+  render: () => <SkeletonHeightClampRegressionDemo />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    const expectParity = async () => {
+      await waitFor(() => {
+        const skeletonStage = canvasElement.querySelector<HTMLElement>(
+          '[data-testid="height-parity-skeleton-stage"]'
+        );
+        const liveStage = canvasElement.querySelector<HTMLElement>(
+          '[data-testid="height-parity-live-stage"]'
+        );
+        expect(skeletonStage).not.toBeNull();
+        expect(liveStage).not.toBeNull();
+
+        const skeletonShell = skeletonStage!.querySelector<HTMLElement>(
+          '[data-rmg-scope-shell="true"]'
+        );
+        const skeletonRow = skeletonStage!.querySelector<HTMLElement>('[data-rmg-skel-part="row"]');
+        const liveViewport = liveStage!.querySelector<HTMLElement>(".height-parity-live-viewport");
+
+        expect(skeletonShell).not.toBeNull();
+        expect(skeletonRow).not.toBeNull();
+        expect(liveViewport).not.toBeNull();
+
+        const skeletonShellHeight = skeletonShell!.getBoundingClientRect().height;
+        const skeletonRowHeight = skeletonRow!.getBoundingClientRect().height;
+        const liveViewportHeight = liveViewport!.getBoundingClientRect().height;
+
+        expect(skeletonShellHeight).toBeGreaterThan(0);
+        expect(skeletonRowHeight).toBeGreaterThan(0);
+        expect(liveViewportHeight).toBeGreaterThan(0);
+        expect(Math.abs(skeletonShellHeight - liveViewportHeight)).toBeLessThanOrEqual(1);
+        expect(Math.abs(skeletonRowHeight - liveViewportHeight)).toBeLessThanOrEqual(1);
+      });
+    };
+
+    await expectParity();
+
+    await userEvent.click(canvas.getByRole("button", { name: "520px" }));
+    await expectParity();
   },
 };

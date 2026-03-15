@@ -2,7 +2,13 @@
 'use client';
 
 import { ChevronDown } from "lucide-react";
-import { startTransition, useEffect, useState, type ReactElement } from "react";
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
+import {
+  startTransition,
+  useEffect,
+  useState,
+  type ReactElement,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import styles from "./demos.module.css";
 import { GalleryCore, Slider, toMediaItems, useFullscreenController } from "../../../../packages/react-motion-gallery/src";
@@ -41,6 +47,11 @@ type DemoDefinition = {
   source?: string;
 };
 
+type SidebarExpansionState = {
+  expandedCategories: DemoCategoryId[];
+  syncedDemoId: string;
+};
+
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
@@ -60,6 +71,33 @@ const STARTER_IMPORTS_BY_CATEGORY: Record<DemoCategoryId, string> = {
   fullscreen:
     'import { GalleryCore, Slider, useFullscreenController } from "react-motion-gallery";',
 };
+
+function resolveExpandedCategories(
+  sidebarExpansion: SidebarExpansionState,
+  selectedDemoId: string,
+  selectedCategoryId: DemoCategoryId
+) {
+  if (
+    sidebarExpansion.syncedDemoId === selectedDemoId ||
+    sidebarExpansion.expandedCategories.includes(selectedCategoryId)
+  ) {
+    return sidebarExpansion.expandedCategories;
+  }
+
+  return [...sidebarExpansion.expandedCategories, selectedCategoryId];
+}
+
+const SIDEBAR_SCROLLBAR_OPTIONS = {
+  overflow: {
+    x: "hidden",
+    y: "scroll",
+  },
+  scrollbars: {
+    theme: "os-theme-demos-sidebar",
+    visibility: "visible",
+    autoHide: "never",
+  },
+} as const;
 
 const SLIDER_DEFAULT_SOURCE = String.raw`"use client";
 
@@ -135,6 +173,113 @@ export function SliderDefaultDemo() {
                 direction: "row",
                 style: {
                   gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_LOOP_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+
+const URLS = [
+  "https://picsum.photos/id/1020/1600/900",
+  "https://picsum.photos/id/1029/1600/900",
+  "https://picsum.photos/id/1039/1600/900",
+  "https://picsum.photos/id/1049/1600/900",
+  "https://picsum.photos/id/1079/1600/900",
+  "https://picsum.photos/id/1076/1600/900",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/1020/3200/1800",
+  "https://picsum.photos/id/1029/3200/1800",
+  "https://picsum.photos/id/1039/3200/1800",
+  "https://picsum.photos/id/1049/3200/1800",
+  "https://picsum.photos/id/1079/3200/1800",
+  "https://picsum.photos/id/1076/3200/1800",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      style={{
+        width: "100cqw",
+        maxWidth: "550px",
+        aspectRatio: "16 / 9",
+        objectFit: "cover",
+        display: "block",
+        borderRadius: 12,
+      }}
+    />
+  );
+}
+
+function FullscreenAddon(props: { fullscreenEnabled?: boolean }) {
+  const { fullscreenEnabled = true } = props;
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: fullscreenEnabled,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderDefaultDemo() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        scroll={{
+          loop: true
+        }}
+        align="center"
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                  justify: "center"
                 },
                 item: {
                   kind: "rect",
@@ -282,7 +427,7 @@ function SliderDefaultDemo() {
     const { fullscreenEnabled = true } = props;
 
     const { fullscreenNode } = useFullscreenController({
-      fullscreen: { 
+      fullscreen: {
         enabled: fullscreenEnabled,
       },
     });
@@ -299,7 +444,6 @@ function SliderDefaultDemo() {
       <Slider
         transitions={{
           loading: {
-            // force: true,
             skeletonCount: 2,
             skeleton: {
               mode: "peek",
@@ -335,7 +479,101 @@ function SliderDefaultDemo() {
 }
 
 function SliderLoopDemo() {
-  return null;
+  const URLS = [
+    "https://picsum.photos/id/1020/1600/900",
+    "https://picsum.photos/id/1029/1600/900",
+    "https://picsum.photos/id/1039/1600/900",
+    "https://picsum.photos/id/1049/1600/900",
+    "https://picsum.photos/id/1079/1600/900",
+    "https://picsum.photos/id/1076/1600/900",
+  ];
+
+  const FS_URLS = [
+    "https://picsum.photos/id/1020/3200/1800",
+    "https://picsum.photos/id/1029/3200/1800",
+    "https://picsum.photos/id/1039/3200/1800",
+    "https://picsum.photos/id/1049/3200/1800",
+    "https://picsum.photos/id/1079/3200/1800",
+    "https://picsum.photos/id/1076/3200/1800",
+  ];
+
+  function Slide({ src, i }: { src: string; i: number }) {
+    return (
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100cqw",
+          maxWidth: "550px",
+          aspectRatio: '16 / 9',
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
+    );
+  }
+
+  function FullscreenAddon(props: {
+  fullscreenEnabled?: boolean;
+  }) {
+    const { fullscreenEnabled = true } = props;
+
+    const { fullscreenNode } = useFullscreenController({
+      fullscreen: {
+        enabled: fullscreenEnabled,
+      },
+    });
+
+    return <>{fullscreenNode}</>;
+  }
+
+  const MEDIA = toMediaItems(URLS);
+
+  const FS_MEDIA = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        scroll={{
+          loop: true
+        }}
+        align="center"
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                  justify: "center"
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                  },
+                },
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <Slide key={`img-${m.kind === 'image' ? m.src : ''}-${i}`} src={m.kind === 'image' ? m.src : ''} i={i} />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderVideoHtml5Demo() {
@@ -527,6 +765,7 @@ const SLIDER_DEMOS: DemoDefinition[] = [
     tags: ["slider", "loop", "fullscreen"],
     categoryId: "slider",
     Component: SliderLoopDemo,
+    source: SLIDER_LOOP_SOURCE
   },
   {
     id: "slider-video-html5",
@@ -1077,34 +1316,52 @@ export default function DemosPageClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [expandedCategories, setExpandedCategories] = useState<DemoCategoryId[]>([]);
   const fallbackDemo = DEMOS[0];
   const fallbackCategory = DEMO_CATEGORIES[0];
-
-  if (!fallbackDemo || !fallbackCategory) {
-    return null;
-  }
-
   const requestedDemoId = searchParams.get("demo");
   const selectedDemo = DEMO_BY_ID.get(requestedDemoId ?? "") ?? fallbackDemo;
   const selectedCategory =
-    DEMO_CATEGORIES.find((category) => category.id === selectedDemo.categoryId) ??
+    DEMO_CATEGORIES.find((category) => category.id === selectedDemo?.categoryId) ??
     fallbackCategory;
+  const [sidebarExpansion, setSidebarExpansion] = useState<SidebarExpansionState>(() => ({
+    expandedCategories: selectedCategory ? [selectedCategory.id] : [],
+    syncedDemoId: selectedDemo?.id ?? "",
+  }));
+  const [openingCategoryId, setOpeningCategoryId] = useState<DemoCategoryId | null>(null);
+
+  if (!fallbackDemo || !fallbackCategory || !selectedDemo || !selectedCategory) {
+    return null;
+  }
+
+  const expandedCategories = resolveExpandedCategories(
+    sidebarExpansion,
+    selectedDemo.id,
+    selectedCategory.id
+  );
 
   const SelectedDemoComponent = selectedDemo.Component;
   const selectedDemoCanvasClassName = styles[toDemoCanvasClassName(selectedDemo.id)];
   const selectedDemoSource = selectedDemo.source ?? createPlaceholderDemoSource(selectedDemo);
 
   function toggleCategory(categoryId: DemoCategoryId) {
-    if (categoryId === selectedCategory.id) {
-      return;
-    }
+    const isCurrentlyOpen = expandedCategories.includes(categoryId);
 
-    setExpandedCategories((current) =>
-      current.includes(categoryId)
-        ? current.filter((id) => id !== categoryId)
-        : [...current, categoryId]
-    );
+    setOpeningCategoryId(isCurrentlyOpen ? null : categoryId);
+
+    setSidebarExpansion((current) => {
+      const currentExpandedCategories = resolveExpandedCategories(
+        current,
+        selectedDemo.id,
+        selectedCategory.id
+      );
+
+      return {
+        syncedDemoId: selectedDemo.id,
+        expandedCategories: currentExpandedCategories.includes(categoryId)
+          ? currentExpandedCategories.filter((id) => id !== categoryId)
+          : [...currentExpandedCategories, categoryId],
+      };
+    });
   }
 
   function selectDemo(demo: DemoDefinition) {
@@ -1128,16 +1385,6 @@ export default function DemosPageClient() {
   return (
     <div className={styles.page}>
       <div className={styles.shell}>
-        <header className={styles.hero}>
-          <span className={styles.heroEyebrow}>Interactive Demo Library</span>
-          <h1 className={styles.heroTitle}>Browse one gallery mode at a time.</h1>
-          <p className={styles.heroCopy}>
-            The left rail still groups every planned variant by surface. Each demo
-            now points to an empty component so you can build the examples yourself
-            without undoing generated demo code first.
-          </p>
-        </header>
-
         <div className={styles.layout}>
           <aside className={styles.sidebar}>
             <div className={styles.sidebarInner}>
@@ -1145,114 +1392,130 @@ export default function DemosPageClient() {
                 <span className={styles.sidebarKicker}>Browse</span>
                 <strong className={styles.sidebarTitle}>{DEMOS.length} demos</strong>
                 <p className={styles.sidebarCopy}>
-                  All demo slots stay wired into the page and grouped by layout,
-                  media type, and fullscreen pattern.
+                  All demos come with pre-made code blocks so you can get started instantly
                 </p>
               </div>
 
-              {DEMO_CATEGORIES.map((category) => {
-                const isOpen =
-                  category.id === selectedCategory.id ||
-                  expandedCategories.includes(category.id);
+              <OverlayScrollbarsComponent
+                element="nav"
+                defer
+                aria-label="Demo navigation"
+                className={styles.sidebarNavScrollArea}
+                data-overlayscrollbars-initialize
+                options={SIDEBAR_SCROLLBAR_OPTIONS}
+              >
+                <div className={styles.sidebarNav}>
+                  {DEMO_CATEGORIES.map((category) => {
+                    const isOpen = expandedCategories.includes(category.id);
+                    const categoryPanelId = `demo-category-panel-${category.id}`;
 
-                return (
-                  <section key={category.id} className={styles.category}>
-                    <button
-                      type="button"
-                      className={styles.categoryToggle}
-                      onClick={() => toggleCategory(category.id)}
-                      aria-expanded={isOpen}
-                    >
-                      <span className={styles.categoryToggleCopy}>
-                        <strong className={styles.categoryLabel}>{category.label}</strong>
-                        <span className={styles.categoryDescription}>
-                          {category.description}
-                        </span>
-                      </span>
-                      <ChevronDown
-                        className={cx(
-                          styles.categoryChevron,
-                          isOpen && styles.categoryChevronOpen
-                        )}
-                        strokeWidth={1.7}
-                      />
-                    </button>
+                    return (
+                      <section key={category.id} className={styles.category}>
+                        <button
+                          type="button"
+                          className={styles.categoryToggle}
+                          onClick={() => toggleCategory(category.id)}
+                          aria-expanded={isOpen}
+                          aria-controls={categoryPanelId}
+                        >
+                          <span className={styles.categoryToggleCopy}>
+                            <strong className={styles.categoryLabel}>{category.label}</strong>
+                          </span>
+                          <ChevronDown
+                            className={cx(
+                              styles.categoryChevron,
+                              isOpen && styles.categoryChevronOpen
+                            )}
+                            strokeWidth={1.7}
+                          />
+                        </button>
 
-                    {isOpen ? (
-                      <div className={styles.demoList}>
-                        {category.items.map((item) => {
-                          if (item.type === "demo") {
-                            const demo = DEMO_BY_ID.get(item.demoId);
+                        {isOpen ? (
+                          <div id={categoryPanelId} className={styles.categoryPanel}>
+                            <div
+                              className={cx(
+                                styles.categoryPanelContent,
+                                openingCategoryId === category.id &&
+                                  styles.categoryPanelContentOpening
+                              )}
+                              onAnimationEnd={() => {
+                                if (openingCategoryId === category.id) {
+                                  setOpeningCategoryId(null);
+                                }
+                              }}
+                            >
+                              <div className={styles.demoList}>
+                                {category.items.map((item) => {
+                                  if (item.type === "demo") {
+                                    const demo = DEMO_BY_ID.get(item.demoId);
 
-                            if (!demo) {
-                              return null;
-                            }
+                                    if (!demo) {
+                                      return null;
+                                    }
 
-                            const isActive = demo.id === selectedDemo.id;
+                                    const isActive = demo.id === selectedDemo.id;
 
-                            return (
-                              <button
-                                key={demo.id}
-                                type="button"
-                                className={cx(
-                                  styles.demoLink,
-                                  isActive && styles.demoLinkActive
-                                )}
-                                onClick={() => selectDemo(demo)}
-                                aria-current={isActive ? "page" : undefined}
-                              >
-                                <span className={styles.demoLinkEyebrow}>
-                                  {demo.eyebrow}
-                                </span>
-                                <strong className={styles.demoLinkTitle}>
-                                  {demo.title}
-                                </strong>
-                              </button>
-                            );
-                          }
-
-                          return (
-                            <div key={item.id} className={styles.demoGroup}>
-                              <span className={styles.demoGroupLabel}>{item.label}</span>
-                              <div className={styles.demoGroupList}>
-                                {item.demoIds.map((demoId) => {
-                                  const demo = DEMO_BY_ID.get(demoId);
-
-                                  if (!demo) {
-                                    return null;
+                                    return (
+                                      <button
+                                        key={demo.id}
+                                        type="button"
+                                        className={cx(
+                                          styles.demoLink,
+                                          isActive && styles.demoLinkActive
+                                        )}
+                                        onClick={() => selectDemo(demo)}
+                                        aria-current={isActive ? "page" : undefined}
+                                      >
+                                        <strong className={styles.demoLinkTitle}>
+                                          {demo.title}
+                                        </strong>
+                                      </button>
+                                    );
                                   }
 
-                                  const isActive = demo.id === selectedDemo.id;
-
                                   return (
-                                    <button
-                                      key={demo.id}
-                                      type="button"
-                                      className={cx(
-                                        styles.demoLink,
-                                        isActive && styles.demoLinkActive
-                                      )}
-                                      onClick={() => selectDemo(demo)}
-                                      aria-current={isActive ? "page" : undefined}
-                                    >
-                                      <span className={styles.demoLinkEyebrow}>
-                                        {demo.eyebrow}
-                                      </span>
-                                      <strong className={styles.demoLinkTitle}>
-                                        {demo.title}
-                                      </strong>
-                                    </button>
+                                    <div key={item.id} className={styles.demoGroup}>
+                                      <span className={styles.demoGroupLabel}>{item.label}</span>
+                                      <div className={styles.demoGroupList}>
+                                        {item.demoIds.map((demoId) => {
+                                          const demo = DEMO_BY_ID.get(demoId);
+
+                                          if (!demo) {
+                                            return null;
+                                          }
+
+                                          const isActive = demo.id === selectedDemo.id;
+
+                                          return (
+                                            <button
+                                              key={demo.id}
+                                              type="button"
+                                              className={cx(
+                                                styles.demoLink,
+                                                isActive && styles.demoLinkActive
+                                              )}
+                                              onClick={() => selectDemo(demo)}
+                                              aria-current={isActive ? "page" : undefined}
+                                            >
+                                              <strong className={styles.demoLinkTitle}>
+                                                {demo.title}
+                                              </strong>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
                                   );
                                 })}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                  </section>
-                );
-              })}
+                          </div>
+                        ) : null}
+                      </section>
+                    );
+                  })}
+                </div>
+              </OverlayScrollbarsComponent>
             </div>
           </aside>
 

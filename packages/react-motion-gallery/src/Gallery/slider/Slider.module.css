@@ -182,11 +182,16 @@
   align-items: stretch;
 }
 
+.sliderScope {
+  position: relative;
+  width: 100%;
+  container-type: inline-size;
+}
+
 .sliderShell {
   position: relative;
   overflow-anchor: none;
   width: 100%;
-  container-type: inline-size;
   height: auto;
   min-height: var(--rmg-slider-initial-height, var(--rmg-slider-height));
   max-height: none;

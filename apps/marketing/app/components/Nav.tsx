@@ -21,8 +21,7 @@ export function Nav() {
       <div
         className="absolute inset-x-0 bottom-0 h-px"
         style={{
-          background:
-            'linear-gradient(to right, transparent, rgb(79, 184, 229), transparent)',
+          background: 'rgb(79, 184, 229)',
           opacity: 0.7,
         }}
       />
