@@ -41,14 +41,16 @@ type SkeletonContainerStyle = {
     maxWidth?: SkeletonLength;
 };
 type SkeletonContainerStyleResponsive = SkeletonContainerStyle | Record<string, SkeletonContainerStyle>;
-type SliderSkeletonNode = {
+type SliderSkeletonSliderNode = {
     kind: "slider";
     style?: SkeletonContainerStyleResponsive;
     count?: number;
     item: SkeletonNode;
     itemWrapStyle?: SkeletonBaseStyle;
     direction?: "row" | "col";
-} | SkeletonNode;
+    children?: SkeletonNode[];
+};
+type SliderSkeletonNode = SliderSkeletonSliderNode | SkeletonNode;
 type SkeletonNode = {
     kind: "stack" | "row" | "col";
     style?: SkeletonContainerStyleResponsive;
@@ -78,6 +80,7 @@ type SkeletonNode = {
 type SliderSkeletonSpec = {
     mode?: "fit" | "peek";
     className?: string;
+    style?: React$1.CSSProperties;
     layout?: SliderSkeletonNode;
     backgroundColor?: string;
     radius?: SkeletonLength;

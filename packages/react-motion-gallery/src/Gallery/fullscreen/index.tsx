@@ -47,16 +47,6 @@ function resolveOpenMethod(
   return req;
 }
 
-function useOpenEpoch(open: boolean) {
-  const [epoch, setEpoch] = useState(0);
-  const prev = useRef(open);
-  useEffect(() => {
-    if (open && !prev.current) setEpoch((e) => e + 1);
-    prev.current = open;
-  }, [open]);
-  return epoch;
-}
-
 function sameStyleObject(
   a?: React.CSSProperties,
   b?: React.CSSProperties
@@ -223,7 +213,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
     useState<FullscreenThumbnailSlotLayout | null>(null);
   const [fullscreenThumbnailMountEl, setFullscreenThumbnailMountElState] =
     useState<HTMLDivElement | null>(null);
-  const epoch = useOpenEpoch(showFullscreenModal);
   const suppressLoopRef = useRef(false);
   const shieldCleanupRef = useRef<null | (() => void)>(null);
   const shieldRef = useRef<ReturnType<typeof createGestureShield> | null>(null);
@@ -503,7 +492,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         setShowFullscreenModal={setShowFullscreenModal}
         setShowFullscreenSlider={setShowFullscreenSlider}
         showFullscreenSlider={showFullscreenSlider}
-        epoch={epoch}
         isClick={isClick}
         isAnimatingRef={isAnimatingRef}
         overlayDivRef={overlayDivRef}

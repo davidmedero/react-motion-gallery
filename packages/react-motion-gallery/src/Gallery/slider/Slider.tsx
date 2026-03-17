@@ -2592,7 +2592,12 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
     function onDown(evt: PointerEvent) {
       const targetEl = evt.target as HTMLElement;
-      if (isPlyrControlsEl(targetEl)) return;
+      if (
+        isPlyrControlsEl(targetEl) &&
+        !targetEl.closest('.plyr__control--overlaid')
+      ) {
+        return;
+      }
       const hit = (evt.target as Node)
 
       if (prevButtonRef.current?.contains(hit)) return

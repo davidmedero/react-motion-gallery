@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
-import { S as SliderOptions, a as SliderHandle } from './types-BM25Jb_V.mjs';
-export { R as ResponsiveHeightRule } from './types-BM25Jb_V.mjs';
+import { S as SliderOptions, a as SliderHandle } from './types-9fvdyhuG.mjs';
+export { R as ResponsiveHeightRule } from './types-9fvdyhuG.mjs';
 import { S as SliderIndexChannel } from './sliderSub-DDPjywVp.mjs';
 export { c as createSliderIndexChannel } from './sliderSub-DDPjywVp.mjs';
 export { I as IndexMode } from './types-tb9Qf2Mj.mjs';

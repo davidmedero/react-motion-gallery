@@ -224,6 +224,34 @@ function createCloseRootMutationGuard(doc: Document) {
   };
 }
 
+function stubMediaPlayback(video: HTMLVideoElement) {
+  let paused = true;
+  const originalPlay = video.play.bind(video);
+  const originalPause = video.pause.bind(video);
+
+  Object.defineProperty(video, "paused", {
+    configurable: true,
+    get: () => paused,
+  });
+
+  video.play = (() => {
+    paused = false;
+    return Promise.resolve();
+  }) as typeof video.play;
+
+  video.pause = (() => {
+    paused = true;
+  }) as typeof video.pause;
+
+  return {
+    restore() {
+      video.play = originalPlay;
+      video.pause = originalPause;
+      delete (video as HTMLVideoElement & { paused?: boolean }).paused;
+    },
+  };
+}
+
 function getFullscreenOverlay(doc: Document): HTMLElement | null {
   return doc.body.querySelector<HTMLElement>('div[class*="fullscreenOverlay"]');
 }
@@ -353,8 +381,9 @@ function Slide({ src, i }: { src: string; i: number }) {
       src={src}
       alt={`Slide ${i + 1}`}
       style={{
-        width: "70dvw",
-        aspectRatio: '16 / 9',
+        width: "100cqw",
+          maxWidth: "550px",
+          aspectRatio: '16 / 9',
         objectFit: "cover",
         display: "block",
         borderRadius: 12,
@@ -381,7 +410,9 @@ function SlideVideoCell({
       //   enabled: false
       // }}
       alt={`Video ${i + 1}`}
-      style={{ width: "70dvw", borderRadius: '12px' }}
+      style={{ width: "100cqw",
+          maxWidth: "550px",
+          aspectRatio: '16 / 9', borderRadius: '12px' }}
       // options={{
       //   ratio: '16:9'
       // }}
@@ -689,6 +720,24 @@ export const FullscreenReopenRegression: Story = {
       await userEvent.click(slide!);
     };
 
+    const waitForBaseVideo = async (index: number) => {
+      let slide: HTMLElement | null = null;
+      let video: HTMLVideoElement | null = null;
+
+      await waitFor(() => {
+        slide = getBaseSlide(canvasElement, index);
+        expect(slide).not.toBeNull();
+
+        video = slide!.querySelector<HTMLVideoElement>("video");
+        expect(video).not.toBeNull();
+      });
+
+      return {
+        slide: slide!,
+        video: video!,
+      };
+    };
+
     const waitForVisibleImage = async (canonicalIndex: number) => {
       let image: HTMLImageElement | null = null;
 
@@ -773,23 +822,37 @@ export const FullscreenReopenRegression: Story = {
     await waitForVisibleImage(1);
     await closeFullscreen();
 
-    await openBaseSlide(0);
-    const initialVideoState = await waitForVisibleVideo(0);
-    const initialMuted = initialVideoState.video.muted;
-    const initialWidth = initialVideoState.wrapper.style.width;
-    const initialHeight = initialVideoState.wrapper.style.height;
+    const baseVideoState = await waitForBaseVideo(0);
+    const baseVideoPlayback = stubMediaPlayback(baseVideoState.video);
+    try {
+      await baseVideoState.video.play();
+      expect(baseVideoState.video.paused).toBe(false);
 
-    const closeGuard = createCloseRootMutationGuard(doc);
-    await closeFullscreen();
-    closeGuard.disconnect();
-    expect(closeGuard.badMutations).toEqual([]);
+      await openBaseSlide(0);
+      const initialVideoState = await waitForVisibleVideo(0);
+      const initialMuted = initialVideoState.video.muted;
+      const initialWidth = initialVideoState.wrapper.style.width;
+      const initialHeight = initialVideoState.wrapper.style.height;
 
-    await openBaseSlide(0);
-    const reopenedVideoState = await waitForVisibleVideo(0);
+      await waitFor(() => {
+        expect(baseVideoState.video.paused).toBe(true);
+      });
 
-    expect(reopenedVideoState.wrapper.style.width).toBe(initialWidth);
-    expect(reopenedVideoState.wrapper.style.height).toBe(initialHeight);
-    expect(reopenedVideoState.video.muted).toBe(initialMuted);
+      const closeGuard = createCloseRootMutationGuard(doc);
+      await closeFullscreen();
+      closeGuard.disconnect();
+      expect(closeGuard.badMutations).toEqual([]);
+      expect(baseVideoState.video.paused).toBe(true);
+
+      await openBaseSlide(0);
+      const reopenedVideoState = await waitForVisibleVideo(0);
+
+      expect(reopenedVideoState.wrapper.style.width).toBe(initialWidth);
+      expect(reopenedVideoState.wrapper.style.height).toBe(initialHeight);
+      expect(reopenedVideoState.video.muted).toBe(initialMuted);
+    } finally {
+      baseVideoPlayback.restore();
+    }
   },
 };
 

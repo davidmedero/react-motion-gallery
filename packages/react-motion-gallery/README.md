@@ -14,10 +14,10 @@ This table reports local gzip measurements for each exported runtime surface. Th
 | `GalleryCore` | 1.8kB |
 | `Grid` | 7.4kB |
 | `Masonry` | 7.2kB |
-| `Slider` | 28.7kB |
+| `Slider` | 29.0kB |
 | `ThumbnailSlider` | 15.8kB |
-| `useFullscreenController` | 41.6kB |
-| `Video` | 8.8kB |
+| `useFullscreenController` | 42.1kB |
+| `Video` | 9.0kB |
 <!-- bundle-size:end -->
 
 ## Overview

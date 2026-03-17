@@ -1,5 +1,5 @@
 export { CoreLayout, GalleryCore, GalleryCoreProps, useGalleryCore } from './core.mjs';
-export { D as DEFAULT_ENTRIES, E as Entries, f as flattenEntries } from './index-TUloU8Bq.mjs';
+export { D as DEFAULT_ENTRIES, E as Entries, f as flattenEntries } from './index-C0AqfaC3.mjs';
 export { DEFAULT_FULLSCREEN, FsCaptionPlacement, FsIntroRequest, FullscreenOptions, useFullscreenController } from './fullscreen.mjs';
 export { FullscreenThumbnailSlider } from './fullscreenThumbnails.mjs';
 export { F as FSItem, a as FullscreenThumbnailBridge, b as FullscreenThumbnailSliderProps, c as FullscreenThumbnailSlotLayout } from './types-CQ6I3EfZ.mjs';
@@ -12,7 +12,7 @@ export { S as SliderIndexChannel, c as createSliderIndexChannel } from './slider
 export { G as GalleryApi, I as IndexMode } from './types-tb9Qf2Mj.mjs';
 export { M as MediaItem, t as toMediaItems } from './media-moIXOhT1.mjs';
 export { E as ElementStyle } from './elements-Bd1vm4Uk.mjs';
-export { R as ResponsiveHeightRule, a as SliderHandle, S as SliderOptions } from './types-BM25Jb_V.mjs';
+export { R as ResponsiveHeightRule, a as SliderHandle, S as SliderOptions } from './types-9fvdyhuG.mjs';
 export { R as ResponsivePosition, T as ThumbnailPosition, a as ThumbnailsOptions } from './types-Bi2iBbyG.mjs';
 export { B as BREAKPOINT_MAP } from './responsive-CvE5dTnP.mjs';
 export { E as EntriesOptions, M as MediaEntryLink, S as SlideOwner } from './types-ChjyCquV.mjs';

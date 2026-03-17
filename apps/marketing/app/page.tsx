@@ -1,6 +1,14 @@
 'use client'
 
+import { CodeBlock } from "@/components/ui/code-block";
+import type { JSX } from "react";
 import { FsDiagramWithCaptionRight, FsDiagramWithEntriesOverlayBottom, FsDiagramWithThumbs } from "./components/svgDiagrams";
+
+function PageCodeBlock(props: { code: string; language?: string }): JSX.Element {
+  const { code, language = "tsx" } = props;
+
+  return <CodeBlock className="max-w-3xl" code={code} language={language} />;
+}
 
 export default function Home() {
 
@@ -252,11 +260,9 @@ export default function Home() {
 
               <p className="font-medium">You can configure caption placement and sizing:</p>
 
-              <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
-                <code>{`fullscreenCaptionPlacement?: 'top' | 'right' | 'bottom' | 'left';
+              <PageCodeBlock language="ts" code={`fullscreenCaptionPlacement?: 'top' | 'right' | 'bottom' | 'left';
 fullscreenCaptionWidth?: number;
-fullscreenCaptionHeight?: number;`}</code>
-              </pre>
+fullscreenCaptionHeight?: number;`} />
 
               <p className="leading-relaxed max-w-3xl">
                 and then manually position an entry overlay inside that caption region,
@@ -390,8 +396,7 @@ fullscreenCaptionHeight?: number;`}</code>
                 <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreen.lazyLoad.images.enabled</code>.
               </p>
 
-              <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
-                <code>{`import Image from "next/image";
+              <PageCodeBlock code={`import Image from "next/image";
 
 fullscreen: {
   lazyLoad: {
@@ -416,8 +421,7 @@ fullscreen: {
       }}
     />
   ),
-}`}</code>
-              </pre>
+}`} />
             </div>
           </section>
         </div>
@@ -472,8 +476,7 @@ fullscreen: {
               <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">skeletonCount</code> accept breakpoint-aware values.
             </p>
 
-            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
-              <code>{`// Using default breakpoint keys (xs / sm / md / lg / xl)
+            <PageCodeBlock code={`// Using default breakpoint keys (xs / sm / md / lg / xl)
 <Gallery
   cellsPerSlide={{
     xs: 1,
@@ -497,8 +500,7 @@ fullscreen: {
   }}
 >
   {children}
-</Gallery>`}</code>
-</pre>
+</Gallery>`} />
 
             <p className="leading-relaxed max-w-3xl">
               In addition, any prop that accepts a <strong>ClassName</strong> can be fully customized through your own stylesheets, giving you complete control over responsive behavior using standard CSS media queries. This includes containers, viewports, thumbnail regions, and individual thumbnail items.
@@ -638,8 +640,7 @@ fullscreen: {
               <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreenTrigger=&quot;media&quot; | &quot;item&quot;</code>.
             </p>
 
-            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
-              <code>{`<Grid
+            <PageCodeBlock code={`<Grid
   minColumnWidth={220}
   gap={{ 0: 10, 900: 18 }}
   fullscreenTrigger="item"
@@ -662,8 +663,7 @@ fullscreen: {
   {images.map((image) => (
     <img key={image.src} src={image.src} alt={image.alt} />
   ))}
-</Grid>`}</code>
-            </pre>
+</Grid>`} />
           </div>
 
           <h3 className="rmgLayouts__subheader !mt-6">Masonry</h3>
@@ -683,8 +683,7 @@ fullscreen: {
               <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">as</code>, and the same lazy-load, loading, intro, and fullscreen integration used by the other layouts.
             </p>
 
-            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
-              <code>{`<Masonry
+            <PageCodeBlock code={`<Masonry
   columns={{ 0: 1, 700: 2, 1100: 3 }}
   gap={{ 0: 12, 1100: 20 }}
   placement="balanced"
@@ -701,8 +700,7 @@ fullscreen: {
   {cards.map((card) => (
     <img key={card.id} src={card.src} alt={card.alt} />
   ))}
-</Masonry>`}</code>
-            </pre>
+</Masonry>`} />
           </div>
 
           <h3 className="rmgLayouts__subheader !mt-6">Entries</h3>
@@ -724,8 +722,7 @@ fullscreen: {
               That ownership model is what makes fullscreen overlays, close-to-origin scrolling, and per-entry slider synchronization all work without forcing your base UI into a rigid schema.
             </p>
 
-            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
-              <code>{`const flat = flattenEntries(entries);
+            <PageCodeBlock code={`const flat = flattenEntries(entries);
 
 <GalleryCore layout="entries" fullscreenItems={flat.flattenedMedia}>
   <Entries
@@ -757,8 +754,7 @@ fullscreen: {
       </Grid>
     )}
   />
-</GalleryCore>`}</code>
-            </pre>
+</GalleryCore>`} />
           </div>
         </div>
       </section>
@@ -792,8 +788,7 @@ fullscreen: {
               <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">plyr-react</code> peer dependencies at all.
             </p>
 
-            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
-              <code>{`<div style={{ width: "100%", aspectRatio: "16 / 9" }}>
+            <PageCodeBlock code={`<div style={{ width: "100%", aspectRatio: "16 / 9" }}>
   <Video
     src="/trailers/lookbook.mp4"
     poster="/trailers/lookbook-poster.jpg"
@@ -806,8 +801,7 @@ fullscreen: {
       spinner: ({ kind }) => <Spinner label={kind} />,
     }}
   />
-</div>`}</code>
-            </pre>
+</div>`} />
           </div>
         </div>
       </section>
@@ -842,8 +836,7 @@ fullscreen: {
               Entry loading is intentionally different. Entry rows can reserve a minimum height, resolve a different skeleton per entry, preload before they enter view, and wait for image decode before revealing the real content. That makes feed-like UIs feel much more deliberate than a simple fade-in-on-load.
             </p>
 
-            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
-              <code>{`<Slider
+            <PageCodeBlock code={`<Slider
   transitions={{
     loading: {
       enabled: true,
@@ -877,8 +870,7 @@ fullscreen: {
     },
   }}
   renderMediaContainer={({ mediaNodes }) => <Grid>{mediaNodes}</Grid>}
-/>`}</code>
-            </pre>
+/>`} />
           </div>
 
           <h3 className="rmgLayouts__subheader !mt-6">Shared Lazy Loading</h3>
@@ -899,8 +891,7 @@ fullscreen: {
               <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">lazyLoad</code> to the embedded Grid, Masonry, Slider, or Video components you render inside that entry.
             </p>
 
-            <pre className="rounded-lg bg-slate-800 text-slate-100 p-4 text-sm overflow-x-auto max-w-3xl">
-              <code>{`<Slider lazyLoad={{ enabled: true, spinner: true }} />
+            <PageCodeBlock code={`<Slider lazyLoad={{ enabled: true, spinner: true }} />
 
 <Grid
   lazyLoad={{
@@ -919,8 +910,7 @@ useFullscreenController({
       videos: { enabled: true, spinner: false },
     },
   },
-});`}</code>
-            </pre>
+});`} />
           </div>
         </div>
       </section>

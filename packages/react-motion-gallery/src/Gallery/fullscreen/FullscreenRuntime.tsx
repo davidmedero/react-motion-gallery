@@ -51,7 +51,6 @@ export type FullscreenRuntimeProps = {
   setShowFullscreenModal: React.Dispatch<React.SetStateAction<boolean>>;
   setShowFullscreenSlider: React.Dispatch<React.SetStateAction<boolean>>;
   showFullscreenSlider: boolean;
-  epoch: number;
   isClick: React.RefObject<boolean>;
   isAnimatingRef: React.RefObject<boolean>;
   overlayDivRef: React.RefObject<HTMLDivElement | null>;
@@ -154,6 +153,34 @@ function canonicalIndexOf(active: number, len: number) {
   return ((active % len) + len) % len;
 }
 
+function fullscreenMediaSignature(items: MediaItem[]) {
+  return items
+    .map((item) => {
+      const any = item as any;
+      return `${item.kind}|${any.src ?? ''}|${any.srcSet ?? ''}|${any.sizes ?? ''}|${any.poster ?? ''}`;
+    })
+    .join('||');
+}
+
+function pausePlyrApi(api: APITypes | null) {
+  if (!api) return;
+
+  try {
+    (api as any)?.pause?.();
+  } catch {}
+
+  const plyr = (api as any)?.plyr ?? null;
+
+  try {
+    plyr?.pause?.();
+  } catch {}
+
+  try {
+    const media: HTMLMediaElement | undefined = plyr?.media;
+    media?.pause?.();
+  } catch {}
+}
+
 export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const {
     fsEnabled,
@@ -187,7 +214,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     introFade,
     introDuration,
     introEasing,
-    epoch,
     fullscreenSliderApi,
     slideIndex,
     isZoomClick,
@@ -273,6 +299,15 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     React.useState<number>(0);
   const canonicalLen = normalizedItems.length || 0;
   const entryPrimeSeqRef = React.useRef(0);
+  const mediaSignature = React.useMemo(
+    () => fullscreenMediaSignature(normalizedItems),
+    [normalizedItems]
+  );
+  const fullscreenVideoSnapshotStoreRef = React.useRef<ReturnType<typeof createVideoSnapshotStore> | null>(null);
+  if (!fullscreenVideoSnapshotStoreRef.current) {
+    fullscreenVideoSnapshotStoreRef.current = createVideoSnapshotStore();
+  }
+  const fullscreenVideoSnapshotStore = fullscreenVideoSnapshotStoreRef.current;
 
   function notifyFsLazyImages() {
     fsLazyImageListenersRef.current.forEach((fn) => fn());
@@ -301,6 +336,26 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     },
     [canonicalLen, fsLazyImagesEnabled, fsLazyVideosEnabled]
   );
+
+  const resetFsSessionState = React.useCallback(() => {
+    fsPreparedVideosRef.current.clear();
+    fsForceMountVideosRef.current.clear();
+    fsAllowedVideosRef.current = new Set<number>();
+    fsAllowedImagesRef.current = new Set<number>();
+  }, []);
+
+  const syncFsSessionToCurrentIndex = React.useCallback(() => {
+    const current = fsSub.get?.();
+    const active =
+      typeof current === 'number' && Number.isFinite(current)
+        ? current
+        : fsActiveIndexRef.current;
+
+    if (typeof active !== 'number' || !Number.isFinite(active)) return;
+
+    fsActiveIndexRef.current = active;
+    recomputeAllowedAndNotify(active);
+  }, [fsSub, recomputeAllowedAndNotify]);
 
   React.useEffect(() => {
     if ((!fsLazyImagesEnabled && !fsLazyVideosEnabled) || !fsSub) return;
@@ -348,6 +403,36 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       fsZRef.current = nextZ();
     }
   }, [showFullscreenModal]);
+
+  const wasFullscreenOpenRef = React.useRef(showFullscreenModal);
+  React.useEffect(() => {
+    const wasOpen = wasFullscreenOpenRef.current;
+    wasFullscreenOpenRef.current = showFullscreenModal;
+
+    if (!showFullscreenModal || wasOpen) return;
+
+    resetFsSessionState();
+    syncFsSessionToCurrentIndex();
+  }, [showFullscreenModal, resetFsSessionState, syncFsSessionToCurrentIndex]);
+
+  const prevMediaSignatureRef = React.useRef(mediaSignature);
+  React.useEffect(() => {
+    if (prevMediaSignatureRef.current === mediaSignature) return;
+
+    prevMediaSignatureRef.current = mediaSignature;
+    resetFsSessionState();
+    fullscreenVideoSnapshotStore.reset();
+
+    if (showFullscreenModal) {
+      syncFsSessionToCurrentIndex();
+    }
+  }, [
+    mediaSignature,
+    resetFsSessionState,
+    showFullscreenModal,
+    syncFsSessionToCurrentIndex,
+    fullscreenVideoSnapshotStore,
+  ]);
 
   React.useEffect(() => {
     if (!fsIntroReq) return;
@@ -712,11 +797,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     return `${item.kind}|${any.src ?? ''}|${any.srcSet ?? ''}|${any.sizes ?? ''}|${any.poster ?? ''}`;
   }
 
-  const fullscreenVideoSnapshotStore = React.useMemo(
-    () => createVideoSnapshotStore(),
-    [epoch]
-  );
-
   React.useEffect(() => {
     return () => {
       fullscreenVideoSnapshotStore.destroy();
@@ -839,6 +919,40 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     deferLiveVideoUntilVisible,
     getMediaKey: mediaKey,
   });
+
+  const pauseAllFullscreenPlayers = React.useCallback(() => {
+    const seenApis = new Set<APITypes>();
+
+    for (const refs of [wrappedModePlyrRefs.current, singleModePlyrRefs.current]) {
+      for (const api of refs) {
+        if (!api || seenApis.has(api)) continue;
+        seenApis.add(api);
+        pausePlyrApi(api);
+      }
+    }
+
+    if (typeof document === 'undefined') return;
+
+    const medias = document.querySelectorAll<HTMLMediaElement>(
+      '[data-rmg-fs-slide="true"] video, [data-rmg-fs-slide="true"] audio'
+    );
+
+    medias.forEach((media) => {
+      try {
+        media.pause();
+      } catch {}
+    });
+  }, [singleModePlyrRefs, wrappedModePlyrRefs]);
+
+  React.useEffect(() => {
+    if (!closingModal) return;
+    pauseAllFullscreenPlayers();
+  }, [closingModal, pauseAllFullscreenPlayers]);
+
+  React.useEffect(() => {
+    if (showFullscreenModal) return;
+    pauseAllFullscreenPlayers();
+  }, [showFullscreenModal, pauseAllFullscreenPlayers]);
 
   React.useEffect(() => {
     if (animRef.current) {

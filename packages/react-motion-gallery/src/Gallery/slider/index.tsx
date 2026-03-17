@@ -15,7 +15,10 @@ import type { SliderHandle, SliderLoadingOptions, SliderOptions  } from "./types
 import type { SliderIndexChannel } from "./sliderSub";
 import { useOptionalGalleryCore } from "../core";
 import { SliderSkeletonCard } from "./SliderSkeleton";
-import { buildInitialHeightFromSkeletonSpecCssExpr } from "./SliderSkeleton";
+import {
+  buildInitialHeightFromSkeletonSpecCssExpr,
+  buildRowHeightFromSkeletonSpecCssExpr,
+} from "./SliderSkeleton";
 
 type Props = SliderOptions & {
   children?: React.ReactNode;
@@ -105,9 +108,17 @@ function buildScopedInitialHeightCss(args: {
   const shellSel = `#${scopeId} > [data-rmg-scope-shell="true"]`;
 
   const mkRule = (count: number) => {
-    const expr = buildInitialHeightFromSkeletonSpecCssExpr(layout, count, mode);
-    if (!expr) return "";
-    return `${shellSel}{--rmg-slider-initial-height:${expr};}`;
+    const totalExpr = buildInitialHeightFromSkeletonSpecCssExpr(layout, count, mode);
+    const rowExpr = buildRowHeightFromSkeletonSpecCssExpr(layout, count, mode);
+
+    if (!totalExpr && !rowExpr) return "";
+
+    const decls = [
+      totalExpr ? `--rmg-slider-initial-height:${totalExpr};` : "",
+      rowExpr ? `--rmg-slider-row-height:${rowExpr};` : "",
+    ].join("");
+
+    return `${shellSel}{${decls}}`;
   };
 
   // responsiveCount can be number or { [minWidth]: count }
@@ -554,8 +565,12 @@ export const Slider = React.forwardRef<SliderHandle, Props>(function Slider(
     const shell = sliderShellRef.current;
     if (!shell) return;
 
+    const layout = shell.querySelector<HTMLElement>('[data-rmg-skel-part="layout"]');
     const row = shell.querySelector<HTMLElement>('[data-rmg-skel-part="row"]');
-    const h = row?.getBoundingClientRect().height || shell.getBoundingClientRect().height;
+    const h =
+      layout?.getBoundingClientRect().height ||
+      row?.getBoundingClientRect().height ||
+      shell.getBoundingClientRect().height;
 
     if (h && h > 1) {
       shell.style.height = `${h}px`;

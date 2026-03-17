@@ -537,6 +537,7 @@ async function captureFrame(
 export function createVideoSnapshotStore(): VideoSnapshotStore {
   const runtimeByCanonical = new Map<number, RuntimeEntry>()
   const snapshotByCanonical = new Map<number, VideoSnapshot>()
+  const retainedObjectUrlByCanonical = new Map<number, string>()
   const listenersByCanonical = new Map<number, Set<SnapshotListener>>()
 
   function notify(canonicalIndex: number) {
@@ -552,10 +553,12 @@ export function createVideoSnapshotStore(): VideoSnapshotStore {
     snapshot: VideoSnapshot,
     objectUrl: string | null
   ) {
+    const retainedObjectUrl = retainedObjectUrlByCanonical.get(snapshot.canonicalIndex) ?? null
     const prevStaleObjectUrl = entry.staleObjectUrl
-    const prevObjectUrl = entry.objectUrl
+    const prevObjectUrl = entry.objectUrl ?? retainedObjectUrl
     entry.staleObjectUrl = prevObjectUrl && prevObjectUrl !== objectUrl ? prevObjectUrl : null
     entry.objectUrl = objectUrl
+    retainedObjectUrlByCanonical.delete(snapshot.canonicalIndex)
     snapshotByCanonical.set(snapshot.canonicalIndex, snapshot)
 
     if (
@@ -696,11 +699,18 @@ export function createVideoSnapshotStore(): VideoSnapshotStore {
     }
 
     entry.cleanup()
-    revokeObjectUrl(entry.objectUrl)
     revokeObjectUrl(entry.staleObjectUrl)
 
+    const snapshot = snapshotByCanonical.get(canonicalIndex)
+    if (entry.objectUrl) {
+      if (snapshot?.frameSrc === entry.objectUrl) {
+        retainedObjectUrlByCanonical.set(canonicalIndex, entry.objectUrl)
+      } else {
+        revokeObjectUrl(entry.objectUrl)
+      }
+    }
+
     runtimeByCanonical.delete(canonicalIndex)
-    snapshotByCanonical.delete(canonicalIndex)
     notify(canonicalIndex)
   }
 
@@ -753,8 +763,28 @@ export function createVideoSnapshotStore(): VideoSnapshotStore {
   }
 
   function reset() {
+    const canonicalIndexes = new Set<number>([
+      ...runtimeByCanonical.keys(),
+      ...snapshotByCanonical.keys(),
+      ...retainedObjectUrlByCanonical.keys(),
+    ])
+
     for (const canonicalIndex of Array.from(runtimeByCanonical.keys())) {
       unregisterOriginal(canonicalIndex)
+    }
+
+    for (const canonicalIndex of canonicalIndexes) {
+      const snapshot = snapshotByCanonical.get(canonicalIndex)
+      const retainedObjectUrl = retainedObjectUrlByCanonical.get(canonicalIndex) ?? null
+
+      if (snapshot?.frameSrc && snapshot.frameSrc !== retainedObjectUrl) {
+        revokeObjectUrl(snapshot.frameSrc)
+      }
+      revokeObjectUrl(retainedObjectUrl)
+
+      snapshotByCanonical.delete(canonicalIndex)
+      retainedObjectUrlByCanonical.delete(canonicalIndex)
+      notify(canonicalIndex)
     }
   }
 

@@ -252,6 +252,8 @@ export function Video(props: VideoProps) {
   const shouldRenderSpinner = lazyEnabled && spinnerResolved.render;
 
   const core = useOptionalGalleryCore();
+  const isFullscreenOpen = core?.isFullscreenOpen ?? false;
+  const isFullscreenOpenRef = core?.isFullscreenOpenRef ?? null;
 
   const baseIdxRef = React.useRef<number | null>(null);
   const notifySeenRef = React.useRef(false);
@@ -451,6 +453,15 @@ export function Video(props: VideoProps) {
     [getSpinnerEl, shouldRenderSpinner]
   );
 
+  const pauseForFullscreenOpen = React.useCallback(
+    (api: APITypes | null = apiRef.current) => {
+      if (isClone) return;
+      if (!(isFullscreenOpenRef?.current ?? isFullscreenOpen)) return;
+      pauseApi(api);
+    },
+    [isClone, isFullscreenOpen, isFullscreenOpenRef]
+  );
+
   const markReady = React.useCallback(() => {
     if (readyRef.current) return;
     readyRef.current = true;
@@ -458,8 +469,14 @@ export function Video(props: VideoProps) {
     requestAnimationFrame(() => {
       syncSpinner(false);
       setPlayerVisible(playerWrapRef.current, true);
+      pauseForFullscreenOpen();
     });
-  }, [syncSpinner]);
+  }, [pauseForFullscreenOpen, syncSpinner]);
+
+  React.useEffect(() => {
+    if (!isFullscreenOpen) return;
+    pauseForFullscreenOpen();
+  }, [isFullscreenOpen, pauseForFullscreenOpen]);
 
   const readyCleanupRef = React.useRef<(() => void) | null>(null);
   const guardedPlyrRef = React.useRef<any>(null);
@@ -496,6 +513,7 @@ export function Video(props: VideoProps) {
 
       props.onApi?.(apiOrNull);
       registerApiByIndex?.(index, apiOrNull);
+      pauseForFullscreenOpen(apiOrNull);
 
       requestAnimationFrame(() => {
         setPlayerVisible(playerWrapRef.current, readyRef.current);
@@ -568,6 +586,7 @@ export function Video(props: VideoProps) {
       index,
       markReady,
       props.onApi,
+      pauseForFullscreenOpen,
       registerApiByIndex,
       syncRuntimeRegistration,
       syncSpinner,

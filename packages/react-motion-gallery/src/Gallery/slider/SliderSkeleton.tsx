@@ -44,16 +44,17 @@ export type SkeletonContainerStyleResponsive =
   | SkeletonContainerStyle
   | Record<string, SkeletonContainerStyle>;
 
-export type SliderSkeletonNode =
-  | {
-      kind: "slider";
-      style?: SkeletonContainerStyleResponsive;
-      count?: number;
-      item: SkeletonNode;
-      itemWrapStyle?: SkeletonBaseStyle;
-      direction?: "row" | "col";
-    }
-  | SkeletonNode;
+export type SliderSkeletonSliderNode = {
+  kind: "slider";
+  style?: SkeletonContainerStyleResponsive;
+  count?: number;
+  item: SkeletonNode;
+  itemWrapStyle?: SkeletonBaseStyle;
+  direction?: "row" | "col";
+  children?: SkeletonNode[];
+};
+
+export type SliderSkeletonNode = SliderSkeletonSliderNode | SkeletonNode;
 
 export type SkeletonNode =
   | {
@@ -89,6 +90,7 @@ export type SkeletonNode =
 export type SliderSkeletonSpec = {
   mode?: "fit" | "peek";
   className?: string;
+  style?: React.CSSProperties;
   layout?: SliderSkeletonNode;
   backgroundColor?: string;
   radius?: SkeletonLength;
@@ -320,7 +322,8 @@ function collectResponsiveCss(
       }
 
       const item = collectResponsiveCss(node.item, allocId, out) as SkeletonNode;
-      return { ...(node as any), __rmgNodeId: id, item };
+      const children = node.children?.map((child) => collectResponsiveCss(child, allocId, out) as SkeletonNode);
+      return { ...(node as any), __rmgNodeId: id, item, children };
     }
 
     default: {
@@ -569,6 +572,56 @@ function pickPlainStyle(style: SkeletonContainerStyleResponsive | undefined): Sk
   return style as SkeletonContainerStyle;
 }
 
+function sliderRowHeightExpr(
+  slider: SliderSkeletonSliderNode,
+  visibleCount: number,
+  mode: "fit" | "peek"
+): string | null {
+  const stylePlain = pickPlainStyle(slider.style);
+
+  const gap = gapExpr(stylePlain) ?? "0px";
+  const padX = containerPaddingXExpr(stylePlain) ?? "0px";
+  const padY = containerPaddingYExpr(stylePlain) ?? "0px";
+
+  const itemWrapW = slider.itemWrapStyle?.width ? toCssLen(slider.itemWrapStyle.width) : null;
+
+  let tileWExpr: string;
+  if (mode === "peek" && itemWrapW && !isPercent(itemWrapW)) {
+    tileWExpr = itemWrapW;
+  } else {
+    const count = Math.max(1, visibleCount | 0);
+    const gapsExpr = count > 1 ? mulExpr(gap, String(count - 1)) : "0px";
+    const avail = `calc(100cqw - ${padX} - ${gapsExpr})`;
+    tileWExpr = divExpr(avail, String(count));
+  }
+
+  tileWExpr = clampMaxSizeExpr(tileWExpr, slider.itemWrapStyle?.maxWidth) ?? tileWExpr;
+
+  const itemH = nodeHeightExpr(slider.item, tileWExpr);
+  if (!itemH) return null;
+
+  const wrap = slider.itemWrapStyle;
+  let wrapH: string | null = null;
+  if (wrap) {
+    const h = toCssLen(wrap.height);
+    if (h) wrapH = sumExpr([h, marginsTBExpr(wrap)]);
+    else {
+      const ar = parseAspectRatio(wrap.aspectRatio);
+      if (ar) wrapH = sumExpr([divExpr(tileWExpr, String(ar)), marginsTBExpr(wrap)]);
+      else wrapH = marginsTBExpr(wrap);
+    }
+  }
+
+  const tileH = wrapH ? maxExpr([wrapH, itemH]) : itemH;
+  return sumExpr([tileH, padY]);
+}
+
+function sliderChildrenHeightExpr(slider: SliderSkeletonSliderNode): string | null {
+  return sumExpr(
+    (slider.children ?? []).map((child) => nodeHeightExpr(child, "100cqw"))
+  );
+}
+
 function nodeHeightExpr(node: SkeletonNode, tileWidthExpr: string): string | null {
   if (node.kind === "rect" || node.kind === "square" || node.kind === "circle") {
     const h = toCssLen(node.style?.height);
@@ -648,51 +701,34 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
   visibleCount: number,
   mode: "fit" | "peek"
 ): string | null {
-  const slider = (layout as any).kind === "slider" ? (layout as Extract<SliderSkeletonNode, { kind: "slider" }>) : null;
+  const slider = (layout as any).kind === "slider"
+    ? (layout as SliderSkeletonSliderNode)
+    : null;
 
-  const dir = slider?.direction ?? "row";
-  const stylePlain = pickPlainStyle(slider?.style);
-
-  const gap = gapExpr(stylePlain) ?? "0px";
-  const padX = containerPaddingXExpr(stylePlain) ?? "0px";
-  const padY = containerPaddingYExpr(stylePlain) ?? "0px";
-
-  const itemWrapW = slider?.itemWrapStyle?.width ? toCssLen(slider.itemWrapStyle.width) : null;
-
-  let tileWExpr: string;
-  if (mode === "peek" && itemWrapW && !isPercent(itemWrapW)) {
-    tileWExpr = itemWrapW;
-  } else {
-    const count = Math.max(1, visibleCount | 0);
-    const gapsExpr = count > 1 ? mulExpr(gap, String(count - 1)) : "0px";
-    const avail = `calc(100cqw - ${padX} - ${gapsExpr})`;
-    tileWExpr = divExpr(avail, String(count));
+  if (!slider) {
+    return nodeHeightExpr(layout as SkeletonNode, "100cqw");
   }
 
-  tileWExpr = clampMaxSizeExpr(tileWExpr, slider?.itemWrapStyle?.maxWidth) ?? tileWExpr;
+  const rowH = sliderRowHeightExpr(slider, visibleCount, mode);
+  const childrenH = sliderChildrenHeightExpr(slider);
 
-  const item = slider ? slider.item : (layout as any as SkeletonNode);
-  const itemH = nodeHeightExpr(item as any, tileWExpr);
+  return sumExpr([rowH, childrenH]);
+}
 
-  if (!itemH) return null;
+export function buildRowHeightFromSkeletonSpecCssExpr(
+  layout: SliderSkeletonNode,
+  visibleCount: number,
+  mode: "fit" | "peek"
+): string | null {
+  const slider = (layout as any).kind === "slider"
+    ? (layout as SliderSkeletonSliderNode)
+    : null;
 
-  const wrap = slider?.itemWrapStyle;
-  let wrapH: string | null = null;
-  if (wrap) {
-    const h = toCssLen(wrap.height);
-    if (h) wrapH = sumExpr([h, marginsTBExpr(wrap)]);
-    else {
-      const ar = parseAspectRatio(wrap.aspectRatio);
-      if (ar) wrapH = sumExpr([divExpr(tileWExpr, String(ar)), marginsTBExpr(wrap)]);
-      else wrapH = marginsTBExpr(wrap);
-    }
+  if (!slider) {
+    return nodeHeightExpr(layout as SkeletonNode, "100cqw");
   }
 
-  const tileH = wrapH ? maxExpr([wrapH, itemH]) : itemH;
-
-  const rowH = sumExpr([tileH, padY]);
-
-  return rowH;
+  return sliderRowHeightExpr(slider, visibleCount, mode);
 }
 
 export function SliderSkeletonCard({ count, maxSlots, rowStyle, spec }: SliderSkeletonCardProps) {
@@ -748,7 +784,7 @@ export function SliderSkeletonCard({ count, maxSlots, rowStyle, spec }: SliderSk
     return { layout: withIds, responsiveCss: cssText };
   }, [layoutIn, scopeId]);
 
-  const sliderNode = layout as Extract<SliderSkeletonNode, { kind: "slider" }>;
+  const sliderNode = layout as SliderSkeletonSliderNode;
 
   const sliderNodeId = (sliderNode as any).__rmgNodeId as string | undefined;
   const plainSliderStyle = isResponsiveContainerStyle(sliderNode.style)
@@ -756,9 +792,9 @@ export function SliderSkeletonCard({ count, maxSlots, rowStyle, spec }: SliderSk
     : containerStylesPlain(sliderNode.style as SkeletonContainerStyle | undefined);
 
   const slotCount = sliderNode.count != null ? Math.max(0, sliderNode.count | 0) : Math.max(0, count | 0);
-
   const dir = sliderNode.direction ?? "row";
   const itemWrap = sliderNode.itemWrapStyle;
+  const footerChildren = sliderNode.children ?? [];
 
   const slotsToRender = Math.max(0, maxSlots | 0);
 
@@ -769,37 +805,48 @@ export function SliderSkeletonCard({ count, maxSlots, rowStyle, spec }: SliderSk
       data-rmg-slider-skel-scope={scopeId}
       data-rmg-skel-mode={mode}
       className={[styles.sliderSkeletonOverlay, s.className].filter(Boolean).join(" ")}
+      style={s.style}
       data-rmg-skel-part="overlay"
     >
       {responsiveCss ? <style dangerouslySetInnerHTML={{ __html: responsiveCss }} /> : null}
 
-      <div
-        data-rmg-skel-node={sliderNodeId}
-        className={styles.sliderSkeletonRow}
-        data-rmg-skel-part="row"
-        style={{
-          ...rootStyle,
-          ...(plainSliderStyle || {}),
-          display: "flex",
-          flexDirection: dir === "row" ? "row" : "column",
-        }}
-      >
-        {Array.from({ length: slotsToRender }).map((_, i) => (
-          <div
-            key={`rmg-slider-skel-${i}`}
-            className={styles.sliderSkeletonItem}
-            data-rmg-skel-slot={i + 1}
-            data-rmg-skel-visible-count={slotCount}
-            style={{
-              ...(itemWrap ? nodeStyleVars(itemWrap, undefined) : null),
-              ...(itemWrap ? applyBoxMargins(itemWrap) : null),
-              minWidth: 0,
-              minHeight: 0,
-            }}
-          >
-            <LayoutNode node={sliderNode.item} />
+      <div className={styles.sliderSkeletonLayout} data-rmg-skel-part="layout">
+        <div
+          data-rmg-skel-node={sliderNodeId}
+          className={styles.sliderSkeletonRow}
+          data-rmg-skel-part="row"
+          style={{
+            ...rootStyle,
+            ...(plainSliderStyle || {}),
+            display: "flex",
+            flexDirection: dir === "row" ? "row" : "column",
+          }}
+        >
+          {Array.from({ length: slotsToRender }).map((_, i) => (
+            <div
+              key={`rmg-slider-skel-${i}`}
+              className={styles.sliderSkeletonItem}
+              data-rmg-skel-slot={i + 1}
+              data-rmg-skel-visible-count={slotCount}
+              style={{
+                ...(itemWrap ? nodeStyleVars(itemWrap, undefined) : null),
+                ...(itemWrap ? applyBoxMargins(itemWrap) : null),
+                minWidth: 0,
+                minHeight: 0,
+              }}
+            >
+              <LayoutNode node={sliderNode.item} />
+            </div>
+          ))}
+        </div>
+
+        {footerChildren.length ? (
+          <div className={styles.sliderSkeletonExtras} data-rmg-skel-part="extras">
+            {footerChildren.map((child, i) => (
+              <LayoutNode key={`rmg-slider-skel-extra-${i}`} node={child} />
+            ))}
           </div>
-        ))}
+        ) : null}
       </div>
     </div>
   );
