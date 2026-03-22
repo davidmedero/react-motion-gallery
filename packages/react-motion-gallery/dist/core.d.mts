@@ -2,10 +2,10 @@ import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
 import { M as MediaItem } from './media-moIXOhT1.mjs';
-import { a as SliderHandle } from './types-9fvdyhuG.mjs';
-import { M as MediaEntryLink } from './types-ChjyCquV.mjs';
+import { a as SliderHandle } from './types-fFyCx1KQ.mjs';
+import { M as MediaEntryLink } from './types-D_6Ksp_r.mjs';
 import { F as FullscreenOpenRequest, O as OpenFullscreenAtArgs } from './types-tb9Qf2Mj.mjs';
-import './elements-Bd1vm4Uk.mjs';
+import './elements-24CTbRWj.mjs';
 import './sliderSub-DDPjywVp.mjs';
 
 type CoreLayout = "slider" | "grid" | "masonry" | "entries";

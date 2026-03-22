@@ -141,3 +141,7 @@
   will-change: opacity;
   z-index: 3;
 }
+
+:global(.rmg__player .plyr__poster) {
+  pointer-events: none;
+}

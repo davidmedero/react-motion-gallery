@@ -324,7 +324,7 @@ fullscreenCaptionHeight?: number;`} />
 
               <h4 className="rmgLayouts__h4">Open & Close Transitions</h4>
                 <p className="leading-relaxed max-w-3xl">
-                  The opening and closing transitions originate directly from the thumbnail&apos;s visible crop, animating both the clip-path and the image in perfect sync to create a seamless, cinematic morph into fullscreen. Transitions can be <strong>transform-based</strong> (default) or a <strong>fade</strong> effect.
+                  The opening and closing transitions originate directly from the thumbnail&apos;s visible crop, animating both the <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">clip-path</code> and the image in perfect sync to create a seamless, cinematic morph into fullscreen. On open, React Motion Gallery uses two clippers: we clip the image container itself, and the outer clipper comes from the nearest ancestor above the source image whose computed overflow clips content, so viewport-style masking stays intact throughout the transition. Transitions can be <strong>transform-based</strong> (default) or a <strong>fade</strong> effect.
                   Duration and easing are customizable for both, with <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">0ms</code> producing an instant change.
                 </p>
             </div>
@@ -477,7 +477,7 @@ fullscreen: {
             </p>
 
             <PageCodeBlock code={`// Using default breakpoint keys (xs / sm / md / lg / xl)
-<Gallery
+<Slider
   cellsPerSlide={{
     xs: 1,
     sm: 2,
@@ -487,10 +487,10 @@ fullscreen: {
   }}
 >
   {children}
-</Gallery>
+</Slider>
 
 // Using custom breakpoint values (explicit viewport widths)
-<Gallery
+<Slider
   cellsPerSlide={{
     0: 1,       // mobile
     640: 2,     // small tablets
@@ -500,7 +500,7 @@ fullscreen: {
   }}
 >
   {children}
-</Gallery>`} />
+</Slider>`} />
 
             <p className="leading-relaxed max-w-3xl">
               In addition, any prop that accepts a <strong>ClassName</strong> can be fully customized through your own stylesheets, giving you complete control over responsive behavior using standard CSS media queries. This includes containers, viewports, thumbnail regions, and individual thumbnail items.

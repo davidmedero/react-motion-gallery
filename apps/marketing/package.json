@@ -15,7 +15,8 @@
     "react-dom": "19.2.3",
     "react-motion-gallery": "^2.0.14",
     "simplebar": "^6.3.2",
-    "simplebar-react": "^3.3.2"
+    "simplebar-react": "^3.3.2",
+    "sugar-high": "^0.9.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

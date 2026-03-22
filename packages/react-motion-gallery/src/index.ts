@@ -31,6 +31,11 @@ export type {
 export type {
   ThumbnailPosition,
   ResponsivePosition,
+  ThumbnailLoadingElements,
+  ThumbnailLoadingRenderArgs,
+  ThumbnailLoadingOptions,
+  ThumbnailSkeletonMode,
+  ThumbnailIntroOptions,
   ThumbnailsOptions,
 } from "./Gallery/thumbnails/types";
 export type { ThumbnailSyncBridge } from "./Gallery/thumbnails/syncBridge";

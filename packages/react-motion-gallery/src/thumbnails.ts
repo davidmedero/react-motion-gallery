@@ -6,7 +6,10 @@ export type { ThumbnailSyncBridge } from "./Gallery/thumbnails/syncBridge";
 export type {
   ThumbnailPosition,
   ResponsivePosition,
+  ThumbnailLoadingElements,
+  ThumbnailLoadingRenderArgs,
   ThumbnailLoadingOptions,
+  ThumbnailSkeletonMode,
   ThumbnailIntroOptions,
   ThumbnailLayout,
   ThumbnailContainerLayout,

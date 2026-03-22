@@ -5,7 +5,7 @@ import type { APITypes } from 'plyr-react';
 import { Plyr } from './LazyPlyr';
 import { VideoCloneSnapshot } from './VideoCloneSnapshot';
 import { useRmgSlide } from '../shared/slideContext';
-import { detectProvider } from './plyr';
+import { bindEmbedReady, detectProvider } from './plyr';
 import type { PlyrOptions, PlyrSource } from './plyrTypes';
 import { createVideoSnapshotStore } from './videoSnapshotStore';
 import { installDragClickSwallower } from './plyrGuards';
@@ -43,6 +43,8 @@ export type VideoProps = {
 };
 
 const baseWrap: React.CSSProperties = { width: '100%', height: '100%' };
+const PLAYER_FADE_MS = 220;
+const EMBED_POSTER_SHIELD_HIDE_DELAY_MS = 140;
 
 function useSlideRevealedGate() {
   const ref = React.useRef<HTMLDivElement | null>(null);
@@ -361,12 +363,6 @@ export function Video(props: VideoProps) {
       if (typeof idx !== 'number' || !Number.isFinite(idx)) return;
       if (idx !== baseIdxRef.current) return;
 
-      console.log('[RMG base clone debug] video baseVisibleSub', {
-        index,
-        baseIdx: baseIdxRef.current,
-        eventIndex: idx,
-      });
-
       promoteLazyVideoShell();
       setFsPrewarmIntent(true);
     });
@@ -387,6 +383,20 @@ export function Video(props: VideoProps) {
   }, [props.source, props.sourceBuilder, props.src, props.poster]);
 
   const provider = React.useMemo(() => detectProvider(source), [source]);
+  const posterSrc = React.useMemo(() => {
+    const explicitPoster =
+      typeof props.poster === 'string' && props.poster.trim().length > 0 ? props.poster : null;
+    const sourcePoster =
+      typeof (source as any)?.poster === 'string' && String((source as any).poster).trim().length > 0
+        ? String((source as any).poster)
+        : null;
+
+    return explicitPoster ?? sourcePoster;
+  }, [props.poster, source]);
+  const shouldUsePosterShield = React.useMemo(() => {
+    if (!posterSrc) return false;
+    return provider === 'youtube' || provider === 'vimeo';
+  }, [posterSrc, provider]);
   const shouldForceSnapshotCrossorigin = React.useMemo(() => {
     if (isClone) return false;
     if (!videoSnapshotStore) return false;
@@ -403,9 +413,12 @@ export function Video(props: VideoProps) {
   }, [index, props.options, props.src, shouldForceSnapshotCrossorigin]);
 
   const ratio = React.useMemo(() => parsePlyrRatio((options as any)?.ratio ?? null), [options]);
+  const [posterShieldVisible, setPosterShieldVisible] = React.useState(shouldUsePosterShield);
+  const posterHideTimeoutRef = React.useRef<number | null>(null);
 
   const syncRuntimeRegistration = React.useCallback(
     (api: APITypes | null) => {
+
       if (!videoSnapshotStore) return;
       if (isClone) return;
 
@@ -427,6 +440,23 @@ export function Video(props: VideoProps) {
     },
     [gateRef, index, isClone, props.poster, props.src, provider, ratio, videoSnapshotStore]
   );
+
+  const clearPosterHideTimeout = React.useCallback(() => {
+    if (posterHideTimeoutRef.current == null) return;
+    window.clearTimeout(posterHideTimeoutRef.current);
+    posterHideTimeoutRef.current = null;
+  }, []);
+
+  React.useLayoutEffect(() => {
+    clearPosterHideTimeout();
+    setPosterShieldVisible(shouldUsePosterShield);
+  }, [clearPosterHideTimeout, props.src, shouldUsePosterShield]);
+
+  React.useEffect(() => {
+    return () => {
+      clearPosterHideTimeout();
+    };
+  }, [clearPosterHideTimeout]);
 
   React.useEffect(() => {
     syncRuntimeRegistration(apiRef.current);
@@ -469,9 +499,20 @@ export function Video(props: VideoProps) {
     requestAnimationFrame(() => {
       syncSpinner(false);
       setPlayerVisible(playerWrapRef.current, true);
+
+      clearPosterHideTimeout();
+      if (shouldUsePosterShield) {
+        posterHideTimeoutRef.current = window.setTimeout(() => {
+          posterHideTimeoutRef.current = null;
+          setPosterShieldVisible(false);
+        }, EMBED_POSTER_SHIELD_HIDE_DELAY_MS);
+      } else {
+        setPosterShieldVisible(false);
+      }
+
       pauseForFullscreenOpen();
     });
-  }, [pauseForFullscreenOpen, syncSpinner]);
+  }, [clearPosterHideTimeout, pauseForFullscreenOpen, shouldUsePosterShield, syncSpinner]);
 
   React.useEffect(() => {
     if (!isFullscreenOpen) return;
@@ -501,16 +542,6 @@ export function Video(props: VideoProps) {
       apiRef.current = apiOrNull;
       syncRuntimeRegistration(apiOrNull);
 
-      if (!isClone) {
-        console.log('[RMG base clone debug] video handlePlyrRef', {
-          index,
-          hasApi: !!apiOrNull,
-          revealed,
-          everMounted,
-          visible: visibleRef.current,
-        });
-      }
-
       props.onApi?.(apiOrNull);
       registerApiByIndex?.(index, apiOrNull);
       pauseForFullscreenOpen(apiOrNull);
@@ -536,17 +567,13 @@ export function Video(props: VideoProps) {
 
       try {
         // YOUTUBE / VIMEO:
-        // rely on Plyr's own ready event
+        // Native provider controls skip Plyr's ready event, so we also
+        // listen to the embed surface itself becoming interactive.
         if (provider === 'youtube' || provider === 'vimeo') {
-          const onReady = () => markReady();
-
-          plyr?.on?.('ready', onReady);
-
-          readyCleanupRef.current = () => {
-            try {
-              plyr?.off?.('ready', onReady);
-            } catch {}
-          };
+          readyCleanupRef.current = bindEmbedReady(plyr, markReady, {
+            provider,
+            posterSrc,
+          });
 
           return;
         }
@@ -590,6 +617,7 @@ export function Video(props: VideoProps) {
       registerApiByIndex,
       syncRuntimeRegistration,
       syncSpinner,
+      posterSrc,
       source,
     ]
   );
@@ -639,15 +667,6 @@ export function Video(props: VideoProps) {
         if (nowVisible === visibleRef.current) return;
         visibleRef.current = nowVisible;
 
-        console.log('[RMG base clone debug] video visibility', {
-          index,
-          ratio,
-          nowVisible,
-          revealed,
-          mounted: mountedRef.current,
-          lazyEnabled,
-        });
-
         if (nowVisible) {
           const idx = baseIdxRef.current;
           if (typeof idx === 'number' && Number.isFinite(idx) && core) {
@@ -669,11 +688,6 @@ export function Video(props: VideoProps) {
 
         if (!lazyEnabled) {
           if (!mountedRef.current && revealed) {
-            console.log('[RMG base clone debug] video mount from visibility', {
-              index,
-              lazyEnabled,
-              revealed,
-            });
             mountedRef.current = true;
 
             setPlayerVisible(playerWrapRef.current, false);
@@ -691,11 +705,6 @@ export function Video(props: VideoProps) {
         }
 
         if (!mountedRef.current && revealed) {
-          console.log('[RMG base clone debug] video lazy mount from visibility', {
-            index,
-            revealed,
-            fsPrewarmIntent,
-          });
           mountedRef.current = true;
 
           setPlayerVisible(playerWrapRef.current, false);
@@ -739,12 +748,6 @@ export function Video(props: VideoProps) {
     if (!visibleRef.current && !fsPrewarmIntent) return;
     if (mountedRef.current) return;
 
-    console.log('[RMG base clone debug] video lazy mount from effect', {
-      index,
-      revealed,
-      fsPrewarmIntent,
-      visible: visibleRef.current,
-    });
     mountedRef.current = true;
 
     setPlayerVisible(playerWrapRef.current, false);
@@ -819,18 +822,52 @@ export function Video(props: VideoProps) {
     >
       {spinnerEl}
 
+      {shouldUsePosterShield ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 2,
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+            pointerEvents: 'none',
+            visibility: posterShieldVisible ? 'visible' : 'hidden',
+            opacity: posterShieldVisible ? 1 : 0,
+            transition: `opacity ${PLAYER_FADE_MS}ms ease`,
+            willChange: 'opacity',
+            background: 'transparent',
+          }}
+        >
+          <img
+            src={posterSrc ?? ''}
+            alt=""
+            draggable={false}
+            style={{
+              display: 'block',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              userSelect: 'none',
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
+      ) : null}
+
       <div
         ref={playerWrapRef}
         className={styles.playerWrap}
         style={{
           position: 'absolute',
           inset: 0,
-          zIndex: 2,
+          zIndex: 1,
           width: '100%',
           height: '100%',
           pointerEvents: 'auto',
           opacity: 0,
-          transition: 'opacity 220ms ease',
+          transition: `opacity ${PLAYER_FADE_MS}ms ease`,
           willChange: 'opacity',
           background: 'transparent',
         }}

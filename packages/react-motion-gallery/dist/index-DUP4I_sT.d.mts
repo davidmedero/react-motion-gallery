@@ -1,8 +1,8 @@
-import { E as EntriesOptions, M as MediaEntryLink, S as SlideOwner, a as EntryItem } from './types-ChjyCquV.mjs';
+import { E as EntriesOptions, M as MediaEntryLink, S as SlideOwner, a as EntryItem } from './types-D_6Ksp_r.mjs';
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { M as MediaItem } from './media-moIXOhT1.mjs';
-import { a as SliderHandle } from './types-9fvdyhuG.mjs';
+import { a as SliderHandle } from './types-fFyCx1KQ.mjs';
 
 declare const DEFAULT_ENTRIES: Required<Pick<EntriesOptions, "mediaLayout">>;
 

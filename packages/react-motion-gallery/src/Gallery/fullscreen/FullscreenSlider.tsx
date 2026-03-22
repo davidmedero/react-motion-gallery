@@ -511,7 +511,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     }
 
     function getOverlayOpacityFromDrag(dyPx: number) {
-      return 1 - clamp01(Math.abs(dyPx) / FADE_DISTANCE)
+      return 1 - clamp01(Math.abs(dyPx * 0.36) / FADE_DISTANCE)
     }
 
     function setOverlayOpacity(next: number) {

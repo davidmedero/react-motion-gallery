@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { APITypes } from "plyr-react";
-import { detectProvider, PlyrProp } from "../video/plyr";
+import { bindEmbedReady, detectProvider, PlyrProp } from "../video/plyr";
 import { VideoCloneSnapshot } from "../video/VideoCloneSnapshot";
 import { Plyr } from "../video/LazyPlyr";
 import { MediaItem } from "../shared/types/media";
@@ -1030,7 +1030,6 @@ function FsLiveVideoContent(props: {
     () => parsePlyrRatio((effectivePlyrOptions as any)?.ratio ?? null),
     [effectivePlyrOptions]
   );
-
   const spinnerRef = React.useRef<HTMLDivElement | null>(null);
   const playerWrapRef = React.useRef<HTMLDivElement | null>(null);
   const apiRef = React.useRef<APITypes | null>(null);
@@ -1227,15 +1226,10 @@ function FsLiveVideoContent(props: {
 
       try {
         if (provider === "youtube" || provider === "vimeo") {
-          const onReady = () => markReady();
-
-          plyrInstance?.on?.("ready", onReady);
-
-          readyCleanupRef.current = () => {
-            try {
-              plyrInstance?.off?.("ready", onReady);
-            } catch {}
-          };
+          readyCleanupRef.current = bindEmbedReady(plyrInstance, markReady, {
+            provider,
+            posterSrc: poster ?? null,
+          });
 
           return;
         }

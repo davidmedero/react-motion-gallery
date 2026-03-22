@@ -411,6 +411,7 @@ export default function ThumbnailSlider({
         setClonedChildren([]);
         sliderWidth.current = 0;
         layoutRef.current = null;
+        pagesRef.current = [];
 
         setWrapSafe(false);
         slidesRef.current = [];
@@ -536,7 +537,9 @@ export default function ThumbnailSlider({
 
     setActiveThumb(canonicalIndex);
 
-    const scroll = slidesRef.current[thumbSlideIndex]?.target ?? 0;
+    const scroll = centerActiveThumb
+      ? getCenterScroll(canonicalIndex)
+      : slidesRef.current[thumbSlideIndex]?.target ?? 0;
     animateToScroll(scroll);
 
     onSelectThumb?.(canonicalIndex);
@@ -884,6 +887,22 @@ export default function ThumbnailSlider({
         })),
       }))
 
+      pagesRef.current = pages
+        .map((page) => {
+          const indices = page.els
+            .map((el) => idxMap.get(el))
+            .filter((idx): idx is number => typeof idx === 'number')
+
+          if (!indices.length) return null
+
+          return {
+            startIndex: Math.min(...indices),
+            endIndex: Math.max(...indices) + 1,
+            targetScroll: page.target,
+          }
+        })
+        .filter((page): page is Page => page !== null)
+
       const hasNaN = newSlides.some((s) => Number.isNaN(s.target))
       const unstable = hasNaN || (wrap && newSlides.length === 1)
       if (unstable) {
@@ -1019,6 +1038,11 @@ export default function ThumbnailSlider({
     return matched >= 0 ? matched : 0;
   }
 
+  function getActiveSelectionScroll(canonicalIndex: number, thumbSlideIndex: number) {
+    if (centerActiveThumb) return getCenterScroll(canonicalIndex);
+    return slidesRef.current[thumbSlideIndex]?.target ?? 0;
+  }
+
   useEffect(() => {
     const ch = channelRef.current;
 
@@ -1049,14 +1073,13 @@ export default function ThumbnailSlider({
 
       snapModeRef.current = "base";
 
-      const scroll = slidesRef.current[thumbSlideIndex]?.target ?? 0;
+      const scroll = getActiveSelectionScroll(canonicalIndex, thumbSlideIndex);
 
       if (mode === "instant") {
         bodyRef.current?.useDuration(0).useFriction(1);
         setTargetToScroll(scroll);
         animRef.current?.start();
       } else {
-        console.log('running')
         animateToScroll(scroll);
       }
     });
@@ -1853,6 +1876,7 @@ export default function ThumbnailSlider({
   };
 
   const outerStyle: React.CSSProperties = {
+    boxSizing: 'border-box',
     overflow: 'hidden',
     ...(isHorizontal
       ? { width: thumbnailsContainerWidth, height: thumbCross ? '100%' : 'auto' }
@@ -1910,7 +1934,7 @@ export default function ThumbnailSlider({
       showArrows={showArrows}
       selectedIndex={selectedSlideIndexRef.current}
       slideCount={slidesRef.current?.length ?? 0}
-      measureRef={trackRef}
+      measureRef={containerRef}
       viewportMainSizeRef={sliderWidth}
       previous={previousFromUi}
       next={nextFromUi}

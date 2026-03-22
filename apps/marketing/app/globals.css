@@ -25,6 +25,58 @@ code, pre, kbd, samp {
   font-family: var(--font-mono);
 }
 
+:root {
+  --sh-class: #b45309;
+  --sh-identifier: #0f172a;
+  --sh-sign: #64748b;
+  --sh-property: #2563eb;
+  --sh-entity: #0f766e;
+  --sh-jsxliterals: #7c3aed;
+  --sh-string: #047857;
+  --sh-keyword: #db2777;
+  --sh-comment: #94a3b8;
+  --sh-space: transparent;
+}
+
+.rmg-code-block {
+  counter-reset: rmg-code-line;
+  padding-bottom: 20px;
+}
+
+.rmg-code-block .sh__line {
+  display: block;
+  height: 0px;
+  position: relative;
+  box-sizing: border-box;
+  min-width: max-content;
+  white-space: pre;
+}
+
+.rmg-code-block--line-numbers .sh__line {
+  padding-left: 2.5rem;
+}
+
+.rmg-code-block--line-numbers .sh__line::before {
+  counter-increment: rmg-code-line;
+  content: counter(rmg-code-line);
+  position: absolute;
+  left: 0;
+  top: 0;
+  user-select: none;
+  text-align: right;
+  color: #94a3b8;
+}
+
+.rmg-code-block .sh__token--comment {
+  font-style: italic;
+}
+
+.rmg-code-block .sh__token--entity,
+.rmg-code-block .sh__token--keyword,
+.rmg-code-block .sh__token--property {
+  font-weight: 500;
+}
+
 .home-intro {
   margin: 32px auto 0 auto;
   width: min(800px, calc(100% - 48px));

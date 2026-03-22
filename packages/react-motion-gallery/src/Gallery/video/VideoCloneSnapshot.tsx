@@ -4,11 +4,13 @@ import * as React from 'react'
 
 import { normalizeLazyLoad, resolveLazySpinnerNode } from '../shared/lazy/LazyItemHost'
 import type { FullscreenLazyLoadConfig } from '../fullscreen/types'
+import { usePrefersReducedMotion } from '../shared/hooks/usePrefersReducedMotion'
 import { detectProvider } from './plyr'
 import type { PlyrOptions, PlyrSource } from './plyrTypes'
 import type { RmgVideoLazyLoadOptions, VideoProps } from './index'
 import styles from './index.module.css'
-import type { VideoSnapshotStore } from './videoSnapshotStore'
+import type { VideoSnapshot, VideoSnapshotStore } from './videoSnapshotStore'
+import { useOptionalGalleryCore } from '../core'
 
 type VideoCloneSnapshotProps = Pick<
   VideoProps,
@@ -20,6 +22,7 @@ type VideoCloneSnapshotProps = Pick<
 }
 
 const baseWrap: React.CSSProperties = { width: '100%' }
+const SNAPSHOT_FADE_MS = 260
 
 function resolveOptions(
   options: VideoProps['options'],
@@ -69,7 +72,47 @@ function parsePlyrRatio(r: unknown): number | null {
   return null
 }
 
+function shouldFadeSnapshot(
+  currentSnapshot: VideoSnapshot | null,
+  nextSnapshot: VideoSnapshot | null
+) {
+  if (!nextSnapshot) return false
+  if (!currentSnapshot) return true
+
+  return !currentSnapshot.hasLiveFrame && nextSnapshot.hasLiveFrame
+}
+
+function renderSnapshotLayer(
+  snapshot: VideoSnapshot,
+  visible: boolean,
+  fadeDurationMs: number,
+  keyPrefix: string
+) {
+  return (
+    <div
+      key={`${keyPrefix}-${snapshot.version}`}
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 2,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        visibility: visible ? 'visible' : 'hidden',
+        opacity: visible ? 1 : 0,
+        transition: fadeDurationMs > 0 ? `opacity ${fadeDurationMs}ms ease` : undefined,
+        willChange: fadeDurationMs > 0 && !visible ? 'opacity' : undefined,
+      }}
+      dangerouslySetInnerHTML={{ __html: snapshot.markupHtml }}
+    />
+  )
+}
+
 export function VideoCloneSnapshot(props: VideoCloneSnapshotProps) {
+  const core = useOptionalGalleryCore()
+  const prefersReducedMotion = usePrefersReducedMotion()
+
   const subscribe = React.useCallback(
     (listener: () => void) => props.store.subscribe(props.canonicalIndex, listener),
     [props.canonicalIndex, props.store]
@@ -81,7 +124,19 @@ export function VideoCloneSnapshot(props: VideoCloneSnapshotProps) {
   )
 
   const snapshot = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  const resolvedSnapshot = snapshot?.markupHtml ? snapshot : null
   const normalizedLazy = React.useMemo(() => normalizeLazyLoad(props.lazyLoad as any), [props.lazyLoad])
+
+  const requestedPrewarmRef = React.useRef(false)
+
+  React.useEffect(() => {
+    if (resolvedSnapshot?.markupHtml) return
+    if (!core) return
+    if (requestedPrewarmRef.current) return
+
+    requestedPrewarmRef.current = true
+    core.notifyBaseVisibleIndex(props.canonicalIndex)
+  }, [core, props.canonicalIndex, resolvedSnapshot?.markupHtml])
 
   const spinnerResolved = React.useMemo(() => {
     return resolveLazySpinnerNode({
@@ -115,13 +170,101 @@ export function VideoCloneSnapshot(props: VideoCloneSnapshotProps) {
   }, [props.canonicalIndex, props.options, props.src])
 
   const provider = React.useMemo(
-    () => snapshot?.provider ?? detectProvider(source),
-    [snapshot?.provider, source]
+    () => resolvedSnapshot?.provider ?? detectProvider(source),
+    [resolvedSnapshot?.provider, source]
   )
 
   const ratio = React.useMemo(() => parsePlyrRatio((options as any)?.ratio ?? null), [options])
-  const hasSnapshot = Boolean(snapshot?.markupHtml)
-  const shouldRenderSpinner = normalizedLazy.enabled && spinnerResolved.render && !hasSnapshot
+  const hasSnapshot = Boolean(resolvedSnapshot)
+  const fadeDurationMs = prefersReducedMotion ? 0 : SNAPSHOT_FADE_MS
+  const [baseSnapshot, setBaseSnapshot] = React.useState<VideoSnapshot | null>(resolvedSnapshot)
+  const [overlaySnapshot, setOverlaySnapshot] = React.useState<VideoSnapshot | null>(null)
+  const [baseSnapshotVisible, setBaseSnapshotVisible] = React.useState(hasSnapshot)
+  const [overlaySnapshotVisible, setOverlaySnapshotVisible] = React.useState(false)
+  const [placeholderVisible, setPlaceholderVisible] = React.useState(!hasSnapshot)
+  const committedSnapshotRef = React.useRef<VideoSnapshot | null>(resolvedSnapshot)
+
+  React.useEffect(() => {
+    const currentSnapshot = committedSnapshotRef.current
+    const nextSnapshot = resolvedSnapshot
+
+    if (!nextSnapshot) {
+      committedSnapshotRef.current = null
+      setBaseSnapshot(null)
+      setOverlaySnapshot(null)
+      setBaseSnapshotVisible(false)
+      setOverlaySnapshotVisible(false)
+      setPlaceholderVisible(true)
+      return
+    }
+
+    if (currentSnapshot?.version === nextSnapshot.version) {
+      setBaseSnapshot((prev) => {
+        if (!prev || prev.version === nextSnapshot.version) return nextSnapshot
+        return prev
+      })
+      return
+    }
+
+    if (!shouldFadeSnapshot(currentSnapshot, nextSnapshot) || fadeDurationMs === 0) {
+      committedSnapshotRef.current = nextSnapshot
+      setBaseSnapshot(nextSnapshot)
+      setOverlaySnapshot(null)
+      setBaseSnapshotVisible(true)
+      setOverlaySnapshotVisible(false)
+      setPlaceholderVisible(false)
+      return
+    }
+
+    let raf1 = 0
+    let raf2 = 0
+
+    if (!currentSnapshot) {
+      setBaseSnapshot(nextSnapshot)
+      setOverlaySnapshot(null)
+      setBaseSnapshotVisible(false)
+      setOverlaySnapshotVisible(false)
+      setPlaceholderVisible(true)
+
+      raf1 = window.requestAnimationFrame(() => {
+        raf2 = window.requestAnimationFrame(() => {
+          setBaseSnapshotVisible(true)
+        })
+      })
+    } else {
+      setBaseSnapshot(currentSnapshot)
+      setOverlaySnapshot(nextSnapshot)
+      setBaseSnapshotVisible(true)
+      setOverlaySnapshotVisible(false)
+      setPlaceholderVisible(false)
+
+      raf1 = window.requestAnimationFrame(() => {
+        raf2 = window.requestAnimationFrame(() => {
+          setOverlaySnapshotVisible(true)
+        })
+      })
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      committedSnapshotRef.current = nextSnapshot
+      setBaseSnapshot(nextSnapshot)
+      setOverlaySnapshot(null)
+      setBaseSnapshotVisible(true)
+      setOverlaySnapshotVisible(false)
+      setPlaceholderVisible(false)
+    }, fadeDurationMs)
+
+    return () => {
+      if (raf1) window.cancelAnimationFrame(raf1)
+      if (raf2) window.cancelAnimationFrame(raf2)
+      window.clearTimeout(timeoutId)
+    }
+  }, [fadeDurationMs, resolvedSnapshot])
+
+  const hasVisibleSnapshot = Boolean(
+    (baseSnapshot && baseSnapshotVisible) || (overlaySnapshot && overlaySnapshotVisible)
+  )
+  const shouldRenderSpinner = normalizedLazy.enabled && spinnerResolved.render && !hasVisibleSnapshot
 
   const spinnerNode = shouldRenderSpinner ? (
     spinnerResolved.isCustom ? (
@@ -164,7 +307,7 @@ export function VideoCloneSnapshot(props: VideoCloneSnapshotProps) {
     >
       {spinnerNode}
 
-      {!hasSnapshot && props.poster ? (
+      {placeholderVisible && props.poster ? (
         <div
           aria-hidden="true"
           style={{
@@ -179,17 +322,10 @@ export function VideoCloneSnapshot(props: VideoCloneSnapshotProps) {
         />
       ) : null}
 
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'relative',
-          zIndex: 2,
-          width: '100%',
-          pointerEvents: 'none',
-          visibility: hasSnapshot ? 'visible' : 'hidden',
-        }}
-        dangerouslySetInnerHTML={hasSnapshot ? { __html: snapshot?.markupHtml ?? '' } : undefined}
-      />
+      {baseSnapshot ? renderSnapshotLayer(baseSnapshot, baseSnapshotVisible, fadeDurationMs, 'base') : null}
+      {overlaySnapshot
+        ? renderSnapshotLayer(overlaySnapshot, overlaySnapshotVisible, fadeDurationMs, 'overlay')
+        : null}
     </div>
   )
 }

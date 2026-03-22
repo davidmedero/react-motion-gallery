@@ -40,7 +40,7 @@ const DEFAULT_SLIDER_OBJECT: any = {
   },
   auto: {
     play: { enabled: false, speedMs: 3000, pauseMs: 1000, pauseOnHover: true },
-    scroll: { enabled: false, speedMs: 3000, pauseMs: 1000, pauseOnHover: true },
+    scroll: { enabled: false, speedMs: 0.3, pauseMs: 1000, pauseOnHover: true },
   },
   effects: {
     parallax: { enabled: false, bleedPct: undefined, borderRadius: undefined, sideWidth: undefined },

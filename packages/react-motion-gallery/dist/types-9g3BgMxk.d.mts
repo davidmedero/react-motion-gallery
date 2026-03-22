@@ -1,14 +1,25 @@
 import * as React from 'react';
 import { R as ResponsiveNumber, a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
-import { E as ElementStyle, A as ArrowRenderArgs } from './elements-Bd1vm4Uk.mjs';
+import { E as ElementStyle, A as ArrowRenderArgs } from './elements-24CTbRWj.mjs';
 
 type ThumbnailPosition = "top" | "right" | "bottom" | "left";
 type ResponsivePosition = ThumbnailPosition | Array<ThumbnailPosition> | Record<string, ThumbnailPosition>;
+type ThumbnailLoadingElements = {
+    container?: ElementStyle;
+    row?: ElementStyle;
+    thumbnail?: ElementStyle;
+};
+type ThumbnailSkeletonMode = "fit" | "peek";
+type ThumbnailLoadingRenderArgs = {
+    count: number;
+};
 type ThumbnailLoadingOptions = {
     enabled?: boolean;
     force?: boolean;
     skeletonCount?: ResponsiveNumber;
-    renderLoading?: () => React.ReactNode;
+    mode?: ThumbnailSkeletonMode;
+    renderLoading?: (args: ThumbnailLoadingRenderArgs) => React.ReactNode;
+    elements?: ThumbnailLoadingElements;
 };
 type ThumbnailIntroOptions = {
     renderIntro?: (args: {
@@ -82,4 +93,4 @@ type ThumbnailsOptions = {
     breakpointMap?: BreakpointMap;
 };
 
-export type { ResponsivePosition as R, ThumbnailPosition as T, ThumbnailsOptions as a, ThumbnailLoadingOptions as b, ThumbnailIntroOptions as c, ThumbnailLayout as d, ThumbnailContainerLayout as e, ThumbnailsLayout as f, ThumbnailsElements as g, ThumbnailsScroll as h, ThumbnailsMotion as i, ThumbnailsRipple as j, ThumbnailsControls as k, ThumbnailsTransitions as l };
+export type { ResponsivePosition as R, ThumbnailPosition as T, ThumbnailLoadingElements as a, ThumbnailLoadingRenderArgs as b, ThumbnailLoadingOptions as c, ThumbnailSkeletonMode as d, ThumbnailIntroOptions as e, ThumbnailsOptions as f, ThumbnailLayout as g, ThumbnailContainerLayout as h, ThumbnailsLayout as i, ThumbnailsElements as j, ThumbnailsScroll as k, ThumbnailsMotion as l, ThumbnailsRipple as m, ThumbnailsControls as n, ThumbnailsTransitions as o };

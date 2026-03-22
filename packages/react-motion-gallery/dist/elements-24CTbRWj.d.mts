@@ -28,10 +28,22 @@ type ProgressRenderArgs = {
     innerClassName?: string;
     innerStyle?: React.CSSProperties;
 };
+type ScrollbarRenderArgs = {
+    ref: React.RefObject<HTMLInputElement | null>;
+    hidden: boolean;
+    value: number;
+    axis: 'x' | 'y';
+    min: number;
+    max: number;
+    step: number;
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    className?: string;
+    style?: React.CSSProperties;
+};
 
 type ElementStyle = {
     className?: string;
     style?: React.CSSProperties;
 };
 
-export type { ArrowRenderArgs as A, DotsRenderArgs as D, ElementStyle as E, ProgressRenderArgs as P };
+export type { ArrowRenderArgs as A, DotsRenderArgs as D, ElementStyle as E, ProgressRenderArgs as P, ScrollbarRenderArgs as S };

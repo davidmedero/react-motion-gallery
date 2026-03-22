@@ -7,6 +7,11 @@ import type {
 } from "./plyrTypes";
 
 export type PlyrProp = { source: PlyrSource; options: PlyrOptions } | null;
+export type PlyrProvider = "youtube" | "vimeo" | "mp4" | "other";
+export type BindEmbedReadyOptions = {
+  provider?: PlyrProvider;
+  posterSrc?: string | null;
+};
 
 export const defaultPlyrOptions: PlyrOptions = {
   controls: ["play-large", "play", "progress", "current-time", "volume", "fullscreen"],
@@ -52,7 +57,7 @@ export function mergePlyrOptions(
   };
 }
 
-export function detectProvider(source: unknown): "youtube" | "vimeo" | "mp4" | "other" {
+export function detectProvider(source: unknown): PlyrProvider {
   const s = source as Partial<PlyrSource> | null | undefined;
 
   const provider = String(s?.sources?.[0]?.provider ?? "").toLowerCase();
@@ -64,6 +69,222 @@ export function detectProvider(source: unknown): "youtube" | "vimeo" | "mp4" | "
   if (looksMp4) return "mp4";
 
   return "other";
+}
+
+function hasEmbedPlaybackFacade(media: any) {
+  return typeof media?.play === "function" && typeof media?.pause === "function";
+}
+
+function hasResolvedEmbedState(media: any) {
+  const duration = Number(media?.duration ?? 0);
+  if (Number.isFinite(duration) && duration > 0) return true;
+
+  const currentSrc = media?.currentSrc;
+  return typeof currentSrc === "string" && currentSrc.length > 0;
+}
+
+function extractCssUrl(value: string | null | undefined) {
+  if (!value) return null;
+  const match = /url\(["']?(.*?)["']?\)/.exec(value);
+  return match?.[1] ?? null;
+}
+
+function resolveEmbedPosterSrc(plyr: any, preferredPosterSrc?: string | null) {
+  if (preferredPosterSrc) return preferredPosterSrc;
+
+  const container = plyr?.elements?.container as HTMLElement | null | undefined;
+  const posterEl = container?.querySelector?.(".plyr__poster") as HTMLElement | null;
+  if (!posterEl) return null;
+
+  const inlineUrl = extractCssUrl(posterEl.style.backgroundImage);
+  if (inlineUrl) return inlineUrl;
+
+  try {
+    return extractCssUrl(getComputedStyle(posterEl).backgroundImage);
+  } catch {
+    return null;
+  }
+}
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    if (typeof window === "undefined") {
+      resolve();
+      return;
+    }
+
+    window.setTimeout(resolve, Math.max(0, ms));
+  });
+}
+
+async function waitForAnimationFrames(count = 1) {
+  if (typeof window === "undefined" || count <= 0) return;
+
+  for (let i = 0; i < count; i += 1) {
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => resolve());
+    });
+  }
+}
+
+async function decodeImageSrc(src: string) {
+  try {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = src;
+
+    if (img.complete) {
+      return img.naturalWidth > 0 && img.naturalHeight > 0;
+    }
+
+    if (typeof img.decode === "function") {
+      try {
+        await img.decode();
+        return img.naturalWidth > 0 && img.naturalHeight > 0;
+      } catch {}
+    }
+
+    return await new Promise<boolean>((resolve) => {
+      const cleanup = () => {
+        img.onload = null;
+        img.onerror = null;
+      };
+
+      img.onload = () => {
+        cleanup();
+        resolve(img.naturalWidth > 0 && img.naturalHeight > 0);
+      };
+
+      img.onerror = () => {
+        cleanup();
+        resolve(false);
+      };
+    });
+  } catch {
+    return false;
+  }
+}
+
+async function settleEmbedReady(
+  plyr: any,
+  options: BindEmbedReadyOptions
+) {
+  if (options.provider !== "youtube") return;
+
+  const posterSrc = resolveEmbedPosterSrc(plyr, options.posterSrc ?? null);
+  if (posterSrc) {
+    await Promise.race([
+      decodeImageSrc(posterSrc),
+      wait(650).then(() => false),
+    ]);
+  }
+
+  await waitForAnimationFrames(2);
+  await wait(posterSrc ? 120 : 180);
+}
+
+export function bindEmbedReady(
+  plyr: any,
+  onReady: () => void,
+  options: BindEmbedReadyOptions = {}
+) {
+  let active = true;
+  let settling = false;
+  let mediaTarget: EventTarget | null = null;
+  let intervalId: number | null = null;
+
+  const teardown = () => {
+    if (intervalId != null) {
+      window.clearInterval(intervalId);
+      intervalId = null;
+    }
+
+    try {
+      plyr?.off?.("ready", handlePlyrReady);
+    } catch {}
+
+    detachMediaListeners();
+  };
+
+  const cleanup = () => {
+    active = false;
+    teardown();
+  };
+
+  const finalize = () => {
+    if (!active) return;
+    active = false;
+    teardown();
+    onReady();
+  };
+
+  const complete = () => {
+    if (!active || settling) return;
+    settling = true;
+    teardown();
+
+    void settleEmbedReady(plyr, options).finally(() => {
+      finalize();
+    });
+  };
+
+  const tryFromState = () => {
+    const media = plyr?.media as any;
+    if (!hasEmbedPlaybackFacade(media)) return false;
+    if (!hasResolvedEmbedState(media)) return false;
+
+    complete();
+    return true;
+  };
+
+  const handleMediaReady = () => {
+    complete();
+  };
+
+  const detachMediaListeners = () => {
+    if (!mediaTarget || typeof (mediaTarget as any).removeEventListener !== "function") return;
+
+    for (const type of ["durationchange", "timeupdate", "canplaythrough", "loadedmetadata", "load"]) {
+      try {
+        (mediaTarget as any).removeEventListener(type, handleMediaReady);
+      } catch {}
+    }
+
+    mediaTarget = null;
+  };
+
+  const attachMediaListeners = () => {
+    const nextTarget = (plyr?.media ?? null) as EventTarget | null;
+    if (!nextTarget || nextTarget === mediaTarget) return;
+    if (typeof (nextTarget as any).addEventListener !== "function") return;
+
+    detachMediaListeners();
+    mediaTarget = nextTarget;
+
+    for (const type of ["durationchange", "timeupdate", "canplaythrough", "loadedmetadata", "load"]) {
+      try {
+        (nextTarget as any).addEventListener(type, handleMediaReady);
+      } catch {}
+    }
+  };
+
+  const handlePlyrReady = () => {
+    complete();
+  };
+
+  try {
+    plyr?.on?.("ready", handlePlyrReady);
+  } catch {}
+
+  attachMediaListeners();
+  if (!tryFromState() && typeof window !== "undefined") {
+    intervalId = window.setInterval(() => {
+      attachMediaListeners();
+      void tryFromState();
+    }, 120);
+  }
+
+  return cleanup;
 }
 
 export function isVideoSlideElement(el: HTMLElement | undefined | null) {

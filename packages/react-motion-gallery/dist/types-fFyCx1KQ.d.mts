@@ -1,5 +1,5 @@
 import { R as ResponsiveNumber } from './responsive-CvE5dTnP.mjs';
-import { E as ElementStyle, A as ArrowRenderArgs, D as DotsRenderArgs, P as ProgressRenderArgs } from './elements-Bd1vm4Uk.mjs';
+import { E as ElementStyle, A as ArrowRenderArgs, D as DotsRenderArgs, P as ProgressRenderArgs, S as ScrollbarRenderArgs } from './elements-24CTbRWj.mjs';
 import { I as IndexMode } from './types-tb9Qf2Mj.mjs';
 import * as React$1 from 'react';
 import { RefObject } from 'react';
@@ -41,12 +41,17 @@ type SkeletonContainerStyle = {
     maxWidth?: SkeletonLength;
 };
 type SkeletonContainerStyleResponsive = SkeletonContainerStyle | Record<string, SkeletonContainerStyle>;
+type SliderSkeletonSlot = {
+    item?: SkeletonNode;
+    itemWrapStyle?: SkeletonBaseStyle;
+};
 type SliderSkeletonSliderNode = {
     kind: "slider";
     style?: SkeletonContainerStyleResponsive;
     count?: number;
     item: SkeletonNode;
     itemWrapStyle?: SkeletonBaseStyle;
+    slots?: SliderSkeletonSlot[];
     direction?: "row" | "col";
     children?: SkeletonNode[];
 };
@@ -79,6 +84,7 @@ type SkeletonNode = {
 };
 type SliderSkeletonSpec = {
     mode?: "fit" | "peek";
+    centering?: "first";
     className?: string;
     style?: React$1.CSSProperties;
     layout?: SliderSkeletonNode;
@@ -132,6 +138,11 @@ type SliderProgress = {
     bar?: ElementStyle;
     render?: (args: ProgressRenderArgs) => React.ReactNode;
 };
+type SliderScrollbar = {
+    enabled?: boolean;
+    root?: ElementStyle;
+    render?: (args: ScrollbarRenderArgs) => React.ReactNode;
+};
 type SliderRipple = {
     enabled?: boolean;
     className?: string;
@@ -140,6 +151,7 @@ type SliderControls = {
     arrows?: SliderArrows;
     dots?: SliderDots;
     progress?: SliderProgress;
+    scrollbar?: SliderScrollbar;
     ripple?: SliderRipple;
 };
 type SliderAutoPlay = {

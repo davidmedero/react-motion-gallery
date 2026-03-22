@@ -21,12 +21,13 @@ export const DEFAULT_SLIDER = {
     arrows: { enabled: true, arrow: {}, prev: {}, next: {} },
     dots: { enabled: true, root: {}, dot: {} },
     progress: { enabled: false, root: {}, bar: {} },
+    scrollbar: { enabled: false, root: {} },
     ripple: { enabled: true, className: "" },
   },
 
   auto: {
     play: { enabled: false, speedMs: 3000, pauseMs: 1000, pauseOnHover: true },
-    scroll: { enabled: false, speedMs: 3000, pauseMs: 1000, pauseOnHover: true },
+    scroll: { enabled: false, speedMs: 0.3, pauseMs: 1000, pauseOnHover: true },
   },
 
   motion: {

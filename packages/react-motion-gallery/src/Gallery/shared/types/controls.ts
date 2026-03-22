@@ -30,3 +30,16 @@ export type ProgressRenderArgs = {
   innerClassName?: string;
   innerStyle?: React.CSSProperties;
 };
+
+export type ScrollbarRenderArgs = {
+  ref: React.RefObject<HTMLInputElement | null>;
+  hidden: boolean;
+  value: number;
+  axis: 'x' | 'y';
+  min: number;
+  max: number;
+  step: number;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  className?: string;
+  style?: React.CSSProperties;
+};

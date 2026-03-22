@@ -3,6 +3,7 @@ import type {
   ArrowRenderArgs,
   DotsRenderArgs,
   ProgressRenderArgs,
+  ScrollbarRenderArgs,
 } from "../shared/types/controls";
 import { ElementStyle } from "../shared/types/elements";
 import { IndexMode } from "../api/types";
@@ -58,6 +59,12 @@ export type SliderProgress = {
   render?: (args: ProgressRenderArgs) => React.ReactNode;
 };
 
+export type SliderScrollbar = {
+  enabled?: boolean;
+  root?: ElementStyle;
+  render?: (args: ScrollbarRenderArgs) => React.ReactNode;
+};
+
 export type SliderRipple = {
   enabled?: boolean;
   className?: string;
@@ -67,6 +74,7 @@ export type SliderControls = {
   arrows?: SliderArrows;
   dots?: SliderDots;
   progress?: SliderProgress;
+  scrollbar?: SliderScrollbar;
   ripple?: SliderRipple;
 };
 

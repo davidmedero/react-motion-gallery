@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
-import { S as SliderOptions, a as SliderHandle } from './types-9fvdyhuG.mjs';
-export { R as ResponsiveHeightRule } from './types-9fvdyhuG.mjs';
+import { S as SliderOptions, a as SliderHandle } from './types-fFyCx1KQ.mjs';
+export { R as ResponsiveHeightRule } from './types-fFyCx1KQ.mjs';
 import { S as SliderIndexChannel } from './sliderSub-DDPjywVp.mjs';
 export { c as createSliderIndexChannel } from './sliderSub-DDPjywVp.mjs';
 export { I as IndexMode } from './types-tb9Qf2Mj.mjs';
-import './elements-Bd1vm4Uk.mjs';
+import './elements-24CTbRWj.mjs';
 
 declare const Slider: React.ForwardRefExoticComponent<SliderOptions & {
     children?: React.ReactNode;
@@ -52,6 +52,10 @@ declare const DEFAULT_SLIDER: {
             readonly root: {};
             readonly bar: {};
         };
+        readonly scrollbar: {
+            readonly enabled: false;
+            readonly root: {};
+        };
         readonly ripple: {
             readonly enabled: true;
             readonly className: "";
@@ -66,7 +70,7 @@ declare const DEFAULT_SLIDER: {
         };
         readonly scroll: {
             readonly enabled: false;
-            readonly speedMs: 3000;
+            readonly speedMs: 0.3;
             readonly pauseMs: 1000;
             readonly pauseOnHover: true;
         };

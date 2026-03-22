@@ -45,3 +45,7 @@
 
 /* optional */
 .playerWrap {}
+
+.playerWrap :global(.plyr__poster) {
+  pointer-events: none;
+}

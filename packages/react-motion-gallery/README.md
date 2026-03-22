@@ -10,14 +10,14 @@ This table reports local gzip measurements for each exported runtime surface. Th
 | Export | JS gzip |
 | --- | --- |
 | `Entries` | 6.8kB |
-| `FullscreenThumbnailSlider` | 16.9kB |
+| `FullscreenThumbnailSlider` | 17.7kB |
 | `GalleryCore` | 1.8kB |
 | `Grid` | 7.4kB |
 | `Masonry` | 7.2kB |
-| `Slider` | 29.0kB |
-| `ThumbnailSlider` | 15.8kB |
-| `useFullscreenController` | 42.1kB |
-| `Video` | 9.0kB |
+| `Slider` | 31.3kB |
+| `ThumbnailSlider` | 16.4kB |
+| `useFullscreenController` | 44.5kB |
+| `Video` | 10.7kB |
 <!-- bundle-size:end -->
 
 ## Overview
@@ -171,19 +171,117 @@ export function BasicSlider() {
 | `auto.play.pauseMs` | `number` | `1000` | Delay after interaction before autoplay resumes. |
 | `auto.play.pauseOnHover` | `boolean` | `true` | Pauses autoplay while hovering. |
 | `auto.scroll.enabled` | `boolean` | `false` | Continuous timed scrolling. |
-| `auto.scroll.speedMs` | `number` | `3000` | Interval for auto-scroll movement. |
+| `auto.scroll.speedMs` | `number` | `0.3` | Continuous auto-scroll speed. |
 | `auto.scroll.pauseMs` | `number` | `1000` | Delay after interaction before auto-scroll resumes. |
 | `auto.scroll.pauseOnHover` | `boolean` | `true` | Pauses while hovering. |
 | `transitions.loading.enabled` | `boolean` | `—` | Enables the loading skeleton layer. |
 | `transitions.loading.force` | `boolean` | `—` | Forces the loading layer to stay visible. |
 | `transitions.loading.skeletonCount` | `number \| Record<string, number>` | `—` | Responsive skeleton slot count. |
 | `transitions.loading.renderLoading` | `({ count }) => ReactNode` | `—` | Custom loading renderer. |
-| `transitions.loading.skeleton` | `SliderSkeletonSpec` | `—` | Built-in skeleton spec. |
+| `transitions.loading.skeleton` | `SliderSkeletonSpec` | `—` | Built-in skeleton spec, including per-slot overrides with `layout.slots` and centered peek support via `centering: "first"`. |
 | `transitions.intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
 | `transitions.intro.staggerMs` | `number` | `—` | Delay between item reveals. |
 | `transitions.intro.transform` | `number \| string` | `—` | Initial intro transform. |
 | `transitions.intro.durationMs` | `number` | `—` | Intro duration. |
 | `transitions.intro.easing` | `string` | `—` | Intro easing. |
+
+### Slider loading skeletons
+
+`transitions.loading.skeleton` lets you describe a placeholder layout that mirrors the final slider instead of falling back to generic blocks. This is especially useful for variable-width slides, mixed aspect ratios, and center-aligned peek carousels.
+
+`layout.slots` is the per-slide override system. Define the shared placeholder once with `layout.item` and `layout.itemWrapStyle`, then override any individual slot with `slots[index]`. Slot `itemWrapStyle` values merge on top of the base wrap style, while `slot.item` can replace the placeholder node entirely for that slot.
+
+`centering: "first"` is designed for center-aligned peek sliders. When the real slider uses `align="center"` and the skeleton uses `mode: "peek"` with `layout.kind: "slider"`, the built-in skeleton renderer inserts the leading spacer needed to center the first visible placeholder. You should not add that spacer manually, and it does not apply when you replace the built-in skeleton with `transitions.loading.renderLoading`.
+
+```typescript
+import { Slider } from "react-motion-gallery";
+
+const slides = [
+  { src: "https://picsum.photos/id/1020/660/960", width: 220, height: 320 },
+  { src: "https://picsum.photos/id/1029/1020/630", width: 340, height: 320 },
+  { src: "https://picsum.photos/id/1039/780/840", width: 260, height: 320 },
+];
+
+export function VariableWidthSkeletonSlider() {
+  return (
+    <Slider
+      align="center"
+      transitions={{
+        loading: {
+          skeletonCount: 2,
+          skeleton: {
+            mode: "peek",
+            centering: "first",
+            layout: {
+              kind: "slider",
+              direction: "row",
+              style: { gap: 20 },
+              item: {
+                kind: "rect",
+                style: {
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: 12,
+                },
+              },
+              slots: slides.map((slide) => ({
+                itemWrapStyle: {
+                  width: slide.width,
+                  height: slide.height,
+                },
+              })),
+            },
+          },
+        },
+      }}
+    >
+      {slides.map((slide, index) => (
+        <img
+          key={slide.src}
+          src={slide.src}
+          alt={`Slide ${index + 1}`}
+          style={{ width: slide.width, height: slide.height, objectFit: "cover" }}
+        />
+      ))}
+    </Slider>
+  );
+}
+```
+
+#### `SliderSkeletonSpec`
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `mode` | `"fit" \| "peek"` | `"peek"` preserves partial next or previous slide visibility in the loading state. |
+| `centering` | `"first"` | Adds the leading spacer needed for the first visible slot when using the built-in centered peek skeleton flow. |
+| `className` | `string \| undefined` | Applied to the skeleton overlay root. |
+| `style` | `React.CSSProperties \| undefined` | Inline styles for the skeleton overlay root. |
+| `layout` | `SliderSkeletonNode \| undefined` | Structured placeholder layout tree. Use `kind: "slider"` to model slide tracks. |
+| `backgroundColor` | `string \| undefined` | Overrides the shared skeleton background color token. |
+| `radius` | `number \| string \| undefined` | Overrides the shared skeleton radius token. |
+| `shimmer` | `SkeletonShimmer \| undefined` | Shared shimmer settings for the entire skeleton tree. |
+
+#### `SliderSkeletonSliderNode`
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `kind` | `"slider"` | Slider-specific skeleton layout root. |
+| `style` | `SkeletonContainerStyle \| Record<string, SkeletonContainerStyle>` | Track-level container styles such as `gap`, `padding`, `align`, `justify`, `width`, and `maxWidth`. |
+| `count` | `number \| undefined` | Optional explicit slot count for the layout. Falls back to `transitions.loading.skeletonCount`. |
+| `item` | `SkeletonNode` | Default placeholder node rendered in each slot. |
+| `itemWrapStyle` | `SkeletonBaseStyle \| undefined` | Shared wrapper size and margin rules for every slot. |
+| `slots` | `SliderSkeletonSlot[] \| undefined` | Per-slot overrides for variable widths, heights, aspect ratios, or custom placeholder nodes. |
+| `direction` | `"row" \| "col" \| undefined` | Slot flow direction. `centering: "first"` only affects row layouts. |
+| `children` | `SkeletonNode[] \| undefined` | Optional extra skeleton content rendered after the slider row. |
+
+#### `SliderSkeletonSlot`
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `item` | `SkeletonNode \| undefined` | Replaces the base `layout.item` for one slot. |
+| `itemWrapStyle` | `SkeletonBaseStyle \| undefined` | Merges on top of the base `layout.itemWrapStyle` for one slot. |
+
+`SkeletonNode` supports these building blocks: `rect`, `square`, `circle`, `text`, `media`, `row`, `col`, and `stack`.
 
 ### Slider motion and effect options
 
@@ -404,12 +502,18 @@ The component forwards a ref to its outer thumbnail shell. The explicit `layout`
 | `transitions.loading.enabled` | `boolean` | `true` | Enables the thumbnail loading layer. |
 | `transitions.loading.force` | `boolean` | `false` | Forces the loading layer to remain visible. |
 | `transitions.loading.skeletonCount` | `number \| Record<string, number>` | `—` | Responsive count for the built-in loading placeholders. |
-| `transitions.loading.renderLoading` | `() => ReactNode` | `—` | Replaces the built-in thumbnail loading skeleton. |
+| `transitions.loading.mode` | `"fit" \| "peek"` | `"peek"` | `"peek"` keeps fixed-size thumbnail placeholders when width or height is explicitly set; `"fit"` divides the rail evenly across the visible count. |
+| `transitions.loading.elements.container` | `ElementStyle` | `—` | Class and inline style for the built-in loading overlay container. |
+| `transitions.loading.elements.row` | `ElementStyle` | `—` | Class and inline style for the built-in skeleton row or column wrapper. |
+| `transitions.loading.elements.thumbnail` | `ElementStyle` | `—` | Class and inline style for each built-in thumbnail placeholder. |
+| `transitions.loading.renderLoading` | `({ count }) => ReactNode` | `—` | Replaces the built-in thumbnail loading skeleton and receives the resolved responsive count. |
 | `transitions.intro.renderIntro` | `({ active, containerProps }, inner) => ReactNode` | `—` | Custom intro wrapper for the thumbnail rail. |
 | `transitions.intro.staggerMs` | `number` | `40` | Delay between thumbnail reveals. |
 | `transitions.intro.transform` | `string` | `"10px"` | Starting translate offset used by the default intro. |
 | `transitions.intro.durationMs` | `number` | `300` | Intro duration. |
 | `transitions.intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro easing. |
+
+`transitions.loading.elements.*` only applies to the built-in thumbnail skeleton. If you provide `transitions.loading.renderLoading`, you fully own the loading markup instead.
 
 ### `createThumbnailSyncBridge`
 

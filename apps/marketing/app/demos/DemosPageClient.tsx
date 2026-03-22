@@ -11,15 +11,25 @@ import {
   useLayoutEffect,
   useRef,
   startTransition,
-  useMemo,
   useState,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from "react";
 import type { JSX } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import styles from "./demos.module.css";
-import { GalleryCore, Slider, toMediaItems, useFullscreenController, Video } from "../../../../packages/react-motion-gallery/src";
+import {
+  createSliderIndexChannel,
+  FullscreenThumbnailSlider,
+  GalleryCore,
+  type MediaItem,
+  Slider,
+  ThumbnailSlider,
+  toMediaItems,
+  useFullscreenController,
+  Video,
+} from "../../../../packages/react-motion-gallery/src";
 
 type DemoComponent = () => ReactElement | null;
 type DemoCategoryId = "slider" | "grid" | "masonry" | "entries" | "fullscreen";
@@ -47,18 +57,19 @@ type DemoDefinition = {
   id: string;
   title: string;
   eyebrow: string;
-  summary: string;
-  focus: string;
   tags: string[];
   categoryId: DemoCategoryId;
   Component: DemoComponent;
   source?: string;
+  css?: string;
 };
 
 type SidebarExpansionState = {
   expandedCategories: DemoCategoryId[];
   syncedDemoId: string;
 };
+
+type DemoCanvasTab = "preview" | "code";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -104,23 +115,24 @@ import {
   toMediaItems,
   useFullscreenController,
 } from "react-motion-gallery";
+import styles from "./slider-default-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/1020/1600/900",
-  "https://picsum.photos/id/1029/1600/900",
-  "https://picsum.photos/id/1039/1600/900",
-  "https://picsum.photos/id/1049/1600/900",
-  "https://picsum.photos/id/1079/1600/900",
-  "https://picsum.photos/id/1076/1600/900",
+  "https://picsum.photos/id/995/1600/900",
+  "https://picsum.photos/id/996/1600/900",
+  "https://picsum.photos/id/997/1600/900",
+  "https://picsum.photos/id/998/1600/900",
+  "https://picsum.photos/id/999/1600/900",
+  "https://picsum.photos/id/1000/1600/900",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/1020/2400/1350",
-  "https://picsum.photos/id/1029/2400/1350",
-  "https://picsum.photos/id/1039/2400/1350",
-  "https://picsum.photos/id/1049/2400/1350",
-  "https://picsum.photos/id/1079/2400/1350",
-  "https://picsum.photos/id/1076/2400/1350",
+  "https://picsum.photos/id/995/2400/1350",
+  "https://picsum.photos/id/996/2400/1350",
+  "https://picsum.photos/id/997/2400/1350",
+  "https://picsum.photos/id/998/2400/1350",
+  "https://picsum.photos/id/999/2400/1350",
+  "https://picsum.photos/id/1000/2400/1350",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
@@ -128,24 +140,16 @@ function Slide({ src, i }: { src: string; i: number }) {
     <img
       src={src}
       alt={\`Slide \${i + 1}\`}
-      style={{
-        width: "100cqw",
-        maxWidth: "550px",
-        aspectRatio: "16 / 9",
-        objectFit: "cover",
-        display: "block",
-        borderRadius: 12,
-      }}
+      className={styles.slide}
     />
   );
 }
 
-function FullscreenAddon(props: { fullscreenEnabled?: boolean }) {
-  const { fullscreenEnabled = true } = props;
+function FullscreenAddon() {
 
   const { fullscreenNode } = useFullscreenController({
     fullscreen: {
-      enabled: fullscreenEnabled,
+      enabled: true,
     },
   });
 
@@ -197,6 +201,1645 @@ export function SliderDefaultDemo() {
   );
 }`;
 
+const SLIDER_LAZY_LOAD_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-lazy-load-demo.module.css";
+
+const URLS = [
+  "https://picsum.photos/id/1048/1600/900",
+  "https://picsum.photos/id/1049/1600/900",
+  "https://picsum.photos/id/1050/1600/900",
+  "https://picsum.photos/id/1051/1600/900",
+  "https://picsum.photos/id/1052/1600/900",
+  "https://picsum.photos/id/1053/1600/900",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/1048/2400/1350",
+  "https://picsum.photos/id/1049/2400/1350",
+  "https://picsum.photos/id/1050/2400/1350",
+  "https://picsum.photos/id/1051/2400/1350",
+  "https://picsum.photos/id/1052/2400/1350",
+  "https://picsum.photos/id/1053/2400/1350",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderLazyLoadDemo() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        lazyLoad={{
+          enabled: true,
+          spinner: true,
+          spinnerClassName: styles.spinner,
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_AUTO_SCROLL_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-auto-scroll-demo.module.css";
+
+const SLIDES = [
+  {
+    src: "https://picsum.photos/id/1055/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1055/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1056/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1056/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1057/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1057/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1058/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1058/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1059/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1059/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1060/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1060/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1061/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1061/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1062/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1062/2400/2400",
+  },
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderAutoScrollDemo() {
+  const media = toMediaItems(SLIDES.map((slide) => slide.src));
+  const fullscreenMedia = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        align="center"
+        scroll={{
+          loop: true,
+        }}
+        auto={{
+          scroll: {
+            enabled: true,
+          },
+        }}
+        controls={{
+          dots: {
+            enabled: false,
+          },
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 4,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                  justify: "center"
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                itemWrapStyle: {
+                  width: "100cqw",
+                  maxWidth: "320px",
+                  aspectRatio: "4 / 5",
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_AUTO_PLAY_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-auto-play-demo.module.css";
+
+const SLIDES = [
+  {
+    src: "https://picsum.photos/id/1055/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1055/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1056/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1056/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1057/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1057/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1058/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1058/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1059/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1059/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1060/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1060/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1061/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1061/2400/2400",
+  },
+  {
+    src: "https://picsum.photos/id/1062/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/1062/2400/2400",
+  },
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderAutoPlayDemo() {
+  const media = toMediaItems(SLIDES.map((slide) => slide.src));
+  const fullscreenMedia = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        align="center"
+        scroll={{
+          loop: true,
+          groupCells: true
+        }}
+        auto={{
+          play: {
+            enabled: true,
+            speedMs: 2200,
+          },
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 4,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                  justify: "center"
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                itemWrapStyle: {
+                  width: "100cqw",
+                  maxWidth: "550px",
+                  aspectRatio: "16 / 9",
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_SKIP_SNAPS_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-skip-snaps-demo.module.css";
+
+const URLS = [
+  "https://picsum.photos/id/1001/1600/900",
+  "https://picsum.photos/id/1002/1600/900",
+  "https://picsum.photos/id/1003/1600/900",
+  "https://picsum.photos/id/1004/1600/900",
+  "https://picsum.photos/id/1005/1600/900",
+  "https://picsum.photos/id/1006/1600/900",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/1001/2400/1350",
+  "https://picsum.photos/id/1002/2400/1350",
+  "https://picsum.photos/id/1003/2400/1350",
+  "https://picsum.photos/id/1004/2400/1350",
+  "https://picsum.photos/id/1005/2400/1350",
+  "https://picsum.photos/id/1006/2400/1350",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderSkipSnapsDemo() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        scroll={{
+          skipSnaps: true,
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_CENTER_ALIGN_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-center-align-demo.module.css";
+
+const URLS = [
+  "https://picsum.photos/id/107/1600/900",
+  "https://picsum.photos/id/1008/1600/900",
+  "https://picsum.photos/id/1009/1600/900",
+  "https://picsum.photos/id/1010/1600/900",
+  "https://picsum.photos/id/1011/1600/900",
+  "https://picsum.photos/id/1012/1600/900",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/107/2400/1350",
+  "https://picsum.photos/id/1008/2400/1350",
+  "https://picsum.photos/id/1009/2400/1350",
+  "https://picsum.photos/id/1010/2400/1350",
+  "https://picsum.photos/id/1011/2400/1350",
+  "https://picsum.photos/id/1012/2400/1350",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderCenterAlignDemo() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        align="center"
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              centering: "first",
+              style: {
+                overflow: "hidden",
+              },
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                itemWrapStyle: {
+                  width: "100cqw",
+                  maxWidth: "550px",
+                  aspectRatio: "16 / 9",
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_VARIABLE_WIDTHS_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-variable-widths-demo.module.css";
+
+const SLIDES = [
+  {
+    src: "https://picsum.photos/id/1013/1200/900",
+    fullscreenSrc: "https://picsum.photos/id/1013/2400/1800",
+    width: 220,
+    height: 320,
+  },
+  {
+    src: "https://picsum.photos/id/1014/1020/630",
+    fullscreenSrc: "https://picsum.photos/id/1014/2040/1260",
+    width: 420,
+    height: 320,
+  },
+  {
+    src: "https://picsum.photos/id/1015/780/1340",
+    fullscreenSrc: "https://picsum.photos/id/1015/1560/2680",
+    width: 260,
+    height: 320,
+  },
+  {
+    src: "https://picsum.photos/id/1016/1280/720",
+    fullscreenSrc: "https://picsum.photos/id/1016/2560/1440",
+    width: 360,
+    height: 320,
+  },
+  {
+    src: "https://picsum.photos/id/101/1200/900",
+    fullscreenSrc: "https://picsum.photos/id/101/2400/1800",
+    width: 200,
+    height: 320,
+  },
+  {
+    src: "https://picsum.photos/id/1018/900/570",
+    fullscreenSrc: "https://picsum.photos/id/1018/1800/1140",
+    width: 300,
+    height: 320,
+  },
+  {
+    src: "https://picsum.photos/id/18/900/570",
+    fullscreenSrc: "https://picsum.photos/id/18/1800/1140",
+    width: 500,
+    height: 320,
+  },
+  {
+    src: "https://picsum.photos/id/19/900/570",
+    fullscreenSrc: "https://picsum.photos/id/19/1800/1140",
+    width: 250,
+    height: 320,
+  },
+];
+
+function Slide(props: { src: string; width: number; height: number; i: number }) {
+  const { src, width, height, i } = props;
+
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.variableWidthSlide}
+      style={{ width, height }}
+    />
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderVariableWidthsDemo() {
+  const media = toMediaItems(SLIDES.map((slide) => slide.src));
+  const fullscreenMedia = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        align="center"
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              centering: "first",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                slots: SLIDES.map((slide) => ({
+                  itemWrapStyle: {
+                    width: slide.width,
+                    height: slide.height,
+                  },
+                })),
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => {
+          const slide = SLIDES[i];
+
+          return (
+            <Slide
+              key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+              src={item.kind === "image" ? item.src : ""}
+              width={slide.width}
+              height={slide.height}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_Y_AXIS_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-y-axis-demo.module.css";
+
+const URLS = [
+  "https://picsum.photos/id/1019/1600/900",
+  "https://picsum.photos/id/1020/1600/900",
+  "https://picsum.photos/id/1021/1600/900",
+  "https://picsum.photos/id/1022/1600/900",
+  "https://picsum.photos/id/1023/1600/900",
+  "https://picsum.photos/id/1024/1600/900",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/1019/2400/1350",
+  "https://picsum.photos/id/1020/2400/1350",
+  "https://picsum.photos/id/1021/2400/1350",
+  "https://picsum.photos/id/1022/2400/1350",
+  "https://picsum.photos/id/1023/2400/1350",
+  "https://picsum.photos/id/1024/2400/1350",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+function SliderYAxisGallery() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        direction={{
+          axis: "y",
+        }}
+        elements={{
+          viewport: {
+            style: {
+              height: "100cqh",
+              maxHeight: "530px",
+            },
+          },
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "col",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                itemWrapStyle: {
+                  width: "100cqw",
+                  aspectRatio: "16 / 7",
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}
+
+export function SliderYAxisDemo() {
+  return (
+    <div className={styles.demoCanvasSliderYAxis}>
+      <SliderYAxisGallery />
+    </div>
+  );
+}`;
+
+const SLIDER_CELLS_PER_SLIDE_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-cells-per-slide-demo.module.css";
+
+const URLS = [
+  "https://picsum.photos/id/1025/1200/1200",
+  "https://picsum.photos/id/1026/1200/1200",
+  "https://picsum.photos/id/1027/1200/1200",
+  "https://picsum.photos/id/1028/1200/1200",
+  "https://picsum.photos/id/1029/1200/1200",
+  "https://picsum.photos/id/103/1200/1200",
+  "https://picsum.photos/id/1031/1200/1200",
+  "https://picsum.photos/id/1032/1200/1200",
+  "https://picsum.photos/id/1033/1200/1200",
+  "https://picsum.photos/id/104/1200/1200",
+  "https://picsum.photos/id/1035/1200/1200",
+  "https://picsum.photos/id/1036/1200/1200",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/1025/2400/2400",
+  "https://picsum.photos/id/1026/2400/2400",
+  "https://picsum.photos/id/1027/2400/2400",
+  "https://picsum.photos/id/1028/2400/2400",
+  "https://picsum.photos/id/1029/2400/2400",
+  "https://picsum.photos/id/103/2400/2400",
+  "https://picsum.photos/id/1031/2400/2400",
+  "https://picsum.photos/id/1032/2400/2400",
+  "https://picsum.photos/id/1033/2400/2400",
+  "https://picsum.photos/id/104/2400/2400",
+  "https://picsum.photos/id/1035/2400/2400",
+  "https://picsum.photos/id/1036/2400/2400",
+];
+
+const CELLS_PER_SLIDE = {
+  xs: 1,
+  sm: 2,
+  md: 3,
+  lg: 4,
+};
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderCellsPerSlideDemo() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        layout={{
+          cellsPerSlide: CELLS_PER_SLIDE,
+        }}
+        scroll={{
+          groupCells: true,
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: CELLS_PER_SLIDE,
+            skeleton: {
+              mode: "fit",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    aspectRatio: "2 / 3",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_THUMBNAILS_SOURCE = String.raw`"use client";
+
+import { useState, useSyncExternalStore } from "react";
+import "react-motion-gallery/styles.css";
+import {
+  FullscreenThumbnailSlider,
+  GalleryCore,
+  Slider,
+  ThumbnailSlider,
+  createSliderIndexChannel,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-thumbnails-demo.module.css";
+
+const SLIDES = [
+  {
+    slideSrc: "https://picsum.photos/id/1037/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1037/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1037/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1038/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1038/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1038/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1039/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1039/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1039/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1040/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1040/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1040/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1041/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1041/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1041/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1042/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1042/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1042/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1043/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1043/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1043/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1044/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1044/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1044/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1045/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1045/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1045/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1047/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1047/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1047/320/200",
+  },
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function Thumb({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Thumbnail \${i + 1}\`}
+      className={styles.thumbnailImage}
+    />
+  );
+}
+
+function useDocumentClientWidth() {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      window.addEventListener("resize", onStoreChange);
+      window.visualViewport?.addEventListener("resize", onStoreChange);
+
+      return () => {
+        window.removeEventListener("resize", onStoreChange);
+        window.visualViewport?.removeEventListener("resize", onStoreChange);
+      };
+    },
+    () => document.documentElement.clientWidth,
+    () => 0
+  );
+}
+
+function FullscreenAddon() {
+  const viewportWidth = useDocumentClientWidth();
+  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return (
+    <>
+      {fullscreenNode}
+      <FullscreenThumbnailSlider
+        bridge={fullscreenThumbnailBridge}
+        items={SLIDES.map((slide, i) => ({
+          thumbSrc: slide.thumbSrc,
+          alt: \`Thumbnail \${i + 1}\`,
+        }))}
+        position="bottom"
+        thumbnailsCenter
+        thumbnailWidth={96}
+        thumbnailHeight={60}
+        containerStyle={{
+          width: viewportWidth || undefined,
+          padding: "8px 12px",
+          overflow: "visible",
+        }}
+        thumbnailItemClassName={styles.fullscreenThumbnailThumb}
+        gap={12}
+        centerActiveThumb
+        showArrows
+      />
+    </>
+  );
+}
+
+export function SliderThumbnailsDemo() {
+  const [indexChannel] = useState(() => createSliderIndexChannel());
+  const media = toMediaItems(SLIDES.map((slide) => slide.slideSrc));
+  const fullscreenMedia = toMediaItems(
+    SLIDES.map((slide) => slide.fullscreenSrc)
+  );
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        indexChannel={indexChannel}
+        controls={{
+          dots: {
+            enabled: false,
+          },
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={SLIDES[i]?.slideSrc ?? ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+
+      <ThumbnailSlider
+        indexChannel={indexChannel}
+        options={{
+          layout: {
+            position: "bottom",
+            gap: 12,
+            thumbnail: {
+              width: 96,
+              height: 60,
+            },
+          },
+          scroll: {
+            centerActiveThumb: true,
+          },
+          controls: {
+            enabled: true,
+          },
+          elements: {
+            container: {
+              style: {
+                marginTop: 14,
+              },
+            },
+            thumbnail: {
+              className: styles.thumbnailThumb,
+            },
+          },
+          transitions: {
+            loading: {
+              skeletonCount: 9,
+              elements: {
+                container: {
+                  className: styles.thumbnailSkeletonContainer,
+                },
+                thumbnail: {
+                  className: styles.thumbnailSkeletonThumb,
+                },
+              },
+            },
+          },
+        }}
+      >
+        {SLIDES.map((slide, i) => (
+          <Thumb
+            key={\`thumb-\${slide.thumbSrc}\`}
+            src={slide.thumbSrc}
+            i={i}
+          />
+        ))}
+      </ThumbnailSlider>
+
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const FULLSCREEN_THUMBNAILS_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  FullscreenThumbnailSlider,
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./fullscreen-thumbnails-demo.module.css";
+
+const SLIDES = [
+  {
+    slideSrc: "https://picsum.photos/id/1043/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1043/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1043/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1044/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1044/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1044/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1045/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1045/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1045/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1046/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1046/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1046/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1047/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1047/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1047/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1048/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1048/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1048/320/200",
+  },
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenThumbnailsAddon() {
+  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return (
+    <>
+      {fullscreenNode}
+      <FullscreenThumbnailSlider
+        bridge={fullscreenThumbnailBridge}
+        items={SLIDES.map((slide, i) => ({
+          thumbSrc: slide.thumbSrc,
+          alt: \`Thumbnail \${i + 1}\`,
+        }))}
+        position="bottom"
+        thumbnailsCenter
+        thumbnailWidth={96}
+        thumbnailHeight={60}
+        containerStyle={{
+          width: "100dvw",
+          padding: "8px 12px",
+          overflow: "visible",
+        }}
+        thumbnailItemClassName={styles.fullscreenThumbnailThumb}
+        gap={12}
+        centerActiveThumb
+        showArrows
+      />
+    </>
+  );
+}
+
+export function FullscreenThumbnailsDemo() {
+  const media = toMediaItems(SLIDES.map((slide) => slide.slideSrc));
+  const fullscreenMedia = toMediaItems(
+    SLIDES.map((slide) => slide.fullscreenSrc)
+  );
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={SLIDES[i]?.slideSrc ?? ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenThumbnailsAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_RIGHT_TO_LEFT_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-right-to-left-demo.module.css";
+
+const URLS = [
+  "https://picsum.photos/id/1049/1600/900",
+  "https://picsum.photos/id/1050/1600/900",
+  "https://picsum.photos/id/1051/1600/900",
+  "https://picsum.photos/id/1052/1600/900",
+  "https://picsum.photos/id/1053/1600/900",
+  "https://picsum.photos/id/1054/1600/900",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/1049/2400/1350",
+  "https://picsum.photos/id/1050/2400/1350",
+  "https://picsum.photos/id/1051/2400/1350",
+  "https://picsum.photos/id/1052/2400/1350",
+  "https://picsum.photos/id/1053/2400/1350",
+  "https://picsum.photos/id/1054/2400/1350",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderRightToLeftDemo() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        direction={{
+          dir: "rtl",
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              style: {
+                direction: "rtl",
+              },
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_GROUP_CELLS_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-group-cells-demo.module.css";
+
+const URLS = [
+  "https://picsum.photos/id/1055/1200/1200",
+  "https://picsum.photos/id/1056/1200/1200",
+  "https://picsum.photos/id/1057/1200/1200",
+  "https://picsum.photos/id/1058/1200/1200",
+  "https://picsum.photos/id/1059/1200/1200",
+  "https://picsum.photos/id/1060/1200/1200",
+  "https://picsum.photos/id/1061/1200/1200",
+  "https://picsum.photos/id/1062/1200/1200",
+  "https://picsum.photos/id/1063/1200/1200",
+  "https://picsum.photos/id/1064/1200/1200",
+  "https://picsum.photos/id/1065/1200/1200",
+  "https://picsum.photos/id/1066/1200/1200",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/1055/2400/2400",
+  "https://picsum.photos/id/1056/2400/2400",
+  "https://picsum.photos/id/1057/2400/2400",
+  "https://picsum.photos/id/1058/2400/2400",
+  "https://picsum.photos/id/1059/2400/2400",
+  "https://picsum.photos/id/1060/2400/2400",
+  "https://picsum.photos/id/1061/2400/2400",
+  "https://picsum.photos/id/1062/2400/2400",
+  "https://picsum.photos/id/1063/2400/2400",
+  "https://picsum.photos/id/1064/2400/2400",
+  "https://picsum.photos/id/1065/2400/2400",
+  "https://picsum.photos/id/1066/2400/2400",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderGroupCellsDemo() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        scroll={{
+          groupCells: true,
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 4,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "280px",
+                    aspectRatio: "2 / 3",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_FREE_SCROLL_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-free-scroll-demo.module.css";
+
+const URLS = [
+  "https://picsum.photos/id/1067/1200/1200",
+  "https://picsum.photos/id/1068/1200/1200",
+  "https://picsum.photos/id/1069/1200/1200",
+  "https://picsum.photos/id/1070/1200/1200",
+  "https://picsum.photos/id/1071/1200/1200",
+  "https://picsum.photos/id/1072/1200/1200",
+  "https://picsum.photos/id/1073/1200/1200",
+  "https://picsum.photos/id/1074/1200/1200",
+  "https://picsum.photos/id/1075/1200/1200",
+  "https://picsum.photos/id/1076/1200/1200",
+  "https://picsum.photos/id/1077/1200/1200",
+  "https://picsum.photos/id/1078/1200/1200",
+];
+
+const FS_URLS = [
+  "https://picsum.photos/id/1067/2400/2400",
+  "https://picsum.photos/id/1068/2400/2400",
+  "https://picsum.photos/id/1069/2400/2400",
+  "https://picsum.photos/id/1070/2400/2400",
+  "https://picsum.photos/id/1071/2400/2400",
+  "https://picsum.photos/id/1072/2400/2400",
+  "https://picsum.photos/id/1073/2400/2400",
+  "https://picsum.photos/id/1074/2400/2400",
+  "https://picsum.photos/id/1075/2400/2400",
+  "https://picsum.photos/id/1076/2400/2400",
+  "https://picsum.photos/id/1077/2400/2400",
+  "https://picsum.photos/id/1078/2400/2400",
+];
+
+function Slide({ src, i }: { src: string; i: number }) {
+  return (
+    <img
+      src={src}
+      alt={\`Slide \${i + 1}\`}
+      className={styles.slide}
+    />
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function SliderFreeScrollDemo() {
+  const media = toMediaItems(URLS);
+  const fullscreenMedia = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        scroll={{
+          freeScroll: true,
+          groupCells: true
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 4,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "280px",
+                    aspectRatio: "2 / 3",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <Slide
+            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+            src={item.kind === "image" ? item.src : ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
 const SLIDER_LOOP_SOURCE = String.raw`"use client";
 
 import "react-motion-gallery/styles.css";
@@ -208,21 +1851,21 @@ import {
 } from "react-motion-gallery";
 
 const URLS = [
-  "https://picsum.photos/id/1020/1600/900",
-  "https://picsum.photos/id/1029/1600/900",
-  "https://picsum.photos/id/1039/1600/900",
-  "https://picsum.photos/id/1049/1600/900",
   "https://picsum.photos/id/1079/1600/900",
-  "https://picsum.photos/id/1076/1600/900",
+  "https://picsum.photos/id/1080/1600/900",
+  "https://picsum.photos/id/1081/1600/900",
+  "https://picsum.photos/id/1082/1600/900",
+  "https://picsum.photos/id/1083/1600/900",
+  "https://picsum.photos/id/1084/1600/900",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/1020/2400/1350",
-  "https://picsum.photos/id/1029/2400/1350",
-  "https://picsum.photos/id/1039/2400/1350",
-  "https://picsum.photos/id/1049/2400/1350",
   "https://picsum.photos/id/1079/2400/1350",
-  "https://picsum.photos/id/1076/2400/1350",
+  "https://picsum.photos/id/1080/2400/1350",
+  "https://picsum.photos/id/1081/2400/1350",
+  "https://picsum.photos/id/1082/2400/1350",
+  "https://picsum.photos/id/1083/2400/1350",
+  "https://picsum.photos/id/1084/2400/1350",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
@@ -230,24 +1873,16 @@ function Slide({ src, i }: { src: string; i: number }) {
     <img
       src={src}
       alt={\`Slide \${i + 1}\`}
-      style={{
-        width: "100cqw",
-        maxWidth: "550px",
-        aspectRatio: "16 / 9",
-        objectFit: "cover",
-        display: "block",
-        borderRadius: 12,
-      }}
+      className={styles.slide}
     />
   );
 }
 
-function FullscreenAddon(props: { fullscreenEnabled?: boolean }) {
-  const { fullscreenEnabled = true } = props;
+function FullscreenAddon() {
 
   const { fullscreenNode } = useFullscreenController({
     fullscreen: {
-      enabled: fullscreenEnabled,
+      enabled: true,
     },
   });
 
@@ -314,17 +1949,36 @@ import {
   toMediaItems,
   useFullscreenController,
 } from "react-motion-gallery";
+import styles from "./slider-video-html5-demo.module.css";
 
   const URLS = [
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9694226-hd_1920_1080_25fps.mp4" },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/12354535_1920_1080_30fps-0.jpg" 
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg" 
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9694226-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg"
+    },
   ];
 
-  function SlideVideoCell({
+  function Slide({
     src,
     poster,
     i,
@@ -334,36 +1988,36 @@ import {
     i: number;
   }) {
     return (
-      <Video
-        src={src}
-        poster={poster}
-        alt={\`Video \${i + 1}\`}
-        style={{ 
-          width: "100cqw",
-          maxWidth: "550px",
-          aspectRatio: '16 / 9',
-          display: "block",
-          borderRadius: 12,
-        }}
-      />
+      <div className={styles.slide_wrapper}>
+        <img
+          src="/open-fullscreen.png"
+          alt="Open fullscreen"
+          width="24"
+          height="24"
+          className={styles.open_fullscreen_icon}
+        />
+        <Video
+          src={src}
+          poster={poster}
+          alt={\`Video \${i + 1}\`}
+          className={styles.slide}
+        />
+      </div>
     );
   }
 
-  function FullscreenAddon(props: {
-  fullscreenEnabled?: boolean;
-  }) {
-    const { fullscreenEnabled = true } = props;
+  function FullscreenAddon() {
 
     const { fullscreenNode } = useFullscreenController({
       fullscreen: {
-        enabled: fullscreenEnabled,
+        enabled: true,
       },
     });
 
     return <>{fullscreenNode}</>;
   }
 
-  const MEDIA = useMemo(() => toMediaItems(URLS), []);
+  const MEDIA = toMediaItems(URLS);
 
   return (
     <GalleryCore layout="slider" fullscreenItems={MEDIA}>
@@ -416,7 +2070,12 @@ import {
       >
         {MEDIA.map((m, i) => {
           return (
-            <SlideVideoCell key={\`video-\${m.kind === 'video' ? m.src : ''}-\${i}\`} src={m.kind === 'video' ? m.src : ''} i={i} />
+            <Slide
+              key={\`video-\${m.kind === 'video' ? m.src : ''}-\${i}\`}
+              src={m.kind === 'video' ? m.src : ''}
+              poster={m.kind === 'video' ? m.poster : ''}
+              i={i}
+            />
           );
         })}
       </Slider>
@@ -424,6 +2083,1014 @@ import {
     </GalleryCore>
   );
 }`;
+
+const SLIDER_HTML5_LOOP_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  Video,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-video-html5-loop-demo.module.css";
+
+  const URLS = [
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/12354535_1920_1080_30fps-0.jpg" 
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg" 
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9694226-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg"
+    },
+  ];
+
+  function Slide({
+    src,
+    poster,
+    i,
+  }: {
+    src: string;
+    poster?: string;
+    i: number;
+  }) {
+    return (
+      <div className={styles.slide_wrapper}>
+        <img
+          src="/open-fullscreen.png"
+          alt="Open fullscreen"
+          width="24"
+          height="24"
+          className={styles.open_fullscreen_icon}
+        />
+        <Video
+          src={src}
+          poster={poster}
+          alt={\`Video \${i + 1}\`}
+          className={styles.slide}
+        />
+      </div>
+    );
+  }
+
+  function FullscreenAddon() {
+
+    const { fullscreenNode } = useFullscreenController({
+      fullscreen: {
+        enabled: true,
+      },
+    });
+
+    return <>{fullscreenNode}</>;
+  }
+
+  const MEDIA = toMediaItems(URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+      <Slider
+        controls={{
+          dots: {
+            root: {
+              style: {
+                bottom: "-52px"
+              }
+            }
+          }
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                  },
+                },
+                children: [
+                  {
+                    kind: "rect",
+                    style: {
+                      width: 162,
+                      height: 32,
+                      borderRadius: 999,
+                      alignSelf: "center",
+                      marginTop: "20px",
+                    },
+                  },
+                ],
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <Slide
+              key={\`video-\${m.kind === 'video' ? m.src : ''}-\${i}\`}
+              src={m.kind === 'video' ? m.src : ''}
+              poster={m.kind === 'video' ? m.poster : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}`;
+
+const SLIDER_YOUTUBE_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  Video,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-video-youtube-demo.module.css";
+
+const URLS = [
+  { 
+    kind: "video",
+    src: "zT5RMvM0gaI",
+    poster: "https://i.ytimg.com/vi/zT5RMvM0gaI/hqdefault.jpg" 
+  },
+  { 
+    kind: "video",
+    src: "c2h1T06-3vQ",
+    poster: "https://i.ytimg.com/vi/c2h1T06-3vQ/hqdefault.jpg" 
+  },
+  { 
+    kind: "video",
+    src: "mTM7F-5999Q",
+    poster: "https://i.ytimg.com/vi/mTM7F-5999Q/hqdefault.jpg"
+  },
+  { 
+    kind: "video",
+    src: "cJLL_gNpBb8",
+    poster: "https://i.ytimg.com/vi/cJLL_gNpBb8/hqdefault.jpg"
+  },
+  { 
+    kind: "video",
+    src: "IxF55qB4CuQ",
+    poster: "https://i.ytimg.com/vi/IxF55qB4CuQ/hqdefault.jpg"
+  },
+  { 
+    kind: "video",
+    src: "IGOaJnvQdng",
+    poster: "https://i.ytimg.com/vi/IGOaJnvQdng/hqdefault.jpg" 
+  },
+];
+
+function buildYoutubeSource(src: string, poster?: string) {
+  return {
+    type: "video",
+    poster,
+    sources: [{ src, provider: "youtube" }],
+  };
+}
+
+const YOUTUBE_OPTIONS = {
+  ratio: "16:9",
+  controls: [],
+  youtube: {
+    customControls: false,
+  },
+};
+
+function buildYoutubeFullscreenSource(item) {
+  return buildYoutubeSource(item.src, item.poster);
+}
+
+function Slide({
+  src,
+  poster,
+  i,
+}: {
+  src: string;
+  poster?: string;
+  i: number;
+}) {
+  return (
+    <div className={styles.slide_wrapper}>
+      <img
+        src="/open-fullscreen.png"
+        alt="Open fullscreen"
+        width="24"
+        height="24"
+        className={styles.open_fullscreen_icon}
+      />
+      <Video
+        src={src}
+        poster={poster}
+        source={buildYoutubeSource(src, poster)}
+        options={YOUTUBE_OPTIONS}
+        alt={\`Video \${i + 1}\`}
+        className={styles.slide}
+      />
+    </div>
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+      video: {
+        source: buildYoutubeFullscreenSource,
+        options: YOUTUBE_OPTIONS,
+      },
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+const MEDIA = toMediaItems(URLS);
+
+return (
+  <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+    <Slider
+      controls={{
+        dots: {
+          enabled: false,
+        },
+        scrollbar: {
+          enabled: true,
+          root: {
+            style: {
+              bottom: "-52px"
+            }
+          }
+        },
+      }}
+      transitions={{
+        loading: {
+          skeletonCount: 2,
+          skeleton: {
+            mode: "peek",
+            layout: {
+              kind: "slider",
+              direction: "row",
+              style: {
+                gap: 20,
+              },
+              item: {
+                kind: "rect",
+                style: {
+                  width: "100cqw",
+                  maxWidth: "550px",
+                  aspectRatio: "16 / 9",
+                  borderRadius: 12,
+                },
+              },
+              children: [
+                {
+                  kind: "rect",
+                  style: {
+                    width: 162,
+                    height: 32,
+                    borderRadius: 999,
+                    alignSelf: "center",
+                    marginTop: "20px",
+                  },
+                },
+              ],
+            }
+          }
+        }
+      }}
+    >
+      {MEDIA.map((m, i) => {
+        return (
+          <Slide
+            key={\`video-\${m.kind === "video" ? m.src : ""}-\${i}\`}
+            src={m.kind === "video" ? m.src : ""}
+            poster={m.kind === "video" ? m.poster : ""}
+            i={i}
+          />
+        );
+      })}
+    </Slider>
+    <FullscreenAddon />
+  </GalleryCore>
+);
+}`;
+
+const SLIDER_YOUTUBE_LOOP_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  Video,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-video-youtube-loop-demo.module.css";
+
+const URLS = [
+  { 
+    kind: "video",
+    src: "zT5RMvM0gaI",
+    poster: "https://i.ytimg.com/vi/zT5RMvM0gaI/hqdefault.jpg" 
+  },
+  { 
+    kind: "video",
+    src: "c2h1T06-3vQ",
+    poster: "https://i.ytimg.com/vi/c2h1T06-3vQ/hqdefault.jpg" 
+  },
+  { 
+    kind: "video",
+    src: "mTM7F-5999Q",
+    poster: "https://i.ytimg.com/vi/mTM7F-5999Q/hqdefault.jpg"
+  },
+  { 
+    kind: "video",
+    src: "cJLL_gNpBb8",
+    poster: "https://i.ytimg.com/vi/cJLL_gNpBb8/hqdefault.jpg"
+  },
+  { 
+    kind: "video",
+    src: "IxF55qB4CuQ",
+    poster: "https://i.ytimg.com/vi/IxF55qB4CuQ/hqdefault.jpg"
+  },
+  { 
+    kind: "video",
+    src: "IGOaJnvQdng",
+    poster: "https://i.ytimg.com/vi/IGOaJnvQdng/hqdefault.jpg" 
+  },
+];
+
+function buildYoutubeSource(src: string, poster?: string) {
+  return {
+    type: "video",
+    poster,
+    sources: [{ src, provider: "youtube" }],
+  };
+}
+
+const YOUTUBE_OPTIONS = {
+  ratio: "16:9",
+  controls: [],
+  youtube: {
+    customControls: false,
+  },
+};
+
+function buildYoutubeFullscreenSource(item) {
+  return buildYoutubeSource(item.src, item.poster);
+}
+
+function Slide({
+  src,
+  poster,
+  i,
+}: {
+  src: string;
+  poster?: string;
+  i: number;
+}) {
+  return (
+    <div className={styles.slide_wrapper}>
+      <img
+        src="/open-fullscreen.png"
+        alt="Open fullscreen"
+        width="24"
+        height="24"
+        className={styles.open_fullscreen_icon}
+      />
+      <Video
+        src={src}
+        poster={poster}
+        source={buildYoutubeSource(src, poster)}
+        options={YOUTUBE_OPTIONS}
+        alt={\`Video \${i + 1}\`}
+        className={styles.slide}
+      />
+    </div>
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+      video: {
+        source: buildYoutubeFullscreenSource,
+        options: YOUTUBE_OPTIONS,
+      },
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+const MEDIA = toMediaItems(URLS);
+
+return (
+  <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+    <Slider
+      scroll={{
+        loop: true
+      }}
+      align="center"
+      controls={{
+        dots: {
+          enabled: false,
+        },
+        scrollbar: {
+          enabled: true,
+          root: {
+            style: {
+              bottom: "-52px"
+            }
+          }
+        },
+      }}
+      transitions={{
+        loading: {
+          skeletonCount: 3,
+          skeleton: {
+            mode: "peek",
+            layout: {
+              kind: "slider",
+              direction: "row",
+              style: {
+                gap: 20,
+                justify: "center"
+              },
+              item: {
+                kind: "rect",
+                style: {
+                  width: "100cqw",
+                  maxWidth: "550px",
+                  aspectRatio: "16 / 9",
+                  borderRadius: 12,
+                },
+              },
+              children: [
+                {
+                  kind: "rect",
+                  style: {
+                    width: 162,
+                    height: 32,
+                    borderRadius: 999,
+                    alignSelf: "center",
+                    marginTop: "20px",
+                  },
+                },
+              ],
+            }
+          }
+        }
+      }}
+    >
+      {MEDIA.map((m, i) => {
+        return (
+          <Slide
+            key={\`video-\${m.kind === "video" ? m.src : ""}-\${i}\`}
+            src={m.kind === "video" ? m.src : ""}
+            poster={m.kind === "video" ? m.poster : ""}
+            i={i}
+          />
+        );
+      })}
+    </Slider>
+    <FullscreenAddon />
+  </GalleryCore>
+);
+}`;
+
+const SLIDER_VIMEO_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  Video,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-video-vimeo-demo.module.css";
+
+const URLS = [
+  {
+    kind: "video",
+    src: "https://vimeo.com/145140004",
+    poster: "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/113314928",
+    poster: "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/172833424",
+    poster: "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/130632032",
+    poster: "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/29216771",
+    poster: "https://i.vimeocdn.com/video/195526505-0b6e473889f312924ae8715001157ffd464349eb7d4cef78136668cae68a0ce8-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/127223734",
+    poster: "https://i.vimeocdn.com/video/517933160-cfa1bfb51adafa1ea32b3e1c67b79abcfdfd848f35fff141b41c24860fd1e22c-d_640?region=us",
+  },
+];
+
+function buildVimeoSource(src: string, poster?: string) {
+  return {
+    type: "video",
+    poster,
+    sources: [{ src, provider: "vimeo" }],
+  };
+}
+
+const VIMEO_OPTIONS = {
+  ratio: "16:9",
+  controls: [],
+  vimeo: {
+    byline: false,
+    portrait: false,
+    title: false,
+    speed: true,
+    transparent: false,
+    customControls: false,
+  },
+};
+
+function buildVimeoFullscreenSource(item) {
+  return buildVimeoSource(item.src, item.poster);
+}
+
+function Slide({
+  src,
+  poster,
+  i,
+}: {
+  src: string;
+  poster?: string;
+  i: number;
+}) {
+  return (
+    <div className={styles.slide_wrapper}>
+      <img
+        src="/open-fullscreen.png"
+        alt="Open fullscreen"
+        width="24"
+        height="24"
+        className={styles.open_fullscreen_icon}
+      />
+      <Video
+        src={src}
+        poster={poster}
+        source={buildVimeoSource(src, poster)}
+        options={VIMEO_OPTIONS}
+        alt={\`Video \${i + 1}\`}
+        className={styles.slide}
+      />
+    </div>
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+      video: {
+        source: buildVimeoFullscreenSource,
+        options: VIMEO_OPTIONS,
+      },
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+const MEDIA = toMediaItems(URLS);
+
+return (
+  <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+    <Slider
+      controls={{
+        dots: {
+          enabled: false,
+        },
+        scrollbar: {
+          enabled: true,
+          root: {
+            style: {
+              bottom: "-52px"
+            }
+          }
+        },
+      }}
+      transitions={{
+        loading: {
+          skeletonCount: 2,
+          skeleton: {
+            mode: "peek",
+            layout: {
+              kind: "slider",
+              direction: "row",
+              style: {
+                gap: 20,
+              },
+              item: {
+                kind: "rect",
+                style: {
+                  width: "100cqw",
+                  maxWidth: "550px",
+                  aspectRatio: "16 / 9",
+                  borderRadius: 12,
+                },
+              },
+              children: [
+                {
+                  kind: "rect",
+                  style: {
+                    width: 162,
+                    height: 32,
+                    borderRadius: 999,
+                    alignSelf: "center",
+                    marginTop: "20px",
+                  },
+                },
+              ],
+            }
+          }
+        }
+      }}
+    >
+      {MEDIA.map((m, i) => {
+        return (
+          <Slide
+            key={\`video-\${m.kind === "video" ? m.src : ""}-\${i}\`}
+            src={m.kind === "video" ? m.src : ""}
+            poster={m.kind === "video" ? m.poster : ""}
+            i={i}
+          />
+        );
+      })}
+    </Slider>
+    <FullscreenAddon />
+  </GalleryCore>
+);
+}`;
+
+const SLIDER_VIMEO_LOOP_SOURCE = String.raw`"use client";
+
+import "react-motion-gallery/styles.css";
+import {
+  GalleryCore,
+  Slider,
+  Video,
+  toMediaItems,
+  useFullscreenController,
+} from "react-motion-gallery";
+import styles from "./slider-video-vimeo-loop-demo.module.css";
+
+const URLS = [
+  {
+    kind: "video",
+    src: "https://vimeo.com/145140004",
+    poster: "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/113314928",
+    poster: "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/172833424",
+    poster: "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/130632032",
+    poster: "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/29216771",
+    poster: "https://i.vimeocdn.com/video/195526505-0b6e473889f312924ae8715001157ffd464349eb7d4cef78136668cae68a0ce8-d_640?region=us",
+  },
+  {
+    kind: "video",
+    src: "https://vimeo.com/127223734",
+    poster: "https://i.vimeocdn.com/video/517933160-cfa1bfb51adafa1ea32b3e1c67b79abcfdfd848f35fff141b41c24860fd1e22c-d_640?region=us",
+  },
+];
+
+function buildVimeoSource(src: string, poster?: string) {
+  return {
+    type: "video",
+    poster,
+    sources: [{ src, provider: "vimeo" }],
+  };
+}
+
+const VIMEO_OPTIONS = {
+  ratio: "16:9",
+  controls: [],
+  vimeo: {
+    byline: false,
+    portrait: false,
+    title: false,
+    speed: true,
+    transparent: false,
+    customControls: false,
+  },
+};
+
+function buildVimeoFullscreenSource(item) {
+  return buildVimeoSource(item.src, item.poster);
+}
+
+function Slide({
+  src,
+  poster,
+  i,
+}: {
+  src: string;
+  poster?: string;
+  i: number;
+}) {
+  return (
+    <div className={styles.slide_wrapper}>
+      <img
+        src="/open-fullscreen.png"
+        alt="Open fullscreen"
+        width="24"
+        height="24"
+        className={styles.open_fullscreen_icon}
+      />
+      <Video
+        src={src}
+        poster={poster}
+        source={buildVimeoSource(src, poster)}
+        options={VIMEO_OPTIONS}
+        alt={\`Video \${i + 1}\`}
+        className={styles.slide}
+      />
+    </div>
+  );
+}
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+      video: {
+        source: buildVimeoFullscreenSource,
+        options: VIMEO_OPTIONS,
+      },
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+const MEDIA = toMediaItems(URLS);
+
+return (
+  <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+    <Slider
+      scroll={{
+        loop: true
+      }}
+      align="center"
+      controls={{
+        dots: {
+          enabled: false,
+        },
+        scrollbar: {
+          enabled: true,
+          root: {
+            style: {
+              bottom: "-52px"
+            }
+          }
+        },
+      }}
+      transitions={{
+        loading: {
+          skeletonCount: 3,
+          skeleton: {
+            mode: "peek",
+            layout: {
+              kind: "slider",
+              direction: "row",
+              style: {
+                gap: 20,
+                justify: "center"
+              },
+              item: {
+                kind: "rect",
+                style: {
+                  width: "100cqw",
+                  maxWidth: "550px",
+                  aspectRatio: "16 / 9",
+                  borderRadius: 12,
+                },
+              },
+              children: [
+                {
+                  kind: "rect",
+                  style: {
+                    width: 162,
+                    height: 32,
+                    borderRadius: 999,
+                    alignSelf: "center",
+                    marginTop: "20px",
+                  },
+                },
+              ],
+            }
+          }
+        }
+      }}
+    >
+      {MEDIA.map((m, i) => {
+        return (
+          <Slide
+            key={\`video-\${m.kind === "video" ? m.src : ""}-\${i}\`}
+            src={m.kind === "video" ? m.src : ""}
+            poster={m.kind === "video" ? m.poster : ""}
+            i={i}
+          />
+        );
+      })}
+    </Slider>
+    <FullscreenAddon />
+  </GalleryCore>
+);
+}`;
+
+const SLIDER_YOUTUBE_VIDEO_IDS = [
+  "zT5RMvM0gaI",
+  "c2h1T06-3vQ",
+  "mTM7F-5999Q",
+  "cJLL_gNpBb8",
+  "IxF55qB4CuQ",
+  "IGOaJnvQdng",
+];
+
+const SLIDER_YOUTUBE_URLS = SLIDER_YOUTUBE_VIDEO_IDS.map((src) => ({
+  kind: "video" as const,
+  src,
+  poster: `https://i.ytimg.com/vi/${src}/hqdefault.jpg`,
+}));
+
+const SLIDER_YOUTUBE_MEDIA = toMediaItems(SLIDER_YOUTUBE_URLS);
+
+function buildYoutubePlyrSource(src: string, poster?: string) {
+  return {
+    type: "video" as const,
+    poster,
+    sources: [{ 
+      src,
+      provider: "youtube" as const,
+    }],
+  };
+}
+
+const YOUTUBE_PLYR_OPTIONS = {
+  ratio: "16:9",
+  controls: [] as string[],
+  youtube: {
+    customControls: false,
+  },
+};
+
+function buildYoutubeFullscreenSource(item: MediaItem, _index: number) {
+  if (item.kind !== "video") {
+    return buildYoutubePlyrSource("");
+  }
+
+  return buildYoutubePlyrSource(item.src, item.poster);
+}
+
+const SLIDER_VIMEO_URLS = [
+  {
+    kind: "video" as const,
+    src: "https://vimeo.com/145140004",
+    poster:
+      "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
+  },
+  {
+    kind: "video" as const,
+    src: "https://vimeo.com/113314928",
+    poster:
+      "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
+  },
+  {
+    kind: "video" as const,
+    src: "https://vimeo.com/172833424",
+    poster:
+      "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
+  },
+  {
+    kind: "video" as const,
+    src: "https://vimeo.com/130632032",
+    poster:
+      "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
+  },
+  {
+    kind: "video" as const,
+    src: "https://vimeo.com/29216771",
+    poster:
+      "https://i.vimeocdn.com/video/195526505-0b6e473889f312924ae8715001157ffd464349eb7d4cef78136668cae68a0ce8-d_640?region=us",
+  },
+  {
+    kind: "video" as const,
+    src: "https://vimeo.com/127223734",
+    poster:
+      "https://i.vimeocdn.com/video/517933160-cfa1bfb51adafa1ea32b3e1c67b79abcfdfd848f35fff141b41c24860fd1e22c-d_640?region=us",
+  },
+];
+
+const SLIDER_VIMEO_MEDIA = toMediaItems(SLIDER_VIMEO_URLS);
+
+function buildVimeoPlyrSource(src: string, poster?: string) {
+  return {
+    type: "video" as const,
+    poster,
+    sources: [
+      {
+        src,
+        provider: "vimeo" as const,
+      },
+    ],
+  };
+}
+
+const VIMEO_PLYR_OPTIONS = {
+  ratio: "16:9",
+  controls: [] as string[],
+  vimeo: {
+    byline: false,
+    portrait: false,
+    title: false,
+    speed: true,
+    transparent: false,
+    customControls: false,
+  },
+};
+
+function buildVimeoFullscreenSource(item: MediaItem, _index: number) {
+  if (item.kind !== "video") {
+    return buildVimeoPlyrSource("");
+  }
+
+  return buildVimeoPlyrSource(item.src, item.poster);
+}
 
 function toDemoFunctionName(demoId: string) {
   return `${toPascalCase(demoId)}Demo`;
@@ -446,16 +3113,441 @@ function createPlaceholderDemoSource(demo: DemoDefinition) {
   ].join("\n");
 }
 
-function DemoCodeBlock(props: { code: string; demoTitle: string }): JSX.Element {
-  const { code, demoTitle } = props;
+const DEFAULT_DEMO_CSS = String.raw`/* app/globals.css or Demo.module.css */
+
+.slide {
+  width: 100cqw;
+  max-width: 550px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+}`;
+
+const VIDEO_FRAME_DEMO_CSS = String.raw`/* app/globals.css or Demo.module.css */
+
+.videoFrame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #0f172a;
+}
+
+.videoFrame > * {
+  width: 100%;
+  height: 100%;
+}`;
+
+const GRID_DEMO_CSS = String.raw`/* app/globals.css or Demo.module.css */
+
+.gridCard {
+  display: grid;
+  gap: 12px;
+}
+
+.gridCard img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 12px;
+}`;
+
+const MASONRY_DEMO_CSS = String.raw`/* app/globals.css or Demo.module.css */
+
+.masonryCard {
+  display: grid;
+  gap: 10px;
+}
+
+.masonryCard img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: 12px;
+}`;
+
+const ENTRIES_DEMO_CSS = String.raw`/* app/globals.css or Demo.module.css */
+
+.entryCard {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 18, 32, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.entryMedia img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+}`;
+
+const FULLSCREEN_DEMO_CSS = String.raw`/* app/globals.css or Demo.module.css */
+
+.fullscreenCaption {
+  max-width: 280px;
+  display: grid;
+  gap: 8px;
+}
+
+.fullscreenCaptionTitle {
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.fullscreenCaptionCopy {
+  margin: 0;
+  color: rgba(11, 18, 32, 0.72);
+  line-height: 1.7;
+}`;
+
+const SLIDER_CARDS_CSS = String.raw`/* app/globals.css or Demo.module.css */
+
+.cardSlide {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 18, 32, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.cardSlide img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 12px;
+}`;
+
+const SLIDER_DEFAULT_CSS = String.raw`.slide {
+  width: 100cqw;
+  max-width: 550px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+}`;
+const SLIDER_LOOP_CSS = String.raw`.slide {
+  width: 100cqw;
+  max-width: 550px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+}`;
+const SLIDER_VIDEO_HTML5_CSS = String.raw`.slide_wrapper {
+  position: relative;
+  width: 100cqw;
+  max-width: 550px;
+}
+
+.open_fullscreen_icon {
+  position: absolute;
+  top: 12;
+  right: 12;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.slide {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+}`;
+const SLIDER_VIDEO_HTML5_LOOP_CSS = String.raw`.slide_wrapper {
+  position: relative;
+  width: 100cqw;
+  max-width: 550px;
+}
+
+.open_fullscreen_icon {
+  position: absolute;
+  top: 12;
+  right: 12;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.slide {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+}`;
+const SLIDER_VIDEO_YOUTUBE_CSS = String.raw`.slide_wrapper {
+  position: relative;
+  width: 100cqw;
+  max-width: 550px;
+}
+
+.open_fullscreen_icon {
+  position: absolute;
+  top: 12;
+  right: 12;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.slide {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+}`;
+const SLIDER_VIDEO_YOUTUBE_LOOP_CSS = String.raw`.slide_wrapper {
+  position: relative;
+  width: 100cqw;
+  max-width: 550px;
+}
+
+.open_fullscreen_icon {
+  position: absolute;
+  top: 12;
+  right: 12;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.slide {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+}`;
+const SLIDER_VIDEO_VIMEO_CSS = String.raw`.slide_wrapper {
+  position: relative;
+  width: 100cqw;
+  max-width: 550px;
+}
+
+.open_fullscreen_icon {
+  position: absolute;
+  top: 12;
+  left: 12;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.slide {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+}`;
+const SLIDER_VIDEO_VIMEO_LOOP_CSS = String.raw`.slide_wrapper {
+  position: relative;
+  width: 100cqw;
+  max-width: 550px;
+}
+
+.open_fullscreen_icon {
+  position: absolute;
+  top: 12;
+  left: 12;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.slide {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+}`;
+const SLIDER_RIGHT_TO_LEFT_CSS = SLIDER_DEFAULT_CSS;
+const SLIDER_GROUP_CELLS_CSS = String.raw`.slide {
+  width: 100cqw;
+  max-width: 280px;
+  display: block;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+}`;
+const SLIDER_FREE_SCROLL_CSS = SLIDER_GROUP_CELLS_CSS;
+const SLIDER_SKIP_SNAPS_CSS = SLIDER_DEFAULT_CSS;
+const SLIDER_CENTER_ALIGN_CSS = SLIDER_DEFAULT_CSS;
+const SLIDER_VARIABLE_WIDTHS_CSS = String.raw`.variableWidthSlide {
+  display: block;
+  object-fit: cover;
+  border-radius: 12px;
+}`;
+const SLIDER_Y_AXIS_CSS = String.raw`.demoCanvasSliderYAxis {
+  height: min(560px, calc(100dvh - 345px));
+  min-height: 320px;
+  container-type: size;
+}
+
+.slide {
+  width: 100cqw;
+  display: block;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+  .demoCanvasSliderYAxis {
+    min-height: 280px;
+  }
+}`;
+const SLIDER_CELLS_PER_SLIDE_CSS = String.raw`.slide {
+  width: 100%;
+  display: block;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+}`;
+const SLIDER_THUMBNAILS_CSS = String.raw`.slide {
+  width: 100cqw;
+  max-width: 550px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.thumbnailThumb {
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.thumbnailSkeletonContainer {
+  padding: 4px;
+}
+
+.thumbnailSkeletonThumb {
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgba(11, 18, 32, 0.08);
+}
+
+.fullscreenThumbnailThumb {
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}`;
+const SLIDER_LAZY_LOAD_CSS = String.raw`.slide {
+  width: 100cqw;
+  max-width: 550px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+  background: rgba(125, 211, 252, 0.14);
+}
+
+.spinner {
+  width: 52px;
+  height: 52px;
+  background: conic-gradient(
+    from 180deg,
+    #cffafe,
+    #67bee5,
+    #0ea5e9,
+    #0284c7,
+    #0369a1,
+    #cffafe
+  );
+  filter: drop-shadow(0 10px 24px rgba(3, 105, 161, 0.28));
+}`;
+const SLIDER_AUTO_SCROLL_CSS = String.raw`.slide {
+  width: 100cqw;
+  max-width: 320px;
+  display: block;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 12px;
+}`;
+const SLIDER_AUTO_PLAY_CSS = String.raw`.slide {
+  width: 100cqw;
+  max-width: 550px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+}`;
+const SLIDER_PROGRESS_CSS = DEFAULT_DEMO_CSS;
+const SLIDER_PARALLAX_CSS = DEFAULT_DEMO_CSS;
+const SLIDER_SCALE_CSS = DEFAULT_DEMO_CSS;
+const SLIDER_FADE_CSS = DEFAULT_DEMO_CSS;
+const GRID_COLUMNS_CSS = GRID_DEMO_CSS;
+const GRID_MIN_COLUMN_WIDTH_CSS = GRID_DEMO_CSS;
+const GRID_LAZY_LOAD_CSS = GRID_DEMO_CSS;
+const GRID_VIDEO_HTML5_CSS = GRID_DEMO_CSS;
+const GRID_VIDEO_YOUTUBE_CSS = GRID_DEMO_CSS;
+const GRID_VIDEO_VIMEO_CSS = GRID_DEMO_CSS;
+const MASONRY_BALANCED_CSS = MASONRY_DEMO_CSS;
+const MASONRY_ROUND_ROBIN_CSS = MASONRY_DEMO_CSS;
+const MASONRY_LAZY_LOAD_CSS = MASONRY_DEMO_CSS;
+const MASONRY_VIDEO_HTML5_CSS = MASONRY_DEMO_CSS;
+const MASONRY_VIDEO_YOUTUBE_CSS = MASONRY_DEMO_CSS;
+const MASONRY_VIDEO_VIMEO_CSS = MASONRY_DEMO_CSS;
+const ENTRIES_SLIDER_CSS = ENTRIES_DEMO_CSS;
+const ENTRIES_GRID_CSS = ENTRIES_DEMO_CSS;
+const ENTRIES_MASONRY_CSS = ENTRIES_DEMO_CSS;
+const FULLSCREEN_CAPTIONS_CSS = FULLSCREEN_DEMO_CSS;
+const FULLSCREEN_THUMBNAILS_CSS = String.raw`.slide {
+  width: 100cqw;
+  max-width: 550px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.fullscreenThumbnailThumb {
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+}`;
+const FULLSCREEN_OVERLAY_CSS = FULLSCREEN_DEMO_CSS;
+const FULLSCREEN_LAZY_LOAD_CSS = FULLSCREEN_DEMO_CSS;
+
+function normalizeDemoSource(code: string) {
+  return code.replaceAll("\\`", "`").replaceAll("\\${", "${");
+}
+
+function DemoCodeBlock(props: {
+  demo: DemoDefinition;
+  typescriptCode: string;
+}): JSX.Element {
+  const { demo, typescriptCode } = props;
+  const normalizedTypescriptCode = normalizeDemoSource(typescriptCode);
+  const normalizedCssCode = normalizeDemoSource(demo.css ?? DEFAULT_DEMO_CSS);
 
   return (
     <CodeBlock
       className={styles.codeBlock}
-      code={code}
-      filename={`${demoTitle}.tsx`}
-      language="tsx"
-      aria-label={`${demoTitle} code example`}
+      code={normalizedTypescriptCode}
+      tabs={[
+        {
+          id: "typescript",
+          label: "TypeScript",
+          code: normalizedTypescriptCode,
+          filename: `${demo.title}.tsx`,
+          language: "tsx",
+        },
+        {
+          id: "css",
+          label: "CSS",
+          code: normalizedCssCode,
+          filename: `${demo.title}.css`,
+          language: "css",
+        },
+      ]}
+      defaultTabId="typescript"
+      aria-label={`${demo.title} code example`}
     />
   );
 }
@@ -472,14 +3564,15 @@ const SelectedDemoPane = memo(function SelectedDemoPane(props: {
     selectedDemoCanvasClassName,
     selectedDemoSource,
   } = props;
+  const [activeTab, setActiveTab] = useState<DemoCanvasTab>("preview");
   const SelectedDemoComponent = selectedDemo.Component;
+  const isPreviewTab = activeTab === "preview";
 
   return (
     <section className={styles.demoCard}>
       <div className={styles.demoHeader}>
         <span className={styles.demoCategory}>{selectedCategoryLabel}</span>
         <h2 className={styles.demoTitle}>{selectedDemo.title}</h2>
-        <p className={styles.demoSummary}>{selectedDemo.summary}</p>
         <div className={styles.tagRow}>
           Add-ons: <span></span>
           {selectedDemo.tags.map((tag) => (
@@ -490,23 +3583,70 @@ const SelectedDemoPane = memo(function SelectedDemoPane(props: {
         </div>
       </div>
 
-      <div className={cx(styles.demoCanvas, selectedDemoCanvasClassName)}>
-        <SelectedDemoComponent />
-      </div>
+      <div className={styles.demoCanvasTabs}>
+        <div
+          className={styles.demoCanvasTabList}
+          aria-label={`${selectedDemo.title} demo view`}
+          data-active-tab={activeTab}
+        >
+          <span
+            aria-hidden="true"
+            className={styles.demoCanvasTabIndicator}
+          />
+          <button
+            type="button"
+            className={cx(
+              styles.demoCanvasTab,
+              isPreviewTab && styles.demoCanvasTabActive
+            )}
+            aria-pressed={isPreviewTab}
+            onClick={() => setActiveTab("preview")}
+          >
+            Preview
+          </button>
+          <button
+            type="button"
+            className={cx(
+              styles.demoCanvasTab,
+              !isPreviewTab && styles.demoCanvasTabActive
+            )}
+            aria-pressed={!isPreviewTab}
+            onClick={() => setActiveTab("code")}
+          >
+            Code
+          </button>
+        </div>
 
-      <DemoCodeBlock
-        key={selectedDemo.id}
-        code={selectedDemoSource}
-        demoTitle={selectedDemo.title}
-      />
-
-      <div className={styles.demoFooter}>
-        <span className={styles.demoFooterLabel}>Planned focus</span>
-        <p className={styles.demoFooterCopy}>{selectedDemo.focus}</p>
+        <div className={styles.demoCanvasPanel}>
+          {isPreviewTab ? (
+            <div
+              className={`${cx(styles.demoCanvas, selectedDemoCanvasClassName)} shadow-sm border border-slate-200`}
+            >
+              <SelectedDemoComponent />
+            </div>
+          ) : (
+            <DemoCodeBlock
+              key={selectedDemo.id}
+              demo={selectedDemo}
+              typescriptCode={selectedDemoSource}
+            />
+          )}
+        </div>
       </div>
     </section>
   );
 });
+
+function FullscreenAddon() {
+
+  const { fullscreenNode } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
 
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => {
@@ -538,6 +3678,30 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
+function subscribeToHydration(): () => void {
+  return () => {};
+}
+
+function useHasMounted(): boolean {
+  return useSyncExternalStore(subscribeToHydration, () => true, () => false);
+}
+
+function useDocumentClientWidth(): number {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      window.addEventListener("resize", onStoreChange);
+      window.visualViewport?.addEventListener("resize", onStoreChange);
+
+      return () => {
+        window.removeEventListener("resize", onStoreChange);
+        window.visualViewport?.removeEventListener("resize", onStoreChange);
+      };
+    },
+    () => document.documentElement.clientWidth,
+    () => 0
+  );
+}
+
 function AnimatedCategoryPanel(props: {
   id: string;
   isOpen: boolean;
@@ -549,6 +3713,10 @@ function AnimatedCategoryPanel(props: {
   const frameRef = useRef<number | null>(null);
   const isFirstRenderRef = useRef(true);
   const isOpenRef = useRef(isOpen);
+  const initialInlineStyle =
+    typeof window === "undefined"
+      ? { height: isOpen ? "auto" : "0px" }
+      : undefined;
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
@@ -607,6 +3775,7 @@ function AnimatedCategoryPanel(props: {
       id={id}
       ref={panelRef}
       className={styles.categoryPanel}
+      style={initialInlineStyle}
       aria-hidden={!isOpen}
       inert={!isOpen}
       onTransitionEnd={(event) => {
@@ -626,21 +3795,21 @@ function AnimatedCategoryPanel(props: {
 
 function SliderDefaultDemo() {
   const URLS = [
-    "https://picsum.photos/id/1020/1600/900",
-    "https://picsum.photos/id/1029/1600/900",
-    "https://picsum.photos/id/1039/1600/900",
-    "https://picsum.photos/id/1049/1600/900",
-    "https://picsum.photos/id/1079/1600/900",
-    "https://picsum.photos/id/1076/1600/900",
+    "https://picsum.photos/id/995/1600/900",
+    "https://picsum.photos/id/996/1600/900",
+    "https://picsum.photos/id/997/1600/900",
+    "https://picsum.photos/id/998/1600/900",
+    "https://picsum.photos/id/999/1600/900",
+    "https://picsum.photos/id/1000/1600/900",
   ];
 
   const FS_URLS = [
-    "https://picsum.photos/id/1020/2400/1350",
-    "https://picsum.photos/id/1029/2400/1350",
-    "https://picsum.photos/id/1039/2400/1350",
-    "https://picsum.photos/id/1049/2400/1350",
-    "https://picsum.photos/id/1079/2400/1350",
-    "https://picsum.photos/id/1076/2400/1350",
+    "https://picsum.photos/id/995/2400/1350",
+    "https://picsum.photos/id/996/2400/1350",
+    "https://picsum.photos/id/997/2400/1350",
+    "https://picsum.photos/id/998/2400/1350",
+    "https://picsum.photos/id/999/2400/1350",
+    "https://picsum.photos/id/1000/2400/1350",
   ];
 
   function Slide({ src, i }: { src: string; i: number }) {
@@ -658,20 +3827,6 @@ function SliderDefaultDemo() {
         }}
       />
     );
-  }
-
-  function FullscreenAddon(props: {
-  fullscreenEnabled?: boolean;
-  }) {
-    const { fullscreenEnabled = true } = props;
-
-    const { fullscreenNode } = useFullscreenController({
-      fullscreen: {
-        enabled: fullscreenEnabled,
-      },
-    });
-
-    return <>{fullscreenNode}</>;
   }
 
   const MEDIA = toMediaItems(URLS);
@@ -711,7 +3866,11 @@ function SliderDefaultDemo() {
       >
         {MEDIA.map((m, i) => {
           return (
-            <Slide key={`img-${m.kind === 'image' ? m.src : ''}-${i}`} src={m.kind === 'image' ? m.src : ''} i={i} />
+            <Slide 
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''} 
+              i={i} 
+            />
           );
         })}
       </Slider>
@@ -722,21 +3881,21 @@ function SliderDefaultDemo() {
 
 function SliderLoopDemo() {
   const URLS = [
-    "https://picsum.photos/id/1020/1600/900",
-    "https://picsum.photos/id/1029/1600/900",
-    "https://picsum.photos/id/1039/1600/900",
-    "https://picsum.photos/id/1049/1600/900",
     "https://picsum.photos/id/1079/1600/900",
-    "https://picsum.photos/id/1076/1600/900",
+    "https://picsum.photos/id/1080/1600/900",
+    "https://picsum.photos/id/1081/1600/900",
+    "https://picsum.photos/id/1082/1600/900",
+    "https://picsum.photos/id/1083/1600/900",
+    "https://picsum.photos/id/1084/1600/900",
   ];
 
   const FS_URLS = [
-    "https://picsum.photos/id/1020/2400/1350",
-    "https://picsum.photos/id/1029/2400/1350",
-    "https://picsum.photos/id/1039/2400/1350",
-    "https://picsum.photos/id/1049/2400/1350",
     "https://picsum.photos/id/1079/2400/1350",
-    "https://picsum.photos/id/1076/2400/1350",
+    "https://picsum.photos/id/1080/2400/1350",
+    "https://picsum.photos/id/1081/2400/1350",
+    "https://picsum.photos/id/1082/2400/1350",
+    "https://picsum.photos/id/1083/2400/1350",
+    "https://picsum.photos/id/1084/2400/1350",
   ];
 
   function Slide({ src, i }: { src: string; i: number }) {
@@ -754,20 +3913,6 @@ function SliderLoopDemo() {
         }}
       />
     );
-  }
-
-  function FullscreenAddon(props: {
-  fullscreenEnabled?: boolean;
-  }) {
-    const { fullscreenEnabled = true } = props;
-
-    const { fullscreenNode } = useFullscreenController({
-      fullscreen: {
-        enabled: fullscreenEnabled,
-      },
-    });
-
-    return <>{fullscreenNode}</>;
   }
 
   const MEDIA = toMediaItems(URLS);
@@ -812,7 +3957,11 @@ function SliderLoopDemo() {
       >
         {MEDIA.map((m, i) => {
           return (
-            <Slide key={`img-${m.kind === 'image' ? m.src : ''}-${i}`} src={m.kind === 'image' ? m.src : ''} i={i} />
+            <Slide 
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''}
+              i={i} 
+            />
           );
         })}
       </Slider>
@@ -823,12 +3972,30 @@ function SliderLoopDemo() {
 
 function SliderVideoHtml5Demo() {
   const URLS = [
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps.mp4" },
-    { src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9694226-hd_1920_1080_25fps.mp4" },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/12354535_1920_1080_30fps-0.jpg" 
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg" 
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9694226-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg"
+    },
   ];
 
   function SlideVideoCell({
@@ -878,21 +4045,7 @@ function SliderVideoHtml5Demo() {
     );
   }
 
-  function FullscreenAddon(props: {
-  fullscreenEnabled?: boolean;
-  }) {
-    const { fullscreenEnabled = true } = props;
-
-    const { fullscreenNode } = useFullscreenController({
-      fullscreen: {
-        enabled: fullscreenEnabled,
-      },
-    });
-
-    return <>{fullscreenNode}</>;
-  }
-
-  const MEDIA = useMemo(() => toMediaItems(URLS), []);
+  const MEDIA = toMediaItems(URLS);
 
   return (
     <GalleryCore layout="slider" fullscreenItems={MEDIA}>
@@ -945,7 +4098,12 @@ function SliderVideoHtml5Demo() {
       >
         {MEDIA.map((m, i) => {
           return (
-            <SlideVideoCell key={`video-${m.kind === 'video' ? m.src : ''}-${i}`} src={m.kind === 'video' ? m.src : ''} i={i} />
+            <SlideVideoCell 
+              key={`video-${m.kind === 'video' ? m.src : ''}-${i}`} 
+              src={m.kind === 'video' ? m.src : ''}
+              poster={m.kind === 'video' ? m.poster : ''}
+              i={i} 
+            />
           );
         })}
       </Slider>
@@ -955,71 +4113,1990 @@ function SliderVideoHtml5Demo() {
 }
 
 function SliderVideoHtml5LoopDemo() {
-  return null;
+  const URLS = [
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/12354535_1920_1080_30fps-0.jpg" 
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg" 
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps-0.jpg"
+    },
+    { 
+      src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9694226-hd_1920_1080_25fps.mp4",
+      poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg"
+    },
+  ];
+
+  function SlideVideoCell({
+    src,
+    poster,
+    i,
+  }: {
+    src: string;
+    poster?: string;
+    i: number;
+  }) {
+    return (
+      <div
+        style={{
+          position: "relative",
+          width: "100cqw",
+          maxWidth: "550px",
+        }}
+      >
+        <img
+          src="/open-fullscreen.png"
+          alt="Open fullscreen"
+          width="24"
+          height="24"
+          className={styles.open_fs_video}
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 9999,
+            cursor: "pointer",
+          }}
+        />
+
+        <Video
+          src={src}
+          poster={poster}
+          alt={`Video ${i + 1}`}
+          style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            display: "block",
+            borderRadius: 12,
+          }}
+        />
+      </div>
+    );
+  }
+
+  const MEDIA = toMediaItems(URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+      <Slider
+        scroll={{
+          loop: true
+        }}
+        align="center"
+        controls={{
+          dots: {
+            root: {
+              style: {
+                bottom: "-52px"
+              }
+            }
+          }
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                  justify: "center"
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                  },
+                },
+                children: [
+                  {
+                    kind: "rect",
+                    style: {
+                      width: 162,
+                      height: 32,
+                      borderRadius: 999,
+                      alignSelf: "center",
+                      marginTop: "20px",
+                    },
+                  },
+                ],
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <SlideVideoCell 
+              key={`video-${m.kind === 'video' ? m.src : ''}-${i}`}
+              src={m.kind === 'video' ? m.src : ''}
+              poster={m.kind === 'video' ? m.poster : ''}
+              i={i} 
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderVideoYoutubeDemo() {
-  return null;
+  function SlideVideoCell({
+    src,
+    poster,
+    i,
+  }: {
+    src: string;
+    poster?: string;
+    i: number;
+  }) {
+    return (
+      <div
+        style={{
+          position: "relative",
+          width: "100cqw",
+          maxWidth: "550px",
+        }}
+      >
+        <img
+          src="/open-fullscreen.png"
+          alt="Open fullscreen"
+          width="24"
+          height="24"
+          className={styles.open_fs_video}
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 9999,
+            cursor: "pointer",
+          }}
+        />
+
+        <Video
+          src={src}
+          poster={poster}
+          source={buildYoutubePlyrSource(src, poster)}
+          options={YOUTUBE_PLYR_OPTIONS}
+          alt={`Video ${i + 1}`}
+          style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            display: "block",
+            borderRadius: 12,
+          }}
+        />
+      </div>
+    );
+  }
+
+  function FullscreenAddon() {
+
+    const { fullscreenNode } = useFullscreenController({
+      fullscreen: {
+        enabled: true,
+        video: {
+          source: buildYoutubeFullscreenSource,
+          options: YOUTUBE_PLYR_OPTIONS,
+        },
+      },
+    });
+
+    return <>{fullscreenNode}</>;
+  }
+
+  const MEDIA = SLIDER_YOUTUBE_MEDIA;
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+      <Slider
+        controls={{
+          dots: {
+            enabled: false,
+          },
+          scrollbar: {
+            enabled: true,
+            root: {
+              style: {
+                bottom: "-52px"
+              }
+            }
+          },
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                  },
+                },
+                children: [
+                  {
+                    kind: "rect",
+                    style: {
+                      width: "100cqw",
+                      maxWidth: "52%",
+                      height: 24,
+                      borderRadius: 999,
+                      alignSelf: "center",
+                      marginTop: "28px",
+                    },
+                  },
+                ],
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <SlideVideoCell
+              key={`video-${m.kind === 'video' ? m.src : ''}-${i}`}
+              src={m.kind === 'video' ? m.src : ''}
+              poster={m.kind === 'video' ? m.poster : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderVideoYoutubeLoopDemo() {
-  return null;
+  function SlideVideoCell({
+    src,
+    poster,
+    i,
+  }: {
+    src: string;
+    poster?: string;
+    i: number;
+  }) {
+    return (
+      <div
+        style={{
+          position: "relative",
+          width: "100cqw",
+          maxWidth: "550px",
+        }}
+      >
+        <img
+          src="/open-fullscreen.png"
+          alt="Open fullscreen"
+          width="24"
+          height="24"
+          className={styles.open_fs_video}
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 9999,
+            cursor: "pointer",
+          }}
+        />
+
+        <Video
+          src={src}
+          poster={poster}
+          source={buildYoutubePlyrSource(src, poster)}
+          options={YOUTUBE_PLYR_OPTIONS}
+          alt={`Video ${i + 1}`}
+          style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            display: "block",
+            borderRadius: 12,
+          }}
+        />
+      </div>
+    );
+  }
+
+  function FullscreenAddon(props: {
+    fullscreenEnabled?: boolean;
+  }) {
+    const { fullscreenEnabled = true } = props;
+
+    const { fullscreenNode } = useFullscreenController({
+      fullscreen: {
+        enabled: fullscreenEnabled,
+        video: {
+          source: buildYoutubeFullscreenSource,
+          options: YOUTUBE_PLYR_OPTIONS,
+        },
+      },
+    });
+
+    return <>{fullscreenNode}</>;
+  }
+
+  const MEDIA = SLIDER_YOUTUBE_MEDIA;
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+      <Slider
+        scroll={{
+          loop: true
+        }}
+        align="center"
+        controls={{
+          dots: {
+            enabled: false,
+          },
+          scrollbar: {
+            enabled: true,
+            root: {
+              style: {
+                bottom: "-52px"
+              }
+            }
+          },
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                  justify: "center"
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                  },
+                },
+                children: [
+                  {
+                    kind: "rect",
+                    style: {
+                      width: "100cqw",
+                      maxWidth: "52%",
+                      height: 24,
+                      borderRadius: 999,
+                      alignSelf: "center",
+                      marginTop: "28px",
+                    },
+                  },
+                ],
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <SlideVideoCell
+              key={`video-${m.kind === 'video' ? m.src : ''}-${i}`}
+              src={m.kind === 'video' ? m.src : ''}
+              poster={m.kind === 'video' ? m.poster : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderVideoVimeoDemo() {
-  return null;
+  function SlideVideoCell({
+    src,
+    poster,
+    i,
+  }: {
+    src: string;
+    poster?: string;
+    i: number;
+  }) {
+    return (
+      <div
+        style={{
+          position: "relative",
+          width: "100cqw",
+          maxWidth: "550px",
+        }}
+      >
+        <img
+          src="/open-fullscreen.png"
+          alt="Open fullscreen"
+          width="24"
+          height="24"
+          className={styles.open_fs_video}
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            zIndex: 9999,
+            cursor: "pointer",
+          }}
+        />
+
+        <Video
+          src={src}
+          poster={poster}
+          source={buildVimeoPlyrSource(src, poster)}
+          options={VIMEO_PLYR_OPTIONS}
+          alt={`Video ${i + 1}`}
+          style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            display: "block",
+            borderRadius: 12,
+          }}
+        />
+      </div>
+    );
+  }
+
+  function FullscreenAddon(props: {
+    fullscreenEnabled?: boolean;
+  }) {
+    const { fullscreenEnabled = true } = props;
+
+    const { fullscreenNode } = useFullscreenController({
+      fullscreen: {
+        enabled: fullscreenEnabled,
+        video: {
+          source: buildVimeoFullscreenSource,
+          options: VIMEO_PLYR_OPTIONS,
+        },
+      },
+    });
+
+    return <>{fullscreenNode}</>;
+  }
+
+  const MEDIA = SLIDER_VIMEO_MEDIA;
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+      <Slider
+        controls={{
+          dots: {
+            enabled: false,
+          },
+          scrollbar: {
+            enabled: true,
+            root: {
+              style: {
+                bottom: "-52px"
+              }
+            }
+          }
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                  },
+                },
+                children: [
+                  {
+                    kind: "rect",
+                    style: {
+                      width: "100cqw",
+                      maxWidth: "52%",
+                      height: 24,
+                      borderRadius: 999,
+                      alignSelf: "center",
+                      marginTop: "28px",
+                    },
+                  },
+                ],
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <SlideVideoCell
+              key={`video-${m.kind === 'video' ? m.src : ''}-${i}`}
+              src={m.kind === 'video' ? m.src : ''}
+              poster={m.kind === 'video' ? m.poster : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderVideoVimeoLoopDemo() {
-  return null;
+  function SlideVideoCell({
+    src,
+    poster,
+    i,
+  }: {
+    src: string;
+    poster?: string;
+    i: number;
+  }) {
+    return (
+      <div
+        style={{
+          position: "relative",
+          width: "100cqw",
+          maxWidth: "550px",
+        }}
+      >
+        <img
+          src="/open-fullscreen.png"
+          alt="Open fullscreen"
+          width="24"
+          height="24"
+          className={styles.open_fs_video}
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            zIndex: 9999,
+            cursor: "pointer",
+          }}
+        />
+
+        <Video
+          src={src}
+          poster={poster}
+          source={buildVimeoPlyrSource(src, poster)}
+          options={VIMEO_PLYR_OPTIONS}
+          alt={`Video ${i + 1}`}
+          style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            display: "block",
+            borderRadius: 12,
+          }}
+        />
+      </div>
+    );
+  }
+
+  function FullscreenAddon(props: {
+    fullscreenEnabled?: boolean;
+  }) {
+    const { fullscreenEnabled = true } = props;
+
+    const { fullscreenNode } = useFullscreenController({
+      fullscreen: {
+        enabled: fullscreenEnabled,
+        video: {
+          source: buildVimeoFullscreenSource,
+          options: VIMEO_PLYR_OPTIONS,
+        },
+      },
+    });
+
+    return <>{fullscreenNode}</>;
+  }
+
+  const MEDIA = SLIDER_VIMEO_MEDIA;
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={MEDIA}>
+      <Slider
+        scroll={{
+          loop: true
+        }}
+        align="center"
+        controls={{
+          dots: {
+            enabled: false,
+          },
+          scrollbar: {
+            enabled: true,
+            root: {
+              style: {
+                bottom: "-52px"
+              }
+            }
+          }
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                  justify: "center"
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                  },
+                },
+                children: [
+                  {
+                    kind: "rect",
+                    style: {
+                      width: "100cqw",
+                      maxWidth: "52%",
+                      height: 24,
+                      borderRadius: 999,
+                      alignSelf: "center",
+                      marginTop: "28px",
+                    },
+                  },
+                ],
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <SlideVideoCell
+              key={`video-${m.kind === 'video' ? m.src : ''}-${i}`}
+              src={m.kind === 'video' ? m.src : ''}
+              poster={m.kind === 'video' ? m.poster : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderRightToLeftDemo() {
-  return null;
+  const URLS = [
+    "https://picsum.photos/id/1049/1600/900",
+    "https://picsum.photos/id/1050/1600/900",
+    "https://picsum.photos/id/1051/1600/900",
+    "https://picsum.photos/id/1052/1600/900",
+    "https://picsum.photos/id/1053/1600/900",
+    "https://picsum.photos/id/1054/1600/900",
+  ];
+
+  const FS_URLS = [
+    "https://picsum.photos/id/1049/2400/1350",
+    "https://picsum.photos/id/1050/2400/1350",
+    "https://picsum.photos/id/1051/2400/1350",
+    "https://picsum.photos/id/1052/2400/1350",
+    "https://picsum.photos/id/1053/2400/1350",
+    "https://picsum.photos/id/1054/2400/1350",
+  ];
+
+  function Slide({ src, i }: { src: string; i: number }) {
+    return (
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100cqw",
+          maxWidth: "550px",
+          aspectRatio: '16 / 9',
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
+    );
+  }
+
+  const MEDIA = toMediaItems(URLS);
+
+  const FS_MEDIA = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        direction={{
+          dir: "rtl",
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              style: {
+                overflow: "hidden",
+                direction: "rtl",
+              },
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                  },
+                },
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <Slide
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderGroupCellsDemo() {
-  return null;
+  const URLS = [
+    "https://picsum.photos/id/1055/1200/1200",
+    "https://picsum.photos/id/1056/1200/1200",
+    "https://picsum.photos/id/1057/1200/1200",
+    "https://picsum.photos/id/1058/1200/1200",
+    "https://picsum.photos/id/1059/1200/1200",
+    "https://picsum.photos/id/1060/1200/1200",
+    "https://picsum.photos/id/1061/1200/1200",
+    "https://picsum.photos/id/1062/1200/1200",
+    "https://picsum.photos/id/1063/1200/1200",
+    "https://picsum.photos/id/1064/1200/1200",
+    "https://picsum.photos/id/1065/1200/1200",
+    "https://picsum.photos/id/1066/1200/1200",
+  ];
+
+  const FS_URLS = [
+    "https://picsum.photos/id/1055/2400/2400",
+    "https://picsum.photos/id/1056/2400/2400",
+    "https://picsum.photos/id/1057/2400/2400",
+    "https://picsum.photos/id/1058/2400/2400",
+    "https://picsum.photos/id/1059/2400/2400",
+    "https://picsum.photos/id/1060/2400/2400",
+    "https://picsum.photos/id/1061/2400/2400",
+    "https://picsum.photos/id/1062/2400/2400",
+    "https://picsum.photos/id/1063/2400/2400",
+    "https://picsum.photos/id/1064/2400/2400",
+    "https://picsum.photos/id/1065/2400/2400",
+    "https://picsum.photos/id/1066/2400/2400",
+  ];
+
+  function Slide({ src, i }: { src: string; i: number }) {
+    return (
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100cqw",
+          maxWidth: "280px",
+          aspectRatio: '2 /3',
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
+    );
+  }
+
+  const MEDIA = toMediaItems(URLS);
+
+  const FS_MEDIA = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        scroll={{
+          groupCells: true
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 4,
+            skeleton: {
+              mode: "peek",
+              style: {
+                overflow: "hidden"
+              },
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "280px",
+                    aspectRatio: '2 / 3',
+                    borderRadius: 12,
+                  },
+                },
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <Slide
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderFreeScrollDemo() {
-  return null;
+  const URLS = [
+    "https://picsum.photos/id/1067/1200/1200",
+    "https://picsum.photos/id/1068/1200/1200",
+    "https://picsum.photos/id/1069/1200/1200",
+    "https://picsum.photos/id/1070/1200/1200",
+    "https://picsum.photos/id/1071/1200/1200",
+    "https://picsum.photos/id/1072/1200/1200",
+    "https://picsum.photos/id/1073/1200/1200",
+    "https://picsum.photos/id/1074/1200/1200",
+    "https://picsum.photos/id/1075/1200/1200",
+    "https://picsum.photos/id/1076/1200/1200",
+    "https://picsum.photos/id/1077/1200/1200",
+    "https://picsum.photos/id/1078/1200/1200",
+  ];
+
+  const FS_URLS = [
+    "https://picsum.photos/id/1067/2400/2400",
+    "https://picsum.photos/id/1068/2400/2400",
+    "https://picsum.photos/id/1069/2400/2400",
+    "https://picsum.photos/id/1070/2400/2400",
+    "https://picsum.photos/id/1071/2400/2400",
+    "https://picsum.photos/id/1072/2400/2400",
+    "https://picsum.photos/id/1073/2400/2400",
+    "https://picsum.photos/id/1074/2400/2400",
+    "https://picsum.photos/id/1075/2400/2400",
+    "https://picsum.photos/id/1076/2400/2400",
+    "https://picsum.photos/id/1077/2400/2400",
+    "https://picsum.photos/id/1078/2400/2400",
+  ];
+
+  function Slide({ src, i }: { src: string; i: number }) {
+    return (
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100cqw",
+          maxWidth: "280px",
+          aspectRatio: '2 /3',
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
+    );
+  }
+
+  const MEDIA = toMediaItems(URLS);
+
+  const FS_MEDIA = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        scroll={{
+          freeScroll: true,
+          groupCells: true
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 4,
+            skeleton: {
+              mode: "peek",
+              style: {
+                overflow: "hidden"
+              },
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "280px",
+                    aspectRatio: '2 / 3',
+                    borderRadius: 12,
+                  },
+                },
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <Slide
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderSkipSnapsDemo() {
-  return null;
+  const URLS = [
+    "https://picsum.photos/id/1001/1600/900",
+    "https://picsum.photos/id/1002/1600/900",
+    "https://picsum.photos/id/1003/1600/900",
+    "https://picsum.photos/id/1004/1600/900",
+    "https://picsum.photos/id/1005/1600/900",
+    "https://picsum.photos/id/1006/1600/900",
+  ];
+
+  const FS_URLS = [
+    "https://picsum.photos/id/1001/2400/1350",
+    "https://picsum.photos/id/1002/2400/1350",
+    "https://picsum.photos/id/1003/2400/1350",
+    "https://picsum.photos/id/1004/2400/1350",
+    "https://picsum.photos/id/1005/2400/1350",
+    "https://picsum.photos/id/1006/2400/1350",
+  ];
+
+  function Slide({ src, i }: { src: string; i: number }) {
+    return (
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100cqw",
+          maxWidth: "550px",
+          aspectRatio: '16 / 9',
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
+    );
+  }
+
+  const MEDIA = toMediaItems(URLS);
+
+  const FS_MEDIA = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        scroll={{
+          skipSnaps: true,
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              style: {
+                overflow: "hidden"
+              },
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: '16 / 9',
+                    borderRadius: 12,
+                  },
+                },
+              },
+            }
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <Slide
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderCenterAlignDemo() {
-  return null;
+  const URLS = [
+    "https://picsum.photos/id/107/1600/900",
+    "https://picsum.photos/id/1008/1600/900",
+    "https://picsum.photos/id/1009/1600/900",
+    "https://picsum.photos/id/1010/1600/900",
+    "https://picsum.photos/id/1011/1600/900",
+    "https://picsum.photos/id/1012/1600/900",
+  ];
+
+  const FS_URLS = [
+    "https://picsum.photos/id/107/2400/1350",
+    "https://picsum.photos/id/1008/2400/1350",
+    "https://picsum.photos/id/1009/2400/1350",
+    "https://picsum.photos/id/1010/2400/1350",
+    "https://picsum.photos/id/1011/2400/1350",
+    "https://picsum.photos/id/1012/2400/1350",
+  ];
+
+  function Slide({ src, i }: { src: string; i: number }) {
+    return (
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100cqw",
+          maxWidth: "550px",
+          aspectRatio: "16 / 9",
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
+    );
+  }
+
+  const MEDIA = toMediaItems(URLS);
+
+  const FS_MEDIA = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        align="center"
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              centering: "first",
+              style: {
+                overflow: "hidden",
+              },
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                itemWrapStyle: {
+                  width: "100cqw",
+                  maxWidth: "550px",
+                  aspectRatio: "16 / 9",
+                },
+              },
+            },
+          }
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <Slide
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderVariableWidthsDemo() {
-  return null;
+  const SLIDES = [
+    {
+      src: "https://picsum.photos/id/1013/1200/900",
+      fullscreenSrc: "https://picsum.photos/id/1013/2400/1800",
+      width: 220,
+      height: 320,
+    },
+    {
+      src: "https://picsum.photos/id/1014/1020/630",
+      fullscreenSrc: "https://picsum.photos/id/1014/2040/1260",
+      width: 420,
+      height: 320,
+    },
+    {
+      src: "https://picsum.photos/id/1015/780/1340",
+      fullscreenSrc: "https://picsum.photos/id/1015/1560/2680",
+      width: 260,
+      height: 320,
+    },
+    {
+      src: "https://picsum.photos/id/1016/1280/720",
+      fullscreenSrc: "https://picsum.photos/id/1016/2560/1440",
+      width: 360,
+      height: 320,
+    },
+    {
+      src: "https://picsum.photos/id/101/1200/900",
+      fullscreenSrc: "https://picsum.photos/id/101/2400/1800",
+      width: 200,
+      height: 320,
+    },
+    {
+      src: "https://picsum.photos/id/1018/900/570",
+      fullscreenSrc: "https://picsum.photos/id/1018/1800/1140",
+      width: 300,
+      height: 320,
+    },
+    {
+      src: "https://picsum.photos/id/18/900/570",
+      fullscreenSrc: "https://picsum.photos/id/18/1800/1140",
+      width: 500,
+      height: 320,
+    },
+    {
+      src: "https://picsum.photos/id/19/900/570",
+      fullscreenSrc: "https://picsum.photos/id/19/1800/1140",
+      width: 250,
+      height: 320,
+    },
+  ];
+
+  const SKELETON_GAP = 20;
+  const SKELETON_VISIBLE_SLIDES = 2;
+
+  function Slide(props: { src: string; width: number; height: number; i: number }) {
+    const { src, width, height, i } = props;
+
+    return (
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        className={styles.variableWidthSlide}
+        style={{ width, height }}
+      />
+    );
+  }
+
+  const MEDIA = toMediaItems(SLIDES.map((slide) => slide.src));
+  const FS_MEDIA = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        align="center"
+        transitions={{
+          loading: {
+            skeletonCount: SKELETON_VISIBLE_SLIDES,
+            skeleton: {
+              mode: "peek",
+              centering: "first",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: SKELETON_GAP,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                slots: SLIDES.map((slide) => ({
+                  itemWrapStyle: {
+                    width: slide.width,
+                    height: slide.height,
+                  },
+                })),
+              },
+            },
+          },
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          const slide = SLIDES[i];
+
+          return (
+            <Slide
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''}
+              width={slide.width}
+              height={slide.height}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderYAxisDemo() {
-  return null;
+  const URLS = [
+    "https://picsum.photos/id/1019/1600/900",
+    "https://picsum.photos/id/1020/1600/900",
+    "https://picsum.photos/id/1021/1600/900",
+    "https://picsum.photos/id/1022/1600/900",
+    "https://picsum.photos/id/1023/1600/900",
+    "https://picsum.photos/id/1024/1600/900",
+  ];
+
+  const FS_URLS = [
+    "https://picsum.photos/id/1019/2400/1350",
+    "https://picsum.photos/id/1020/2400/1350",
+    "https://picsum.photos/id/1021/2400/1350",
+    "https://picsum.photos/id/1022/2400/1350",
+    "https://picsum.photos/id/1023/2400/1350",
+    "https://picsum.photos/id/1024/2400/1350",
+  ];
+
+  function Slide({ src, i }: { src: string; i: number }) {
+    return (
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100cqw",
+          aspectRatio: "16 / 7",
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
+    );
+  }
+
+  const MEDIA = toMediaItems(URLS);
+  const FS_MEDIA = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        direction={{
+          axis: "y",
+        }}
+        elements={{
+          viewport: {
+            style: {
+              height: "100cqh",
+              maxHeight: "530px",
+            },
+          },
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "col",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                itemWrapStyle: {
+                  width: "100cqw",
+                  aspectRatio: "16 / 7",
+                },
+              },
+            },
+          },
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <Slide
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderCellsPerSlideDemo() {
-  return null;
+  const URLS = [
+    "https://picsum.photos/id/1025/1200/1200",
+    "https://picsum.photos/id/1026/1200/1200",
+    "https://picsum.photos/id/1027/1200/1200",
+    "https://picsum.photos/id/1028/1200/1200",
+    "https://picsum.photos/id/1029/1200/1200",
+    "https://picsum.photos/id/103/1200/1200",
+    "https://picsum.photos/id/1031/1200/1200",
+    "https://picsum.photos/id/1032/1200/1200",
+    "https://picsum.photos/id/1033/1200/1200",
+    "https://picsum.photos/id/104/1200/1200",
+    "https://picsum.photos/id/1035/1200/1200",
+    "https://picsum.photos/id/1036/1200/1200",
+  ];
+
+  const FS_URLS = [
+    "https://picsum.photos/id/1025/2400/2400",
+    "https://picsum.photos/id/1026/2400/2400",
+    "https://picsum.photos/id/1027/2400/2400",
+    "https://picsum.photos/id/1028/2400/2400",
+    "https://picsum.photos/id/1029/2400/2400",
+    "https://picsum.photos/id/103/2400/2400",
+    "https://picsum.photos/id/1031/2400/2400",
+    "https://picsum.photos/id/1032/2400/2400",
+    "https://picsum.photos/id/1033/2400/2400",
+    "https://picsum.photos/id/104/2400/2400",
+    "https://picsum.photos/id/1035/2400/2400",
+    "https://picsum.photos/id/1036/2400/2400",
+  ];
+
+  const CELLS_PER_SLIDE = {
+    xs: 1,
+    sm: 2,
+    md: 3,
+    lg: 4,
+  };
+
+  function Slide({ src, i }: { src: string; i: number }) {
+    return (
+      <img
+        src={src}
+        alt={`Slide ${i + 1}`}
+        style={{
+          width: "100%",
+          aspectRatio: "2 / 3",
+          objectFit: "cover",
+          display: "block",
+          borderRadius: 12,
+        }}
+      />
+    );
+  }
+
+  const MEDIA = toMediaItems(URLS);
+  const FS_MEDIA = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        layout={{
+          cellsPerSlide: CELLS_PER_SLIDE,
+        }}
+        scroll={{
+          groupCells: true
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: CELLS_PER_SLIDE,
+            skeleton: {
+              mode: "fit",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    aspectRatio: "2 / 3",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {MEDIA.map((m, i) => {
+          return (
+            <Slide
+              key={`img-${m.kind === 'image' ? m.src : ''}-${i}`}
+              src={m.kind === 'image' ? m.src : ''}
+              i={i}
+            />
+          );
+        })}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}
+
+const THUMBNAIL_DEMO_SLIDES = [
+  {
+    slideSrc: "https://picsum.photos/id/1037/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1037/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1037/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1038/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1038/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1038/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1039/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1039/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1039/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1040/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1040/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1040/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1041/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1041/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1041/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1042/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1042/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1042/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1043/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1043/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1043/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1044/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1044/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1044/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1045/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1045/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1045/320/200",
+  },
+  {
+    slideSrc: "https://picsum.photos/id/1047/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/1047/2400/1350",
+    thumbSrc: "https://picsum.photos/id/1047/320/200",
+  },
+];
+
+function ThumbnailDemoSlide(props: { src: string; i: number }) {
+  const { src, i } = props;
+
+  return (
+    <img
+      src={src}
+      alt={`Slide ${i + 1}`}
+      style={{
+        width: "100cqw",
+        maxWidth: "550px",
+        aspectRatio: "16 / 9",
+        objectFit: "cover",
+        display: "block",
+        borderRadius: 12,
+      }}
+    />
+  );
+}
+
+function ThumbnailDemoThumb(props: { src: string; i: number }) {
+  const { src, i } = props;
+
+  return (
+    <img
+      src={src}
+      alt={`Thumbnail ${i + 1}`}
+      className={styles.thumbnailImage}
+    />
+  );
 }
 
 function SliderThumbnailsDemo() {
-  return null;
+  const [indexChannel] = useState(() => createSliderIndexChannel());
+  const media = toMediaItems(
+    THUMBNAIL_DEMO_SLIDES.map((slide) => slide.slideSrc)
+  );
+  const fullscreenMedia = toMediaItems(
+    THUMBNAIL_DEMO_SLIDES.map((slide) => slide.fullscreenSrc)
+  );
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        indexChannel={indexChannel}
+        controls={{
+          dots: {
+            enabled: false
+          }
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <ThumbnailDemoSlide
+            key={`img-${item.kind === "image" ? item.src : ""}-${i}`}
+            src={THUMBNAIL_DEMO_SLIDES[i]?.slideSrc ?? ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+
+      <ThumbnailSlider
+        indexChannel={indexChannel}
+        options={{
+          layout: {
+            position: "bottom",
+            gap: 12,
+            thumbnail: {
+              width: 96,
+              height: 60,
+            },
+          },
+          scroll: {
+            centerActiveThumb: true,
+          },
+          controls: {
+            enabled: true,
+          },
+          elements: {
+            container: {
+              style: {
+                marginTop: 14,
+              },
+            },
+            thumbnail: {
+              className: styles.thumbnailThumb,
+            },
+          },
+          transitions: {
+            loading: {
+              skeletonCount: 9,
+              elements: {
+                thumbnail: {
+                  style: {
+                    borderRadius: 10,
+                  },
+                },
+              },
+            }
+          }
+        }}
+      >
+        {THUMBNAIL_DEMO_SLIDES.map((slide, i) => (
+          <ThumbnailDemoThumb
+            key={`thumb-${slide.thumbSrc}`}
+            src={slide.thumbSrc}
+            i={i}
+          />
+        ))}
+      </ThumbnailSlider>
+
+      <FullscreenThumbnailRailAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderLazyLoadDemo() {
-  return null;
+  const URLS = [
+    "https://picsum.photos/id/1048/1600/900",
+    "https://picsum.photos/id/1049/1600/900",
+    "https://picsum.photos/id/1050/1600/900",
+    "https://picsum.photos/id/1051/1600/900",
+    "https://picsum.photos/id/1052/1600/900",
+    "https://picsum.photos/id/1053/1600/900",
+  ];
+
+  const FS_URLS = [
+    "https://picsum.photos/id/1048/2400/1350",
+    "https://picsum.photos/id/1049/2400/1350",
+    "https://picsum.photos/id/1050/2400/1350",
+    "https://picsum.photos/id/1051/2400/1350",
+    "https://picsum.photos/id/1052/2400/1350",
+    "https://picsum.photos/id/1053/2400/1350",
+  ];
+
+  const MEDIA = toMediaItems(URLS);
+  const FS_MEDIA = toMediaItems(FS_URLS);
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        lazyLoad={{
+          enabled: true,
+          spinner: true,
+          spinnerClassName: styles.spinner,
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              style: {
+                overflow: "hidden",
+              },
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {MEDIA.map((item, i) => (
+          <img
+            key={`img-${item.kind === "image" ? item.src : ""}-${i}`}
+            src={item.kind === "image" ? item.src : ""}
+            alt={`Slide ${i + 1}`}
+            className={styles.slide}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderAutoScrollDemo() {
-  return null;
+  const SLIDES = [
+    {
+      src: "https://picsum.photos/id/1055/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1055/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1056/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1056/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1057/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1057/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1058/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1058/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1059/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1059/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1060/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1060/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1061/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1061/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1062/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1062/2400/2400",
+    },
+  ];
+
+  const MEDIA = toMediaItems(SLIDES.map((slide) => slide.src));
+  const FS_MEDIA = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        align="center"
+        scroll={{
+          loop: true,
+        }}
+        auto={{
+          scroll: {
+            enabled: true,
+          },
+        }}
+        controls={{
+          dots: {
+            enabled: false,
+          },
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                  justify: "center"
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                itemWrapStyle: {
+                  width: "100cqw",
+                  maxWidth: "320px",
+                  aspectRatio: "4 / 5",
+                },
+              },
+            },
+          },
+        }}
+      >
+        {MEDIA.map((item, i) => (
+          <img
+            key={`img-${item.kind === "image" ? item.src : ""}-${i}`}
+            src={item.kind === "image" ? item.src : ""}
+            alt={`Slide ${i + 1}`}
+            style={{
+              width: "100cqw",
+              maxWidth: "320px",
+              aspectRatio: "4 / 5",
+              objectFit: "cover",
+              display: "block",
+              borderRadius: 12,
+            }}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderAutoPlayDemo() {
-  return null;
+  const SLIDES = [
+    {
+      src: "https://picsum.photos/id/1055/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1055/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1056/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1056/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1057/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1057/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1058/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1058/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1059/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1059/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1060/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1060/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1061/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1061/2400/2400",
+    },
+    {
+      src: "https://picsum.photos/id/1062/1200/1200",
+      fullscreenSrc: "https://picsum.photos/id/1062/2400/2400",
+    },
+  ];
+
+  const MEDIA = toMediaItems(SLIDES.map((slide) => slide.src));
+  const FS_MEDIA = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={FS_MEDIA}>
+      <Slider
+        align="center"
+        scroll={{
+          loop: true,
+          groupCells: true
+        }}
+        auto={{
+          play: {
+            enabled: true,
+            speedMs: 2200,
+          },
+        }}
+        transitions={{
+          loading: {
+            skeletonCount: 3,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                  justify: "center"
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 12,
+                  },
+                },
+                itemWrapStyle: {
+                  width: "100cqw",
+                  maxWidth: "550px",
+                  aspectRatio: "16 / 9",
+                },
+              },
+            },
+          },
+        }}
+      >
+        {MEDIA.map((item, i) => (
+          <img
+            key={`img-${item.kind === "image" ? item.src : ""}-${i}`}
+            src={item.kind === "image" ? item.src : ""}
+            alt={`Slide ${i + 1}`}
+            style={{
+              width: "100cqw",
+              maxWidth: "550px",
+              aspectRatio: "16 / 9",
+              objectFit: "cover",
+              display: "block",
+              borderRadius: 12,
+            }}
+          />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
 }
 
 function SliderProgressDemo() {
@@ -1106,8 +6183,88 @@ function FullscreenCaptionsDemo() {
   return null;
 }
 
+function FullscreenThumbnailRailAddon() {
+  const viewportWidth = useDocumentClientWidth();
+  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
+    fullscreen: {
+      enabled: true,
+    },
+  });
+
+  return (
+    <>
+      {fullscreenNode}
+      <FullscreenThumbnailSlider
+        bridge={fullscreenThumbnailBridge}
+        items={THUMBNAIL_DEMO_SLIDES.map((slide, i) => ({
+          thumbSrc: slide.thumbSrc,
+          alt: `Thumbnail ${i + 1}`,
+        }))}
+        position="bottom"
+        thumbnailsCenter
+        thumbnailWidth={96}
+        thumbnailHeight={60}
+        containerStyle={{
+          width: viewportWidth || undefined,
+          padding: "8px 12px",
+          overflow: "visible",
+        }}
+        thumbnailItemClassName={styles.fullscreenThumbnailThumb}
+        gap={12}
+        centerActiveThumb
+        showArrows
+      />
+    </>
+  );
+}
+
 function FullscreenThumbnailsDemo() {
-  return null;
+  const media = toMediaItems(
+    THUMBNAIL_DEMO_SLIDES.map((slide) => slide.slideSrc)
+  );
+  const fullscreenMedia = toMediaItems(
+    THUMBNAIL_DEMO_SLIDES.map((slide) => slide.fullscreenSrc)
+  );
+
+  return (
+    <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
+      <Slider
+        transitions={{
+          loading: {
+            skeletonCount: 2,
+            skeleton: {
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "550px",
+                    aspectRatio: "16 / 9",
+                    borderRadius: 12,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      >
+        {media.map((item, i) => (
+          <ThumbnailDemoSlide
+            key={`img-${item.kind === "image" ? item.src : ""}-${i}`}
+            src={THUMBNAIL_DEMO_SLIDES[i]?.slideSrc ?? ""}
+            i={i}
+          />
+        ))}
+      </Slider>
+      <FullscreenThumbnailRailAddon />
+    </GalleryCore>
+  );
 }
 
 function FullscreenOverlayDemo() {
@@ -1123,254 +6280,246 @@ const SLIDER_DEMOS: DemoDefinition[] = [
     id: "slider-default",
     title: "Default",
     eyebrow: "Slider",
-    summary: "Single-cell slider with the base motion model and direct click-to-fullscreen behavior.",
-    focus: "Use this as the neutral starting point before layering in more opinionated navigation or effects.",
-    tags: ["fullscreen"],
+    tags: ["fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderDefaultDemo,
     source: SLIDER_DEFAULT_SOURCE,
+    css: SLIDER_DEFAULT_CSS,
   },
   {
     id: "slider-loop",
     title: "Loop",
     eyebrow: "Slider",
-    summary: "Continuous slider cycling with fullscreen still mapped back to canonical items.",
-    focus: "Reach for this when the sequence should feel endless instead of bounded by a hard last slide.",
-    tags: ["center", "fullscreen"],
+    tags: ["center", "fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderLoopDemo,
-    source: SLIDER_LOOP_SOURCE
+    source: SLIDER_LOOP_SOURCE,
+    css: SLIDER_LOOP_CSS,
   },
   {
     id: "slider-video-html5",
     title: "HTML5",
     eyebrow: "Slider Video",
-    summary: "Base slider using embedded HTML5 video slides with fullscreen playback still available.",
-    focus: "Use this when you want local or CDN-hosted MP4 playback inside the slider track.",
-    tags: ["fullscreen"],
+    tags: ["fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderVideoHtml5Demo,
-    source: SLIDER_HTML5_SOURCE
+    source: SLIDER_HTML5_SOURCE,
+    css: SLIDER_VIDEO_HTML5_CSS,
   },
   {
     id: "slider-video-html5-loop",
     title: "HTML5 + Loop",
     eyebrow: "Slider Video",
-    summary: "HTML5 video slides combined with looped slider navigation.",
-    focus: "This is the version to validate clone behavior and fullscreen continuity around the loop seam.",
-    tags: ["video", "loop"],
+    tags: ["center", "fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderVideoHtml5LoopDemo,
+    source: SLIDER_HTML5_LOOP_SOURCE,
+    css: SLIDER_VIDEO_HTML5_LOOP_CSS,
   },
   {
     id: "slider-video-youtube",
     title: "Youtube",
     eyebrow: "Slider Video",
-    summary: "Embedded YouTube slides mounted inside the base slider with fullscreen preserved via the active-slide control.",
-    focus: "Use it to validate provider-specific embed behavior without dropping fullscreen support.",
-    tags: ["video", "youtube"],
+    tags: ["fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderVideoYoutubeDemo,
+    source: SLIDER_YOUTUBE_SOURCE,
+    css: SLIDER_VIDEO_YOUTUBE_CSS,
   },
   {
     id: "slider-video-youtube-loop",
     title: "Youtube + Loop",
     eyebrow: "Slider Video",
-    summary: "YouTube slide embedding with looped carousel behavior.",
-    focus: "This variant is useful for checking provider embeds when the slider wraps and clones around the viewport.",
-    tags: ["video", "youtube", "loop"],
+    tags: ["center", "fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderVideoYoutubeLoopDemo,
+    source: SLIDER_YOUTUBE_LOOP_SOURCE,
+    css: SLIDER_VIDEO_YOUTUBE_LOOP_CSS,
   },
   {
     id: "slider-video-vimeo",
     title: "Vimeo",
     eyebrow: "Slider Video",
-    summary: "Vimeo-backed video slides running inside the base slider and opening in fullscreen on demand.",
-    focus: "Use this when your source media lives in Vimeo but the gallery still needs a unified fullscreen flow.",
-    tags: ["video", "vimeo"],
+    tags: ["fulscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderVideoVimeoDemo,
+    source: SLIDER_VIMEO_SOURCE,
+    css: SLIDER_VIDEO_VIMEO_CSS,
   },
   {
     id: "slider-video-vimeo-loop",
     title: "Vimeo + Loop",
     eyebrow: "Slider Video",
-    summary: "Looped Vimeo slides showing how embed providers behave when the track wraps.",
-    focus: "This is the stress case for provider-backed video plus continuous slider navigation.",
-    tags: ["video", "vimeo", "loop"],
+    tags: ["center", "fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderVideoVimeoLoopDemo,
+    source: SLIDER_VIMEO_LOOP_SOURCE,
+    css: SLIDER_VIDEO_VIMEO_LOOP_CSS,
   },
   {
     id: "slider-right-to-left",
     title: "Right To Left",
     eyebrow: "Slider",
-    summary: "RTL base direction mirrored in both the main slider and the fullscreen controller.",
-    focus: "Use this to validate right-to-left interaction without rebuilding the gallery content model.",
-    tags: ["rtl", "fullscreen"],
+    tags: ["fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderRightToLeftDemo,
+    source: SLIDER_RIGHT_TO_LEFT_SOURCE,
+    css: SLIDER_RIGHT_TO_LEFT_CSS,
   },
   {
     id: "slider-group-cells",
     title: "Group Cells",
     eyebrow: "Slider",
-    summary: "Grouped cell snapping based on what fits into the viewport at each breakpoint.",
-    focus: "Use this when the design wants multi-cell steps without hardcoding cells-per-slide values everywhere.",
-    tags: ["group-cells", "responsive"],
+    tags: ["fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderGroupCellsDemo,
+    source: SLIDER_GROUP_CELLS_SOURCE,
+    css: SLIDER_GROUP_CELLS_CSS,
   },
   {
     id: "slider-free-scroll",
     title: "Free Scroll",
     eyebrow: "Slider",
-    summary: "Momentum-based slider movement without strict snapping between slides.",
-    focus: "Reach for this when the gallery should feel closer to a trackpad-driven surface than a paged carousel.",
-    tags: ["free-scroll", "motion"],
+    tags: ["group-cells", "fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderFreeScrollDemo,
+    source: SLIDER_FREE_SCROLL_SOURCE,
+    css: SLIDER_FREE_SCROLL_CSS,
   },
   {
     id: "slider-skip-snaps",
     title: "Skip Snaps",
     eyebrow: "Slider",
-    summary: "Free-scrolling slider with skip-snaps enabled to loosen the lock to nearest targets.",
-    focus: "Use it when the track should glide past intermediate snap points instead of catching each one.",
-    tags: ["skip-snaps", "free-scroll"],
+    tags: ["fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderSkipSnapsDemo,
+    source: SLIDER_SKIP_SNAPS_SOURCE,
+    css: SLIDER_SKIP_SNAPS_CSS,
   },
   {
     id: "slider-center-align",
     title: "Center Align",
     eyebrow: "Slider",
-    summary: "Centered alignment for the active slide while fullscreen remains tied to the same base order.",
-    focus: "This is useful when the composition should hold the active slide in the center instead of tracking from the left edge.",
-    tags: ["center-align", "layout"],
+    tags: ["fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderCenterAlignDemo,
+    source: SLIDER_CENTER_ALIGN_SOURCE,
+    css: SLIDER_CENTER_ALIGN_CSS,
   },
   {
     id: "slider-variable-widths",
     title: "Variable Widths",
     eyebrow: "Slider",
-    summary: "Mixed slide widths inside the same track with fullscreen preserving the canonical item order.",
-    focus: "Use this for more editorial carousels where the cells should not all resolve to the same fixed width.",
-    tags: ["variable-widths", "editorial"],
+    tags: ["center", "fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderVariableWidthsDemo,
+    source: SLIDER_VARIABLE_WIDTHS_SOURCE,
+    css: SLIDER_VARIABLE_WIDTHS_CSS,
   },
   {
     id: "slider-y-axis",
     title: "Y Axis",
     eyebrow: "Slider",
-    summary: "Vertical slider flow with fullscreen kept in the same demo shell.",
-    focus: "This is the version to inspect when the gallery needs vertical travel instead of horizontal swiping.",
-    tags: ["y-axis", "vertical"],
+    tags: ["fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderYAxisDemo,
+    source: SLIDER_Y_AXIS_SOURCE,
+    css: SLIDER_Y_AXIS_CSS,
   },
   {
     id: "slider-cells-per-slide",
     title: "Cells Per Slide",
     eyebrow: "Slider",
-    summary: "Explicit cells-per-slide rules applied responsively across the viewport range.",
-    focus: "Use this when the design system wants specific slide counts at specific breakpoints instead of auto grouping.",
-    tags: ["cells-per-slide", "responsive"],
+    tags: ["group-cells", "fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderCellsPerSlideDemo,
+    source: SLIDER_CELLS_PER_SLIDE_SOURCE,
+    css: SLIDER_CELLS_PER_SLIDE_CSS,
   },
   {
     id: "slider-thumbnails",
     title: "Thumbnails",
     eyebrow: "Slider",
-    summary: "Base slider synced to a thumbnail rail through a shared index channel.",
-    focus: "This is the pattern to use when users need direct visual navigation instead of relying on arrows or dots.",
-    tags: ["thumbnails", "sync"],
+    tags: ["thumbnails", "fullscreen", "skeleton", "fullscreen-thumbnails"],
     categoryId: "slider",
     Component: SliderThumbnailsDemo,
+    source: SLIDER_THUMBNAILS_SOURCE,
+    css: SLIDER_THUMBNAILS_CSS,
   },
   {
     id: "slider-lazy-load",
     title: "Lazy Load",
     eyebrow: "Slider",
-    summary: "Slider media revealed on demand while fullscreen remains available for each item.",
-    focus: "Use this to reduce the initial cost of media-heavy sliders without dropping the fullscreen affordance.",
-    tags: ["lazy-load", "media"],
+    tags: ["fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderLazyLoadDemo,
+    source: SLIDER_LAZY_LOAD_SOURCE,
+    css: SLIDER_LAZY_LOAD_CSS,
   },
   {
     id: "slider-auto-scroll",
     title: "Auto Scroll",
     eyebrow: "Slider",
-    summary: "Continuous motion driven by auto-scroll rather than user input.",
-    focus: "Use it when the gallery should feel ambient and constantly in motion until the user takes over.",
-    tags: ["auto-scroll", "motion"],
+    tags: ["center", "loop", "fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderAutoScrollDemo,
+    source: SLIDER_AUTO_SCROLL_SOURCE,
+    css: SLIDER_AUTO_SCROLL_CSS,
   },
   {
     id: "slider-auto-play",
     title: "Auto Play",
     eyebrow: "Slider",
-    summary: "Timed slide progression with fullscreen still bound to the active media set.",
-    focus: "This is the right fit when the gallery should advance as a sequence instead of gliding continuously.",
-    tags: ["auto-play", "sequence"],
+    tags: ["center", "loop", "fullscreen", "skeleton"],
     categoryId: "slider",
     Component: SliderAutoPlayDemo,
+    source: SLIDER_AUTO_PLAY_SOURCE,
+    css: SLIDER_AUTO_PLAY_CSS,
   },
   {
     id: "slider-progress",
     title: "Progress",
     eyebrow: "Slider",
-    summary: "Progress bar control mounted into the base slider while fullscreen keeps the same item order.",
-    focus: "Use this when the gallery benefits from explicit wayfinding but dots would add too much UI noise.",
     tags: ["progress", "controls"],
     categoryId: "slider",
     Component: SliderProgressDemo,
+    css: SLIDER_PROGRESS_CSS,
   },
   {
     id: "slider-parallax",
     title: "Parallax",
     eyebrow: "Slider",
-    summary: "Built-in parallax motion layered over the base slider and preserved alongside fullscreen.",
-    focus: "Use this when the carousel needs a stronger sense of depth without building a custom effect stack.",
     tags: ["parallax", "effects"],
     categoryId: "slider",
     Component: SliderParallaxDemo,
+    css: SLIDER_PARALLAX_CSS,
   },
   {
     id: "slider-scale",
     title: "Scale",
     eyebrow: "Slider",
-    summary: "Inactive slides scale away slightly while fullscreen still resolves from the active cell.",
-    focus: "This variant adds a subtle focus cue without changing the underlying layout rules.",
     tags: ["scale", "effects"],
     categoryId: "slider",
     Component: SliderScaleDemo,
+    css: SLIDER_SCALE_CSS,
   },
   {
     id: "slider-fade",
     title: "Fade",
     eyebrow: "Slider",
-    summary: "Cross-fade slide transitions instead of translated movement in the base slider.",
-    focus: "Use this when the gallery should feel closer to a slideshow than a spatial carousel.",
     tags: ["fade", "effects"],
     categoryId: "slider",
     Component: SliderFadeDemo,
+    css: SLIDER_FADE_CSS,
   },
   {
     id: "slider-cards",
     title: "Cards",
     eyebrow: "Slider",
-    summary: "Card-based slider cells mixing image, metadata, and copy while fullscreen still targets the underlying media.",
-    focus: "Use this when the base surface should feel like a content module instead of a pure image strip.",
     tags: ["cards", "editorial"],
     categoryId: "slider",
     Component: SliderCardsDemo,
+    css: SLIDER_CARDS_CSS,
   },
 ];
 
@@ -1379,61 +6528,55 @@ const GRID_DEMOS: DemoDefinition[] = [
     id: "grid-columns",
     title: "Columns",
     eyebrow: "Grid",
-    summary: "Explicit responsive column counts with fullscreen enabled on each media card.",
-    focus: "Use this when the layout needs deterministic row structure across specific breakpoints.",
     tags: ["columns", "fullscreen"],
     categoryId: "grid",
     Component: GridColumnsDemo,
+    css: GRID_COLUMNS_CSS,
   },
   {
     id: "grid-min-column-width",
     title: "Min Column Width",
     eyebrow: "Grid",
-    summary: "Auto-fit grid columns driven by a minimum item width instead of explicit counts.",
-    focus: "Reach for this when the wall should adapt fluidly and you care more about minimum card size than exact columns.",
     tags: ["min-column-width", "responsive"],
     categoryId: "grid",
     Component: GridMinColumnWidthDemo,
+    css: GRID_MIN_COLUMN_WIDTH_CSS,
   },
   {
     id: "grid-lazy-load",
     title: "Lazy Load",
     eyebrow: "Grid",
-    summary: "Grid cards revealed on demand while fullscreen remains available for every image.",
-    focus: "Use this for heavier walls where the initial viewport should stay fast but inspection still matters.",
     tags: ["lazy-load", "media"],
     categoryId: "grid",
     Component: GridLazyLoadDemo,
+    css: GRID_LAZY_LOAD_CSS,
   },
   {
     id: "grid-video-html5",
     title: "HTML5",
     eyebrow: "Grid Video",
-    summary: "HTML5 video cards arranged in a grid with per-card fullscreen access.",
-    focus: "Use this for hosted MP4 libraries that still need a fullscreen escape hatch from the wall view.",
     tags: ["video", "html5"],
     categoryId: "grid",
     Component: GridVideoHtml5Demo,
+    css: GRID_VIDEO_HTML5_CSS,
   },
   {
     id: "grid-video-youtube",
     title: "Youtube",
     eyebrow: "Grid Video",
-    summary: "YouTube-backed video cards inside the grid surface with fullscreen support preserved.",
-    focus: "This is useful when editorial walls mix provider embeds with the same gallery-level fullscreen runtime.",
     tags: ["video", "youtube"],
     categoryId: "grid",
     Component: GridVideoYoutubeDemo,
+    css: GRID_VIDEO_YOUTUBE_CSS,
   },
   {
     id: "grid-video-vimeo",
     title: "Vimeo",
     eyebrow: "Grid Video",
-    summary: "Vimeo embeds presented as grid cards while still opening inside the gallery fullscreen layer.",
-    focus: "Use it when the wall view needs provider playback but fullscreen should remain consistent with the rest of the library.",
     tags: ["video", "vimeo"],
     categoryId: "grid",
     Component: GridVideoVimeoDemo,
+    css: GRID_VIDEO_VIMEO_CSS,
   },
 ];
 
@@ -1442,61 +6585,55 @@ const MASONRY_DEMOS: DemoDefinition[] = [
     id: "masonry-balanced",
     title: "Balanced",
     eyebrow: "Masonry",
-    summary: "Balanced masonry placement keeping the columns visually even while fullscreen stays item-aware.",
-    focus: "Use this when visual rhythm matters more than preserving the source order column by column.",
     tags: ["balanced", "fullscreen"],
     categoryId: "masonry",
     Component: MasonryBalancedDemo,
+    css: MASONRY_BALANCED_CSS,
   },
   {
     id: "masonry-round-robin",
     title: "Round Robin",
     eyebrow: "Masonry",
-    summary: "Round-robin placement preserving a simpler left-to-right source distribution.",
-    focus: "Choose this when column assignment should stay predictable even if the layout becomes less visually balanced.",
     tags: ["round-robin", "distribution"],
     categoryId: "masonry",
     Component: MasonryRoundRobinDemo,
+    css: MASONRY_ROUND_ROBIN_CSS,
   },
   {
     id: "masonry-lazy-load",
     title: "Lazy Load",
     eyebrow: "Masonry",
-    summary: "Masonry wall with lazy media reveal and fullscreen still wired to the flattened item order.",
-    focus: "Use this when the wall is image-heavy and you want to delay work without dropping the waterfall presentation.",
     tags: ["lazy-load", "media"],
     categoryId: "masonry",
     Component: MasonryLazyLoadDemo,
+    css: MASONRY_LAZY_LOAD_CSS,
   },
   {
     id: "masonry-video-html5",
     title: "HTML5",
     eyebrow: "Masonry Video",
-    summary: "HTML5 video cards dropped into a masonry wall with manual fullscreen entry points.",
-    focus: "Use this when hosted video needs a more editorial waterfall treatment instead of uniform rows.",
     tags: ["video", "html5"],
     categoryId: "masonry",
     Component: MasonryVideoHtml5Demo,
+    css: MASONRY_VIDEO_HTML5_CSS,
   },
   {
     id: "masonry-video-youtube",
     title: "Youtube",
     eyebrow: "Masonry Video",
-    summary: "YouTube-backed masonry cards with fullscreen still controlled by the gallery runtime.",
-    focus: "This is the provider-embed version of the masonry surface when fullscreen still needs to feel native.",
     tags: ["video", "youtube"],
     categoryId: "masonry",
     Component: MasonryVideoYoutubeDemo,
+    css: MASONRY_VIDEO_YOUTUBE_CSS,
   },
   {
     id: "masonry-video-vimeo",
     title: "Vimeo",
     eyebrow: "Masonry Video",
-    summary: "Vimeo cards flowing through the masonry wall with fullscreen support preserved.",
-    focus: "Use it when the visual layout should stay irregular but the fullscreen experience should stay consistent.",
     tags: ["video", "vimeo"],
     categoryId: "masonry",
     Component: MasonryVideoVimeoDemo,
+    css: MASONRY_VIDEO_VIMEO_CSS,
   },
 ];
 
@@ -1505,31 +6642,28 @@ const ENTRIES_DEMOS: DemoDefinition[] = [
     id: "entries-slider",
     title: "Slider",
     eyebrow: "Entries",
-    summary: "Structured entries whose per-entry media surface is a slider, with owner-aware fullscreen overlays intact.",
-    focus: "Use this when each entry needs a short sequence instead of a single thumbnail or a fixed grid.",
     tags: ["slider", "fullscreen"],
     categoryId: "entries",
     Component: EntriesSliderDemo,
+    css: ENTRIES_SLIDER_CSS,
   },
   {
     id: "entries-grid",
     title: "Grid",
     eyebrow: "Entries",
-    summary: "Entries rendered with grid-like media blocks while fullscreen still resolves back to the correct owner record.",
-    focus: "Use this for editorial feeds or case studies where each entry needs a compact image wall.",
     tags: ["grid", "fullscreen"],
     categoryId: "entries",
     Component: EntriesGridDemo,
+    css: ENTRIES_GRID_CSS,
   },
   {
     id: "entries-masonry",
     title: "Masonry",
     eyebrow: "Entries",
-    summary: "Entries with masonry-style media blocks and the same flattened fullscreen index under the hood.",
-    focus: "Reach for this when entry media should feel looser and more editorial without losing owner context in fullscreen.",
     tags: ["masonry", "fullscreen"],
     categoryId: "entries",
     Component: EntriesMasonryDemo,
+    css: ENTRIES_MASONRY_CSS,
   },
 ];
 
@@ -1538,41 +6672,38 @@ const FULLSCREEN_DEMOS: DemoDefinition[] = [
     id: "fullscreen-captions",
     title: "Captions",
     eyebrow: "Fullscreen",
-    summary: "Fullscreen captions rendered in a dedicated side column while the base slider stays minimal.",
-    focus: "Use this when the overlay needs room for longer editorial context or metadata next to the media.",
     tags: ["captions", "overlay"],
     categoryId: "fullscreen",
     Component: FullscreenCaptionsDemo,
+    css: FULLSCREEN_CAPTIONS_CSS,
   },
   {
     id: "fullscreen-thumbnails",
     title: "Thumbnails",
     eyebrow: "Fullscreen",
-    summary: "Fullscreen overlay with a dedicated thumbnail rail mounted into the modal.",
-    focus: "Reach for this when users need to jump directly between media after opening the fullscreen experience.",
-    tags: ["thumbnails", "navigation"],
+    tags: ["thumbnails", "navigation", "sync"],
     categoryId: "fullscreen",
     Component: FullscreenThumbnailsDemo,
+    source: FULLSCREEN_THUMBNAILS_SOURCE,
+    css: FULLSCREEN_THUMBNAILS_CSS,
   },
   {
     id: "fullscreen-overlay",
     title: "Overlay",
     eyebrow: "Fullscreen",
-    summary: "Caption content restyled as a denser overlay block instead of a long side column.",
-    focus: "Use this when fullscreen metadata should stay compact and visually attached to the media.",
     tags: ["overlay", "captions"],
     categoryId: "fullscreen",
     Component: FullscreenOverlayDemo,
+    css: FULLSCREEN_OVERLAY_CSS,
   },
   {
     id: "fullscreen-lazy-load",
     title: "LazyLoad",
     eyebrow: "Fullscreen",
-    summary: "Fullscreen image loading enabled explicitly so the overlay can decode and reveal media on demand.",
-    focus: "Use this to validate the fullscreen lazy-load path separately from the base surface behavior.",
     tags: ["lazy-load", "media"],
     categoryId: "fullscreen",
     Component: FullscreenLazyLoadDemo,
+    css: FULLSCREEN_LAZY_LOAD_CSS,
   },
 ];
 
@@ -1691,6 +6822,7 @@ export default function DemosPageClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hasMounted = useHasMounted();
   const fallbackDemo = DEMOS[0];
   const fallbackCategory = DEMO_CATEGORIES[0];
   const requestedDemoId = searchParams.get("demo");
@@ -1703,10 +6835,11 @@ export default function DemosPageClient() {
     syncedDemoId: selectedDemo?.id ?? "",
   }));
   const simpleBarRef = useRef<SimpleBarCore | null>(null);
-  const isCompactSidebar = useMediaQuery("(max-width: 980px)");
+  const isCompactSidebar = useMediaQuery("(max-width: 767px)");
+  const shouldUseSimpleBar = hasMounted && !isCompactSidebar;
 
   useLayoutEffect(() => {
-    if (isCompactSidebar) {
+    if (!shouldUseSimpleBar) {
       return;
     }
 
@@ -1742,7 +6875,7 @@ export default function DemosPageClient() {
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, [isCompactSidebar]);
+  }, [shouldUseSimpleBar]);
 
   if (!fallbackDemo || !fallbackCategory || !selectedDemo || !selectedCategory) {
     return null;
@@ -1904,9 +7037,7 @@ export default function DemosPageClient() {
                 </p>
               </div>
 
-              {isCompactSidebar ? (
-                <div className={styles.sidebarNavScrollArea}>{sidebarNavigation}</div>
-              ) : (
+              {shouldUseSimpleBar ? (
                 <SimpleBar
                   ref={simpleBarRef}
                   className={styles.sidebarNavScrollArea}
@@ -1915,12 +7046,22 @@ export default function DemosPageClient() {
                 >
                   {sidebarNavigation}
                 </SimpleBar>
+              ) : (
+                <div
+                  className={cx(
+                    styles.sidebarNavScrollArea,
+                    styles.sidebarNavScrollAreaNative
+                  )}
+                >
+                  {sidebarNavigation}
+                </div>
               )}
             </div>
           </aside>
 
           <main className={styles.main}>
             <SelectedDemoPane
+              key={selectedDemo.id}
               selectedCategoryLabel={selectedCategory.label}
               selectedDemo={selectedDemo}
               selectedDemoCanvasClassName={selectedDemoCanvasClassName}

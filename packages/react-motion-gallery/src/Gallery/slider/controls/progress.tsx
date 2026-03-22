@@ -2,14 +2,14 @@
 
 import * as React from 'react';
 import { ProgressRenderArgs } from '../../shared/types/controls';
+import type { BaseLimit } from '../../shared/motion/baseLimit';
 
 export type BuildProgressNodeArgs = {
   AX: { main: 'x' | 'y'; clientKey: string };
-  slider: React.RefObject<HTMLElement | null>;
-  sliderWidth: React.RefObject<number>;
   wrap: boolean;
   offsetLocationRef: React.RefObject<{ get: () => number } | null>;
-  lastProgressRef: React.RefObject<number>;
+  scrollLimitRef: React.RefObject<BaseLimit | null>;
+  lastProgressRef: React.MutableRefObject<number>;
   progressHolderRef: React.RefObject<HTMLDivElement | null>;
   progressInnerRef: React.RefObject<HTMLDivElement | null>;
   showProgress?: boolean;
@@ -54,58 +54,44 @@ export function setProgressDom(args: {
 
 export function updateProgressInFrame(args: {
   AX: { main: 'x' | 'y'; clientKey: string };
-  slider: React.RefObject<HTMLElement | null>;
-  sliderWidth: React.RefObject<number>;
   wrap: boolean;
   offsetLocationRef: React.RefObject<{ get: () => number } | null>;
+  scrollLimitRef: React.RefObject<BaseLimit | null>;
   lastProgressRef: React.MutableRefObject<number>;
   progressHolderRef: React.RefObject<HTMLDivElement | null>;
   progressInnerRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const {
     AX,
-    slider,
-    sliderWidth,
     wrap,
     offsetLocationRef,
+    scrollLimitRef,
     lastProgressRef,
     progressHolderRef,
     progressInnerRef,
   } = args;
 
-  const track = slider.current;
-  const content = sliderWidth.current || 0;
+  const p = readScrollProgressValue({ wrap, offsetLocationRef, scrollLimitRef });
+  setProgressDom({ AX, lastProgressRef, progressHolderRef, progressInnerRef, p });
+}
 
-  if (!track) {
-    setProgressDom({ AX, lastProgressRef, progressHolderRef, progressInnerRef, p: 0 });
-    return;
-  }
+export function readScrollProgressValue(args: {
+  wrap: boolean;
+  offsetLocationRef: React.RefObject<{ get: () => number } | null>;
+  scrollLimitRef: React.RefObject<BaseLimit | null>;
+}) {
+  const { wrap, offsetLocationRef, scrollLimitRef } = args;
 
-  const cw = (track as any)[AX.clientKey] as number;
+  const limit = scrollLimitRef.current;
+  if (!limit) return 0;
 
-  if (!wrap) {
-    const max = Math.max(0, content - cw);
-    if (max <= 0) {
-      setProgressDom({ AX, lastProgressRef, progressHolderRef, progressInnerRef, p: 1 });
-      return;
-    }
-    const loc = -(offsetLocationRef.current?.get() ?? 0);
-    setProgressDom({ AX, lastProgressRef, progressHolderRef, progressInnerRef, p: Math.min(1, Math.max(0, loc / max)) });
-  } else {
-    const W = sliderWidth.current || 0;
-    if (W <= 0) {
-      setProgressDom({ AX, lastProgressRef, progressHolderRef, progressInnerRef, p: 0 });
-      return;
-    }
-    const world = ((-(offsetLocationRef.current?.get() ?? 0) % W) + W) % W;
-    setProgressDom({
-      AX,
-      lastProgressRef,
-      progressHolderRef,
-      progressInnerRef,
-      p: Math.round(world) === Math.round(W) ? 0 : world / W,
-    });
-  }
+  const span = limit.max - limit.min;
+  if (span <= 0) return 1;
+
+  const current = offsetLocationRef.current?.get() ?? limit.max;
+  const bounded = wrap ? limit.removeOffset(current) : limit.constrain(current);
+
+  return clamp01((limit.max - bounded) / span);
 }
 
 export function DefaultProgress({
@@ -164,10 +150,9 @@ export function DefaultProgress({
 export function buildProgressNode(args: BuildProgressNodeArgs) {
   const {
     AX,
-    slider,
-    sliderWidth,
     wrap,
     offsetLocationRef,
+    scrollLimitRef,
     lastProgressRef,
     progressHolderRef,
     progressInnerRef,
@@ -202,10 +187,9 @@ export function buildProgressNode(args: BuildProgressNodeArgs) {
     updateProgressInFrame: () =>
       updateProgressInFrame({
         AX,
-        slider,
-        sliderWidth,
         wrap,
         offsetLocationRef,
+        scrollLimitRef,
         lastProgressRef,
         progressHolderRef,
         progressInnerRef,

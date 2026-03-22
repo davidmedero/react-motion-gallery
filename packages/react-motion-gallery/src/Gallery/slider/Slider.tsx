@@ -38,7 +38,7 @@ import { Animations, AnimationsType } from '../shared/motion/animations';
 import type { APITypes } from 'plyr-react';
 import { RmgSlideProvider } from '../shared/slideContext';
 import { SliderHandle, SliderIntroOptions, SliderLazyLoadOptions } from './types';
-import { ArrowRenderArgs, DotsRenderArgs, ProgressRenderArgs } from '../shared/types/controls';
+import { ArrowRenderArgs, DotsRenderArgs, ProgressRenderArgs, ScrollbarRenderArgs } from '../shared/types/controls';
 import { FsCaptionRenderArgs } from '../fullscreen/types';
 import { BreakpointMap } from '../shared/responsive';
 import { IndexMode } from '../api/types';
@@ -50,7 +50,8 @@ import { useFadeEffect } from './effects/useFadeEffect';
 import { BaseLimit, createBaseLimit } from '../shared/motion/baseLimit';
 import { RmgArrows } from './controls/arrows';
 import { buildDotsNode } from './controls/dots';
-import { buildProgressNode } from './controls/progress';
+import { buildProgressNode, readScrollProgressValue } from './controls/progress';
+import { buildScrollbarNode } from './controls/scrollbar';
 import { WindowType } from '../shared/input/pointerTypes'
 import { AXSpec } from '../shared/types/axis';
 import { Translate } from '../shared/motion/translate';
@@ -127,6 +128,10 @@ interface SliderProps {
   progressInnerClassName?: string;
   progressInnerStyle?: React.CSSProperties;
   renderProgress?: (args: ProgressRenderArgs) => React.ReactNode;
+  showScrollbar?: boolean;
+  scrollbarClassName?: string;
+  scrollbarStyle?: React.CSSProperties;
+  renderScrollbar?: (args: ScrollbarRenderArgs) => React.ReactNode;
   parallax?: boolean;
   parallaxBleedPct?: string;
   parallaxBorderRadius?: string;
@@ -666,6 +671,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     progressInnerClassName,
     progressInnerStyle,
     renderProgress,
+    showScrollbar,
+    scrollbarClassName,
+    scrollbarStyle,
+    renderScrollbar,
     parallax,
     parallaxBleedPct,
     parallaxBorderRadius,
@@ -695,7 +704,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   ref: Ref<SliderHandle>
 ) {
   const slider = useRef<HTMLDivElement | null>(null);
-  const slides = useRef<{ cells: { element: HTMLElement, index: number }[], target: number }[]>([]);
+  const slides = useRef<{ cells: { element: HTMLElement, index: number }[], target: number, alignSize: number }[]>([]);
   const visibleImagesRef = useRef(0);
   const selectedIndex = useRef(0);
   const sliderX = useRef(0);
@@ -716,6 +725,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   const [wrap, setWrap] = useState(false)
   const progressHolderRef = useRef<HTMLDivElement | null>(null);
   const progressInnerRef  = useRef<HTMLDivElement | null>(null);
+  const scrollbarRef = useRef<HTMLInputElement | null>(null);
   const lastProgressRef   = useRef(0);
   const cellToSlideRef = useRef<number[]>([]);
   const builtOnceRef = useRef(false);
@@ -745,7 +755,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   const cells = useRef<{ element: HTMLElement; index: number }[]>([])
   const sliderWidth = useRef(0)
   const hasPositioned = useRef<boolean>(false)
-  const getSnapTargets: () => number[] = () => (slides.current || []).map((s) => s.target)
+  const getSnapTargets: () => number[] = () =>
+    (slides.current || []).map((_, i) => -getSnapLocationForIndex(i))
   const totalWidth = () => sliderWidth.current || 0
   const contentSizeRef = useRef(0)
   const loopLimitRef = useRef<ReturnType<typeof Limit> | null>(null)
@@ -813,6 +824,20 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       wheelDelta,
     };
   }, [axis]);
+
+  function getViewportMainSize() {
+    const viewport = viewportRef.current;
+    if (viewport) {
+      const size = (viewport as any)[AX.clientKey] as number;
+      if (Number.isFinite(size) && size > 0) return size;
+    }
+
+    const track = slider.current;
+    if (!track) return 0;
+
+    const fallback = (track as any)[AX.clientKey] as number;
+    return Number.isFinite(fallback) ? fallback : 0;
+  }
 
   const baseCss = useMemo(() => {
     const root = `#${scopeId}`;
@@ -994,10 +1019,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
   const progressApi = buildProgressNode({
     AX,
-    slider,
-    sliderWidth,
     wrap,
     offsetLocationRef,
+    scrollLimitRef,
     lastProgressRef,
     progressHolderRef,
     progressInnerRef,
@@ -1010,6 +1034,35 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   });
 
   const progressNode = progressApi.progressNode;
+
+  const scrollbarApi = buildScrollbarNode({
+    AX,
+    wrap,
+    offsetLocationRef,
+    scrollLimitRef,
+    lastProgressRef,
+    scrollbarRef,
+    showScrollbar,
+    renderScrollbar,
+    scrollbarClassName,
+    scrollbarStyle,
+    onScrollBarChange,
+    styles,
+  });
+
+  const scrollbarNode = scrollbarApi.scrollbarNode;
+
+  function syncProgressUiInFrame() {
+    const nextProgress = readScrollProgressValue({
+      wrap,
+      offsetLocationRef,
+      scrollLimitRef,
+    });
+
+    lastProgressRef.current = nextProgress;
+    progressApi.setProgressDom(nextProgress);
+    scrollbarApi.setScrollBarDom(nextProgress);
+  }
 
   const childrenKey = useMemo(() => {
     const arr = Children.toArray(children) as any[];
@@ -1144,11 +1197,21 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   }, []);
 
   function getCenterOffsetForIndex(idx: number) {
-    const track = slider.current;
-    if (!track || !slides.current?.[idx]?.cells?.[0]?.element) return 0;
-    const containerSize = (track as any)[AX.clientKey] as number;
-    const cellSize = slides.current[idx].cells[0].element.getBoundingClientRect()[AX.sizeKey];
-    return centerAlign ? (containerSize - cellSize) / 2 : 0;
+    const slide = slides.current?.[idx];
+    if (!slide?.cells?.[0]?.element) return 0;
+    const containerSize = getViewportMainSize();
+    if (containerSize <= 0) return 0;
+    const alignSize =
+      slide.alignSize > 0
+        ? slide.alignSize
+        : slide.cells[0].element.getBoundingClientRect()[AX.sizeKey];
+    return centerAlign ? (containerSize - alignSize) / 2 : 0;
+  }
+
+  function getSnapLocationForIndex(idx: number) {
+    const slide = slides.current?.[idx];
+    if (!slide) return 0;
+    return -(slide.target ?? 0) + getCenterOffsetForIndex(idx);
   }
 
   function snapToIndex(requested: number) {
@@ -1159,7 +1222,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     const slide = slides.current?.[idx];
     if (!slide) return;
 
-    const next = -(slide.target ?? 0) + getCenterOffsetForIndex(idx);
+    const next = getSnapLocationForIndex(idx);
 
     animRef.current?.stop();
     isAnimatingRef.current = false;
@@ -1178,7 +1241,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     indexPreviousRef.current?.set(idx);
 
     positionSlider(next);
-    if (showProgress) progressApi.updateProgressInFrame();
+    syncProgressUiInFrame();
     if (parallax) tweenParallax();
     if (scaleEffect) applyPairScaleTween();
     if (fadeEffect) applyFadeTween();
@@ -1212,20 +1275,32 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   }, []);
 
   useEffect(() => {
+    if (!autoPlay || !isReady) return;
+
     const id = window.setInterval(() => {
       const now = performance.now();
+      const slideCount = slides.current?.length ?? 0;
+      const currentIndex = indexCurrentRef.current?.get() ?? selectedIndex.current ?? 0;
+
       if (
         isPointerDown.current ||
         isFullscreenOpen ||
-        !isWrapping.current ||
-        !autoPlay ||
-        !isReady ||
+        slideCount <= 1 ||
         (pauseAutoPlayOnHover && isHoveringRef.current)
       ) {
         return;
       }
 
       if (now - lastPointerUpTime.current < autoPlayPause) return;
+
+      if (!wrap) {
+        const atStart = currentIndex <= 0;
+        const atEnd = currentIndex >= Math.max(0, slideCount - 1);
+
+        if (isRtl ? atStart : atEnd) {
+          return;
+        }
+      }
 
       if (isRtl) {
         previous();
@@ -1238,7 +1313,17 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       window.clearInterval(id);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFullscreenOpen, slidesState, clonedChildren, isWrapping.current]);
+  }, [
+    autoPlay,
+    autoPlayPause,
+    autoPlaySpeed,
+    isFullscreenOpen,
+    isReady,
+    isRtl,
+    pauseAutoPlayOnHover,
+    slidesState.length,
+    wrap,
+  ]);
 
   useEffect(() => {
     let lastTime = performance.now();
@@ -1270,13 +1355,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
       targetRef.current?.set(next);
       bodyRef.current?.useDuration(0).useFriction(1);
-
+      isAnimatingRef.current = true;
       animRef.current?.start();
-      xRef.current = next;
-      positionSlider();
-      if (showProgress) progressApi.updateProgressInFrame();
-      if (parallax) tweenParallax();
-      updateActiveIndexFromX(next);
     }
 
     frameId = requestAnimationFrame(loop);
@@ -1565,7 +1645,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       const clonesAfter  = clonesBefore;
       const originalEls  = allEls.slice(clonesBefore, allEls.length - clonesAfter);
 
-      const cw = (el as any)[AX.clientKey] as number;
+      const cw = getViewportMainSize();
+      if (cw <= 0) return;
 
       const useCols =
         typeof cellsPerSlide === 'number' && cellsPerSlide > 0;
@@ -1699,6 +1780,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     });
 
     ro.observe(el);
+    if (viewportRef.current) {
+      ro.observe(viewportRef.current);
+    }
     return () => ro.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -1739,16 +1823,17 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       const contentSize =
         AX.main === "x" ? trackEl.scrollWidth : trackEl.scrollHeight;
 
+      const cw = getViewportMainSize();
+      if (cw <= 0) return;
+
       layoutRef.current = {
         originals: originalsForLayout,
-        cw: (trackEl as any)[AX.clientKey] as number,
+        cw,
       };
 
       const originalsCount = layoutRef.current?.originals?.length ?? 0;
       const baseSpan = originalsForLayout[originalsCount - 1]?.end ?? 0;
       sliderWidth.current = wrap ? baseSpan + (originalsCount > 0 ? gap : 0) : baseSpan;
-
-      const cw = (trackEl as any)[AX.clientKey] as number;
 
       const wantLoop = !!loop && originalsCount > 1 && contentSize > cw;
 
@@ -1769,6 +1854,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     const ro = new ResizeObserver(schedule);
 
     ro.observe(track);
+    if (viewportRef.current) {
+      ro.observe(viewportRef.current);
+    }
 
     if (sliderContainer.current) {
       ro.observe(sliderContainer.current);
@@ -1818,7 +1906,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       !slides.current[0].cells[0]?.element
     ) return;
 
-    const containerSize = (slider.current as any)[AX.clientKey] as number;
+    const containerSize = getViewportMainSize();
+    if (containerSize <= 0) return;
 
     if (!wrap && sliderWidth.current <= containerSize) {
       trackCenterOffsetRef.current = Math.round((containerSize - sliderWidth.current) / 2);
@@ -1870,24 +1959,36 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
       const data = L.originals
       const cw = L.cw
+      const allowCenteredOverflow = centerAlign && !wrap
 
       const pages: { els: HTMLElement[]; target: number }[] = []
       let i = 0
 
+      const fixedCellsPerSlide =
+        typeof cellsPerSlide === 'number' && cellsPerSlide > 0
+          ? Math.max(1, Math.min(data.length, cellsPerSlide))
+          : null
+
       if (groupCells) {
         while (i < data.length) {
           const startLeft = data[i]?.start ?? 0
-          const viewRight = startLeft + cw
-
           let j = i
-          while (j < data.length && (data[j]?.end ?? 0) <= viewRight) j++
-          if (j === i) j++
+
+          if (fixedCellsPerSlide != null) {
+            j = Math.min(data.length, i + fixedCellsPerSlide)
+          } else {
+            const viewRight = startLeft + cw
+            const EPS = 0.5
+
+            while (j < data.length && (data[j]?.end ?? 0) <= viewRight + EPS) j++
+            if (j === i) j++
+          }
 
           const slice = data.slice(i, j).map((d) => d.el)
           const isLast = j >= data.length
 
           let target = startLeft
-          if (isLast && !wrap) {
+          if (isLast && !wrap && !allowCenteredOverflow) {
             target = Math.max(0, (sliderWidth.current || 0) - cw)
           }
           if (i === 0) target = 0
@@ -1899,10 +2000,12 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         const maxTarget = Math.max(0, (sliderWidth.current || 0) - cw)
         const EPS = 0.5
 
-        if (wrap) {
+        if (wrap || allowCenteredOverflow) {
           data.forEach((d, idx) => {
             const t = idx === 0 ? 0 : d.start
-            pages.push({ els: [d.el], target: t })
+            if (!pages.length || Math.abs(t - pages[pages.length - 1].target) > EPS) {
+              pages.push({ els: [d.el], target: t })
+            }
           })
         } else {
           for (let idx = 0; idx < data.length; idx++) {
@@ -1951,13 +2054,42 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         }
       }
 
-      const newSlides = pages.map((page) => ({
-        target: page.target,
-        cells: page.els.map((el) => ({
-          element: el,
-          index: idxMap.get(el)!,
-        })),
-      }))
+      const newSlides = pages.map((page) => {
+        let alignSize = 0
+
+        if (groupCells) {
+          let minStart = Infinity
+          let maxEnd = -Infinity
+
+          for (const el of page.els) {
+            const dataIdx = idxMap.get(el)
+            if (dataIdx == null) continue
+
+            const cell = data[dataIdx]
+            if (!cell) continue
+
+            minStart = Math.min(minStart, cell.start)
+            maxEnd = Math.max(maxEnd, cell.end)
+          }
+
+          if (Number.isFinite(minStart) && Number.isFinite(maxEnd) && maxEnd > minStart) {
+            alignSize = maxEnd - minStart
+          }
+        }
+
+        if (alignSize <= 0) {
+          alignSize = page.els[0]?.getBoundingClientRect()[AX.sizeKey] ?? 0
+        }
+
+        return {
+          target: page.target,
+          alignSize,
+          cells: page.els.map((el) => ({
+            element: el,
+            index: idxMap.get(el)!,
+          })),
+        }
+      })
 
       const hasNaN = newSlides.some((s) => Number.isNaN(s.target))
       const unstable = hasNaN || (wrap && newSlides.length === 1)
@@ -2130,6 +2262,16 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
     const dir = typeof direction === "number" ? direction : 0;
     scrollToRef.current.index(targetIndex, dir);
+
+    if (!bodyRef.current.duration()) {
+      const settled = offsetLocationRef.current?.get() ?? targetRef.current?.get() ?? 0;
+      xRef.current = settled;
+      syncProgressUiInFrame();
+      if (parallax) tweenParallax();
+      if (scaleEffect) applyPairScaleTween();
+      if (fadeEffect) applyFadeTween();
+      updateControlsImperatively();
+    }
   }
 
   function previous() {
@@ -2282,6 +2424,57 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     next();
   }
 
+  function scrollToProgressFromUi(progress: number) {
+    const scrollTo = scrollToRef.current;
+    const body = bodyRef.current;
+    const limit = scrollLimitRef.current;
+    if (!scrollTo || !body || !limit) return;
+
+    const span = limit.max - limit.min;
+    if (span <= 0) {
+      syncProgressUiInFrame();
+      return;
+    }
+
+    beginUiNavWheelTakeover();
+
+    animRef.current?.stop();
+    isAnimatingRef.current = false;
+    programNavRef.current = false;
+
+    const nextProgress = Math.max(0, Math.min(1, progress));
+    const currentOffset =
+      offsetLocationRef.current?.get() ??
+      targetRef.current?.get() ??
+      limit.max;
+    const currentNormalized = wrap
+      ? limit.removeOffset(currentOffset)
+      : limit.constrain(currentOffset);
+    const targetOffset = limit.max - nextProgress * span;
+    const distance = targetOffset - currentNormalized;
+
+    body.useDuration(0).useFriction(1).sync().resetVelocity();
+    scrollTo.distance(distance, false);
+
+    const settled = offsetLocationRef.current?.get() ?? targetRef.current?.get() ?? currentOffset;
+    xRef.current = settled;
+
+    syncProgressUiInFrame();
+    if (parallax) tweenParallax();
+    if (scaleEffect) applyPairScaleTween();
+    if (fadeEffect) applyFadeTween();
+    updateControlsImperatively();
+
+    const ch: any = indexChannel;
+    ch.emitBasePointerDown?.();
+  }
+
+  function onScrollBarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const nextProgress = Number.parseFloat(event.target.value);
+    if (!Number.isFinite(nextProgress)) return;
+    scrollToProgressFromUi(nextProgress);
+  }
+
   useEffect(() => {
     const ch: any = indexChannel;
     const len = () => slides.current?.length ?? 0;
@@ -2394,10 +2587,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     contentSizeRef.current = W
     scrollContentSizeRef.current = W
 
-    const scrollSnaps = slides.current.map((slide, i) => {
-      const centerOffset = getCenterOffsetForIndex(i)
-      return -(slide.target) + centerOffset
-    })
+    const scrollSnaps = slides.current.map((_, i) => getSnapLocationForIndex(i))
     scrollSnapsRef.current = scrollSnaps
 
     const initialSnap = scrollSnaps[startIdx] ?? 0;
@@ -2422,7 +2612,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
     loopLimitRef.current = wrap ? Limit(-W, 0) : Limit(minSnap, maxSnap)
 
-    const baseLimit = wrap ? createBaseLimit(-W, 0) : createBaseLimit(minSnap, maxSnap)
+    const loopProgressOrigin = scrollSnaps[0] ?? 0
+    const baseLimit = wrap
+      ? createBaseLimit(loopProgressOrigin - W, loopProgressOrigin)
+      : createBaseLimit(minSnap, maxSnap)
     scrollLimitRef.current = baseLimit
 
     if (loopLimitRef.current) {
@@ -2451,7 +2644,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
           animRef.current!.start()
         } else {
           bodyRef.current!.seek()
-          positionSlider()
+          const settled = targetRef.current!.get()
+          offsetLocationRef.current?.set(settled)
+          xRef.current = settled
+          positionSlider(settled)
         }
       }
 
@@ -2500,12 +2696,15 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
     const body = ScrollBody(location, offsetLocation, previousLocation, target, selectDuration, sliderFriction)
     bodyRef.current = body
+    syncProgressUiInFrame();
 
     if (!wrap) {
-      const cw = (track as any)[AX.clientKey] as number;
-      const min = -(Math.max(0, sliderWidth.current - cw))
-      const max = 0
-      limitRef.current = Limit(isNaN(min) ? 0 : min, max)
+      const cw = getViewportMainSize();
+      if (cw <= 0) return;
+      limitRef.current = Limit(
+        Number.isFinite(minSnap) ? minSnap : 0,
+        Number.isFinite(maxSnap) ? maxSnap : 0
+      )
 
       povRef.current    = PercentOfView(cw)
       boundsRef.current = ScrollBounds(
@@ -2557,7 +2756,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         positionSlider()
         if (scaleEffect) applyPairScaleTween()
         if (fadeEffect) applyFadeTween();
-        if (showProgress) progressApi.updateProgressInFrame();
+        syncProgressUiInFrame();
         if (parallax) tweenParallax();
         updateArrowsOnly()
         updateActiveIndexFromX(loc)
@@ -2605,6 +2804,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       const dotIndex = dotRefs.current.findIndex((dot) => dot?.contains(hit))
       if (dotIndex >= 0) return
       if (dotsContainerRef.current?.contains(hit)) return
+      if (scrollbarRef.current?.contains(hit)) return
 
       const isMouseEvt = isMouseEvent(evt as any, window as any)
       isMouse = isMouseEvt
@@ -2855,7 +3055,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       const trackEl = slider.current;
       if (!trackEl) return;
 
-      const containerSize = (trackEl as any)[AX.clientKey] as number;
+      const containerSize = getViewportMainSize();
       const contentSize = sliderWidth.current;
       const canScrollMain = contentSize > containerSize;
 
@@ -2865,6 +3065,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
           : Math.abs(e.deltaY) >= Math.abs(e.deltaX);
 
       if (!isMain || !canScrollMain) return;
+      if (scrollbarRef.current?.contains(e.target as Node)) return;
       programNavRef.current = false;
 
       autoScrollPauseUntil.current = now + 100;
@@ -3171,7 +3372,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     }
 
     const ro = new ResizeObserver(() => {
-      const cw = (track as any)[AX.clientKey] as number;
+      const cw = getViewportMainSize();
+      if (cw <= 0) return;
       const contentW = sliderWidth.current || 0;
 
       // =========================
@@ -3200,7 +3402,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
           const canCollapseToSingle = (slides.current?.length ?? 0) <= 1;
           if (!canCollapseToSingle) {
             positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
-            if (showProgress) progressApi.updateProgressInFrame();
+            syncProgressUiInFrame();
             if (parallax) tweenParallax();
             if (scaleEffect) applyPairScaleTween();
             if (fadeEffect) applyFadeTween();
@@ -3243,7 +3445,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
           // ✅ always position through canonical function
           positionSlider(0);
-          if (showProgress) progressApi.updateProgressInFrame();
+          syncProgressUiInFrame();
           if (parallax) tweenParallax();
           if (scaleEffect) applyPairScaleTween();
           if (fadeEffect) applyFadeTween();
@@ -3254,11 +3456,15 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         // ✅ scrollable again: remove centering offset + restore bounds/limits
         trackCenterOffsetRef.current = 0;
 
-        const min = -(Math.max(0, contentW - cw));
-        const max = 0;
+        const currentSnaps = scrollSnapsRef.current;
+        const min = currentSnaps.length ? Math.min(...currentSnaps) : -(Math.max(0, contentW - cw));
+        const max = currentSnaps.length ? Math.max(...currentSnaps) : 0;
 
         // update limit used by wheel + bounds
-        limitRef.current = Limit(isNaN(min) ? 0 : min, max);
+        limitRef.current = Limit(
+          Number.isFinite(min) ? min : 0,
+          Number.isFinite(max) ? max : 0
+        );
 
         // update bounds helpers too (they depend on cw)
         if (offsetLocationRef.current && targetRef.current && bodyRef.current) {
@@ -3303,6 +3509,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     });
 
     ro.observe(track);
+    if (viewportRef.current) {
+      ro.observe(viewportRef.current);
+    }
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wrap, layoutReady, isMeasured, isReady]);
@@ -3401,7 +3610,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       showArrows={showArrows}
       selectedIndex={selectedIndex.current}
       slideCount={slides.current?.length ?? 0}
-      measureRef={slider}
+      measureRef={viewportRef}
       viewportMainSizeRef={sliderWidth}
       previous={previousFromUi}
       next={nextFromUi}
@@ -3422,7 +3631,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
   const { dotsNode } = buildDotsNode({
     AX,
-    slider,
+    slider: viewportRef as React.RefObject<HTMLElement | null>,
     sliderWidth,
     wrap,
     showDots,
@@ -3476,6 +3685,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       {arrowNodes}
       <div 
         ref={viewportRef}
+        data-rmg-part="viewport"
         className={[
           styles.viewport,
           sliderViewportClassName ?? "",
@@ -3495,6 +3705,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       </div>
       {dotsNode}
       {progressNode}
+      {scrollbarNode}
     </>
   );
 

@@ -10,11 +10,25 @@ export type ResponsivePosition =
   | Array<ThumbnailPosition>
   | Record<string, ThumbnailPosition>;
 
+export type ThumbnailLoadingElements = {
+  container?: ElementStyle;
+  row?: ElementStyle;
+  thumbnail?: ElementStyle;
+};
+
+export type ThumbnailSkeletonMode = "fit" | "peek";
+
+export type ThumbnailLoadingRenderArgs = {
+  count: number;
+};
+
 export type ThumbnailLoadingOptions = {
   enabled?: boolean;
   force?: boolean;
   skeletonCount?: ResponsiveNumber;
-  renderLoading?: () => React.ReactNode;
+  mode?: ThumbnailSkeletonMode;
+  renderLoading?: (args: ThumbnailLoadingRenderArgs) => React.ReactNode;
+  elements?: ThumbnailLoadingElements;
 };
 
 export type ThumbnailIntroOptions = {

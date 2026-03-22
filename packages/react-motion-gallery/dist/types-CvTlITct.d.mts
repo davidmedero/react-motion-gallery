@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
-import { T as ThumbnailPosition } from './types-Bi2iBbyG.mjs';
+import { T as ThumbnailPosition } from './types-9g3BgMxk.mjs';
 
 type JumpMode = 'instant' | 'animated';
 type FSRequest = {

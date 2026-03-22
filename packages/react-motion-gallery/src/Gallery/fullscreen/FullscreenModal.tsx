@@ -38,11 +38,6 @@ interface FullscreenModalProps {
   setClosingModal: Dispatch<SetStateAction<boolean>>
   slides: RefObject<{ cells: { element: HTMLElement; index: number }[]; target: number }[]>
   slider: RefObject<HTMLDivElement | null>
-  visibleImagesRef: RefObject<number>
-  selectedIndex: RefObject<number>
-  sliderX: RefObject<number>
-  sliderVelocity: RefObject<number>
-  isWrapping: RefObject<boolean>
   wrappedItems: MediaItem[]
   centerSlider?: () => void;
   setSliderIndex: (i: number, mode: IndexMode) => void;
@@ -999,15 +994,18 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         return;
       }
 
-      // image path (PROXY: do NOT move the real img)
-      const realImg = targetImg!;
-      const fsCS = getComputedStyle(realImg);
+      // image path (move the real fullscreen image)
+      const movingEl = targetImg!;
+      const restoreIntoParent = movingEl.parentNode || null;
+      const restoreNextSibling = movingEl.nextSibling || null;
+
+      const fsCS = getComputedStyle(movingEl);
       const fsObjPos = parseObjectPosition(fsCS?.objectPosition ?? null) ?? { x: 0.5, y: 0.5 };
       const fsFit = ((fsCS?.objectFit || "contain") as "contain" | "cover");
 
-      const curRect = realImg.getBoundingClientRect();
-      const natW = Math.max(1, realImg.naturalWidth || Math.round(curRect.width) || 1);
-      const natH = Math.max(1, realImg.naturalHeight || Math.round(curRect.height) || 1);
+      const curRect = movingEl.getBoundingClientRect();
+      const natW = Math.max(1, movingEl.naturalWidth || Math.round(curRect.width) || 1);
+      const natH = Math.max(1, movingEl.naturalHeight || Math.round(curRect.height) || 1);
 
       const startT =
         fsFit === "contain"
@@ -1016,17 +1014,24 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
       const endT = coverTransformForRect(natW, natH, args.thumbCropRect, args.endObjPos);
 
-      const proxy = realImg.cloneNode(true) as HTMLImageElement;
-      proxy.decoding = "async";
-      (proxy as any).loading = "eager";
-      proxy.draggable = false;
+      const previous = {
+        position: movingEl.style.position,
+        left: movingEl.style.left,
+        top: movingEl.style.top,
+        width: movingEl.style.width,
+        height: movingEl.style.height,
+        maxWidth: movingEl.style.maxWidth,
+        maxHeight: movingEl.style.maxHeight,
+        transformOrigin: movingEl.style.transformOrigin,
+        transform: movingEl.style.transform,
+        transition: movingEl.style.transition,
+        willChange: movingEl.style.willChange,
+        zIndex: movingEl.style.zIndex,
+        opacity: movingEl.style.opacity,
+        pointerEvents: movingEl.style.pointerEvents,
+      };
 
-      trackStyleMutation(realImg, 'transition', 'none');
-      trackStyleMutation(realImg, 'willChange', 'opacity');
-      trackStyleMutation(realImg, 'visibility', 'hidden');
-      trackStyleMutation(realImg, 'opacity', '0');
-
-      Object.assign(proxy.style, {
+      Object.assign(movingEl.style, {
         position: "fixed",
         left: "0",
         top: "0",
@@ -1036,21 +1041,21 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         maxHeight: "none",
         transformOrigin: "50% 50%",
         willChange: "transform",
-        zIndex: "2147483601",
+        zIndex: "1",
         pointerEvents: "none",
         transition: "none",
         opacity: "1",
       } as CSSStyleDeclaration);
 
-      proxy.style.transform =
+      movingEl.style.transform =
         `translate3d(${startT.cx}px, ${startT.cy}px, 0)` +
         ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
         ` scale(${startT.scale})`;
 
       const clipper = createClipper({ DURATION_MS, EASING });
-      clipper.appendChild(proxy);
+      clipper.appendChild(movingEl);
 
-      void proxy.offsetWidth;
+      void movingEl.offsetWidth;
       void clipper.offsetWidth;
 
       let finished = false;
@@ -1064,10 +1069,21 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           captionClone = null;
         }
 
-        proxy.removeEventListener("transitionend", onEnd as any);
+        movingEl.removeEventListener("transitionend", onEnd as any);
+
+        try {
+          if (restoreIntoParent) {
+            if (restoreNextSibling) {
+              restoreIntoParent.insertBefore(movingEl, restoreNextSibling);
+            } else {
+              restoreIntoParent.appendChild(movingEl);
+            }
+          }
+        } catch {}
+
+        Object.assign(movingEl.style, previous);
 
         try { document.body.removeChild(clipper); } catch {}
-        try { proxy.remove(); } catch {}
 
         safeTeardown();
       };
@@ -1079,13 +1095,13 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
       requestAnimationFrame(() => {
         clipper.style.clipPath = insetForRect(args.thumbCropRect);
-        proxy.style.transition = `transform ${DURATION_MS}ms ${EASING}`;
-        proxy.style.transform =
+        movingEl.style.transition = `transform ${DURATION_MS}ms ${EASING}`;
+        movingEl.style.transform =
           `translate3d(${endT.cx}px, ${endT.cy}px, 0)` +
           ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
           ` scale(${endT.scale})`;
 
-        proxy.addEventListener("transitionend", onEnd as any, { once: true });
+        movingEl.addEventListener("transitionend", onEnd as any, { once: true });
 
         window.setTimeout(() => finish(), DURATION_MS + 80);
       });

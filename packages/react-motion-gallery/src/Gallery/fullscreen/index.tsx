@@ -499,10 +499,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         cells={cells}
         slidesForFullscreen={slidesForFullscreen}
         sliderForFullscreen={sliderForFullscreen}
-        visibleImagesForFullscreen={visibleImagesForFullscreen}
-        selectedIndexForFullscreen={selectedIndexForFullscreen}
-        sliderXForFullscreen={sliderXForFullscreen}
-        sliderVelocityForFullscreen={sliderVelocityForFullscreen}
         isWrappingForFullscreen={isWrappingForFullscreen}
         wrappedItems={wrappedItems}
         setClosingModal={setClosingModal}

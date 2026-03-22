@@ -19,6 +19,7 @@
   pointer-events: none;
   transition: opacity 220ms ease;
   will-change: opacity;
+  overflow: hidden;
 }
 
 .thumbLoadingLayerExit {

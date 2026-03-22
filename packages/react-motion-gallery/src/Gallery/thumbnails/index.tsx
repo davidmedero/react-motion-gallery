@@ -6,7 +6,11 @@ import styles from "./Thumbnails.module.css";
 import ThumbnailSliderCore from "./ThumbnailSlider";
 import { createSliderIndexChannel, SliderIndexChannel } from "../slider/sliderSub";
 import { DEFAULT_THUMBNAILS } from "./defaults";
-import { BREAKPOINT_MAP, resolvePositionFromResponsive } from "../shared/responsive";
+import {
+  BREAKPOINT_MAP,
+  normalizeResponsiveToMinWidthRules,
+  resolvePositionFromResponsive,
+} from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { usePrefersReducedMotion } from "../shared/hooks/usePrefersReducedMotion";
 import { buildScopedSkeletonCountCss } from "../shared/skeleton/buildScopedSkeletonCountCss";
@@ -26,6 +30,7 @@ type Props = {
 
 const SKELETON_EXIT_MS = 220;
 const INTRO_OVERLAP_MS = 220;
+const THUMBNAIL_SKELETON_FALLBACK_COUNT = 6;
 
 type UseScopedSkeletonArgs = {
   enabled: boolean;
@@ -37,6 +42,89 @@ type UseScopedSkeletonArgs = {
   showLoadingFallback: boolean;
   defaultNode: (maxSlots: number, baseCount: number) => React.ReactNode;
 };
+
+function maxResolvedSkeletonCount(
+  responsiveCount: ThumbnailLoadingOptions["skeletonCount"],
+  fallbackCount: number,
+  breakpointMap: BreakpointMap
+) {
+  return normalizeResponsiveToMinWidthRules(
+    responsiveCount,
+    fallbackCount,
+    breakpointMap
+  ).reduce((max, rule) => Math.max(max, rule.count), 0);
+}
+
+function toCssLengthValue(value: number | string | undefined): string | undefined {
+  if (value == null) return undefined;
+  return typeof value === "number" ? `${value}px` : value;
+}
+
+function isPercentCssValue(value: string | undefined) {
+  return typeof value === "string" && /%$/.test(value.trim());
+}
+
+function resolveThumbnailSkeletonGap(
+  rowStyle: React.CSSProperties | undefined,
+  fallbackGap: number,
+  isHorizontal: boolean
+) {
+  const axisGap = isHorizontal ? rowStyle?.columnGap : rowStyle?.rowGap;
+  return toCssLengthValue((axisGap ?? rowStyle?.gap ?? fallbackGap) as number | string | undefined) ?? "0px";
+}
+
+function buildThumbnailSkeletonSlotSizeExpr(args: {
+  mode: NonNullable<ThumbnailLoadingOptions["mode"]>;
+  visibleCount: number;
+  gap: string;
+  explicitSize: string | undefined;
+}) {
+  const { mode, visibleCount, gap, explicitSize } = args;
+  const safeCount = Math.max(1, visibleCount);
+  const countExpr = `var(--rmg-thumb-skel-visible-count, ${safeCount})`;
+  const fitExpr = `calc((100% - (${gap} * (${countExpr} - 1))) / ${countExpr})`;
+
+  if (mode === "peek" && explicitSize && !isPercentCssValue(explicitSize)) {
+    return explicitSize;
+  }
+
+  return fitExpr;
+}
+
+function buildScopedThumbnailSkeletonCss(args: {
+  scopeId: string;
+  responsiveCount: ThumbnailLoadingOptions["skeletonCount"];
+  fallbackCount: number;
+  breakpointMap: BreakpointMap;
+  maxSlots: number;
+}) {
+  const { scopeId, responsiveCount, fallbackCount, breakpointMap, maxSlots } = args;
+  const countCss = buildScopedSkeletonCountCss({
+    scopeId,
+    responsiveCount,
+    fallbackCount,
+    breakpointMap,
+    maxSlots,
+  });
+  const responsiveRules = normalizeResponsiveToMinWidthRules(
+    responsiveCount,
+    fallbackCount,
+    breakpointMap
+  );
+  const rootSel = `[data-rmg-scope="${scopeId}"]`;
+  const lines = [
+    countCss.cssText,
+    `${rootSel}{--rmg-thumb-skel-visible-count:${Math.max(1, countCss.ssrBaseCount)};}`,
+  ];
+
+  for (const rule of responsiveRules.slice(1)) {
+    lines.push(
+      `@media (min-width:${rule.minWidth}px){${rootSel}{--rmg-thumb-skel-visible-count:${Math.max(1, rule.count)};}}`
+    );
+  }
+
+  return { cssText: lines.join("\n"), ssrBaseCount: countCss.ssrBaseCount };
+}
 
 function useScopedSkeleton(args: UseScopedSkeletonArgs) {
   const {
@@ -61,7 +149,7 @@ function useScopedSkeleton(args: UseScopedSkeletonArgs) {
       return { cssText: "", ssrBaseCount: fallbackCount };
     }
 
-    return buildScopedSkeletonCountCss({
+    return buildScopedThumbnailSkeletonCss({
       scopeId,
       responsiveCount: loading.skeletonCount,
       fallbackCount,
@@ -82,7 +170,7 @@ function useScopedSkeleton(args: UseScopedSkeletonArgs) {
     if (!showLoading) return null;
 
     if (loading.renderLoading) {
-      return loading.renderLoading();
+      return loading.renderLoading({ count: ssrBaseCount });
     }
 
     return defaultNode(maxSlots, ssrBaseCount);
@@ -169,7 +257,9 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
         enabled: src.enabled ?? true,
         force: src.force ?? false,
         skeletonCount: src.skeletonCount,
+        mode: src.mode ?? "peek",
         renderLoading: src.renderLoading,
+        elements: src.elements,
       } satisfies ThumbnailLoadingOptions;
     }, [thumbsObject.transitions?.loading]);
 
@@ -209,46 +299,92 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
     const thumbsGap = thumbsObject.layout?.gap ?? 8;
     const thumbW = thumbsObject.layout?.thumbnail?.width ?? 64;
     const thumbH = thumbsObject.layout?.thumbnail?.height ?? 64;
+    const thumbsSkeletonMode = thumbsLoading.mode ?? "peek";
+    const maxThumbSkeletonSlots = React.useMemo(
+      () =>
+        Math.max(
+          12,
+          maxResolvedSkeletonCount(
+            thumbsLoading.skeletonCount,
+            THUMBNAIL_SKELETON_FALLBACK_COUNT,
+            effectiveBreakpoints
+          )
+        ),
+      [thumbsLoading.skeletonCount, effectiveBreakpoints]
+    );
+    const thumbsSkeletonGap = React.useMemo(
+      () =>
+        resolveThumbnailSkeletonGap(
+          thumbsLoading.elements?.row?.style,
+          thumbsGap,
+          isHorizontalThumbs
+        ),
+      [thumbsLoading.elements?.row?.style, thumbsGap, isHorizontalThumbs]
+    );
 
     const thumbsSkeleton = useScopedSkeleton({
       enabled: true,
       scopeId: thumbsScope,
       loading: thumbsLoading,
-      fallbackCount: 6,
+      fallbackCount: THUMBNAIL_SKELETON_FALLBACK_COUNT,
       breakpointMap: effectiveBreakpoints,
-      maxSlots: 12,
+      maxSlots: maxThumbSkeletonSlots,
       showLoadingFallback: !thumbsReady,
-      defaultNode: (MAX_SKELETONS) => (
-        <div
-          className={styles.thumbSkeletonOverlay}
-          data-rmg-skel-part="overlay"
-          style={{
-            height: thumbsObject.layout?.container?.height,
-            width: thumbsObject.layout?.container?.width,
-          }}
-        >
+      defaultNode: (MAX_SKELETONS, baseCount) => {
+        const mainAxisSize = buildThumbnailSkeletonSlotSizeExpr({
+          mode: thumbsSkeletonMode,
+          visibleCount: baseCount,
+          gap: thumbsSkeletonGap,
+          explicitSize: toCssLengthValue(isHorizontalThumbs ? thumbW : thumbH),
+        });
+
+        return (
           <div
-            className={styles.thumbSkeletonRow}
-            data-rmg-skel-part="row"
+            className={[
+              styles.thumbSkeletonOverlay,
+              thumbsLoading.elements?.container?.className ?? "",
+            ].filter(Boolean).join(" ")}
+            data-rmg-skel-mode={thumbsSkeletonMode}
+            data-rmg-skel-part="overlay"
             style={{
-              gap: thumbsGap,
-              flexDirection: isHorizontalThumbs ? "row" : "column",
+              height: thumbsObject.layout?.container?.height,
+              width: thumbsObject.layout?.container?.width,
+              ...(thumbsLoading.elements?.container?.style ?? {}),
             }}
           >
-            {Array.from({ length: MAX_SKELETONS }).map((_, i) => (
-              <div
-                key={`rmg-thumb-skel-${i}`}
-                className={styles.thumbSkeleton}
-                data-rmg-skel-slot={i + 1}
-                style={{
-                  width: isHorizontalThumbs ? thumbW : "100%",
-                  height: isHorizontalThumbs ? "100%" : thumbH,
-                }}
-              />
-            ))}
+            <div
+              className={[
+                styles.thumbSkeletonRow,
+                thumbsLoading.elements?.row?.className ?? "",
+              ].filter(Boolean).join(" ")}
+              data-rmg-skel-part="row"
+              style={{
+                gap: thumbsGap,
+                flexDirection: isHorizontalThumbs ? "row" : "column",
+                ...(thumbsLoading.elements?.row?.style ?? {}),
+              }}
+            >
+              {Array.from({ length: MAX_SKELETONS }).map((_, i) => (
+                <div
+                  key={`rmg-thumb-skel-${i}`}
+                  className={[
+                    styles.thumbSkeleton,
+                    thumbsLoading.elements?.thumbnail?.className ?? "",
+                  ].filter(Boolean).join(" ")}
+                  data-rmg-skel-part="thumbnail"
+                  data-rmg-skel-slot={i + 1}
+                  style={{
+                    flex: "0 0 auto",
+                    width: isHorizontalThumbs ? mainAxisSize : "100%",
+                    height: isHorizontalThumbs ? "100%" : mainAxisSize,
+                    ...(thumbsLoading.elements?.thumbnail?.style ?? {}),
+                  }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     });
 
     const childCount = thumbChildArray.filter(Boolean).length;

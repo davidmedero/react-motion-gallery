@@ -60,10 +60,6 @@ export type FullscreenRuntimeProps = {
     { cells: { element: HTMLElement; index: number }[]; target: number }[]
   >;
   sliderForFullscreen: React.RefObject<HTMLDivElement | null>;
-  visibleImagesForFullscreen: React.RefObject<number>;
-  selectedIndexForFullscreen: React.RefObject<number>;
-  sliderXForFullscreen: React.RefObject<number>;
-  sliderVelocityForFullscreen: React.RefObject<number>;
   isWrappingForFullscreen: React.RefObject<boolean>;
   wrappedItems: MediaItem[];
   setClosingModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -194,10 +190,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     setShowFullscreenSlider,
     slidesForFullscreen,
     sliderForFullscreen,
-    visibleImagesForFullscreen,
-    selectedIndexForFullscreen,
-    sliderXForFullscreen,
-    sliderVelocityForFullscreen,
     isWrappingForFullscreen,
     wrappedItems,
     setClosingModal,
@@ -1191,11 +1183,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           cellCount={cellCount}
           slides={slidesForFullscreen}
           slider={sliderForFullscreen}
-          visibleImagesRef={visibleImagesForFullscreen}
-          selectedIndex={selectedIndexForFullscreen}
-          sliderX={sliderXForFullscreen}
-          sliderVelocity={sliderVelocityForFullscreen}
-          isWrapping={isWrappingForFullscreen}
           wrappedItems={wrappedItems}
           setClosingModal={setClosingModal}
           closeButtonRef={closeButtonRef}

@@ -25,6 +25,7 @@
 .contentLayer {
   position: relative;
   z-index: 1;
+  padding-bottom: var(--rmg-slider-extras-height, 0px);
 }
 
 .contentBlocked {
@@ -87,6 +88,67 @@
 
 .pagination_dot.inactive {
   background-color: lightgray;
+}
+
+.scrollbar {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.18);
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  touch-action: manipulation;
+  display: flex;
+  cursor: pointer;
+  border: 0;
+  margin: 0;
+  padding: calc((var(--rmg-scrollbar-thumb-size, 1rem) - var(--rmg-scrollbar-track-size, 0.375rem)) / 2) 0;
+  pointer-events: auto;
+  --rmg-scrollbar-track: rgba(15, 23, 42, 0.16);
+  --rmg-scrollbar-track-active: rgba(80, 163, 255, 0.28);
+  --rmg-scrollbar-thumb: rgb(80, 163, 255);
+  --rmg-scrollbar-thumb-shadow: 0 4px 14px rgba(80, 163, 255, 0.28);
+}
+
+.scrollbarY {
+  transform-origin: center;
+}
+
+.scrollbar::-webkit-slider-runnable-track {
+  border-radius: 9999px;
+  background:
+    linear-gradient(
+      90deg,
+      var(--rmg-scrollbar-track-active) 0%,
+      var(--rmg-scrollbar-track-active) calc(var(--rmg-scrollbar-progress, 0) * 100%),
+      var(--rmg-scrollbar-track) calc(var(--rmg-scrollbar-progress, 0) * 100%),
+      var(--rmg-scrollbar-track) 100%
+    );
+  height: var(--rmg-scrollbar-track-size, 0.375rem);
+}
+
+.scrollbar::-moz-range-track {
+  border-radius: 9999px;
+  background: var(--rmg-scrollbar-track);
+  height: var(--rmg-scrollbar-track-size, 0.375rem);
+}
+
+.scrollbar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--rmg-scrollbar-thumb-size, 1rem);
+  height: var(--rmg-scrollbar-thumb-size, 1rem);
+  border-radius: 50%;
+  border: 0;
+  background: var(--rmg-scrollbar-thumb);
+  box-shadow: var(--rmg-scrollbar-thumb-shadow);
+  margin-top: calc((var(--rmg-scrollbar-thumb-size, 1rem) - var(--rmg-scrollbar-track-size, 0.375rem)) / -2);
+}
+
+.scrollbar::-moz-range-thumb {
+  width: var(--rmg-scrollbar-thumb-size, 1rem);
+  height: var(--rmg-scrollbar-thumb-size, 1rem);
+  border-radius: 50%;
+  border: 0;
+  background: var(--rmg-scrollbar-thumb);
+  box-shadow: var(--rmg-scrollbar-thumb-shadow);
 }
 
 .ripple {
