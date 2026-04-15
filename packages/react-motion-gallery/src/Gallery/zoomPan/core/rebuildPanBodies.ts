@@ -1,5 +1,5 @@
 import { baseFitSize, getCurrentTransform } from "./utils";
-import { getPrimaryImgEl } from "./dom";
+import { getFsMediaViewportEl, getPrimaryImgEl } from "./dom";
 
 type VectorLike = { get(): number; set(v: number): void };
 type RefLike<T> = { current: T };
@@ -39,7 +39,9 @@ export function rebuildPanBodiesFn(ctx: RebuildPanBodiesCtx) {
   const img = getPrimaryImgEl(container);
   if (!img) return;
 
-  const rect = container.getBoundingClientRect();
+  const rect =
+    getFsMediaViewportEl(container)?.getBoundingClientRect() ??
+    container.getBoundingClientRect();
   const containerW = rect.width;
   const containerH = rect.height;
 

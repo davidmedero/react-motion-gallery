@@ -1,30 +1,42 @@
 import * as React from 'react';
-import { S as SliderIndexChannel } from './sliderSub-DDPjywVp.mjs';
-import { a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
-import { f as ThumbnailsOptions } from './types-9g3BgMxk.mjs';
-export { R as ResponsivePosition, h as ThumbnailContainerLayout, e as ThumbnailIntroOptions, g as ThumbnailLayout, a as ThumbnailLoadingElements, c as ThumbnailLoadingOptions, b as ThumbnailLoadingRenderArgs, T as ThumbnailPosition, d as ThumbnailSkeletonMode, n as ThumbnailsControls, j as ThumbnailsElements, i as ThumbnailsLayout, l as ThumbnailsMotion, m as ThumbnailsRipple, k as ThumbnailsScroll, o as ThumbnailsTransitions } from './types-9g3BgMxk.mjs';
-import { I as IndexMode } from './types-tb9Qf2Mj.mjs';
-import './elements-24CTbRWj.mjs';
+import { S as SliderIndexChannel } from './sliderSub-Bo6Y8as_.mjs';
+import { c as BreakpointMap, I as IndexMode } from './responsive-D_xhZmVI.mjs';
+import { f as ThumbnailsOptions, h as ThumbnailSelectMeta } from './types-CHUayqcj.mjs';
+export { R as ResponsivePosition, j as ThumbnailContainerLayout, e as ThumbnailIntroOptions, i as ThumbnailLayout, a as ThumbnailLoadingElements, c as ThumbnailLoadingOptions, b as ThumbnailLoadingRenderArgs, T as ThumbnailPosition, d as ThumbnailSkeletonMode, p as ThumbnailsControls, l as ThumbnailsElements, k as ThumbnailsLayout, n as ThumbnailsMotion, o as ThumbnailsRipple, m as ThumbnailsScroll, q as ThumbnailsTransitions } from './types-CHUayqcj.mjs';
+import './plyrTypes-Cq4C3ul5.mjs';
+import 'plyr';
+import './types-Dhh8xfHo.mjs';
+import './controls-SpWg1Kgt.mjs';
 
 type Props = {
     options?: ThumbnailsOptions;
     children?: React.ReactNode;
     indexChannel?: SliderIndexChannel;
     breakpoints?: BreakpointMap;
-    onThumbnailClick?: (index: number) => void;
+    onThumbnailClick?: (index: number, meta?: ThumbnailSelectMeta) => void;
     onReadyChange?: (ready: boolean) => void;
     direction?: "ltr" | "rtl";
 };
 declare const ThumbnailSlider: React.ForwardRefExoticComponent<Props & React.RefAttributes<HTMLDivElement>>;
 
+type SliderIndexEventMeta = {
+    source?: "thumbnail" | "external";
+    transition?: "scroll" | "crossfade";
+    crossfade?: {
+        durationMs?: number;
+        easing?: string;
+    };
+};
 type SliderIndexEvent = {
     type: "set";
     index: number;
     mode: IndexMode;
+    meta?: SliderIndexEventMeta;
 } | {
     type: "bump";
     delta: number;
     mode: IndexMode;
+    meta?: SliderIndexEventMeta;
 };
 type SliderIndexChannelLike = {
     get: () => {
@@ -33,9 +45,11 @@ type SliderIndexChannelLike = {
     };
     set: (index: number, mode?: IndexMode, opts?: {
         silent?: boolean;
+        meta?: SliderIndexEventMeta;
     }) => void;
     bump: (delta: number, mode?: IndexMode, opts?: {
         silent?: boolean;
+        meta?: SliderIndexEventMeta;
     }) => void;
     onEvent?: (fn: (event: SliderIndexEvent) => void) => () => void;
     subscribe?: (fn: () => void) => () => void;
@@ -50,7 +64,7 @@ type CreateThumbnailSyncBridgeArgs = {
 type ThumbnailSyncBridge = {
     start: () => () => void;
     stop: () => void;
-    publishThumbnailClick: (index: number, mode?: IndexMode) => void;
+    publishThumbnailClick: (index: number, mode?: IndexMode, meta?: SliderIndexEventMeta) => void;
 };
 declare function createThumbnailSyncBridge(args: CreateThumbnailSyncBridgeArgs): ThumbnailSyncBridge;
 

@@ -1,0 +1,24 @@
+export const css = String.raw`.slide {
+  width: 100cqw;
+  max-width: 550px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+  background: rgba(125, 211, 252, 0.14);
+}
+
+.spinner {
+  width: 52px;
+  height: 52px;
+  background: conic-gradient(
+    from 180deg,
+    #cffafe,
+    #67bee5,
+    #0ea5e9,
+    #0284c7,
+    #0369a1,
+    #cffafe
+  );
+  filter: drop-shadow(0 10px 24px rgba(3, 105, 161, 0.28));
+}`;

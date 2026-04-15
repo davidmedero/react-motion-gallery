@@ -5,6 +5,7 @@
 import {
   useRef,
   useEffect,
+  useState,
   ReactNode,
   Children,
   RefObject,
@@ -12,6 +13,7 @@ import {
   useImperativeHandle,
   forwardRef
 } from 'react'
+import { flushSync } from 'react-dom'
 import type { APITypes } from 'plyr-react'
 import styles from './Fullscreen.module.css'
 import type { FullscreenSliderSub, FSRequest } from './fullscreenSliderSub'
@@ -32,11 +34,14 @@ import { createBaseLimit } from '../shared/motion/baseLimit'
 import { Counter, CounterType } from '../shared/motion/counter'
 import { PercentOfView, PercentOfViewType, ScrollBounds, ScrollBoundsType } from '../shared/motion/scrollBounds'
 import { useWheelLock } from '../shared/hooks/useWheelLock'
+import {
+  clamp01,
+  resolveCrossfadeDragTarget,
+  shouldCompleteCrossfadeDrag,
+} from '../shared/crossfade'
 import { DefaultChevronIcon } from './controls/DefaultChevronIcon'
 import { FullscreenOptions } from './types'
 import { getFsMediaContainer, getPrimaryImgEl } from '../zoomPan/core/dom'
-
-const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
 function DragTracker(axis: AxisLike, ownerWindow: WindowType) {
@@ -64,6 +69,59 @@ type PendingCloneToggleState = {
   observer: IntersectionObserver | null
   rafId: number | null
   deadlineTs: number
+}
+
+export type FullscreenCrossfadeTrigger = 'arrow' | 'requestSet' | 'wheel' | 'drag'
+
+type FullscreenCrossfadeState = {
+  id: number;
+  fromIndex: number;
+  toIndex: number;
+  progress: number;
+  delta: number;
+  animate: boolean;
+  durationMs?: number;
+  easing?: string;
+};
+
+export function shouldUseFullscreenZoomedSourceSnapshot(args: {
+  controlsFade: boolean
+  trigger: FullscreenCrossfadeTrigger
+  isZoomed: boolean
+}) {
+  const { controlsFade, trigger, isZoomed } = args
+  return controlsFade && trigger !== 'drag' && isZoomed
+}
+
+export function shouldStartFullscreenCrossfade(args: {
+  controlsFade: boolean
+  dragFade: boolean
+  showFullscreenSlider: boolean
+  busy: boolean
+  trigger: FullscreenCrossfadeTrigger
+  mode?: 'instant' | 'animated'
+  hasCrossfadeSlides: boolean
+  fromIndex: number
+  toIndex: number
+}) {
+  const {
+    controlsFade,
+    dragFade,
+    showFullscreenSlider,
+    busy,
+    trigger,
+    mode = 'animated',
+    hasCrossfadeSlides,
+    fromIndex,
+    toIndex,
+  } = args
+
+  if (!showFullscreenSlider || busy || !hasCrossfadeSlides) return false
+  if (fromIndex === toIndex) return false
+  if (trigger === 'wheel') return false
+  if (trigger === 'requestSet' && mode === 'instant') return false
+  if (trigger === 'drag') return dragFade
+  return controlsFade
 }
 
 interface FullscreenSliderProps {
@@ -102,10 +160,12 @@ interface FullscreenSliderProps {
   suppressLoopRef: React.RefObject<boolean>;
   fadeOpening: boolean;
   introFade?: boolean;
-  slideFade?: boolean;
+  controlsFade?: boolean;
+  dragFade?: boolean;
   slideFadeDuration?: number;
   slideFadeEasing?: string;
   normalizedItems: MediaItem[];
+  crossfadeSlides?: ReactNode[];
   introDuration?: number;
   introEasing?: string;
   resetAllZoomDom: () => void;
@@ -149,10 +209,12 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       suppressLoopRef,
       fadeOpening,
       introFade,
-      slideFade = false,
+      controlsFade = false,
+      dragFade = false,
       slideFadeDuration = 120,
       slideFadeEasing = 'cubic-bezier(.4,0,.22,1)',
       normalizedItems,
+      crossfadeSlides,
       introDuration = 300,
       introEasing = 'cubic-bezier(.4,0,.22,1)',
       resetAllZoomDom,
@@ -212,12 +274,30 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const wasPinch = useRef(false)
     const appliedYRef = useRef(0)
     const overlayOpacityRef = useRef(1)
+    const publishedIndexRef = useRef<number>(sub.get())
     type DragMode = 'none' | 'x' | 'y'
     const dragMode = useRef<DragMode>('none')
     const limitRef = useRef<LimitType | null>(null)
     const povRef    = useRef<PercentOfViewType | null>(null)
     const boundsRef = useRef<ScrollBoundsType | null>(null)
     const pendingCloneToggleRef = useRef<PendingCloneToggleState | null>(null)
+    const [crossfadeState, setCrossfadeState] =
+      useState<FullscreenCrossfadeState | null>(null)
+    const [crossfadeSourceSnapshotHtml, setCrossfadeSourceSnapshotHtml] =
+      useState<string | null>(null)
+    const crossfadeStateRef = useRef<FullscreenCrossfadeState | null>(null)
+    const crossfadeSeqRef = useRef(0)
+    const crossfadeRaf1Ref = useRef<number | null>(null)
+    const crossfadeRaf2Ref = useRef<number | null>(null)
+    const crossfadeTimeoutRef = useRef<number | null>(null)
+
+    const showFullscreenSliderRef = useRef(showFullscreenSlider)
+    showFullscreenSliderRef.current = showFullscreenSlider
+    const dragFadeRef = useRef(dragFade)
+    dragFadeRef.current = dragFade
+    const crossfadeSlidesRef = useRef(crossfadeSlides)
+    crossfadeSlidesRef.current = crossfadeSlides
+    const dragFadeSessionStartedRef = useRef(false)
 
     type ElementStyleLike = { className?: string; style?: React.CSSProperties } | null | undefined;
 
@@ -265,6 +345,10 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       return r
     }
     const isZoomedRef = useLatest(isZoomed)
+
+    useEffect(() => {
+      crossfadeStateRef.current = crossfadeState
+    }, [crossfadeState])
 
     const {
       wheelLockMs: WHEEL_LOCK_MS,
@@ -375,13 +459,27 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       }
     }, [children])
 
-    function commitIndexChange(idx: number) {
+    function publishVisibleIndex(idx: number) {
+      if (publishedIndexRef.current === idx) return
+      publishedIndexRef.current = idx
+      sub.setLocalIndex(idx)
+    }
+
+    function commitIndexChange(
+      idx: number,
+      opts: { publishVisible?: boolean; resetZoom?: boolean } = {}
+    ) {
+      const { publishVisible = true, resetZoom = true } = opts
       selectedIndex.current = idx;
       indexCurrentRef.current?.set(idx);
-      sub.setLocalIndex(idx);
+      if (publishVisible) {
+        publishVisibleIndex(idx)
+      }
       updateCounterFromIndex(idx);
 
-      resetAllZoomDom();
+      if (resetZoom) {
+        resetAllZoomDom();
+      }
     }
     
     const GLOBAL_DRAG_ATTR = 'data-rmg-global-drag';
@@ -434,12 +532,69 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
     const { start: startGrabbing, stop: stopGrabbing } = useGlobalGrabbingGuards();
 
-    const slideFadeBusyRef = useRef(false);
+    const crossfadeBusyRef = useRef(false);
 
-    const SLIDE_FADE_MS = slideFadeDuration;
-    const SLIDE_FADE_EASING = slideFadeEasing
+    const CROSSFADE_MS = slideFadeDuration;
+    const CROSSFADE_EASING = slideFadeEasing;
 
-    function jumpToIndexInstant(idx: number) {
+    type FullscreenCrossfadeOpts = {
+      enabled?: boolean;
+      durationMs?: number;
+      easing?: string;
+    };
+
+    function clearPendingCrossfadeWork() {
+      if (crossfadeRaf1Ref.current != null) {
+        cancelAnimationFrame(crossfadeRaf1Ref.current)
+        crossfadeRaf1Ref.current = null
+      }
+      if (crossfadeRaf2Ref.current != null) {
+        cancelAnimationFrame(crossfadeRaf2Ref.current)
+        crossfadeRaf2Ref.current = null
+      }
+      if (crossfadeTimeoutRef.current != null) {
+        window.clearTimeout(crossfadeTimeoutRef.current)
+        crossfadeTimeoutRef.current = null
+      }
+    }
+
+    function finishCrossfade(
+      id?: number,
+      opts: { sync?: boolean } = {}
+    ) {
+      clearPendingCrossfadeWork()
+      crossfadeBusyRef.current = false
+
+      const clearState = () => {
+        if (typeof id !== 'number') {
+          crossfadeStateRef.current = null
+        }
+
+        setCrossfadeSourceSnapshotHtml(null)
+
+        setCrossfadeState((current) => {
+          if (!current) return null
+          if (typeof id === 'number' && current.id !== id) {
+            crossfadeStateRef.current = current
+            return current
+          }
+          crossfadeStateRef.current = null
+          return null
+        })
+      }
+
+      // Native drag listeners can start the next gesture before React paints.
+      // Flush the overlay teardown there so a stale crossfade layer doesn't
+      // linger above a vertical close drag.
+      if (opts.sync && crossfadeStateRef.current) {
+        flushSync(clearState)
+        return
+      }
+
+      clearState()
+    }
+
+    function jumpTrackToIndexInstant(idx: number) {
       const per = perSlide();
       const nx = -per * idx;
 
@@ -448,50 +603,296 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       setAllX(nx);
       setTranslateX(nx, 0);
-
-      commitIndexChange(idx);
+      animRef.current?.resetBlend();
     }
 
-    function fadeToIndex(idx: number) {
-      if (!slideFade) return;
+    function stopTrackScrollAnimation() {
+      const currentX =
+        offsetLocationRef.current?.get() ??
+        locationRef.current?.get() ??
+        x.current;
 
-      const track = slider.current;
-      if (!track) return;
+      animRef.current?.stop();
+      isAnimatingRef.current = false;
+      bodyRef.current?.useDuration(0).useFriction(1);
 
-      if (!showFullscreenSlider) return;
+      setAllX(currentX);
+      positionSlider();
+      animRef.current?.resetBlend();
+    }
 
-      slideFadeBusyRef.current = true;
+    function jumpToIndexInstant(
+      idx: number,
+      opts: { publishVisible?: boolean; resetZoom?: boolean } = {}
+    ) {
+      jumpTrackToIndexInstant(idx);
 
-      const prevTransition = track.style.transition;
-      const prevOpacity = track.style.opacity;
+      commitIndexChange(idx, opts);
+    }
 
-      track.style.transition = `opacity ${SLIDE_FADE_MS}ms ${SLIDE_FADE_EASING}`;
+    function triggerZoomToggle(
+      evt: PointerEvent,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) {
+      if (crossfadeStateRef.current) {
+        finishCrossfade(undefined, { sync: true })
+      }
 
-      const computed = window.getComputedStyle(track).opacity;
-      track.style.opacity = computed;
+      isZooming.current = true
+      handleZoomToggle(evt as any, imageRef)
+    }
 
-      (track as any).offsetWidth;
+    function cloneTrackSnapshotHtml() {
+      const track = slider.current
+      if (!track) return null
 
-      track.style.opacity = '0';
+      const clone = track.cloneNode(true) as HTMLDivElement
+      clone.setAttribute('aria-hidden', 'true')
+      clone.style.position = 'absolute'
+      clone.style.inset = '0'
+      clone.style.width = '100%'
+      clone.style.height = '100%'
+      clone.style.margin = '0'
+      clone.style.pointerEvents = 'none'
+      clone.removeAttribute('data-rmg-fs-hide-track-captions')
+      clone.querySelectorAll<HTMLElement>('[id]').forEach((node) => {
+        node.removeAttribute('id')
+      })
 
-      const t1 = window.setTimeout(() => {
+      return clone.outerHTML
+    }
 
-        jumpToIndexInstant(idx);
+    function hasCrossfadeSlideNodes(len = slideCount()) {
+      return (crossfadeSlidesRef.current?.length ?? 0) >= len;
+    }
 
-        (track as any).offsetWidth;
+    function startCrossfadeToIndex(
+      requestedIdx: number,
+      trigger: FullscreenCrossfadeTrigger,
+      mode: "instant" | "animated" = "animated",
+      opts?: FullscreenCrossfadeOpts
+    ) {
+      const len = slideCount();
+      const fromIdx = resolveStartIndex(selectedIndex.current, len);
+      const nextIdx = resolveStartIndex(requestedIdx, len);
+      const hasCrossfadeSlides = hasCrossfadeSlideNodes(len);
 
-        track.style.opacity = '1';
+      const crossfadeRequested = opts?.enabled ?? controlsFade;
+      const durationMs = opts?.durationMs ?? CROSSFADE_MS;
+      const easing = opts?.easing ?? CROSSFADE_EASING;
 
-        const t2 = window.setTimeout(() => {
-          track.style.transition = prevTransition;
-          if (!prevTransition) track.style.opacity = prevOpacity;
+      const isEligibleTrigger =
+        trigger === "arrow" || (trigger === "requestSet" && mode !== "instant");
 
-          slideFadeBusyRef.current = false;
-          window.clearTimeout(t2);
-        }, SLIDE_FADE_MS + 40);
+      if (
+        crossfadeRequested &&
+        showFullscreenSliderRef.current &&
+        hasCrossfadeSlides &&
+        isEligibleTrigger &&
+        crossfadeBusyRef.current
+      ) {
+        clearPendingCrossfadeWork();
+        crossfadeBusyRef.current = false;
+      }
 
-        window.clearTimeout(t1);
-      }, SLIDE_FADE_MS + 20);
+      if (
+        !shouldStartFullscreenCrossfade({
+          controlsFade: crossfadeRequested,
+          dragFade,
+          showFullscreenSlider: showFullscreenSliderRef.current,
+          busy: crossfadeBusyRef.current,
+          trigger,
+          mode,
+          hasCrossfadeSlides,
+          fromIndex: fromIdx,
+          toIndex: nextIdx,
+        })
+      ) {
+        return false;
+      }
+
+      stopTrackScrollAnimation();
+
+      const sourceSnapshotHtml = shouldUseFullscreenZoomedSourceSnapshot({
+        controlsFade: crossfadeRequested,
+        trigger,
+        isZoomed: isZoomedRef.current,
+      })
+        ? cloneTrackSnapshotHtml()
+        : null;
+
+      const deferZoomReset = !!sourceSnapshotHtml;
+
+      clearPendingCrossfadeWork();
+      const id = ++crossfadeSeqRef.current;
+      crossfadeBusyRef.current = true;
+      indexPreviousRef.current?.set(fromIdx);
+
+      const nextState: FullscreenCrossfadeState = {
+        id,
+        fromIndex: fromIdx,
+        toIndex: nextIdx,
+        progress: 0,
+        delta: 0,
+        animate: false,
+        durationMs,
+        easing,
+      };
+
+      crossfadeStateRef.current = nextState;
+      setCrossfadeSourceSnapshotHtml(sourceSnapshotHtml);
+      setCrossfadeState(nextState);
+
+      commitIndexChange(nextIdx, {
+        resetZoom: !deferZoomReset,
+      });
+
+      crossfadeRaf1Ref.current = requestAnimationFrame(() => {
+        crossfadeRaf1Ref.current = null;
+        if (crossfadeSeqRef.current !== id) return;
+
+        jumpTrackToIndexInstant(nextIdx);
+
+        if (deferZoomReset) {
+          resetAllZoomDom();
+        }
+
+        crossfadeRaf2Ref.current = requestAnimationFrame(() => {
+          crossfadeRaf2Ref.current = null;
+          if (crossfadeSeqRef.current !== id) return;
+
+          setCrossfadeState((current) => {
+            if (!current || current.id !== id) return current;
+
+            const updated: FullscreenCrossfadeState = {
+              ...current,
+              progress: 1,
+              delta: 0,
+              animate: true,
+            };
+
+            crossfadeStateRef.current = updated;
+            return updated;
+          });
+
+          crossfadeTimeoutRef.current = window.setTimeout(() => {
+            finishCrossfade(id);
+          }, durationMs + 48);
+        });
+      });
+
+      return true;
+    }
+
+    function canUseDragFade() {
+      return (
+        !!dragFadeRef.current &&
+        showFullscreenSliderRef.current &&
+        slideCount() > 1 &&
+        hasCrossfadeSlideNodes()
+      )
+    }
+
+    function updateDragCrossfade(delta: number) {
+      const len = slideCount()
+      const hasCrossfadeSlides = hasCrossfadeSlideNodes(len)
+      if (!len || !hasCrossfadeSlides) return false
+
+      const sourceIndex = resolveStartIndex(selectedIndex.current, len)
+      const targetIndex = resolveCrossfadeDragTarget({
+        currentIndex: sourceIndex,
+        delta,
+        slideCount: len,
+        wrap: len > 1,
+      })
+
+      if (targetIndex === sourceIndex) {
+        finishCrossfade()
+        return false
+      }
+
+      const progress = clamp01(Math.abs(delta) / Math.max(1, perSlide()))
+
+      setCrossfadeState((current) => {
+        const nextId =
+          current &&
+          current.fromIndex === sourceIndex &&
+          current.toIndex === targetIndex
+            ? current.id
+            : ++crossfadeSeqRef.current
+
+        crossfadeBusyRef.current = true
+        indexPreviousRef.current?.set(sourceIndex)
+
+        const nextState = {
+          id: nextId,
+          fromIndex: sourceIndex,
+          toIndex: targetIndex,
+          progress,
+          delta,
+          animate: false,
+        }
+        crossfadeStateRef.current = nextState
+        return nextState
+      })
+
+      return true
+    }
+
+    function settleDragCrossfade(force: number) {
+      const state = crossfadeStateRef.current
+      if (!state) {
+        finishCrossfade()
+        return false
+      }
+
+      const shouldAdvance = shouldCompleteCrossfadeDrag({
+        progress: state.progress,
+        force,
+        delta: state.delta,
+      })
+
+      crossfadeBusyRef.current = true
+
+      if (!shouldAdvance) {
+        const id = state.id
+        setCrossfadeState((current) =>
+          current?.id === id
+            ? (() => {
+                const nextState = { ...current, progress: 0, animate: true }
+                crossfadeStateRef.current = nextState
+                return nextState
+              })()
+            : current
+        )
+
+        crossfadeTimeoutRef.current = window.setTimeout(() => {
+          finishCrossfade(id)
+        }, CROSSFADE_MS + 48)
+
+        return false
+      }
+
+      const id = state.id
+      indexPreviousRef.current?.set(state.fromIndex)
+      commitIndexChange(state.toIndex)
+      setCrossfadeState((current) =>
+        current?.id === id
+          ? (() => {
+              const nextState = { ...current, progress: 1, animate: true }
+              crossfadeStateRef.current = nextState
+              return nextState
+            })()
+          : current
+      )
+
+      crossfadeTimeoutRef.current = window.setTimeout(() => {
+        if (crossfadeSeqRef.current !== id) return
+        jumpTrackToIndexInstant(state.toIndex)
+        finishCrossfade(id)
+      }, CROSSFADE_MS + 48)
+
+      return true
     }
 
     function perSlide() {
@@ -527,8 +928,20 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       if (closingModal) {
         animRef.current?.stop()
         pointerDownRef.current = false
+        finishCrossfade()
       }
     }, [closingModal])
+
+    useEffect(() => {
+      if (show) return
+      finishCrossfade()
+    }, [show])
+
+    useEffect(() => {
+      return () => {
+        finishCrossfade()
+      }
+    }, [])
 
     useEffect(() => {
       if (!slider.current || hasPositioned.current) return
@@ -537,7 +950,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       const startIndex = resolveStartIndex(slideIndex, len)
 
       selectedIndex.current = startIndex
-      sub.setLocalIndex(startIndex)
+      publishVisibleIndex(startIndex)
       updateCounterFromIndex(startIndex)
 
       setTimeout(() => {
@@ -755,8 +1168,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       const cur = selectedIndex.current || 0;
       const nextIdx = ((cur - 1) % len + len) % len;
 
-      if (slideFade) {
-        fadeToIndex(nextIdx);
+      if (startCrossfadeToIndex(nextIdx, 'arrow')) {
+        sub.emitBasePointerDown?.();
         return;
       }
 
@@ -831,8 +1244,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       const cur = selectedIndex.current || 0;
       const nextIdx = ((cur + 1) % len + len) % len;
 
-      if (slideFade) {
-        fadeToIndex(nextIdx);
+      if (startCrossfadeToIndex(nextIdx, 'arrow')) {
+        sub.emitBasePointerDown?.();
         return;
       }
 
@@ -1128,7 +1541,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       indexPreviousRef.current = indexPrevious;
 
       selectedIndex.current = startIndex;
-      sub.setLocalIndex(startIndex);
+      publishVisibleIndex(startIndex);
       updateCounterFromIndex(startIndex);
 
       function scrollTo(target: BaseTarget): void {
@@ -1155,7 +1568,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           indexCurrent.set(target.index);
 
           const idx = indexCurrent.get();
-          commitIndexChange(idx);
+          commitIndexChange(idx, {
+            publishVisible: !bodyRef.current!.duration(),
+          });
         }
       }
 
@@ -1244,7 +1659,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             isAnimatingRef.current = false
           }
           if (!isZoomedRef.current && !isAnimatingRef.current) {
-            updateActiveIndexFromX(loc)
+            syncInteractiveIndexFromX(loc)
           }
         }
       )
@@ -1289,6 +1704,10 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
         if (isZoomedRef.current || closingModal) return
 
+        if (crossfadeBusyRef.current) {
+          finishCrossfade(undefined, { sync: true });
+        }
+
         sub.emitBasePointerDown?.();
         
         const isMouseEvt = isMouseEvent(evt as any, window as any)
@@ -1321,11 +1740,21 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         startPX = trackerX.readPoint(evt as any, 'x')
         startPY = trackerY.readPoint(evt as any, 'y')
 
-        bodyRef.current!.useFriction(0).useDuration(0)
-        targetRef.current!.set(locationRef.current!.get())
+        dragFadeSessionStartedRef.current = false
+        const canDragFade = canUseDragFade()
+
+        if (canDragFade) {
+          finishCrossfade(undefined, { sync: true });
+          jumpTrackToIndexInstant(selectedIndex.current);
+        } else {
+          bodyRef.current!.useFriction(0).useDuration(0)
+          targetRef.current!.set(locationRef.current!.get())
+        }
 
         addDragEvents()
-        animRef.current?.start()
+        if (!canDragFade) {
+          animRef.current?.start()
+        }
       }
 
       function onMove(evt: PointerEvent) {
@@ -1357,6 +1786,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             dragMode.current = dxAbs >= dyAbs ? 'x' : 'y'
             isClick.current = false
             if (dragMode.current === 'y') {
+              finishCrossfade(undefined, { sync: true })
               isVerticalScroll.current = true
               dragStartY.current = lastCross
               yTemp.current = 0
@@ -1373,6 +1803,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         dragX.current = lastScroll * sign
         velocityX.current = diffX
         dragMoveTime.current = new Date()
+        const totalDeltaX = (lastScroll - startPX) * sign
 
         if (!preventScroll && !isMouse && dragMode.current === 'x') {
           if (!('cancelable' in evt) || !(evt as any).cancelable) return
@@ -1393,6 +1824,13 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           return
         }
 
+        if (canUseDragFade()) {
+          isScrolling.current = Math.abs(totalDeltaX) > 0.5;
+          updateDragCrossfade(totalDeltaX);
+          if ((evt as any).cancelable) evt.preventDefault?.()
+          return;
+        }
+    
         bodyRef.current!.useFriction(0.3).useDuration(0.75)
         const delta = axisRef.current!.direction(diffX)
         targetRef.current!.add(delta)
@@ -1477,16 +1915,13 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             return
           }
           if (idx !== renderedIndex && renderedIndex !== idx + 2) {
-            isZooming.current = true
-            handleZoomToggle(evt as any, matchedRef)
+            triggerZoomToggle(evt, matchedRef)
           }
           if (idx === cellCount - 1 && renderedIndex === cellCount + 1) {
-            isZooming.current = true
-            handleZoomToggle(evt as any, matchedRef)
+            triggerZoomToggle(evt, matchedRef)
           }
           if (slider.current && slider.current.children.length === 1) {
-            isZooming.current = true
-            handleZoomToggle(evt as any, matchedRef)
+            triggerZoomToggle(evt, matchedRef)
           }
           suppressLoopRef.current = true
           goToCanonical(idx)
@@ -1525,6 +1960,13 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
           if (isRtl) rawForce = -rawForce
 
+          if (canUseDragFade()) {
+            isScrolling.current = false
+            settleDragCrossfade(rawForce)
+            dragMode.current = 'none'
+            return
+          }
+
           const isMouseEvt = isMouseEvent(evt as any, window as any)
           const snapForceBoost = { mouse: 300, touch: 400 }
           const boost = snapForceBoost[isMouseEvt ? 'mouse' : 'touch']
@@ -1552,14 +1994,18 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             return nextTarget.distance
           }
           
-          const force = allowedForce(boostedForce)
+          const isOutOfBounds = boundsRef.current?.passed()
+
+          let adjustedBoostedForce = boostedForce
+          if (isOutOfBounds) {
+            adjustedBoostedForce *= 0.6 // tune: 0.4 to 0.8
+          }
+
+          const force = allowedForce(adjustedBoostedForce)
 
           const baseFriction = sliderFriction
           const forceFactor = factorAbs(boostedForce, force)
           let speed = sliderDuration
-          if (boundsRef.current?.passed()) {
-            speed = sliderDuration + 10 * forceFactor
-          }
           const friction = baseFriction + forceFactor / 50
 
           body.useDuration(speed).useFriction(friction)
@@ -1605,6 +2051,11 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       function onWheel(e: WheelEvent) {
         const now = markWheelSeen();
 
+        if (crossfadeBusyRef.current) {
+          if ((e as any).cancelable) e.preventDefault?.();
+          return;
+        }
+
         if (pointerDownRef.current) {
           lockWheelFor(WHEEL_LOCK_MS);
           if ((e as any).cancelable) e.preventDefault?.();
@@ -1637,29 +2088,38 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         animRef.current?.start()
         x.current = next
         positionSlider()
-        updateActiveIndexFromX(next)
+        syncInteractiveIndexFromX(next)
       }
       root.addEventListener('wheel', onWheel as any, { passive: false })
       return () => root.removeEventListener('wheel', onWheel as any)
     }, [isZoomed])
 
-    function updateActiveIndexFromX(loc: number) {
+    function activeIndexFromLocation(loc: number) {
       const per = perSlide()
       const len = slideCount()
       let idx = Math.round(Math.abs(loc) / per)
       idx = ((idx % len) + len) % len
+      return idx
+    }
+
+    function publishVisibleIndexFromX(loc: number) {
+      publishVisibleIndex(activeIndexFromLocation(loc))
+    }
+
+    function syncInteractiveIndexFromX(loc: number) {
+      const idx = activeIndexFromLocation(loc)
 
       if (selectedIndex.current !== idx) {
         selectedIndex.current = idx
         indexCurrentRef.current?.set(idx)
-
-        sub.setLocalIndex(idx)
         let actualIndex = ((idx + 1) % cellCount + cellCount) % cellCount
         if (actualIndex === 0) actualIndex = cellCount
         if (counterRef.current) {
           counterRef.current.textContent = `${actualIndex} / ${cellCount}`
         }
       }
+
+      publishVisibleIndex(idx)
     }
 
     function setTranslateX(tx: number, ty: number) {
@@ -1715,47 +2175,60 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     useEffect(() => {
       const offReq = sub.onRequest((req: FSRequest) => {
         switch (req.type) {
-          case 'requestSet': {
-            const mode = req.mode ?? 'animated';
-            if (mode === 'instant') {
+          case "requestSet": {
+            const mode = req.mode ?? "animated";
+
+            if (mode === "instant") {
               const per = perSlide();
               const nx = -per * req.index;
               setAllX(nx);
               setTranslateX(nx, 0);
               animRef.current?.stop();
+
               const idx = ((req.index % slideCount()) + slideCount()) % slideCount();
               commitIndexChange(idx);
-              if (counterRef.current) {
-                let actual = selectedIndex.current + 1;
-                const len = slideCount();
-                actual = ((actual % len) + len) % len;
-                if (actual === 0) actual = cellCount;
-                counterRef.current.textContent = `${actual} / ${cellCount}`;
-              }
-            } else {
-              const mode = req.mode ?? 'animated'
-              const jump = mode === 'instant'
-              scrollToIndex(req.index, { jump });
+              break;
             }
+
+            const isThumbnailReq = req.meta?.source === "thumbnail";
+            const thumbTransition = isThumbnailReq
+              ? req.meta?.transition ?? "scroll"
+              : null;
+
+            if (thumbTransition === "scroll") {
+              scrollToIndex(req.index, { jump: false });
+              break;
+            }
+
+            if (
+              !startCrossfadeToIndex(req.index, "requestSet", mode, {
+                enabled: thumbTransition === "crossfade" ? true : undefined,
+                durationMs: req.meta?.crossfade?.durationMs,
+                easing: req.meta?.crossfade?.easing,
+              })
+            ) {
+              scrollToIndex(req.index, { jump: false });
+            }
+
             break;
           }
-          case 'requestPrev':
+
+          case "requestPrev":
             previous();
             break;
-          case 'requestNext':
+
+          case "requestNext":
             next();
             break;
-          case 'center':
+
+          case "center":
             recenterWithAnchor();
             break;
         }
       });
 
-      const offEvt = sub.onEvent(() => { /* noop here */ });
-
       return () => {
         offReq();
-        offEvt();
       };
     }, [sub]);
 
@@ -1801,6 +2274,29 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       isVideoItem(normalizedItems?.[openingIndex]);
 
     const shouldFadeIntro = introMethod === "fade" || introFade || isVideoSlide;
+    const crossfadeSourceNode =
+      crossfadeState != null
+        ? crossfadeSlides?.[crossfadeState.fromIndex] ?? null
+        : null
+    const crossfadeTargetNode =
+      crossfadeState != null
+        ? crossfadeSlides?.[crossfadeState.toIndex] ?? null
+        : null
+    const hasActiveCrossfade =
+      !!crossfadeState &&
+      (!!crossfadeSourceNode || !!crossfadeSourceSnapshotHtml) &&
+      !!crossfadeTargetNode
+    const crossfadeProgress = clamp01(crossfadeState?.progress ?? 0)
+    
+    const activeCrossfadeDurationMs =
+      crossfadeState?.durationMs ?? CROSSFADE_MS;
+
+    const activeCrossfadeEasing =
+      crossfadeState?.easing ?? CROSSFADE_EASING;
+
+    const crossfadeTransition = crossfadeState?.animate
+      ? `opacity ${activeCrossfadeDurationMs}ms ${activeCrossfadeEasing}`
+      : 'none';
 
     function setChevronOpen(open: boolean) {
       const cls = chromeStyles?.open;
@@ -1836,6 +2332,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     return (
       <div
         ref={viewportRef}
+        data-rmg-fs-viewport="true"
         className={`fs_viewport ${rtlCls}`}
         dir={isRtl ? 'rtl' : undefined}
         style={{
@@ -1864,7 +2361,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
                 top: '50%',
                 left: '16px',
                 transform: 'translateY(-50%) rotate(180deg)',
-                zIndex: 3,
                 ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
                 ...(styleFromElementStyle(arrows?.prev as any) ?? {}),
               }}
@@ -1890,7 +2386,6 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
                 top: '50%',
                 right: '16px',
                 transform: 'translateY(-50%)',
-                zIndex: 3,
                 ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
                 ...(styleFromElementStyle(arrows?.next as any) ?? {}),
               }}
@@ -1899,8 +2394,56 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             </button>
           </>
         )}
+        {hasActiveCrossfade && (
+          <div
+            key={crossfadeState!.id}
+            data-rmg-fs-crossfade-layer="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 2,
+              pointerEvents: 'none',
+            }}
+          >
+            <div
+              data-rmg-fs-crossfade-slide="source"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                overflow: 'hidden',
+                opacity: 1 - crossfadeProgress,
+                transition: crossfadeTransition,
+                willChange: 'opacity',
+              }}
+            >
+              {crossfadeSourceSnapshotHtml ? (
+                <div
+                  aria-hidden="true"
+                  style={{ position: 'absolute', inset: 0 }}
+                  dangerouslySetInnerHTML={{ __html: crossfadeSourceSnapshotHtml }}
+                />
+              ) : (
+                crossfadeSourceNode
+              )}
+            </div>
+            <div
+              data-rmg-fs-crossfade-slide="target"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                opacity: crossfadeProgress,
+                transition: crossfadeTransition,
+                willChange: 'opacity',
+              }}
+            >
+              {crossfadeTargetNode}
+            </div>
+          </div>
+        )}
         <div
           ref={slider}
+          data-rmg-fs-track="true"
+          data-rmg-fs-hide-track-captions={hasActiveCrossfade ? 'true' : undefined}
           className={`fullscreen_slider ${rtlCls}`}
           style={{
             position: 'absolute',

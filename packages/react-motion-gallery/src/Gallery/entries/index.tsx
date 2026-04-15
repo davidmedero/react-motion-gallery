@@ -12,6 +12,7 @@ import * as React from "react";
 import { EntryList } from "./components/EntryList";
 import { DEFAULT_ENTRIES } from "./defaults";
 import type { EntriesOptions, SlideOwner, MediaEntryLink, EntryItem } from "./types";
+import { BREAKPOINT_MAP } from "../shared/responsive";
 import { toMediaItems, type MediaItem } from "../shared/types/media";
 import { useOptionalGalleryCore } from "../core";
 import { SliderHandle } from "../slider/types";
@@ -109,6 +110,10 @@ export function Entries(props: EntriesProps) {
   }, [entries]);
 
   const core = useOptionalGalleryCore();
+  const effectiveBreakpoints = React.useMemo(
+    () => core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP },
+    [core?.effectiveBreakpoints]
+  );
 
   const entryFlatIndexRef = props.entryFlatIndexRef ?? React.useRef<number[][] | null>(null);
   const entryMapRef = props.entryMapRef ?? React.useRef<MediaEntryLink[] | null>(null);
@@ -218,6 +223,7 @@ export function Entries(props: EntriesProps) {
       registerExpandableImage={registerExpandableImage}
       renderMediaContainer={renderMediaContainer}
       entrySliderRefs={entrySliderRefs}
+      breakpoints={effectiveBreakpoints}
     />
   );
 }

@@ -12,6 +12,7 @@ export default defineConfig({
     "src/thumbnails.ts",
     "src/fullscreenThumbnails.ts",
     "src/video.ts",
+    "src/zoomPan.ts",
   ],
   format: ["esm"],
   loader: {

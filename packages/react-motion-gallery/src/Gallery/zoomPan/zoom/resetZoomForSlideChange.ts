@@ -15,25 +15,39 @@ type ResetAllArgs = {
   zoomState: ZoomStateRefs;
   imageRefs: React.RefObject<React.RefObject<HTMLDivElement | null>[]>;
   resetPan?: () => void;
+  stopPanMotion?: () => void;
   transition?: string;
   unlockDelayMs?: number;
 };
 
 export function resetZoomForSlideChange(args: ResetAllArgs) {
-  const { setScale, zoomState, imageRefs, resetPan } = args;
+  const {
+    setScale,
+    zoomState,
+    imageRefs,
+    resetPan,
+    stopPanMotion,
+  } = args;
 
   if (zoomState.scaleRef.current === 1) return;
 
   zoomState.changingSlides.current = true;
+  zoomState.suppressLoopRef.current = false;
+
+  // Critical: stop any in-flight pan animation before touching DOM transforms.
+  stopPanMotion?.();
 
   setScale(1);
-  zoomState.previousZoom.current.x = 0;
-  zoomState.previousZoom.current.y = 0;
+  zoomState.previousZoom.current = { x: 0, y: 0 };
   zoomState.panRef.current = { x: 0, y: 0 };
   zoomState.scaleRef.current = 1;
-  
-  const transition = "transform 0.2s cubic-bezier(.4,0,.22,1)";
-  const transform = "translate(0, 0) scale(1)";
+
+  const transition =
+    args.transition ?? "transform 0.2s cubic-bezier(.4,0,.22,1)";
+  const transform = "translate3d(0, 0, 0) scale(1)";
+  const disableTransition = transition.trim() === "none";
+  const match = disableTransition ? null : transition.match(/([\d.]+)s/);
+  const durationMs = match ? parseFloat(match[1]) * 1000 : 300;
 
   imageRefs.current.forEach((ref) => {
     const element = ref.current;
@@ -41,32 +55,44 @@ export function resetZoomForSlideChange(args: ResetAllArgs) {
 
     const firstChild = element.children[0] as HTMLElement | undefined;
     if (isVideoSlideElement(firstChild)) return;
+
     const imgEl = getPrimaryImgEl(element);
     if (!imgEl) return;
 
-    const match = transition.match(/([\d.]+)s/);
-    const durationMs = match ? parseFloat(match[1]) * 1000 : 300;
+    const previousTransition = imgEl.style.transition;
+    const restoreTransition =
+      previousTransition === "none" ? "" : previousTransition;
 
     imgEl.style.transition = transition;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    (imgEl as any).offsetWidth;
+    // Force layout so the browser honors the transition change.
+    void (imgEl as any).offsetWidth;
 
     imgEl.style.transform = transform;
 
-    setTimeout(() => {
-      imgEl.style.transition = "";
+    if (disableTransition) {
+      requestAnimationFrame(() => {
+        if (imgEl.style.transition === transition) {
+          imgEl.style.transition = restoreTransition;
+        }
+      });
+      return;
+    }
+
+    window.setTimeout(() => {
+      if (imgEl.style.transition === transition) {
+        imgEl.style.transition = "";
+      }
     }, durationMs + 50);
   });
 
+  // Rebuild the pan system only after the DOM transform has been reset.
   resetPan?.();
 
-  const match = transition.match(/([\d.]+)s/);
-  const durationMs = match ? parseFloat(match[1]) * 1000 : 300;
+  const unlockDelayMs =
+    args.unlockDelayMs ?? (disableTransition ? 0 : durationMs + 50);
 
-  const unlockDelayMs = durationMs + 50;
-  setTimeout(() => {
+  window.setTimeout(() => {
     zoomState.changingSlides.current = false;
-    zoomState.suppressLoopRef.current = false;
   }, unlockDelayMs);
 }

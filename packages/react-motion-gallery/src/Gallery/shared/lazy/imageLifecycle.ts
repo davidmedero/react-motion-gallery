@@ -25,7 +25,14 @@ export function applyImageHints(
 }
 
 export function nextFrame(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => resolve());
+      return;
+    }
+
+    globalThis.setTimeout(() => resolve(), 0);
+  });
 }
 
 export async function waitForImageDecode(img: HTMLImageElement): Promise<void> {

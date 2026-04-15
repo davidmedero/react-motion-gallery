@@ -9,15 +9,16 @@ This table reports local gzip measurements for each exported runtime surface. Th
 <!-- bundle-size:start -->
 | Export | JS gzip |
 | --- | --- |
-| `Entries` | 6.8kB |
-| `FullscreenThumbnailSlider` | 17.7kB |
-| `GalleryCore` | 1.8kB |
-| `Grid` | 7.4kB |
-| `Masonry` | 7.2kB |
-| `Slider` | 31.3kB |
-| `ThumbnailSlider` | 16.4kB |
-| `useFullscreenController` | 44.5kB |
-| `Video` | 10.7kB |
+| `Entries` | 9.3kB |
+| `FullscreenThumbnailSlider` | 18.8kB |
+| `GalleryCore` | 2.5kB |
+| `Grid` | 13.8kB |
+| `Masonry` | 16.2kB |
+| `Slider` | 38.4kB |
+| `ThumbnailSlider` | 17.4kB |
+| `useFullscreenController` | 55.5kB |
+| `Video` | 12.2kB |
+| `ZoomPanImage` | 8.5kB |
 <!-- bundle-size:end -->
 
 ## Overview
@@ -41,6 +42,7 @@ Mental model:
 - `Entries` renders structured entry data with a custom media container.
 - `GalleryCore` and `useFullscreenController` power fullscreen behavior.
 - `Video` is the gallery-ready video primitive.
+- `ZoomPanImage` attaches click-to-zoom, drag pan, ctrl-wheel pinch, and touch pinch to one clipped image surface.
 
 `MediaItem` accepts three shapes:
 
@@ -82,7 +84,29 @@ export function QuickStart() {
 
 Responsive numeric props in this package accept either a plain number or a breakpoint map like `{ 0: 1, md: 2, 1200: 3 }`. Named breakpoints resolve from the internal map: `xs: 0`, `sm: 600`, `md: 900`, `lg: 1200`, `xl: 1536`.
 
-The package root now exports the primary public components, helper functions, and companion prop types. Subpath entrypoints are also available when you want narrower imports: `react-motion-gallery/core`, `react-motion-gallery/slider`, `react-motion-gallery/grid`, `react-motion-gallery/masonry`, `react-motion-gallery/entries`, `react-motion-gallery/fullscreen`, `react-motion-gallery/thumbnails`, `react-motion-gallery/fullscreenThumbnails`, and `react-motion-gallery/video`.
+The package root now exports the primary public components, helper functions, and companion prop types. Subpath entrypoints are also available when you want narrower imports: `react-motion-gallery/core`, `react-motion-gallery/slider`, `react-motion-gallery/grid`, `react-motion-gallery/masonry`, `react-motion-gallery/entries`, `react-motion-gallery/fullscreen`, `react-motion-gallery/thumbnails`, `react-motion-gallery/fullscreenThumbnails`, `react-motion-gallery/video`, and `react-motion-gallery/zoomPan`.
+
+## ZoomPanImage
+
+```typescript
+import { ZoomPanImage } from "react-motion-gallery/zoomPan";
+
+export function ZoomPanCard() {
+  return (
+    <ZoomPanImage
+      src="https://picsum.photos/id/1035/1600/1200"
+      alt="A hiker looking over a canyon at dusk"
+      className="zoomCard"
+      zoom={{
+        clickZoomLevel: 2.35,
+        maxZoomLevel: 3.5,
+      }}
+    />
+  );
+}
+```
+
+`ZoomPanImage` is the lightweight standalone zoom surface. The component root is the clipping container, so border radius, aspect ratio, and overflow all live on the same element.
 
 ## Slider
 
@@ -179,11 +203,12 @@ export function BasicSlider() {
 | `transitions.loading.skeletonCount` | `number \| Record<string, number>` | `—` | Responsive skeleton slot count. |
 | `transitions.loading.renderLoading` | `({ count }) => ReactNode` | `—` | Custom loading renderer. |
 | `transitions.loading.skeleton` | `SliderSkeletonSpec` | `—` | Built-in skeleton spec, including per-slot overrides with `layout.slots` and centered peek support via `centering: "first"`. |
+| `transitions.loading.timing.exitMs` | `number` | `600` | Keeps the loading layer mounted for this long after exit starts. |
+| `transitions.loading.timing.minVisibleMs` | `number` | `220` | Minimum time the loading layer stays visible before exit can begin. |
 | `transitions.intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `transitions.intro.staggerMs` | `number` | `—` | Delay between item reveals. |
-| `transitions.intro.transform` | `number \| string` | `—` | Initial intro transform. |
-| `transitions.intro.durationMs` | `number` | `—` | Intro duration. |
-| `transitions.intro.easing` | `string` | `—` | Intro easing. |
+| `transitions.intro.staggerMs` | `number` | `—` | Delay between item fade-ins. |
+| `transitions.intro.durationMs` | `number` | `—` | Intro fade duration. |
+| `transitions.intro.easing` | `string` | `—` | Intro fade easing. |
 
 ### Slider loading skeletons
 
@@ -191,7 +216,13 @@ export function BasicSlider() {
 
 `layout.slots` is the per-slide override system. Define the shared placeholder once with `layout.item` and `layout.itemWrapStyle`, then override any individual slot with `slots[index]`. Slot `itemWrapStyle` values merge on top of the base wrap style, while `slot.item` can replace the placeholder node entirely for that slot.
 
+`itemWrapStyle` now supports wrapper-only `border` and `boxShadow` values. Wrapper `width`, `height`, and `aspectRatio` are treated as outer border-box dimensions, so the inner placeholder shrinks by the border thickness. Use simple uniform border shorthands such as `1px solid #cbd5e1` when you want the built-in sizing math to account for the border width.
+
+`text` nodes render one skeleton bar per `lines` value. `lines` can be a single number or a numeric min-width map such as `{ 0: 3, 767: 2, 1200: 1 }`. Use `lineWidth` to override the shortened final-line width; it defaults to `68%` of the text block width and can also be responsive with numeric min-width keys.
+
 `centering: "first"` is designed for center-aligned peek sliders. When the real slider uses `align="center"` and the skeleton uses `mode: "peek"` with `layout.kind: "slider"`, the built-in skeleton renderer inserts the leading spacer needed to center the first visible placeholder. You should not add that spacer manually, and it does not apply when you replace the built-in skeleton with `transitions.loading.renderLoading`.
+
+When you provide `transitions.loading.timing`, `exitMs` controls both how long the loading layer remains mounted after exit starts and its opacity transition duration. The real slider intro begins as soon as the loading exit starts; it does not wait for the loading layer to finish unmounting.
 
 ```typescript
 import { Slider } from "react-motion-gallery";
@@ -269,19 +300,19 @@ export function VariableWidthSkeletonSlider() {
 | `style` | `SkeletonContainerStyle \| Record<string, SkeletonContainerStyle>` | Track-level container styles such as `gap`, `padding`, `align`, `justify`, `width`, and `maxWidth`. |
 | `count` | `number \| undefined` | Optional explicit slot count for the layout. Falls back to `transitions.loading.skeletonCount`. |
 | `item` | `SkeletonNode` | Default placeholder node rendered in each slot. |
-| `itemWrapStyle` | `SkeletonBaseStyle \| undefined` | Shared wrapper size and margin rules for every slot. |
+| `itemWrapStyle` | `SliderSkeletonWrapStyle \| undefined` | Shared wrapper size, margin, border, and box-shadow rules for every slot. Border sizing is border-box. |
 | `slots` | `SliderSkeletonSlot[] \| undefined` | Per-slot overrides for variable widths, heights, aspect ratios, or custom placeholder nodes. |
 | `direction` | `"row" \| "col" \| undefined` | Slot flow direction. `centering: "first"` only affects row layouts. |
-| `children` | `SkeletonNode[] \| undefined` | Optional extra skeleton content rendered after the slider row. |
+| `children` | `SkeletonNode[] \| undefined` | Optional extra skeleton content rendered after the slider row. It does not affect `--rmg-slider-initial-height` or reserve live layout space. |
 
 #### `SliderSkeletonSlot`
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `item` | `SkeletonNode \| undefined` | Replaces the base `layout.item` for one slot. |
-| `itemWrapStyle` | `SkeletonBaseStyle \| undefined` | Merges on top of the base `layout.itemWrapStyle` for one slot. |
+| `itemWrapStyle` | `SliderSkeletonWrapStyle \| undefined` | Merges on top of the base `layout.itemWrapStyle` for one slot, including wrapper borders and shadows. |
 
-`SkeletonNode` supports these building blocks: `rect`, `square`, `circle`, `text`, `media`, `row`, `col`, and `stack`.
+`SkeletonNode` supports these building blocks: `rect`, `square`, `circle`, `text`, `media`, `row`, `col`, and `stack`. `text.lines` controls how many wrapped skeleton rows render for that text block, and `text.lineWidth` controls the trailing line width.
 
 ### Slider motion and effect options
 
@@ -297,6 +328,7 @@ export function VariableWidthSkeletonSlider() {
 | `effects.scale.enabled` | `boolean` | `—` | Scales neighboring slides. |
 | `effects.scale.amount` | `number` | `—` | Scale multiplier for the scale effect. |
 | `effects.fade.enabled` | `boolean` | `—` | Fades slides based on position. |
+| `effects.fade.minOpacity` | `number` | `0.36` | Minimum opacity used for the fade effect, clamped from `0` to `1`. |
 
 ### Slider render callback args
 
@@ -507,13 +539,18 @@ The component forwards a ref to its outer thumbnail shell. The explicit `layout`
 | `transitions.loading.elements.row` | `ElementStyle` | `—` | Class and inline style for the built-in skeleton row or column wrapper. |
 | `transitions.loading.elements.thumbnail` | `ElementStyle` | `—` | Class and inline style for each built-in thumbnail placeholder. |
 | `transitions.loading.renderLoading` | `({ count }) => ReactNode` | `—` | Replaces the built-in thumbnail loading skeleton and receives the resolved responsive count. |
+| `transitions.loading.timing.exitMs` | `number` | `600` | Keeps the thumbnail loading layer mounted for this long after exit starts. |
+| `transitions.loading.timing.minVisibleMs` | `number` | `220` | Minimum time the loading layer stays visible before exit can begin. |
 | `transitions.intro.renderIntro` | `({ active, containerProps }, inner) => ReactNode` | `—` | Custom intro wrapper for the thumbnail rail. |
-| `transitions.intro.staggerMs` | `number` | `40` | Delay between thumbnail reveals. |
-| `transitions.intro.transform` | `string` | `"10px"` | Starting translate offset used by the default intro. |
-| `transitions.intro.durationMs` | `number` | `300` | Intro duration. |
-| `transitions.intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro easing. |
+| `transitions.intro.staggerMs` | `number` | `40` | Delay between thumbnail fade-ins. |
+| `transitions.intro.durationMs` | `number` | `300` | Intro fade duration. |
+| `transitions.intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
 
 `transitions.loading.elements.*` only applies to the built-in thumbnail skeleton. If you provide `transitions.loading.renderLoading`, you fully own the loading markup instead.
+
+The built-in thumbnail placeholders use the same shimmer variable family as slider skeletons: `--rmg-skel-bg`, `--rmg-skel-shimmer-enabled`, `--rmg-skel-shimmer-opacity`, `--rmg-skel-shimmer-filter`, `--rmg-skel-shimmer-angle`, `--rmg-skel-shimmer-c1`, `--rmg-skel-shimmer-c2`, `--rmg-skel-shimmer-c3`, `--rmg-skel-shimmer-duration`, and `--rmg-skel-shimmer-timing`.
+
+For thumbnails, `transitions.loading.timing.exitMs` controls both the mounted exit lifetime and the loading-layer opacity fade. The thumbnail intro can begin as soon as the loading exit starts.
 
 ### `createThumbnailSyncBridge`
 
@@ -574,14 +611,21 @@ export function BasicGrid() {
 | `loading.force` | `boolean` | `—` | Keeps the loading layer visible even when media is ready. |
 | `loading.renderLoading` | `({ count }) => ReactNode` | `—` | Custom loading renderer. |
 | `loading.skeleton` | `GridSkeletonSpec` | `—` | Built-in grid skeleton spec. |
+| `loading.timing.exitMs` | `number` | `600` | Keeps the loading layer mounted for this long after exit starts. |
+| `loading.timing.minVisibleMs` | `number` | `220` | Minimum time the loading layer stays visible before exit can begin. |
 | `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `intro.staggerMs` | `number` | `40` | Reveal stagger. |
-| `intro.transform` | `string` | `"translateY(10px) scale(0.99)"` | Starting transform. |
-| `intro.durationMs` | `number` | `300` | Intro duration. |
-| `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro easing. |
+| `intro.staggerMs` | `number` | `40` | Reveal stagger for the fade-in. |
+| `intro.durationMs` | `number` | `300` | Intro fade duration. |
+| `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
 | `intro.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
 
+When `lazyLoad.enabled` is true, Grid rewrites trackable image `src` values into `data-rmg-lazy-src`, reveals them on viewport intersection, then fades them in after decode and spinner exit.
+
 Grid fullscreen behavior is provided by `GalleryCore` and `useFullscreenController`; Grid itself does not expose a ref-based imperative API.
+
+Grid skeleton `text` nodes use the same wrapped-line treatment as slider skeletons, including responsive `lines` maps and the configurable trailing `lineWidth`.
+
+Grid uses the same loading timing model as Slider: `loading.timing.exitMs` controls both how long the loading layer stays mounted after exit starts and its opacity transition, and the real grid intro begins as soon as exit starts.
 
 ## Masonry
 
@@ -621,6 +665,8 @@ export function BasicMasonry() {
 | `gap` | `number \| Record<string, number>` | `—` | Responsive gap between columns and items. |
 | `placement` | `"balanced" \| "roundRobin"` | `"balanced"` | `balanced` aims for even column heights. |
 | `estimatedItemHeight` | `number` | `—` | Hint used before measurements settle. |
+| `itemWrapClassName` | `string` | `—` | Class name added to the masonry item wrapper. |
+| `itemWrapStyle` | `React.CSSProperties` | `—` | Inline styles applied to the masonry item wrapper. |
 | `as` | `React.ElementType` | `"div"` | Root HTML element or custom component. |
 | `rootRef` | `React.Ref<HTMLDivElement>` | `—` | Ref to the masonry root. |
 | `classNames.root` | `string` | `—` | Root class name. |
@@ -635,11 +681,118 @@ export function BasicMasonry() {
 | `loading.renderLoading` | `({ count }) => ReactNode` | `—` | Custom loading renderer. |
 | `loading.skeleton` | `MasonrySkeletonSpec` | `—` | Built-in masonry skeleton spec. |
 | `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `intro.staggerMs` | `number` | `40` | Reveal stagger. |
-| `intro.transform` | `string` | `"translateY(10px) scale(0.99)"` | Starting transform. |
-| `intro.durationMs` | `number` | `300` | Intro duration. |
-| `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro easing. |
+| `intro.staggerMs` | `number` | `40` | Reveal stagger for the fade-in. |
+| `intro.durationMs` | `number` | `300` | Intro fade duration. |
+| `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
 | `intro.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
+
+When `lazyLoad.enabled` is true, Masonry uses the same image shell behavior as Slider: trackable image `src` values move into `data-rmg-lazy-src`, the real images load on intersection, and the item only fades in after decode and spinner exit.
+
+Masonry already accepts arbitrary React children, including text-containing JSX. The new wrapper props are only for styling the built-in masonry item shell.
+
+Masonry skeletons can now use a structured `layout` spec with the same inner node vocabulary as Grid skeletons, including `text` nodes and `itemWrapStyle`.
+
+`layout.slots` gives Masonry the same per-card override escape hatch that slider skeletons have. Use a slot when one card needs a different placeholder tree, wrapper styling, or outer height. `slot.ratio` maps to Masonry's card-height rhythm, while `slot.heightPx` lets you pin a specific shell height when you need an exact placeholder.
+
+```typescript
+<Masonry
+  columns={{ 0: 1, 700: 2, 1100: 3 }}
+  gap={{ 0: 12, 1100: 20 }}
+  itemWrapStyle={{
+    padding: "6px",
+    borderRadius: "28px",
+  }}
+  loading={{
+    enabled: true,
+    skeleton: {
+      ratios: [118, 126, 102, 146],
+      layout: {
+        kind: "masonry",
+        itemWrapStyle: {
+          padding: 14,
+          borderRadius: 20,
+          boxShadow: "0 18px 36px rgba(15, 23, 42, 0.08)",
+        },
+        item: {
+          kind: "col",
+          style: { gap: 12 },
+          children: [
+            {
+              kind: "rect",
+              style: { width: "100%", height: 180, borderRadius: 16 },
+            },
+            {
+              kind: "text",
+              fontSize: 12,
+              lineHeight: 1.4,
+              lines: 1,
+              lineWidth: "36%",
+              style: { width: "34%", borderRadius: 999 },
+            },
+            {
+              kind: "text",
+              fontSize: 18,
+              lineHeight: 1.35,
+              lines: { 0: 2, 900: 1 },
+              lineWidth: "64%",
+              style: { width: "88%" },
+            },
+            {
+              kind: "text",
+              fontSize: 14,
+              lineHeight: 1.55,
+              lines: 3,
+              lineWidth: "74%",
+              style: { width: "100%" },
+            },
+          ],
+        },
+        slots: [
+          {
+            ratio: 182,
+            item: {
+              kind: "col",
+              style: { gap: 12 },
+              children: [
+                {
+                  kind: "rect",
+                  style: { width: "100%", aspectRatio: "3 / 5", borderRadius: 16 },
+                },
+                {
+                  kind: "text",
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                  lines: 1,
+                  lineWidth: "36%",
+                  style: { width: "28%", borderRadius: 999 },
+                },
+                {
+                  kind: "text",
+                  fontSize: 18,
+                  lineHeight: 1.35,
+                  lines: 1,
+                  lineWidth: "64%",
+                  style: { width: "72%" },
+                },
+                {
+                  kind: "text",
+                  fontSize: 14,
+                  lineHeight: 1.55,
+                  lines: 2,
+                  lineWidth: "78%",
+                  style: { width: "100%" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  }}
+>
+  {items}
+</Masonry>
+```
 
 ## Entries
 
@@ -747,12 +900,14 @@ export function EntryGallery() {
 | `loading.decodeTimeoutMs` | `number` | `8000` | Decode timeout fallback. |
 | `loading.skeletonWrap` | `ElementStyle` | `—` | Styles the skeleton wrapper. |
 | `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `intro.staggerMs` | `number` | `200` | Delay between entry reveals. |
-| `intro.durationMs` | `number` | `700` | Entry intro duration. |
-| `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Entry intro easing. |
+| `intro.staggerMs` | `number` | `200` | Delay between entry fade-ins. |
+| `intro.durationMs` | `number` | `700` | Entry intro fade duration. |
+| `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Entry intro fade easing. |
 | `intro.staggerLimit` | `number` | `6` | Maximum number of entries that receive staggered delays. |
 | `entryList` | `ElementStyle` | `—` | Styles the entry list container. |
 | `entryRow` | `ElementStyle` | `—` | Styles each entry row container. |
+
+Entry skeleton `text` nodes also render wrapped line bars via `lines`, matching the slider and grid skeleton behavior, including responsive line counts and configurable trailing `lineWidth`.
 
 ### Entry-related callback and helper types
 
@@ -964,6 +1119,12 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `caption.height` | `number` | `—` | Caption area height. |
 | `caption.breakpoint` | `number` | `—` | Viewport cutoff for switching placement logic. |
 | `caption.render` | `({ item, index, isZoomed }) => ReactNode` | `—` | Custom caption renderer. |
+| `caption.layout` | `"overlay" \| "slide"` | `—` | Chooses whether the caption overlays the media or lives in the slide layout. |
+| `caption.zoomFade` | `boolean` | `true` | Fades captions out on fullscreen zoom-in and back in on zoom-out. |
+| `caption.zoomFadeDurationMs` | `number` | `300` | Duration for fullscreen caption zoom fades. |
+| `caption.zoomFadeEasing` | `string` | `"cubic-bezier(.4,0,.22,1)"` | Easing for fullscreen caption zoom fades. |
+| `caption.zoomInTransform` | `string` | `""` | Optional transform applied while captions fade out on zoom-in. |
+| `caption.zoomOutTransform` | `string` | `""` | Optional transform used as the starting point when captions fade back in on zoom-out. |
 | `slider.duration` | `number` | `25` | Fullscreen slider motion duration. |
 | `slider.friction` | `number` | `0.68` | Fullscreen slider friction. |
 | `slider.direction` | `"ltr" \| "rtl"` | `"ltr"` | Fullscreen slider interaction direction. |

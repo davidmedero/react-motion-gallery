@@ -3,11 +3,15 @@ import { isVideoSlideElement } from "../../video/plyr";
 import { Vector1DType } from "../../shared/motion/vector1d";
 import { LimitType } from "../../shared/motion/limit";
 import { ScrollBodyType } from "../../shared/motion/scrollBody";
-import { PercentOfViewType, ScrollBoundsType } from "../../shared/motion/scrollBounds";
-import { getPrimaryImgEl } from "../core/dom";
+import {
+  PercentOfViewType,
+  ScrollBoundsType,
+} from "../../shared/motion/scrollBounds";
+import { getFsMediaViewportEl, getPrimaryImgEl } from "../core/dom";
 
 type AnimationsLike = {
   resetBlend: () => void;
+  stop?: () => void;
 };
 
 type ResetZoomArgs = {
@@ -88,10 +92,13 @@ export function resetPanForScale1(args: ResetZoomArgs) {
     !prevX.current ||
     !offX.current ||
     !tgtX.current ||
-    !bodyX.current ||
-    !boundsX.current ||
-    !tgtX.current
-  ) return;
+    !locY.current ||
+    !prevY.current ||
+    !offY.current ||
+    !tgtY.current
+  ) {
+    return;
+  }
 
   const firstChild = container.children[0] as HTMLElement | undefined;
   if (isVideoSlideElement(firstChild)) return;
@@ -99,32 +106,71 @@ export function resetPanForScale1(args: ResetZoomArgs) {
   const imgEl = getPrimaryImgEl(container);
   if (!imgEl) return;
 
-  const rect = container.getBoundingClientRect();
+  animRef.current?.stop?.();
+
+  const measureEl = getFsMediaViewportEl(container) ?? container;
+  const rect = measureEl.getBoundingClientRect();
   const containerW = rect.width;
   const containerH = rect.height;
 
   const { baseW, baseH } = baseFitSize(imgEl, containerW, containerH);
 
-  locX.current!.set(0); prevX.current!.set(0); offX.current!.set(0); tgtX.current!.set(0);
-  locY.current!.set(0); prevY.current!.set(0); offY.current!.set(0); tgtY.current!.set(0);
+  locX.current.set(0);
+  prevX.current.set(0);
+  offX.current.set(0);
+  tgtX.current.set(0);
+
+  locY.current.set(0);
+  prevY.current.set(0);
+  offY.current.set(0);
+  tgtY.current.set(0);
 
   bodyX.current = ScrollBody(
-    locX.current!, offX.current!, prevX.current!, tgtX.current!,
-    panDuration, panFriction
+    locX.current,
+    offX.current,
+    prevX.current,
+    tgtX.current,
+    panDuration,
+    panFriction
   ).sync();
+
   bodyY.current = ScrollBody(
-    locY.current!, offY.current!, prevY.current!, tgtY.current!,
-    panDuration, panFriction
+    locY.current,
+    offY.current,
+    prevY.current,
+    tgtY.current,
+    panDuration,
+    panFriction
   ).sync();
 
-  const { x: limX2, y: limY2, povX, povY } =
-    boundsForCurrent(1, baseW, baseH, containerW, containerH);
+  const { x: limX2, y: limY2, povX, povY } = boundsForCurrent(
+    1,
+    baseW,
+    baseH,
+    containerW,
+    containerH
+  );
 
-  boundsX.current = ScrollBounds(limX2, offX.current!, tgtX.current!, bodyX.current!, povX, panDuration);
-  boundsY.current = ScrollBounds(limY2, offY.current!, tgtY.current!, bodyY.current!, povY, panDuration);
+  boundsX.current = ScrollBounds(
+    limX2,
+    offX.current,
+    tgtX.current,
+    bodyX.current,
+    povX,
+    panDuration
+  );
 
-  tgtX.current!.set(limX2.constrain(tgtX.current!.get()));
-  tgtY.current!.set(limY2.constrain(tgtY.current!.get()));
+  boundsY.current = ScrollBounds(
+    limY2,
+    offY.current,
+    tgtY.current,
+    bodyY.current,
+    povY,
+    panDuration
+  );
+
+  tgtX.current.set(limX2.constrain(0));
+  tgtY.current.set(limY2.constrain(0));
 
   animRef.current?.resetBlend();
 }

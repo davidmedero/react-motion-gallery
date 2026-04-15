@@ -1,5 +1,24 @@
 import * as React from "react";
 import styles from "../Entries.module.css";
+import { BREAKPOINT_MAP, type BreakpointMap } from "../../shared/responsive";
+import {
+  buildResponsiveBaseStyleCssRules,
+  buildResponsiveContainerStyleCssRules,
+  buildResponsiveTextStyleCssRules,
+  resolveInlineResponsiveBaseStyle,
+  resolveInlineResponsiveContainerStyle,
+} from "../../shared/skeleton/layout";
+import {
+  TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER,
+  buildResponsiveTextCssRules,
+  getResponsiveTextRenderState,
+  hasResponsiveTextLineCount,
+  hasResponsiveTextLineWidth,
+  type ResponsiveTextLineCount,
+  type ResponsiveTextLineWidth,
+} from "../../shared/skeleton/text";
+import { shimmerStyleVars } from "../../shared/skeleton/layout";
+import { buildStableScopeId } from "../../shared/stableScope";
 
 export type SkeletonLength = number | string;
 
@@ -22,6 +41,7 @@ export type SkeletonBaseStyle = {
   maxHeight?: SkeletonLength;
   backgroundColor?: string;
   borderRadius?: SkeletonLength;
+  overflow?: React.CSSProperties["overflow"];
   marginTop?: SkeletonLength;
   marginRight?: SkeletonLength;
   marginBottom?: SkeletonLength;
@@ -29,6 +49,10 @@ export type SkeletonBaseStyle = {
   alignSelf?: React.CSSProperties["alignSelf"];
   aspectRatio?: number | string;
 };
+
+export type SkeletonBaseStyleResponsive =
+  | SkeletonBaseStyle
+  | Record<string, SkeletonBaseStyle>;
 
 export type SkeletonContainerStyle = {
   gap?: SkeletonLength;
@@ -38,6 +62,7 @@ export type SkeletonContainerStyle = {
   wrap?: boolean;
   width?: SkeletonLength;
   maxWidth?: SkeletonLength;
+  overflow?: React.CSSProperties["overflow"];
 };
 
 export type SkeletonContainerStyleResponsive =
@@ -52,7 +77,7 @@ export type SkeletonNode =
     }
   | {
       kind: "rect" | "square" | "circle";
-      style?: SkeletonBaseStyle;
+      style?: SkeletonBaseStyleResponsive;
       shimmer?: SkeletonShimmer;
     }
   | {
@@ -62,7 +87,7 @@ export type SkeletonNode =
       style?: SkeletonContainerStyleResponsive;
       tile?: {
         shape?: "rect" | "square" | "circle";
-        style?: SkeletonBaseStyle;
+        style?: SkeletonBaseStyleResponsive;
         shimmer?: SkeletonShimmer;
       };
     }
@@ -70,8 +95,9 @@ export type SkeletonNode =
       kind: "text";
       fontSize: number;
       lineHeight: number;
-      lines?: number;
-      style?: SkeletonBaseStyle;
+      lines?: ResponsiveTextLineCount;
+      lineWidth?: ResponsiveTextLineWidth;
+      style?: SkeletonBaseStyleResponsive;
       shimmer?: SkeletonShimmer;
     };
 
@@ -90,6 +116,7 @@ export type EntrySkeletonSpec = {
 export type EntrySkeletonCardProps = {
   spec?: EntrySkeletonSpec;
   className?: string;
+  breakpoints?: BreakpointMap;
 };
 
 function defaultSpec(): EntrySkeletonSpec {
@@ -131,12 +158,34 @@ function nodeStyleVars(
 
   if (base?.backgroundColor) (s as any)["--rmg-skel-bg"] = base.backgroundColor;
   if (base?.borderRadius != null) (s as any)["--rmg-skel-radius"] = cssLen(base.borderRadius);
+  if (base?.overflow != null) s.overflow = base.overflow;
   if (base?.alignSelf) s.alignSelf = base.alignSelf;
+  Object.assign(s, shimmerStyleVars(shimmer));
 
-  if (shimmer?.enabled === false) (s as any)["--rmg-skel-shimmer-enabled"] = "0";
-  if (shimmer?.durationMs != null)
-    (s as any)["--rmg-skel-shimmer-duration"] = `${shimmer.durationMs}ms`;
-  if (shimmer?.angleDeg != null) (s as any)["--rmg-skel-shimmer-angle"] = `${shimmer.angleDeg}deg`;
+  return s;
+}
+
+function textWrapperStyleVars(
+  base: SkeletonBaseStyle | undefined,
+  height?: number
+): React.CSSProperties {
+  const s: React.CSSProperties = {};
+  if (height != null) {
+    s.height = `${height}px`;
+  }
+
+  const w = cssLen(base?.width);
+  const mw = cssLen(base?.maxWidth);
+
+  if (w != null) {
+    s.width = w;
+  }
+
+  if (mw != null) {
+    s.maxWidth = mw;
+  }
+
+  if (base?.alignSelf) s.alignSelf = base.alignSelf;
 
   return s;
 }
@@ -153,93 +202,99 @@ function containerStylesPlain(style?: SkeletonContainerStyle): React.CSSProperti
 
   if (style.width != null) s.width = cssLen(style.width);
   if (style.maxWidth != null) s.maxWidth = cssLen(style.maxWidth);
+  if (style.overflow != null) s.overflow = style.overflow;
 
   return s;
-}
-
-function isResponsiveContainerStyle(
-  style: SkeletonContainerStyleResponsive | undefined
-): style is Record<string, SkeletonContainerStyle> {
-  if (!style) return false;
-  return Object.keys(style).some((k) => String(+k) === k);
 }
 
 function escapeAttrValue(v: string) {
   return v.replace(/"/g, '\\"');
 }
 
-function sanitizeIdForAttr(id: string) {
-  return id.replace(/[^a-zA-Z0-9_-]/g, "_");
-}
-
-function containerStyleToCssDecls(style: SkeletonContainerStyle): string {
-  const decls: string[] = [];
-  if (style.gap != null) decls.push(`gap:${cssLen(style.gap)};`);
-  if (style.padding != null) decls.push(`padding:${cssLen(style.padding)};`);
-  if (style.align) decls.push(`align-items:${style.align};`);
-  if (style.justify) decls.push(`justify-content:${style.justify};`);
-  if (style.wrap) decls.push(`flex-wrap:wrap;`);
-  if (style.width != null) decls.push(`width:${cssLen(style.width)};`);
-  if (style.maxWidth != null) decls.push(`max-width:${cssLen(style.maxWidth)};`);
-  return decls.join("");
-}
+type ResponsiveCssRule = {
+  minWidth: number;
+  css: string;
+  raw?: boolean;
+};
 
 function collectResponsiveCss(
   node: SkeletonNode,
   allocId: () => string,
-  out: Array<{ nodeId: string; rules: Array<{ minWidth: number; css: string }> }>
+  out: Array<{ nodeId: string; rules: ResponsiveCssRule[] }>,
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP
 ): SkeletonNode {
   switch (node.kind) {
     case "rect":
     case "square":
-    case "circle":
-    case "text":
-      return node;
+    case "circle": {
+      const rules = buildResponsiveBaseStyleCssRules({
+        style: node.style,
+        breakpointMap,
+      });
+      if (!rules.length) return node;
+
+      const id = allocId();
+      out.push({ nodeId: id, rules });
+      return { ...(node as any), __rmgNodeId: id };
+    }
+
+    case "text": {
+      const rules = [
+        ...buildResponsiveTextCssRules({
+          fontSize: node.fontSize,
+          lineHeight: node.lineHeight,
+          lines: node.lines,
+          lineWidth: node.lineWidth,
+          breakpointMap,
+        }).map((rule) => ({ ...rule, raw: true })),
+        ...buildResponsiveTextStyleCssRules({
+          style: node.style,
+          breakpointMap,
+        }),
+      ];
+
+      if (!rules.length) return node;
+
+      const id = allocId();
+      out.push({ nodeId: id, rules });
+      return { ...(node as any), __rmgNodeId: id };
+    }
 
     case "media": {
+      const rules = [
+        ...buildResponsiveContainerStyleCssRules({
+          style: node.style,
+          breakpointMap,
+        }),
+        ...buildResponsiveBaseStyleCssRules({
+          style: node.tile?.style,
+          breakpointMap,
+          selector: `${TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER} [data-rmg-skel-media-tile="true"]`,
+        }),
+      ];
+
+      if (!rules.length) return node;
+
       const id = allocId();
-      const style = node.style;
-
-      if (isResponsiveContainerStyle(style)) {
-        const rs = style;
-        const rules = Object.keys(style)
-          .map((k) => +k)
-          .filter((n) => Number.isFinite(n) && n >= 0)
-          .sort((a, b) => a - b)
-          .map((minWidth) => ({
-            minWidth,
-            css: containerStyleToCssDecls(rs[String(minWidth)] || {}),
-          }))
-          .filter((r) => r.css.length > 0);
-
-        if (rules.length) out.push({ nodeId: id, rules });
-      }
-
+      out.push({ nodeId: id, rules });
       return { ...(node as any), __rmgNodeId: id };
     }
 
     case "stack":
     case "row":
     case "col": {
-      const id = allocId();
-      const style = node.style;
+      const rules = buildResponsiveContainerStyleCssRules({
+        style: node.style,
+        breakpointMap,
+      });
+      const id = rules.length ? allocId() : undefined;
 
-      if (isResponsiveContainerStyle(style)) {
-        const rules = Object.keys(style)
-          .map((k) => +k)
-          .filter((n) => Number.isFinite(n) && n >= 0)
-          .sort((a, b) => a - b)
-          .map((minWidth) => ({
-            minWidth,
-            css: containerStyleToCssDecls(style[minWidth] || {}),
-          }))
-          .filter((r) => r.css.length > 0);
+      if (id && rules.length) out.push({ nodeId: id, rules });
 
-        if (rules.length) out.push({ nodeId: id, rules });
-      }
-
-      const children = node.children.map((c) => collectResponsiveCss(c, allocId, out));
-      return { ...(node as any), __rmgNodeId: id, children };
+      const children = node.children.map((c) =>
+        collectResponsiveCss(c, allocId, out, breakpointMap)
+      );
+      return { ...(node as any), ...(id ? { __rmgNodeId: id } : null), children };
     }
 
     default: {
@@ -251,7 +306,7 @@ function collectResponsiveCss(
 
 function buildResponsiveCssText(
   scopeId: string,
-  rules: Array<{ nodeId: string; rules: Array<{ minWidth: number; css: string }> }>
+  rules: Array<{ nodeId: string; rules: ResponsiveCssRule[] }>
 ) {
   if (!rules.length) return "";
 
@@ -262,42 +317,145 @@ function buildResponsiveCssText(
     const nodeSel = `${scopeSel} [data-rmg-skel-node="${escapeAttrValue(nodeRule.nodeId)}"]`;
 
     for (const r of nodeRule.rules) {
-      lines.push(`@media (min-width:${r.minWidth}px){${nodeSel}{${r.css}}}`);
+      const cssText = r.raw
+        ? r.css.split("__NODE_SEL__").join(nodeSel)
+        : `${nodeSel}{${r.css}}`;
+
+      if (r.minWidth <= 0) {
+        lines.push(cssText);
+      } else {
+        lines.push(`@media (min-width:${r.minWidth}px){${cssText}}`);
+      }
     }
   }
 
   return lines.join("\n");
 }
 
-function ShapeNode({
-  kind,
-  style,
-  shimmer,
-}: Extract<SkeletonNode, { kind: "rect" | "square" | "circle" }>) {
+function ShapeNode(
+  props: Extract<SkeletonNode, { kind: "rect" | "square" | "circle" }> & {
+    breakpointMap: BreakpointMap;
+    mediaTile?: boolean;
+  }
+) {
+  const { kind, style, shimmer, breakpointMap, mediaTile } = props;
   const cls =
     kind === "circle"
       ? styles.entrySkelCircle
       : kind === "square"
       ? styles.entrySkelSquare
       : styles.entrySkelRect;
+  const inlineStyle = resolveInlineResponsiveBaseStyle(style, breakpointMap);
+  const nodeId = (props as any).__rmgNodeId as string | undefined;
 
   return (
     <div
+      data-rmg-skel-node={nodeId}
+      data-rmg-skel-media-tile={mediaTile ? "true" : undefined}
       className={[styles.entrySkelTile, cls].join(" ")}
       style={{
-        ...nodeStyleVars(style, shimmer),
-        ...applyBoxMargins(style),
+        ...nodeStyleVars(inlineStyle, shimmer),
+        ...applyBoxMargins(inlineStyle),
       }}
     />
   );
 }
 
-function LayoutNode({ node }: { node: SkeletonNode }) {
+function TextNode({
+  node,
+  breakpointMap,
+}: {
+  node: Extract<SkeletonNode, { kind: "text" }>;
+  breakpointMap: BreakpointMap;
+}) {
+  const renderState = getResponsiveTextRenderState({
+    fontSize: node.fontSize,
+    lineHeight: node.lineHeight,
+    lines: node.lines,
+    lineWidth: node.lineWidth,
+    breakpointMap,
+  });
+  const inlineStyle = resolveInlineResponsiveBaseStyle(
+    node.style,
+    breakpointMap
+  );
+  const hasResponsiveLines = hasResponsiveTextLineCount(
+    node.lines,
+    breakpointMap
+  );
+  const hasResponsiveLineWidth = hasResponsiveTextLineWidth(
+    node.lineWidth,
+    breakpointMap
+  );
+  const usesResponsiveLineCss =
+    hasResponsiveLines || hasResponsiveLineWidth;
+  const nodeId = (node as any).__rmgNodeId as string | undefined;
+  const wrapperStyle = textWrapperStyleVars(
+    inlineStyle,
+    hasResponsiveLines ? undefined : renderState.metrics.totalHeight
+  );
+
+  const lineStyle: SkeletonBaseStyle = {
+    height: renderState.metrics.lineBarHeight,
+    backgroundColor: inlineStyle?.backgroundColor,
+    borderRadius: inlineStyle?.borderRadius,
+  };
+
+  return (
+    <div
+      data-rmg-skel-node={nodeId}
+      data-rmg-skel-text="true"
+      className={styles.entrySkelText}
+      style={{
+        ...wrapperStyle,
+        ...applyBoxMargins(inlineStyle),
+        ...(hasResponsiveLines
+          ? null
+          : {
+              paddingBlock: `${renderState.metrics.paddingBlock}px`,
+              rowGap: `${renderState.metrics.rowGap}px`,
+            }),
+      }}
+    >
+      {Array.from({ length: renderState.maxLines }).map((_, index) => (
+        <div
+          key={index}
+          data-rmg-skel-text-line="true"
+          className={[
+            styles.entrySkelTile,
+            styles.entrySkelTextLine,
+          ].join(" ")}
+          style={{
+            ...nodeStyleVars(lineStyle, node.shimmer),
+            ...(usesResponsiveLineCss
+              ? null
+              : {
+                  display:
+                    index >= renderState.baseLines ? "none" : undefined,
+                  width:
+                    index === renderState.baseLines - 1
+                      ? renderState.baseLineWidth
+                      : "100%",
+                }),
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function LayoutNode({
+  node,
+  breakpointMap,
+}: {
+  node: SkeletonNode;
+  breakpointMap: BreakpointMap;
+}) {
   switch (node.kind) {
     case "rect":
     case "square":
     case "circle":
-      return <ShapeNode {...node} />;
+      return <ShapeNode {...node} breakpointMap={breakpointMap} />;
 
     case "media": {
       const count = Math.max(0, node.count | 0);
@@ -305,9 +463,12 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
       const tileShape = node.tile?.shape ?? "rect";
 
       const nodeId = (node as any).__rmgNodeId as string | undefined;
-      const plainStyle = isResponsiveContainerStyle(node.style)
-        ? undefined
-        : containerStylesPlain(node.style as SkeletonContainerStyle | undefined);
+      const plainStyle = containerStylesPlain(
+        resolveInlineResponsiveContainerStyle(
+          node.style,
+          breakpointMap
+        )
+      );
 
       return (
         <div
@@ -324,6 +485,8 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
               kind={tileShape}
               style={node.tile?.style}
               shimmer={node.tile?.shimmer}
+              breakpointMap={breakpointMap}
+              mediaTile
             />
           ))}
         </div>
@@ -341,9 +504,12 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
           : styles.entrySkelStack;
 
       const nodeId = (node as any).__rmgNodeId as string | undefined;
-      const plainStyle = isResponsiveContainerStyle(node.style)
-        ? undefined
-        : containerStylesPlain(node.style as SkeletonContainerStyle | undefined);
+      const plainStyle = containerStylesPlain(
+        resolveInlineResponsiveContainerStyle(
+          node.style,
+          breakpointMap
+        )
+      );
 
       return (
         <div
@@ -352,23 +518,14 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
           style={plainStyle}
         >
           {node.children.map((child, i) => (
-            <LayoutNode key={i} node={child} />
+            <LayoutNode key={i} node={child} breakpointMap={breakpointMap} />
           ))}
         </div>
       );
     }
 
     case "text": {
-      const lines = Math.max(1, node.lines ?? 1);
-      const h = node.fontSize * node.lineHeight * lines;
-
-      return (
-        <ShapeNode
-          kind="rect"
-          style={{ ...(node.style || {}), height: h }}
-          shimmer={node.shimmer}
-        />
-      );
+      return <TextNode node={node} breakpointMap={breakpointMap} />;
     }
 
     default: {
@@ -378,43 +535,24 @@ function LayoutNode({ node }: { node: SkeletonNode }) {
   }
 }
 
-export function EntrySkeletonCard({ spec, className }: EntrySkeletonCardProps) {
+export function EntrySkeletonCard({
+  spec,
+  className,
+  breakpoints,
+}: EntrySkeletonCardProps) {
   const s = spec ?? defaultSpec();
+  const effectiveBreakpoints = React.useMemo(
+    () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
+    [breakpoints]
+  );
 
   const rootStyle: React.CSSProperties = {
     ...(s.minHeight != null ? { minHeight: cssLen(s.minHeight) } : null),
+    ...shimmerStyleVars(s.defaults?.shimmer),
   };
 
   if (s.defaults?.backgroundColor) (rootStyle as any)["--rmg-skel-bg"] = s.defaults.backgroundColor;
   if (s.defaults?.radius != null) (rootStyle as any)["--rmg-skel-radius"] = cssLen(s.defaults.radius);
-
-  const sh = s.defaults?.shimmer;
-
-  if (sh?.enabled === false) (rootStyle as any)["--rmg-skel-shimmer-enabled"] = "0";
-
-  if (sh?.durationMs != null)
-    (rootStyle as any)["--rmg-skel-shimmer-duration"] = `${sh.durationMs}ms`;
-
-  if (sh?.angleDeg != null)
-    (rootStyle as any)["--rmg-skel-shimmer-angle"] = `${sh.angleDeg}deg`;
-
-  if (sh?.opacity != null)
-    (rootStyle as any)["--rmg-skel-shimmer-opacity"] = String(sh.opacity);
-
-  if (sh?.blurPx != null)
-    (rootStyle as any)["--rmg-skel-shimmer-blur"] = `${sh.blurPx}px`;
-
-  if (sh?.timing)
-    (rootStyle as any)["--rmg-skel-shimmer-timing"] = sh.timing;
-
-  if (sh?.c1)
-    (rootStyle as any)["--rmg-skel-shimmer-c1"] = sh.c1;
-
-  if (sh?.c2)
-    (rootStyle as any)["--rmg-skel-shimmer-c2"] = sh.c2;
-
-  if (sh?.c3)
-    (rootStyle as any)["--rmg-skel-shimmer-c3"] = sh.c3;
 
   if (s.variant === "solid" && !s.layout) {
     return (
@@ -438,20 +576,33 @@ export function EntrySkeletonCard({ spec, className }: EntrySkeletonCardProps) {
   }), []);
 
   const layoutIn = s.layout ?? defaultLayout;
-
-  const reactId = React.useId();
-  const scopeId = React.useMemo(() => `skel_${sanitizeIdForAttr(reactId)}`, [reactId]);
+  const scopeId = React.useMemo(
+    () =>
+      buildStableScopeId("skel_", {
+        breakpoints: effectiveBreakpoints,
+        className,
+        layout: layoutIn,
+        minHeight: s.minHeight,
+        variant: s.variant,
+      }),
+    [className, effectiveBreakpoints, layoutIn, s.minHeight, s.variant]
+  );
 
   const { layout, responsiveCss } = React.useMemo(() => {
     let n = 0;
     const allocId = () => `n${++n}`;
     const collected: Array<{ nodeId: string; rules: Array<{ minWidth: number; css: string }> }> = [];
 
-    const withIds = collectResponsiveCss(layoutIn as SkeletonNode, allocId, collected);
+    const withIds = collectResponsiveCss(
+      layoutIn as SkeletonNode,
+      allocId,
+      collected,
+      effectiveBreakpoints
+    );
     const cssText = buildResponsiveCssText(scopeId, collected);
 
     return { layout: withIds, responsiveCss: cssText };
-  }, [layoutIn, scopeId]);
+  }, [layoutIn, scopeId, effectiveBreakpoints]);
 
   return (
     <div
@@ -460,7 +611,7 @@ export function EntrySkeletonCard({ spec, className }: EntrySkeletonCardProps) {
       style={rootStyle}
     >
       {responsiveCss ? <style dangerouslySetInnerHTML={{ __html: responsiveCss }} /> : null}
-      <LayoutNode node={layout} />
+      <LayoutNode node={layout} breakpointMap={effectiveBreakpoints} />
     </div>
   );
 }

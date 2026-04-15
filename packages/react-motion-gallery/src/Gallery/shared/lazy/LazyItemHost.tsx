@@ -9,13 +9,17 @@ import type {
 } from "../types/lazy";
 import {
   applyImageHints,
+  findPrimaryTrackableImage,
   findTrackableImages,
-  nextFrame,
-  prepareImage,
-  restorePreparedImage,
-  revealPreparedImage,
-  waitForImageDecode,
 } from "./imageLifecycle";
+import {
+  LAZY_LOADED_ATTR,
+  LAZY_LOADING_ATTR,
+  hydrateLazyImageShell,
+  markLazyImageShell,
+  restoreLazyImageShell,
+  revealLazyImageShell,
+} from "./lazyShell";
 
 function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined>): React.RefCallback<T> {
   return (node) => {
@@ -55,11 +59,59 @@ export function resolveLazySpinnerNode(args: {
   return { render: true, node: spinner, isCustom: true };
 }
 
+type LazySpinnerAnchor = {
+  top: string;
+  left: string;
+};
+
+type RectLike = Pick<DOMRectReadOnly, "left" | "top" | "width" | "height">;
+
+function sameLazySpinnerAnchor(
+  a: LazySpinnerAnchor | null,
+  b: LazySpinnerAnchor | null
+) {
+  return a?.top === b?.top && a?.left === b?.left;
+}
+
+export function resolveLazySpinnerAnchor(args: {
+  hostRect?: RectLike | null;
+  imageRect?: RectLike | null;
+}): LazySpinnerAnchor | null {
+  const { hostRect, imageRect } = args;
+  if (!hostRect || !imageRect) return null;
+  if (hostRect.width <= 0 || hostRect.height <= 0) return null;
+  if (imageRect.width <= 0 || imageRect.height <= 0) return null;
+
+  const top = imageRect.top - hostRect.top + imageRect.height / 2;
+  const left = imageRect.left - hostRect.left + imageRect.width / 2;
+
+  if (!Number.isFinite(top) || !Number.isFinite(left)) return null;
+
+  return {
+    top: `${top}px`,
+    left: `${left}px`,
+  };
+}
+
+export function resolveLazySpinnerStyle(args: {
+  isCustom: boolean;
+  anchor: LazySpinnerAnchor | null;
+  spinnerStyle?: React.CSSProperties;
+}): React.CSSProperties | undefined {
+  const { isCustom, anchor, spinnerStyle } = args;
+  if (isCustom || !anchor) return spinnerStyle;
+  return {
+    ...anchor,
+    ...(spinnerStyle ?? {}),
+  };
+}
+
 export type LazyItemHostProps = React.HTMLAttributes<HTMLDivElement> & {
   index: number;
   lazyLoad?: GalleryLazyLoadOptions;
   onVisibleIndex?: (index: number) => void;
   registerExpandableImage?: (index: number, node: HTMLImageElement | null) => void;
+  revealedIndicesRef?: React.RefObject<Set<number>>;
 };
 
 export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
@@ -69,6 +121,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       lazyLoad,
       onVisibleIndex,
       registerExpandableImage,
+      revealedIndicesRef,
       children,
       className,
       style,
@@ -77,8 +130,10 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
     forwardedRef
   ) {
     const hostRef = React.useRef<HTMLDivElement | null>(null);
+    const primaryImageRef = React.useRef<HTMLImageElement | null>(null);
     const [hasTrackableImages, setHasTrackableImages] = React.useState(false);
     const [ready, setReady] = React.useState(true);
+    const [spinnerAnchor, setSpinnerAnchor] = React.useState<LazySpinnerAnchor | null>(null);
     const normalizedLazy = React.useMemo(() => normalizeLazyLoad(lazyLoad), [lazyLoad]);
     const visibleSentRef = React.useRef(false);
 
@@ -94,6 +149,8 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
 
     React.useEffect(() => {
       visibleSentRef.current = false;
+      primaryImageRef.current = null;
+      setSpinnerAnchor(null);
     }, [index, children]);
 
     React.useEffect(() => {
@@ -125,49 +182,178 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
 
       const images = findTrackableImages(host);
       const primary = images[0] ?? null;
-      const preparedImages = normalizedLazy.enabled ? images.map(prepareImage) : [];
+      const alreadyRevealed = revealedIndicesRef?.current?.has(index) ?? false;
 
+      primaryImageRef.current = primary;
       registerExpandableImage?.(index, primary);
       setHasTrackableImages(images.length > 0);
 
       if (!normalizedLazy.enabled || images.length === 0) {
+        setSpinnerAnchor(null);
         setReady(true);
         return () => {
+          primaryImageRef.current = null;
           registerExpandableImage?.(index, null);
         };
       }
 
       images.forEach((img) => applyImageHints(img));
+      host.removeAttribute(LAZY_LOADING_ATTR);
 
+      if (alreadyRevealed || host.getAttribute(LAZY_LOADED_ATTR) === "true") {
+        hydrateLazyImageShell(host, {
+          onRevealed: () => {
+            revealedIndicesRef?.current?.add(index);
+          },
+        });
+        setReady(true);
+        return () => {
+          primaryImageRef.current = null;
+          registerExpandableImage?.(index, null);
+        };
+      }
+
+      markLazyImageShell(host);
       setReady(false);
       let cancelled = false;
-      let revealed = false;
+      let observer: IntersectionObserver | null = null;
 
-      void (async () => {
-        await Promise.all(images.map((img) => waitForImageDecode(img)));
-        await nextFrame();
-
+      const reveal = async () => {
         if (cancelled) return;
+        if (host.getAttribute(LAZY_LOADED_ATTR) === "true") {
+          revealedIndicesRef?.current?.add(index);
+          setReady(true);
+          return;
+        }
+        if (host.getAttribute(LAZY_LOADING_ATTR) === "true") return;
 
-        preparedImages.forEach(revealPreparedImage);
-        revealed = true;
-        setReady(true);
-      })();
+        host.setAttribute(LAZY_LOADING_ATTR, "true");
+        try {
+          await revealLazyImageShell(host, {
+            onRevealed: () => {
+              revealedIndicesRef?.current?.add(index);
+            },
+            shouldAbort: () => cancelled || hostRef.current !== host,
+          });
+
+          if (!cancelled && hostRef.current === host) {
+            setReady(true);
+          }
+        } finally {
+          host.removeAttribute(LAZY_LOADING_ATTR);
+        }
+      };
+
+      if (typeof IntersectionObserver === "undefined") {
+        void reveal();
+      } else {
+        const root = host.closest('[data-rmg-viewport="true"]') as Element | null;
+        observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting || entry.intersectionRatio < 0.25) continue;
+              observer?.disconnect();
+              observer = null;
+              void reveal();
+              break;
+            }
+          },
+          {
+            root,
+            rootMargin: "0px",
+            threshold: [0, 0.25, 0.5, 0.6, 0.75, 1],
+          }
+        );
+        observer.observe(host);
+      }
 
       return () => {
         cancelled = true;
-        if (!revealed) {
-          preparedImages.forEach(restorePreparedImage);
+        observer?.disconnect();
+        primaryImageRef.current = null;
+        if (host.getAttribute(LAZY_LOADED_ATTR) !== "true") {
+          restoreLazyImageShell(host);
         }
         registerExpandableImage?.(index, null);
       };
-    }, [children, index, normalizedLazy.enabled, registerExpandableImage]);
+    }, [children, index, normalizedLazy.enabled, registerExpandableImage, revealedIndicesRef]);
 
-    const showSpinner =
+    React.useLayoutEffect(() => {
+      if (!normalizedLazy.enabled || spinnerResolved.isCustom) {
+        setSpinnerAnchor(null);
+        return;
+      }
+
+      const host = hostRef.current;
+      const primary = primaryImageRef.current ?? findPrimaryTrackableImage(host);
+      if (!host || !primary) {
+        setSpinnerAnchor(null);
+        return;
+      }
+
+      primaryImageRef.current = primary;
+
+      let rafId: number | null = null;
+
+      const measure = () => {
+        const next = resolveLazySpinnerAnchor({
+          hostRect: host.getBoundingClientRect(),
+          imageRect: primary.getBoundingClientRect(),
+        });
+
+        setSpinnerAnchor((prev) => (sameLazySpinnerAnchor(prev, next) ? prev : next));
+      };
+
+      const scheduleMeasure = () => {
+        if (typeof requestAnimationFrame !== "function") {
+          measure();
+          return;
+        }
+
+        if (rafId != null) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          measure();
+        });
+      };
+
+      const resizeObserver =
+        typeof ResizeObserver === "undefined"
+          ? null
+          : new ResizeObserver(() => {
+              scheduleMeasure();
+            });
+
+      resizeObserver?.observe(host);
+      resizeObserver?.observe(primary);
+
+      primary.addEventListener("load", scheduleMeasure);
+      primary.addEventListener("error", scheduleMeasure);
+      window.addEventListener("resize", scheduleMeasure, { passive: true });
+      window.visualViewport?.addEventListener("resize", scheduleMeasure);
+
+      scheduleMeasure();
+
+      return () => {
+        if (rafId != null && typeof cancelAnimationFrame === "function") {
+          cancelAnimationFrame(rafId);
+        }
+        resizeObserver?.disconnect();
+        primary.removeEventListener("load", scheduleMeasure);
+        primary.removeEventListener("error", scheduleMeasure);
+        window.removeEventListener("resize", scheduleMeasure);
+        window.visualViewport?.removeEventListener("resize", scheduleMeasure);
+      };
+    }, [children, index, normalizedLazy.enabled, spinnerResolved.isCustom]);
+
+    const shouldRenderSpinner =
       normalizedLazy.enabled &&
       hasTrackableImages &&
-      !ready &&
       spinnerResolved.render;
+
+    const showSpinner =
+      shouldRenderSpinner &&
+      !ready;
 
     const spinnerClassName = [
       spinnerResolved.isCustom ? styles.spinnerWrap : styles.spinner,
@@ -176,11 +362,21 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       .filter(Boolean)
       .join(" ");
 
-    const spinnerNode = showSpinner ? (
+    const spinnerStyle = React.useMemo(
+      () =>
+        resolveLazySpinnerStyle({
+          isCustom: spinnerResolved.isCustom,
+          anchor: spinnerAnchor,
+          spinnerStyle: normalizedLazy.spinnerStyle,
+        }),
+      [normalizedLazy.spinnerStyle, spinnerAnchor, spinnerResolved.isCustom]
+    );
+
+    const spinnerNode = shouldRenderSpinner ? (
       spinnerResolved.isCustom ? (
         <div
           className={spinnerClassName}
-          style={normalizedLazy.spinnerStyle}
+          style={spinnerStyle}
           aria-hidden="true"
           data-rmg-spinner
         >
@@ -189,7 +385,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       ) : (
         <div
           className={spinnerClassName}
-          style={normalizedLazy.spinnerStyle}
+          style={spinnerStyle}
           aria-hidden="true"
           data-rmg-spinner
         />
@@ -197,7 +393,9 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
     ) : null;
 
     const ariaBusy =
-      normalizedLazy.enabled && hasTrackableImages && !ready
+      normalizedLazy.enabled &&
+      hasTrackableImages &&
+      !ready
         ? true
         : rest["aria-busy"];
 

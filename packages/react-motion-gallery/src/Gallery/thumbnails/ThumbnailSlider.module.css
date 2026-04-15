@@ -37,24 +37,19 @@
 
 .fade_container [data-rmg-thumb-index] > * {
   opacity: 0;
-  transform: translateY(var(--rmg-intro-transform, 10px));
-
   transition:
     opacity var(--rmg-intro-duration, 300ms)
-      var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1)),
-    transform var(--rmg-intro-duration, 300ms)
       var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
 
   transition-delay: calc(
     var(--rmg-intro-index, 0) * var(--rmg-intro-stagger, 40ms)
   );
 
-  will-change: opacity, transform;
+  will-change: opacity;
 }
 
 .fade_container.fadeInActive [data-rmg-thumb-index] > * {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .ripple {

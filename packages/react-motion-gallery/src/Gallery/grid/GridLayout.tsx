@@ -1,19 +1,44 @@
 import * as React from 'react';
 import styles from './Grid.module.css';
-import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
-import { resolveNumberFromResponsive } from '../shared/responsive';
+import {
+  BREAKPOINT_MAP,
+  effectiveViewportWidth,
+  normalizeResponsiveToMinWidthRules,
+  resolveNumberFromResponsive,
+  type BreakpointMap,
+  type ResponsiveNumber,
+} from '../shared/responsive';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
+import { useLoadingLayerState } from '../shared/hooks/useLoadingLayerState';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
 import { usePrefersReducedMotion } from '../shared/hooks/usePrefersReducedMotion';
 import { LazyItemHost, normalizeLazyLoad } from '../shared/lazy/LazyItemHost';
+import { RmgSlideProvider } from '../shared/slideContext';
+import {
+  DEFAULT_SKELETON_MIN_VISIBLE_MS,
+  getRemainingLoadingVisibleMs,
+  resolveLoadingTiming,
+  scheduleLoadingExit,
+} from '../shared/loading/timing';
+import { createRmgSlideStoreBag } from '../shared/slideStoreBag';
+import { buildStableScopeId } from '../shared/stableScope';
 import { GridSkeletonCard } from './GridSkeleton';
 import { useOptionalGalleryCore } from '../core';
-import { GridLazyLoadOptions, IntroOptions, LoadingOptions } from './types';
+import {
+  isResponsiveGridSpanMap,
+  normalizeResponsiveGridSpanRules,
+  resolveGridColumnFromSpan,
+  resolveInlineGridItemSpanStyle,
+  type GridCell,
+  type GridItemLayoutMeta,
+} from './item';
+import { GridLazyLoadOptions, IntroOptions, LoadingOptions, ResponsiveGridTemplate } from './types';
 
 type FullscreenTrigger = 'item' | 'media';
 
 type GridOptions = {
   columns?: ResponsiveNumber;
+  templateColumns?: ResponsiveGridTemplate;
   minColumnWidth?: number | string;
   gap?: ResponsiveNumber;
   rootClassName?: string;
@@ -23,7 +48,7 @@ type GridOptions = {
 };
 
 export type GridLayoutProps = {
-  cells: Array<{ id: string; node: React.ReactNode }>;
+  cells: GridCell[];
   grid: GridOptions;
   breakpoints?: BreakpointMap;
   viewportWidth: number;
@@ -69,9 +94,212 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ');
 }
 
-const SKELETON_EXIT_MS = 220;
-const INTRO_OVERLAP_MS = 220;
+export const SKELETON_MIN_VISIBLE_MS = DEFAULT_SKELETON_MIN_VISIBLE_MS;
 
+export function resolveGridLoadingActive(args: {
+  loadingEnabled?: boolean;
+  loadingForced?: boolean;
+  contentReady: boolean;
+}) {
+  const loadingEnabledFlag = args.loadingEnabled ?? true;
+  const loadingForced = args.loadingForced ?? false;
+
+  return loadingEnabledFlag && (loadingForced || !args.contentReady);
+}
+
+export const getRemainingGridSkeletonVisibleMs = getRemainingLoadingVisibleMs;
+export const scheduleGridLoadingExit = scheduleLoadingExit;
+
+const warnedGridMessages = new Set<string>();
+
+function warnGridOnce(key: string, message: string) {
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'production') return;
+  if (warnedGridMessages.has(key)) return;
+  warnedGridMessages.add(key);
+  console.warn(message);
+}
+
+function isResponsiveMap(value: ResponsiveNumber | undefined): value is Record<string, number> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isResponsiveGridTemplateMap(
+  value: ResponsiveGridTemplate | undefined
+): value is Record<string, string> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function parseBreakpointMinWidth(key: string, breakpointMap: BreakpointMap): number {
+  const mapped = breakpointMap[key];
+  if (typeof mapped === 'number' && Number.isFinite(mapped)) return mapped;
+
+  const parsed = parseFloat(key);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function normalizeResponsiveGridTemplateRules(args: {
+  templateColumns: ResponsiveGridTemplate | undefined;
+  breakpointMap: BreakpointMap;
+}): Array<{ minWidth: number; template: string }> {
+  const { templateColumns, breakpointMap } = args;
+
+  if (!isResponsiveGridTemplateMap(templateColumns)) return [];
+
+  const entries = Object.entries(templateColumns)
+    .map(([key, template]) => ({
+      minWidth: parseBreakpointMinWidth(key, breakpointMap),
+      template: typeof template === 'string' ? template.trim() : '',
+    }))
+    .filter((entry) => entry.template.length > 0)
+    .sort((a, b) => a.minWidth - b.minWidth);
+
+  if (entries.length === 0) return [];
+
+  if (entries[0].minWidth > 0) {
+    entries.unshift({ minWidth: 0, template: entries[0].template });
+  } else if (entries[0].minWidth < 0) {
+    entries[0] = { ...entries[0], minWidth: 0 };
+  }
+
+  return entries;
+}
+
+function resolveGridTemplateFromResponsive(args: {
+  templateColumns: ResponsiveGridTemplate | undefined;
+  viewportWidth: number;
+  breakpointMap: BreakpointMap;
+}): string | undefined {
+  const { templateColumns, viewportWidth, breakpointMap } = args;
+
+  if (typeof templateColumns === 'string') {
+    const trimmed = templateColumns.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  const rules = normalizeResponsiveGridTemplateRules({ templateColumns, breakpointMap });
+  if (!rules.length) return undefined;
+
+  const vw = effectiveViewportWidth(viewportWidth);
+  let resolved = rules[0]?.template;
+
+  for (const rule of rules) {
+    if (vw >= rule.minWidth) resolved = rule.template;
+  }
+
+  return resolved;
+}
+
+function buildScopedGridResponsiveCss(args: {
+  scopeId: string;
+  columns?: ResponsiveNumber;
+  templateColumns?: ResponsiveGridTemplate;
+  gap?: ResponsiveNumber;
+  breakpointMap: BreakpointMap;
+  fallbackGap: number;
+}) {
+  const { scopeId, columns, templateColumns, gap, breakpointMap, fallbackGap } = args;
+  const scopeSelector = `[data-rmg-grid-scope="${scopeId}"]`;
+  const targets = [
+    `${scopeSelector} [data-rmg-grid-node="true"]`,
+    `${scopeSelector} .${styles.gridSkeletonGrid}`,
+  ].join(',');
+
+  const lines: string[] = [];
+
+  const pushRule = (minWidth: number, declarations: string[]) => {
+    if (!declarations.length) return;
+
+    const rule = `${targets}{${declarations.join('')}}`;
+    if (minWidth <= 0) {
+      lines.push(rule);
+      return;
+    }
+
+    lines.push(`@media (min-width:${minWidth}px){${rule}}`);
+  };
+
+  const templateRules = normalizeResponsiveGridTemplateRules({
+    templateColumns,
+    breakpointMap,
+  });
+
+  if (templateRules.length > 0) {
+    for (const rule of templateRules) {
+      pushRule(rule.minWidth, [`grid-template-columns:${rule.template};`]);
+    }
+  } else if (isResponsiveMap(columns)) {
+    const rules = normalizeResponsiveToMinWidthRules(columns, 1, breakpointMap);
+    for (const rule of rules) {
+      pushRule(rule.minWidth, [
+        `grid-template-columns:repeat(${Math.max(1, rule.count | 0)}, minmax(0, 1fr));`,
+      ]);
+    }
+  }
+
+  if (isResponsiveMap(gap)) {
+    const rules = normalizeResponsiveToMinWidthRules(gap, fallbackGap, breakpointMap);
+    for (const rule of rules) {
+      pushRule(rule.minWidth, [`--rmg-grid-gap:${Math.max(0, rule.count | 0)}px;`]);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function buildScopedGridItemSpanCss(args: {
+  scopeId: string;
+  cells: GridCell[];
+  breakpointMap: BreakpointMap;
+  allowSpan: boolean;
+}) {
+  const { scopeId, cells, breakpointMap, allowSpan } = args;
+  if (!allowSpan) return '';
+
+  const lines: string[] = [];
+  const scopeSelector = `[data-rmg-grid-scope="${scopeId}"]`;
+
+  for (const cell of cells) {
+    const span = cell.layoutMeta?.span;
+    if (!isResponsiveGridSpanMap(span)) continue;
+
+    const selector = `${scopeSelector} [data-rmg-grid-item-key="${cell.id}"]`;
+    const rules = normalizeResponsiveGridSpanRules(span, breakpointMap);
+
+    for (const rule of rules) {
+      const gridColumn = resolveGridColumnFromSpan(rule.span);
+      if (!gridColumn) continue;
+
+      const cssRule = `${selector}{grid-column:${gridColumn};}`;
+      if (rule.minWidth <= 0) {
+        lines.push(cssRule);
+        continue;
+      }
+
+      lines.push(`@media (min-width:${rule.minWidth}px){${cssRule}}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function buildGridItemHostStyle(args: {
+  originalStyle?: React.CSSProperties;
+  layoutMeta?: GridItemLayoutMeta;
+  allowSpan: boolean;
+  introStyle: React.CSSProperties & Record<string, any>;
+}) {
+  const { originalStyle, layoutMeta, allowSpan, introStyle } = args;
+
+  return {
+    ...(originalStyle || {}),
+    ...(resolveInlineGridItemSpanStyle({
+      span: layoutMeta?.span,
+      allowSpan,
+    }) || {}),
+    ...(layoutMeta?.style || {}),
+    ...introStyle,
+  };
+}
 export function GridLayout({
   cells,
   grid,
@@ -87,9 +315,11 @@ export function GridLayout({
 }: GridLayoutProps) {
   const core = useOptionalGalleryCore();
   const gridRootRef = React.useRef<HTMLDivElement | null>(null);
+  const layoutStoreBag = React.useMemo(() => createRmgSlideStoreBag(), []);
   const [inView, setInView] = React.useState(false);
   const [mediaReady, setMediaReady] = React.useState(false);
   const visibleSeenRef = React.useRef(new Set<number>());
+  const revealedIndicesRef = React.useRef(new Set<number>());
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const normalizedLazy = React.useMemo(() => normalizeLazyLoad(grid.lazyLoad), [grid.lazyLoad]);
@@ -108,55 +338,34 @@ export function GridLayout({
     setClientReady(true);
   }, []);
 
-  const loadingEnabledFlag = loading.enabled ?? true;
-  const loadingForced = loading.force ?? false;
   const contentReady = lazyEnabled ? clientReady : mediaReady;
-  const loadingActive = loadingEnabledFlag && (loadingForced || !contentReady);
-  const resolvedSkeletonExitMs = prefersReducedMotion ? 0 : SKELETON_EXIT_MS;
-  const introUnlockDelayMs = Math.max(0, resolvedSkeletonExitMs - INTRO_OVERLAP_MS);
-  const [showLoadingLayer, setShowLoadingLayer] = React.useState(() => loadingActive);
-  const [loadingExiting, setLoadingExiting] = React.useState(false);
-  const [introUnlocked, setIntroUnlocked] = React.useState(() => !loadingActive);
+  const loadingActive = resolveGridLoadingActive({
+    loadingEnabled: loading.enabled,
+    loadingForced: loading.force,
+    contentReady,
+  });
+  const loadingEnabledFlag = loading.enabled ?? true;
+  const loadingTiming = React.useMemo(
+    () =>
+      resolveLoadingTiming({
+        prefersReducedMotion,
+        timing: loading.timing,
+      }),
+    [loading.timing, prefersReducedMotion]
+  );
+  const { showLoadingLayer, loadingExiting, introUnlocked } = useLoadingLayerState({
+    loadingActive,
+    exitMs: loadingTiming.exitMs,
+    minVisibleMs: loadingTiming.minVisibleMs,
+  });
   const introActive = contentReady && inView && introUnlocked;
 
   React.useEffect(() => {
-    if (loadingActive) {
-      setShowLoadingLayer(true);
-      setLoadingExiting(false);
-      setIntroUnlocked(false);
-      return;
-    }
-
-    if (!showLoadingLayer) {
-      setIntroUnlocked(true);
-      return;
-    }
-
-    if (resolvedSkeletonExitMs === 0) {
-      setLoadingExiting(false);
-      setShowLoadingLayer(false);
-      setIntroUnlocked(true);
-      return;
-    }
-
-    setLoadingExiting(true);
-    const introTimeoutId = window.setTimeout(() => {
-      setIntroUnlocked(true);
-    }, introUnlockDelayMs);
-
-    const exitTimeoutId = window.setTimeout(() => {
-      setShowLoadingLayer(false);
-      setLoadingExiting(false);
-    }, resolvedSkeletonExitMs);
-
-    return () => {
-      window.clearTimeout(introTimeoutId);
-      window.clearTimeout(exitTimeoutId);
-    };
-  }, [introUnlockDelayMs, loadingActive, resolvedSkeletonExitMs, showLoadingLayer]);
+    visibleSeenRef.current.clear();
+  }, [cells.length]);
 
   React.useEffect(() => {
-    visibleSeenRef.current.clear();
+    revealedIndicesRef.current.clear();
   }, [cells.length]);
 
   React.useEffect(() => {
@@ -250,53 +459,178 @@ export function GridLayout({
     [registerExpandableImage]
   );
 
+  React.useEffect(() => {
+    return () => {
+      layoutStoreBag.destroyAll();
+    };
+  }, [layoutStoreBag]);
+
   const minWidth =
     typeof grid.minColumnWidth === 'number'
       ? `${grid.minColumnWidth}px`
       : grid.minColumnWidth ?? '160px';
 
+  const fallbackGap =
+    typeof grid.gap === 'number' && Number.isFinite(grid.gap)
+      ? grid.gap
+      : 8;
+
+  const breakpointMap = breakpoints ?? BREAKPOINT_MAP;
+  const hasResponsiveGap = isResponsiveMap(grid.gap);
+  const hasResponsiveTemplateColumns = isResponsiveGridTemplateMap(grid.templateColumns);
+  const hasResponsiveColumns = isResponsiveMap(grid.columns);
+  const hasExplicitTracks = grid.templateColumns != null || grid.columns != null;
+
+  if (grid.templateColumns != null && (grid.columns != null || grid.minColumnWidth != null)) {
+    warnGridOnce(
+      'grid-template-columns-precedence',
+      '[react-motion-gallery] Grid `templateColumns` overrides `columns` and `minColumnWidth` when they are provided together.'
+    );
+  }
+
+  if (!hasExplicitTracks && cells.some((cell) => cell.layoutMeta?.span != null)) {
+    warnGridOnce(
+      'grid-span-autofill-ignored',
+      '[react-motion-gallery] Grid item `span` is ignored when the grid is using auto-fill `minColumnWidth` mode. Use `columns` or `templateColumns` to enable spans.'
+    );
+  }
+
+  const gridScope = React.useMemo(() => {
+    return buildStableScopeId('rmg-grid-', {
+      columns: grid.columns,
+      templateColumns: grid.templateColumns,
+      gap: grid.gap,
+      breakpointMap,
+      fallbackGap,
+    });
+  }, [grid.columns, grid.templateColumns, grid.gap, breakpointMap, fallbackGap]);
+
   const gapVal = React.useMemo(() => {
+    if (hasResponsiveGap) return undefined;
     if (typeof grid.gap === 'string' && Number.isNaN(parseFloat(grid.gap))) return grid.gap;
 
     const raw = resolveNumberFromResponsive(
       grid.gap,
-      typeof grid.gap === 'number' ? grid.gap : 8,
+      fallbackGap,
       viewportWidth,
-      breakpoints
+      breakpointMap
     );
 
     return `${Math.max(0, raw | 0)}px`;
-  }, [grid.gap, viewportWidth, breakpoints]);
+  }, [grid.gap, hasResponsiveGap, viewportWidth, breakpointMap, fallbackGap]);
+
+  const resolvedGridTemplateColumns = React.useMemo(
+    () =>
+      hasResponsiveTemplateColumns
+        ? undefined
+        : resolveGridTemplateFromResponsive({
+            templateColumns: grid.templateColumns,
+            viewportWidth,
+            breakpointMap,
+          }),
+    [grid.templateColumns, hasResponsiveTemplateColumns, viewportWidth, breakpointMap]
+  );
 
   const resolvedGridColumnCount = React.useMemo(() => {
+    if (grid.templateColumns != null) return undefined;
+    if (hasResponsiveColumns) return undefined;
     if (grid.columns == null) return undefined;
-    const raw = resolveNumberFromResponsive(grid.columns, 1, viewportWidth, breakpoints);
+    const raw = resolveNumberFromResponsive(grid.columns, 1, viewportWidth, breakpointMap);
     return Math.max(1, raw | 0);
-  }, [grid.columns, viewportWidth, breakpoints]);
+  }, [grid.columns, grid.templateColumns, hasResponsiveColumns, viewportWidth, breakpointMap]);
+
+  const responsiveGridCssText = React.useMemo(
+    () =>
+      buildScopedGridResponsiveCss({
+        scopeId: gridScope,
+        columns:
+          grid.templateColumns == null && hasResponsiveColumns ? grid.columns : undefined,
+        templateColumns: grid.templateColumns,
+        gap: hasResponsiveGap ? grid.gap : undefined,
+        breakpointMap,
+        fallbackGap,
+      }),
+    [
+      gridScope,
+      hasResponsiveColumns,
+      hasResponsiveTemplateColumns,
+      hasResponsiveGap,
+      grid.columns,
+      grid.templateColumns,
+      grid.gap,
+      breakpointMap,
+      fallbackGap,
+    ]
+  );
+
+  const responsiveItemCssText = React.useMemo(
+    () =>
+      buildScopedGridItemSpanCss({
+        scopeId: gridScope,
+        cells,
+        breakpointMap,
+        allowSpan: hasExplicitTracks,
+      }),
+    [gridScope, cells, breakpointMap, hasExplicitTracks]
+  );
+
+  const responsiveCssText = React.useMemo(
+    () => [responsiveGridCssText, responsiveItemCssText].filter(Boolean).join('\n'),
+    [responsiveGridCssText, responsiveItemCssText]
+  );
 
   const gridStyle: React.CSSProperties = React.useMemo(() => {
     const style: React.CSSProperties = {
       ['--rmg-grid-min' as any]: minWidth,
-      ['--rmg-grid-gap' as any]: gapVal,
     };
 
-    if (resolvedGridColumnCount && resolvedGridColumnCount > 0) {
+    if (gapVal != null) {
+      (style as any)['--rmg-grid-gap'] = gapVal;
+    }
+
+    if (resolvedGridTemplateColumns) {
+      style.gridTemplateColumns = resolvedGridTemplateColumns;
+    } else if (resolvedGridColumnCount && resolvedGridColumnCount > 0) {
       style.gridTemplateColumns = `repeat(${resolvedGridColumnCount}, minmax(0, 1fr))`;
     }
 
     return style;
-  }, [minWidth, gapVal, resolvedGridColumnCount]);
+  }, [minWidth, gapVal, resolvedGridTemplateColumns, resolvedGridColumnCount]);
 
   const skeletonCount = cells.length;
+  const skeletonItems = React.useMemo(
+    () =>
+      cells.map((cell) => ({
+        id: cell.id,
+        span: cell.layoutMeta?.span,
+      })),
+    [cells]
+  );
 
   const loadingNode = React.useMemo(() => {
     if (!loadingEnabledFlag || !showLoadingLayer) return null;
     if (loading.renderLoading) return loading.renderLoading({ count: skeletonCount });
 
     return (
-      <GridSkeletonCard count={skeletonCount} gridStyle={gridStyle} spec={loading.skeleton} />
+      <GridSkeletonCard
+        count={skeletonCount}
+        gridStyle={gridStyle}
+        spec={loading.skeleton}
+        breakpoints={breakpointMap}
+        items={skeletonItems}
+        allowItemSpans={hasExplicitTracks}
+      />
     );
-  }, [loadingEnabledFlag, showLoadingLayer, loading.renderLoading, loading.skeleton, skeletonCount, gridStyle]);
+  }, [
+    loadingEnabledFlag,
+    showLoadingLayer,
+    loading.renderLoading,
+    loading.skeleton,
+    skeletonCount,
+    gridStyle,
+    skeletonItems,
+    hasExplicitTracks,
+  ]);
 
   const baseItemClassName = React.useMemo(
     () => cx(gridItemBaseClass, styles.gridItem, styles.introItem, grid.itemClassName),
@@ -306,10 +640,25 @@ export function GridLayout({
   const gridChildren = React.useMemo(() => {
     return cells.map((cell, index) => {
       const original = cell.node;
+      const layoutMeta = cell.layoutMeta;
+      const scopedOriginal = (
+        <RmgSlideProvider
+          value={{ normIdx: index, isClone: false, storeBag: layoutStoreBag }}
+        >
+          {original as any}
+        </RmgSlideProvider>
+      );
 
       const introStyle: React.CSSProperties & Record<string, any> = {
         ['--rmg-intro-index' as any]: index,
       };
+
+      const itemClassName = cx(baseItemClassName, layoutMeta?.className);
+      const itemStyle = buildGridItemHostStyle({
+        layoutMeta,
+        allowSpan: hasExplicitTracks,
+        introStyle,
+      });
 
       if (lazyEnabled) {
         const originalEl = React.isValidElement(original)
@@ -342,10 +691,12 @@ export function GridLayout({
             key={cell.id}
             index={index}
             data-rmg-idx={index}
-            className={baseItemClassName}
-            style={introStyle}
+            data-rmg-grid-item-key={cell.id}
+            className={itemClassName}
+            style={itemStyle}
             lazyLoad={grid.lazyLoad}
             registerExpandableImage={registerExpandableImage as any}
+            revealedIndicesRef={revealedIndicesRef}
             onClick={mergedOnClick}
             onKeyDown={mergedOnKeyDown}
             tabIndex={enableFullscreen ? (origProps.tabIndex ?? 0) : undefined}
@@ -355,7 +706,7 @@ export function GridLayout({
                 : undefined
             }
           >
-            {original as any}
+            {scopedOriginal}
           </LazyItemHost>
         );
       }
@@ -365,10 +716,11 @@ export function GridLayout({
           <div
             key={cell.id}
             data-rmg-idx={index}
-            className={baseItemClassName}
-            style={introStyle}
+            data-rmg-grid-item-key={cell.id}
+            className={itemClassName}
+            style={itemStyle}
           >
-            {original as any}
+            {scopedOriginal}
           </div>
         );
       }
@@ -378,15 +730,16 @@ export function GridLayout({
           <div
             key={cell.id}
             data-rmg-idx={index}
-            className={baseItemClassName}
-            style={introStyle}
+            data-rmg-grid-item-key={cell.id}
+            className={itemClassName}
+            style={itemStyle}
             onClick={onItemClick(index)}
             onKeyDown={onItemKeyDown(index)}
             tabIndex={0}
             aria-label={`View image ${index + 1}`}
             ref={registerFromHostRef(index) as any}
           >
-            {original as any}
+            {scopedOriginal}
           </div>
         );
       }
@@ -420,12 +773,26 @@ export function GridLayout({
         key: cell.id,
         ref: mergedRef,
         'data-rmg-idx': index,
-        className: cx(baseItemClassName, origProps.className),
-        style: { ...(origProps.style || {}), ...introStyle },
+        'data-rmg-grid-item-key': cell.id,
+        className: cx(itemClassName, origProps.className),
+        style: buildGridItemHostStyle({
+          originalStyle: origProps.style,
+          layoutMeta,
+          allowSpan: hasExplicitTracks,
+          introStyle,
+        }),
         onClick: mergedOnClick,
         onKeyDown: mergedOnKeyDown,
         tabIndex: originalEl.props?.tabIndex ?? 0,
         'aria-label': originalEl.props?.['aria-label'] ?? `View image ${index + 1}`,
+        children:
+          originalEl.props?.children === undefined ? undefined : (
+            <RmgSlideProvider
+              value={{ normIdx: index, isClone: false, storeBag: layoutStoreBag }}
+            >
+              {originalEl.props.children}
+            </RmgSlideProvider>
+          ),
       });
     });
   }, [
@@ -434,11 +801,13 @@ export function GridLayout({
     grid.lazyLoad,
     renderModeProp,
     baseItemClassName,
+    hasExplicitTracks,
     enableFullscreen,
     onItemClick,
     onItemKeyDown,
     registerExpandableImage,
     registerFromHostRef,
+    layoutStoreBag,
   ]);
 
   React.useLayoutEffect(() => {
@@ -465,10 +834,10 @@ export function GridLayout({
         introActive && styles.introActive,
         grid.rootClassName
       ),
+      'data-rmg-grid-node': 'true',
       style: {
         ...gridStyle,
         ['--rmg-intro-stagger' as any]: `${intro.staggerMs}ms`,
-        ['--rmg-intro-transform' as any]: intro.transform,
         ['--rmg-intro-duration' as any]: `${intro.durationMs}ms`,
         ['--rmg-intro-easing' as any]: intro.easing,
       },
@@ -478,7 +847,6 @@ export function GridLayout({
       grid.rootClassName,
       gridStyle,
       intro.staggerMs,
-      intro.transform,
       intro.durationMs,
       intro.easing,
       introActive,
@@ -497,13 +865,19 @@ export function GridLayout({
     : inner;
 
   return (
-    <div className={styles.gridShell}>
+    <div className={styles.gridShell} data-rmg-grid-scope={gridScope}>
+      {responsiveCssText ? (
+        <style dangerouslySetInnerHTML={{ __html: responsiveCssText }} />
+      ) : null}
       <div className={cx(styles.gridContentLayer, showLoadingLayer && styles.gridContentBlocked)}>
         {introWrapped}
       </div>
       {showLoadingLayer && loadingNode ? (
         <div
           className={cx(styles.gridLoadingLayer, loadingExiting && styles.gridLoadingLayerExit)}
+          style={{
+            ['--rmg-loading-fade-duration' as any]: `${loadingTiming.exitMs}ms`,
+          }}
           aria-hidden="true"
         >
           {loadingNode}

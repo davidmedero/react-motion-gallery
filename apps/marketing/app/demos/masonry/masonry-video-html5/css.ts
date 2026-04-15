@@ -1,0 +1,66 @@
+export const css = String.raw`/* app/globals.css or Demo.module.css */
+
+.masonryHtml5Card {
+  display: grid;
+  gap: 14px;
+  padding: 12px 12px 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+
+.masonryHtml5Frame {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #020617;
+}
+
+.masonryHtml5Frame > * {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryHtml5Video {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryHtml5Frame :global(.plyr),
+.masonryHtml5Frame :global(.plyr__video-wrapper),
+.masonryHtml5Frame :global(.plyr__video-wrapper--fixed-ratio),
+.masonryHtml5Frame :global(.plyr__poster),
+.masonryHtml5Frame :global(video) {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryHtml5Frame :global(.plyr__poster) {
+  background-size: cover;
+}
+
+.masonryHtml5Frame :global(.plyr__video-wrapper--fixed-ratio) {
+  aspect-ratio: auto;
+}
+
+.masonryHtml5Frame :global(video) {
+  object-fit: cover;
+}
+
+.masonryHtml5Meta {
+  display: grid;
+  gap: 6px;
+}
+
+.masonryHtml5Title {
+  font-size: 1.04rem;
+  letter-spacing: -0.02em;
+}
+
+.masonryHtml5Body {
+  margin: 0;
+  color: rgba(11, 18, 32, 0.72);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}`;

@@ -55,28 +55,23 @@ export function DefaultDotsFactory(
     classNameContainer,
     classNameDot,
   }: DotsRenderArgs) {
-    const pos: React.CSSProperties =
-      AX.main === 'y'
-        ? { top: '50%', left: 10, transform: 'translateY(-50%)', flexDirection: 'column' }
-        : { left: '50%', bottom: 10, transform: 'translateX(-50%)', flexDirection: 'row' };
-
     return (
       <div
         ref={ref}
-        className={`rmgDots ${classNameContainer ?? ''}`}
+        data-rmg-part="dots"
+        data-rmg-axis={AX.main}
+        className={[
+          styles.dotsRoot,
+          AX.main === 'y' ? styles.dotsRootY : styles.dotsRootX,
+          'rmgDots',
+          classNameContainer ?? '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         style={{
-          display: 'flex',
-          justifyContent: 'center',
-          position: 'absolute',
-          zIndex: 10,
-          background: 'rgba(0, 0, 0, 0.5)',
-          padding: AX.main === 'y' ? '8px 4px' : '4px 8px',
-          borderRadius: '9999px',
-          cursor: 'auto',
           opacity: hidden ? 0 : 1,
           pointerEvents: hidden ? 'none' : 'auto',
           visibility: hidden ? 'hidden' : 'visible',
-          ...pos,
           ...(dotsContainerStyles || {}),
         }}
       >

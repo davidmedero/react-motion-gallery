@@ -1,11 +1,15 @@
 import * as React from 'react';
-import { a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
-import { S as SliderOptions, a as SliderHandle } from './types-fFyCx1KQ.mjs';
-export { R as ResponsiveHeightRule } from './types-fFyCx1KQ.mjs';
-import { S as SliderIndexChannel } from './sliderSub-DDPjywVp.mjs';
-export { c as createSliderIndexChannel } from './sliderSub-DDPjywVp.mjs';
-export { I as IndexMode } from './types-tb9Qf2Mj.mjs';
-import './elements-24CTbRWj.mjs';
+import { c as BreakpointMap } from './responsive-D_xhZmVI.mjs';
+export { I as IndexMode } from './responsive-D_xhZmVI.mjs';
+import { S as SliderOptions, a as SliderHandle } from './types-DY058l5M.mjs';
+export { R as ResponsiveHeightRule } from './types-DY058l5M.mjs';
+import { S as SliderIndexChannel } from './sliderSub-Bo6Y8as_.mjs';
+export { c as createSliderIndexChannel } from './sliderSub-Bo6Y8as_.mjs';
+import './plyrTypes-Cq4C3ul5.mjs';
+import 'plyr';
+import './types-Dhh8xfHo.mjs';
+import './controls-SpWg1Kgt.mjs';
+import './text-Cl2tR8oO.mjs';
 
 declare const Slider: React.ForwardRefExoticComponent<SliderOptions & {
     children?: React.ReactNode;

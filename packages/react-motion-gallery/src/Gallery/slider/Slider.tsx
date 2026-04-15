@@ -17,7 +17,6 @@ import {
   RefObject,
   isValidElement,
   useCallback,
-  useId,
   useMemo,
   Ref,
   useImperativeHandle,
@@ -59,6 +58,30 @@ import { useOptionalGalleryCore } from '../core';
 import { useWheelLock } from '../shared/hooks/useWheelLock';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { createRmgSlideStoreBag, type RmgSlideStoreBag } from '../shared/slideStoreBag';
+import {
+  LAZY_ATTR,
+  RMG_BLANK,
+  hydrateLazyImageShell,
+  markLazyImageShell,
+  revealLazyImageShell,
+} from '../shared/lazy/lazyShell';
+import { buildStableScopeId } from '../shared/stableScope';
+import { detectKindFromChild, isRmgVideoElement } from './mediaKind';
+import { computeSliderChildrenKey } from './childrenSignature';
+import {
+  buildSliderScrollSnaps,
+  fitsWithinSliderViewport,
+  getSliderCenterOffset,
+  roundSliderLayoutMetric,
+  resolveSliderContentSpan,
+  shouldEnableSliderLoop,
+} from './layoutStability';
+import {
+  clamp01,
+  resolveSliderCrossfadeDragTarget,
+  shouldCompleteSliderDragCrossfade,
+  shouldStartSliderControlsCrossfade,
+} from './crossfade';
 
 function DragTracker(main: AxisKey | undefined, ownerWindow: WindowType) {
   const scroll: AxisKey = main ?? 'x'
@@ -73,6 +96,257 @@ function DragTracker(main: AxisKey | undefined, ownerWindow: WindowType) {
 type BaseScrollTo = {
   distance: (n: number, snap: boolean) => void
   index: (n: number, direction: number) => void
+}
+
+const DEFAULT_SLIDER_CROSSFADE_MS = 420;
+const DEFAULT_SLIDER_CROSSFADE_EASING = 'cubic-bezier(.4,0,.22,1)';
+
+const SLIDER_LAYOUT_EPS = 0.75;
+const SLIDER_CELL_SIZE_STEP = 0.5;
+const SLIDER_WRAP_HYSTERESIS_PX = 6;
+
+type MeasuredCell = {
+  el: HTMLElement;
+  start: number;
+  end: number;
+  size: number;
+};
+
+type SliderPage = {
+  cells: { element: HTMLElement; index: number }[];
+  target: number;
+  alignSize: number;
+};
+
+type PageModel = {
+  slides: SliderPage[];
+  cellToSlide: number[];
+};
+
+function quantizeSliderMetric(value: number, step = SLIDER_CELL_SIZE_STEP) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.round(value / step) * step;
+}
+
+function nearlyEqual(a: number, b: number, eps = SLIDER_LAYOUT_EPS) {
+  return Math.abs(a - b) <= eps;
+}
+
+function normalizeCellsPerSlideValue(
+  total: number,
+  cellsPerSlide?: number
+): number | null {
+  if (typeof cellsPerSlide !== 'number' || cellsPerSlide <= 0) return null;
+  return Math.max(1, Math.min(total, cellsPerSlide));
+}
+
+export function shouldReanchorSliderOnResize(args: {
+  wrap: boolean;
+  centerAlign?: boolean;
+  cellsPerSlide?: number;
+}) {
+  const { wrap, centerAlign, cellsPerSlide } = args;
+  const hasFixedCellsPerSlide =
+    typeof cellsPerSlide === 'number' &&
+    Number.isFinite(cellsPerSlide) &&
+    cellsPerSlide > 0;
+
+  return wrap || !!centerAlign || hasFixedCellsPerSlide;
+}
+
+function shouldEnableLoopWithHysteresis(args: {
+  loop?: boolean;
+  itemCount: number;
+  span: number;
+  viewport: number;
+  previous: boolean;
+}) {
+  const { loop, itemCount, span, viewport, previous } = args;
+  if (!loop) return false;
+  if (itemCount <= 1) return false;
+
+  // Prevent flapping when resize hovers around the fit threshold.
+  if (previous) {
+    return span > viewport - SLIDER_WRAP_HYSTERESIS_PX;
+  }
+
+  return span > viewport + SLIDER_WRAP_HYSTERESIS_PX;
+}
+
+function computeCellsPerSideForLoop(args: {
+  originalsCount: number;
+  measuredOriginals: MeasuredCell[];
+  viewport: number;
+  gap: number;
+  fixedCellsPerSlide: number | null;
+}) {
+  const { originalsCount, measuredOriginals, viewport, gap, fixedCellsPerSlide } = args;
+
+  if (!originalsCount) return 0;
+
+  if (fixedCellsPerSlide != null) {
+    return Math.max(1, Math.min(originalsCount, fixedCellsPerSlide));
+  }
+
+  let sum = 0;
+  let count = 0;
+  for (const item of measuredOriginals) {
+    const next = count === 0 ? item.size : sum + gap + item.size;
+    if (fitsWithinSliderViewport(next, viewport)) {
+      sum = next;
+      count++;
+    } else {
+      count++;
+      break;
+    }
+  }
+
+  return Math.max(2, Math.min(originalsCount, count || 1));
+}
+
+function computePagesFromLayout(args: {
+  data: MeasuredCell[];
+  originals: HTMLElement[];
+  wrap: boolean;
+  groupCells?: boolean;
+  centerAlign?: boolean;
+  cellsPerSlide?: number;
+  viewport: number;
+  contentSpan: number;
+  getLayoutMainSize: (el: HTMLElement | null) => number;
+}): PageModel {
+  const {
+    data,
+    originals,
+    wrap,
+    groupCells,
+    centerAlign,
+    cellsPerSlide,
+    viewport,
+    contentSpan,
+    getLayoutMainSize,
+  } = args;
+
+  const idxMap = new Map<HTMLElement, number>(originals.map((el, i) => [el, i]));
+  const allowCenteredOverflow = !!centerAlign && !wrap;
+
+  const pages: { els: HTMLElement[]; target: number }[] = [];
+  let i = 0;
+
+  const fixedCellsPerSlide = normalizeCellsPerSlideValue(data.length, cellsPerSlide);
+
+  if (groupCells) {
+    while (i < data.length) {
+      const startLeft = data[i]?.start ?? 0;
+      let j = i;
+
+      if (fixedCellsPerSlide != null) {
+        j = Math.min(data.length, i + fixedCellsPerSlide);
+      } else {
+        const viewRight = startLeft + viewport;
+        while (j < data.length && (data[j]?.end ?? 0) <= viewRight + 0.5) j++;
+        if (j === i) j++;
+      }
+
+      const slice = data.slice(i, j).map((d) => d.el);
+      const isLast = j >= data.length;
+
+      let target = startLeft;
+      if (isLast && !wrap && !allowCenteredOverflow) {
+        target = Math.max(0, contentSpan - viewport);
+      }
+      if (i === 0) target = 0;
+
+      pages.push({ els: slice, target });
+      i = j;
+    }
+  } else {
+    const maxTarget = Math.max(0, contentSpan - viewport);
+
+    if (wrap || allowCenteredOverflow) {
+      data.forEach((d, idx) => {
+        const t = idx === 0 ? 0 : d.start;
+        if (!pages.length || Math.abs(t - pages[pages.length - 1].target) > 0.5) {
+          pages.push({ els: [d.el], target: t });
+        }
+      });
+    } else {
+      for (let idx = 0; idx < data.length; idx++) {
+        const d = data[idx];
+        let t = idx === 0 ? 0 : d.start;
+        t = Math.min(t, maxTarget);
+
+        if (!pages.length || Math.abs(t - pages[pages.length - 1].target) > 0.5) {
+          pages.push({ els: [d.el], target: t });
+        }
+
+        if (Math.abs(t - maxTarget) <= 0.5) break;
+      }
+
+      const winStart = maxTarget - 0.5;
+      const winEnd = maxTarget + viewport + 0.5;
+
+      const lastEls = data
+        .filter((d) => d.start < winEnd && d.end > winStart)
+        .map((d) => d.el);
+
+      if (lastEls.length) {
+        const lastT = pages[pages.length - 1]?.target ?? -1;
+        if (Math.abs(lastT - maxTarget) > 0.5) {
+          pages.push({ els: lastEls, target: maxTarget });
+        } else {
+          const uniq = new Set(pages[pages.length - 1].els.concat(lastEls));
+          pages[pages.length - 1].els = Array.from(uniq);
+        }
+      }
+    }
+  }
+
+  const slides: SliderPage[] = pages.map((page) => {
+    let alignSize = 0;
+
+    if (groupCells) {
+      let minStart = Infinity;
+      let maxEnd = -Infinity;
+
+      for (const el of page.els) {
+        const dataIdx = idxMap.get(el);
+        if (dataIdx == null) continue;
+
+        const cell = data[dataIdx];
+        if (!cell) continue;
+
+        minStart = Math.min(minStart, cell.start);
+        maxEnd = Math.max(maxEnd, cell.end);
+      }
+
+      if (Number.isFinite(minStart) && Number.isFinite(maxEnd) && maxEnd > minStart) {
+        alignSize = maxEnd - minStart;
+      }
+    }
+
+    if (alignSize <= 0) {
+      alignSize = getLayoutMainSize(page.els[0] ?? null);
+    }
+
+    return {
+      target: page.target,
+      alignSize,
+      cells: page.els.map((el) => ({
+        element: el,
+        index: idxMap.get(el)!,
+      })),
+    };
+  });
+
+  const cellToSlide: number[] = [];
+  slides.forEach((slide, slideIdx) => {
+    slide.cells.forEach((cell) => {
+      cellToSlide[cell.index] = slideIdx;
+    });
+  });
+
+  return { slides, cellToSlide };
 }
 
 interface SliderProps {
@@ -139,6 +413,11 @@ interface SliderProps {
   scaleEffect?: boolean;
   scaleAmount?: number;
   fadeEffect?: boolean;
+  fadeMinOpacity?: number;
+  crossfadeControls?: boolean;
+  crossfadeDrag?: boolean;
+  crossfadeDurationMs?: number;
+  crossfadeEasing?: string;
   cellsPerSlide?: number;
   direction?: 'ltr' | 'rtl';
   axis?: 'x' | 'y';
@@ -169,11 +448,6 @@ type CarouselChildProps = HTMLAttributes<HTMLElement> &
   ClassAttributes<HTMLElement> & {
     style?: React.CSSProperties
   }
-
-const RMG_BLANK =
-  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
-
-const LAZY_ATTR = "data-rmg-lazy-src";
 
 function getSlidesForCanonicalIndex(track: HTMLElement, canonicalIndex: number): HTMLElement[] {
   return Array.from(
@@ -227,152 +501,23 @@ async function revealCanonicalSlides(
 }
 
 function markLazyShell(slideEl: HTMLElement) {
-  slideEl.setAttribute("data-rmg-lazyload", "");
-  slideEl.setAttribute("aria-busy", "true");
-
-  const imgs = slideEl.querySelectorAll<HTMLImageElement>(`img[src]:not([${LAZY_ATTR}])`);
-
-  imgs.forEach((img) => {
-    const src = img.getAttribute("src");
-    if (!src || src === RMG_BLANK) return;
-
-    img.setAttribute(LAZY_ATTR, src);
-    img.setAttribute("src", RMG_BLANK);
-
-    if (!img.style.opacity) img.style.opacity = "0";
-    if (!img.style.transition) img.style.transition = "opacity 220ms ease";
-  });
-
-  const targets = slideEl.querySelectorAll<HTMLElement>(`[${LAZY_ATTR}]`);
-  targets.forEach((t) => {
-    if (t instanceof HTMLImageElement) {
-      if (!t.getAttribute("src")) t.src = RMG_BLANK;
-      if (!t.style.opacity) t.style.opacity = "0";
-      if (!t.style.transition) t.style.transition = "opacity 220ms ease";
-    } else {
-      t.style.opacity = "0";
-    }
-  });
+  markLazyImageShell(slideEl);
 }
 
 function hydrateRevealedShell(slideEl: HTMLElement, revealedCanonicals?: Set<number>) {
-  slideEl.setAttribute("data-rmg-lazyload", "");
-  slideEl.setAttribute("data-rmg-lazyloaded", "true");
-  slideEl.removeAttribute("data-rmg-lazyloading");
-  slideEl.removeAttribute("aria-busy");
-
-  const targets = Array.from(slideEl.querySelectorAll<HTMLElement>(`[${LAZY_ATTR}]`));
-  for (const t of targets) {
-    const src = t.getAttribute(LAZY_ATTR);
-    if (!src) continue;
-
-    if (t instanceof HTMLImageElement) {
-      t.src = src;
-      t.style.opacity = "1";
-      t.style.transition = t.style.transition || "opacity 220ms ease";
-    } else {
-      (t.style as any).backgroundImage = `url("${src}")`;
-      t.style.opacity = "1";
-    }
-
-    t.removeAttribute(LAZY_ATTR);
-  }
-
-  slideEl.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
-    if (img.getAttribute("src") && img.getAttribute("src") !== RMG_BLANK) {
-      img.style.opacity = "1";
-      img.style.transition = img.style.transition || "opacity 220ms ease";
-    }
-  });
-
-  hideSpinnerEl(slideEl.querySelector<HTMLElement>("[data-rmg-spinner]"));
-  rememberRevealedCanonical(slideEl, revealedCanonicals);
-}
-
-function nextFrame(): Promise<void> {
-  return new Promise((r) => requestAnimationFrame(() => r()));
-}
-
-async function decodeImage(img: HTMLImageElement): Promise<void> {
-  // If it's already loaded/decoded enough, resolve quickly
-  if (img.complete && img.naturalWidth > 0) {
-    const dec = (img as any).decode;
-    if (typeof dec === "function") return dec.call(img).catch(() => {});
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve) => {
-    const done = () => {
-      img.onload = null;
-      img.onerror = null;
-      const dec = (img as any).decode;
-      if (typeof dec === "function") {
-        dec.call(img).catch(() => {}).finally(() => resolve());
-      } else {
-        resolve();
-      }
-    };
-    img.onload = done;
-    img.onerror = done;
+  hydrateLazyImageShell(slideEl, {
+    onRevealed: () => {
+      rememberRevealedCanonical(slideEl, revealedCanonicals);
+    },
   });
 }
 
 async function revealSlide(slideEl: HTMLElement, revealedCanonicals?: Set<number>) {
-  // Don’t double-run
-  if (slideEl.getAttribute("data-rmg-lazyloaded") === "true") return;
-
-  const sp = slideEl.querySelector<HTMLElement>("[data-rmg-spinner]");
-  // ensure spinner is visible while loading
-  if (sp) showSpinnerEl(sp);
-
-  // keep slide busy until images are decoded
-  slideEl.setAttribute("aria-busy", "true");
-
-  const targets = Array.from(slideEl.querySelectorAll<HTMLElement>(`[${LAZY_ATTR}]`));
-
-  // First: kick off loads (still invisible)
-  const decodePromises: Promise<void>[] = [];
-
-  for (const t of targets) {
-    const src = t.getAttribute(LAZY_ATTR);
-    if (!src) continue;
-
-    if (t instanceof HTMLImageElement) {
-      // Make sure opacity is 0 before setting src
-      t.style.opacity = "0";
-      t.style.transition = t.style.transition || "opacity 220ms ease";
-
-      t.src = src;
-      // IMPORTANT: don’t remove LAZY_ATTR yet; it prevents other code from treating it "done"
-      decodePromises.push(decodeImage(t));
-    } else {
-      // For background images, you can't decode reliably. You can at least start the load.
-      (t.style as any).backgroundImage = `url("${src}")`;
-    }
-  }
-
-  // Wait for image decode (best effort)
-  if (decodePromises.length) {
-    await Promise.all(decodePromises);
-  }
-
-  // Give the browser a frame to commit decoded pixels before fading
-  await nextFrame();
-
-  // Second: fade in + finalize
-  for (const t of targets) {
-    const src = t.getAttribute(LAZY_ATTR);
-    if (!src) continue;
-
-    t.removeAttribute(LAZY_ATTR);
-    t.style.opacity = "1";
-  }
-
-  slideEl.setAttribute("data-rmg-lazyloaded", "true");
-  rememberRevealedCanonical(slideEl, revealedCanonicals);
-  slideEl.removeAttribute("aria-busy");
-
-  if (sp) hideSpinnerEl(sp);
+  await revealLazyImageShell(slideEl, {
+    onRevealed: () => {
+      rememberRevealedCanonical(slideEl, revealedCanonicals);
+    },
+  });
 }
 
 function detectKindFromDom(slideEl: HTMLElement): 'video' | 'image' {
@@ -391,38 +536,6 @@ function detectKindFromDom(slideEl: HTMLElement): 'video' | 'image' {
   if (slideEl.querySelector('[data-plyr-provider], [data-plyr-embed-id]')) return 'video';
 
   return 'image';
-}
-
-function isRmgVideoElement(child: ReactElement<any>) {
-  return (child.type as { rmgMediaKind?: string } | undefined)?.rmgMediaKind === 'video';
-}
-
-function detectKindFromChild(child: ReactElement<any>): 'video' | 'image' {
-  if (isRmgVideoElement(child)) return 'video';
-
-  if (typeof child.type === 'string') {
-    const tagName = child.type.toLowerCase();
-    return tagName === 'video' || tagName === 'iframe' ? 'video' : 'image';
-  }
-
-  const props = child.props ?? {};
-  if (props.poster || props.source || props.sourceBuilder) return 'video';
-
-  return 'image';
-}
-
-function showSpinnerEl(spinnerEl: HTMLElement | null) {
-  if (!spinnerEl) return;
-  spinnerEl.style.setProperty("opacity", "1", "important");
-  spinnerEl.style.setProperty("visibility", "visible", "important");
-  spinnerEl.style.setProperty("pointer-events", "none", "important");
-}
-
-function hideSpinnerEl(spinnerEl: HTMLElement | null) {
-  if (!spinnerEl) return;
-  spinnerEl.style.setProperty("opacity", "0", "important");
-  spinnerEl.style.setProperty("visibility", "hidden", "important");
-  spinnerEl.style.setProperty("pointer-events", "none", "important");
 }
 
 function normalizeLazyLoad(src?: SliderLazyLoadOptions) {
@@ -478,7 +591,8 @@ function cloneSlide(
   isClone?: boolean,
   plyrRefsByIdx?: PlyrRefsByIndex,
   slideStoreBag?: RmgSlideStoreBag,
-  revealedCanonicals?: Set<number>
+  revealedCanonicals?: Set<number>,
+  indexChannel?: ReturnType<typeof createIndexChannel>
 ): ReactElement<CarouselChildProps> {
   const normIdx =
     cellCountForIdx != null
@@ -498,6 +612,7 @@ function cloneSlide(
     normIdx,
     isClone: !!isClone,
     storeBag: slideStoreBag,
+    indexChannel,
     registerApiByIndex: registerCanonicalApi,
   };
 
@@ -565,8 +680,6 @@ function cloneSlide(
 
   let contentNode: React.ReactNode = child;
 
-  const LAZY_ATTR = "data-rmg-lazy-src";
-
   if (isRmgVideo) {
     const videoProps = child.props ?? {};
     const existingRegisterApiByIndex = videoProps.registerApiByIndex;
@@ -595,7 +708,7 @@ function cloneSlide(
         style: {
           ...(imgProps.style || {}),
           opacity: 0,
-          transition: imgProps.style?.transition ?? "opacity 220ms ease",
+          transition: imgProps.style?.transition ?? "opacity 280ms ease",
         },
       });
     }
@@ -682,6 +795,11 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     scaleEffect,
     scaleAmount,
     fadeEffect,
+    fadeMinOpacity,
+    crossfadeControls,
+    crossfadeDrag,
+    crossfadeDurationMs,
+    crossfadeEasing,
     cellsPerSlide,
     direction,
     axis,
@@ -716,6 +834,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   const nextButtonRef = useRef<HTMLDivElement>(null)
   const dotRefs = useRef<(HTMLDivElement | null)[]>([])
   const dotsContainerRef = useRef<HTMLDivElement | null>(null)
+  const crossfadeLayerRef = useRef<HTMLDivElement | null>(null)
+  const crossfadeSourceRef = useRef<HTMLDivElement | null>(null)
+  const crossfadeTargetRef = useRef<HTMLDivElement | null>(null)
   const [clonedChildren, setClonedChildren] = useState<React.ReactElement[]>([])
   const clonesCountRef = useRef(0)
   const [visibleImages, setVisibleImages] = useState(1)
@@ -760,6 +881,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   const totalWidth = () => sliderWidth.current || 0
   const contentSizeRef = useRef(0)
   const loopLimitRef = useRef<ReturnType<typeof Limit> | null>(null)
+  const looperRef = useRef<ReturnType<typeof ScrollLooper> | null>(null)
   const loopRenderOffsetRef = useRef(0)
   const scrollSnapsRef = useRef<number[]>([])
   const scrollContentSizeRef = useRef(0)
@@ -779,22 +901,56 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   const lastPointerUpTime = useRef<number>(performance.now() - 1000);
   const autoScrollPauseUntil = useRef(0);
   const [buildKey, setBuildKey] = useState(0);
-  const loopStableRef = useRef<boolean | null>(null);
-  const [geomKey, setGeomKey] = useState(0);
+  const loopStableRef = useRef(false);
   const lastGeomSigRef = useRef<string>("");
   const plyrRefsByIdx = useRef<Record<number, any>>({});
   const slideStoreBag = useMemo(() => createRmgSlideStoreBag(), [buildKey]);
   const lastCloneSigRef = useRef<string>("");
+  const rebuildPagesRef = useRef<(() => void) | null>(null);
+  const rebuildPagesRafRef = useRef<number | null>(null);
   const shieldRef = useRef<ReturnType<typeof createGestureShield> | null>(null);
   const revealedCanonicalIndicesRef = useRef<Set<number>>(new Set());
   const pendingCloneToggleRef = useRef<PendingCloneToggleState | null>(null);
   const internalIndexChannel = useMemo(() => createIndexChannel(), []);
   const indexChannel = externalIndexChannel ?? internalIndexChannel;
+  const crossfadeBusyRef = useRef(false);
+  const crossfadeSeqRef = useRef(0);
+  const crossfadeRaf1Ref = useRef<number | null>(null);
+  const crossfadeRaf2Ref = useRef<number | null>(null);
+  const crossfadeTimeoutRef = useRef<number | null>(null);
+  const dragCrossfadeStateRef = useRef<{
+    sourceIndex: number;
+    targetIndex: number;
+    progress: number;
+    delta: number;
+  } | null>(null);
   const isRtl = direction === 'rtl' ? true : false
   const rtlCls = isRtl ? styles.rtl : '';
   const sign = axis === 'x' && isRtl ? -1 : 1;
+  const resolvedCrossfadeDurationMs =
+    typeof crossfadeDurationMs === 'number' && Number.isFinite(crossfadeDurationMs)
+      ? Math.max(0, crossfadeDurationMs)
+      : DEFAULT_SLIDER_CROSSFADE_MS;
+  const resolvedCrossfadeEasing =
+    typeof crossfadeEasing === 'string' && crossfadeEasing.trim().length > 0
+      ? crossfadeEasing
+      : DEFAULT_SLIDER_CROSSFADE_EASING;
+  const shouldReanchorOnResize = shouldReanchorSliderOnResize({
+    wrap,
+    centerAlign,
+    cellsPerSlide,
+  });
 
-  const scopeId = useId().replace(/:/g, "-");
+  const scopeId = useMemo(
+    () =>
+      buildStableScopeId('rmg-slider-core-', {
+        axis,
+        parallaxBleedPct,
+        parallaxBorderRadius,
+        parallaxSideWidth,
+      }),
+    [axis, parallaxBleedPct, parallaxBorderRadius, parallaxSideWidth]
+  );
 
   const AX: AXSpec = useMemo(() => {
     const main = axis!;
@@ -839,10 +995,37 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     return Number.isFinite(fallback) ? fallback : 0;
   }
 
+  function getLayoutMainSize(el: HTMLElement | null) {
+    if (!el) return 0;
+
+    const rectSize = el.getBoundingClientRect()[AX.sizeKey];
+    const scaleRaw =
+      typeof window !== "undefined"
+        ? window.getComputedStyle(el).getPropertyValue("--rmg-scale").trim()
+        : "";
+    const scale = Number.parseFloat(scaleRaw);
+
+    if (Number.isFinite(rectSize) && rectSize > 0) {
+      if (Number.isFinite(scale) && scale > 0) {
+        return rectSize / scale;
+      }
+
+      return rectSize;
+    }
+
+    const offsetSize =
+      AX.main === "x"
+        ? el.offsetWidth
+        : el.offsetHeight;
+
+    return Number.isFinite(offsetSize) ? offsetSize : 0;
+  }
+
   const baseCss = useMemo(() => {
-    const root = `#${scopeId}`;
+    const root = `[data-rmg-slider-core-scope="${scopeId}"]`;
     const fixedSel = `${root}[data-rmg-fixed-height="true"]`;
     const autoSel = `${root}[data-rmg-fixed-height="false"]`;
+    const bleedScale = parseFloat(parallaxBleedPct ?? "130%") / 100;
 
     return `
   ${root} .rmg__slide {
@@ -872,18 +1055,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   ${root} .rmg__parallax__layer {
     width: 100%;
     will-change: transform;
+    --rmg-bleed-scale: ${bleedScale};
     transform: ${
-      axis === 'x' ? 'translateX(0%)' : 'translateY(0%)'
+      axis === 'x' ? 'translateX(0%) scale(var(--rmg-bleed-scale))' : 'translateY(0%) scale(var(--rmg-bleed-scale))'
     }
-  }
-
-  ${root} .rmg__parallax__layer > img,
-  ${root} .rmg__parallax__layer > picture,
-  ${root} .rmg__parallax__layer > video {
-    display: block;
-    width: ${parallaxBleedPct};
-    max-width: none;
-    margin-left: calc((100% - ${parallaxBleedPct}) / 2);
   }
 
   ${fixedSel} .rmg__parallax__layer > img,
@@ -891,12 +1066,6 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   ${fixedSel} .rmg__parallax__layer > video {
     height: 100%;
     object-fit: cover;
-  }
-
-  ${autoSel} .rmg__parallax__layer > img,
-  ${autoSel} .rmg__parallax__layer > picture,
-  ${autoSel} .rmg__parallax__layer > video {
-    height: auto;
   }
   `;
   }, [axis, scopeId, parallaxBleedPct, parallaxBorderRadius, parallaxSideWidth]);
@@ -1065,22 +1234,15 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   }
 
   const childrenKey = useMemo(() => {
-    const arr = Children.toArray(children) as any[];
-    // only keys, so this doesn’t change on every render
-    return arr.map((c) => String(c?.key ?? "")).join("|");
+    return computeSliderChildrenKey(children);
   }, [children]);
 
   useEffect(() => {
-    ioSeenRef.current.clear();
-    fsPreloadSeenRef.current.clear();
-    revealedCanonicalIndicesRef.current.clear();
-  }, [cellCount, childrenKey]);
-
-  useEffect(() => {
+    // Child mutations still need a fresh measure/build pass, but they should not
+    // replay mount-only loading or intro state after the slider has become ready.
     setEngineReady(false);
     setLayoutReady(false);
     hasPositioned.current = false;
-    setIsReady(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cellCount, childrenKey, loop, axis]);
 
@@ -1098,12 +1260,12 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
     const offsetKey = AX.main === 'x' ? 'offsetLeft' : 'offsetTop';
     const first = elements[0];
-    const firstSize = first.getBoundingClientRect()[AX.sizeKey];
+    const firstSize = getLayoutMainSize(first);
     const firstOffset = (first as any)[offsetKey] as number;
     const firstEnd = firstOffset + firstSize;
 
     return elements.map((el) => {
-      const size = el.getBoundingClientRect()[AX.sizeKey];
+      const size = getLayoutMainSize(el);
       const offset = (el as any)[offsetKey] as number;
       const start =
         AX.main === 'x' && isRtl
@@ -1122,18 +1284,15 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
   function measureLoopRenderOffset(track: HTMLElement | null, firstOriginal: HTMLElement | null) {
     if (!track || !firstOriginal) return 0;
 
-    const trackRect = track.getBoundingClientRect();
-    const firstRect = firstOriginal.getBoundingClientRect();
-
     if (AX.main === 'y') {
-      return firstRect.top - trackRect.top;
+      return firstOriginal.offsetTop;
     }
 
     if (isRtl) {
-      return trackRect.right - firstRect.right;
+      return track.scrollWidth - (firstOriginal.offsetLeft + getLayoutMainSize(firstOriginal));
     }
 
-    return firstRect.left - trackRect.left;
+    return firstOriginal.offsetLeft;
   }
 
   function clampIndex(i: number, len: number) {
@@ -1151,8 +1310,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     style.id = id;
     style.textContent = `
       /* Only while data-rmg-drag is present on this slider root */
-      #${scopeId}[data-rmg-drag]        { cursor: grabbing !important; }
-      #${scopeId}[data-rmg-drag] *      { cursor: grabbing !important; }
+      [data-rmg-slider-core-scope="${scopeId}"][data-rmg-drag]        { cursor: grabbing !important; }
+      [data-rmg-slider-core-scope="${scopeId}"][data-rmg-drag] *      { cursor: grabbing !important; }
     `;
     document.head.appendChild(style);
   }
@@ -1204,8 +1363,12 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     const alignSize =
       slide.alignSize > 0
         ? slide.alignSize
-        : slide.cells[0].element.getBoundingClientRect()[AX.sizeKey];
-    return centerAlign ? (containerSize - alignSize) / 2 : 0;
+        : getLayoutMainSize(slide.cells[0].element);
+    return getSliderCenterOffset({
+      viewport: containerSize,
+      alignSize,
+      centerAlign,
+    });
   }
 
   function getSnapLocationForIndex(idx: number) {
@@ -1214,37 +1377,144 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     return -(slide.target ?? 0) + getCenterOffsetForIndex(idx);
   }
 
+  function computeCurrentScrollSnaps() {
+    const viewport = getViewportMainSize();
+
+    return buildSliderScrollSnaps({
+      targets: (slides.current || []).map((slide) => slide.target ?? 0),
+      alignSizes: (slides.current || []).map((slide) => {
+        const fallbackEl = slide.cells?.[0]?.element;
+        const fallbackSize = getLayoutMainSize(fallbackEl ?? null);
+        return slide.alignSize > 0 ? slide.alignSize : fallbackSize;
+      }),
+      viewport,
+      centerAlign,
+    });
+  }
+
+  function applyScrollMetrics(scrollSnaps: number[]) {
+    const W = sliderWidth.current || 0;
+
+    scrollSnapsRef.current = scrollSnaps;
+    contentSizeRef.current = W;
+    scrollContentSizeRef.current = W;
+
+    let minSnap = 0;
+    let maxSnap = 0;
+
+    if (scrollSnaps.length) {
+      minSnap = Math.min(...scrollSnaps);
+      maxSnap = Math.max(...scrollSnaps);
+    }
+
+    const loopLimit = wrap ? Limit(-W, 0) : Limit(minSnap, maxSnap);
+    loopLimitRef.current = loopLimit;
+
+    const loopProgressOrigin = scrollSnaps[0] ?? 0;
+    scrollLimitRef.current = wrap
+      ? createBaseLimit(loopProgressOrigin - W, loopProgressOrigin)
+      : createBaseLimit(minSnap, maxSnap);
+
+    scrollTargetRef.current = targetRef.current
+      ? ScrollTarget(wrap, scrollSnaps, W, loopLimit, targetRef.current)
+      : null;
+
+    const location = locationRef.current;
+    const previousLocation = previousLocationRef.current;
+    const offsetLocation = offsetLocationRef.current;
+    const target = targetRef.current;
+
+    if (wrap && W > 0 && location && previousLocation && offsetLocation && target) {
+      looperRef.current = ScrollLooper(
+        W,
+        loopLimit,
+        location,
+        [location, previousLocation, offsetLocation, target]
+      );
+    } else {
+      looperRef.current = null;
+    }
+
+    return { minSnap, maxSnap };
+  }
+
+  function syncMotionGeometry(options: { reanchor?: boolean } = {}) {
+    const { reanchor = false } = options;
+    const scrollSnaps = computeCurrentScrollSnaps();
+    const { minSnap, maxSnap } = applyScrollMetrics(scrollSnaps);
+
+    if (!scrollSnaps.length) return;
+
+    if (wrap) {
+      limitRef.current = null;
+      boundsRef.current = null;
+      povRef.current = null;
+
+      if (reanchor) {
+        reanchorToCurrentIndex();
+      } else {
+        renderTrackAtLocation(offsetLocationRef.current?.get() ?? xRef.current);
+        syncProgressUiInFrame();
+        updateControlsImperatively();
+      }
+
+      return;
+    }
+
+    const cw = getViewportMainSize();
+    if (cw <= 0) return;
+
+    limitRef.current = Limit(
+      Number.isFinite(minSnap) ? minSnap : 0,
+      Number.isFinite(maxSnap) ? maxSnap : 0
+    );
+
+    if (
+      locationRef.current &&
+      targetRef.current &&
+      bodyRef.current
+    ) {
+      povRef.current = PercentOfView(cw);
+      boundsRef.current = ScrollBounds(
+        limitRef.current,
+        locationRef.current,
+        targetRef.current,
+        bodyRef.current,
+        povRef.current,
+        selectDuration
+      );
+    }
+
+    if (reanchor) {
+      reanchorToCurrentIndex();
+      return;
+    }
+
+    const current = offsetLocationRef.current?.get() ?? xRef.current ?? 0;
+    const clamped = limitRef.current.constrain(current);
+
+    renderTrackAtLocation(clamped);
+    bodyRef.current?.useDuration(0).useFriction(1).sync().resetVelocity();
+    animRef.current?.stop();
+    isAnimatingRef.current = false;
+    syncProgressUiInFrame();
+    updateControlsImperatively();
+  }
+
   function snapToIndex(requested: number) {
     const len = slides.current?.length ?? 0;
     if (!len) return;
 
     const idx = clampIndex(requested, len);
-    const slide = slides.current?.[idx];
-    if (!slide) return;
+    if (!slides.current?.[idx]) return;
 
-    const next = getSnapLocationForIndex(idx);
-
-    animRef.current?.stop();
-    isAnimatingRef.current = false;
-
-    locationRef.current?.set(next);
-    previousLocationRef.current?.set(next);
-    offsetLocationRef.current?.set(next);
-    targetRef.current?.set(next);
-    xRef.current = next;
-
-    bodyRef.current?.useDuration(0).useFriction(1).sync().resetVelocity();
+    jumpTrackToIndexInstant(idx);
 
     selectedIndex.current = idx;
     lastEmittedIndexRef.current = idx;
     indexCurrentRef.current?.set(idx);
     indexPreviousRef.current?.set(idx);
 
-    positionSlider(next);
-    syncProgressUiInFrame();
-    if (parallax) tweenParallax();
-    if (scaleEffect) applyPairScaleTween();
-    if (fadeEffect) applyFadeTween();
     updateControlsImperatively();
   }
 
@@ -1375,6 +1645,18 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     setLayoutReady(false);
 
     setBuildKey(k => k + 1);
+  }
+
+  const rebuildingPagesRef = useRef(false);
+
+  function rebuildPagesNow() {
+    if (rebuildingPagesRef.current) return;
+    rebuildingPagesRef.current = true;
+    try {
+      rebuildPagesRef.current?.();
+    } finally {
+      rebuildingPagesRef.current = false;
+    }
   }
 
   function isPlyrControlsEl(el: HTMLElement | null) {
@@ -1617,105 +1899,123 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     const el = slider.current;
     if (!el) return;
 
-    const ro = new ResizeObserver(() => {
-      const rawKids = Children
-        .toArray(children)
-        .filter(isValidElement) as ReactElement<any>[];
+    let retryTimeout: number | null = null;
+    let isRebuilding = false;
 
-      const originals = rawKids.length;
-      if (originals < 1) {
-        el.style.removeProperty("--rmg-slide-main-size");
-        clonesCountRef.current = 0;
-        loopRenderOffsetRef.current = 0;
-        cells.current = [];
-        setClonedChildren([]);
-        sliderWidth.current = 0;
-        layoutRef.current = null;
+    const queueCloneRetry = () => {
+      if (retryTimeout != null) return;
 
-        setWrapSafe(false);
-        slides.current = [];
-        setSlidesState([]);
-        cellToSlideRef.current = [];
+      retryTimeout = window.setTimeout(() => {
+        retryTimeout = null;
+        rebuildClonedChildren();
+      }, 0);
+    };
 
-        return;
-      }
+    const rebuildClonedChildren = () => {
+      if (isRebuilding) return;
+      isRebuilding = true;
 
-      const allEls = Array.from(el.children) as HTMLElement[];
-      const clonesBefore = clonesCountRef.current;
-      const clonesAfter  = clonesBefore;
-      const originalEls  = allEls.slice(clonesBefore, allEls.length - clonesAfter);
+      try {
+        const rawKids = Children
+          .toArray(children)
+          .filter(isValidElement) as ReactElement<any>[];
 
-      const cw = getViewportMainSize();
-      if (cw <= 0) return;
+        const originals = rawKids.length;
+        if (originals < 1) {
+          el.style.removeProperty("--rmg-slide-main-size");
+          clonesCountRef.current = 0;
+          loopRenderOffsetRef.current = 0;
+          lastCloneSigRef.current = "";
+          cells.current = [];
+          setClonedChildren([]);
+          sliderWidth.current = 0;
+          layoutRef.current = null;
 
-      const useCols =
-        typeof cellsPerSlide === 'number' && cellsPerSlide > 0;
+          setWrapSafe(false);
+          slides.current = [];
+          setSlidesState([]);
+          cellToSlideRef.current = [];
 
-      let cols = 1;
-      let cellSize: number | undefined;
-
-      if (useCols) {
-        cols = Math.max(1, Math.min(originals, cellsPerSlide as number));
-        const totalGap = gap * Math.max(0, cols - 1);
-        cellSize = (cw - totalGap) / cols;
-      }
-
-      if (useCols && cellSize != null) {
-        el.style.setProperty("--rmg-slide-main-size", `${cellSize}px`);
-      } else {
-        el.style.removeProperty("--rmg-slide-main-size");
-      }
-
-      let sum = 0;
-      let count = 0;
-      for (const slot of originalEls) {
-        const w = slot.getBoundingClientRect()[AX.sizeKey];
-        if (w === 0) {
-          requestAnimationFrame(() => ro.observe(el));
           return;
         }
-        const next = count === 0 ? w : sum + gap + w;
-        if (next <= cw) {
-          sum = next;
-          count++;
-        } else {
-          count++;
-          break;
+
+        const allEls = Array.from(el.children) as HTMLElement[];
+        const clonesBefore = clonesCountRef.current;
+        const clonesAfter = clonesBefore;
+        const originalEls = allEls.slice(clonesBefore, allEls.length - clonesAfter);
+
+        const cw = getViewportMainSize();
+        if (cw <= 0) return;
+
+        const useCols =
+          typeof cellsPerSlide === "number" && cellsPerSlide > 0;
+
+        let cols = 1;
+        let cellSize: number | undefined;
+
+        if (useCols) {
+          cols = Math.max(1, Math.min(originals, cellsPerSlide as number));
+          const totalGap = gap * Math.max(0, cols - 1);
+          cellSize = (cw - totalGap) / cols;
         }
-      }
 
-      const per = useCols
-        ? Math.max(1, Math.min(originals, cols))
-        : Math.max(2, Math.min(originals, count));
+        if (useCols && cellSize != null) {
+          el.style.setProperty("--rmg-slide-main-size", `${cellSize}px`);
+        } else {
+          el.style.removeProperty("--rmg-slide-main-size");
+        }
 
-      const shouldLoop = wrap;
-      clonesCountRef.current = shouldLoop ? per : 0;
-      if (visibleImagesRef.current !== per) {
-        setVisibleImages(per);
-        visibleImagesRef.current = per;
-      }
+        let sum = 0;
+        let count = 0;
+        for (const slot of originalEls) {
+          const w = getLayoutMainSize(slot);
+          if (w === 0) {
+            queueCloneRetry();
+            return;
+          }
 
-      const sig = computeCloneSig(originals, per, useCols);
-      if (sig === lastCloneSigRef.current) return;
-      lastCloneSigRef.current = sig;
+          const next = count === 0 ? w : sum + gap + w;
+          if (fitsWithinSliderViewport(next, cw)) {
+            sum = next;
+            count++;
+          } else {
+            count++;
+            break;
+          }
+        }
 
-      const enableParallax = !!parallax;
-      const slidesArr: ReactElement<any>[] = [];
-      cells.current = [];
+        const per = useCols
+          ? Math.max(1, Math.min(originals, cols))
+          : Math.max(2, Math.min(originals, count));
 
-      const extraStyle: React.CSSProperties | undefined =
-        useCols && cellSize != null
-          ? {
-              flex: '0 0 auto',
-              [AX.sizeKey]: 'var(--rmg-slide-main-size)',
-            } as any
-          : undefined;
+        const shouldLoop = wrap;
+        clonesCountRef.current = shouldLoop ? per : 0;
 
-      if (shouldLoop) {
-        slidesArr.push(
-          ...rawKids
-            .slice(-per)
-            .map((c, i) =>
+        if (visibleImagesRef.current !== per) {
+          setVisibleImages(per);
+          visibleImagesRef.current = per;
+        }
+
+        const sig = computeCloneSig(originals, per, useCols);
+        const cloneSig = `${sig}|kids=${childrenKey}`;
+        if (cloneSig === lastCloneSigRef.current) return;
+        lastCloneSigRef.current = cloneSig;
+
+        const enableParallax = !!parallax;
+        const slidesArr: ReactElement<any>[] = [];
+        cells.current = [];
+
+        const extraStyle: React.CSSProperties | undefined =
+          useCols && cellSize != null
+            ? ({
+                flex: "0 0 auto",
+                [AX.sizeKey]: "var(--rmg-slide-main-size)",
+              } as any)
+            : undefined;
+
+        if (shouldLoop) {
+          slidesArr.push(
+            ...rawKids.slice(-per).map((c, i) =>
               cloneSlide(
                 c,
                 `before-${i}`,
@@ -1728,36 +2028,36 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
                 true,
                 plyrRefsByIdx,
                 slideStoreBag,
-                revealedCanonicalIndicesRef.current
+                revealedCanonicalIndicesRef.current,
+                indexChannel
               )
             )
-        );
-      }
+          );
+        }
 
-      slidesArr.push(
-        ...rawKids.map((c, i) =>
-          cloneSlide(
-            c,
-            `original-${i}`,
-            i,
-            cells,
-            enableParallax,
-            cellCount,
-            normalizedLazy,
-            extraStyle,
-            false,
-            plyrRefsByIdx,
-            slideStoreBag,
-            revealedCanonicalIndicesRef.current
-          )
-        )
-      );
-
-      if (shouldLoop) {
         slidesArr.push(
-          ...rawKids
-            .slice(0, per)
-            .map((c, i) =>
+          ...rawKids.map((c, i) =>
+            cloneSlide(
+              c,
+              `original-${i}`,
+              i,
+              cells,
+              enableParallax,
+              cellCount,
+              normalizedLazy,
+              extraStyle,
+              false,
+              plyrRefsByIdx,
+              slideStoreBag,
+              revealedCanonicalIndicesRef.current,
+              indexChannel
+            )
+          )
+        );
+
+        if (shouldLoop) {
+          slidesArr.push(
+            ...rawKids.slice(0, per).map((c, i) =>
               cloneSlide(
                 c,
                 `after-${i}`,
@@ -1770,38 +2070,54 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
                 true,
                 plyrRefsByIdx,
                 slideStoreBag,
-                revealedCanonicalIndicesRef.current
+                revealedCanonicalIndicesRef.current,
+                indexChannel
               )
             )
-        );
-      }
+          );
+        }
 
-      setClonedChildren(slidesArr);
+        setClonedChildren(slidesArr);
+      } finally {
+        isRebuilding = false;
+      }
+    };
+
+    const ro = new ResizeObserver(() => {
+      rebuildClonedChildren();
     });
 
-    ro.observe(el);
+    rebuildClonedChildren();
+
     if (viewportRef.current) {
       ro.observe(viewportRef.current);
     }
-    return () => ro.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    if (sliderContainer.current) {
+      ro.observe(sliderContainer.current);
+    }
+
+    return () => {
+      if (retryTimeout != null) {
+        window.clearTimeout(retryTimeout);
+      }
+      ro.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     cellCount,
     slider,
     visibleImagesRef,
     cellsPerSlide,
     buildKey,
+    childrenKey,
     wrap,
     slideStoreBag,
   ]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const track = slider.current;
     if (!track) return;
-
-    const schedule = () => {
-      measureAndPosition()
-    };
 
     function measureAndPosition() {
       const trackEl = slider.current;
@@ -1820,9 +2136,6 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         return;
       }
 
-      const contentSize =
-        AX.main === "x" ? trackEl.scrollWidth : trackEl.scrollHeight;
-
       const cw = getViewportMainSize();
       if (cw <= 0) return;
 
@@ -1833,27 +2146,38 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
       const originalsCount = layoutRef.current?.originals?.length ?? 0;
       const baseSpan = originalsForLayout[originalsCount - 1]?.end ?? 0;
-      sliderWidth.current = wrap ? baseSpan + (originalsCount > 0 ? gap : 0) : baseSpan;
 
-      const wantLoop = !!loop && originalsCount > 1 && contentSize > cw;
+      // Only original slide geometry should decide whether looping is needed.
+      const wantLoop = shouldEnableSliderLoop({
+        loop,
+        itemCount: originalsCount,
+        span: baseSpan,
+        viewport: cw,
+      });
+
+      sliderWidth.current = resolveSliderContentSpan({
+        baseSpan,
+        gap,
+        shouldLoop: wantLoop,
+      });
 
       const flowSig = originalsForLayout
-        .map((o) => `${o.start}:${o.size}`)
+        .map((o) => `${roundSliderLayoutMetric(o.start)}:${roundSliderLayoutMetric(o.size)}`)
         .join(",");
-      const sig = `${flowSig}|cw=${cw}|W=${contentSize}`;
+
+      const sig = `${flowSig}|cw=${roundSliderLayoutMetric(cw)}|W=${roundSliderLayoutMetric(baseSpan)}|wrap=${wantLoop ? 1 : 0}`;
 
       if (sig !== lastGeomSigRef.current) {
         lastGeomSigRef.current = sig;
-        setGeomKey((k) => k + 1)
+        rebuildPagesNow();
       }
 
       setWrapSafe(wantLoop);
       setIsMeasured(true);
     }
 
-    const ro = new ResizeObserver(schedule);
+    const ro = new ResizeObserver(measureAndPosition);
 
-    ro.observe(track);
     if (viewportRef.current) {
       ro.observe(viewportRef.current);
     }
@@ -1863,16 +2187,16 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     }
 
     const vv = typeof window !== "undefined" ? window.visualViewport : null;
-    vv?.addEventListener("resize", schedule);
+    vv?.addEventListener("resize", measureAndPosition);
 
-    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("resize", measureAndPosition, { passive: true });
 
-    schedule();
+    measureAndPosition();
 
     return () => {
       ro.disconnect();
-      vv?.removeEventListener("resize", schedule);
-      window.removeEventListener("resize", schedule);
+      vv?.removeEventListener("resize", measureAndPosition);
+      window.removeEventListener("resize", measureAndPosition);
     };
   }, [
     cellCount,
@@ -2078,7 +2402,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         }
 
         if (alignSize <= 0) {
-          alignSize = page.els[0]?.getBoundingClientRect()[AX.sizeKey] ?? 0
+          alignSize = getLayoutMainSize(page.els[0] ?? null)
         }
 
         return {
@@ -2098,9 +2422,13 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         return
       }
 
-      const pagesAllowLoop = newSlides.length > 1
-
-      const nextWrap = !!loop && pagesAllowLoop && sliderWidth.current > cw
+      const baseSpan = data[data.length - 1]?.end ?? 0
+      const nextWrap = shouldEnableSliderLoop({
+        loop,
+        itemCount: newSlides.length,
+        span: baseSpan,
+        viewport: cw,
+      })
       if (nextWrap !== wrap) {
         setWrapSafe(nextWrap)
         return
@@ -2117,8 +2445,9 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       setSlidesState(newSlides)
 
       if (translateRef.current) {
-        if (nextWrap) reanchorToCurrentIndex()
-        else positionSlider(offsetLocationRef.current?.get() ?? xRef.current)
+        syncMotionGeometry({
+          reanchor: shouldReanchorOnResize,
+        })
       }
 
       setLayoutReady(true)
@@ -2141,14 +2470,22 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       }, 0)
     }
 
+    rebuildPagesRef.current = buildPages
     buildPages()
 
     return () => {
       canceled = true
+      if (rebuildPagesRef.current === buildPages) {
+        rebuildPagesRef.current = null
+      }
+      if (rebuildPagesRafRef.current != null) {
+        cancelAnimationFrame(rebuildPagesRafRef.current)
+        rebuildPagesRafRef.current = null
+      }
       if (retryTimer != null) window.clearTimeout(retryTimer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cellCount, children, clonedChildren, visibleImages, cellsPerSlide, geomKey, wrap]);
+  }, [cellCount, childrenKey, clonedChildren, visibleImages, cellsPerSlide, wrap]);
 
   useEffect(() => {
     if (!lazyLoad?.enabled) return;
@@ -2403,24 +2740,41 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     commitIndex(idxFromLoc, 'animated');
   }
 
-  function goToIndex(idx: number, opts: { preserveTiming?: boolean; fromUi?: boolean } = {}) {
-    const { preserveTiming = false, fromUi = false } = opts
-    if (!bodyRef.current || !targetRef.current) return
-    if (fromUi) beginUiNavWheelTakeover();
-    if (!preserveTiming) bodyRef.current.useBaseDuration().useBaseFriction()
-    scrollToIndex(idx)
-    const ch: any = indexChannel;
-
-    ch.emitBasePointerDown?.();
-  }
-
   function previousFromUi() {
     beginUiNavWheelTakeover();
+    const len = slides.current?.length ?? 0;
+    if (!len) {
+      previous();
+      return;
+    }
+    const cur = indexCurrentRef.current?.get() ?? selectedIndex.current ?? 0;
+    const target = wrap ? ((cur - 1) % len + len) % len : clampIndex(cur - 1, len);
+
+    if (startControlsCrossfadeToIndex(target)) {
+      const ch: any = indexChannel;
+      ch.emitBasePointerDown?.();
+      return;
+    }
+
     previous();
   }
 
   function nextFromUi() {
     beginUiNavWheelTakeover();
+    const len = slides.current?.length ?? 0;
+    if (!len) {
+      next();
+      return;
+    }
+    const cur = indexCurrentRef.current?.get() ?? selectedIndex.current ?? 0;
+    const target = wrap ? ((cur + 1) % len + len) % len : clampIndex(cur + 1, len);
+
+    if (startControlsCrossfadeToIndex(target)) {
+      const ch: any = indexChannel;
+      ch.emitBasePointerDown?.();
+      return;
+    }
+
     next();
   }
 
@@ -2480,20 +2834,41 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     const len = () => slides.current?.length ?? 0;
 
     const handle = (ev: any) => {
-      const L = len(); if (!L) return;
+      const L = len();
+      if (!L) return;
+
       const cur = selectedIndex.current;
       const signed = (n: number) => (isRtl ? -n : n);
 
-      if (ev.type === 'set') {
+      if (ev.type === "set") {
         const nextC = wrap ? ((ev.index % L) + L) % L : clampIndex(ev.index, L);
         if (nextC === cur) return;
+
+        const wantsCrossfade =
+          ev?.meta?.source === "thumbnail" &&
+          ev?.meta?.transition === "crossfade" &&
+          ev.mode !== "instant";
+
+        if (wantsCrossfade) {
+          goToIndex(nextC, {
+            fromUi: true,
+            preferCrossfade: true,
+            crossfade: {
+              durationMs: ev?.meta?.crossfade?.durationMs,
+              easing: ev?.meta?.crossfade?.easing,
+            },
+          });
+          return;
+        }
+
         scrollToIndex(nextC, ev.mode);
         return;
       }
 
-      if (ev.type === 'bump') {
+      if (ev.type === "bump") {
         const delta = signed(ev.delta | 0);
         if (!delta) return;
+
         if (!wrap) {
           const bounded = clampIndex(cur + delta, L);
           if (bounded === cur) return;
@@ -2505,18 +2880,18 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         return;
       }
 
-      if (typeof ev.index === 'number') {
+      if (typeof ev.index === "number") {
         const nextC = wrap ? ((ev.index % L) + L) % L : clampIndex(ev.index, L);
-        if (nextC !== cur) scrollToIndex(nextC, ev.mode || 'animated');
+        if (nextC !== cur) scrollToIndex(nextC, ev.mode || "animated");
       }
     };
 
-    if (typeof ch.onEvent === 'function') {
+    if (typeof ch.onEvent === "function") {
       return ch.onEvent(handle);
     } else {
       return ch.subscribe(() => {
         const { index, mode } = ch.get();
-        handle({ type: 'set', index, mode });
+        handle({ type: "set", index, mode });
       });
     }
   }, [indexChannel, wrap, isRtl]);
@@ -2584,11 +2959,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     indexCurrentRef.current = indexCurrent
     indexPreviousRef.current = indexPrevious
 
-    contentSizeRef.current = W
-    scrollContentSizeRef.current = W
-
-    const scrollSnaps = slides.current.map((_, i) => getSnapLocationForIndex(i))
-    scrollSnapsRef.current = scrollSnaps
+    const scrollSnaps = computeCurrentScrollSnaps()
+    const { minSnap, maxSnap } = applyScrollMetrics(scrollSnaps)
 
     const initialSnap = scrollSnaps[startIdx] ?? 0;
 
@@ -2602,31 +2974,6 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     positionSlider(initialSnap);
 
     commitIndex(startIdx, 'instant');
-
-    let minSnap = Infinity;
-    let maxSnap = -Infinity;
-    for (const s of scrollSnaps) {
-      if (s < minSnap) minSnap = s;
-      if (s > maxSnap) maxSnap = s;
-    }
-
-    loopLimitRef.current = wrap ? Limit(-W, 0) : Limit(minSnap, maxSnap)
-
-    const loopProgressOrigin = scrollSnaps[0] ?? 0
-    const baseLimit = wrap
-      ? createBaseLimit(loopProgressOrigin - W, loopProgressOrigin)
-      : createBaseLimit(minSnap, maxSnap)
-    scrollLimitRef.current = baseLimit
-
-    if (loopLimitRef.current) {
-      scrollTargetRef.current = ScrollTarget(
-        wrap,
-        scrollSnaps,
-        W,
-        loopLimitRef.current,
-        target
-      )
-    }
 
     function scrollTo(target: BaseTarget): void {
       const indexCurrent = indexCurrentRef.current
@@ -2684,16 +3031,6 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
     scrollToRef.current = baseScrollTo
 
-    const loLimit = Limit(-W, 0)
-    const looper = wrap && W > 0
-      ? ScrollLooper(
-          W,
-          loLimit,
-          locationRef.current!,
-          [locationRef.current!, previousLocationRef.current!, offsetLocationRef.current!, targetRef.current!]
-        )
-      : null
-
     const body = ScrollBody(location, offsetLocation, previousLocation, target, selectDuration, sliderFriction)
     bodyRef.current = body
     syncProgressUiInFrame();
@@ -2731,10 +3068,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
         bodyRef.current?.seek()
 
-        if (wrap && W > 0) {
+        if (wrap && (sliderWidth.current || 0) > 0) {
           const body = bodyRef.current!
           const dir = body.direction() || Math.sign(targetRef.current!.get() - locationRef.current!.get()) || 0
-          looper?.loop(dir)
+          looperRef.current?.loop(dir)
         }
 
         xRef.current = locationRef.current!.get()
@@ -2810,6 +3147,10 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       isMouse = isMouseEvt
       if (isMouseEvt && (evt as MouseEvent).button !== 0) return
 
+      if (crossfadeBusyRef.current) {
+        finishCrossfade();
+      }
+
       setDragCursor(true);
 
       const ch: any = indexChannel;
@@ -2829,11 +3170,18 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       startMain  = tracker.readPoint(evt as any, AX.main)
       startCross = tracker.readPoint(evt as any, AX.cross)
 
-      bodyRef.current!.useFriction(0).useDuration(0)
-      targetRef.current!.set(locationRef.current!.get())
+      if (canUseCrossfadeDrag()) {
+        finishCrossfade();
+        jumpTrackToIndexInstant(selectedIndex.current);
+      } else {
+        bodyRef.current!.useFriction(0).useDuration(0)
+        targetRef.current!.set(locationRef.current!.get())
+      }
 
       addDragEvents()
-      animRef.current?.start()
+      if (!canUseCrossfadeDrag()) {
+        animRef.current?.start()
+      }
     }
 
     function onMove(evt: PointerEvent) {
@@ -2864,6 +3212,15 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       sliderVelocity.current = deltaMain;
       dragMoveTime.current = performance.now();
 
+      const totalDeltaMain = (lastMain - startMain) * sign;
+
+      if (canUseCrossfadeDrag()) {
+        isScrolling.current = Math.abs(totalDeltaMain) > 0.5;
+        updateDragCrossfade(totalDeltaMain);
+        if ((evt as any).cancelable) evt.preventDefault?.()
+        return;
+      }
+
       bodyRef.current!.useFriction(0.3).useDuration(0.75);
       targetRef.current!.add(deltaMain);
 
@@ -2888,15 +3245,14 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         const img = target.closest('img') as HTMLImageElement | null
         if (img && enableFullscreen) {
           if (!expandableImageRefs) {
-            snapToIndex(selectedIndex.current);
             return;
           };
           const index = expandableImageRefs.current.findIndex((el) => el === img);
           if (index >= 0) handleImageClick(evt as any, index);
-          setTimeout(() => {
-            snapToIndex(selectedIndex.current);
-          }, 300)
           return;
+        }
+        if (!enableFullscreen) {
+          scrollToIndex(selectedIndex.current)
         }
         const clickedVideo = clickedVideoSurface(evt);
         if (clickedVideo != null && (clickedVideo.isClone || !isYouTubeVideoEvent(evt))) {
@@ -2911,6 +3267,17 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       }
 
       autoScrollPauseUntil.current = performance.now() + autoScrollPause;
+
+      if (canUseCrossfadeDrag()) {
+        const end = tracker.pointerUp(evt as any)
+        let rawForce = (AX.main === 'x' ? end.fx : end.fy)
+
+        if (isRtl) rawForce = -rawForce
+
+        isScrolling.current = false
+        settleDragCrossfade(rawForce)
+        return
+      }
 
       if (freeScroll === false) {
         const end = tracker.pointerUp(evt as any)
@@ -2991,6 +3358,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
           return forced.distance
         }
         
+        const isOutOfBounds = boundsRef.current?.passed()
+
         const force = allowedForce(boostedForce)
 
         const snapTarget = baseScrollTarget.byDistance(force, true);
@@ -2999,8 +3368,8 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         const baseFriction = sliderFriction
         const forceFactor = factorAbs(boostedForce, force)
         let speed = selectDuration
-        if (boundsRef.current?.passed()) {
-          speed = selectDuration + 10 * forceFactor
+        if (isOutOfBounds) {
+          speed = selectDuration + 5
         }
         const friction = baseFriction + forceFactor / 50
 
@@ -3012,9 +3381,6 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         const force = forceBoost(raw)
         const forceFactor = factorAbs(raw, force)
         let speed = freeScrollDuration
-        if (boundsRef.current?.passed()) {
-          speed = freeScrollDuration + 10 * forceFactor
-        }
         const friction = sliderFriction + forceFactor / 50
 
         body.useDuration(speed).useFriction(friction)
@@ -3101,13 +3467,13 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       root.removeEventListener('wheel', onWheel as any)
       animRef.current?.destroy()
       animRef.current = null
+      looperRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     slidesState.length,
     wrap,
     cellsPerSlide,
-    geomKey,
     layoutReady,
     isMeasured,
   ]);
@@ -3116,11 +3482,12 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     enabled: parallax,
     wrap,
     axisMain: AX.main,
-    isRtl,
     sliderRef: slider,
     sliderWidthRef: sliderWidth,
     offsetLocationRef,
     visibleImagesRef,
+    slidesRef: slides,
+    getCenterOffsetForIndex,
     slidesLen: slidesState.length,
     clonedLen: clonedChildren.length,
     isReady,
@@ -3141,6 +3508,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
   const { applyFadeTween } = useFadeEffect({
     enabled: fadeEffect,
+    minOpacity: fadeMinOpacity,
     wrap,
     sliderRef: slider,
     sliderWidthRef: sliderWidth,
@@ -3150,6 +3518,384 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     slidesLen: slidesState.length,
     clonedLen: clonedChildren.length,
   });
+
+  function readMotionState() {
+    return {
+      location: locationRef.current?.get() ?? xRef.current ?? 0,
+      previous: previousLocationRef.current?.get() ?? xRef.current ?? 0,
+      offset: offsetLocationRef.current?.get() ?? xRef.current ?? 0,
+      target: targetRef.current?.get() ?? xRef.current ?? 0,
+      x: xRef.current ?? 0,
+    };
+  }
+
+  function restoreMotionState(state: ReturnType<typeof readMotionState>) {
+    locationRef.current?.set(state.location);
+    previousLocationRef.current?.set(state.previous);
+    offsetLocationRef.current?.set(state.offset);
+    targetRef.current?.set(state.target);
+    xRef.current = state.x;
+
+    positionSlider(state.offset);
+    if (parallax) tweenParallax();
+    if (scaleEffect) applyPairScaleTween();
+    if (fadeEffect) applyFadeTween();
+  }
+
+  function renderTrackAtLocation(loc: number) {
+    locationRef.current?.set(loc);
+    previousLocationRef.current?.set(loc);
+    offsetLocationRef.current?.set(loc);
+    targetRef.current?.set(loc);
+    xRef.current = loc;
+
+    positionSlider(loc);
+    if (parallax) tweenParallax();
+    if (scaleEffect) applyPairScaleTween();
+    if (fadeEffect) applyFadeTween();
+  }
+
+  function cloneViewportSnapshot() {
+    const viewport = viewportRef.current;
+    if (!viewport) return null;
+
+    const clone = viewport.cloneNode(true) as HTMLDivElement;
+    clone.removeAttribute('data-rmg-part');
+    clone.setAttribute('aria-hidden', 'true');
+    clone.style.position = 'absolute';
+    clone.style.inset = '0';
+    clone.style.width = '100%';
+    clone.style.height = '100%';
+    clone.style.margin = '0';
+    clone.style.pointerEvents = 'none';
+    clone
+      .querySelectorAll('[data-rmg-slider-crossfade-layer="true"]')
+      .forEach((node) => node.remove());
+    clone.querySelectorAll<HTMLElement>('[id]').forEach((node) => {
+      node.removeAttribute('id');
+    });
+    return clone;
+  }
+
+  function captureViewportSnapshotForIndex(idx: number) {
+    const state = readMotionState();
+    const next = getSnapLocationForIndex(idx);
+
+    renderTrackAtLocation(next);
+    const snapshot = cloneViewportSnapshot();
+    restoreMotionState(state);
+
+    return snapshot;
+  }
+
+  function clearPendingCrossfadeWork() {
+    if (crossfadeRaf1Ref.current != null) {
+      cancelAnimationFrame(crossfadeRaf1Ref.current);
+      crossfadeRaf1Ref.current = null;
+    }
+    if (crossfadeRaf2Ref.current != null) {
+      cancelAnimationFrame(crossfadeRaf2Ref.current);
+      crossfadeRaf2Ref.current = null;
+    }
+    if (crossfadeTimeoutRef.current != null) {
+      window.clearTimeout(crossfadeTimeoutRef.current);
+      crossfadeTimeoutRef.current = null;
+    }
+  }
+
+  function clearCrossfadeSnapshots() {
+    crossfadeSourceRef.current?.replaceChildren();
+    crossfadeTargetRef.current?.replaceChildren();
+
+    if (crossfadeLayerRef.current) {
+      crossfadeLayerRef.current.style.opacity = '0';
+      crossfadeLayerRef.current.style.visibility = 'hidden';
+    }
+  }
+
+  function finishCrossfade() {
+    clearPendingCrossfadeWork();
+    crossfadeBusyRef.current = false;
+    dragCrossfadeStateRef.current = null;
+    clearCrossfadeSnapshots();
+  }
+
+  function setCrossfadeProgress(progress: number, transition = 'none') {
+    const clamped = clamp01(progress);
+
+    if (crossfadeLayerRef.current) {
+      crossfadeLayerRef.current.style.opacity = '1';
+      crossfadeLayerRef.current.style.visibility = 'visible';
+    }
+
+    if (crossfadeSourceRef.current) {
+      crossfadeSourceRef.current.style.transition = transition;
+      crossfadeSourceRef.current.style.opacity = String(1 - clamped);
+    }
+
+    if (crossfadeTargetRef.current) {
+      crossfadeTargetRef.current.style.transition = transition;
+      crossfadeTargetRef.current.style.opacity = String(clamped);
+    }
+  }
+
+  function mountCrossfadeSnapshots(sourceSnapshot: HTMLElement, targetSnapshot: HTMLElement) {
+    if (!crossfadeSourceRef.current || !crossfadeTargetRef.current) return false;
+
+    crossfadeSourceRef.current.replaceChildren(sourceSnapshot);
+    crossfadeTargetRef.current.replaceChildren(targetSnapshot);
+    setCrossfadeProgress(0, 'none');
+    return true;
+  }
+
+  function jumpTrackToIndexInstant(idx: number) {
+    const next = getSnapLocationForIndex(idx);
+
+    animRef.current?.stop();
+    isAnimatingRef.current = false;
+
+    renderTrackAtLocation(next);
+
+    bodyRef.current?.useDuration(0).useFriction(1).sync().resetVelocity();
+    syncProgressUiInFrame();
+  }
+
+  function jumpToIndexInstant(idx: number, mode: IndexMode = 'instant') {
+    const normalizedIdx = clampIndex(idx, slides.current?.length ?? 0);
+    const prev = selectedIndex.current;
+
+    jumpTrackToIndexInstant(normalizedIdx);
+
+    indexPreviousRef.current?.set(prev);
+    commitIndex(normalizedIdx, mode);
+    indexCurrentRef.current?.set(normalizedIdx);
+    selectedIndex.current = normalizedIdx;
+    updateControlsImperatively();
+  }
+
+  function prepareCrossfadeSnapshots(targetIdx: number) {
+    const sourceSnapshot = cloneViewportSnapshot();
+    const targetSnapshot = captureViewportSnapshotForIndex(targetIdx);
+
+    if (!sourceSnapshot || !targetSnapshot) return false;
+
+    return mountCrossfadeSnapshots(sourceSnapshot, targetSnapshot);
+  }
+
+  function startControlsCrossfadeToIndex(
+    requested: number,
+    opts?: {
+      enabled?: boolean;
+      durationMs?: number;
+      easing?: string;
+    }
+  ) {
+    const len = slides.current?.length ?? 0;
+    if (!len) return false;
+
+    const nextIdx = wrap ? ((requested % len) + len) % len : clampIndex(requested, len);
+    const fromIdx = wrap
+      ? ((selectedIndex.current % len) + len) % len
+      : clampIndex(selectedIndex.current, len);
+
+    if ((opts?.enabled ?? crossfadeControls) && crossfadeBusyRef.current) {
+      finishCrossfade();
+    }
+
+    if (
+      !shouldStartSliderControlsCrossfade({
+        enabled: opts?.enabled ?? crossfadeControls,
+        busy: crossfadeBusyRef.current,
+        fromIndex: fromIdx,
+        toIndex: nextIdx,
+      })
+    ) {
+      return false;
+    }
+
+    const durationMs = opts?.durationMs ?? resolvedCrossfadeDurationMs;
+    const easing = opts?.easing ?? resolvedCrossfadeEasing;
+
+    if (normalizedLazy.enabled) preloadCanonicalIndex(nextIdx);
+
+    finishCrossfade();
+    if (!prepareCrossfadeSnapshots(nextIdx)) return false;
+
+    const id = ++crossfadeSeqRef.current;
+    crossfadeBusyRef.current = true;
+    jumpToIndexInstant(nextIdx, "animated");
+
+    crossfadeRaf1Ref.current = requestAnimationFrame(() => {
+      crossfadeRaf1Ref.current = null;
+      if (crossfadeSeqRef.current !== id) return;
+
+      crossfadeRaf2Ref.current = requestAnimationFrame(() => {
+        crossfadeRaf2Ref.current = null;
+        if (crossfadeSeqRef.current !== id) return;
+
+        setCrossfadeProgress(1, `opacity ${durationMs}ms ${easing}`);
+
+        crossfadeTimeoutRef.current = window.setTimeout(() => {
+          if (crossfadeSeqRef.current !== id) return;
+          finishCrossfade();
+        }, durationMs + 48);
+      });
+    });
+
+    return true;
+  }
+
+  function goToIndex(
+    idx: number,
+    opts: {
+      preserveTiming?: boolean;
+      fromUi?: boolean;
+      preferCrossfade?: boolean;
+      crossfade?: {
+        durationMs?: number;
+        easing?: string;
+      };
+    } = {}
+  ) {
+    const {
+      preserveTiming = false,
+      fromUi = false,
+      preferCrossfade = false,
+      crossfade,
+    } = opts;
+
+    if (!bodyRef.current || !targetRef.current) return;
+
+    if (fromUi) {
+      beginUiNavWheelTakeover();
+
+      if (
+        preferCrossfade &&
+        startControlsCrossfadeToIndex(idx, {
+          enabled: true,
+          durationMs: crossfade?.durationMs,
+          easing: crossfade?.easing,
+        })
+      ) {
+        const ch: any = indexChannel;
+        ch.emitBasePointerDown?.();
+        return;
+      }
+    }
+
+    if (!preserveTiming) bodyRef.current.useBaseDuration().useBaseFriction();
+    scrollToIndex(idx);
+
+    const ch: any = indexChannel;
+    ch.emitBasePointerDown?.();
+  }
+
+  function canUseCrossfadeDrag() {
+    return !!crossfadeDrag && freeScroll !== true && (slides.current?.length ?? 0) > 1;
+  }
+
+  function updateDragCrossfade(delta: number) {
+    const len = slides.current?.length ?? 0;
+    if (!len) return false;
+
+    const sourceIndex = wrap
+      ? ((selectedIndex.current % len) + len) % len
+      : clampIndex(selectedIndex.current, len);
+    const targetIndex = resolveSliderCrossfadeDragTarget({
+      currentIndex: sourceIndex,
+      delta,
+      slideCount: len,
+      wrap,
+    });
+
+    if (targetIndex === sourceIndex) {
+      dragCrossfadeStateRef.current = null;
+      finishCrossfade();
+      return false;
+    }
+
+    if (normalizedLazy.enabled) preloadCanonicalIndex(targetIndex);
+
+    const current = dragCrossfadeStateRef.current;
+    const needsSnapshots =
+      !current ||
+      current.sourceIndex !== sourceIndex ||
+      current.targetIndex !== targetIndex;
+
+    if (needsSnapshots) {
+      finishCrossfade();
+
+      if (!prepareCrossfadeSnapshots(targetIndex)) return false;
+    }
+
+    const trackSize = Math.max(1, getViewportMainSize());
+    const progress = clamp01(Math.abs(delta) / trackSize);
+
+    crossfadeBusyRef.current = true;
+    dragCrossfadeStateRef.current = {
+      sourceIndex,
+      targetIndex,
+      progress,
+      delta,
+    };
+    setCrossfadeProgress(progress, 'none');
+    return true;
+  }
+
+  function settleDragCrossfade(force: number) {
+    const state = dragCrossfadeStateRef.current;
+    if (!state) {
+      finishCrossfade();
+      return false;
+    }
+
+    const shouldAdvance = shouldCompleteSliderDragCrossfade({
+      progress: state.progress,
+      force,
+      delta: state.delta,
+    });
+
+    if (!shouldAdvance) {
+      const id = ++crossfadeSeqRef.current;
+      crossfadeBusyRef.current = true;
+
+      setCrossfadeProgress(
+        0,
+        `opacity ${resolvedCrossfadeDurationMs}ms ${resolvedCrossfadeEasing}`
+      );
+
+      crossfadeTimeoutRef.current = window.setTimeout(() => {
+        if (crossfadeSeqRef.current !== id) return;
+        finishCrossfade();
+      }, resolvedCrossfadeDurationMs + 48);
+
+      return false;
+    }
+
+    const id = ++crossfadeSeqRef.current;
+    crossfadeBusyRef.current = true;
+    commitIndex(state.targetIndex, 'animated');
+    indexPreviousRef.current?.set(state.sourceIndex);
+    indexCurrentRef.current?.set(state.targetIndex);
+    selectedIndex.current = state.targetIndex;
+
+    setCrossfadeProgress(
+      1,
+      `opacity ${resolvedCrossfadeDurationMs}ms ${resolvedCrossfadeEasing}`
+    );
+
+    crossfadeTimeoutRef.current = window.setTimeout(() => {
+      if (crossfadeSeqRef.current !== id) return;
+      jumpTrackToIndexInstant(state.targetIndex);
+      updateControlsImperatively();
+      finishCrossfade();
+    }, resolvedCrossfadeDurationMs + 48);
+
+    return true;
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => finishCrossfade(), []);
 
   function cellsInViewInternal(): number[] {
     const L = layoutRef.current;
@@ -3265,6 +4011,14 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
         setIndex: (i: number, mode: IndexMode = 'animated') => {
           scrollToIndex(i, { jump: mode === 'animated' ? false : true });
+        },
+
+        setIndexFromUi: (i: number, opts) => {
+          goToIndex(i, {
+            fromUi: true,
+            preferCrossfade: !!opts?.crossfade,
+            crossfade: opts,
+          });
         },
 
         subscribeIndex: (fn: () => void) => indexChannel.subscribe(fn),
@@ -3411,7 +4165,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
           }
 
           // ✅ collapse snaps to a single snap at 0
-          scrollSnapsRef.current = [0];
+          applyScrollMetrics([0]);
 
           // ✅ force index back to 0 everywhere
           selectedIndex.current = 0;
@@ -3424,12 +4178,12 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
           povRef.current = PercentOfView(cw);
           boundsRef.current = ScrollBounds(
             limitRef.current,
-            offsetLocationRef.current!,
+            locationRef.current!,
             targetRef.current!,
             bodyRef.current!,
             povRef.current,
             selectDuration
-          );
+          )
 
           // ✅ kill motion + set canonical state to 0
           bodyRef.current.useDuration(0).useFriction(1);
@@ -3455,57 +4209,15 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
 
         // ✅ scrollable again: remove centering offset + restore bounds/limits
         trackCenterOffsetRef.current = 0;
-
-        const currentSnaps = scrollSnapsRef.current;
-        const min = currentSnaps.length ? Math.min(...currentSnaps) : -(Math.max(0, contentW - cw));
-        const max = currentSnaps.length ? Math.max(...currentSnaps) : 0;
-
-        // update limit used by wheel + bounds
-        limitRef.current = Limit(
-          Number.isFinite(min) ? min : 0,
-          Number.isFinite(max) ? max : 0
-        );
-
-        // update bounds helpers too (they depend on cw)
-        if (offsetLocationRef.current && targetRef.current && bodyRef.current) {
-          povRef.current = PercentOfView(cw);
-          boundsRef.current = ScrollBounds(
-            limitRef.current,
-            offsetLocationRef.current!,
-            targetRef.current!,
-            bodyRef.current!,
-            povRef.current,
-            selectDuration
-          );
-
-          // clamp current to new limits to keep state consistent
-          const cur = offsetLocationRef.current?.get() ?? xRef.current ?? 0;
-          const clamped = limitRef.current.constrain(cur);
-
-          locationRef.current?.set(clamped);
-          previousLocationRef.current?.set(clamped);
-          offsetLocationRef.current?.set(clamped);
-          targetRef.current?.set(clamped);
-          xRef.current = clamped;
-
-          positionSlider(clamped);
-          animRef.current?.start();
-        } else {
-          // engine not ready yet; just reposition safely
-          positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
-        }
-
-        updateControlsImperatively();
+        syncMotionGeometry({ reanchor: shouldReanchorOnResize });
         return;
       }
 
       // =========================
       // ✅ WRAP
       // =========================
-      limitRef.current = null;
-      povRef.current = null;
-      boundsRef.current = null;
-      reanchorToCurrentIndex();
+      trackCenterOffsetRef.current = 0;
+      syncMotionGeometry({ reanchor: true });
     });
 
     ro.observe(track);
@@ -3514,7 +4226,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     }
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wrap, layoutReady, isMeasured, isReady]);
+  }, [wrap, layoutReady, isMeasured, isReady, shouldReanchorOnResize]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3655,7 +4367,6 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
     return {
       renderIntro: src.renderIntro,
       staggerMs: src.staggerMs ?? 60,
-      transform: src.transform ?? '10px',
       durationMs: src.durationMs ?? 600,
       easing: src.easing ?? 'cubic-bezier(.2,.7,.2,1)',
     };
@@ -3702,6 +4413,41 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         >
           {introChildren}
         </div>
+        <div
+          ref={crossfadeLayerRef}
+          data-rmg-slider-crossfade-layer="true"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            // Keep the crossfade overlay above the track, but below arrows/dots.
+            zIndex: 1,
+            pointerEvents: 'none',
+            opacity: 0,
+            visibility: 'hidden',
+          }}
+        >
+          <div
+            ref={crossfadeSourceRef}
+            data-rmg-slider-crossfade-slide="source"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: 1,
+              willChange: 'opacity',
+            }}
+          />
+          <div
+            ref={crossfadeTargetRef}
+            data-rmg-slider-crossfade-slide="target"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: 0,
+              willChange: 'opacity',
+            }}
+          />
+        </div>
       </div>
       {dotsNode}
       {progressNode}
@@ -3739,8 +4485,7 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
       {baseCss && <style dangerouslySetInnerHTML={{ __html: baseCss }} />}
 
       <div
-        id={scopeId}
-        data-rmg-scope={scopeId}
+        data-rmg-slider-core-scope={scopeId}
         ref={sliderContainer}
         className={[
           styles.slider_container,
@@ -3751,7 +4496,6 @@ const SliderCore = forwardRef<SliderHandle, SliderProps>(function SliderCore(
         style={{
           position: 'relative',
           ['--rmg-intro-stagger' as any]: `${normalizedIntro.staggerMs}ms`,
-          ['--rmg-intro-offset' as any]: normalizedIntro.transform,
           ['--rmg-intro-duration' as any]: `${normalizedIntro.durationMs}ms`,
           ['--rmg-intro-easing' as any]: normalizedIntro.easing,
           zIndex: 1,

@@ -20,7 +20,8 @@ export function createEntriesMasonryMedia(args: {
       enabled: src?.enabled,
       force: src?.force,
       renderLoading: src?.renderLoading,
-      skeleton: src?.skeleton
+      skeleton: src?.skeleton,
+      timing: src?.timing,
     }
   }
 
@@ -28,7 +29,6 @@ export function createEntriesMasonryMedia(args: {
     return {
       renderIntro: src?.renderIntro,
       staggerMs: src?.staggerMs ?? 40,
-      transform: src?.transform ?? "translateY(10px) scale(0.99)",
       durationMs: src?.durationMs ?? 300,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
       staggerLimit: src?.staggerLimit,
@@ -54,6 +54,7 @@ export function createEntriesMasonryMedia(args: {
         loading={normalizedLoading}
         intro={normalizedIntro}
         skeletonCount={mediaNodes.length}
+        contentLayerMode="flow"
       />
     );
   }

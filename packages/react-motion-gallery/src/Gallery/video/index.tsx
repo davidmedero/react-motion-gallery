@@ -43,8 +43,8 @@ export type VideoProps = {
 };
 
 const baseWrap: React.CSSProperties = { width: '100%', height: '100%' };
-const PLAYER_FADE_MS = 220;
-const EMBED_POSTER_SHIELD_HIDE_DELAY_MS = 140;
+const PLAYER_FADE_MS = 280;
+const SPINNER_FADE_MS = 180;
 
 function useSlideRevealedGate() {
   const ref = React.useRef<HTMLDivElement | null>(null);
@@ -145,10 +145,12 @@ function resolveOptions(
       : resolved;
   }
 
+  const autoplay = (resolved as any).autoplay ?? false;
+
   const next = {
     ...(resolved as any),
-    autoplay: (resolved as any).autoplay ?? false,
-    preload: (resolved as any).preload ?? 'none',
+    autoplay,
+    preload: (resolved as any).preload ?? (autoplay ? 'auto' : 'none'),
   } as any;
 
   if (args.forceCrossorigin && next.crossorigin == null) {
@@ -174,18 +176,42 @@ function setPlayerVisible(playerEl: HTMLElement | null, visible: boolean) {
   playerEl.style.opacity = visible ? '1' : '0';
 }
 
-function showSpinner(spinnerEl: HTMLElement | null) {
+function clearTimer(timerRef: React.MutableRefObject<number | null>) {
+  if (timerRef.current == null) return;
+  window.clearTimeout(timerRef.current);
+  timerRef.current = null;
+}
+
+function showSpinner(
+  spinnerEl: HTMLElement | null,
+  hideTimerRef: React.MutableRefObject<number | null>
+) {
   if (!spinnerEl) return;
+  clearTimer(hideTimerRef);
   spinnerEl.style.setProperty('opacity', '1', 'important');
   spinnerEl.style.setProperty('visibility', 'visible', 'important');
   spinnerEl.style.setProperty('pointer-events', 'none', 'important');
 }
 
-function hideSpinner(spinnerEl: HTMLElement | null) {
-  if (!spinnerEl) return;
+function hideSpinner(
+  spinnerEl: HTMLElement | null,
+  hideTimerRef: React.MutableRefObject<number | null>,
+  onHidden?: () => void
+) {
+  if (!spinnerEl) {
+    onHidden?.();
+    return;
+  }
+
+  clearTimer(hideTimerRef);
   spinnerEl.style.setProperty('opacity', '0', 'important');
-  spinnerEl.style.setProperty('visibility', 'hidden', 'important');
   spinnerEl.style.setProperty('pointer-events', 'none', 'important');
+
+  hideTimerRef.current = window.setTimeout(() => {
+    hideTimerRef.current = null;
+    spinnerEl.style.setProperty('visibility', 'hidden', 'important');
+    onHidden?.();
+  }, SPINNER_FADE_MS);
 }
 
 function pauseApi(api: APITypes | null) {
@@ -411,10 +437,12 @@ export function Video(props: VideoProps) {
       forceCrossorigin: shouldForceSnapshotCrossorigin,
     });
   }, [index, props.options, props.src, shouldForceSnapshotCrossorigin]);
+  const autoplayEnabled = React.useMemo(() => Boolean((options as any)?.autoplay), [options]);
 
   const ratio = React.useMemo(() => parsePlyrRatio((options as any)?.ratio ?? null), [options]);
   const [posterShieldVisible, setPosterShieldVisible] = React.useState(shouldUsePosterShield);
   const posterHideTimeoutRef = React.useRef<number | null>(null);
+  const spinnerHideTimeoutRef = React.useRef<number | null>(null);
 
   const syncRuntimeRegistration = React.useCallback(
     (api: APITypes | null) => {
@@ -442,21 +470,25 @@ export function Video(props: VideoProps) {
   );
 
   const clearPosterHideTimeout = React.useCallback(() => {
-    if (posterHideTimeoutRef.current == null) return;
-    window.clearTimeout(posterHideTimeoutRef.current);
-    posterHideTimeoutRef.current = null;
+    clearTimer(posterHideTimeoutRef);
+  }, []);
+
+  const clearSpinnerHideTimeout = React.useCallback(() => {
+    clearTimer(spinnerHideTimeoutRef);
   }, []);
 
   React.useLayoutEffect(() => {
     clearPosterHideTimeout();
+    clearSpinnerHideTimeout();
     setPosterShieldVisible(shouldUsePosterShield);
-  }, [clearPosterHideTimeout, props.src, shouldUsePosterShield]);
+  }, [clearPosterHideTimeout, clearSpinnerHideTimeout, props.src, shouldUsePosterShield]);
 
   React.useEffect(() => {
     return () => {
       clearPosterHideTimeout();
+      clearSpinnerHideTimeout();
     };
-  }, [clearPosterHideTimeout]);
+  }, [clearPosterHideTimeout, clearSpinnerHideTimeout]);
 
   React.useEffect(() => {
     syncRuntimeRegistration(apiRef.current);
@@ -473,12 +505,18 @@ export function Video(props: VideoProps) {
   }, [gateRef, shouldRenderSpinner]);
 
   const syncSpinner = React.useCallback(
-    (wantVisible: boolean) => {
-      if (!shouldRenderSpinner) return;
+    (wantVisible: boolean, onHidden?: () => void) => {
+      if (!shouldRenderSpinner) {
+        if (!wantVisible) onHidden?.();
+        return;
+      }
       const el = getSpinnerEl();
-      if (!el) return;
-      if (wantVisible) showSpinner(el);
-      else hideSpinner(el);
+      if (!el) {
+        if (!wantVisible) onHidden?.();
+        return;
+      }
+      if (wantVisible) showSpinner(el, spinnerHideTimeoutRef);
+      else hideSpinner(el, spinnerHideTimeoutRef, onHidden);
     },
     [getSpinnerEl, shouldRenderSpinner]
   );
@@ -492,27 +530,70 @@ export function Video(props: VideoProps) {
     [isClone, isFullscreenOpen, isFullscreenOpenRef]
   );
 
+  const tryAutoplay = React.useCallback(
+    (api: APITypes | null = apiRef.current) => {
+      if (!autoplayEnabled) return;
+      if (isClone) return;
+      if (!visibleRef.current) return;
+      if (isFullscreenOpenRef?.current ?? isFullscreenOpen) return;
+
+      const plyr = (api as any)?.plyr ?? api;
+      if (!plyr) return;
+
+      try {
+        const muted = (options as any)?.muted;
+        if (typeof muted === 'boolean') {
+          plyr.muted = muted;
+        }
+      } catch {}
+
+      try {
+        const media: HTMLMediaElement | undefined = plyr?.media;
+        if (media) {
+          media.autoplay = true;
+          media.setAttribute('autoplay', '');
+
+          if ((options as any)?.muted) {
+            media.muted = true;
+            media.setAttribute('muted', '');
+          }
+
+          if ((options as any)?.playsinline !== false) {
+            (media as HTMLVideoElement).playsInline = true;
+            media.setAttribute('playsinline', '');
+            media.setAttribute('webkit-playsinline', '');
+          }
+        }
+      } catch {}
+
+      requestAnimationFrame(() => {
+        try {
+          const result = plyr.play?.();
+          if (result && typeof result.catch === 'function') {
+            result.catch(() => {});
+          }
+        } catch {}
+      });
+    },
+    [autoplayEnabled, isClone, isFullscreenOpen, isFullscreenOpenRef, options]
+  );
+
   const markReady = React.useCallback(() => {
     if (readyRef.current) return;
     readyRef.current = true;
 
     requestAnimationFrame(() => {
-      syncSpinner(false);
-      setPlayerVisible(playerWrapRef.current, true);
-
       clearPosterHideTimeout();
-      if (shouldUsePosterShield) {
-        posterHideTimeoutRef.current = window.setTimeout(() => {
-          posterHideTimeoutRef.current = null;
+      syncSpinner(false, () => {
+        requestAnimationFrame(() => {
+          setPlayerVisible(playerWrapRef.current, true);
           setPosterShieldVisible(false);
-        }, EMBED_POSTER_SHIELD_HIDE_DELAY_MS);
-      } else {
-        setPosterShieldVisible(false);
-      }
-
-      pauseForFullscreenOpen();
+          pauseForFullscreenOpen();
+          tryAutoplay();
+        });
+      });
     });
-  }, [clearPosterHideTimeout, pauseForFullscreenOpen, shouldUsePosterShield, syncSpinner]);
+  }, [clearPosterHideTimeout, pauseForFullscreenOpen, syncSpinner, tryAutoplay]);
 
   React.useEffect(() => {
     if (!isFullscreenOpen) return;
@@ -700,6 +781,7 @@ export function Video(props: VideoProps) {
           requestAnimationFrame(() => {
             setPlayerVisible(playerWrapRef.current, readyRef.current);
             syncSpinner(false);
+            if (readyRef.current) tryAutoplay();
           });
           return;
         }
@@ -717,6 +799,7 @@ export function Video(props: VideoProps) {
         requestAnimationFrame(() => {
           setPlayerVisible(playerWrapRef.current, readyRef.current);
           syncSpinner(!readyRef.current);
+          if (readyRef.current) tryAutoplay();
         });
       },
       {
@@ -728,7 +811,7 @@ export function Video(props: VideoProps) {
 
     io.observe(el);
     return () => io.disconnect();
-  }, [gateRef, viewportRootRef, revealed, isClone, syncSpinner, lazyEnabled, core]);
+  }, [gateRef, viewportRootRef, revealed, isClone, syncSpinner, lazyEnabled, core, tryAutoplay]);
 
   React.useEffect(() => {
     if (isClone) return;

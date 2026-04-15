@@ -14,18 +14,153 @@ function isImageItem(item: MediaItem | undefined | null): item is Extract<MediaI
   return !!item && (item as any).kind === "image";
 }
 
-function isScalePossible(item: MediaItem | undefined | null, img: HTMLImageElement | null) {
-  return isImageItem(item) && !!img;
+function resolveRegisteredExpandableImage(slot: unknown): HTMLImageElement | null {
+  if (!slot) return null;
+  if (slot instanceof HTMLImageElement) return slot;
+  if (slot instanceof HTMLElement) {
+    return slot.querySelector("img") as HTMLImageElement | null;
+  }
+  return null;
+}
+
+function resolveRegisteredLayoutlessHost(slot: unknown): HTMLElement | null {
+  if (!slot) return null;
+  if (slot instanceof HTMLElement) return slot;
+  return null;
+}
+
+function isLayoutlessIgnoredNode(node: Element | null) {
+  return !!node?.closest('[data-rmg-fs-root="true"]');
+}
+
+function resolveLayoutlessSurfaceHost(
+  mediaEl: HTMLElement,
+  root: HTMLElement
+): HTMLElement {
+  const semanticHost = mediaEl.closest(
+    '[data-rmg-layoutless-item], article, figure, section, button, a[href], [role="button"], li'
+  ) as HTMLElement | null;
+
+  if (semanticHost && root.contains(semanticHost) && !isLayoutlessIgnoredNode(semanticHost)) {
+    return semanticHost;
+  }
+
+  const countOwnedMedia = (node: HTMLElement) =>
+    Array.from(node.querySelectorAll<HTMLElement>("img, video")).filter(
+      (child) => !isLayoutlessIgnoredNode(child)
+    ).length;
+
+  let candidate = mediaEl;
+  let current = mediaEl.parentElement;
+  while (current && current !== root) {
+    if (countOwnedMedia(current) > 1) return candidate;
+    candidate = current;
+    current = current.parentElement;
+  }
+
+  return candidate;
+}
+
+type LayoutlessTarget = {
+  host: HTMLElement | null;
+  image: HTMLImageElement | null;
+  media: HTMLElement | null;
+};
+
+function collectLayoutlessTargets(root: HTMLElement | null): LayoutlessTarget[] {
+  if (!root) return [];
+
+  const mediaNodes = Array.from(root.querySelectorAll<HTMLElement>("img, video")).filter(
+    (node) => !isLayoutlessIgnoredNode(node)
+  );
+
+  const seenHosts = new Set<HTMLElement>();
+  const targets: LayoutlessTarget[] = [];
+
+  for (const mediaNode of mediaNodes) {
+    const host = resolveLayoutlessSurfaceHost(mediaNode, root);
+    if (seenHosts.has(host)) continue;
+    seenHosts.add(host);
+
+    const image =
+      host instanceof HTMLImageElement
+        ? host
+        : (host.querySelector("img") as HTMLImageElement | null);
+
+    const media =
+      image ??
+      (host instanceof HTMLVideoElement
+        ? host
+        : (host.querySelector("video") as HTMLVideoElement | null)) ??
+      host;
+
+    targets.push({ host, image, media });
+  }
+
+  return targets;
+}
+
+function resolveOriginFromEvent(event: Event | undefined): {
+  host: HTMLElement | HTMLImageElement | null;
+  image: HTMLImageElement | null;
+} {
+  if (!event) return { host: null, image: null };
+
+  const eventLike = event as Event & {
+    nativeEvent?: Event;
+    composedPath?: () => EventTarget[];
+    currentTarget?: EventTarget | null;
+    target?: EventTarget | null;
+  };
+
+  const nativeEvent = (eventLike.nativeEvent ?? eventLike) as Event & {
+    composedPath?: () => EventTarget[];
+    currentTarget?: EventTarget | null;
+    target?: EventTarget | null;
+  };
+
+  const candidates: EventTarget[] = [];
+
+  const pushCandidate = (candidate: EventTarget | null | undefined) => {
+    if (!candidate || candidates.includes(candidate)) return;
+    candidates.push(candidate);
+  };
+
+  pushCandidate(eventLike.currentTarget);
+  pushCandidate(nativeEvent.currentTarget);
+  pushCandidate(eventLike.target);
+  pushCandidate(nativeEvent.target);
+
+  const path =
+    nativeEvent.composedPath?.() ??
+    eventLike.composedPath?.() ??
+    [];
+
+  path.forEach((candidate) => pushCandidate(candidate));
+
+  for (const candidate of candidates) {
+    if (!(candidate instanceof HTMLElement)) continue;
+
+    if (candidate instanceof HTMLImageElement) {
+      return { host: candidate, image: candidate };
+    }
+
+    const img = candidate.querySelector("img") as HTMLImageElement | null;
+    if (img) {
+      return { host: candidate, image: img };
+    }
+  }
+
+  return { host: null, image: null };
 }
 
 function resolveOpenMethod(
   item: MediaItem | undefined | null,
-  img: HTMLImageElement | null,
   requested: FullscreenOpenMethod | undefined
 ): FullscreenOpenMethod {
   const want = requested ?? "scale";
   if (want === "fade") return "fade";
-  return isScalePossible(item, img) ? "scale" : "fade";
+  return isImageItem(item) ? "scale" : "fade";
 }
 
 function createSub<T>() {
@@ -75,7 +210,8 @@ export type FullscreenSourceAdapter = {
 };
 
 export type GalleryCore = {
-  layout: CoreLayout;
+  layout: CoreLayout | null;
+  layoutlessRootRef: React.RefObject<HTMLDivElement | null>;
   effectiveBreakpoints: BreakpointMap;
   cellsState: Cell[];
   cellsRef: React.RefObject<Cell[]>;
@@ -93,6 +229,8 @@ export type GalleryCore = {
     emit(v: FullscreenOpenRequest): void;
     subscribe(fn: (v: FullscreenOpenRequest) => void): () => void;
   };
+  fsEnabled: boolean;
+  setFsEnabled: (enabled: boolean) => void;
   isFullscreenOpen: boolean;
   isFullscreenOpenRef: React.RefObject<boolean>;
   setFullscreenOpen: (open: boolean) => void;
@@ -110,12 +248,13 @@ export type GalleryCore = {
     subscribe(fn: (v: FsVisibleIndexEvent) => void): () => void;
   };
   notifyFsVisibleIndex: (index: number) => void;
+  resolveLayoutlessTarget: (index: number) => LayoutlessTarget;
   openFullscreenAt: (args: OpenFullscreenAtArgs) => void;
 };
 
 export type GalleryCoreProps = {
   children?: React.ReactNode;
-  layout: CoreLayout;
+  layout?: CoreLayout;
   breakpoints?: BreakpointMap;
   fullscreenItems?: MediaItem[] | string[];
   nodes?: React.ReactNode | React.ReactNode[];
@@ -139,9 +278,11 @@ function buildCellsFromNodes(
 }
 
 function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
-  const { layout, breakpoints, fullscreenItems, nodes } = props;
+  const { layout = null, breakpoints, fullscreenItems, nodes } = props;
 
   const expandableImageRefs = React.useRef<Array<HTMLImageElement | null>>([]);
+  const layoutlessRootRef = React.useRef<HTMLDivElement | null>(null);
+  const layoutlessSurfaceRefs = React.useRef<Array<HTMLElement | HTMLImageElement | null>>([]);
 
   const registerExpandableImage = React.useCallback((index: number, node: HTMLElement | null) => {
     const prev = expandableImageRefs.current[index];
@@ -183,6 +324,11 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
 
   const idSeqRef = React.useRef(0);
   const newId = React.useCallback(() => `rmg-${++idSeqRef.current}`, []);
+
+  const [fsEnabled, _setFsEnabled] = React.useState(false);
+  const setFsEnabled = React.useCallback((enabled: boolean) => {
+    _setFsEnabled(enabled);
+  }, []);
 
   const [isFullscreenOpen, _setIsFullscreenOpen] = React.useState(false);
   const isFullscreenOpenRef = React.useRef(false);
@@ -283,26 +429,75 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     [fsOpenSub]
   );
 
+  const resolveLayoutlessTarget = React.useCallback(
+    (index: number): LayoutlessTarget => {
+      const registeredHost = resolveRegisteredLayoutlessHost(layoutlessSurfaceRefs.current[index] ?? null);
+      const registeredImage = resolveRegisteredExpandableImage(
+        layoutlessSurfaceRefs.current[index] ?? null
+      );
+
+      if (registeredHost || registeredImage) {
+        return {
+          host: registeredHost ?? registeredImage,
+          image: registeredImage,
+          media: registeredImage ?? registeredHost,
+        };
+      }
+
+      const target = collectLayoutlessTargets(layoutlessRootRef.current)[index] ?? null;
+
+      if (target?.host || target?.image || target?.media) {
+        if (target.host) {
+          layoutlessSurfaceRefs.current[index] = target.host;
+        } else if (target.image) {
+          layoutlessSurfaceRefs.current[index] = target.image;
+        }
+        return target;
+      }
+
+      return {
+        host: null,
+        image: null,
+        media: null,
+      };
+    },
+    []
+  );
+
   const openFullscreenAt = React.useCallback(
     (args: OpenFullscreenAtArgs) => {
       const index = clamp(args.index | 0, 0, Math.max(0, normalizedItems.length - 1));
       const item = normalizedItems[index] ?? null;
 
-      const img = expandableImageRefs.current[index] ?? null;
+      const originFromEvent = resolveOriginFromEvent(args.event);
+      const layoutlessTarget = resolveLayoutlessTarget(index);
+      const img =
+        originFromEvent.image ??
+        layoutlessTarget.image ??
+        resolveRegisteredExpandableImage(expandableImageRefs.current[index] ?? null);
+
+      if (originFromEvent.host) {
+        layoutlessSurfaceRefs.current[index] = originFromEvent.host;
+      } else if (layoutlessTarget.host) {
+        layoutlessSurfaceRefs.current[index] = layoutlessTarget.host;
+      }
 
       const requestedMethod = args.method;
-      const method = resolveOpenMethod(item, img, requestedMethod);
+      const method = resolveOpenMethod(item, requestedMethod);
 
       const effectiveImage = method === "scale" ? img : null;
 
-      const sourceForLayout: FullscreenSource =
+      const sourceForLayout: FullscreenSource | null =
         layout === "slider" ? "slider" :
         layout === "grid" ? "grid" :
         layout === "masonry" ? "masonry" :
-        "entries";
+        layout === "entries" ? "entries" :
+        null;
 
-      const adapter = getFullscreenAdapter(sourceForLayout);
-      adapter?.syncBeforeOpen?.(index);
+      if (sourceForLayout) {
+        const adapter = getFullscreenAdapter(sourceForLayout);
+        adapter?.syncBeforeOpen?.(index);
+      }
 
       requestFullscreenOpen({
         source: "api",
@@ -313,7 +508,14 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
         event: args.event,
       });
     },
-    [normalizedItems, expandableImageRefs, layout, getFullscreenAdapter, requestFullscreenOpen]
+    [
+      normalizedItems,
+      expandableImageRefs,
+      layout,
+      getFullscreenAdapter,
+      requestFullscreenOpen,
+      resolveLayoutlessTarget,
+    ]
   );
 
   const baseVisibleSub = React.useMemo(() => createSub<BaseVisibleIndexEvent>(), []);
@@ -333,6 +535,7 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
   const core = React.useMemo<GalleryCore>(() => {
     return {
       layout,
+      layoutlessRootRef,
       effectiveBreakpoints,
       cellsState,
       cellsRef,
@@ -348,6 +551,8 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
       requestFullscreenOpen,
       openFullscreenAt,
       fsOpenSub,
+      fsEnabled,
+      setFsEnabled,
       isFullscreenOpen,
       isFullscreenOpenRef,
       setFullscreenOpen,
@@ -359,9 +564,11 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
       notifyBaseVisibleIndex,
       fsVisibleSub,
       notifyFsVisibleIndex,
+      resolveLayoutlessTarget,
     };
   }, [
     layout,
+    layoutlessRootRef,
     effectiveBreakpoints,
     cellsState,
     normalizedItems,
@@ -378,6 +585,8 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     requestFullscreenOpen,
     openFullscreenAt,
     fsOpenSub,
+    fsEnabled,
+    setFsEnabled,
     isFullscreenOpenRef,
     setFullscreenOpen,
     registerFullscreenAdapter,
@@ -388,6 +597,7 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     notifyBaseVisibleIndex,
     fsVisibleSub,
     notifyFsVisibleIndex,
+    resolveLayoutlessTarget,
   ]);
 
   return core;
@@ -397,7 +607,17 @@ const GalleryCoreContext = React.createContext<GalleryCore | null>(null);
 
 export function GalleryCoreProvider(props: GalleryCoreProps) {
   const core = useGalleryCoreInternal(props);
-  return <GalleryCoreContext.Provider value={core}>{props.children}</GalleryCoreContext.Provider>;
+  return (
+    <GalleryCoreContext.Provider value={core}>
+      {props.layout == null ? (
+        <div ref={core.layoutlessRootRef} data-rmg-layoutless-root="true" style={{ display: "contents" }}>
+          {props.children}
+        </div>
+      ) : (
+        props.children
+      )}
+    </GalleryCoreContext.Provider>
+  );
 }
 
 export const GalleryCore = GalleryCoreProvider;

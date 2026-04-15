@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import type { BreakpointMap } from '../shared/responsive';
-import type { ThumbnailPosition } from '../thumbnails/types';
+import type { ThumbnailCrossfadeOptions, ThumbnailPosition } from '../thumbnails/types';
 import type { FullscreenSliderSub } from '../fullscreen/fullscreenSliderSub';
 
 type ArrowRenderArgs = {
@@ -73,4 +73,5 @@ export type FullscreenThumbnailSliderProps = {
   renderArrows?: (args: ArrowRenderArgs & { dir: 'prev' | 'next' }) => React.ReactNode;
   renderPrevArrow?: (args: ArrowRenderArgs) => React.ReactNode;
   renderNextArrow?: (args: ArrowRenderArgs) => React.ReactNode;
+  thumbnailCrossfade?: ThumbnailCrossfadeOptions;
 };

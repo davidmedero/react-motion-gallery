@@ -7,6 +7,7 @@ export { default as Grid } from "./Gallery/grid";
 export { default as Masonry } from "./Gallery/masonry";
 export { ThumbnailSlider } from "./Gallery/thumbnails";
 export { Video } from "./Gallery/video";
+export { ZoomPanImage } from "./Gallery/zoomPan";
 export { createSliderIndexChannel } from "./Gallery/slider/sliderSub";
 export { createThumbnailSyncBridge } from "./Gallery/thumbnails/syncBridge";
 
@@ -18,7 +19,14 @@ export type { GalleryCoreProps, CoreLayout } from "./Gallery/core";
 
 export type { SliderOptions, SliderHandle, ResponsiveHeightRule } from "./Gallery/slider/types";
 export type { SliderIndexChannel } from "./Gallery/slider/sliderSub";
-export type { GridOptions, GridLazyLoadOptions } from "./Gallery/grid/types";
+export type {
+  GridItemProps,
+  GridLazyLoadOptions,
+  GridOptions,
+  GridSpan,
+  ResponsiveGridSpan,
+  ResponsiveGridTemplate,
+} from "./Gallery/grid/types";
 export type { MasonryOptions, MasonryLazyLoadOptions } from "./Gallery/masonry/types";
 export type { EntriesOptions, MediaEntryLink, SlideOwner } from "./Gallery/entries";
 export type { FullscreenOptions, FsCaptionPlacement, FsIntroRequest } from "./Gallery/fullscreen/types";
@@ -45,6 +53,7 @@ export type {
   RmgVideoLazyLoadOptions,
   VideoProps,
 } from "./Gallery/video";
+export type { ZoomPanImageProps, ZoomPanOptions } from "./Gallery/zoomPan/types";
 
 export { toMediaItems } from "./Gallery/shared/types/media";
 export { BREAKPOINT_MAP } from "./Gallery/shared/responsive";
@@ -55,3 +64,4 @@ export { DEFAULT_MASONRY } from "./Gallery/masonry/defaults";
 export { DEFAULT_ENTRIES } from "./Gallery/entries";
 export { DEFAULT_FULLSCREEN } from "./Gallery/fullscreen/defaults";
 export { DEFAULT_THUMBNAILS } from "./Gallery/thumbnails/defaults";
+export { DEFAULT_ZOOM_PAN } from "./Gallery/zoomPan/defaults";

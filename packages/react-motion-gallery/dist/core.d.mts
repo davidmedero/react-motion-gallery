@@ -1,13 +1,20 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
-import { a as BreakpointMap } from './responsive-CvE5dTnP.mjs';
-import { M as MediaItem } from './media-moIXOhT1.mjs';
-import { a as SliderHandle } from './types-fFyCx1KQ.mjs';
-import { M as MediaEntryLink } from './types-D_6Ksp_r.mjs';
-import { F as FullscreenOpenRequest, O as OpenFullscreenAtArgs } from './types-tb9Qf2Mj.mjs';
-import './elements-24CTbRWj.mjs';
-import './sliderSub-DDPjywVp.mjs';
+import { c as BreakpointMap, f as FullscreenOpenRequest, O as OpenFullscreenAtArgs } from './responsive-D_xhZmVI.mjs';
+import { M as MediaItem } from './plyrTypes-Cq4C3ul5.mjs';
+import { a as SliderHandle } from './types-DY058l5M.mjs';
+import { M as MediaEntryLink } from './types-_1D0QtfD.mjs';
+import './types-Dhh8xfHo.mjs';
+import 'plyr';
+import './controls-SpWg1Kgt.mjs';
+import './text-Cl2tR8oO.mjs';
+import './sliderSub-Bo6Y8as_.mjs';
 
+type LayoutlessTarget = {
+    host: HTMLElement | null;
+    image: HTMLImageElement | null;
+    media: HTMLElement | null;
+};
 type CoreLayout = "slider" | "grid" | "masonry" | "entries";
 type Cell = {
     id: string;
@@ -37,14 +44,15 @@ type FullscreenSourceAdapter = {
 };
 type GalleryCoreProps = {
     children?: React.ReactNode;
-    layout: CoreLayout;
+    layout?: CoreLayout;
     breakpoints?: BreakpointMap;
     fullscreenItems?: MediaItem[] | string[];
     nodes?: React.ReactNode | React.ReactNode[];
 };
 declare function GalleryCoreProvider(props: GalleryCoreProps): react_jsx_runtime.JSX.Element;
 type GalleryCore = {
-    layout: CoreLayout;
+    layout: CoreLayout | null;
+    layoutlessRootRef: React.RefObject<HTMLDivElement | null>;
     effectiveBreakpoints: BreakpointMap;
     cellsState: Cell[];
     cellsRef: React.RefObject<Cell[]>;
@@ -62,6 +70,8 @@ type GalleryCore = {
         emit(v: FullscreenOpenRequest): void;
         subscribe(fn: (v: FullscreenOpenRequest) => void): () => void;
     };
+    fsEnabled: boolean;
+    setFsEnabled: (enabled: boolean) => void;
     isFullscreenOpen: boolean;
     isFullscreenOpenRef: React.RefObject<boolean>;
     setFullscreenOpen: (open: boolean) => void;
@@ -79,6 +89,7 @@ type GalleryCore = {
         subscribe(fn: (v: FsVisibleIndexEvent) => void): () => void;
     };
     notifyFsVisibleIndex: (index: number) => void;
+    resolveLayoutlessTarget: (index: number) => LayoutlessTarget;
     openFullscreenAt: (args: OpenFullscreenAtArgs) => void;
 };
 declare const GalleryCore: typeof GalleryCoreProvider;

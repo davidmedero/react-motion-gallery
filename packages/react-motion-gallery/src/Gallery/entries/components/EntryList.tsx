@@ -1,6 +1,7 @@
 import * as React from "react";
 import styles from "../Entries.module.css";
 import type { EntriesOptions } from "../types";
+import type { BreakpointMap } from "../../shared/responsive";
 import { useEntryInView } from "../hooks/useEntryInView";
 import { useEntryDecodeReady } from "../hooks/useEntryDecodeReady";
 import { usePrefersReducedMotion } from "../../shared/hooks/usePrefersReducedMotion";
@@ -24,6 +25,7 @@ type Props = {
     mediaNodes: React.ReactNode[];
     entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
   }) => React.ReactNode;
+  breakpoints: BreakpointMap;
   registerExpandableImage?: (globalIndex: number, node: HTMLImageElement | HTMLVideoElement | null) => void;
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
 };
@@ -36,6 +38,7 @@ export function EntryList({
   entryFlatIndexRef,
   nodeFromMedia,
   renderMediaContainer,
+  breakpoints,
   registerExpandableImage,
   entrySliderRefs,
 }: Props) {
@@ -295,8 +298,11 @@ export function EntryList({
                 className={[styles.entrySkeletonWrap, skelWrap?.className].filter(Boolean).join(" ")}
                 style={skelWrap?.style}
                 aria-hidden={showSkeleton ? undefined : true}
+                data-rmg-entry-skeleton
               >
-                {skeletonOverride ?? <EntrySkeletonCard spec={spec} />}
+                {skeletonOverride ?? (
+                  <EntrySkeletonCard spec={spec} breakpoints={breakpoints} />
+                )}
               </div>
             ) : null}
 

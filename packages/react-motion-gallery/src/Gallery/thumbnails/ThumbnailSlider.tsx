@@ -9,7 +9,6 @@ import {
   isValidElement,
   useCallback,
   useEffect,
-  useId,
   useMemo,
   useRef,
   useState,
@@ -26,7 +25,7 @@ import { ScrollBounds, ScrollBoundsType, PercentOfView, PercentOfViewType } from
 import { BaseTarget, factorAbs, mathSign, ScrollTarget, ScrollTargetType } from '../shared/motion/scrollTarget'
 import { Animations, AnimationsType } from '../shared/motion/animations'
 import { EventStore } from '../shared/motion/eventStore'
-import { ThumbnailIntroOptions, ThumbnailLoadingOptions, ThumbnailPosition } from './types'
+import { ThumbnailCrossfadeOptions, ThumbnailIntroOptions, ThumbnailLoadingOptions, ThumbnailPosition, ThumbnailSelectMeta } from './types'
 import { ArrowRenderArgs } from '../shared/types/controls'
 import { BreakpointMap } from '../shared/responsive'
 import { Counter, CounterType } from '../shared/motion/counter'
@@ -38,6 +37,12 @@ import { Axis, AxisType, AXSpec } from '../shared/types/axis'
 import { Translate } from '../shared/motion/translate'
 import { useWheelLock } from '../shared/hooks/useWheelLock'
 import { useInViewOnce } from '../shared/hooks/useInViewOnce'
+import { buildStableScopeId } from '../shared/stableScope'
+import {
+  roundSliderLayoutMetric,
+  resolveSliderContentSpan,
+  shouldEnableSliderLoop,
+} from '../slider/layoutStability'
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n))
 
@@ -72,7 +77,7 @@ interface ThumbnailSliderProps {
   thumbnailWidth?: number | string
   thumbnailHeight?: number | string
   indexChannel?: ReturnType<typeof createIndexChannel>
-  onSelectThumb?: (index: number) => void
+  onSelectThumb?: (index: number, meta?: ThumbnailSelectMeta) => void;
   thumbnailsCenter?: boolean
   thumbnailsContainerWidth?: number | string
   thumbnailsContainerHeight?: number | string
@@ -108,6 +113,7 @@ interface ThumbnailSliderProps {
   renderPrevArrow?: (args: ArrowRenderArgs) => React.ReactNode;
   renderNextArrow?: (args: ArrowRenderArgs) => React.ReactNode;
   onReadyChange?: (ready: boolean) => void;
+  crossfade?: ThumbnailCrossfadeOptions;
 }
 
 export default function ThumbnailSlider({
@@ -154,6 +160,7 @@ export default function ThumbnailSlider({
   renderPrevArrow,
   renderNextArrow,
   onReadyChange,
+  crossfade
 }: ThumbnailSliderProps) {
   const isHorizontal = position === 'top' || position === 'bottom'
   const axis = Axis(isHorizontal);
@@ -161,7 +168,17 @@ export default function ThumbnailSlider({
   const sign = isHorizontal && isRtl ? -1 : 1;
   const containerRef = useRef<HTMLDivElement | null>(null)
   const trackRef = useRef<HTMLDivElement | null>(null)
-  const scopeId = useId().replace(/:/g, "-");
+  const scopeId = useMemo(
+    () =>
+      buildStableScopeId('rmg-thumb-core-', {
+        direction,
+        position,
+        thumbSize,
+        thumbnailHeight,
+        thumbnailWidth,
+      }),
+    [direction, position, thumbSize, thumbnailHeight, thumbnailWidth]
+  );
   const channelRef = useRef(indexChannel ?? createIndexChannel())
   const [thumbLong, setThumbLong] = useState<number>(thumbSize ?? 0)
   const [thumbCross, setThumbCross] = useState<number>(0)
@@ -224,16 +241,17 @@ export default function ThumbnailSlider({
   const [clonedChildren, setClonedChildren] = useState<ReactElement<any>[]>([]);
   const lastCloneSigRef = useRef<string>('');
   const slidesRef = useRef<Slide[]>([])
-  const [slidesState, setSlidesState] = useState<Slide[]>([])
   const [isMeasured, setIsMeasured] = useState(false)
   const cellToSlideRef = useRef<number[]>([])
   const sliderWidth = useRef(0)
   const [layoutReady, setLayoutReady] = useState(false)
+  const layoutReadyRef = useRef(false)
   const prevActiveRef = useRef<number>(-1)
   const draggingAttr = 'data-rmg-drag';
   const activePointerIdRef = useRef<number | null>(null);
   const guardsStoreRef = useRef<ReturnType<typeof EventStore> | null>(null);
   const muteChannelRef = useRef(false);
+  const onReadyChangeRef = useRef(onReadyChange);
 
   const AX: AXSpec = useMemo(() => {
     const main = isHorizontal ? 'x' : 'y';
@@ -266,8 +284,13 @@ export default function ThumbnailSlider({
   } = useWheelLock()
 
   useEffect(() => {
-    onReadyChange?.(isReady);
-  }, [isReady, onReadyChange]);
+    onReadyChangeRef.current = onReadyChange;
+  }, [onReadyChange]);
+
+  useEffect(() => {
+    // Only notify parents when readiness changes, not when callback identities churn.
+    onReadyChangeRef.current?.(isReady);
+  }, [isReady]);
   const UI_NAV_WHEEL_LOCK_MS = 300
 
   function beginUiNavWheelTakeover() {
@@ -293,7 +316,10 @@ export default function ThumbnailSlider({
     setWrap(next)
     isWrapping.current = next
 
-    setLayoutReady(false)
+    if (layoutReadyRef.current) {
+      layoutReadyRef.current = false
+      setLayoutReady(false)
+    }
 
     setIsReady(false)
     readyPaintedRef.current = false
@@ -415,7 +441,6 @@ export default function ThumbnailSlider({
 
         setWrapSafe(false);
         slidesRef.current = [];
-        setSlidesState([]);
         cellToSlideRef.current = [];
         return;
       }
@@ -540,9 +565,15 @@ export default function ThumbnailSlider({
     const scroll = centerActiveThumb
       ? getCenterScroll(canonicalIndex)
       : slidesRef.current[thumbSlideIndex]?.target ?? 0;
+
     animateToScroll(scroll);
 
-    onSelectThumb?.(canonicalIndex);
+    const shouldCrossfade = !!crossfade?.enabled;
+
+    onSelectThumb?.(canonicalIndex, {
+      transition: shouldCrossfade ? "crossfade" : "scroll",
+      crossfade,
+    });
   }
 
   useEffect(() => {
@@ -582,9 +613,6 @@ export default function ThumbnailSlider({
         return;
       }
 
-      const contentSize =
-        AX.main === "x" ? trackEl.scrollWidth : trackEl.scrollHeight;
-
       const clonesBefore = clonesCountRef.current;
       const beforeSizes = sizes.slice(0, clonesBefore);
       let running = -(beforeSizes.reduce((s, w) => s + w, 0) + gap * clonesBefore);
@@ -611,12 +639,22 @@ export default function ThumbnailSlider({
         cw: (trackEl as any)[AX.clientKey] as number,
       };
 
-      const originalsCount = layoutRef.current?.originals?.length ?? 0;
-      const innerGaps = Math.max(0, originalsCount - 1);
-      const baseWidth = origSizes.reduce((sum, s) => sum + s, 0) + gap * innerGaps;
-      sliderWidth.current = wrap ? baseWidth + (originalsCount > 0 ? gap : 0) : baseWidth;
-
       const cw = (trackEl as any)[AX.clientKey] as number;
+      const originalsCount = layoutRef.current?.originals?.length ?? 0;
+      const baseSpan = originalsForLayout[originalsCount - 1]?.end ?? 0;
+
+      const wantLoop = shouldEnableSliderLoop({
+        loop,
+        itemCount: originalsCount,
+        span: baseSpan,
+        viewport: cw,
+      });
+
+      sliderWidth.current = resolveSliderContentSpan({
+        baseSpan,
+        gap,
+        shouldLoop: wantLoop,
+      });
 
       setContentLength(sliderWidth.current);
 
@@ -632,10 +670,12 @@ export default function ThumbnailSlider({
         setThumbCross(cross || 0);
       }
       
-      const wantLoop = !!loop && originalsCount > 1 && contentSize > cw;
-
-      const origSizesCsv = originalsForLayout.map((o) => o.size).join(",");
-      const sig = `${origSizesCsv}|gap=${gap}|cw=${cw}|W=${contentSize}`;
+      const flowSig = originalsForLayout
+        .map((o) => `${roundSliderLayoutMetric(o.start)}:${roundSliderLayoutMetric(o.size)}`)
+        .join(",");
+      const sig =
+        `${flowSig}|gap=${gap}|cw=${roundSliderLayoutMetric(cw)}` +
+        `|W=${roundSliderLayoutMetric(baseSpan)}|wrap=${wantLoop ? 1 : 0}`;
 
       if (sig !== lastGeomSigRef.current) {
         lastGeomSigRef.current = sig;
@@ -910,15 +950,29 @@ export default function ThumbnailSlider({
         return
       }
 
-      const pagesAllowLoop = newSlides.length > 1
+      const layoutOriginals = layoutRef.current?.originals ?? []
+      const baseSpan = layoutOriginals[layoutOriginals.length - 1]?.end ?? 0
 
-      setWrap(!!loop && pagesAllowLoop && sliderWidth.current > cw)
-      isWrapping.current = !!loop && pagesAllowLoop && sliderWidth.current > cw
+      const nextWrap = shouldEnableSliderLoop({
+        loop,
+        itemCount: newSlides.length,
+        span: baseSpan,
+        viewport: cw,
+      })
+      // Rebuild clones against the new loop mode before committing slide pages.
+      if (nextWrap !== wrap) {
+        setWrapSafe(nextWrap)
+        return
+      }
+
+      isWrapping.current = nextWrap
 
       slidesRef.current = newSlides
-      setSlidesState(newSlides)
 
-      setLayoutReady(true)
+      if (!layoutReadyRef.current) {
+        layoutReadyRef.current = true
+        setLayoutReady(true)
+      }
 
       const map: number[] = []
       newSlides.forEach((s, slideIdx) => {
@@ -982,8 +1036,8 @@ export default function ThumbnailSlider({
     style.id = id;
     style.textContent = `
       /* Only while data-rmg-drag is present on this slider root */
-      #${scopeId}[data-rmg-drag]        { cursor: grabbing !important; }
-      #${scopeId}[data-rmg-drag] *      { cursor: grabbing !important; }
+      [data-rmg-thumb-core-scope="${scopeId}"][data-rmg-drag]        { cursor: grabbing !important; }
+      [data-rmg-thumb-core-scope="${scopeId}"][data-rmg-drag] *      { cursor: grabbing !important; }
     `;
     document.head.appendChild(style);
   }
@@ -1464,7 +1518,7 @@ export default function ThumbnailSlider({
       povRef.current    = PercentOfView(cw)
       boundsRef.current = ScrollBounds(
         limitRef.current,
-        offsetLocationRef.current!,
+        locationRef.current!,
         targetRef.current!,
         bodyRef.current!,
         povRef.current,
@@ -1701,14 +1755,18 @@ export default function ThumbnailSlider({
           return forced.distance
         }
         
-        const force = allowedForce(boostedForce)
+        const isOutOfBounds = boundsRef.current?.passed()
+
+        let adjustedBoostedForce = boostedForce
+        if (isOutOfBounds) {
+          adjustedBoostedForce *= 0.6 // tune: 0.4 to 0.8
+        }
+
+        const force = allowedForce(adjustedBoostedForce)
 
         const baseFriction = sliderFriction
         const forceFactor = factorAbs(boostedForce, force)
         let speed = selectDuration
-        if (boundsRef.current?.passed()) {
-          speed = selectDuration + 10 * forceFactor
-        }
         const friction = baseFriction + forceFactor / 50
 
         body.useDuration(speed).useFriction(friction)
@@ -1719,9 +1777,6 @@ export default function ThumbnailSlider({
         const force = forceBoost(raw)
         const forceFactor = factorAbs(raw, force)
         let speed = freeScrollDuration
-        if (boundsRef.current?.passed()) {
-          speed = freeScrollDuration + 10 * forceFactor
-        }
         const friction = sliderFriction + forceFactor / 50
 
         body.useDuration(speed).useFriction(friction)
@@ -1795,7 +1850,7 @@ export default function ThumbnailSlider({
       animRef.current = null
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, contentLength, containerLength, position, slidesState.length, layoutReady, geomKey, isMeasured, wrap]);
+  }, [count, contentLength, containerLength, position, layoutReady, geomKey, isMeasured, wrap]);
 
   useEffect(() => {
     const isNarrow =
@@ -1838,7 +1893,6 @@ export default function ThumbnailSlider({
     return {
       renderIntro: src.renderIntro,
       staggerMs: src.staggerMs ?? 40,
-      transform: src.transform ?? '10px',
       durationMs: src.durationMs ?? 300,
       easing: src.easing ?? 'cubic-bezier(.2,.7,.2,1)',
     };
@@ -1966,7 +2020,7 @@ export default function ThumbnailSlider({
     <div
       {...baseContainerProps}
       ref={containerRef}
-      id={scopeId}
+      data-rmg-thumb-core-scope={scopeId}
       data-rmg-scope={scopeId}
       className={[className, thumbnailsContainerClassName, baseContainerProps.className]
         .filter(Boolean)
@@ -1977,7 +2031,6 @@ export default function ThumbnailSlider({
         ...(thumbnailsContainerStyle || {}),
         ...(baseContainerProps.style || {}),
         ['--rmg-intro-stagger' as any]: `${normalizedIntro.staggerMs}ms`,
-        ['--rmg-intro-transform' as any]: `${normalizedIntro.transform}`,
         ['--rmg-intro-duration' as any]: `${normalizedIntro.durationMs}ms`,
         ['--rmg-intro-easing' as any]: normalizedIntro.easing,
       }}

@@ -30,21 +30,17 @@ import type { FullscreenSliderHandle } from "./FullscreenSlider";
 import FullscreenRuntime from "./FullscreenRuntime";
 import styles from './Fullscreen.module.css'
 import { useGalleryCore } from "../core";
-
+import { resolveFullscreenControllerOpenMethod } from "./openMethod";
+import { BREAKPOINT_MAP, BreakpointMap, resolveCaptionPlacementFromResponsive, ResponsiveCaptionPlacement } from "../shared/responsive";
 type FullscreenOpenMethod = "fade" | "scale";
 
-function resolveOpenMethod(
-  item: MediaItem | undefined,
-  requested: FullscreenOpenMethod | undefined,
-  originImg: HTMLImageElement | null
-): FullscreenOpenMethod {
-  const req: FullscreenOpenMethod = requested ?? "scale";
-
-  if (!item || item.kind !== "image") return "fade";
-
-  if (!originImg) return "fade";
-
-  return req;
+function resolveImageFromSlot(slot: unknown): HTMLImageElement | null {
+  if (!slot) return null;
+  if (slot instanceof HTMLImageElement) return slot;
+  if (slot instanceof HTMLElement) {
+    return slot.querySelector("img") as HTMLImageElement | null;
+  }
+  return null;
 }
 
 function sameStyleObject(
@@ -93,6 +89,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
 
   const {
     layout,
+    resolveLayoutlessTarget,
     normalizedItems,
     fsOpenSub,
     setFullscreenOpen,
@@ -114,7 +111,16 @@ export function useFullscreenController(args: UseFullscreenArgs) {
 
   const getClosestSelector = useCallback(
     (source: "slider" | "grid" | "masonry" | "entries" | "api") => {
-      return adapterFor(source)?.closestSelector ?? (source === "slider" ? ".rmg__slide" : ".rmg__grid-item");
+      return (
+        adapterFor(source)?.closestSelector ??
+        (source === "slider"
+          ? ".rmg__slide"
+          : source === "masonry"
+            ? ".rmg__masonry-item"
+            : source === "api"
+              ? '[data-rmg-idx], [data-rmg-layoutless-item], article, figure, section, button, [role="button"], a[href], .rmg__grid-item, .rmg__masonry-item, .rmg__slide'
+              : ".rmg__grid-item")
+      );
     },
     [adapterFor]
   );
@@ -266,13 +272,31 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   }, []);
 
   function resolveFsCaptionPlacement(
-    placement: FsCaptionPlacement | undefined,
+    placement: ResponsiveCaptionPlacement | undefined,
     breakpoint: number | undefined,
-    viewportWidth: number
+    viewportWidth: number,
+    breakpointMap: BreakpointMap = BREAKPOINT_MAP
   ): FsCaptionPlacement | null {
-    if (!placement) return null;
-    if (breakpoint != null && viewportWidth < breakpoint) return "bottom";
-    return placement;
+    if (placement == null) return null;
+
+    if (
+      typeof placement === "object" ||
+      Array.isArray(placement)
+    ) {
+      return resolveCaptionPlacementFromResponsive(
+        placement,
+        "bottom",
+        viewportWidth,
+        breakpointMap
+      );
+    }
+
+    // legacy simple-string mode
+    if (breakpoint == null) {
+      return placement;
+    }
+
+    return viewportWidth >= breakpoint ? placement : "bottom";
   }
 
   useEffect(() => {
@@ -411,10 +435,16 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       }
 
       if (!originImg) {
-        originImg = (expandableImageRefs.current[gridIndex] ?? null) as HTMLImageElement | null;
+        originImg =
+          resolveImageFromSlot(expandableImageRefs.current[gridIndex] ?? null) ??
+          resolveLayoutlessTarget(gridIndex).image;
       }
 
-      const method = resolveOpenMethod(item, requestedMethod, originImg);
+      const method = resolveFullscreenControllerOpenMethod(
+        item,
+        requestedMethod,
+        !!fs.effects?.introFade
+      );
 
       const introImg = method === "scale" ? originImg : null;
 
@@ -443,6 +473,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       setFullscreenOpen,
       fsSub,
       expandableImageRefs,
+      resolveLayoutlessTarget,
       getClosestSelector,
     ]
   );
@@ -483,6 +514,10 @@ export function useFullscreenController(args: UseFullscreenArgs) {
     setFullscreenOpen(false);
   }, [showFullscreenModal, setFullscreenOpen]);
 
+  useEffect(() => {
+    core.setFsEnabled(fs.enabled);
+  }, [fs.enabled]);
+
   const fullscreenNode =
     fs.enabled ? (
       <FullscreenRuntime
@@ -511,6 +546,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         setSliderIndexForFullscreen={setSliderIndexForFullscreen}
         layout={layout}
         expandableImageRefs={expandableImageRefs}
+        resolveLayoutlessTarget={resolveLayoutlessTarget}
         entryMapRef={safeEntryMapRef}
         entryMediaLayout={safeEntryMediaLayout}
         introFade={fs.effects.introFade}
@@ -532,7 +568,8 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         sliderFriction={fs.slider.friction}
         suppressLoopRef={suppressLoopRef}
         fsFadeOpening={fsFadeOpening}
-        slideFade={fs.effects.slideFade}
+        controlsFade={fs.effects.controlsFade}
+        dragFade={fs.effects.dragFade}
         slideFadeDuration={fs.effects.slideFadeDuration}
         slideFadeEasing={fs.effects.slideFadeEasing}
         normalizedItems={normalizedItems}

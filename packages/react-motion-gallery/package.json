@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.18",
+  "version": "2.0.19",
   "description": "React Motion Gallery - smooth, customizable media gallery components",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "React Motion Gallery",
@@ -21,81 +21,69 @@
     "requiredForRevenueUse": true,
     "url": "https://react-motion-gallery.com/license"
   },
-
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
-
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
-
     "./styles.css": "./dist/index.css",
-
     "./core": {
       "types": "./dist/core.d.mts",
       "import": "./dist/core.mjs"
     },
-
     "./slider": {
       "types": "./dist/slider.d.mts",
       "import": "./dist/slider.mjs"
     },
-
     "./grid": {
       "types": "./dist/grid.d.mts",
       "import": "./dist/grid.mjs"
     },
-
     "./masonry": {
       "types": "./dist/masonry.d.mts",
       "import": "./dist/masonry.mjs"
     },
-
     "./entries": {
       "types": "./dist/entries.d.mts",
       "import": "./dist/entries.mjs"
     },
-
     "./fullscreen": {
       "types": "./dist/fullscreen.d.mts",
       "import": "./dist/fullscreen.mjs"
     },
-
     "./thumbnails": {
       "types": "./dist/thumbnails.d.mts",
       "import": "./dist/thumbnails.mjs"
     },
-
     "./fullscreenThumbnails": {
       "types": "./dist/fullscreenThumbnails.d.mts",
       "import": "./dist/fullscreenThumbnails.mjs"
     },
-
     "./video": {
       "types": "./dist/video.d.mts",
       "import": "./dist/video.mjs"
+    },
+    "./zoomPan": {
+      "types": "./dist/zoomPan.d.mts",
+      "import": "./dist/zoomPan.mjs"
     }
   },
-
   "files": [
     "dist"
   ],
-
   "sideEffects": [
     "*.css",
     "**/*.css"
   ],
-
   "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18",
     "plyr": "^3.8.4",
-    "plyr-react": "^6.0.0"
+    "plyr-react": "^6.0.0",
+    "react": ">=18",
+    "react-dom": ">=18"
   },
-
   "peerDependenciesMeta": {
     "plyr": {
       "optional": true
@@ -104,16 +92,17 @@
       "optional": true
     }
   },
-
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
     "size:report": "node ./scripts/report_bundle_sizes.mjs",
     "size:readme": "node ./scripts/report_bundle_sizes.mjs --write-readme"
   },
-
   "devDependencies": {
     "plyr": "^3.8.4",
     "plyr-react": "^6.0.0"
+  },
+  "dependencies": {
+    "@chenglou/pretext": "^0.0.5"
   }
 }

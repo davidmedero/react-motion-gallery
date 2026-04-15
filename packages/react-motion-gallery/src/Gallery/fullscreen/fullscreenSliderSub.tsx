@@ -1,18 +1,39 @@
-export type JumpMode = 'instant' | 'animated';
+import type { IndexMode } from "../api/types";
+
+export type JumpMode = "instant" | "animated";
+
+export type FullscreenRequestMeta = {
+  source?: "thumbnail" | "external";
+  transition?: "scroll" | "crossfade";
+  crossfade?: {
+    durationMs?: number;
+    easing?: string;
+  };
+};
+
 export type FSRequest =
-  | { type: 'requestSet'; index: number; mode?: JumpMode }
-  | { type: 'requestNext' }
-  | { type: 'requestPrev' }
-  | { type: 'center' };
+  | {
+      type: "requestSet";
+      index: number;
+      mode?: IndexMode;
+      meta?: FullscreenRequestMeta;
+    }
+  | { type: "requestPrev" }
+  | { type: "requestNext" }
+  | { type: "center" };
 
 export type FSEvent =
-  | { type: 'internalIndex'; index: number }
-  | { type: 'mounted' }
-  | { type: 'unmounted' };
+  | { type: "internalIndex"; index: number }
+  | { type: "mounted" }
+  | { type: "unmounted" };
 
 export type FullscreenSliderSub = {
   get: () => number;
-  requestSet: (index: number, mode?: JumpMode) => void;
+  requestSet: (
+    index: number,
+    mode?: JumpMode,
+    opts?: { meta?: FullscreenRequestMeta }
+  ) => void;
   requestPrev: () => void;
   requestNext: () => void;
   requestCenter: () => void;
@@ -24,34 +45,50 @@ export type FullscreenSliderSub = {
   emitBasePointerDown: () => void;
 };
 
-export function createFullscreenSliderSub(initialIndex = 0): FullscreenSliderSub {
+export function createFullscreenSliderSub(
+  initialIndex = 0
+): FullscreenSliderSub {
   let curIndex = initialIndex;
 
   const reqSubs = new Set<(r: FSRequest) => void>();
   const evtSubs = new Set<(e: FSEvent) => void>();
-
   const baseDownSubs = new Set<() => void>();
 
   const api: FullscreenSliderSub = {
     get: () => curIndex,
 
-    requestSet(index, mode) {
-      reqSubs.forEach((fn) => fn({ type: 'requestSet', index, mode }));
+    requestSet(
+      index: number,
+      mode: IndexMode = "animated",
+      opts?: { meta?: FullscreenRequestMeta }
+    ) {
+      reqSubs.forEach((fn) =>
+        fn({
+          type: "requestSet",
+          index,
+          mode,
+          meta: opts?.meta,
+        })
+      );
     },
+
     requestPrev() {
-      reqSubs.forEach((fn) => fn({ type: 'requestPrev' }));
+      reqSubs.forEach((fn) => fn({ type: "requestPrev" }));
     },
+
     requestNext() {
-      reqSubs.forEach((fn) => fn({ type: 'requestNext' }));
+      reqSubs.forEach((fn) => fn({ type: "requestNext" }));
     },
+
     requestCenter() {
-      reqSubs.forEach((fn) => fn({ type: 'center' }));
+      reqSubs.forEach((fn) => fn({ type: "center" }));
     },
 
     onEvent(fn) {
       evtSubs.add(fn);
       return () => evtSubs.delete(fn);
     },
+
     onRequest(fn) {
       reqSubs.add(fn);
       return () => reqSubs.delete(fn);
@@ -59,7 +96,7 @@ export function createFullscreenSliderSub(initialIndex = 0): FullscreenSliderSub
 
     setLocalIndex(index) {
       curIndex = index;
-      evtSubs.forEach((fn) => fn({ type: 'internalIndex', index }));
+      evtSubs.forEach((fn) => fn({ type: "internalIndex", index }));
     },
 
     onBasePointerDown(fn) {
@@ -79,7 +116,7 @@ export function createFullscreenSliderSub(initialIndex = 0): FullscreenSliderSub
   };
 
   queueMicrotask(() => {
-    evtSubs.forEach((fn) => fn({ type: 'mounted' }));
+    evtSubs.forEach((fn) => fn({ type: "mounted" }));
   });
 
   return api;

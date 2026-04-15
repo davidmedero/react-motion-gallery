@@ -1,5 +1,9 @@
 import { ElementStyle } from "../shared/types/elements";
 import { MediaItem } from "../shared/types/media";
+import type {
+  ResponsiveCaptionPlacement,
+  ResponsiveLength,
+} from "../shared/responsive";
 import type { EntrySkeletonSpec, SkeletonLength } from "./components/EntrySkeleton";
 
 export type EntryItem = {
@@ -28,6 +32,18 @@ export type EntryOverlayRenderArgs = {
   fsIndex: number;
   style: React.CSSProperties;
   containerProps: React.HTMLAttributes<HTMLDivElement>;
+};
+
+export type EntryOverlayStyle = ElementStyle & {
+  width?: ResponsiveLength;
+  height?: ResponsiveLength;
+  placement?: ResponsiveCaptionPlacement;
+  breakpoint?: number;
+  zoomFade?: boolean;
+  zoomFadeDurationMs?: number;
+  zoomFadeEasing?: string;
+  zoomInTransform?: string;
+  zoomOutTransform?: string;
 };
 
 export type EntryMediaLayout = "slider" | "grid" | "masonry";
@@ -83,7 +99,7 @@ export type EntriesOptions = {
     overlay?: (args: EntryOverlayRenderArgs) => React.ReactNode;
     skeleton?: (args: EntrySkeletonRenderArgs) => React.ReactNode;
   };
-  overlay?: ElementStyle;
+  overlay?: EntryOverlayStyle;
   loading?: EntriesLoadingOptions;
   intro?: IntroOptions;
   entryList?: ElementStyle;

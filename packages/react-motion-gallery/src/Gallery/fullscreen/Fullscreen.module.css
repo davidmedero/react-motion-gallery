@@ -96,11 +96,18 @@
     opacity 300ms cubic-bezier(.4,0,.22,1),
     transform 300ms cubic-bezier(.4,0,.22,1);
   z-index: calc(var(--rmg-fs-z, 9999) + 1);
+  will-change: opacity, transform;
 }
 
 .fsOverlayCaption.open {
   opacity: 1;
   transform: translateY(0);
+}
+
+:global(.fullscreen_slider[data-rmg-fs-hide-track-captions="true"] [data-rmg-fs-caption="true"]) {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .spinner {

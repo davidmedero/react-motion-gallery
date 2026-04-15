@@ -3,13 +3,6 @@
   min-height: var(--rmg-entry-min-height, 260px);
 }
 
-.entryRow[data-rmg-entry-mounted="1"] .entrySkeletonWrap {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  height: auto;
-}
-
 .entrySkeletonWrap {
   position: relative;
   display: block;
@@ -25,15 +18,19 @@
 }
 
 .entryInner {
-  position: relative;
+  position: absolute;
+  inset: 0;
   opacity: 0;
   pointer-events: none;
-  min-height: var(--rmg-entry-min-height, 260px);
   transition:
     opacity var(--rmg-entry-intro-duration, 700ms)
       var(--rmg-entry-intro-easing, cubic-bezier(.4,0,.22,1));
   transition-delay: 0ms;
-  z-index: 0;
+  z-index: 1;
+}
+
+.entryInner > * {
+  height: 100%;
 }
 
 .entryRow[data-rmg-entry-ready="1"] .entrySkeletonWrap {
@@ -78,6 +75,21 @@
   width: 100%;
 }
 
+.entrySkelText {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.entrySkelTextLine {
+  min-width: 0;
+  align-self: flex-start;
+}
+
 .entrySkelTile {
   flex: 0 0 auto;
   width: 100%;
@@ -94,7 +106,7 @@
   position: absolute;
   inset: 0;
   opacity: calc(var(--rmg-skel-shimmer-enabled, 1) * var(--rmg-skel-shimmer-opacity, 1));
-  filter: blur(var(--rmg-skel-shimmer-blur, 0.2px));
+  filter: var(--rmg-skel-shimmer-filter, none);
   background-image: linear-gradient(
     var(--rmg-skel-shimmer-angle, 90deg),
     transparent 0%,
@@ -104,8 +116,9 @@
     transparent 100%
   );
   animation: rmgShimmer var(--rmg-skel-shimmer-duration, 1200ms)
-    var(--rmg-skel-shimmer-timing, ease-in-out) infinite;
-  will-change: transform;
+    var(--rmg-skel-shimmer-timing, linear) infinite;
+  transform: translateX(-100%);
+  pointer-events: none;
 }
 
 @keyframes rmgShimmer {
@@ -114,6 +127,12 @@
   }
   100% {
     transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entrySkelTile::after {
+    animation: none;
   }
 }
 

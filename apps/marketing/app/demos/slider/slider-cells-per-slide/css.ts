@@ -1,0 +1,7 @@
+export const css = String.raw`.slide {
+  width: 100%;
+  display: block;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+}`;

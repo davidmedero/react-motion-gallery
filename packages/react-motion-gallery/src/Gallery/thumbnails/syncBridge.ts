@@ -1,13 +1,30 @@
 import type { IndexMode } from "../api/types";
 
+export type SliderIndexEventMeta = {
+  source?: "thumbnail" | "external";
+  transition?: "scroll" | "crossfade";
+  crossfade?: {
+    durationMs?: number;
+    easing?: string;
+  };
+};
+
 export type SliderIndexEvent =
-  | { type: "set"; index: number; mode: IndexMode }
-  | { type: "bump"; delta: number; mode: IndexMode };
+  | { type: "set"; index: number; mode: IndexMode; meta?: SliderIndexEventMeta }
+  | { type: "bump"; delta: number; mode: IndexMode; meta?: SliderIndexEventMeta };
 
 export type SliderIndexChannelLike = {
   get: () => { index: number; mode: IndexMode };
-  set: (index: number, mode?: IndexMode, opts?: { silent?: boolean }) => void;
-  bump: (delta: number, mode?: IndexMode, opts?: { silent?: boolean }) => void;
+  set: (
+    index: number,
+    mode?: IndexMode,
+    opts?: { silent?: boolean; meta?: SliderIndexEventMeta }
+  ) => void;
+  bump: (
+    delta: number,
+    mode?: IndexMode,
+    opts?: { silent?: boolean; meta?: SliderIndexEventMeta }
+  ) => void;
   onEvent?: (fn: (event: SliderIndexEvent) => void) => () => void;
   subscribe?: (fn: () => void) => () => void;
   onBasePointerDown?: (fn: () => void) => () => void;
@@ -23,7 +40,11 @@ type CreateThumbnailSyncBridgeArgs = {
 export type ThumbnailSyncBridge = {
   start: () => () => void;
   stop: () => void;
-  publishThumbnailClick: (index: number, mode?: IndexMode) => void;
+  publishThumbnailClick: (
+    index: number,
+    mode?: IndexMode,
+    meta?: SliderIndexEventMeta
+  ) => void;
 };
 
 function normalizeMode(mode: unknown): IndexMode {
@@ -88,8 +109,10 @@ export function createThumbnailSyncBridge(
 
     const unsubs: Array<() => void> = [];
 
-    if (typeof externalChannel.onBasePointerDown === "function" &&
-        typeof localChannel.emitBasePointerDown === "function") {
+    if (
+      typeof externalChannel.onBasePointerDown === "function" &&
+      typeof localChannel.emitBasePointerDown === "function"
+    ) {
       unsubs.push(
         externalChannel.onBasePointerDown(() => {
           localChannel.emitBasePointerDown?.();
@@ -135,7 +158,14 @@ export function createThumbnailSyncBridge(
     return stop;
   };
 
-  const publishThumbnailClick = (index: number, mode: IndexMode = "animated") => {
+  const publishThumbnailClick = (
+    index: number,
+    mode: IndexMode = "animated",
+    meta: SliderIndexEventMeta = {
+      source: "thumbnail",
+      transition: "scroll",
+    }
+  ) => {
     if (!externalChannel) return;
     const nextIndexRaw = normalizeFiniteInt(index);
     if (nextIndexRaw == null) return;
@@ -143,7 +173,7 @@ export function createThumbnailSyncBridge(
     const nextIndex = maybeClampIndex(nextIndexRaw, clampIndex);
     if (nextIndex == null) return;
 
-    externalChannel.set(nextIndex, normalizeMode(mode));
+    externalChannel.set(nextIndex, normalizeMode(mode), { meta });
   };
 
   return {

@@ -46,9 +46,10 @@ const DEFAULT_SLIDER_OBJECT: any = {
     parallax: { enabled: false, bleedPct: undefined, borderRadius: undefined, sideWidth: undefined },
     scale: { enabled: false, amount: undefined },
     fade: { enabled: false },
+    crossfade: { controls: false, drag: false, durationMs: undefined, easing: undefined },
   },
   elements: { container: {}, viewport: {} },
-  transitions: { intro: undefined },
+  transitions: { intro: { staggerMs: 0, durationMs: 0 } },
   lazyLoad: {
     enabled: false,
     spinner: true,

@@ -1,0 +1,50 @@
+.slide {
+  width: 100cqw;
+  max-width: 550px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.fullscreenCaption {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem;
+  width: min(100%, 42rem);
+  padding: 0.25rem 0;
+}
+
+.fullscreenCaptionIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.fullscreenCaptionBody {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.fullscreenCaptionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.fullscreenCaptionMeta {
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}

@@ -1,8 +1,14 @@
 import { ResponsiveNumber } from "../responsive";
 
+export type LoadingTimingOptions = {
+  exitMs?: number;
+  minVisibleMs?: number;
+};
+
 export type LoadingOptions = {
   isLoading?: boolean;
   skeletonCount?: ResponsiveNumber;
+  timing?: LoadingTimingOptions;
   renderLoading?: (args: {
     layout: "slider" | "grid" | "masonry" | "entries";
     count: number;
@@ -26,7 +32,6 @@ export type IntroOptions = {
     content: React.ReactNode
   ) => React.ReactNode;
   staggerMs?: number;
-  transform?: string;
   durationMs?: number;
   easing?: string;
   staggerLimit?: number;

@@ -1,6 +1,11 @@
 import type React from "react";
 import { getCurrentTransform, baseFitSize, clampNum } from "../core/utils";
-import { getPrimaryImgEl, gapAllEdges } from "../core/dom";
+import {
+  gapAllEdges,
+  getFsMediaViewportEl,
+  getFullscreenTwinImages,
+  getPrimaryImgEl,
+} from "../core/dom";
 
 export type ZoomPoint = { x: number; y: number };
 
@@ -65,14 +70,16 @@ export function applySmoothTransform(
   const container = ctx.currentImage.current;
   if (!container) return;
 
-  const primary = getPrimaryImgEl(container);
-  if (!primary) return;
+  const twinImages = getFullscreenTwinImages(container);
+  if (!twinImages.length) return;
 
   const transition = `transform ${durationMs}ms cubic-bezier(.4,0,.22,1)`;
   const toTransform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
 
-  primary.style.transition = transition;
-  primary.style.transform = toTransform;
+  twinImages.forEach((imgEl) => {
+    imgEl.style.transition = transition;
+    imgEl.style.transform = toTransform;
+  });
 
   ctx.offX.current?.set(x);
   ctx.offY.current?.set(y);
@@ -87,7 +94,9 @@ export function applySmoothTransform(
   ctx.setScale(scale);
 
   window.setTimeout(() => {
-    primary.style.transition = "";
+    twinImages.forEach((imgEl) => {
+      imgEl.style.transition = "";
+    });
   }, durationMs + 30);
 }
 
@@ -101,7 +110,8 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
   const imgEl = getPrimaryImgEl(container);
   if (!imgEl) return;
 
-  const rect0 = container.getBoundingClientRect();
+  const measureEl = getFsMediaViewportEl(container) ?? container;
+  const rect0 = measureEl.getBoundingClientRect();
   if (gapAllEdges({ width: rect0.width, height: rect0.height }, imgEl)) return;
 
   const { x: domTx, y: domTy } = getCurrentTransform(imgEl);
@@ -147,7 +157,7 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
   if (!wasZoomed && willBeZoomed) ctx.suppressLoopRef.current = true;
   else if (wasZoomed && !willBeZoomed) ctx.suppressLoopRef.current = false;
 
-  const rect = container.getBoundingClientRect();
+  const rect = measureEl.getBoundingClientRect();
   const containerW = rect.width;
   const containerH = rect.height;
 

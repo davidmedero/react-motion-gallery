@@ -1,8 +1,8 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { APITypes } from 'plyr-react';
-import { b as PlyrSource, c as PlyrOptions } from './plyrTypes-CmP9NWvX.mjs';
-import './media-moIXOhT1.mjs';
+import { b as PlyrSource, c as PlyrOptions } from './plyrTypes-Cq4C3ul5.mjs';
+import 'plyr';
 
 type RmgPlyrSourceBuilder = (args: {
     src: string;

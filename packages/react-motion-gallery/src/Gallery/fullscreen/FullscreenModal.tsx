@@ -17,7 +17,7 @@ import { MediaEntryLink } from '../entries';
 import { FullscreenOptions } from './types';
 import { DefaultCloseIcon } from './controls/DefaultCloseIcon';
 import { DefaultCounterText } from './controls/DefaultCounterText';
-import { scrollEntrySectionIntoView, waitForEntryOwnerReady } from './entryOwnerReady';
+import { scrollEntrySectionIntoView, waitForEntryOwnerReady, isEntryOwnerReady } from './entryOwnerReady';
 import { getPrimaryImgEl } from '../zoomPan/core/dom';
 
 interface FullscreenModalProps {
@@ -42,8 +42,13 @@ interface FullscreenModalProps {
   centerSlider?: () => void;
   setSliderIndex: (i: number, mode: IndexMode) => void;
   onForceResetZoom: () => void;
-  layout?: 'slider' | 'grid' | 'masonry' | 'entries';
+  layout?: 'slider' | 'grid' | 'masonry' | 'entries' | null;
   expandableImageRefs: RefObject<RefObject<HTMLImageElement | null>[]>
+  resolveLayoutlessTarget: (index: number) => {
+    host: HTMLElement | null;
+    image: HTMLImageElement | null;
+    media: HTMLElement | null;
+  };
   entryMapRef?: RefObject<MediaEntryLink[] | null>;
   entryMediaLayout?: string;
   introFade?: boolean;
@@ -137,6 +142,227 @@ function isCellVisible(
   return allowPartial ? intersects : fully
 }
 
+type ObjectFitMode = "contain" | "cover";
+type ObjectPosition = { x: number; y: number };
+type RectTransform = { cx: number; cy: number; scale: number };
+
+function parseScaleCssValue(value: string | null | undefined): number | null {
+  const parsed = Number.parseFloat(value?.trim() ?? '');
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function scaleRectAroundPoint(
+  rect: DOMRect,
+  centerX: number,
+  centerY: number,
+  factor: number
+) {
+  const left = centerX + (rect.left - centerX) * factor;
+  const top = centerY + (rect.top - centerY) * factor;
+  return new DOMRect(left, top, rect.width * factor, rect.height * factor);
+}
+
+function getRenderedScaleForSlide(slideEl: HTMLElement, rect: DOMRect): number | null {
+  const widthScale = slideEl.offsetWidth > 0 ? rect.width / slideEl.offsetWidth : NaN;
+  const heightScale = slideEl.offsetHeight > 0 ? rect.height / slideEl.offsetHeight : NaN;
+
+  if (Number.isFinite(widthScale) && widthScale > 0) return widthScale;
+  if (Number.isFinite(heightScale) && heightScale > 0) return heightScale;
+  return null;
+}
+
+function getScaleSettledRect(el: HTMLElement | null): DOMRect | null {
+  if (!el) return null;
+
+  const currentRect = el.getBoundingClientRect();
+  const slideEl = el.matches('[data-rmg-slide="true"]')
+    ? el
+    : (el.closest('[data-rmg-slide="true"]') as HTMLElement | null);
+
+  if (!slideEl) return currentRect;
+
+  const targetScale = parseScaleCssValue(
+    getComputedStyle(slideEl).getPropertyValue('--rmg-scale')
+  );
+
+  if (!targetScale || Math.abs(targetScale - 1) < 0.0001) {
+    return currentRect;
+  }
+
+  const slideRect = slideEl.getBoundingClientRect();
+  const currentScale = getRenderedScaleForSlide(slideEl, slideRect);
+
+  if (!currentScale || currentScale <= 0) return currentRect;
+
+  const factor = targetScale / currentScale;
+  if (Math.abs(factor - 1) < 0.0001) return currentRect;
+
+  const centerX = slideRect.left + slideRect.width / 2;
+  const centerY = slideRect.top + slideRect.height / 2;
+
+  return scaleRectAroundPoint(currentRect, centerX, centerY, factor);
+}
+
+function resolveObjectFitMode(
+  value: string | null | undefined,
+  fallback: ObjectFitMode
+): ObjectFitMode {
+  return value === "contain" ? "contain" : value === "cover" ? "cover" : fallback;
+}
+
+function insetForViewportRect(rect: DOMRect, vw: number, vh: number) {
+  const top = rect.top;
+  const left = rect.left;
+  const right = vw - (rect.left + rect.width);
+  const bottom = vh - (rect.top + rect.height);
+  return `inset(${top}px ${right}px ${bottom}px ${left}px)`;
+}
+
+function createViewportClipper(startInset: string, zIndex: number) {
+  const clipper = document.createElement("div");
+  Object.assign(clipper.style, {
+    position: "fixed",
+    inset: "0",
+    clipPath: startInset,
+    willChange: "clip-path",
+    transition: "none",
+    pointerEvents: "none",
+    zIndex: String(zIndex),
+  } as CSSStyleDeclaration);
+  return clipper;
+}
+
+function isVisibleTopStickyNavCandidate(el: Element | null): el is HTMLElement {
+  if (!(el instanceof HTMLElement)) return false;
+
+  const style = getComputedStyle(el);
+  if (style.display === "none" || style.visibility === "hidden") return false;
+  if (Number.parseFloat(style.opacity || "1") <= 0) return false;
+  if (style.position !== "sticky" && style.position !== "fixed") return false;
+
+  const rect = el.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return false;
+  if (rect.bottom <= 0 || rect.top >= window.innerHeight) return false;
+  if (rect.top > Math.min(window.innerHeight * 0.25, 120)) return false;
+
+  return true;
+}
+
+function rectsOverlapOnX(a: DOMRect, b: DOMRect) {
+  return Math.min(a.right, b.right) > Math.max(a.left, b.left);
+}
+
+function findStickyNav(
+  selector?: string | null,
+  sourceRect?: DOMRect | null
+): HTMLElement | null {
+  const query = selector?.trim();
+  const fallbackSelectors = [
+    ".rmg-intro-sticky-nav",
+    '[data-rmg-intro-sticky-nav="true"]',
+    'header[role="banner"]',
+    "header",
+  ];
+  const candidates = query
+    ? Array.from(document.querySelectorAll(query))
+    : fallbackSelectors.flatMap((fallbackSelector) =>
+        Array.from(document.querySelectorAll(fallbackSelector))
+      );
+
+  let bestMatch: HTMLElement | null = null;
+  let bestBottom = -Infinity;
+
+  for (const candidate of candidates) {
+    if (!isVisibleTopStickyNavCandidate(candidate)) continue;
+
+    const rect = candidate.getBoundingClientRect();
+    if (sourceRect && !rectsOverlapOnX(rect, sourceRect)) continue;
+
+    if (rect.bottom > bestBottom) {
+      bestBottom = rect.bottom;
+      bestMatch = candidate;
+    }
+  }
+
+  if (bestMatch || query) {
+    return bestMatch;
+  }
+
+  for (const candidate of Array.from(document.body.querySelectorAll("*"))) {
+    if (!isVisibleTopStickyNavCandidate(candidate)) continue;
+
+    const rect = candidate.getBoundingClientRect();
+    if (sourceRect && !rectsOverlapOnX(rect, sourceRect)) continue;
+
+    if (rect.bottom > bestBottom) {
+      bestBottom = rect.bottom;
+      bestMatch = candidate;
+    }
+  }
+
+  return bestMatch;
+}
+
+function intersectRectWithTopOccluder(
+  rect: DOMRect,
+  occluderBottom: number
+): DOMRect | null {
+  const viewportHeight = Math.max(
+    window.innerHeight || 0,
+    document.documentElement?.clientHeight || 0
+  );
+  const clampedOccluderBottom = Math.min(
+    Math.max(occluderBottom, 0),
+    viewportHeight
+  );
+  const left = rect.left;
+  const right = rect.right;
+  const top = Math.max(rect.top, clampedOccluderBottom);
+  const bottom = rect.bottom;
+
+  if (bottom <= top || right <= left) {
+    return null;
+  }
+
+  return new DOMRect(left, top, right - left, bottom - top);
+}
+
+function clipsOverflow(style: CSSStyleDeclaration | null | undefined) {
+  if (!style) return false;
+
+  return [style.overflow, style.overflowX, style.overflowY].some((value) => {
+    const normalized = value?.trim().toLowerCase() ?? "";
+    return normalized === "hidden" || normalized === "clip";
+  });
+}
+
+function findClosestOverflowClipParentRectFromEl(el: HTMLElement | null) {
+  let current = el?.parentElement ?? null;
+
+  while (current && current !== document.body && current !== document.documentElement) {
+    if (clipsOverflow(getComputedStyle(current))) {
+      const rect = getScaleSettledRect(current) ?? current.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) return rect;
+    }
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
+function computeRectTransform(args: {
+  fit: ObjectFitMode;
+  natW: number;
+  natH: number;
+  rect: DOMRect;
+  objPos: ObjectPosition;
+}) {
+  const { fit, natW, natH, rect, objPos } = args;
+  return fit === "cover"
+    ? coverTransformForRect(natW, natH, rect, objPos)
+    : containTransformForRect(natW, natH, rect, objPos);
+}
+
 type ClipperArgs = {
   DURATION_MS: number;
   EASING: string;
@@ -201,12 +427,12 @@ function findThumbInfoEnsuringVisible(
     }
   }
 
-  const cropRect = targetCell.getBoundingClientRect()
+  const cropRect = getScaleSettledRect(targetCell) ?? targetCell.getBoundingClientRect()
 
   const imgEl = targetCell.querySelector('img') as HTMLImageElement | null
   const cs = imgEl ? getComputedStyle(imgEl) : null
   const objPos = parseObjectPosition(cs?.objectPosition ?? null) ?? { x: 0.5, y: 0.5 };
-  const renderedRect = imgEl?.getBoundingClientRect() ?? null
+  const renderedRect = getScaleSettledRect(imgEl) ?? imgEl?.getBoundingClientRect() ?? null
   const renderedW = renderedRect ? renderedRect.width : 0
   const renderedH = renderedRect ? renderedRect.height : 0
 
@@ -335,7 +561,7 @@ function isElementOnScreen(el: HTMLElement, visibleThreshold = 0.4): boolean {
 async function scrollElementIntoCenterView(el: HTMLElement | null): Promise<void> {
   if (!el) return;
 
-  if (isElementOnScreen(el, 0.5)) return;
+  // if (isElementOnScreen(el, 1)) return;
 
   const rect = el.getBoundingClientRect();
   const scrollY =
@@ -361,6 +587,7 @@ type VideoProxyCloseArgs = {
   fsSliderEl: HTMLElement;
   nodeIdx: number;
   thumbCropRect: DOMRect;
+  endClipRect?: DOMRect;
   endObjPos: { x: number; y: number };
   captionClone: HTMLElement | null;
   trackStyleMutation: TrackStyleMutation;
@@ -376,6 +603,7 @@ async function animateVideoCloseProxy({
   fsSliderEl,
   nodeIdx,
   thumbCropRect,
+  endClipRect,
   endObjPos,
   captionClone,
   trackStyleMutation,
@@ -482,7 +710,7 @@ async function animateVideoCloseProxy({
   };
 
   requestAnimationFrame(() => {
-    clipper.style.clipPath = insetForRect(thumbCropRect);
+    clipper.style.clipPath = insetForRect(endClipRect ?? thumbCropRect);
     (movingProxy as HTMLElement).style.transition = `transform ${DURATION_MS}ms ${EASING}`;
     (movingProxy as HTMLElement).style.transform =
       `translate3d(${endT.cx}px, ${endT.cy}px, 0)` +
@@ -522,6 +750,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   onForceResetZoom,
   layout,
   expandableImageRefs,
+  resolveLayoutlessTarget,
   entryMapRef,
   entryMediaLayout,
   introFade,
@@ -708,7 +937,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     const fsSlider = modal?.querySelector<HTMLElement>('.fullscreen_slider') ?? null;
     if (fsSlider) {
-      fsSlider.style.transition = '';
       fsSlider.style.willChange = '';
     }
   }, []);
@@ -916,13 +1144,41 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     const normalizedFsIndex = normalizeFsIndex(fsIdx, originals.length);
 
     const isGridish =
+      !layout ||
       layout === "grid" ||
       layout === "masonry" ||
       entryMediaLayout === "grid" ||
       entryMediaLayout === "masonry";
 
+    const resolveExpandableSlot = (slot: unknown): {
+      host: HTMLElement | null;
+      image: HTMLImageElement | null;
+    } => {
+      if (!slot) return { host: null, image: null };
+
+      if (slot instanceof HTMLImageElement) {
+        return {
+          host:
+            (slot.closest(
+              '[data-rmg-idx], .rmg__grid-item, .rmg__masonry-item, .rmg__slide'
+            ) as HTMLElement | null) ??
+            slot.parentElement,
+          image: slot,
+        };
+      }
+
+      if (slot instanceof HTMLElement) {
+        return {
+          host: slot,
+          image: (slot.querySelector("img") as HTMLImageElement | null) ?? null,
+        };
+      }
+
+      return { host: null, image: null };
+    };
+
     const computeThumbCropRectFromImg = (img: HTMLImageElement): { cropRect: DOMRect; objPos: { x: number; y: number } } => {
-      const box = img.getBoundingClientRect();
+      const box = getScaleSettledRect(img) ?? img.getBoundingClientRect();
       const cs = getComputedStyle(img);
       const objPos = parseObjectPosition(cs?.objectPosition ?? null) ?? { x: 0.5, y: 0.5 };
       const fit = (cs?.objectFit ?? "cover") as "contain" | "cover";
@@ -935,10 +1191,30 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       return { cropRect, objPos };
     };
 
+    const computeVisibleThumbClipRect = (args: {
+      thumbCropRect: DOMRect;
+      destImg?: HTMLImageElement | null;
+    }) => {
+      const sourceRect = args.destImg
+        ? (getScaleSettledRect(args.destImg) ?? args.destImg.getBoundingClientRect())
+        : args.thumbCropRect;
+      const navEl = findStickyNav(fs.effects?.introStickyNavSelector, sourceRect);
+      const navRect = navEl?.getBoundingClientRect();
+
+      if (!navRect) return args.thumbCropRect;
+
+      return (
+        intersectRectWithTopOccluder(args.thumbCropRect, navRect.bottom) ??
+        args.thumbCropRect
+      );
+    };
+
     const animateCloseToThumb = async (args: {
       thumbCropRect: DOMRect;
       endObjPos: { x: number; y: number };
       isVideoSlide: boolean;
+      destImg?: HTMLImageElement | null;
+      destOverflowRect?: DOMRect | null;
     }) => {
       const fsSlider = withinFs<HTMLElement>(".fullscreen_slider");
       if (!fsSlider) {
@@ -968,6 +1244,11 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         return;
       }
 
+      const endClipRect = computeVisibleThumbClipRect({
+        thumbCropRect: args.thumbCropRect,
+        destImg: args.destImg,
+      });
+
       fadeNonActiveSlides(fsSlider, nodeIdx, targetImg, args.isVideoSlide);
 
       let captionClone: HTMLElement | null = cloneFsCaptionForNode(fsSlider, nodeIdx);
@@ -983,6 +1264,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           fsSliderEl: fsSlider,
           nodeIdx,
           thumbCropRect: args.thumbCropRect,
+          endClipRect,
           endObjPos: args.endObjPos ?? { x: 0.5, y: 0.5 },
           captionClone,
           trackStyleMutation,
@@ -1014,7 +1296,26 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
       const endT = coverTransformForRect(natW, natH, args.thumbCropRect, args.endObjPos);
 
-      const previous = {
+      const destOverflowRect =
+        args.destOverflowRect ??
+        findClosestOverflowClipParentRectFromEl(args.destImg ?? null) ??
+        args.thumbCropRect;
+
+      const vw = document.documentElement.clientWidth;
+      const vh = window.innerHeight;
+
+      const imageClipper = createViewportClipper(
+        insetForViewportRect(curRect, vw, vh),
+        computedBaseZ
+      );
+
+      const parentClipper = createViewportClipper(
+        insetForViewportRect(destOverflowRect, vw, vh),
+        computedBaseZ
+      );
+      parentClipper.style.clipPath = 'inset(0px 0px 0px 0px)';  
+
+      const prevStyle = {
         position: movingEl.style.position,
         left: movingEl.style.left,
         top: movingEl.style.top,
@@ -1027,36 +1328,50 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         transition: movingEl.style.transition,
         willChange: movingEl.style.willChange,
         zIndex: movingEl.style.zIndex,
-        opacity: movingEl.style.opacity,
         pointerEvents: movingEl.style.pointerEvents,
       };
 
       Object.assign(movingEl.style, {
-        position: "fixed",
-        left: "0",
-        top: "0",
+        position: 'fixed',
+        left: '0',
+        top: '0',
         width: `${natW}px`,
         height: `${natH}px`,
-        maxWidth: "none",
-        maxHeight: "none",
-        transformOrigin: "50% 50%",
-        willChange: "transform",
-        zIndex: "1",
-        pointerEvents: "none",
-        transition: "none",
-        opacity: "1",
+        maxWidth: 'none',
+        maxHeight: 'none',
+        transformOrigin: '50% 50%',
+        willChange: 'transform',
+        transition: 'none',
+        zIndex: '1',
+        pointerEvents: 'none',
       } as CSSStyleDeclaration);
+
+      imageClipper.appendChild(movingEl);
+      parentClipper.appendChild(imageClipper);
+      document.body.appendChild(parentClipper);
 
       movingEl.style.transform =
         `translate3d(${startT.cx}px, ${startT.cy}px, 0)` +
         ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
         ` scale(${startT.scale})`;
 
-      const clipper = createClipper({ DURATION_MS, EASING });
-      clipper.appendChild(movingEl);
-
       void movingEl.offsetWidth;
-      void clipper.offsetWidth;
+      void imageClipper.offsetWidth;
+      void parentClipper.offsetWidth;
+
+      imageClipper.style.transition = `clip-path ${DURATION_MS}ms ${EASING}`;
+      parentClipper.style.transition = `clip-path ${DURATION_MS}ms ${EASING}`;
+      movingEl.style.transition = `transform ${DURATION_MS}ms ${EASING}`;
+
+      requestAnimationFrame(() => {
+        imageClipper.style.clipPath = insetForViewportRect(endClipRect, vw, vh);
+        parentClipper.style.clipPath = insetForViewportRect(destOverflowRect, vw, vh);
+
+        movingEl.style.transform =
+          `translate3d(${endT.cx}px, ${endT.cy}px, 0)` +
+          ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
+          ` scale(${endT.scale})`;
+      });
 
       let finished = false;
 
@@ -1064,12 +1379,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         if (finished) return;
         finished = true;
 
-        if (captionClone) {
-          try { captionClone.remove(); } catch {}
-          captionClone = null;
-        }
-
-        movingEl.removeEventListener("transitionend", onEnd as any);
+        movingEl.removeEventListener('transitionend', onEnd as any);
 
         try {
           if (restoreIntoParent) {
@@ -1081,30 +1391,20 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           }
         } catch {}
 
-        Object.assign(movingEl.style, previous);
+        Object.assign(movingEl.style, prevStyle);
 
-        try { document.body.removeChild(clipper); } catch {}
+        try { parentClipper.remove(); } catch {}
 
         safeTeardown();
       };
 
       const onEnd = (ev: TransitionEvent) => {
-        if (ev.propertyName !== "transform") return;
+        if (ev.propertyName !== 'transform') return;
         finish();
       };
 
-      requestAnimationFrame(() => {
-        clipper.style.clipPath = insetForRect(args.thumbCropRect);
-        movingEl.style.transition = `transform ${DURATION_MS}ms ${EASING}`;
-        movingEl.style.transform =
-          `translate3d(${endT.cx}px, ${endT.cy}px, 0)` +
-          ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
-          ` scale(${endT.scale})`;
-
-        movingEl.addEventListener("transitionend", onEnd as any, { once: true });
-
-        window.setTimeout(() => finish(), DURATION_MS + 80);
-      });
+      movingEl.addEventListener('transitionend', onEnd as any, { once: true });
+      window.setTimeout(() => finish(), DURATION_MS + 80);
     };
 
     let canonicalIdx = normalizedFsIndex;
@@ -1133,17 +1433,80 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       localSlideIdx = link.mediaIndex;
       await scrollEntrySectionIntoView(link.entryIndex);
       await waitForEntryOwnerReady(link.entryIndex);
+
+      // waitForEntryOwnerReady resolves when React sets data-rmg-entry-ready="1", which is
+      // when CSS transitions START — not when they finish. Directly force the skeleton and
+      // content to their final visual state (no transition) so the FLIP starts on a clean,
+      // fully-revealed entry.
+      const revealSection = document.querySelector<HTMLElement>(`[data-rmg-entry-owner="${link.entryIndex}"]`);
+      if (revealSection) {
+        for (const child of Array.from(revealSection.children)) {
+          const el = child as HTMLElement;
+          if (el.hasAttribute('data-rmg-entry-skeleton')) {
+            el.style.setProperty('transition', 'none');
+            el.style.setProperty('opacity', '0');
+          } else {
+            el.style.setProperty('transition', 'none');
+            el.style.setProperty('opacity', '1');
+          }
+        }
+        // One RAF so the browser paints the forced state before the FLIP animation starts.
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      }
+
       syncFullscreenSourceFromIndex(canonicalIdx);
     };
 
+    let closeSpinnerEl: HTMLElement | null = null;
+    if (!isGridish && layout === 'entries' && entryMapRef?.current) {
+      const link = entryMapRef.current[canonicalIdx];
+      if (link) {
+        const section = document.querySelector<HTMLElement>(`[data-rmg-entry-owner="${link.entryIndex}"]`);
+        // Suppress reveal transitions so the entry appears instantly before the close
+        // animation starts — avoids the skeleton being visible or content still fading
+        // in while the FLIP runs.
+        section?.style.setProperty('--rmg-entry-intro-duration', '0ms');
+        section?.style.setProperty('--rmg-entry-intro-delay', '0ms');
+        section?.style.setProperty('--rmg-entry-skeleton-exit-duration', '0ms');
+
+        if (!isEntryOwnerReady(link.entryIndex)) {
+          const el = document.createElement('div');
+          el.className = styles.spinner;
+          el.style.position = 'fixed';
+          el.style.zIndex = String(computedBaseZ + 10);
+          el.style.setProperty('opacity', '1', 'important');
+          el.style.setProperty('visibility', 'visible', 'important');
+          document.body.appendChild(el);
+          closeSpinnerEl = el;
+        }
+      }
+    }
+
     if (!isGridish) {
       await waitForEntriesOwnerReady();
+
+      if (closeSpinnerEl) {
+        closeSpinnerEl.style.setProperty('opacity', '0', 'important');
+        const captured = closeSpinnerEl;
+        setTimeout(() => { try { captured.remove(); } catch {} }, 200);
+        closeSpinnerEl = null;
+      }
+
       if (!slider.current || !slides.current?.length) {
         safeTeardown();
         return;
       }
     } else {
-      const el = document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`);
+      const layoutlessTarget = resolveLayoutlessTarget(canonicalIdx);
+      const slotInfo = resolveExpandableSlot(
+        (expandableImageRefs.current as any)?.[canonicalIdx] ?? null
+      );
+      const el =
+        layoutlessTarget.host ??
+        layoutlessTarget.media ??
+        document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`) ??
+        slotInfo.host ??
+        null;
       await scrollElementIntoCenterView(el);
       await waitForEntriesOwnerReady();
     }
@@ -1207,6 +1570,10 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           thumbCropRect,
           endObjPos,
           isVideoSlide: false,
+          destImg: thumbInfo.imgEl,
+          destOverflowRect: thumbInfo.imgEl
+            ? findClosestOverflowClipParentRectFromEl(thumbInfo.imgEl)
+            : thumbCropRect,
         });
       };
 
@@ -1237,18 +1604,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     }
 
     const slot: any = (expandableImageRefs.current as any)[canonicalIdx] ?? null;
-
     const slotCurrent: any =
       slot && typeof slot === "object" && "current" in slot ? slot.current : slot;
+    const slotInfo = resolveExpandableSlot(slotCurrent);
+    const layoutlessTarget = resolveLayoutlessTarget(canonicalIdx);
 
-    let destImg: HTMLImageElement | null = null;
-
-    if (slotCurrent?.tagName === "IMG") {
-      destImg = slotCurrent as HTMLImageElement;
-    } else if (slotCurrent) {
-      const host = slotCurrent as HTMLElement;
-      destImg = host.querySelector?.("img") as HTMLImageElement | null;
-    }
+    let destImg: HTMLImageElement | null = slotInfo.image ?? layoutlessTarget.image;
 
     if (!destImg) {
       const host = document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`);
@@ -1330,6 +1691,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   return (
     <div
       ref={modalRef}
+      data-rmg-fs-root="true"
       onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
         pointerDownX.current = e.clientX
         pointerDownY.current = e.clientY

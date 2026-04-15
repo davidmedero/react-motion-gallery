@@ -1,18 +1,21 @@
 /* eslint-disable @next/next/no-img-element */
-'use client'
+"use client";
 
-import React, { useEffect, useMemo, useRef } from 'react'
-import { createPortal } from 'react-dom'
-import ThumbnailSlider from '../thumbnails'
-import { createSliderIndexChannel } from '../slider/sliderSub'
-import type { ThumbnailsOptions } from '../thumbnails/types'
-import { createFullscreenThumbnailSyncBridge } from './syncBridge'
-import type { FullscreenThumbnailSliderProps } from './types'
+import React, { useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
+import ThumbnailSlider from "../thumbnails";
+import { createSliderIndexChannel } from "../slider/sliderSub";
+import type {
+  ThumbnailSelectMeta,
+  ThumbnailsOptions,
+} from "../thumbnails/types";
+import { createFullscreenThumbnailSyncBridge } from "./syncBridge";
+import type { FullscreenThumbnailSliderProps } from "./types";
 
 function clampIndex(index: number, len: number) {
-  if (len <= 0 || !Number.isFinite(index)) return 0
-  const whole = Math.trunc(index)
-  return Math.max(0, Math.min(len - 1, whole))
+  if (len <= 0 || !Number.isFinite(index)) return 0;
+  const whole = Math.trunc(index);
+  return Math.max(0, Math.min(len - 1, whole));
 }
 
 export default function FullscreenThumbnailSlider({
@@ -27,7 +30,7 @@ export default function FullscreenThumbnailSlider({
   thumbnailsContainerWidth,
   thumbnailsContainerHeight,
   fadeDurationMs = 300,
-  fadeEasing = 'cubic-bezier(.4,0,.22,1)',
+  fadeEasing = "cubic-bezier(.4,0,.22,1)",
   thumbnailItemClassName,
   thumbnailItemStyle,
   gap,
@@ -51,26 +54,32 @@ export default function FullscreenThumbnailSlider({
   nextArrowClassName,
   renderArrows,
   renderPrevArrow,
-  renderNextArrow
+  renderNextArrow,
+  thumbnailCrossfade,
 }: FullscreenThumbnailSliderProps) {
-  const { fsSub, mountEl, visible, invisible, direction, registerLayout, clearLayout } = bridge
-  const itemCount = items.length
+  const { fsSub, mountEl, visible, invisible, direction, registerLayout, clearLayout } =
+    bridge;
+
+  const itemCount = items.length;
+
   const channelRef = useRef(
-    createSliderIndexChannel(clampIndex(fsSub.get(), itemCount), 'animated')
-  )
-  const thumbsReadyRef = useRef(false)
-  const didInitialSnapThisOpenRef = useRef(false)
+    createSliderIndexChannel(clampIndex(fsSub.get(), itemCount), "animated")
+  );
+
+  const thumbsReadyRef = useRef(false);
+  const didInitialSnapThisOpenRef = useRef(false);
+
   const syncBridgeRef = useRef(
     createFullscreenThumbnailSyncBridge({
       localChannel: channelRef.current,
       fsSub,
       clampIndex: (index) => clampIndex(index, itemCount),
     })
-  )
+  );
 
-  function snapToCurrentFsIndex(mode: 'instant' | 'animated' = 'instant') {
-    const idx = clampIndex(fsSub.get(), itemCount)
-    channelRef.current.set(idx, mode, { silent: false })
+  function snapToCurrentFsIndex(mode: "instant" | "animated" = "instant") {
+    const idx = clampIndex(fsSub.get(), itemCount);
+    channelRef.current.set(idx, mode, { silent: false });
   }
 
   useEffect(() => {
@@ -78,11 +87,11 @@ export default function FullscreenThumbnailSlider({
       localChannel: channelRef.current,
       fsSub,
       clampIndex: (index) => clampIndex(index, itemCount),
-    })
+    });
 
-    const cleanup = syncBridgeRef.current.start()
-    return () => cleanup()
-  }, [fsSub, itemCount])
+    const cleanup = syncBridgeRef.current.start();
+    return () => cleanup();
+  }, [fsSub, itemCount]);
 
   useEffect(() => {
     registerLayout({
@@ -91,7 +100,7 @@ export default function FullscreenThumbnailSlider({
       style: containerStyle,
       fadeDurationMs,
       fadeEasing,
-    })
+    });
   }, [
     registerLayout,
     position,
@@ -99,25 +108,25 @@ export default function FullscreenThumbnailSlider({
     containerStyle,
     fadeDurationMs,
     fadeEasing,
-  ])
+  ]);
 
   useEffect(() => {
     return () => {
-      clearLayout()
-    }
-  }, [clearLayout])
+      clearLayout();
+    };
+  }, [clearLayout]);
 
   useEffect(() => {
-    const isOpen = visible && !invisible
+    const isOpen = visible && !invisible;
     if (!isOpen) {
-      didInitialSnapThisOpenRef.current = false
-      return
+      didInitialSnapThisOpenRef.current = false;
+      return;
     }
     if (thumbsReadyRef.current && !didInitialSnapThisOpenRef.current) {
-      snapToCurrentFsIndex('instant')
-      didInitialSnapThisOpenRef.current = true
+      snapToCurrentFsIndex("instant");
+      didInitialSnapThisOpenRef.current = true;
     }
-  }, [visible, invisible, itemCount, fsSub])
+  }, [visible, invisible, itemCount, fsSub]);
 
   const children = useMemo(
     () =>
@@ -127,26 +136,26 @@ export default function FullscreenThumbnailSlider({
           src={item.thumbSrc}
           alt={item.alt ?? `thumb-${i}`}
           style={{
-            width: 'inherit',
-            height: 'inherit',
-            objectFit: 'contain',
-            display: 'block',
+            width: "inherit",
+            height: "inherit",
+            objectFit: "contain",
+            display: "block",
           }}
           draggable={false}
         />
       )),
     [items]
-  )
+  );
 
-  const isOpen   = visible && !invisible
+  const isOpen = visible && !invisible;
 
-  const opacity = isOpen ? 1 : 0
-  const transform = isOpen ? 'translateY(0)' : 'translateY(8px)'
-  const pointerEvents: React.CSSProperties['pointerEvents'] =
-    isOpen ? 'auto' : 'none'
+  const opacity = isOpen ? 1 : 0;
+  const transform = isOpen ? "translateY(0)" : "translateY(8px)";
+  const pointerEvents: React.CSSProperties["pointerEvents"] =
+    isOpen ? "auto" : "none";
 
-  const resolvedContainerWidth = thumbnailsContainerWidth ?? containerStyle?.width
-  const resolvedContainerHeight = thumbnailsContainerHeight ?? containerStyle?.height
+  const resolvedContainerWidth = thumbnailsContainerWidth ?? containerStyle?.width;
+  const resolvedContainerHeight = thumbnailsContainerHeight ?? containerStyle?.height;
 
   const wrapperStyle: React.CSSProperties = {
     opacity,
@@ -156,7 +165,7 @@ export default function FullscreenThumbnailSlider({
       opacity ${fadeDurationMs}ms ${fadeEasing},
       transform ${fadeDurationMs}ms ${fadeEasing}
     `,
-  }
+  };
 
   const thumbnailOptions = useMemo<ThumbnailsOptions>(
     () => ({
@@ -219,13 +228,13 @@ export default function FullscreenThumbnailSlider({
       },
       transitions: {
         loading: {
-          enabled: false
+          enabled: false,
         },
         intro: {
           staggerMs: 0,
           durationMs: 0,
-          transform: '0px'
-        }
+        },
+        crossfade: thumbnailCrossfade,
       },
       breakpointMap,
     }),
@@ -262,10 +271,11 @@ export default function FullscreenThumbnailSlider({
       rippleEnabled,
       rippleClassName,
       breakpointMap,
+      thumbnailCrossfade,
     ]
-  )
+  );
 
-  if (!mountEl) return null
+  if (!mountEl) return null;
 
   return createPortal(
     <div style={wrapperStyle}>
@@ -274,20 +284,32 @@ export default function FullscreenThumbnailSlider({
         direction={direction}
         options={thumbnailOptions}
         onReadyChange={(ready) => {
-          thumbsReadyRef.current = ready
-          if (!ready) return
-          const isOpen = visible && !invisible
-          if (!isOpen || didInitialSnapThisOpenRef.current) return
-          snapToCurrentFsIndex('instant')
-          didInitialSnapThisOpenRef.current = true
+          thumbsReadyRef.current = ready;
+          if (!ready) return;
+
+          const isOpen = visible && !invisible;
+          if (!isOpen || didInitialSnapThisOpenRef.current) return;
+
+          snapToCurrentFsIndex("instant");
+          didInitialSnapThisOpenRef.current = true;
         }}
-        onThumbnailClick={(idx) =>
-          syncBridgeRef.current.publishThumbnailClick(idx, 'animated')
-        }
+        onThumbnailClick={(idx, meta?: ThumbnailSelectMeta) => {
+          syncBridgeRef.current.publishThumbnailClick(idx, "animated", {
+            source: "thumbnail",
+            transition: meta?.transition ?? "scroll",
+            crossfade:
+              meta?.transition === "crossfade"
+                ? {
+                    durationMs: meta.crossfade?.durationMs,
+                    easing: meta.crossfade?.easing,
+                  }
+                : undefined,
+          });
+        }}
       >
         {children}
       </ThumbnailSlider>
     </div>,
     mountEl
-  )
+  );
 }

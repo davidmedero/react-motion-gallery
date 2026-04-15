@@ -1,0 +1,58 @@
+export const css = String.raw`/* app/globals.css or Demo.module.css */
+
+.masonryVimeoCard {
+  display: grid;
+  gap: 14px;
+  padding: 12px 12px 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+
+.masonryVimeoFrame {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #020617;
+}
+
+.masonryVimeoFrame > * {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryVimeoVideo {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryVimeoFrame :global(.plyr),
+.masonryVimeoFrame :global(.plyr__video-wrapper),
+.masonryVimeoFrame :global(.plyr__poster),
+.masonryVimeoFrame :global(video),
+.masonryVimeoFrame :global(iframe) {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryVimeoFrame :global(.plyr__poster) {
+  background-size: cover;
+}
+
+.masonryVimeoMeta {
+  display: grid;
+  gap: 6px;
+}
+
+.masonryVimeoTitle {
+  font-size: 1.04rem;
+  letter-spacing: -0.02em;
+}
+
+.masonryVimeoBody {
+  margin: 0;
+  color: rgba(11, 18, 32, 0.72);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}`;

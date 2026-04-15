@@ -3,12 +3,12 @@
 
 import * as React from "react";
 import { GridLayout } from "./GridLayout";
-import { DEFAULT_GRID } from "./defaults";
-import { BREAKPOINT_MAP, resolveNumberFromResponsive } from "../shared/responsive";
+import { BREAKPOINT_MAP } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import type { BreakpointMap } from "../shared/responsive";
 import type { GridOptions, IntroOptions, LoadingOptions } from "./types";
 import { useOptionalGalleryCore } from "../core";
+import { GridItem, normalizeGridChild, type GridCell } from "./item";
 
 type Props = GridOptions & {
   children?: React.ReactNode;
@@ -17,9 +17,11 @@ type Props = GridOptions & {
   renderMode?: "wrap" | "passthrough";
 };
 
-type Cell = { id: string; node: React.ReactNode };
+type GridComponent = ((props: Props) => React.JSX.Element) & {
+  Item: typeof GridItem;
+};
 
-export default function GridLayoutRuntime(props: Props) {
+export function GridLayoutRuntime(props: Props) {
   const { children, breakpoints, gridItemBaseClass, renderMode, ...gridOptions } = props;
 
   const core = useOptionalGalleryCore();
@@ -30,43 +32,31 @@ export default function GridLayoutRuntime(props: Props) {
     [core?.effectiveBreakpoints, breakpoints]
   );
 
-  const gridObject: GridOptions = React.useMemo(() => {
-    const resolvedColumns =
-      gridOptions.columns != null
-        ? Math.max(
-            1,
-            resolveNumberFromResponsive(gridOptions.columns, 0, vw, effectiveBreakpoints) | 0
-          )
-        : undefined;
-
-    const fallbackGap = (DEFAULT_GRID as any).gap != null ? (DEFAULT_GRID as any).gap : 0;
-
-    const resolvedGap =
-      gridOptions.gap != null
-        ? Math.max(
-            0,
-            resolveNumberFromResponsive(gridOptions.gap, fallbackGap, vw, effectiveBreakpoints) | 0
-          )
-        : fallbackGap;
-
-    return {
-      ...gridOptions,
-      columns: resolvedColumns,
-      minColumnWidth: gridOptions.minColumnWidth ?? (DEFAULT_GRID as any).minColumnWidth,
-      gap: resolvedGap,
-    };
-  }, [gridOptions, vw, effectiveBreakpoints]);
+  const gridObject: GridOptions = React.useMemo(() => ({ ...gridOptions }), [gridOptions]);
 
   const idSeqRef = React.useRef(0);
   const newId = React.useCallback(() => `rmg-${++idSeqRef.current}`, []);
 
-  const initialCells = React.useMemo<Cell[]>(() => {
+  const initialCells = React.useMemo<GridCell[]>(() => {
     const kids = React.Children.toArray(children);
-    return kids.map((n) => ({ id: newId(), node: n }));
+    const next: GridCell[] = [];
+
+    for (const child of kids) {
+      const normalized = normalizeGridChild(child);
+      if (normalized.node == null) continue;
+
+      next.push({
+        id: newId(),
+        node: normalized.node,
+        layoutMeta: normalized.layoutMeta,
+      });
+    }
+
+    return next;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [cellsState] = React.useState<Cell[]>(initialCells);
+  const [cellsState] = React.useState<GridCell[]>(initialCells);
 
   function normalizeLoading(src?: LoadingOptions) {
     return {
@@ -74,6 +64,7 @@ export default function GridLayoutRuntime(props: Props) {
       force: src?.force,
       renderLoading: src?.renderLoading,
       skeleton: src?.skeleton,
+      timing: src?.timing,
     };
   }
 
@@ -82,9 +73,8 @@ export default function GridLayoutRuntime(props: Props) {
   function normalizeIntro(src?: IntroOptions) {
     return {
       renderIntro: src?.renderIntro,
-      staggerMs: src?.staggerMs ?? 40,
-      transform: src?.transform ?? "translateY(10px) scale(0.99)",
-      durationMs: src?.durationMs ?? 300,
+      staggerMs: src?.staggerMs ?? 60,
+      durationMs: src?.durationMs ?? 600,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
     };
   }
@@ -151,7 +141,7 @@ export default function GridLayoutRuntime(props: Props) {
       viewportWidth={vw}
       loading={gridLoading}
       intro={gridIntro}
-      enableFullscreen={!!core?.requestFullscreenOpen}
+      enableFullscreen={!!core?.fsEnabled}
       onOpen={onOpen}
       registerExpandableImage={registerExpandableImage}
       gridItemBaseClass={gridItemBaseClass}
@@ -159,3 +149,9 @@ export default function GridLayoutRuntime(props: Props) {
     />
   );
 }
+
+export const Grid = Object.assign(GridLayoutRuntime, {
+  Item: GridItem,
+}) as GridComponent;
+
+export default Grid;

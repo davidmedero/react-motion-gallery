@@ -3,8 +3,10 @@
 import * as React from 'react';
 import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
 import { LazyItemHost } from '../shared/lazy/LazyItemHost';
+import { useViewportWidth } from '../shared/hooks/useViewportWidth';
 import { parseNumberLike, resolveNumberFromResponsive } from '../shared/responsive';
 import type { MasonryLazyLoadOptions } from './types';
+import { buildMasonryColumnLayout } from './prediction';
 
 export type MasonryClassNames = {
   root?: string;
@@ -20,14 +22,68 @@ export type MasonryProps = {
   masonryGap?: ResponsiveNumber;
   masonryPlacement?: MasonryPlacement;
   masonryEstimatedItemHeight?: number;
+  masonryInitialHeights?: ReadonlyArray<number | undefined>;
   masonryClassNames?: MasonryClassNames;
   masonryStyle?: React.CSSProperties;
   masonryAs?: React.ElementType;
   masonryRootRef?: React.Ref<any>;
   breakpoints?: BreakpointMap;
   masonryLazyLoad?: MasonryLazyLoadOptions;
+  responsiveViewportWidth?: number;
   onVisibleIndex?: (index: number) => void;
+  revealedIndicesRef?: React.RefObject<Set<number>>;
 };
+
+export { buildMasonryColumnLayout } from './prediction';
+
+export function resolveMasonrySeedHeight(args: {
+  index: number;
+  previousHeight?: number;
+  initialHeights?: ReadonlyArray<number | undefined>;
+  estimatedItemHeight: number;
+}) {
+  const predicted = args.initialHeights?.[args.index];
+  if (Number.isFinite(predicted) && Number(predicted) > 0) {
+    return Number(predicted);
+  }
+
+  if (Number.isFinite(args.estimatedItemHeight) && args.estimatedItemHeight > 0) {
+    return args.estimatedItemHeight;
+  }
+
+  return args.previousHeight ?? 0;
+}
+
+export function seedUnmeasuredMasonryHeights(args: {
+  itemCount: number;
+  previousHeights: number[];
+  measuredIndices: Set<number>;
+  initialHeights?: ReadonlyArray<number | undefined>;
+  estimatedItemHeight: number;
+}) {
+  const next = args.previousHeights.slice(0, args.itemCount);
+  let changed = next.length !== args.previousHeights.length;
+
+  for (let index = 0; index < args.itemCount; index++) {
+    if (args.measuredIndices.has(index) && Number.isFinite(next[index])) {
+      continue;
+    }
+
+    const seededHeight = resolveMasonrySeedHeight({
+      index,
+      previousHeight: next[index],
+      initialHeights: args.initialHeights,
+      estimatedItemHeight: args.estimatedItemHeight,
+    });
+
+    if (next[index] !== seededHeight) {
+      next[index] = seededHeight;
+      changed = true;
+    }
+  }
+
+  return changed ? next : args.previousHeights;
+}
 
 export const MasonryCore: React.FC<MasonryProps> = ({
   items,
@@ -35,42 +91,51 @@ export const MasonryCore: React.FC<MasonryProps> = ({
   masonryGap,
   masonryPlacement = 'balanced',
   masonryEstimatedItemHeight = 0,
+  masonryInitialHeights,
   masonryClassNames,
   masonryStyle,
   masonryAs: RootComponent = 'div',
   masonryRootRef,
   breakpoints,
   masonryLazyLoad,
+  responsiveViewportWidth,
   onVisibleIndex,
+  revealedIndicesRef,
 }) => {
   const DEFAULT_MASONRY_COLUMNS = 4;
   const DEFAULT_MASONRY_GAP_PX = 8;
-
-  const [viewportWidth, setViewportWidth] = React.useState(() => {
-    if (typeof window === 'undefined') return 0;
-    return window.innerWidth;
-  });
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+  const liveViewportWidth = useViewportWidth();
+  const viewportWidth = responsiveViewportWidth ?? liveViewportWidth;
+  const measuredIndicesRef = React.useRef<Set<number>>(new Set());
 
   const [heights, setHeights] = React.useState<number[]>(
-    () => items.map(() => masonryEstimatedItemHeight)
+    () =>
+      seedUnmeasuredMasonryHeights({
+        itemCount: items.length,
+        previousHeights: [],
+        measuredIndices: new Set(),
+        initialHeights: masonryInitialHeights,
+        estimatedItemHeight: masonryEstimatedItemHeight,
+      })
   );
 
   React.useEffect(() => {
-    setHeights((prev) => {
-      const next: number[] = [];
-      for (let i = 0; i < items.length; i++) {
-        next[i] = prev[i] ?? masonryEstimatedItemHeight;
+    for (const index of Array.from(measuredIndicesRef.current)) {
+      if (index >= items.length) {
+        measuredIndicesRef.current.delete(index);
       }
-      return next;
-    });
-  }, [items.length, masonryEstimatedItemHeight]);
+    }
+
+    setHeights((prev) =>
+      seedUnmeasuredMasonryHeights({
+        itemCount: items.length,
+        previousHeights: prev,
+        measuredIndices: measuredIndicesRef.current,
+        initialHeights: masonryInitialHeights,
+        estimatedItemHeight: masonryEstimatedItemHeight,
+      })
+    );
+  }, [items.length, masonryEstimatedItemHeight, masonryInitialHeights]);
 
   const columnCount = React.useMemo(() => {
     const raw = resolveNumberFromResponsive(
@@ -92,52 +157,32 @@ export const MasonryCore: React.FC<MasonryProps> = ({
     return Math.max(0, parseNumberLike(raw as any, DEFAULT_MASONRY_GAP_PX));
   }, [masonryGap, viewportWidth, breakpoints]);
 
-  const [colIndex, setColIndex] = React.useState<number[]>(
+  const colIndex = React.useMemo(
     () =>
-      items.map((_, i) =>
-        masonryPlacement === 'roundRobin' ? i % Math.max(1, columnCount) : 0
-      )
+      buildMasonryColumnLayout({
+        itemCount: items.length,
+        columnCount,
+        placement: masonryPlacement,
+        heights,
+        estimatedItemHeight: masonryEstimatedItemHeight,
+        gapPx,
+      }),
+    [
+      items.length,
+      heights,
+      columnCount,
+      masonryPlacement,
+      gapPx,
+      masonryEstimatedItemHeight,
+    ]
   );
 
-  React.useEffect(() => {
-    const layout: number[] = new Array(items.length);
-
-    if (masonryPlacement === 'roundRobin') {
-      for (let i = 0; i < items.length; i++) {
-        layout[i] = i % columnCount;
-      }
-    } else {
-      const colHeights = new Array(columnCount).fill(0);
-
-      for (let i = 0; i < items.length; i++) {
-        const h = heights[i] ?? masonryEstimatedItemHeight;
-
-        let minCol = 0;
-        let minVal = colHeights[0];
-
-        for (let c = 1; c < columnCount; c++) {
-          if (colHeights[c] < minVal) {
-            minVal = colHeights[c];
-            minCol = c;
-          }
-        }
-
-        layout[i] = minCol;
-        colHeights[minCol] += h + gapPx;
-      }
+  const handleHeight = React.useCallback((index: number, height: number) => {
+    if (!Number.isFinite(height)) return;
+    if (height > 0) {
+      measuredIndicesRef.current.add(index);
     }
 
-    setColIndex(layout);
-  }, [
-    items.length,
-    heights,
-    columnCount,
-    masonryPlacement,
-    gapPx,
-    masonryEstimatedItemHeight,
-  ]);
-
-  const handleHeight = React.useCallback((index: number, height: number) => {
     setHeights((prev) => {
       const old = prev[index];
       if (old === height) return prev;
@@ -166,6 +211,7 @@ export const MasonryCore: React.FC<MasonryProps> = ({
           gapPx={gapPx}
           lazyLoad={masonryLazyLoad}
           onVisibleIndex={onVisibleIndex}
+          revealedIndicesRef={revealedIndicesRef}
         >
           {child}
         </MasonryItem>
@@ -183,6 +229,7 @@ export const MasonryCore: React.FC<MasonryProps> = ({
     masonryLazyLoad,
     masonryClassNames?.item,
     onVisibleIndex,
+    revealedIndicesRef,
   ]);
 
   return (
@@ -223,6 +270,7 @@ type MasonryItemProps = {
   gapPx: number;
   lazyLoad?: MasonryLazyLoadOptions;
   onVisibleIndex?: (index: number) => void;
+  revealedIndicesRef?: React.RefObject<Set<number>>;
   children: React.ReactNode;
 };
 
@@ -233,6 +281,7 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
   gapPx,
   lazyLoad,
   onVisibleIndex,
+  revealedIndicesRef,
   children,
 }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
@@ -241,7 +290,7 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
     const el = ref.current;
     if (!el) return;
 
-    const measure = () => onHeight(index, el.offsetHeight);
+    const measure = () => onHeight(index, el.getBoundingClientRect().height);
     measure();
 
     if (typeof ResizeObserver !== 'undefined') {
@@ -263,6 +312,7 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
       index={index}
       lazyLoad={lazyLoad}
       onVisibleIndex={onVisibleIndex}
+      revealedIndicesRef={revealedIndicesRef}
       className={className}
       data-rmg-idx={index}
       style={{

@@ -5,6 +5,7 @@ import * as React from "react";
 import type { BreakpointMap } from "../shared/responsive";
 import { BREAKPOINT_MAP } from "../shared/responsive";
 import { useOptionalGalleryCore } from "../core";
+import { createRmgSlideStoreBag } from "../shared/slideStoreBag";
 import { DEFAULT_MASONRY } from "./defaults";
 import type { IntroOptions, LoadingOptions, MasonryOptions } from "./types";
 import { MasonryLayout } from "./MasonryLayout";
@@ -35,15 +36,15 @@ function normalizeLoading(src?: LoadingOptions) {
     force: src?.force,
     renderLoading: src?.renderLoading,
     skeleton: src?.skeleton,
+    timing: src?.timing,
   };
 }
 
 function normalizeIntro(src?: IntroOptions) {
   return {
     renderIntro: src?.renderIntro,
-    staggerMs: src?.staggerMs ?? 40,
-    transform: src?.transform ?? "translateY(10px) scale(0.99)",
-    durationMs: src?.durationMs ?? 300,
+    staggerMs: src?.staggerMs ?? 160,
+    durationMs: src?.durationMs ?? 600,
     easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
   };
 }
@@ -94,8 +95,6 @@ export default function Masonry(props: Props) {
   const cellsState: Cell[] =
     coreCells && coreCells.length > 0 ? coreCells : localCellsState;
 
-  const isClick = React.useRef(false);
-
   const expandableImageRefs =
     core?.expandableImageRefs ??
     React.useRef<Array<HTMLImageElement | HTMLVideoElement | null>>([]);
@@ -111,7 +110,7 @@ export default function Masonry(props: Props) {
     );
 
   const normalizedItems = core?.normalizedItems ?? [];
-  const enableFullscreen = !!core?.requestFullscreenOpen;
+  const enableFullscreen = !!core?.fsEnabled;
 
   const openFullscreenAt = React.useCallback(
     (index: number, originEl?: HTMLElement | null) => {
@@ -138,14 +137,10 @@ export default function Masonry(props: Props) {
         }
       }
 
-      if (!imgEl) return;
-
-      isClick.current = true;
-
       core!.requestFullscreenOpen({
         source: "masonry",
         index,
-        image: imgEl,
+        image: imgEl ?? null,
       });
     },
     [core, enableFullscreen, normalizedItems.length, expandableImageRefs]
@@ -164,21 +159,45 @@ export default function Masonry(props: Props) {
   }, [masonryObject]);
 
   const itemClassName = (masonryObject as any).classNames?.item ?? "";
+  const itemWrapClassName = (masonryObject as any).itemWrapClassName ?? "";
+  const itemWrapStyle = (masonryObject as any).itemWrapStyle;
+  const fullscreenTrigger = (masonryObject as any).fullscreenTrigger ?? DEFAULT_MASONRY.fullscreenTrigger;
+  const layoutStoreBag = React.useMemo(() => createRmgSlideStoreBag(), []);
+
+  React.useEffect(() => {
+    return () => {
+      layoutStoreBag.destroyAll();
+    };
+  }, [layoutStoreBag]);
 
   const masonryChildren = React.useMemo(() => {
     return buildMasonryChildren({
       cells: cellsState,
       fsEnabled: enableFullscreen,
+      fullscreenTrigger,
       openFullscreenAt: (i: number, originEl?: HTMLElement | null) => openFullscreenAt(i, originEl),
 
-      registerExpandableImage: (i: number, node: HTMLImageElement | null) =>
+      registerExpandableImage: (i: number, node: HTMLElement | null) =>
         registerExpandableImage(i, (node as any) ?? null),
 
       itemBaseClass: "rmg__masonry-item",
       itemBaseStyleClass: "",
       itemClassName,
+      itemWrapClassName,
+      itemWrapStyle,
+      slideStoreBag: layoutStoreBag,
     });
-  }, [cellsState, enableFullscreen, openFullscreenAt, registerExpandableImage, itemClassName]);
+  }, [
+    cellsState,
+    enableFullscreen,
+    fullscreenTrigger,
+    openFullscreenAt,
+    registerExpandableImage,
+    itemClassName,
+    itemWrapClassName,
+    itemWrapStyle,
+    layoutStoreBag,
+  ]);
 
   return (
     <MasonryLayout

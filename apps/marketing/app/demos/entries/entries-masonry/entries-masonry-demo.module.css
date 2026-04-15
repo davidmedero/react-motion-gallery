@@ -1,0 +1,112 @@
+.shell {
+  display: grid;
+}
+
+.entryCard {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96)),
+    linear-gradient(135deg, rgba(125, 211, 252, 0.12), rgba(250, 204, 21, 0.08));
+  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
+}
+
+.entryMeta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.entryKicker,
+.entryOverlayKicker {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.entryKicker {
+  color: rgba(14, 116, 144, 0.88);
+  background: rgba(224, 242, 254, 0.9);
+}
+
+.entryTitle {
+  margin: 8px 0 0;
+  color: #0f172a;
+  font-size: 1.08rem;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.entryCount {
+  color: rgba(15, 23, 42, 0.56);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.entryBody {
+  margin: 0;
+  color: rgba(15, 23, 42, 0.7);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.entryMedia {
+  min-width: 0;
+}
+
+.entryMasonryImage {
+  width: 100%;
+  display: block;
+  height: auto;
+  border-radius: 16px;
+  background: #dbeafe;
+}
+
+.entryOverlay {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  max-width: 36rem;
+}
+
+.entryOverlayKicker {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.entryOverlayTitle {
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.entryOverlayMeta {
+  color: rgba(248, 250, 252, 0.82);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .entryMeta {
+    flex-direction: column;
+  }
+
+  .entryCount {
+    white-space: normal;
+  }
+}

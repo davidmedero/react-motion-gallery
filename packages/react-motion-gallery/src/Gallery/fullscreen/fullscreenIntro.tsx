@@ -15,6 +15,13 @@ import type {
   FsCaptionRenderArgs,
 } from "../fullscreen/types";
 import { FullscreenOpenMethod } from "../api/types";
+import {
+  effectiveViewportHeight,
+  effectiveViewportWidth,
+  resolveLengthFromResponsive,
+  ResponsiveCaptionPlacement,
+  ResponsiveLength,
+} from "../shared/responsive";
 
 type RefEl<T extends HTMLElement> = React.RefObject<T | null>;
 type ObjectFitMode = "contain" | "cover";
@@ -26,6 +33,11 @@ type FullscreenImageState = {
   natW: number;
   natH: number;
   rect: DOMRect;
+};
+
+type FullscreenCaptionState = {
+  rect: DOMRect;
+  computedStyle: CSSStyleDeclaration;
 };
 
 export type FullscreenIntroArgs = {
@@ -45,10 +57,16 @@ export type FullscreenIntroArgs = {
   setFsFadeOpening: (v: boolean) => void;
   addShield?: (timeoutMs?: number) => void;
   resolveFsCaptionPlacement: (
-    placement: any,
+    placement: ResponsiveCaptionPlacement | undefined,
     breakpoint: number | undefined,
     viewportWidth: number
   ) => FsCaptionPlacement | null;
+  viewportOverlay?: {
+    placement?: ResponsiveCaptionPlacement;
+    width?: ResponsiveLength;
+    height?: ResponsiveLength;
+    breakpoint?: number;
+  };
   closestSelector?: string;
   baseZ?: number;
 };
@@ -74,18 +92,13 @@ function resolveIntroMethod(args: {
   requested?: FullscreenOpenMethod;
   item: any;
   fs: FullscreenOptions;
-  originImg: HTMLImageElement | null;
   isVideoSlide: boolean;
 }): "fade" | "scale" {
-  const { requested, item, fs, originImg, isVideoSlide } = args;
+  const { requested, item, fs, isVideoSlide } = args;
 
   if (fs.effects?.introFade) return "fade";
-
   if (isVideoSlide) return "fade";
-
   if (requested === "fade") return "fade";
-
-  if (!originImg) return "fade";
   if (item?.kind !== "image" && item?.type !== "image") return "fade";
 
   return "scale";
@@ -104,7 +117,6 @@ function createOverlay(
   overlay.style.opacity = "0";
   overlay.style.pointerEvents = "none";
   overlay.style.transition = "none";
-
   overlay.style.transition = `opacity ${durationMs}ms ${easing}`;
 
   return overlay;
@@ -114,6 +126,7 @@ function computeContentRect(args: {
   vw: number;
   vh: number;
   fs: FullscreenOptions;
+  viewportOverlay?: FullscreenIntroArgs["viewportOverlay"];
   fsThumbContainerRef?: RefEl<HTMLElement>;
   fullscreenThumbnailPosition?: FullscreenThumbnailSlotLayout["position"] | null;
   resolveFsCaptionPlacement: FullscreenIntroArgs["resolveFsCaptionPlacement"];
@@ -122,35 +135,122 @@ function computeContentRect(args: {
     vw,
     vh,
     fs,
+    viewportOverlay,
     fsThumbContainerRef,
     fullscreenThumbnailPosition,
     resolveFsCaptionPlacement,
   } = args;
+  const resolvedViewportWidth = effectiveViewportWidth(vw);
+  const resolvedViewportHeight = effectiveViewportHeight(vh);
 
   const effectivePlacement = resolveFsCaptionPlacement(
     fs.caption?.placement,
     fs.caption?.breakpoint,
-    vw
+    resolvedViewportWidth
   );
 
   const DEFAULT_SIDE = 280;
   const DEFAULT_TOP_BOTTOM = 200;
 
-  const sideWidth = fs.caption?.width ?? DEFAULT_SIDE;
-  const topBottomHeight = fs.caption?.height ?? DEFAULT_TOP_BOTTOM;
+  const sideWidth = resolveLengthFromResponsive(
+    fs.caption?.width,
+    DEFAULT_SIDE,
+    resolvedViewportWidth,
+    resolvedViewportWidth
+  );
+
+  const topBottomHeight = resolveLengthFromResponsive(
+    fs.caption?.height,
+    DEFAULT_TOP_BOTTOM,
+    resolvedViewportWidth,
+    resolvedViewportHeight
+  );
+
+  const explicitOverlayWidth =
+    fs.caption?.width == null
+      ? undefined
+      : resolveLengthFromResponsive(
+          fs.caption.width,
+          DEFAULT_SIDE,
+          resolvedViewportWidth,
+          resolvedViewportWidth
+        );
+
+  const explicitOverlayHeight =
+    fs.caption?.height == null
+      ? undefined
+      : resolveLengthFromResponsive(
+          fs.caption.height,
+          DEFAULT_TOP_BOTTOM,
+          resolvedViewportWidth,
+          resolvedViewportHeight
+        );
+
+  const effectiveViewportOverlayPlacement = resolveFsCaptionPlacement(
+    viewportOverlay?.placement,
+    viewportOverlay?.breakpoint,
+    resolvedViewportWidth
+  );
+
+  const explicitViewportOverlayWidth =
+    viewportOverlay?.width == null
+      ? undefined
+      : resolveLengthFromResponsive(
+          viewportOverlay.width,
+          DEFAULT_SIDE,
+          resolvedViewportWidth,
+          resolvedViewportWidth
+        );
+
+  const explicitViewportOverlayHeight =
+    viewportOverlay?.height == null
+      ? undefined
+      : resolveLengthFromResponsive(
+          viewportOverlay.height,
+          DEFAULT_TOP_BOTTOM,
+          resolvedViewportWidth,
+          resolvedViewportHeight
+        );
 
   let contentLeft = 0;
-  let contentRight = vw;
+  let contentRight = resolvedViewportWidth;
   let contentTop = 0;
-  let contentBottom = vh;
+  let contentBottom = resolvedViewportHeight;
 
-  if (effectivePlacement === "right") contentRight = Math.max(0, vw - sideWidth);
-  else if (effectivePlacement === "left")
-    contentLeft = Math.min(vw, sideWidth);
-  else if (effectivePlacement === "top")
-    contentTop = Math.min(vh, topBottomHeight);
-  else if (effectivePlacement === "bottom")
-    contentBottom = Math.max(0, vh - topBottomHeight);
+  if (fs.caption?.layout !== "overlay") {
+    if (effectivePlacement === "right") contentRight = Math.max(0, resolvedViewportWidth - sideWidth);
+    else if (effectivePlacement === "left") contentLeft = Math.min(resolvedViewportWidth, sideWidth);
+    else if (effectivePlacement === "top") contentTop = Math.min(resolvedViewportHeight, topBottomHeight);
+    else if (effectivePlacement === "bottom")
+      contentBottom = Math.max(0, resolvedViewportHeight - topBottomHeight);
+  } else if (explicitOverlayWidth != null || explicitOverlayHeight != null) {
+    if (explicitOverlayWidth != null) {
+      if (effectivePlacement === "right") contentRight = Math.max(0, resolvedViewportWidth - explicitOverlayWidth);
+      else if (effectivePlacement === "left") contentLeft = Math.min(resolvedViewportWidth, explicitOverlayWidth);
+    }
+
+    if (explicitOverlayHeight != null) {
+      if (effectivePlacement === "top") contentTop = Math.min(resolvedViewportHeight, explicitOverlayHeight);
+      else if (effectivePlacement === "bottom")
+        contentBottom = Math.max(0, resolvedViewportHeight - explicitOverlayHeight);
+    }
+  }
+
+  if (explicitViewportOverlayWidth != null) {
+    if (effectiveViewportOverlayPlacement === "right") {
+      contentRight = Math.max(0, contentRight - explicitViewportOverlayWidth);
+    } else if (effectiveViewportOverlayPlacement === "left") {
+      contentLeft = Math.min(contentRight, contentLeft + explicitViewportOverlayWidth);
+    }
+  }
+
+  if (explicitViewportOverlayHeight != null) {
+    if (effectiveViewportOverlayPlacement === "top") {
+      contentTop = Math.min(contentBottom, contentTop + explicitViewportOverlayHeight);
+    } else if (effectiveViewportOverlayPlacement === "bottom") {
+      contentBottom = Math.max(contentTop, contentBottom - explicitViewportOverlayHeight);
+    }
+  }
 
   const thumbPos = fullscreenThumbnailPosition ?? null;
   if (fsThumbContainerRef?.current && thumbPos) {
@@ -182,12 +282,6 @@ function mountOverlayCaption(args: {
   normalizedItems: any[];
   index: number;
   introZ: number;
-  viewport: { vw: number; vh: number };
-  effectivePlacement: FsCaptionPlacement | null;
-  thumbPos: FullscreenThumbnailSlotLayout["position"] | null;
-  sideWidth: number;
-  topBottomHeight: number;
-  contentRect: DOMRect;
 }) {
   const {
     overlay,
@@ -198,25 +292,22 @@ function mountOverlayCaption(args: {
     normalizedItems,
     index,
     introZ,
-    viewport,
-    effectivePlacement,
-    thumbPos,
-    sideWidth,
-    topBottomHeight,
-    contentRect,
   } = args;
 
   if (typeof fs.caption?.render !== "function") return;
+  if (fs.caption?.layout === "overlay") return;
 
   try {
     const overlayCaption = document.createElement("div");
     overlayCaption.className = styles.fsOverlayCaption;
     overlayCaptionRef.current = overlayCaption;
 
-    const { vw, vh } = viewport;
-
-    const base: Partial<CSSStyleDeclaration> = {
+    Object.assign(overlayCaption.style, {
       position: "fixed",
+      left: "0",
+      top: "0",
+      width: "0px",
+      height: "0px",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -226,47 +317,9 @@ function mountOverlayCaption(args: {
       fontSize: "0.875rem",
       boxSizing: "border-box",
       pointerEvents: "none",
-      transition:
-        "opacity 220ms cubic-bezier(.4,0,.22,1), transform 220ms cubic-bezier(.4,0,.22,1)",
+      opacity: "0",
       zIndex: String(introZ + 1),
-    };
-
-    const contentLeft = contentRect.x;
-    const contentRight = contentRect.x + contentRect.width;
-    const contentTop = contentRect.y;
-    const contentBottom = contentRect.y + contentRect.height;
-
-    if (effectivePlacement === "right") {
-      base.top = thumbPos === "top" ? `${contentTop}px` : "0";
-      base.bottom = "0";
-      base.left = `${contentRight}px`;
-      base.width = `${sideWidth}px`;
-      base.height = thumbPos === "bottom" ? `${contentBottom}px` : "auto";
-    } else if (effectivePlacement === "left") {
-      base.top = thumbPos === "top" ? `${contentTop}px` : "0";
-      base.bottom = "0";
-      base.left = "0";
-      base.width = `${sideWidth}px`;
-      base.height = thumbPos === "bottom" ? `${contentBottom}px` : "auto";
-    } else if (effectivePlacement === "top") {
-      base.top = `${Math.max(0, contentTop - topBottomHeight)}px`;
-      base.left = `${contentLeft}px`;
-      base.right = `${Math.max(0, vw - contentRight)}px`;
-      base.height = `${topBottomHeight}px`;
-    } else if (effectivePlacement === "bottom") {
-      const bottomOffset = Math.max(0, vh - contentBottom - topBottomHeight);
-      base.bottom = `${bottomOffset}px`;
-      base.left = `${contentLeft}px`;
-      base.right = `${Math.max(0, vw - contentRight)}px`;
-      base.height = `${topBottomHeight}px`;
-    } else {
-      base.bottom = "0";
-      base.left = "0";
-      base.right = "0";
-      base.height = "auto";
-    }
-
-    Object.assign(overlayCaption.style, base);
+    } satisfies Partial<CSSStyleDeclaration>);
 
     if (fs.caption?.className) {
       fs.caption.className
@@ -275,6 +328,7 @@ function mountOverlayCaption(args: {
         .filter(Boolean)
         .forEach((c) => overlayCaption.classList.add(c));
     }
+
     if (fs.caption?.style) {
       Object.assign(overlayCaption.style, fs.caption.style);
     }
@@ -286,11 +340,38 @@ function mountOverlayCaption(args: {
 
     const item = normalizedItems[index];
     root.render(
-      <>{fs.caption.render({ item, index, isZoomed: false } satisfies FsCaptionRenderArgs)}</>
+      <div
+        data-rmg-fs-caption-content="true"
+        style={{ width: "100%" }}
+      >
+        {fs.caption.render({ item, index, isZoomed: false } satisfies FsCaptionRenderArgs)}
+      </div>
     );
   } catch (err) {
     console.error("[RMG] Failed to render overlay caption", err);
   }
+}
+
+function applyMeasuredCaptionRect(args: {
+  overlayCaption: HTMLDivElement;
+  captionState: FullscreenCaptionState;
+}) {
+  const { overlayCaption, captionState } = args;
+  const { rect, computedStyle } = captionState;
+
+  overlayCaption.style.left = `${rect.left}px`;
+  overlayCaption.style.top = `${rect.top}px`;
+  overlayCaption.style.width = `${rect.width}px`;
+  overlayCaption.style.height = `${rect.height}px`;
+  overlayCaption.style.opacity = "1";
+
+  // Mirror a few layout-critical properties from the real caption box.
+  overlayCaption.style.display = computedStyle.display;
+  overlayCaption.style.alignItems = computedStyle.alignItems;
+  overlayCaption.style.justifyContent = computedStyle.justifyContent;
+  overlayCaption.style.padding = computedStyle.padding;
+  overlayCaption.style.textAlign = computedStyle.textAlign;
+  overlayCaption.style.boxSizing = computedStyle.boxSizing;
 }
 
 function cleanupOverlayCaption(
@@ -327,7 +408,11 @@ function computeRectTransform(args: {
     : containTransformForRect(natW, natH, rect, objPos);
 }
 
-function computeFallbackEndTransform(natW: number, natH: number, contentRect: DOMRect): RectTransform {
+function computeFallbackEndTransform(
+  natW: number,
+  natH: number,
+  contentRect: DOMRect
+): RectTransform {
   const fitsIntrinsic = natW <= contentRect.width && natH <= contentRect.height;
   const endObjPos = { x: 0.5, y: 0.5 };
 
@@ -410,6 +495,73 @@ function waitForMountedFullscreenImage(
   });
 }
 
+function readMountedFullscreenCaptionState(
+  index: number
+): FullscreenCaptionState | null {
+  const targetSlide = document.querySelector<HTMLElement>(
+    `[data-rmg-fs-slide="true"][data-rmg-canonical-idx="${index}"][data-rmg-clone="false"]`
+  );
+
+  if (!targetSlide) return null;
+
+  const captionEl =
+    targetSlide.querySelector<HTMLElement>('[data-rmg-fs-caption="true"]') ??
+    targetSlide.querySelector<HTMLElement>('[data-rmg-fs-caption-content="true"]')?.parentElement ??
+    null;
+
+  if (!captionEl) return null;
+
+  const rect = captionEl.getBoundingClientRect();
+
+  if (rect.width <= 0 || rect.height <= 0) {
+    return null;
+  }
+
+  return {
+    rect,
+    computedStyle: getComputedStyle(captionEl),
+  };
+}
+
+function waitForMountedFullscreenCaption(
+  index: number,
+  maxWaitMs: number
+): Promise<FullscreenCaptionState | null> {
+  const immediate = readMountedFullscreenCaptionState(index);
+  if (immediate) return Promise.resolve(immediate);
+  if (maxWaitMs <= 0) return Promise.resolve(null);
+
+  return new Promise((resolve) => {
+    const startedAt = performance.now();
+    let rafId = 0;
+    let settled = false;
+
+    const resolveOnce = (value: FullscreenCaptionState | null) => {
+      if (settled) return;
+      settled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      resolve(value);
+    };
+
+    const tick = () => {
+      const next = readMountedFullscreenCaptionState(index);
+      if (next) {
+        resolveOnce(next);
+        return;
+      }
+
+      if (performance.now() - startedAt >= maxWaitMs) {
+        resolveOnce(null);
+        return;
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+  });
+}
+
 function waitForImageStartReady(img: HTMLImageElement): Promise<void> {
   if (img.complete) return Promise.resolve();
 
@@ -432,6 +584,101 @@ function insetForViewportRect(rect: DOMRect, vw: number, vh: number) {
   const right = vw - (rect.left + rect.width);
   const bottom = vh - (rect.top + rect.height);
   return `inset(${top}px ${right}px ${bottom}px ${left}px)`;
+}
+
+function isVisibleTopStickyNavCandidate(el: Element | null): el is HTMLElement {
+  if (!(el instanceof HTMLElement)) return false;
+
+  const style = getComputedStyle(el);
+  if (style.display === "none" || style.visibility === "hidden") return false;
+  if (Number.parseFloat(style.opacity || "1") <= 0) return false;
+  if (style.position !== "sticky" && style.position !== "fixed") return false;
+
+  const rect = el.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return false;
+  if (rect.bottom <= 0 || rect.top >= window.innerHeight) return false;
+  if (rect.top > Math.min(window.innerHeight * 0.25, 120)) return false;
+
+  return true;
+}
+
+function rectsOverlapOnX(a: DOMRect, b: DOMRect) {
+  return Math.min(a.right, b.right) > Math.max(a.left, b.left);
+}
+
+function findStickyNav(
+  selector?: string | null,
+  sourceRect?: DOMRect | null
+): HTMLElement | null {
+  const query = selector?.trim();
+  const fallbackSelectors = [
+    ".rmg-intro-sticky-nav",
+    '[data-rmg-intro-sticky-nav="true"]',
+    'header[role="banner"]',
+    "header",
+  ];
+  const candidates = query
+    ? Array.from(document.querySelectorAll(query))
+    : fallbackSelectors.flatMap((fallbackSelector) =>
+        Array.from(document.querySelectorAll(fallbackSelector))
+      );
+
+  let bestMatch: HTMLElement | null = null;
+  let bestBottom = -Infinity;
+
+  for (const candidate of candidates) {
+    if (!isVisibleTopStickyNavCandidate(candidate)) continue;
+
+    const rect = candidate.getBoundingClientRect();
+    if (sourceRect && !rectsOverlapOnX(rect, sourceRect)) continue;
+
+    if (rect.bottom > bestBottom) {
+      bestBottom = rect.bottom;
+      bestMatch = candidate;
+    }
+  }
+
+  if (bestMatch || query) {
+    return bestMatch;
+  }
+
+  for (const candidate of Array.from(document.body.querySelectorAll("*"))) {
+    if (!isVisibleTopStickyNavCandidate(candidate)) continue;
+
+    const rect = candidate.getBoundingClientRect();
+    if (sourceRect && !rectsOverlapOnX(rect, sourceRect)) continue;
+
+    if (rect.bottom > bestBottom) {
+      bestBottom = rect.bottom;
+      bestMatch = candidate;
+    }
+  }
+
+  return bestMatch;
+}
+
+function intersectRectWithTopOccluder(
+  rect: DOMRect,
+  occluderBottom: number
+): DOMRect | null {
+  const viewportHeight = Math.max(
+    window.innerHeight || 0,
+    document.documentElement?.clientHeight || 0
+  );
+  const clampedOccluderBottom = Math.min(
+    Math.max(occluderBottom, 0),
+    viewportHeight
+  );
+  const left = rect.left;
+  const right = rect.right;
+  const top = Math.max(rect.top, clampedOccluderBottom);
+  const bottom = rect.bottom;
+
+  if (bottom <= top || right <= left) {
+    return null;
+  }
+
+  return new DOMRect(left, top, right - left, bottom - top);
 }
 
 function createViewportClipper(startInset: string, zIndex: number) {
@@ -457,19 +704,30 @@ function clipsOverflow(style: CSSStyleDeclaration | null | undefined) {
   });
 }
 
-function findClosestOverflowClipParentRect(image: HTMLImageElement) {
+function findOverflowClipAncestorRects(
+  image: HTMLImageElement,
+  maxCount = 2
+): DOMRect[] {
+  const rects: DOMRect[] = [];
   let current = image.parentElement;
 
-  while (current && current !== document.body && current !== document.documentElement) {
+  while (
+    current &&
+    current !== document.body &&
+    current !== document.documentElement &&
+    rects.length < maxCount
+  ) {
     if (clipsOverflow(getComputedStyle(current))) {
       const rect = current.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) return rect;
+      if (rect.width > 0 && rect.height > 0) {
+        rects.push(rect);
+      }
     }
 
     current = current.parentElement;
   }
 
-  return null;
+  return rects;
 }
 
 function runFadeIntro(args: {
@@ -515,6 +773,63 @@ function runFadeIntro(args: {
   window.setTimeout(() => {
     cleanupOverlayCaption(overlayCaptionRootRef, overlayCaptionRef);
   }, durationMs + 30);
+}
+
+function applyFallbackCaptionRect(args: {
+  overlayCaption: HTMLDivElement;
+  fs: FullscreenOptions;
+  contentRect: DOMRect;
+  vw: number;
+  vh: number;
+}) {
+  const { overlayCaption, fs, contentRect, vw, vh } = args;
+  const resolvedViewportWidth = effectiveViewportWidth(vw);
+  const resolvedViewportHeight = effectiveViewportHeight(vh);
+
+  const sideWidth = resolveLengthFromResponsive(
+    fs.caption?.width,
+    280,
+    resolvedViewportWidth,
+    resolvedViewportWidth
+  );
+
+  const topBottomHeight = resolveLengthFromResponsive(
+    fs.caption?.height,
+    200,
+    resolvedViewportWidth,
+    resolvedViewportHeight
+  );
+
+  const placement =
+    fs.caption?.placement == null
+      ? "bottom"
+      : typeof fs.caption.placement === "string"
+        ? fs.caption.placement
+        : "bottom";
+
+  if (placement === "right") {
+    overlayCaption.style.left = `${contentRect.right}px`;
+    overlayCaption.style.top = `${contentRect.top}px`;
+    overlayCaption.style.width = `${sideWidth}px`;
+    overlayCaption.style.height = `${contentRect.height}px`;
+  } else if (placement === "left") {
+    overlayCaption.style.left = `${contentRect.left - sideWidth}px`;
+    overlayCaption.style.top = `${contentRect.top}px`;
+    overlayCaption.style.width = `${sideWidth}px`;
+    overlayCaption.style.height = `${contentRect.height}px`;
+  } else if (placement === "top") {
+    overlayCaption.style.left = `${contentRect.left}px`;
+    overlayCaption.style.top = `${contentRect.top - topBottomHeight}px`;
+    overlayCaption.style.width = `${contentRect.width}px`;
+    overlayCaption.style.height = `${topBottomHeight}px`;
+  } else {
+    overlayCaption.style.left = `${contentRect.left}px`;
+    overlayCaption.style.top = `${contentRect.bottom}px`;
+    overlayCaption.style.width = `${contentRect.width}px`;
+    overlayCaption.style.height = `${topBottomHeight}px`;
+  }
+
+  overlayCaption.style.opacity = "1";
 }
 
 function runScaleIntro(args: {
@@ -563,20 +878,34 @@ function runScaleIntro(args: {
   const cs0 = getComputedStyle(originalImage);
   const startObjPos = parseObjectPosition(cs0?.objectPosition ?? null);
 
-  const visibleImgRect =
+  const baseVisibleImgRect =
     fit === "contain"
       ? objectFitContentRect(sourceNatW, sourceNatH, imgRect, "contain", startObjPos)
       : imgRect;
+  const navEl = findStickyNav(fs.effects?.introStickyNavSelector, imgRect);
+  const navRect = navEl?.getBoundingClientRect();
+  const occlusionAdjustedRect =
+    navRect != null
+      ? intersectRectWithTopOccluder(baseVisibleImgRect, navRect.bottom)
+      : null;
+  const startVisibleImgRect = occlusionAdjustedRect ?? baseVisibleImgRect;
 
   const imageClipper = createViewportClipper(
-    insetForViewportRect(visibleImgRect, vw, vh),
+    insetForViewportRect(startVisibleImgRect, vw, vh),
     introZ
   );
-  const overflowClipParentRect = findClosestOverflowClipParentRect(originalImage);
-  const parentClipper = overflowClipParentRect
-    ? createViewportClipper(insetForViewportRect(overflowClipParentRect, vw, vh), introZ)
+
+  const overflowRects = findOverflowClipAncestorRects(originalImage, 2);
+  const parentOverflowRect = overflowRects[0] ?? null;
+  const grandparentOverflowRect = overflowRects[1] ?? null;
+
+  const parentClipper = parentOverflowRect
+    ? createViewportClipper(insetForViewportRect(parentOverflowRect, vw, vh), introZ)
     : null;
-  const clipperRoot = parentClipper ?? imageClipper;
+
+  const grandparentClipper = grandparentOverflowRect
+    ? createViewportClipper(insetForViewportRect(grandparentOverflowRect, vw, vh), introZ)
+    : null;
 
   const dup = document.createElement("img");
   dup.src = originalImage.currentSrc || originalImage.src;
@@ -600,9 +929,21 @@ function runScaleIntro(args: {
   duplicateImgRef.current = dup;
 
   imageClipper.appendChild(dup);
-  parentClipper?.appendChild(imageClipper);
+
+  if (parentClipper) {
+    parentClipper.appendChild(imageClipper);
+
+    if (grandparentClipper) {
+      grandparentClipper.appendChild(parentClipper);
+    }
+  } else if (grandparentClipper) {
+    grandparentClipper.appendChild(imageClipper);
+  }
+
+  const outermostClipper = grandparentClipper ?? parentClipper ?? imageClipper;
+
   const frag = document.createDocumentFragment();
-  frag.append(overlay, clipperRoot);
+  frag.append(overlay, outermostClipper);
   document.body.appendChild(frag);
 
   const applyTransform = (transform: RectTransform, natW: number, natH: number) => {
@@ -623,7 +964,7 @@ function runScaleIntro(args: {
       fit,
       natW: proxyNatW,
       natH: proxyNatH,
-      rect: fit === "contain" ? visibleImgRect : imgRect,
+      rect: fit === "contain" ? baseVisibleImgRect : imgRect,
       objPos: startObjPos ?? { x: 0.5, y: 0.5 },
     });
 
@@ -648,11 +989,15 @@ function runScaleIntro(args: {
     void dup.offsetWidth;
     void imageClipper.offsetWidth;
     void parentClipper?.offsetWidth;
+    void grandparentClipper?.offsetWidth;
     void overlay.offsetWidth;
 
     imageClipper.style.transition = `clip-path ${durationMs}ms ${easing}`;
     if (parentClipper) {
       parentClipper.style.transition = `clip-path ${durationMs}ms ${easing}`;
+    }
+    if (grandparentClipper) {
+      grandparentClipper.style.transition = `clip-path ${durationMs}ms ${easing}`;
     }
     dup.style.transition = `transform ${durationMs}ms ${easing}`;
     overlay.style.transition = `opacity ${durationMs}ms ${easing}`;
@@ -662,16 +1007,19 @@ function runScaleIntro(args: {
       if (parentClipper) {
         parentClipper.style.clipPath = "inset(0px 0px 0px 0px)";
       }
+      if (grandparentClipper) {
+        grandparentClipper.style.clipPath = "inset(0px 0px 0px 0px)";
+      }
       applyTransform(endT, proxyNatW, proxyNatH);
       dup.style.opacity = "1";
       overlay.style.opacity = "1";
       overlay.style.pointerEvents = "auto";
-      overlayCaptionRef.current?.classList.add(styles.open);
     });
   }
 
   let started = false;
   let startWaitTimer: number | null = null;
+
   const startAnimationOnce = (targetImageState: FullscreenImageState | null) => {
     if (started) return;
     started = true;
@@ -684,14 +1032,42 @@ function runScaleIntro(args: {
 
   const startReadyPromise = waitForImageStartReady(dup);
   const fullscreenImagePromise = waitForMountedFullscreenImage(index, maxStartWaitMs);
+  const fullscreenCaptionPromise = waitForMountedFullscreenCaption(index, maxStartWaitMs);
+
   const timeoutPromise = new Promise<FullscreenImageState | null>((resolve) => {
     startWaitTimer = window.setTimeout(() => resolve(null), maxStartWaitMs);
   });
 
   Promise.race([
-    Promise.all([startReadyPromise, fullscreenImagePromise]).then(([, targetImageState]) => targetImageState),
+    Promise.all([startReadyPromise, fullscreenImagePromise]).then(
+      ([, targetImageState]) => targetImageState
+    ),
     timeoutPromise,
   ]).then((targetImageState) => startAnimationOnce(targetImageState));
+
+  void fullscreenCaptionPromise.then((captionState) => {
+    requestAnimationFrame(() => {
+      const liveOverlayCaption = overlayCaptionRef.current;
+      if (!liveOverlayCaption) return;
+
+      if (captionState) {
+        applyMeasuredCaptionRect({
+          overlayCaption: liveOverlayCaption,
+          captionState,
+        });
+      } else {
+        applyFallbackCaptionRect({
+          overlayCaption: liveOverlayCaption,
+          fs,
+          contentRect,
+          vw,
+          vh,
+        });
+      }
+
+      liveOverlayCaption.classList.add(styles.open);
+    });
+  });
 
   requestAnimationFrame(() => {
     overlay.style.opacity = "1";
@@ -712,7 +1088,7 @@ function runScaleIntro(args: {
 
     requestAnimationFrame(() => {
       cleanupOverlayCaption(overlayCaptionRootRef, overlayCaptionRef);
-      clipperRoot.remove();
+      outermostClipper.remove();
       dup.remove();
       (duplicateImgRef as any).current = null;
     });
@@ -739,6 +1115,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     setFsFadeOpening,
     addShield,
     resolveFsCaptionPlacement,
+    viewportOverlay,
     closestSelector,
     baseZ,
   } = args;
@@ -762,7 +1139,9 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     const slideEl =
       (originalImage.closest(
         closestSelector ??
-          (closestSelector === undefined ? ".rmg__grid-item, .rmg__slide" : "")
+          (closestSelector === undefined
+            ? ".rmg__grid-item, .rmg__masonry-item, .rmg__slide"
+            : "")
       ) as HTMLElement) ||
       (originalImage.parentElement as HTMLElement) ||
       originalImage;
@@ -777,7 +1156,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     requested: requestedMethod,
     item,
     fs,
-    originImg: originalImage,
     isVideoSlide,
   });
 
@@ -785,14 +1163,11 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
 
   const {
     rect: contentRect,
-    effectivePlacement,
-    thumbPos,
-    sideWidth,
-    topBottomHeight,
   } = computeContentRect({
     vw,
     vh,
     fs,
+    viewportOverlay,
     fsThumbContainerRef,
     fullscreenThumbnailPosition,
     resolveFsCaptionPlacement,
@@ -807,12 +1182,6 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     normalizedItems,
     index,
     introZ: INTRO_DUP_Z,
-    viewport: { vw, vh },
-    effectivePlacement,
-    thumbPos,
-    sideWidth,
-    topBottomHeight,
-    contentRect,
   });
 
   if (introMethod === "fade") {

@@ -18,7 +18,7 @@ export default defineConfig({
         test: {
           name: 'unit',
           environment: 'node',
-          include: ['packages/react-motion-gallery/src/**/*.test.ts'],
+          include: ['packages/react-motion-gallery/src/**/*.test.{ts,tsx}'],
         },
       },
       {

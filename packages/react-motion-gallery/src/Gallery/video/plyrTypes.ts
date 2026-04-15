@@ -1,3 +1,5 @@
+import type Plyr from "plyr";
+
 import type { MediaItem } from "../shared/types/media";
 
 export type PlyrSource = Plyr.SourceInfo;

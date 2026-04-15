@@ -1,129 +1,13 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import * as React from 'react';
+import { F as FullscreenOptions, g as FullscreenClose, h as FullscreenArrows, i as FullscreenCounter, d as ResponsiveLength, e as ResponsiveCaptionPlacement, j as FsCaptionRenderArgs, k as FSImageRender, l as FullscreenVideoOptions, m as FullscreenLazyLoadOptions, f as FullscreenOpenRequest } from './responsive-D_xhZmVI.mjs';
+export { a as FsCaptionPlacement, b as FsIntroRequest, G as GalleryApi, I as IndexMode } from './responsive-D_xhZmVI.mjs';
 import React__default from 'react';
-import { M as MediaItem } from './media-moIXOhT1.mjs';
-import { E as ElementStyle } from './elements-24CTbRWj.mjs';
-import { a as FullscreenOpenMethod$1, F as FullscreenOpenRequest } from './types-tb9Qf2Mj.mjs';
-export { G as GalleryApi, I as IndexMode } from './types-tb9Qf2Mj.mjs';
-import { P as PlyrSourceBuilder, a as PlyrOptionsBuilder } from './plyrTypes-CmP9NWvX.mjs';
-import { a as FullscreenThumbnailBridge } from './types-CvTlITct.mjs';
-import './responsive-CvE5dTnP.mjs';
-import './types-9g3BgMxk.mjs';
-
-type FsCounterArgs = {
-    index: number;
-    count: number;
-};
-type FsCaptionPlacement = "top" | "right" | "bottom" | "left";
-type FsIntroRequest = null | {
-    originalImage: HTMLImageElement | null;
-    index: number;
-    method: FullscreenOpenMethod$1;
-    closestSelector?: string;
-};
-type FSImageRender = (args: {
-    item: Extract<MediaItem, {
-        kind: "image";
-    }>;
-    index: number;
-    isZoomed: boolean;
-    className: string;
-    baseStyle: React.CSSProperties;
-}) => React.ReactNode;
-type FullscreenArrows = {
-    enabled?: boolean;
-    arrow?: ElementStyle;
-    prev?: ElementStyle;
-    next?: ElementStyle;
-    render?: (args: {
-        dir: "prev" | "next";
-    }) => React.ReactNode;
-    renderPrev?: () => React.ReactNode;
-    renderNext?: () => React.ReactNode;
-};
-type FullscreenClose = {
-    enabled?: boolean;
-    style?: React.CSSProperties;
-    className?: string;
-    render?: () => React.ReactNode;
-};
-type FullscreenCounter = {
-    enabled?: boolean;
-    style?: React.CSSProperties;
-    className?: string;
-    render?: (args: FsCounterArgs) => React.ReactNode;
-};
-type FullscreenControlsOptions = {
-    close?: FullscreenClose;
-    arrows?: FullscreenArrows;
-    counter?: FullscreenCounter;
-};
-type FsCaptionRenderArgs = {
-    item: MediaItem;
-    index: number;
-    isZoomed: boolean;
-};
-type FullscreenCaptionOptions = {
-    className?: string;
-    style?: React.CSSProperties;
-    placement?: FsCaptionPlacement;
-    width?: number;
-    height?: number;
-    breakpoint?: number;
-    render?: (args: FsCaptionRenderArgs) => React.ReactNode;
-};
-type FullscreenEffectsOptions = {
-    introDuration?: number;
-    introEasing?: string;
-    introFade?: boolean;
-    slideFade?: boolean;
-    slideFadeDuration?: number;
-    slideFadeEasing?: string;
-};
-type FullscreenSliderOptions = {
-    duration?: number;
-    friction?: number;
-    direction?: "ltr" | "rtl";
-};
-type FullscreenZoomPanOptions = {
-    clickZoomLevel?: number;
-    maxZoomLevel?: number;
-    panDuration?: number;
-    panFriction?: number;
-};
-type FullscreenVideoOptions = {
-    source?: PlyrSourceBuilder;
-    options?: PlyrOptionsBuilder;
-    style?: React.CSSProperties;
-    className?: string;
-};
-type FullscreenLazyLoadKind = "image" | "video";
-type FullscreenLazyLoadArgs = {
-    kind: FullscreenLazyLoadKind;
-    isClone?: boolean;
-};
-type FullscreenLazyLoadConfig = {
-    enabled?: boolean;
-    spinner?: boolean | React.ReactNode | ((args: FullscreenLazyLoadArgs) => React.ReactNode);
-    spinnerClassName?: string;
-    spinnerStyle?: React.CSSProperties;
-};
-type FullscreenLazyLoadOptions = {
-    images?: FullscreenLazyLoadConfig;
-    videos?: FullscreenLazyLoadConfig;
-};
-type FullscreenOptions = {
-    enabled?: boolean;
-    items?: MediaItem[] | string[];
-    renderImage?: FSImageRender;
-    video?: FullscreenVideoOptions;
-    controls?: FullscreenControlsOptions;
-    caption?: FullscreenCaptionOptions;
-    slider?: FullscreenSliderOptions;
-    zoom?: FullscreenZoomPanOptions;
-    effects?: FullscreenEffectsOptions;
-    lazyLoad?: FullscreenLazyLoadOptions;
-};
+import { M as MediaItem } from './plyrTypes-Cq4C3ul5.mjs';
+import { a as FullscreenThumbnailBridge } from './types-ROPjU8Nl.mjs';
+import './types-Dhh8xfHo.mjs';
+import 'plyr';
+import './types-CHUayqcj.mjs';
+import './controls-SpWg1Kgt.mjs';
 
 type FullscreenOpenMethod = "fade" | "scale";
 type UseFullscreenArgs = {
@@ -146,7 +30,9 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
             introDuration: number;
             introEasing: string;
             introFade: boolean;
-            slideFade: boolean;
+            introStickyNavSelector?: string;
+            controlsFade: boolean;
+            dragFade: boolean;
             slideFadeDuration: number;
             slideFadeEasing: string;
             thumbnailsFadeDuration?: number;
@@ -160,11 +46,18 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
         caption: {
             className?: string;
             style?: React__default.CSSProperties;
-            placement?: FsCaptionPlacement;
-            width?: number;
-            height?: number;
+            width?: ResponsiveLength;
+            height?: ResponsiveLength;
+            placement?: ResponsiveCaptionPlacement;
             breakpoint?: number;
             render?: (args: FsCaptionRenderArgs) => React__default.ReactNode;
+            layout?: "overlay" | "slide";
+            overlayCrossfadeTarget: "content" | "overlay";
+            zoomFade: boolean;
+            zoomFadeDurationMs: number;
+            zoomFadeEasing: string;
+            zoomInTransform: string;
+            zoomOutTransform: string;
         };
         enabled: boolean;
         items?: MediaItem[] | string[];
@@ -241,7 +134,8 @@ declare const DEFAULT_FULLSCREEN: {
         readonly introDuration: 300;
         readonly introEasing: "cubic-bezier(.4,0,.22,1)";
         readonly introFade: false;
-        readonly slideFade: false;
+        readonly controlsFade: false;
+        readonly dragFade: false;
         readonly slideFadeDuration: 120;
         readonly slideFadeEasing: "cubic-bezier(.4,0,.22,1)";
     };
@@ -251,12 +145,19 @@ declare const DEFAULT_FULLSCREEN: {
         readonly direction: "ltr";
     };
     readonly zoom: {
-        readonly clickZoomLevel: 2.5;
-        readonly maxZoomLevel: 3;
-        readonly panDuration: 43;
-        readonly panFriction: 0.68;
+        readonly clickZoomLevel: number;
+        readonly maxZoomLevel: number;
+        readonly panDuration: number;
+        readonly panFriction: number;
     };
-    readonly caption: {};
+    readonly caption: {
+        readonly overlayCrossfadeTarget: "content";
+        readonly zoomFade: true;
+        readonly zoomFadeDurationMs: 300;
+        readonly zoomFadeEasing: "cubic-bezier(.4,0,.22,1)";
+        readonly zoomInTransform: "";
+        readonly zoomOutTransform: "";
+    };
 };
 
-export { DEFAULT_FULLSCREEN, type FsCaptionPlacement, type FsIntroRequest, type FullscreenOptions, useFullscreenController };
+export { DEFAULT_FULLSCREEN, FullscreenOptions, useFullscreenController };

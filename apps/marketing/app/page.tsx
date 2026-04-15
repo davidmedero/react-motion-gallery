@@ -850,7 +850,14 @@ fullscreen: {
             kind: "stack",
             children: [
               { kind: "rect", style: { aspectRatio: "4 / 5" } },
-              { kind: "text", fontSize: 16, lineHeight: 24, lines: 2 },
+              {
+                kind: "text",
+                fontSize: 16,
+                lineHeight: 1.35,
+                lines: { 0: 2, 900: 1 },
+                lineWidth: "56%",
+                style: { width: "88%" },
+              },
             ],
           },
         },

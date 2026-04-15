@@ -13,9 +13,12 @@ import {
 } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { usePrefersReducedMotion } from "../shared/hooks/usePrefersReducedMotion";
+import { useLoadingLayerState } from "../shared/hooks/useLoadingLayerState";
+import { resolveLoadingTiming } from "../shared/loading/timing";
 import { buildScopedSkeletonCountCss } from "../shared/skeleton/buildScopedSkeletonCountCss";
+import { buildStableScopeId } from "../shared/stableScope";
 import type { BreakpointMap } from "../shared/responsive";
-import type { ThumbnailLoadingOptions, ThumbnailsOptions } from "./types";
+import type { ThumbnailLoadingOptions, ThumbnailSelectMeta, ThumbnailsOptions } from "./types";
 import { createThumbnailSyncBridge } from "./syncBridge";
 
 type Props = {
@@ -23,15 +26,12 @@ type Props = {
   children?: React.ReactNode;
   indexChannel?: SliderIndexChannel;
   breakpoints?: BreakpointMap;
-  onThumbnailClick?: (index: number) => void;
+  onThumbnailClick?: (index: number, meta?: ThumbnailSelectMeta) => void
   onReadyChange?: (ready: boolean) => void;
   direction?: "ltr" | "rtl";
 };
 
-const SKELETON_EXIT_MS = 220;
-const INTRO_OVERLAP_MS = 220;
 const THUMBNAIL_SKELETON_FALLBACK_COUNT = 6;
-
 type UseScopedSkeletonArgs = {
   enabled: boolean;
   scopeId: string;
@@ -248,9 +248,6 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
       [thumbsObject.layout?.position, vw, effectiveBreakpoints]
     );
 
-    const thumbsScopeId = React.useId();
-    const thumbsScope = `rmg-thumbs-${thumbsScopeId.replace(/:/g, "")}`;
-
     const thumbsLoading = React.useMemo(() => {
       const src = thumbsObject.transitions?.loading ?? {};
       return {
@@ -260,8 +257,28 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
         mode: src.mode ?? "peek",
         renderLoading: src.renderLoading,
         elements: src.elements,
+        timing: src.timing,
       } satisfies ThumbnailLoadingOptions;
     }, [thumbsObject.transitions?.loading]);
+    const thumbsScope = React.useMemo(
+      () =>
+        buildStableScopeId("rmg-thumbs-", {
+          breakpoints: effectiveBreakpoints,
+          direction,
+          layout: thumbsObject.layout,
+          loadingElements: thumbsLoading.elements,
+          loadingMode: thumbsLoading.mode,
+          loadingSkeletonCount: thumbsLoading.skeletonCount,
+        }),
+      [
+        effectiveBreakpoints,
+        direction,
+        thumbsObject.layout,
+        thumbsLoading.elements,
+        thumbsLoading.mode,
+        thumbsLoading.skeletonCount,
+      ]
+    );
 
     const [thumbsReady, setThumbsReady] = React.useState(false);
     const prefersReducedMotion = usePrefersReducedMotion();
@@ -394,48 +411,19 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
       persistedLoadingNodeRef.current = thumbsSkeleton.node;
     }
 
-    const resolvedSkeletonExitMs = prefersReducedMotion ? 0 : SKELETON_EXIT_MS;
-    const introUnlockDelayMs = Math.max(0, resolvedSkeletonExitMs - INTRO_OVERLAP_MS);
-    const [showLoadingLayer, setShowLoadingLayer] = React.useState(() => thumbsSkeleton.showLoading);
-    const [loadingExiting, setLoadingExiting] = React.useState(false);
-    const [introUnlocked, setIntroUnlocked] = React.useState(() => !thumbsSkeleton.showLoading);
-
-    React.useEffect(() => {
-      if (thumbsSkeleton.showLoading) {
-        setShowLoadingLayer(true);
-        setLoadingExiting(false);
-        setIntroUnlocked(false);
-        return;
-      }
-
-      if (!showLoadingLayer) {
-        setIntroUnlocked(true);
-        return;
-      }
-
-      if (resolvedSkeletonExitMs === 0) {
-        setLoadingExiting(false);
-        setShowLoadingLayer(false);
-        setIntroUnlocked(true);
-        return;
-      }
-
-      setLoadingExiting(true);
-
-      const introTimeoutId = window.setTimeout(() => {
-        setIntroUnlocked(true);
-      }, introUnlockDelayMs);
-
-      const exitTimeoutId = window.setTimeout(() => {
-        setShowLoadingLayer(false);
-        setLoadingExiting(false);
-      }, resolvedSkeletonExitMs);
-
-      return () => {
-        window.clearTimeout(introTimeoutId);
-        window.clearTimeout(exitTimeoutId);
-      };
-    }, [introUnlockDelayMs, resolvedSkeletonExitMs, showLoadingLayer, thumbsSkeleton.showLoading]);
+    const loadingTiming = React.useMemo(
+      () =>
+        resolveLoadingTiming({
+          prefersReducedMotion,
+          timing: thumbsLoading.timing,
+        }),
+      [prefersReducedMotion, thumbsLoading.timing]
+    );
+    const { showLoadingLayer, loadingExiting, introUnlocked } = useLoadingLayerState({
+      loadingActive: thumbsSkeleton.showLoading,
+      exitMs: loadingTiming.exitMs,
+      minVisibleMs: loadingTiming.minVisibleMs,
+    });
 
     const clampIndex = React.useCallback(
       (index: number) => {
@@ -473,6 +461,42 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
       const cleanup = bridgeRef.current.start();
       return () => cleanup();
     }, [indexChannel, clampIndex, localChannel]);
+
+    const thumbsCrossfade = React.useMemo(() => {
+      const src = thumbsObject.transitions?.crossfade ?? {};
+      return {
+        enabled: src.enabled ?? false,
+        durationMs: src.durationMs,
+        easing: src.easing,
+      };
+    }, [thumbsObject.transitions?.crossfade]);
+
+    const handleThumbSelect = React.useCallback(
+      (index: number, meta?: ThumbnailSelectMeta) => {
+        bridgeRef.current.publishThumbnailClick(index, "animated", {
+          source: "thumbnail",
+          transition: meta?.transition ?? "scroll",
+          crossfade:
+            meta?.transition === "crossfade"
+              ? {
+                  durationMs: meta.crossfade?.durationMs,
+                  easing: meta.crossfade?.easing,
+                }
+              : undefined,
+        });
+
+        onThumbnailClick?.(index, meta);
+      },
+      [onThumbnailClick]
+    );
+
+    const handleThumbReadyChange = React.useCallback(
+      (ready: boolean) => {
+        setThumbsReady((prev) => (prev === ready ? prev : ready));
+        onReadyChange?.(ready);
+      },
+      [onReadyChange]
+    );
 
     return (
       <>
@@ -530,14 +554,9 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
               renderArrows={thumbsObject.controls?.render}
               renderPrevArrow={thumbsObject.controls?.renderPrev}
               renderNextArrow={thumbsObject.controls?.renderNext}
-              onReadyChange={(ready) => {
-                setThumbsReady(ready);
-                onReadyChange?.(ready);
-              }}
-              onSelectThumb={(index) => {
-                bridgeRef.current.publishThumbnailClick(index, "animated");
-                onThumbnailClick?.(index);
-              }}
+              crossfade={thumbsObject.transitions?.crossfade}
+              onReadyChange={handleThumbReadyChange}
+              onSelectThumb={handleThumbSelect}
             >
               {thumbChildren}
             </ThumbnailSliderCore>
@@ -548,6 +567,9 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
                 styles.thumbLoadingLayer,
                 loadingExiting ? styles.thumbLoadingLayerExit : "",
               ].filter(Boolean).join(" ")}
+              style={{
+                ["--rmg-loading-fade-duration" as any]: `${loadingTiming.exitMs}ms`,
+              }}
               aria-hidden="true"
             >
               {thumbsSkeleton.node ?? persistedLoadingNodeRef.current}

@@ -10,6 +10,7 @@ import { IndexMode } from "../api/types";
 import { RefObject } from "react";
 import { SliderSkeletonSpec } from "./SliderSkeleton";
 import type { SliderIndexChannel } from "./sliderSub";
+import type { LoadingTimingOptions } from "../shared/types/transitions";
 
 export type ResponsiveHeightRule = { query: string; height: string };
 
@@ -103,6 +104,7 @@ export type SliderLoadingOptions = {
   skeletonCount?: ResponsiveNumber;
   renderLoading?: (args: { count: number }) => React.ReactNode;
   skeleton?: SliderSkeletonSpec;
+  timing?: LoadingTimingOptions;
 };
 
 export type SliderIntroOptions = {
@@ -111,7 +113,6 @@ export type SliderIntroOptions = {
     content: React.ReactNode
   ) => React.ReactNode;
   staggerMs?: number;
-  transform?: number | string;
   durationMs?: number;
   easing?: string;
 };
@@ -135,12 +136,21 @@ export type SliderScale = {
 
 export type SliderFade = {
   enabled?: boolean;
+  minOpacity?: number;
+};
+
+export type CrossFade = {
+  controls?: boolean;
+  drag?: boolean;
+  durationMs?: number;
+  easing?: string;
 };
 
 export type SliderEffects = {
   parallax?: SliderParallax;
   scale?: SliderScale;
   fade?: SliderFade;
+  crossfade?: CrossFade;
 };
 
 export type SliderMotion = {
@@ -171,6 +181,12 @@ export type SliderOptions = {
   indexChannel?: SliderIndexChannel;
 };
 
+export type SliderUiSelectOptions = {
+  crossfade?: boolean;
+  durationMs?: number;
+  easing?: string;
+};
+
 export interface SliderHandle {
   centerSlider: () => void;
   getIndex: () => number;
@@ -199,4 +215,5 @@ export interface SliderHandle {
     sliderVelocity: RefObject<number>;
     isWrapping: RefObject<boolean>;
   };
+  setIndexFromUi: (i: number, opts?: SliderUiSelectOptions) => void;
 }

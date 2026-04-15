@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { getPrimaryImgEl } from '../core/dom';
+import { getFsMediaViewportEl, getPrimaryImgEl } from '../core/dom';
 
 type Point = { x: number; y: number };
 
@@ -156,7 +156,9 @@ export function useGlobalPinchZoom(args: UseGlobalPinchZoomArgs) {
       rebuildPanBodies();
 
       const container = currentImage.current as HTMLDivElement;
-      const rect = container.getBoundingClientRect();
+      const rect =
+        getFsMediaViewportEl(container)?.getBoundingClientRect() ??
+        container.getBoundingClientRect();
       const containerW = rect.width;
       const containerH = rect.height;
       const imgEl = getPrimaryImgEl(container);

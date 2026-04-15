@@ -2,6 +2,7 @@ import type * as React from "react";
 import type { BreakpointMap, ResponsiveNumber } from "../shared/responsive";
 import type { ArrowRenderArgs } from "../shared/types/controls";
 import { ElementStyle } from "../shared/types/elements";
+import type { LoadingTimingOptions } from "../shared/types/transitions";
 
 export type ThumbnailPosition = "top" | "right" | "bottom" | "left";
 
@@ -29,6 +30,7 @@ export type ThumbnailLoadingOptions = {
   mode?: ThumbnailSkeletonMode;
   renderLoading?: (args: ThumbnailLoadingRenderArgs) => React.ReactNode;
   elements?: ThumbnailLoadingElements;
+  timing?: LoadingTimingOptions;
 };
 
 export type ThumbnailIntroOptions = {
@@ -37,7 +39,6 @@ export type ThumbnailIntroOptions = {
     inner: React.ReactNode
   ) => React.ReactNode;
   staggerMs?: number;
-  transform?: string;
   durationMs?: number;
   easing?: string;
 };
@@ -95,9 +96,21 @@ export type ThumbnailsControls = {
   ripple?: ThumbnailsRipple;
 };
 
+export type ThumbnailCrossfadeOptions = {
+  enabled?: boolean;
+  durationMs?: number;
+  easing?: string;
+};
+
+export type ThumbnailSelectMeta = {
+  transition: "scroll" | "crossfade";
+  crossfade?: ThumbnailCrossfadeOptions;
+};
+
 export type ThumbnailsTransitions = {
   loading?: ThumbnailLoadingOptions;
   intro?: ThumbnailIntroOptions;
+  crossfade?: ThumbnailCrossfadeOptions;
 };
 
 export type ThumbnailsOptions = {

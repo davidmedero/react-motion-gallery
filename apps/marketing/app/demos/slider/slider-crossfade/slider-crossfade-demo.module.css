@@ -1,0 +1,7 @@
+.slide {
+  width: 100cqw;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  border-radius: 12px;
+}

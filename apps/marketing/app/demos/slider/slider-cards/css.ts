@@ -1,0 +1,38 @@
+export const css = String.raw`.cardSlide {
+  width: 100%;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 3px 6px rgba(15, 23, 42, 0.08);
+  background-color: #fff;
+}
+
+.cardSlideImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.cardSlideCopy {
+  display: grid;
+  gap: 4px;
+}
+
+.cardSlideTitle {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.96rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.cardSlidePrice {
+  margin: 0;
+  color: #155e75;
+  font-size: 0.9rem;
+  font-weight: 700;
+}`;

@@ -1,6 +1,9 @@
 import type { IndexMode } from "../api/types";
 import type { SliderIndexChannel } from "../slider/sliderSub";
-import type { FullscreenSliderSub } from "../fullscreen/fullscreenSliderSub";
+import type {
+  FullscreenSliderSub,
+  FullscreenRequestMeta,
+} from "../fullscreen/fullscreenSliderSub";
 
 type CreateFullscreenThumbnailSyncBridgeArgs = {
   localChannel: SliderIndexChannel;
@@ -11,7 +14,11 @@ type CreateFullscreenThumbnailSyncBridgeArgs = {
 export type FullscreenThumbnailSyncBridge = {
   start: () => () => void;
   stop: () => void;
-  publishThumbnailClick: (index: number, mode?: IndexMode) => void;
+  publishThumbnailClick: (
+    index: number,
+    mode?: IndexMode,
+    meta?: FullscreenRequestMeta
+  ) => void;
 };
 
 function normalizeMode(mode: unknown): IndexMode {
@@ -23,7 +30,10 @@ function normalizeFiniteInt(value: unknown): number | null {
   return value | 0;
 }
 
-function maybeClampIndex(index: number, clampIndex?: (index: number) => number): number | null {
+function maybeClampIndex(
+  index: number,
+  clampIndex?: (index: number) => number
+): number | null {
   if (!clampIndex) return index;
   const clamped = clampIndex(index);
   return normalizeFiniteInt(clamped);
@@ -94,14 +104,21 @@ export function createFullscreenThumbnailSyncBridge(
     return stop;
   };
 
-  const publishThumbnailClick = (index: number, mode: IndexMode = "animated") => {
+  const publishThumbnailClick = (
+    index: number,
+    mode: IndexMode = "animated",
+    meta: FullscreenRequestMeta = {
+      source: "thumbnail",
+      transition: "scroll",
+    }
+  ) => {
     const nextIndexRaw = normalizeFiniteInt(index);
     if (nextIndexRaw == null) return;
 
     const nextIndex = maybeClampIndex(nextIndexRaw, clampIndex);
     if (nextIndex == null) return;
 
-    fsSub.requestSet(nextIndex, normalizeMode(mode));
+    fsSub.requestSet(nextIndex, normalizeMode(mode), { meta });
   };
 
   return { start, stop, publishThumbnailClick };

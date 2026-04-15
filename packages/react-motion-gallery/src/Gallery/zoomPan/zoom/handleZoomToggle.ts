@@ -1,6 +1,11 @@
 import type React from "react";
 import { getCurrentTransform, baseFitSize } from "../core/utils";
-import { getPrimaryImgEl, gapAllEdges, getClientXY } from "../core/dom";
+import {
+  gapAllEdges,
+  getClientXY,
+  getFsMediaViewportEl,
+  getPrimaryImgEl,
+} from "../core/dom";
 import { applySmoothTransform, type ZoomCtx } from "./zoomTo";
 
 type ImageRef = React.RefObject<HTMLElement | null>;
@@ -25,7 +30,8 @@ export function handleZoomToggle(
   const imgEl = getPrimaryImgEl(container);
   if (!imgEl) return;
 
-  const rect0 = container.getBoundingClientRect();
+  const measureEl = getFsMediaViewportEl(container) ?? container;
+  const rect0 = measureEl.getBoundingClientRect();
   if (gapAllEdges({ width: rect0.width, height: rect0.height }, imgEl)) return;
 
   const { x: domTx, y: domTy } = getCurrentTransform(imgEl);
@@ -71,7 +77,7 @@ export function handleZoomToggle(
     ctx.resetAllZoomDom();
   }
 
-  const rect = container.getBoundingClientRect();
+  const rect = measureEl.getBoundingClientRect();
   const containerW = rect.width;
   const containerH = rect.height;
 

@@ -6,6 +6,7 @@ type SlideLike = { target: number };
 
 type Args = {
   enabled?: boolean;
+  minOpacity?: number;
   wrap: boolean;
   sliderRef: React.RefObject<HTMLElement | null>;
   sliderWidthRef: React.RefObject<number>;
@@ -16,7 +17,11 @@ type Args = {
   clonedLen: number;
 };
 
-const MIN_FADE_OPACITY = 0.5;
+const DEFAULT_MIN_FADE_OPACITY = 0.36;
+
+function clamp01(n: number) {
+  return Math.max(0, Math.min(1, n));
+}
 
 function circularDist(x: number, c: number, W: number) {
   let d = Math.abs(x - c);
@@ -28,6 +33,7 @@ function circularDist(x: number, c: number, W: number) {
 
 export function useFadeEffect({
   enabled,
+  minOpacity,
   wrap,
   sliderRef,
   sliderWidthRef,
@@ -53,6 +59,13 @@ export function useFadeEffect({
     for (let i = 0; i < L; i++) arr.push(slideCenterX(i));
     return arr;
   }, [slidesRef, slideCenterX]);
+
+  const resolvedMinOpacity = React.useMemo(() => {
+    if (typeof minOpacity !== "number" || !Number.isFinite(minOpacity)) {
+      return DEFAULT_MIN_FADE_OPACITY;
+    }
+    return clamp01(minOpacity);
+  }, [minOpacity]);
 
   const applyFadeTween = React.useCallback(() => {
     if (!enabled || !sliderRef.current || !slidesRef.current?.length) return;
@@ -96,12 +109,12 @@ export function useFadeEffect({
 
     const span = Math.max(1, nodes[rightIdx].x - nodes[leftIdx].x);
 
-    const opacityByIdx = new Array<number>(L).fill(MIN_FADE_OPACITY);
+    const opacityByIdx = new Array<number>(L).fill(resolvedMinOpacity);
     for (let i = 0; i < L; i++) {
       const c = centers[i];
       const d = useWrap ? circularDist(loc, c, W) : Math.abs(loc - c);
       const t = Math.max(0, Math.min(1, 1 - d / span));
-      const op = MIN_FADE_OPACITY + (1 - MIN_FADE_OPACITY) * t;
+      const op = resolvedMinOpacity + (1 - resolvedMinOpacity) * t;
       opacityByIdx[i] = op;
     }
 
@@ -122,6 +135,7 @@ export function useFadeEffect({
     slidesRef,
     offsetLocationRef,
     getCenters,
+    resolvedMinOpacity,
     sliderWidthRef,
     wrap,
   ]);

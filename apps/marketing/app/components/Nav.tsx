@@ -17,7 +17,7 @@ const mobileItems: MenuItem[] = [
 
 export function Nav() {
   return (
-    <header className="sticky top-0 z-50 w-full bg-white">
+    <header className="rmg-intro-sticky-nav sticky top-0 z-50 w-full bg-white">
       <div
         className="absolute inset-x-0 bottom-0 h-px"
         style={{

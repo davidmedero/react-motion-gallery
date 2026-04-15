@@ -24,6 +24,7 @@ const REPORTED_EXPORTS = [
   "ThumbnailSlider",
   "useFullscreenController",
   "Video",
+  "ZoomPanImage",
 ];
 const EXTERNALS = [
   "react",

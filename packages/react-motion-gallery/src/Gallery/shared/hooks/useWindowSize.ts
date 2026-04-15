@@ -21,7 +21,12 @@ export function useWindowSize(): WindowSize {
   React.useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const onResize = () => setSize(readSize());
+    const onResize = () => {
+      const next = readSize();
+      setSize((prev) =>
+        prev.width === next.width && prev.height === next.height ? prev : next
+      );
+    };
     window.addEventListener("resize", onResize);
     onResize();
 

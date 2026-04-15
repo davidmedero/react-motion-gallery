@@ -7,6 +7,10 @@
   height: 44px;
   border-radius: 50%;
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 180ms ease;
+  will-change: opacity;
   z-index: 3;
   animation: rmgLazySpin 1s linear infinite;
   background: conic-gradient(from 0deg,#ffffff,#cfe6ff,#8ec5ff,#4ea1ff,#2f7fff,#1d4ed8);
@@ -20,6 +24,10 @@
   display: grid;
   place-items: center;
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 180ms ease;
+  will-change: opacity;
   z-index: 3;
 }
 

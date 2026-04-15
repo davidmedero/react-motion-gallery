@@ -1,0 +1,148 @@
+.page {
+  min-height: calc(100vh - 64px);
+  padding: 32px 0 56px;
+  background:
+    radial-gradient(circle at top, rgba(103, 190, 229, 0.12), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+}
+
+.shell {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
+}
+
+.header {
+  max-width: 760px;
+  display: grid;
+  gap: 10px;
+}
+
+.kicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(103, 190, 229, 0.12);
+  color: rgba(10, 150, 250, 1);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+}
+
+.copy {
+  margin: 0;
+  max-width: 66ch;
+  color: rgba(11, 18, 32, 0.72);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.canvas {
+  padding: clamp(14px, 2vw, 20px);
+  border-radius: 18px;
+  background: rgba(246, 250, 255, 0.9);
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+}
+
+.masonryBalancedCard {
+  display: grid;
+  gap: 12px;
+  padding: 10px 10px 14px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 3px 6px rgba(15, 23, 42, 0.08);
+  background-color: #fff;
+}
+
+.masonryBalancedMedia {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #e7edf3;
+}
+
+.masonryBalancedMedia > * {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryBalancedImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.masonryBalancedVideo {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryBalancedVideo :global(.plyr),
+.masonryBalancedVideo :global(.plyr__video-wrapper),
+.masonryBalancedVideo :global(.plyr__video-wrapper--fixed-ratio),
+.masonryBalancedVideo :global(.plyr__poster),
+.masonryBalancedVideo :global(video) {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryBalancedVideo :global(.plyr__poster) {
+  background-size: cover;
+}
+
+.masonryBalancedVideo :global(.plyr__video-wrapper--fixed-ratio) {
+  aspect-ratio: auto;
+}
+
+.masonryBalancedVideo :global(video) {
+  object-fit: cover;
+}
+
+.masonryBalancedMeta {
+  display: grid;
+  gap: 5px;
+  padding: 0 4px;
+}
+
+.masonryBalancedBadge {
+  color: rgba(21, 94, 117, 0.78);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.masonryBalancedTitle {
+  font-size: 1.02rem;
+  letter-spacing: -0.02em;
+}
+
+.masonryBalancedBody {
+  margin: 0;
+  color: rgba(11, 18, 32, 0.72);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 767px) {
+  .page {
+    padding-top: 24px;
+  }
+
+  .shell {
+    width: min(100% - 24px, 1180px);
+  }
+}

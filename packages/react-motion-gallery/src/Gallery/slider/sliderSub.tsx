@@ -2,12 +2,20 @@ import { IndexMode } from "../api/types";
 
 type IndexListener = () => void;
 
+export type IndexEventMeta = {
+  source?: "thumbnail" | "external";
+  transition?: "scroll" | "crossfade";
+  crossfade?: {
+    durationMs?: number;
+    easing?: string;
+  };
+};
+
 export type IndexEvent =
-  | { type: "set"; index: number; mode: IndexMode }
-  | { type: "bump"; delta: number; mode: IndexMode };
+  | { type: "set"; index: number; mode: IndexMode; meta?: IndexEventMeta }
+  | { type: "bump"; delta: number; mode: IndexMode; meta?: IndexEventMeta };
 
 type EventListener = (ev: IndexEvent) => void;
-
 type BasePointerDownListener = () => void;
 
 export type SliderIndexChannel = ReturnType<typeof createSliderIndexChannel>;
@@ -18,11 +26,14 @@ export function createSliderIndexChannel(
 ) {
   let index = initialIndex;
   let mode: IndexMode = initialMode;
-  let lastEvent: IndexEvent = { type: "set", index: initialIndex, mode: initialMode };
+  let lastEvent: IndexEvent = {
+    type: "set",
+    index: initialIndex,
+    mode: initialMode,
+  };
 
   const subs = new Set<IndexListener>();
   const evtSubs = new Set<EventListener>();
-
   const baseDownSubs = new Set<BasePointerDownListener>();
 
   let raf = 0;
@@ -45,15 +56,23 @@ export function createSliderIndexChannel(
       return { index, mode };
     },
 
-    set(next: number, m: IndexMode = "animated", opts?: { silent?: boolean }) {
+    set(
+      next: number,
+      m: IndexMode = "animated",
+      opts?: { silent?: boolean; meta?: IndexEventMeta }
+    ) {
       index = next;
       mode = m;
-      lastEvent = { type: "set", index, mode: m };
+      lastEvent = { type: "set", index, mode: m, meta: opts?.meta };
       if (!opts?.silent) schedule();
     },
 
-    bump(delta: number, m: IndexMode = "animated", opts?: { silent?: boolean }) {
-      lastEvent = { type: "bump", delta: delta | 0, mode: m };
+    bump(
+      delta: number,
+      m: IndexMode = "animated",
+      opts?: { silent?: boolean; meta?: IndexEventMeta }
+    ) {
+      lastEvent = { type: "bump", delta: delta | 0, mode: m, meta: opts?.meta };
       if (!opts?.silent) schedule();
     },
 

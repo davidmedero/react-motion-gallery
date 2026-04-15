@@ -1,10 +1,15 @@
 import type * as React from "react";
 import { MediaItem } from "../shared/types/media";
 import { ElementStyle } from "../shared/types/elements";
-import { BreakpointMap } from "../shared/responsive";
+import {
+  BreakpointMap,
+  ResponsiveCaptionPlacement,
+  ResponsiveLength,
+} from "../shared/responsive";
 import { SliderHandle } from "../slider/types";
 import { EntriesOptions, MediaEntryLink, SlideOwner } from "../entries";
 import { PlyrOptionsBuilder, PlyrSourceBuilder } from "../video/plyrTypes";
+import type { ZoomPanOptions } from "../zoomPan/types";
 import { FullscreenOpenMethod } from "../api/types";
 
 export type FsCounterArgs = { index: number; count: number };
@@ -77,18 +82,27 @@ export type FsCaptionRenderArgs = {
 export type FullscreenCaptionOptions = {
   className?: string;
   style?: React.CSSProperties;
-  placement?: FsCaptionPlacement;
-  width?: number;
-  height?: number;
+  width?: ResponsiveLength;
+  height?: ResponsiveLength;
+  placement?: ResponsiveCaptionPlacement;
   breakpoint?: number;
   render?: (args: FsCaptionRenderArgs) => React.ReactNode;
+  layout?: "overlay" | "slide";
+  overlayCrossfadeTarget?: "content" | "overlay";
+  zoomFade?: boolean;
+  zoomFadeDurationMs?: number;
+  zoomFadeEasing?: string;
+  zoomInTransform?: string;
+  zoomOutTransform?: string;
 };
 
 export type FullscreenEffectsOptions = {
   introDuration?: number;
   introEasing?: string;
   introFade?: boolean;
-  slideFade?: boolean;
+  introStickyNavSelector?: string;
+  controlsFade?: boolean;
+  dragFade?: boolean;
   slideFadeDuration?: number;
   slideFadeEasing?: string;
 };
@@ -99,12 +113,7 @@ export type FullscreenSliderOptions = {
   direction?: "ltr" | "rtl";
 };
 
-export type FullscreenZoomPanOptions = {
-  clickZoomLevel?: number;
-  maxZoomLevel?: number;
-  panDuration?: number;
-  panFriction?: number;
-};
+export type FullscreenZoomPanOptions = ZoomPanOptions;
 
 export type FullscreenVideoOptions = {
   source?: PlyrSourceBuilder;

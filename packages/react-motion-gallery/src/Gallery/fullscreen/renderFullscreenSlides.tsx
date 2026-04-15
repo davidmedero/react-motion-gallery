@@ -12,6 +12,7 @@ import {
   FullscreenLazyLoadOptions,
   FullscreenLazyLoadConfig,
 } from "./types";
+import type { FullscreenCaptionZoomMotion } from "./captionZoomMotion";
 import styles from "./Fullscreen.module.css";
 import type { VideoSnapshotStore } from "../video/videoSnapshotStore";
 import { installDragClickSwallower } from "../video/plyrGuards";
@@ -25,8 +26,18 @@ import {
   revealPreparedImage,
   waitForImageDecode,
 } from "../shared/lazy/imageLifecycle";
+import {
+  BREAKPOINT_MAP,
+  BreakpointMap,
+  effectiveViewportHeight,
+  effectiveViewportWidth,
+  resolveLengthFromResponsive,
+  ResponsiveCaptionPlacement,
+  ResponsiveLength,
+} from "../shared/responsive";
 
 type ResolvedPlyrOptions = NonNullable<PlyrProp>["options"];
+export type RenderFullscreenSlidesMode = "track" | "crossfade";
 
 type RenderFullscreenSlidesArgs = {
   items: MediaItem[];
@@ -48,12 +59,21 @@ type RenderFullscreenSlidesArgs = {
   renderCaption?: (args: FsCaptionRenderArgs) => React.ReactNode;
   captionClassName?: string;
   captionStyle?: React.CSSProperties;
-  fsCaptionPlacement?: FsCaptionPlacement;
-  fsCaptionWidth?: number;
-  fsCaptionHeight?: number;
+  captionZoomMotion?: FullscreenCaptionZoomMotion;
+  fsCaptionPlacement?: ResponsiveCaptionPlacement;
+  fsCaptionWidth?: ResponsiveLength;
+  fsCaptionHeight?: ResponsiveLength;
   fsCaptionBreakpoint?: number;
+  fsCaptionLayout?: "overlay" | "slide";
+  fsViewportOverlayPlacement?: ResponsiveCaptionPlacement;
+  fsViewportOverlayWidth?: ResponsiveLength;
+  fsViewportOverlayHeight?: ResponsiveLength;
+  fsViewportOverlayBreakpoint?: number;
+  viewportWidth?: number;
+  viewportHeight?: number;
+  breakpointMap?: BreakpointMap;
   resolveFsCaptionPlacement: (
-    placement: FsCaptionPlacement | undefined,
+    placement: ResponsiveCaptionPlacement | undefined,
     breakpoint: number | undefined,
     viewportWidth: number
   ) => FsCaptionPlacement | null;
@@ -83,7 +103,20 @@ type RenderFullscreenSlidesArgs = {
   fsPreparedVideosRef: React.RefObject<Set<string>>;
   videoSnapshotStore?: VideoSnapshotStore;
   getMediaKey: (item: MediaItem) => string;
+  renderMode?: RenderFullscreenSlidesMode;
 };
+
+function subtractReservedSpace(base: string, reservedPx: number): string {
+  if (!(reservedPx > 0)) return base;
+  return `calc(${base} - ${reservedPx}px)`;
+}
+
+export function shouldUseFsStaticVideoPreview(args: {
+  isClone: boolean;
+  renderMode?: RenderFullscreenSlidesMode;
+}) {
+  return args.isClone || args.renderMode === "crossfade";
+}
 
 function isWrappedItems(itemsLen: number, canonicalLen: number) {
   return canonicalLen > 1 && itemsLen === canonicalLen + 2;
@@ -1431,8 +1464,17 @@ function FsSlide(props: {
   captionFirst: boolean;
   captionClassName?: string;
   captionStyle?: React.CSSProperties;
+  captionZoomMotion?: FullscreenCaptionZoomMotion;
+  captionLayout?: "overlay" | "slide";
   isHorizontal: boolean;
   isVertical: boolean;
+  fsCaptionWidth?: ResponsiveLength;
+  fsCaptionHeight?: ResponsiveLength;
+  viewportOverlayPlacement?: FsCaptionPlacement | null;
+  fsViewportOverlayWidth?: ResponsiveLength;
+  fsViewportOverlayHeight?: ResponsiveLength;
+  viewportOverlaySideWidth?: number;
+  viewportOverlayTopBottomHeight?: number;
   sideWidth: number;
   topBottomHeight: number;
   getTransform: (index: number) => string;
@@ -1449,6 +1491,9 @@ function FsSlide(props: {
   fsPreparedVideosRef: React.RefObject<Set<string>>;
   videoSnapshotStore?: VideoSnapshotStore;
   getMediaKey: (item: MediaItem) => string;
+  renderMode?: RenderFullscreenSlidesMode;
+  interactive?: boolean;
+  registerCell?: boolean;
 }) {
   const {
     item,
@@ -1473,8 +1518,17 @@ function FsSlide(props: {
     captionFirst,
     captionClassName,
     captionStyle,
+    captionZoomMotion,
+    captionLayout,
     isHorizontal,
     isVertical,
+    fsCaptionWidth,
+    fsCaptionHeight,
+    viewportOverlayPlacement,
+    fsViewportOverlayWidth,
+    fsViewportOverlayHeight,
+    viewportOverlaySideWidth = 0,
+    viewportOverlayTopBottomHeight = 0,
     sideWidth,
     topBottomHeight,
     getTransform,
@@ -1491,10 +1545,17 @@ function FsSlide(props: {
     fsPreparedVideosRef,
     videoSnapshotStore,
     getMediaKey,
+    renderMode = "track",
+    interactive = showFullscreenSlider,
+    registerCell = true,
   } = props;
 
   const isNode = item.kind === "node";
   const shouldDeferLiveVideo = !!deferLiveVideoUntilVisible && !showFullscreenSlider;
+  const shouldRenderStaticVideo = shouldUseFsStaticVideoPreview({
+    isClone,
+    renderMode,
+  });
 
   const baseImgStyle: React.CSSProperties = {
     maxWidth: "100%",
@@ -1503,9 +1564,78 @@ function FsSlide(props: {
     touchAction: "manipulation",
     transformOrigin: "0 0",
     transform: "translate(0, 0) scale(1)",
-    cursor: isZoomed ? "grab" : "zoom-in",
+    cursor: interactive ? (isZoomed ? "grab" : "zoom-in") : "default",
     userSelect: "none",
   };
+  const captionInteractive = interactive && (captionZoomMotion?.interactive ?? true);
+  const captionContentStyle = captionZoomMotion?.contentStyle;
+  const captionContent = captionNode ? (
+    <div
+      data-rmg-fs-caption-content="true"
+      style={{
+        width: "100%",
+        ...captionContentStyle,
+      }}
+    >
+      {captionNode}
+    </div>
+  ) : null;
+  const captionOverlayReservedLeft =
+    captionLayout === "overlay" && isHorizontal && captionFirst && fsCaptionWidth != null
+      ? sideWidth
+      : 0;
+  const captionOverlayReservedRight =
+    captionLayout === "overlay" && isHorizontal && !captionFirst && fsCaptionWidth != null
+      ? sideWidth
+      : 0;
+  const captionOverlayReservedTop =
+    captionLayout === "overlay" && isVertical && captionFirst && fsCaptionHeight != null
+      ? topBottomHeight
+      : 0;
+  const captionOverlayReservedBottom =
+    captionLayout === "overlay" && isVertical && !captionFirst && fsCaptionHeight != null
+      ? topBottomHeight
+      : 0;
+
+  const viewportOverlayReservedLeft =
+    viewportOverlayPlacement === "left" && fsViewportOverlayWidth != null
+      ? viewportOverlaySideWidth
+      : 0;
+  const viewportOverlayReservedRight =
+    viewportOverlayPlacement === "right" && fsViewportOverlayWidth != null
+      ? viewportOverlaySideWidth
+      : 0;
+  const viewportOverlayReservedTop =
+    viewportOverlayPlacement === "top" && fsViewportOverlayHeight != null
+      ? viewportOverlayTopBottomHeight
+      : 0;
+  const viewportOverlayReservedBottom =
+    viewportOverlayPlacement === "bottom" && fsViewportOverlayHeight != null
+      ? viewportOverlayTopBottomHeight
+      : 0;
+
+  const reservedLeftWidth = captionOverlayReservedLeft + viewportOverlayReservedLeft;
+  const reservedRightWidth = captionOverlayReservedRight + viewportOverlayReservedRight;
+  const reservedTopHeight = captionOverlayReservedTop + viewportOverlayReservedTop;
+  const reservedBottomHeight = captionOverlayReservedBottom + viewportOverlayReservedBottom;
+  const reservedBefore = isHorizontal ? reservedLeftWidth : reservedTopHeight;
+  const reservedAfter = isHorizontal ? reservedRightWidth : reservedBottomHeight;
+  const mediaViewportBaseWidth =
+    !isHorizontal || captionLayout === "overlay" || !captionNode
+      ? "100%"
+      : `calc(100% - ${sideWidth}px)`;
+  const mediaViewportBaseHeight =
+    !isVertical || captionLayout === "overlay" || !captionNode
+      ? "100%"
+      : `calc(100% - ${topBottomHeight}px)`;
+  const mediaViewportWidth = subtractReservedSpace(
+    mediaViewportBaseWidth,
+    reservedLeftWidth + reservedRightWidth
+  );
+  const mediaViewportHeight = subtractReservedSpace(
+    mediaViewportBaseHeight,
+    reservedTopHeight + reservedBottomHeight
+  );
 
   return (
     <div
@@ -1514,22 +1644,31 @@ function FsSlide(props: {
       data-index={index}
       data-rmg-canonical-idx={canonicalIndex}
       data-rmg-clone={isClone ? "true" : "false"}
+      data-rmg-fs-render-mode={renderMode}
       ref={(el: HTMLDivElement | null) => {
-        if (el && !cells.current.some((c) => c.element === el)) {
+        if (
+          registerCell &&
+          el &&
+          !cells.current.some((c) => c.element === el)
+        ) {
           cells.current.push({ element: el as unknown as HTMLElement, index });
         }
       }}
       style={{
-        transform: getTransform(index),
+        transform: renderMode === "crossfade" ? "none" : getTransform(index),
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         position: "absolute",
-        left: 0,
+        inset: renderMode === "crossfade" ? 0 : undefined,
+        left: renderMode === "crossfade" ? undefined : 0,
+        top: renderMode === "crossfade" ? undefined : 0,
+        width: renderMode === "crossfade" ? "100%" : undefined,
         minWidth: "100%",
         height: "100%",
         margin: "auto",
-        touchAction: "none",
+        touchAction: interactive ? "none" : "manipulation",
+        pointerEvents: interactive ? "auto" : "none",
       }}
       className={styles.imgMargin}
     >
@@ -1543,10 +1682,11 @@ function FsSlide(props: {
           justifyContent: "center",
         }}
       >
-        {captionNode && captionFirst && (
+        {captionNode && captionFirst && captionLayout !== "overlay" && (
           <div
             className={captionClassName}
             data-rmg-fs-caption="true"
+            aria-hidden={captionInteractive ? undefined : true}
             style={{
               display: "flex",
               alignItems: "center",
@@ -1554,7 +1694,7 @@ function FsSlide(props: {
               flex: isHorizontal ? `0 0 ${sideWidth}px` : "0 0 auto",
               alignSelf: "stretch",
               textAlign: "left",
-              pointerEvents: showFullscreenSlider ? "auto" : "none",
+              pointerEvents: captionInteractive ? "auto" : "none",
               padding: "0.75rem 1rem",
               color: "#fff",
               fontSize: "0.875rem",
@@ -1564,25 +1704,41 @@ function FsSlide(props: {
               ...captionStyle,
             }}
           >
-            {captionNode}
+            {captionContent}
           </div>
+        )}
+        {reservedBefore > 0 && (
+          <div
+            aria-hidden
+            style={{
+              flex: `0 0 ${reservedBefore}px`,
+              pointerEvents: "none",
+              visibility: "hidden",
+            }}
+          />
         )}
 
         <div
           ref={imageRef}
           data-rmg-fs-media="true"
-          onPointerDown={isNode ? undefined : (e) => onPanPointerDown(e, imageRef)}
+          data-rmg-fs-media-viewport="true"
+          onPointerDown={
+            isNode || !interactive
+              ? undefined
+              : (e) => onPanPointerDown(e, imageRef)
+          }
           onClickCapture={onSuppressNextClickCapture as any}
           style={{
             overflow: "visible",
             touchAction: "none",
-            height: isVertical
-              ? `calc(100% - ${captionNode ? topBottomHeight : 0}px)`
-              : "100%",
+            width: mediaViewportWidth,
+            height: mediaViewportHeight,
+            minWidth: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             position: "relative",
+            pointerEvents: interactive ? "auto" : "none",
           }}
         >
           {isNode ? (
@@ -1592,7 +1748,7 @@ function FsSlide(props: {
                 width: "100%",
                 height: "100%",
                 position: "relative",
-                pointerEvents: showFullscreenSlider ? "auto" : "none",
+                pointerEvents: interactive ? "auto" : "none",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1601,7 +1757,7 @@ function FsSlide(props: {
               {(item as any).node}
             </div>
           ) : item.kind === "video" ? (
-            isClone ? (
+            shouldRenderStaticVideo ? (
               <FsCloneVideoPreview
                 item={item as any}
                 renderedIndex={index}
@@ -1612,8 +1768,10 @@ function FsSlide(props: {
                 defaultPlayerStyle={defaultPlayerStyle}
                 fsVideoStyle={fsVideoStyle}
                 fsVideoClassName={fsVideoClassName}
-                fsLazy={fsLazy?.videos}
-                showFullscreenSlider={showFullscreenSlider}
+                fsLazy={renderMode === "crossfade" ? undefined : fsLazy?.videos}
+                showFullscreenSlider={
+                  showFullscreenSlider || renderMode === "crossfade"
+                }
               />
             ) : (
               shouldDeferLiveVideo ? null : (
@@ -1648,7 +1806,7 @@ function FsSlide(props: {
               className={styles.fullscreenImages}
               baseStyle={baseImgStyle}
               renderImage={renderImage}
-              fsLazy={fsLazy?.images}
+              fsLazy={renderMode === "crossfade" ? undefined : fsLazy?.images}
               fsLazyAllowedRef={fsLazyAllowedImagesRef}
               fsLazyListenersRef={fsLazyListenersImagesRef}
               fsDecodedImagesRef={fsDecodedImagesRef}
@@ -1659,10 +1817,11 @@ function FsSlide(props: {
           )}
         </div>
 
-        {captionNode && !captionFirst && (
+        {captionNode && !captionFirst && captionLayout !== "overlay" && (
           <div
             className={captionClassName}
             data-rmg-fs-caption="true"
+            aria-hidden={captionInteractive ? undefined : true}
             style={{
               display: "flex",
               alignItems: "center",
@@ -1670,7 +1829,7 @@ function FsSlide(props: {
               flex: isHorizontal ? `0 0 ${sideWidth}px` : "0 0 auto",
               alignSelf: "stretch",
               textAlign: "left",
-              pointerEvents: showFullscreenSlider ? "auto" : "none",
+              pointerEvents: captionInteractive ? "auto" : "none",
               padding: "0.75rem 1rem",
               color: "#fff",
               fontSize: "0.875rem",
@@ -1680,8 +1839,18 @@ function FsSlide(props: {
               ...captionStyle,
             }}
           >
-            {captionNode}
+            {captionContent}
           </div>
+        )}
+        {reservedAfter > 0 && (
+          <div
+            aria-hidden
+            style={{
+              flex: `0 0 ${reservedAfter}px`,
+              pointerEvents: "none",
+              visibility: "hidden",
+            }}
+          />
         )}
       </div>
     </div>
@@ -1706,10 +1875,17 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
     renderCaption,
     captionClassName,
     captionStyle,
+    captionZoomMotion,
     fsCaptionPlacement,
     fsCaptionWidth,
     fsCaptionHeight,
     fsCaptionBreakpoint,
+    fsCaptionLayout,
+    fsViewportOverlayPlacement,
+    fsViewportOverlayWidth,
+    fsViewportOverlayHeight,
+    fsViewportOverlayBreakpoint,
+    breakpointMap,
     resolveFsCaptionPlacement,
     styles,
     renderImage,
@@ -1728,10 +1904,17 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
     fsPreparedVideosRef,
     videoSnapshotStore,
     getMediaKey,
+    renderMode = "track",
   } = opts;
 
-  const vw =
-    typeof window !== "undefined" ? document.documentElement.clientWidth : 1024;
+  const vw = effectiveViewportWidth(
+    opts.viewportWidth ??
+      (typeof window !== "undefined" ? document.documentElement.clientWidth : 0)
+  );
+  const vh = effectiveViewportHeight(
+    opts.viewportHeight ??
+      (typeof window !== "undefined" ? window.innerHeight : 0)
+  );
 
   const effectivePlacement = resolveFsCaptionPlacement(
     fsCaptionPlacement,
@@ -1739,31 +1922,68 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
     vw
   );
 
-  const isHorizontal =
-    effectivePlacement === "left" || effectivePlacement === "right";
-  const isVertical =
-    effectivePlacement === "top" || effectivePlacement === "bottom";
-
   const captionFirst =
     effectivePlacement === "left" || effectivePlacement === "top";
 
   const DEFAULT_SIDE = 280;
   const DEFAULT_TOP_BOTTOM = 200;
 
-  const sideWidth = fsCaptionWidth ?? DEFAULT_SIDE;
-  const topBottomHeight = fsCaptionHeight ?? DEFAULT_TOP_BOTTOM;
+  const sideWidth = resolveLengthFromResponsive(
+    fsCaptionWidth,
+    DEFAULT_SIDE,
+    vw,
+    vw,
+    breakpointMap ?? BREAKPOINT_MAP
+  );
+
+  const topBottomHeight = resolveLengthFromResponsive(
+    fsCaptionHeight,
+    DEFAULT_TOP_BOTTOM,
+    vw,
+    vh,
+    breakpointMap ?? BREAKPOINT_MAP
+  );
+
+  const effectiveViewportOverlayPlacement = resolveFsCaptionPlacement(
+    fsViewportOverlayPlacement,
+    fsViewportOverlayBreakpoint,
+    vw
+  );
+
+  const layoutPlacement = effectivePlacement ?? effectiveViewportOverlayPlacement;
+
+  const viewportOverlaySideWidth = resolveLengthFromResponsive(
+    fsViewportOverlayWidth,
+    DEFAULT_SIDE,
+    vw,
+    vw,
+    breakpointMap ?? BREAKPOINT_MAP
+  );
+
+  const viewportOverlayTopBottomHeight = resolveLengthFromResponsive(
+    fsViewportOverlayHeight,
+    DEFAULT_TOP_BOTTOM,
+    vw,
+    vh,
+    breakpointMap ?? BREAKPOINT_MAP
+  );
 
   const canonLen = canonicalLength ?? items.length;
+
+  const isHorizontal =
+    layoutPlacement === "left" || layoutPlacement === "right";
+  const isVertical =
+    layoutPlacement === "top" || layoutPlacement === "bottom";
 
   return items.map((item, index) => {
     const imageRef = imageRefs.current[index];
     const plyr = plyrList[index];
+    const canonicalIndex = toCanonicalIndex(index, items.length, canonLen);
 
     const captionNode = renderCaption
-      ? renderCaption({ item, index, isZoomed })
+      ? renderCaption({ item, index: canonicalIndex, isZoomed })
       : null;
 
-    const canonicalIndex = toCanonicalIndex(index, items.length, canonLen);
     const isClone = isCloneIndex(index, items.length, canonLen);
 
     return (
@@ -1791,8 +2011,17 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
         captionFirst={captionFirst}
         captionClassName={captionClassName}
         captionStyle={captionStyle}
+        captionZoomMotion={captionZoomMotion}
+        captionLayout={fsCaptionLayout}
         isHorizontal={!!isHorizontal}
         isVertical={!!isVertical}
+        fsCaptionWidth={fsCaptionWidth}
+        fsCaptionHeight={fsCaptionHeight}
+        viewportOverlayPlacement={effectiveViewportOverlayPlacement}
+        fsViewportOverlayWidth={fsViewportOverlayWidth}
+        fsViewportOverlayHeight={fsViewportOverlayHeight}
+        viewportOverlaySideWidth={viewportOverlaySideWidth}
+        viewportOverlayTopBottomHeight={viewportOverlayTopBottomHeight}
         sideWidth={sideWidth}
         topBottomHeight={topBottomHeight}
         getTransform={getTransform}
@@ -1809,7 +2038,20 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
         fsPreparedVideosRef={fsPreparedVideosRef}
         videoSnapshotStore={videoSnapshotStore}
         getMediaKey={getMediaKey}
+        renderMode={renderMode}
+        interactive={renderMode === "track" && showFullscreenSlider}
+        registerCell={renderMode === "track"}
       />
     );
+  });
+}
+
+export function renderFullscreenCrossfadeSlides(
+  opts: RenderFullscreenSlidesArgs
+) {
+  return renderFullscreenSlides({
+    ...opts,
+    renderMode: "crossfade",
+    showFullscreenSlider: true,
   });
 }
