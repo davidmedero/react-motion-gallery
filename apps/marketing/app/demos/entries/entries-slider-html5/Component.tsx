@@ -2,14 +2,12 @@
 'use client';
 
 import { useSearchParams } from "next/navigation";
-import {
-  GalleryCore,
-  Video,
-  useFullscreenController,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
-import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import { GalleryCore } from "react-motion-gallery/core";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { Video } from "react-motion-gallery/video";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
 import {
   Entries,
   createEntriesSliderMedia,
@@ -17,7 +15,7 @@ import {
   type EntryCardRenderArgs,
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
-} from "../../../../../../packages/react-motion-gallery/src/entries";
+} from "react-motion-gallery/entries";
 import styles from "./entries-slider-html5-demo.module.css";
 import { entriesSliderHtml5SkeletonText } from "./entries-slider-html5.skeleton-text.generated";
 

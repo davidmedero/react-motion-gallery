@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { M as MasonryHandle } from './types-DWzjXjYR.mjs';
+import { M as MasonryHandle } from './types-Br27DWP7.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
-import './lazy-dGoYpcRa.mjs';
 
 type MasonryReadyController = {
     ref: React.RefCallback<MasonryHandle>;

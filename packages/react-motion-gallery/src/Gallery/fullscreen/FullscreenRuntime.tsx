@@ -17,6 +17,7 @@ import {
   FullscreenPlugin,
   FullscreenRuntimeFeatures,
 } from './types';
+import type { SliderSkipSnaps } from '../slider/types';
 import type { Root } from 'react-dom/client';
 import {
   renderFullscreenBaseCrossfadeSlides,
@@ -94,6 +95,8 @@ export type FullscreenRuntimeProps = {
   sliderGap?: number;
   sliderDuration: number;
   sliderFriction: number;
+  sliderSkipSnaps?: SliderSkipSnaps;
+  sliderStrictSnaps?: boolean;
   suppressLoopRef: React.RefObject<boolean>;
   fsFadeOpening: boolean;
   normalizedItems: MediaItem[];
@@ -364,6 +367,8 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     sliderGap,
     sliderDuration,
     sliderFriction,
+    sliderSkipSnaps,
+    sliderStrictSnaps,
     suppressLoopRef,
     fsFadeOpening,
     normalizedItems,
@@ -1469,6 +1474,8 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                 sliderGap={fullscreenSliderGap}
                 sliderDuration={sliderDuration}
                 sliderFriction={sliderFriction}
+                skipSnaps={sliderSkipSnaps}
+                strictSnaps={sliderStrictSnaps}
                 suppressLoopRef={suppressLoopRef}
                 fadeOpening={fsFadeOpening}
                 introFade={introFade}

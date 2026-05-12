@@ -1,13 +1,13 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { d as FullscreenOptions, e as FullscreenPlugin, w as FullscreenClose, x as FullscreenArrows, y as FullscreenCounter, l as ResponsiveLength, R as ResponsiveCaptionPlacement, z as FsCaptionRenderArgs, A as FSImageRender, h as FullscreenVideoOptions, c as FullscreenLazyLoadOptions } from './responsive-Ch5b4LC-.mjs';
-export { j as FsCaptionPlacement, k as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenControlsOptions, b as FullscreenCrossfadeOptions, f as FullscreenPluginKind, g as FullscreenSliderOptions, i as FullscreenZoomPanOptions } from './responsive-Ch5b4LC-.mjs';
+import { d as FullscreenOptions, e as FullscreenPlugin, w as FullscreenClose, x as FullscreenArrows, y as FullscreenCounter, l as ResponsiveLength, R as ResponsiveCaptionPlacement, z as FsCaptionRenderArgs, A as FSImageRender, h as FullscreenVideoOptions, c as FullscreenLazyLoadOptions } from './responsive-CrESIWcm.mjs';
+export { j as FsCaptionPlacement, k as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenControlsOptions, b as FullscreenCrossfadeOptions, f as FullscreenPluginKind, g as FullscreenSliderOptions, i as FullscreenZoomPanOptions } from './responsive-CrESIWcm.mjs';
 import React__default from 'react';
 import { MediaItem } from './media.mjs';
-import { d as CrossFadeWheel, H as FullscreenOpenRequest } from './types-CfvTYIyd.mjs';
-export { G as GalleryApi, a as GalleryCoreApi, I as IndexMode } from './types-CfvTYIyd.mjs';
-import { a as FullscreenThumbnailBridge } from './types-B7AiQJkM.mjs';
+import { g as SliderSkipSnaps, d as CrossFadeWheel, H as FullscreenOpenRequest } from './types-BiXSaEk7.mjs';
+export { G as GalleryApi, a as GalleryCoreApi, I as IndexMode } from './types-BiXSaEk7.mjs';
+import { a as FullscreenThumbnailBridge } from './types-DNd5jSkS.mjs';
 import { R as ResponsiveNumber } from './responsiveNumber-CouEMJ9O.mjs';
-import './types-DP7ogmr4.mjs';
+import './types-DXFoG8LC.mjs';
 import './force-C5m1QpdF.mjs';
 import './transitions-DU3ftmIq.mjs';
 import './plyrTypes-DhzgHNfX.mjs';
@@ -29,6 +29,8 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
             duration: number;
             friction: number;
             direction: "ltr" | "rtl";
+            skipSnaps: SliderSkipSnaps;
+            strictSnaps: boolean;
         };
         zoom: {
             clickZoomLevel: number;

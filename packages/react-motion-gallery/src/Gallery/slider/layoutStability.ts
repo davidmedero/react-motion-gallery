@@ -53,18 +53,85 @@ export function getSliderCenterOffset(args: {
   return (viewport - alignSize) / 2;
 }
 
+export function containSliderScrollSnap(args: {
+  snap: number;
+  viewport: number;
+  contentSpan?: number;
+  containScroll?: boolean;
+}): number {
+  const { snap, viewport, contentSpan, containScroll } = args;
+  if (!containScroll || viewport <= 0 || (contentSpan ?? 0) <= viewport) return snap;
+
+  return Math.max(viewport - (contentSpan as number), Math.min(0, snap));
+}
+
 export function buildSliderScrollSnaps(args: {
   targets: number[];
   alignSizes: number[];
   viewport: number;
   centerAlign?: boolean;
+  contentSpan?: number;
+  containScroll?: boolean;
 }): number[] {
-  const { targets, alignSizes, viewport, centerAlign } = args;
+  const { targets, alignSizes, viewport, centerAlign, contentSpan, containScroll } = args;
 
   return targets.map((target, index) => {
     const alignSize = alignSizes[index] ?? 0;
-    return -target + getSliderCenterOffset({ viewport, alignSize, centerAlign });
+    const snap = -target + getSliderCenterOffset({ viewport, alignSize, centerAlign });
+    return containSliderScrollSnap({ snap, viewport, contentSpan, containScroll });
   });
+}
+
+export function mergeDuplicateContainedSliderPages<
+  T extends { target: number; alignSize: number; cells: unknown[] },
+>(args: {
+  pages: T[];
+  viewport: number;
+  contentSpan?: number;
+  centerAlign?: boolean;
+  containScroll?: boolean;
+  epsilon?: number;
+}): T[] {
+  const {
+    pages,
+    viewport,
+    contentSpan,
+    centerAlign,
+    containScroll,
+    epsilon = SLIDER_LAYOUT_EPSILON,
+  } = args;
+
+  if (!containScroll || viewport <= 0 || (contentSpan ?? 0) <= viewport) return pages;
+
+  const merged: T[] = [];
+  let previousSnap: number | null = null;
+
+  pages.forEach((page) => {
+    const rawSnap =
+      -page.target +
+      getSliderCenterOffset({ viewport, alignSize: page.alignSize, centerAlign });
+    const snap = containSliderScrollSnap({
+      snap: rawSnap,
+      viewport,
+      contentSpan,
+      containScroll,
+    });
+    const previousPage = merged[merged.length - 1];
+
+    if (
+      previousPage &&
+      previousSnap != null &&
+      Math.abs(snap - previousSnap) <= epsilon
+    ) {
+      previousPage.cells = previousPage.cells.concat(page.cells);
+      return;
+    }
+
+    merged.push({ ...page, cells: page.cells.slice() } as T);
+    previousSnap = snap;
+  });
+
+  return merged;
 }
 
 export function shouldEnableSliderLoop(args: {

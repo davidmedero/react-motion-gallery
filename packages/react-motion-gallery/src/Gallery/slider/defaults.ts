@@ -9,6 +9,7 @@ export const DEFAULT_SLIDER = {
     strictSnaps: false,
     freeScroll: false,
     loop: false,
+    containScroll: false,
   },
 
   motion: {

@@ -1,19 +1,17 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import {
-  FullscreenThumbnailSlider,
-  GalleryCore,
-  Slider,
-  useSliderReady,
-  toMediaItems,
-  useFullscreenController,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
-import { fullscreenCaptions } from "../../../../../../packages/react-motion-gallery/src/fullscreen-captions";
-import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { GalleryCore } from "react-motion-gallery/core";
+import { toMediaItems } from "react-motion-gallery/media";
+import { Slider } from "react-motion-gallery/slider";
+import { useSliderReady } from "react-motion-gallery/slider/ready";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { FullscreenThumbnailSlider } from "react-motion-gallery/fullscreenThumbnails";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { fullscreenCaptions } from "react-motion-gallery/fullscreen/captions";
+import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import styles from "./fullscreen-caption-thumbnails-demo.module.css";
 
 const SLIDES = [

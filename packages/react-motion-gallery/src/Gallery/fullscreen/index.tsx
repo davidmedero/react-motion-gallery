@@ -734,6 +734,8 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         sliderGap={fullscreenSliderGap}
         sliderDuration={fs.slider.duration}
         sliderFriction={fs.slider.friction}
+        sliderSkipSnaps={fs.slider.skipSnaps}
+        sliderStrictSnaps={fs.slider.strictSnaps}
         suppressLoopRef={suppressLoopRef}
         fsFadeOpening={fsFadeOpening}
         normalizedItems={normalizedItems}

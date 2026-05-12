@@ -4,8 +4,9 @@ export { useMasonryReady } from "./masonry-ready";
 export type {
   MasonryHandle,
   MasonryItemProps,
-  MasonryLazyLoadOptions,
   MasonryOptions,
+  MasonryPlugin,
+  MasonryPluginKind,
   MasonrySpan,
   ResponsiveMasonrySpan,
 } from "./Gallery/masonry/types";

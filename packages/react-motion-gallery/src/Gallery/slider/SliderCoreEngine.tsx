@@ -51,8 +51,10 @@ import {
 } from '../shared/slideStoreBag';
 import {
   buildSliderScrollSnaps,
+  containSliderScrollSnap,
   fitsWithinSliderViewport,
   getSliderCenterOffset,
+  mergeDuplicateContainedSliderPages,
   roundSliderLayoutMetric,
   resolveSliderMeasuredSize,
   resolveSliderContentSpan,
@@ -108,6 +110,7 @@ interface SliderProps {
   isReady: boolean
   setIsReady: Dispatch<SetStateAction<boolean>>
   loop?: boolean
+  containScroll?: boolean
   freeScroll?: boolean
   groupCells?: boolean
   centerAlign?: boolean
@@ -199,6 +202,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     isReady,
     setIsReady,
     loop,
+    containScroll,
     freeScroll,
     groupCells,
     centerAlign,
@@ -546,7 +550,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     setLayoutReady(false);
     hasPositioned.current = false;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cellCount, childrenKey, loop, axis]);
+  }, [cellCount, childrenKey, loop, containScroll, axis]);
 
   function getOriginalNodes(): HTMLElement[] {
     const track = slider.current;
@@ -673,7 +677,13 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   function getSnapLocationForIndex(idx: number) {
     const slide = slides.current?.[idx];
     if (!slide) return 0;
-    return -(slide.target ?? 0) + getCenterOffsetForIndex(idx);
+    const snap = -(slide.target ?? 0) + getCenterOffsetForIndex(idx);
+    return containSliderScrollSnap({
+      snap,
+      viewport: getViewportMainSize(),
+      contentSpan: sliderWidth.current || 0,
+      containScroll: containScroll && !wrap,
+    });
   }
 
   function computeCurrentScrollSnaps() {
@@ -688,6 +698,8 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       }),
       viewport,
       centerAlign,
+      contentSpan: sliderWidth.current || 0,
+      containScroll: containScroll && !wrap,
     });
   }
 
@@ -1593,8 +1605,16 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         }
       })
 
-      const hasNaN = newSlides.some((s) => Number.isNaN(s.target))
-      const unstable = hasNaN || (wrap && newSlides.length === 1)
+      const containedSlides = mergeDuplicateContainedSliderPages({
+        pages: newSlides,
+        viewport: cw,
+        contentSpan: sliderWidth.current || 0,
+        centerAlign,
+        containScroll: containScroll && !wrap,
+      })
+
+      const hasNaN = containedSlides.some((s) => Number.isNaN(s.target))
+      const unstable = hasNaN || (wrap && containedSlides.length === 1)
       if (unstable) {
         retry()
         return
@@ -1603,7 +1623,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       const baseSpan = data[data.length - 1]?.end ?? 0
       const nextWrap = shouldEnableSliderLoop({
         loop,
-        itemCount: newSlides.length,
+        itemCount: containedSlides.length,
         span: baseSpan,
         viewport: cw,
       })
@@ -1619,8 +1639,8 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
       isWrapping.current = nextWrap
 
-      slides.current = newSlides
-      setSlidesState(newSlides)
+      slides.current = containedSlides
+      setSlidesState(containedSlides)
 
       if (translateRef.current) {
         syncMotionGeometry({
@@ -1631,7 +1651,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       setLayoutReady(true)
 
       const map: number[] = []
-      newSlides.forEach((s, slideIdx) => {
+      containedSlides.forEach((s, slideIdx) => {
         s.cells.forEach((c) => {
           map[c.index] = slideIdx
         })
@@ -1663,7 +1683,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       if (retryTimer != null) window.clearTimeout(retryTimer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cellCount, childrenKey, clonedChildren, visibleImages, cellsPerSlide, wrap]);
+  }, [cellCount, childrenKey, clonedChildren, visibleImages, cellsPerSlide, wrap, containScroll]);
 
   const programNavRef = useRef(false);
 
@@ -2450,6 +2470,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     cellsPerSlide,
     layoutReady,
     isMeasured,
+    containScroll,
   ]);
 
   function readMotionState() {
@@ -2830,6 +2851,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       isReady,
       isRtl,
       wrap,
+      containScroll,
     ]
   );
   useEffect(() => {
@@ -2947,7 +2969,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     }
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wrap, layoutReady, isMeasured, isReady, shouldReanchorOnResize, autoHeight]);
+  }, [wrap, layoutReady, isMeasured, isReady, shouldReanchorOnResize, autoHeight, containScroll]);
 
   function onTouchStart(e: TouchEvent) {
     const t0 = e.touches[0]

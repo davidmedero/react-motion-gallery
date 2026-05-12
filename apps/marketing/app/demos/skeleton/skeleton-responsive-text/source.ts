@@ -2,11 +2,11 @@ export const source = String.raw`'use client';
 
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
-import { Video } from "../../../../../../packages/react-motion-gallery/src";
+import { Video } from "react-motion-gallery/video";
 import {
   Skeleton,
   type SkeletonNode,
-} from "../../../../../../packages/react-motion-gallery/src/skeleton-base";
+} from "react-motion-gallery/skeleton/base";
 import styles from "./skeleton-responsive-text-demo.module.css";
 import { skeletonResponsiveTextSkeletonText } from "./skeleton-responsive-text.skeleton-text.generated";
 

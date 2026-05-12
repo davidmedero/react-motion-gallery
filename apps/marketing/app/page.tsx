@@ -638,7 +638,7 @@ fullscreen: {
         minColumnWidth={220}
         gap={{ 0: 10, 900: 18 }}
         fullscreenTrigger="item"
-        lazyLoad={{ enabled: true }}
+        plugins={[gridLazyLoad()]}
       >
         {images.map((image) => (
           <img key={image.src} src={image.src} alt={image.alt} />
@@ -713,7 +713,7 @@ fullscreen: {
         columns={{ 0: 1, 700: 2, 1100: 3 }}
         gap={{ 0: 12, 1100: 20 }}
         placement="balanced"
-        lazyLoad={{ enabled: true }}
+        plugins={[masonryLazyLoad()]}
       >
         {cards.map((card) => (
           <Masonry.Item key={card.id} span={card.featured ? { 0: "full", 1100: 2 } : 1}>
@@ -957,12 +957,13 @@ fullscreen: {
           </header>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              The shared <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad</code> API stays intentionally small: enable it, keep the built-in spinner, or replace that spinner with your own React node or resolver based on{" "}
+              Slider, Grid, and Masonry keep lazy media as explicit plugins, so the base layout imports stay small. The lazy-load option shape stays intentionally small: enable it, keep the built-in spinner, or replace that spinner with your own React node or resolver based on{" "}
               <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">{`{ kind, isClone }`}</code>.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              That same shape is used by Slider, Grid, Masonry, and Video. Fullscreen splits the configuration into{" "}
+              Video keeps a direct <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad</code> prop because it is already a media runtime. Fullscreen uses{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">fullscreenLazyLoad()</code> and splits configuration into{" "}
               <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad.images</code> and{" "}
               <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad.videos</code> so you can tune image and video behavior independently.
             </p>
@@ -973,28 +974,31 @@ fullscreen: {
 
             <p className="leading-relaxed max-w-3xl">
               Entries does not expose a top-level lazy-load prop because entry rows already have viewport/decode gating. If you want per-item lazy behavior inside an entry, apply{" "}
-              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad</code> to the embedded Grid, Masonry, Slider, or Video components you render inside that entry.
+              a lazy-load plugin to the embedded Slider, Grid, or Masonry, or use the direct <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad</code> prop on embedded Video components.
             </p>
 
-            <PageCodeBlock code={`<Slider lazyLoad={{ enabled: true, spinner: true }} />
+            <PageCodeBlock code={`<Slider plugins={[sliderLazyLoad({ spinner: true })]} />
 
 <Grid
-  lazyLoad={{
-    enabled: true,
-    spinner: ({ kind }) => <Spinner label={kind} />,
-  }}
+  plugins={[
+    gridLazyLoad({
+      spinner: ({ kind }) => <Spinner label={kind} />,
+    }),
+  ]}
 />
+
+<Masonry plugins={[masonryLazyLoad()]} />
 
 <Video lazyLoad={{ enabled: true }} />
 
 useFullscreenController({
-  fullscreen: {
-    enabled: true,
-    lazyLoad: {
+  plugins: [
+    fullscreenSlider(),
+    fullscreenLazyLoad({
       images: { enabled: true },
       videos: { enabled: true, spinner: false },
-    },
-  },
+    }),
+  ],
 });`} />
           </div>
         </div>

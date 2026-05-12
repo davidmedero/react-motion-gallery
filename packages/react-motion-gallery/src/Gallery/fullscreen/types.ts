@@ -7,7 +7,7 @@ import {
   ResponsiveLength,
   ResponsiveNumber,
 } from "../shared/responsive";
-import { SliderHandle } from "../slider/types";
+import type { SliderHandle, SliderSkipSnaps } from "../slider/types";
 import { EntriesOptions, MediaEntryLink, SlideOwner } from "../entries";
 import { PlyrOptionsBuilder, PlyrSourceBuilder } from "../video/plyrTypes";
 import type { ZoomPanOptions } from "../zoomPan/types";
@@ -116,6 +116,8 @@ export type FullscreenSliderOptions = {
   duration?: number;
   friction?: number;
   direction?: "ltr" | "rtl";
+  skipSnaps?: SliderSkipSnaps;
+  strictSnaps?: boolean;
 };
 
 export type FullscreenZoomPanOptions = ZoomPanOptions;

@@ -1,9 +1,8 @@
 import * as React from 'react';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
-import { a as MasonryItemProps, c as MasonryOptions, M as MasonryHandle } from './types-DWzjXjYR.mjs';
-export { b as MasonryLazyLoadOptions, d as MasonrySpan, R as ResponsiveMasonrySpan } from './types-DWzjXjYR.mjs';
+import { a as MasonryItemProps, b as MasonryOptions, M as MasonryHandle } from './types-Br27DWP7.mjs';
+export { c as MasonryPlugin, d as MasonryPluginKind, e as MasonrySpan, R as ResponsiveMasonrySpan } from './types-Br27DWP7.mjs';
 export { MasonryReadyController, useMasonryReady } from './masonry-ready.mjs';
-import './lazy-dGoYpcRa.mjs';
 
 type MasonryItemComponent = React.FC<MasonryItemProps> & {
     __rmgMasonryItem: true;

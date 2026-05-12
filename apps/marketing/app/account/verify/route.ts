@@ -4,8 +4,8 @@ import {
   verifyMagicLinkToken,
 } from "@/lib/auth/session";
 import {
-  getBillingCadenceOrDefault,
-  getPlanIdOrDefault,
+  isBillingCadence,
+  isPlanId,
 } from "@/lib/billing/plans";
 
 export async function GET(request: Request) {
@@ -19,13 +19,14 @@ export async function GET(request: Request) {
 
   await setSessionCookie(payload.email);
 
-  const plan = getPlanIdOrDefault(payload.plan);
-  const billing = getBillingCadenceOrDefault(payload.billing);
   const redirectUrl = new URL("/account", url);
 
   redirectUrl.searchParams.set("auth", "signed-in");
-  redirectUrl.searchParams.set("plan", plan);
-  redirectUrl.searchParams.set("billing", billing);
+
+  if (isPlanId(payload.plan) && isBillingCadence(payload.billing)) {
+    redirectUrl.searchParams.set("plan", payload.plan);
+    redirectUrl.searchParams.set("billing", payload.billing);
+  }
 
   return NextResponse.redirect(redirectUrl);
 }

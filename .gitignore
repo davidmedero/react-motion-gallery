@@ -1,6 +1,4 @@
 node_modules/
-*storybook.log
-storybook-static
 
 # Environment variables and local secrets
 .env

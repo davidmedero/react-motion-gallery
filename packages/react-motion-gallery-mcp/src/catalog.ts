@@ -36,12 +36,13 @@ export const componentCatalog: ComponentSurface[] = [
     exports: ["Grid"],
     categoryIds: ["grid"],
     description:
-      "Responsive media grid with spans, template columns, lazy loading, skeletons, and fullscreen item handoffs.",
+      "Responsive media grid with spans, template columns, skeletons, and fullscreen item handoffs.",
     whenToUse: [
       "Use for predictable editorial or product grids.",
       "Use templateColumns when track proportions matter more than a plain column count.",
+      "Add gridLazyLoad from react-motion-gallery/grid/lazy-load only when the route needs lazy media.",
     ],
-    relatedTags: ["grid", "span", "template-columns", "responsive"],
+    relatedTags: ["grid", "span", "template-columns", "responsive", "plugins"],
   },
   {
     id: "masonry",
@@ -54,8 +55,9 @@ export const componentCatalog: ComponentSurface[] = [
     whenToUse: [
       "Use for mixed aspect ratios or cards with uneven text/media heights.",
       "Choose placement mode based on whether balance, round-robin order, or horizontal visual order matters most.",
+      "Add masonryLazyLoad from react-motion-gallery/masonry/lazy-load only when the route needs lazy media.",
     ],
-    relatedTags: ["masonry", "balanced", "round-robin", "horizontal-order", "span"],
+    relatedTags: ["masonry", "balanced", "round-robin", "horizontal-order", "span", "plugins"],
   },
   {
     id: "entries",
@@ -214,9 +216,9 @@ const categoryDescriptions: Record<DemoCategoryId, string> = {
   slider:
     "Motion-first slider demos covering loop, axis, granular plugins, effects, thumbnails, video, API mutation, and Skeleton-owned loading.",
   grid:
-    "Responsive grid demos for spans, template tracks, min column width, lazy loading, video, fullscreen, and skeletons.",
+    "Responsive grid demos for spans, template tracks, min column width, lazy-load plugins, video, fullscreen, and skeletons.",
   masonry:
-    "Masonry demos for balanced, round-robin, horizontal order, spans, video, fullscreen, and stable skeleton loading.",
+    "Masonry demos for balanced, round-robin, horizontal order, spans, lazy-load plugins, video, fullscreen, and stable skeleton loading.",
   entries:
     "Structured entry demos that combine copy, metadata, media, and slider/grid/masonry renderers.",
   "zoom-pan":

@@ -643,8 +643,7 @@ var ignoredDirectories = /* @__PURE__ */ new Set([
   ".next",
   "dist",
   "build",
-  "coverage",
-  "storybook-static"
+  "coverage"
 ]);
 function resolveInsideRoot(projectRoot, targetPath) {
   const root = path5.resolve(projectRoot);

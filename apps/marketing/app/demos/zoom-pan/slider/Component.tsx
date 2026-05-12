@@ -1,12 +1,10 @@
 'use client';
 
-import {
-  GalleryCore,
-  Slider,
-  useSliderReady,
-  ZoomPanImage,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { GalleryCore } from "react-motion-gallery/core";
+import { Slider } from "react-motion-gallery/slider";
+import { useSliderReady } from "react-motion-gallery/slider/ready";
+import { ZoomPanImage } from "react-motion-gallery/zoomPan";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
 import styles from "./slider-demo.module.css";
 
 const IMAGES = [

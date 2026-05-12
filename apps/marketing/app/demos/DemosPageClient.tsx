@@ -23,6 +23,7 @@ import {
 } from "react";
 import type { JSX } from "react";
 import styles from "./demos.module.css";
+import { generatedCodeTabsByDemoId } from "./generated-code-tabs";
 import { SliderDefaultDemo } from "./slider/slider-default/Component";
 import { source as sliderDefaultSource } from "./slider/slider-default/source";
 import { css as sliderDefaultCss } from "./slider/slider-default/css";
@@ -317,7 +318,11 @@ const DemoCodeBlock = memo(function DemoCodeBlock(props: {
   const { demo, typescriptCode } = props;
   const normalizedTypescriptCode = normalizeDemoSource(typescriptCode);
   const normalizedCssCode = normalizeDemoSource(demo.css);
-  const normalizedExtraTabs = (demo.extraCodeTabs ?? []).map((tab) => ({
+  const generatedCodeTabs = generatedCodeTabsByDemoId[demo.id] ?? [];
+  const normalizedExtraTabs = [
+    ...generatedCodeTabs,
+    ...(demo.extraCodeTabs ?? []),
+  ].map((tab) => ({
     ...tab,
     code: normalizeDemoSource(tab.code),
   }));
@@ -773,7 +778,7 @@ const DEMOS: DemoDefinition[] = [
     id: "slider-strict-snaps",
     title: "Strict Snaps",
     eyebrow: "Slider",
-    tags: ["loop","center-align","fullscreen","skeleton"],
+    tags: ["loop","align-center","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderStrictSnapsDemo,
     source: sliderStrictSnapsSource,
@@ -793,7 +798,7 @@ const DEMOS: DemoDefinition[] = [
     id: "slider-variable-widths",
     title: "Variable Widths",
     eyebrow: "Slider",
-    tags: ["center","fullscreen","skeleton"],
+    tags: ["center", "contain-scroll", "fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderVariableWidthsDemo,
     source: sliderVariableWidthsSource,

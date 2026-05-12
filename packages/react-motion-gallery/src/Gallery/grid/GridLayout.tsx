@@ -10,7 +10,6 @@ import {
 } from '../shared/responsive';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
-import { LazyItemHost, normalizeLazyLoad } from '../shared/lazy/LazyItemHost';
 import { RmgSlideProvider } from '../shared/slideContext';
 import { createRmgSlideStoreBag } from '../shared/slideStoreBag';
 import { buildStableScopeId } from '../shared/stableScope';
@@ -23,7 +22,7 @@ import {
   type GridCell,
   type GridItemLayoutMeta,
 } from './item';
-import { GridLazyLoadOptions, IntroOptions, ResponsiveGridTemplate, type GridHandle } from './types';
+import { IntroOptions, ResponsiveGridTemplate, type GridHandle, type GridPlugin } from './types';
 
 type FullscreenTrigger = 'item' | 'media';
 
@@ -35,7 +34,7 @@ type GridOptions = {
   rootClassName?: string;
   itemClassName?: string;
   fullscreenTrigger?: FullscreenTrigger;
-  lazyLoad?: GridLazyLoadOptions;
+  plugins?: GridPlugin[];
 };
 
 export type GridLayoutProps = {
@@ -82,6 +81,14 @@ function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined>): React.RefCallba
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ');
+}
+
+function isGridPlugin(value: unknown): value is GridPlugin {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    (value as GridPlugin).__rmgGridPlugin === true
+  );
 }
 
 const warnedGridMessages = new Set<string>();
@@ -297,11 +304,21 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   const readySubsRef = React.useRef(new Set<(nodes: HTMLElement[]) => void>());
   const readyRef = React.useRef(false);
 
-  const normalizedLazy = React.useMemo(() => normalizeLazyLoad(grid.lazyLoad), [grid.lazyLoad]);
-  const lazyEnabled = normalizedLazy.enabled;
+  const pluginEntries = React.useMemo(
+    () => (grid.plugins ?? []).filter(isGridPlugin),
+    [grid.plugins]
+  );
+  const pluginItemEntry = React.useMemo(
+    () => pluginEntries.find((plugin) => plugin.renderItem),
+    [pluginEntries]
+  );
+  const pluginBlocksMediaReady = React.useMemo(
+    () => pluginEntries.some((plugin) => plugin.blocksReady),
+    [pluginEntries]
+  );
 
   useInViewOnce(true, gridRootRef as any, () => setInView(true));
-  useMediaReady(!lazyEnabled, gridRootRef as any, setMediaReady);
+  useMediaReady(!pluginBlocksMediaReady, gridRootRef as any, setMediaReady);
 
   const renderModeProp = renderMode ?? 'wrap';
 
@@ -313,7 +330,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     setClientReady(true);
   }, []);
 
-  const contentReady = lazyEnabled ? clientReady : mediaReady;
+  const contentReady = pluginBlocksMediaReady ? clientReady : mediaReady;
   const introActive = contentReady && inView;
 
   const getItemNodes = React.useCallback(() => {
@@ -403,7 +420,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     });
 
     return () => io.disconnect();
-  }, [cells, core, lazyEnabled, renderModeProp]);
+  }, [cells, core, renderModeProp]);
 
   const openFromEvent = React.useCallback(
     (index: number, host: HTMLElement, e: React.SyntheticEvent) => {
@@ -613,7 +630,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
         introStyle,
       });
 
-      if (lazyEnabled) {
+      if (pluginItemEntry?.renderItem) {
         const originalEl = React.isValidElement(original)
           ? (original as React.ReactElement<any>)
           : null;
@@ -639,28 +656,30 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
             }
           : undefined;
 
-        return (
-          <LazyItemHost
-            key={cell.id}
-            index={index}
-            data-rmg-idx={index}
-            data-rmg-grid-item-key={cell.id}
-            className={itemClassName}
-            style={itemStyle}
-            lazyLoad={grid.lazyLoad}
-            registerExpandableImage={registerExpandableImage as any}
-            revealedIndicesRef={revealedIndicesRef}
-            onClick={mergedOnClick}
-            onKeyDown={mergedOnKeyDown}
-            tabIndex={enableFullscreen ? (origProps.tabIndex ?? 0) : undefined}
-            aria-label={
-              enableFullscreen
-                ? (origProps['aria-label'] ?? `View image ${index + 1}`)
-                : undefined
-            }
-          >
-            {scopedOriginal}
-          </LazyItemHost>
+        const itemProps = {
+          'data-rmg-idx': index,
+          'data-rmg-grid-item-key': cell.id,
+          className: itemClassName,
+          style: itemStyle,
+          onClick: mergedOnClick,
+          onKeyDown: mergedOnKeyDown,
+          tabIndex: enableFullscreen ? (origProps.tabIndex ?? 0) : undefined,
+          'aria-label': enableFullscreen
+            ? (origProps['aria-label'] ?? `View image ${index + 1}`)
+            : undefined,
+        } as React.HTMLAttributes<HTMLDivElement>;
+
+        return pluginItemEntry.renderItem(
+          {
+            index,
+            key: cell.id,
+            itemProps,
+            children: scopedOriginal,
+            registerExpandableImage: (itemIndex, node) =>
+              registerExpandableImage(itemIndex, node),
+            revealedIndicesRef,
+          },
+          pluginItemEntry.options
         );
       }
 
@@ -750,8 +769,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     });
   }, [
     cells,
-    lazyEnabled,
-    grid.lazyLoad,
+    pluginItemEntry,
     renderModeProp,
     baseItemClassName,
     hasExplicitTracks,
@@ -764,7 +782,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   ]);
 
   React.useLayoutEffect(() => {
-    if (renderModeProp !== 'passthrough' || lazyEnabled) return;
+    if (renderModeProp !== 'passthrough' || pluginItemEntry?.renderItem) return;
 
     const root = gridRootRef.current;
     if (!root) return;
@@ -777,7 +795,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     return () => {
       for (let i = 0; i < cells.length; i++) registerExpandableImage(i, null);
     };
-  }, [renderModeProp, lazyEnabled, cells.length, registerExpandableImage]);
+  }, [renderModeProp, pluginItemEntry, cells.length, registerExpandableImage]);
 
   const containerProps: React.HTMLAttributes<HTMLDivElement> = React.useMemo(
     () => ({

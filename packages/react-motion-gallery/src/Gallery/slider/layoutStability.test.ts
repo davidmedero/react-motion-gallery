@@ -4,6 +4,7 @@ import {
   buildSliderScrollSnaps,
   fitsWithinSliderViewport,
   getSliderCenterOffset,
+  mergeDuplicateContainedSliderPages,
   resolveSliderMeasuredSize,
   roundSliderLayoutMetric,
   resolveSliderContentSpan,
@@ -119,5 +120,48 @@ describe("slider layout stability helpers", () => {
         centerAlign: true,
       })
     ).toEqual([100, -420]);
+  });
+
+  test("contains center-aligned snaps inside non-loop scroll bounds", () => {
+    expect(
+      buildSliderScrollSnaps({
+        targets: [0, 520, 1040],
+        alignSizes: [500, 500, 500],
+        viewport: 900,
+        centerAlign: true,
+      })
+    ).toEqual([200, -320, -840]);
+
+    expect(
+      buildSliderScrollSnaps({
+        targets: [0, 520, 1040],
+        alignSizes: [500, 500, 500],
+        viewport: 900,
+        centerAlign: true,
+        contentSpan: 1540,
+        containScroll: true,
+      })
+    ).toEqual([0, -320, -640]);
+  });
+
+  test("merges pages that contain to the same bound snap", () => {
+    const pages = mergeDuplicateContainedSliderPages({
+      pages: [
+        { target: 0, alignSize: 220, cells: [0] },
+        { target: 240, alignSize: 420, cells: [1] },
+        { target: 680, alignSize: 260, cells: [2] },
+        { target: 2400, alignSize: 250, cells: [7] },
+      ],
+      viewport: 900,
+      contentSpan: 2650,
+      centerAlign: true,
+      containScroll: true,
+    });
+
+    expect(pages).toEqual([
+      { target: 0, alignSize: 220, cells: [0, 1] },
+      { target: 680, alignSize: 260, cells: [2] },
+      { target: 2400, alignSize: 250, cells: [7] },
+    ]);
   });
 });

@@ -7,7 +7,7 @@ All rights reserved.
 
 ## 1. Definitions
 
-**"Software"** refers to the React Motion Gallery library, including all source code, documentation, examples, demos, Storybook content, and any associated assets provided in this repository or distributed via npm.
+**"Software"** refers to the React Motion Gallery library, including all source code, documentation, examples, demos, and any associated assets provided in this repository or distributed via npm.
 
 **"Non-Commercial Use"** means use of the Software:
 - for personal projects,

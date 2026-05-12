@@ -11,7 +11,6 @@ const ignoredDirectories = new Set([
   "dist",
   "build",
   "coverage",
-  "storybook-static",
 ]);
 
 export function resolveInsideRoot(projectRoot: string, targetPath: string) {

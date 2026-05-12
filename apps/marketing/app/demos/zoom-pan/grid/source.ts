@@ -1,13 +1,11 @@
 export const source = String.raw`'use client';
 
-import {
-  GalleryCore,
-  Grid,
-  useGridReady,
-  ZoomPanImage,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { GridSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
-import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
+import { GalleryCore } from "react-motion-gallery/core";
+import { Grid } from "react-motion-gallery/grid";
+import { useGridReady } from "react-motion-gallery/grid/ready";
+import { ZoomPanImage } from "react-motion-gallery/zoomPan";
+import { GridSkeleton } from "react-motion-gallery/skeleton/grid";
+import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-demo.module.css";
 
 const IMAGES = [

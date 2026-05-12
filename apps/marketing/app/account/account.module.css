@@ -161,6 +161,16 @@
   grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.1fr);
 }
 
+.contentGrid[data-has-purchase="false"] {
+  grid-template-columns: minmax(0, 760px);
+}
+
+.accountColumn {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
 .panel {
   min-width: 0;
   border: 1px solid rgba(var(--rmg-logo-shadow-rgb), 0.12);
@@ -332,6 +342,15 @@
   margin-top: 18px;
   border-top: 1px solid rgba(var(--rmg-logo-shadow-rgb), 0.1);
   padding-top: 18px;
+}
+
+.checkoutSummary form {
+  min-width: 0;
+}
+
+.checkoutSummary .secondaryButton {
+  width: auto;
+  margin-top: 0;
 }
 
 .checkoutSummary div {

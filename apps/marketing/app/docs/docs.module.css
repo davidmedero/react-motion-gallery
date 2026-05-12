@@ -38,12 +38,23 @@
 }
 
 .toc nav {
-  display: grid;
-  gap: 1px;
   margin-top: 10px;
 }
 
-.toc a {
+.tocList {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tocItem {
+  min-width: 0;
+}
+
+.tocLink {
+  display: block;
   border-radius: 7px;
   padding: 7px 9px;
   color: rgba(var(--rmg-logo-shadow-rgb), 0.72);
@@ -52,7 +63,8 @@
   text-decoration: none;
 }
 
-.toc a:hover {
+.tocLink:hover,
+.tocLinkActive {
   background: rgba(var(--rmg-logo-cyan-rgb), 0.13);
   color: rgb(var(--rmg-logo-shadow-rgb));
 }
@@ -365,7 +377,7 @@
     max-height: none;
   }
 
-  .toc nav {
+  .tocList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -404,7 +416,7 @@
     font-size: 1.22rem;
   }
 
-  .toc nav {
+  .tocList {
     grid-template-columns: 1fr;
   }
 }

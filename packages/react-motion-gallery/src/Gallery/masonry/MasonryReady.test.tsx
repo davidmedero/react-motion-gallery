@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { Masonry, useMasonryReady } from "../../masonry";
+import { masonryLazyLoad } from "../../masonry-lazy-load";
 import type { MasonryHandle } from "./types";
 
 type ResizeObserverEntryLike = {
@@ -62,6 +63,15 @@ class MockIntersectionObserver {
 
   disconnect() {}
 
+  takeRecords() {
+    return [];
+  }
+}
+
+class IdleIntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
   takeRecords() {
     return [];
   }
@@ -224,6 +234,54 @@ describe("useMasonryReady", () => {
     });
 
     expect(container.querySelector("[data-ready='true']")).not.toBeNull();
+
+    unmount(root, container);
+  });
+
+  test("does not mark base masonry images as lazy without the plugin", async () => {
+    vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+    vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(800);
+
+    const { root, container } = mount(
+      <Masonry columns={1}>
+        <img src="/image-a.jpg" alt="Image A" />
+      </Masonry>
+    );
+    await settle();
+
+    const image = container.querySelector("img[alt='Image A']") as HTMLImageElement;
+    expect(container.querySelector("[data-rmg-lazyload]")).toBeNull();
+    expect(image.getAttribute("data-rmg-lazy-src")).toBeNull();
+    expect(image.getAttribute("src")).toBe("/image-a.jpg");
+
+    unmount(root, container);
+  });
+
+  test("uses the lazy-load plugin without waiting for eager image decode", async () => {
+    vi.stubGlobal("IntersectionObserver", IdleIntersectionObserver);
+    vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(false);
+    vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(0);
+
+    function ReadyProbe() {
+      const masonry = useMasonryReady();
+      return (
+        <>
+          <span data-ready={masonry.ready ? "true" : "false"} />
+          <Masonry ref={masonry.ref} columns={1} plugins={[masonryLazyLoad()]}>
+            <img src="/image-a.jpg" alt="Image A" />
+          </Masonry>
+        </>
+      );
+    }
+
+    const { root, container } = mount(<ReadyProbe />);
+    await settle();
+
+    const image = container.querySelector("img[alt='Image A']") as HTMLImageElement;
+    expect(container.querySelector("[data-ready='true']")).not.toBeNull();
+    expect(container.querySelector("[data-rmg-lazyload]")).not.toBeNull();
+    expect(image.getAttribute("data-rmg-lazy-src")).toBe("/image-a.jpg");
+    expect(image.getAttribute("src")).toContain("data:image/gif");
 
     unmount(root, container);
   });

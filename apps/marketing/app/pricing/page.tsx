@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import {
+  type BillingCadence,
+  type BillingOption,
+  billingPlans,
+} from "@/lib/billing/plans";
+import { checkoutAction } from "@/app/account/actions";
 import styles from "./pricing.module.css";
 
 export const metadata: Metadata = {
@@ -8,23 +13,6 @@ export const metadata: Metadata = {
   description:
     "Commercial license pricing for React Motion Gallery, including single-project and unlimited commercial plans.",
   alternates: { canonical: "/pricing" },
-};
-
-type BillingOption = {
-  label: string;
-  price: string;
-  cadence: string;
-  note: string;
-};
-
-type Plan = {
-  name: string;
-  eyebrow: string;
-  description: string;
-  href: string;
-  featured?: boolean;
-  billing: BillingOption[];
-  features: string[];
 };
 
 function priceToNumber(price: string): number {
@@ -54,69 +42,17 @@ function getAnnualSavings(
   return `$${savings.toLocaleString("en-US")}`;
 }
 
-const plans: Plan[] = [
-  {
-    name: "Single Commercial",
-    eyebrow: "One commercial build",
-    description:
-      "For a single product, portfolio, client site, or commercial application.",
-    href: "/account?plan=single-commercial",
-    billing: [
-      {
-        label: "Monthly",
-        price: "$19",
-        cadence: "/month",
-        note: "Flexible monthly billing",
-      },
-      {
-        label: "Yearly",
-        price: "$149",
-        cadence: "/year",
-        note: "Renew annually",
-      },
-      {
-        label: "Lifetime",
-        price: "$299",
-        cadence: "lifetime unlimited",
-        note: "One-time purchase",
-      },
-    ],
-    features: [
-      "Commercial use for one project",
-    ],
-  },
-  {
-    name: "Unlimited Commercial",
-    eyebrow: "Unlimited commercial builds",
-    description:
-      "For agencies, studios, and product teams using React Motion Gallery across many commercial projects.",
-    href: "/account?plan=unlimited-commercial",
-    featured: true,
-    billing: [
-      {
-        label: "Monthly",
-        price: "$59",
-        cadence: "/month",
-        note: "Flexible monthly billing",
-      },
-      {
-        label: "Yearly",
-        price: "$599",
-        cadence: "/year",
-        note: "Renew annually",
-      },
-      {
-        label: "Lifetime",
-        price: "$999",
-        cadence: "lifetime unlimited",
-        note: "One-time purchase",
-      },
-    ],
-    features: [
-      "Commercial use across unlimited projects",
-    ],
-  },
-];
+function cadenceLabel(cadence: BillingCadence): string {
+  if (cadence === "monthly") {
+    return "/month";
+  }
+
+  if (cadence === "yearly") {
+    return "/year";
+  }
+
+  return "one-time";
+}
 
 export default function PricingPage() {
   return (
@@ -129,19 +65,21 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className={styles.planGrid} aria-label="Commercial plans">
-          {plans.map((plan) => (
+        <section className={styles.planGrid} aria-label="Commercial license packages">
+          {billingPlans.map((plan) => (
             <article
               className={styles.planCard}
-              data-featured={plan.featured ? "true" : undefined}
-              key={plan.name}
+              data-featured={
+                plan.id === "unlimited-commercial" ? "true" : undefined
+              }
+              key={plan.id}
             >
               <div className={styles.planHeader}>
                 <div>
                   <p className={styles.planEyebrow}>{plan.eyebrow}</p>
                   <h2>{plan.name}</h2>
                 </div>
-                {plan.featured ? (
+                {plan.id === "unlimited-commercial" ? (
                   <span className={styles.badge}>Best for teams</span>
                 ) : null}
               </div>
@@ -154,31 +92,31 @@ export default function PricingPage() {
 
                   return (
                     <li className={styles.billingRow} key={option.label}>
-                      <div>
-                        <strong>{option.label}</strong>
-                        <span>{option.note}</span>
-                        {annualSavings ? (
-                          <span className={styles.savingsBadge}>
-                            Save {annualSavings} per year
-                          </span>
-                        ) : null}
-                      </div>
-                      <p>
-                        <span>{option.price}</span>
-                        <em>{option.cadence}</em>
-                      </p>
+                      <form action={checkoutAction} className={styles.billingForm}>
+                        <input name="plan" type="hidden" value={plan.id} />
+                        <input name="billing" type="hidden" value={option.cadence} />
+                        <button className={styles.billingButton} type="submit">
+                          <div>
+                            <strong>{option.label}</strong>
+                            <span>{option.detail}</span>
+                            {annualSavings ? (
+                              <span className={styles.savingsBadge}>
+                                Save {annualSavings} per year
+                              </span>
+                            ) : null}
+                          </div>
+                          <p>
+                            <span>{option.price}</span>
+                            <em>{cadenceLabel(option.cadence)}</em>
+                          </p>
+                          <ArrowRight aria-hidden="true" />
+                        </button>
+                      </form>
                     </li>
                   );
                 })}
               </ul>
 
-              <ul className={styles.featureList}>
-              </ul>
-
-              <Link className={styles.cta} href={plan.href}>
-                Choose {plan.name}
-                <ArrowRight aria-hidden="true" />
-              </Link>
             </article>
           ))}
         </section>

@@ -28,11 +28,21 @@ const REPORTED_SURFACES = [
     exportName: "useGridReady",
     entry: "dist/grid-ready.mjs",
   },
+  {
+    label: "grid/lazy-load",
+    exportName: "gridLazyLoad",
+    entry: "dist/grid-lazy-load.mjs",
+  },
   { label: "Masonry", exportName: "Masonry", entry: "dist/masonry.mjs" },
   {
     label: "masonry/ready",
     exportName: "useMasonryReady",
     entry: "dist/masonry-ready.mjs",
+  },
+  {
+    label: "masonry/lazy-load",
+    exportName: "masonryLazyLoad",
+    entry: "dist/masonry-lazy-load.mjs",
   },
   {
     label: "Skeleton base",

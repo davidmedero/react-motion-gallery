@@ -2,20 +2,13 @@ export const source = String.raw`/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import * as React from "react";
-import {
-  GalleryCore,
-  Slider,
-  useSliderReady,
-  createSliderIndexChannel,
-  useGalleryCore,
-  type GalleryApi,
-  type SliderHandle,
-  type SliderIndexChannel,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
-import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
-import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
-import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
+import { GalleryCore, useGalleryCore, type GalleryApi } from "react-motion-gallery/core";
+import { Slider, createSliderIndexChannel, type SliderHandle, type SliderIndexChannel } from "react-motion-gallery/slider";
+import { useSliderReady } from "react-motion-gallery/slider/ready";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
+import { sliderDots } from "react-motion-gallery/slider/dots";
+import { sliderArrows } from "react-motion-gallery/slider/arrows";
+import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-interactive-demo.module.css";
 
 const INITIAL_IMAGE_IDS = [478, 479, 480, 481, 482, 483];

@@ -1,12 +1,10 @@
 export const source = String.raw`/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import {
-  GalleryCore,
-  useFullscreenController,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { GalleryCore } from "react-motion-gallery/core";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import {
   Entries,
   createEntriesGridMedia,
@@ -14,7 +12,7 @@ import {
   type EntryCardRenderArgs,
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
-} from "../../../../../../packages/react-motion-gallery/src/entries";
+} from "react-motion-gallery/entries";
 import styles from "./entries-grid-demo.module.css";
 import { entriesGridSkeletonText } from "./entries-grid.skeleton-text.generated";
 

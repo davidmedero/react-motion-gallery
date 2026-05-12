@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
-import { LazyItemHost } from '../shared/lazy/LazyItemHost';
 import { useViewportWidth } from '../shared/hooks/useViewportWidth';
 import {
   BREAKPOINT_MAP,
@@ -17,7 +16,7 @@ import {
   buildMasonryPositionedLayout,
 } from './prediction';
 import { resolveMasonrySpanAtWidth } from './item';
-import type { MasonryLazyLoadOptions, ResponsiveMasonrySpan } from './types';
+import type { MasonryPlugin, ResponsiveMasonrySpan } from './types';
 
 export type MasonryClassNames = {
   root?: string;
@@ -39,7 +38,7 @@ export type MasonryProps = {
   masonryAs?: React.ElementType;
   masonryRootRef?: React.Ref<any>;
   breakpoints?: BreakpointMap;
-  masonryLazyLoad?: MasonryLazyLoadOptions;
+  masonryPlugins?: MasonryPlugin[];
   responsiveViewportWidth?: number;
   onVisibleIndex?: (index: number) => void;
   onLayoutMeasured?: (measured: boolean) => void;
@@ -115,7 +114,7 @@ export const MasonryCore: React.FC<MasonryProps> = ({
   masonryAs: RootComponent = 'div',
   masonryRootRef,
   breakpoints,
-  masonryLazyLoad,
+  masonryPlugins,
   responsiveViewportWidth,
   onVisibleIndex,
   onLayoutMeasured,
@@ -314,7 +313,7 @@ export const MasonryCore: React.FC<MasonryProps> = ({
           index={index}
           onHeight={handleHeight}
           className={masonryClassNames?.item}
-          lazyLoad={masonryLazyLoad}
+          masonryPlugins={masonryPlugins}
           onVisibleIndex={onVisibleIndex}
           revealedIndicesRef={revealedIndicesRef}
           measurementKey={measurementKey}
@@ -330,7 +329,7 @@ export const MasonryCore: React.FC<MasonryProps> = ({
     items,
     positionedLayout.items,
     handleHeight,
-    masonryLazyLoad,
+    masonryPlugins,
     masonryClassNames?.item,
     onVisibleIndex,
     measurementKey,
@@ -363,7 +362,7 @@ type MasonryItemProps = {
   top: number;
   left: string;
   width: string;
-  lazyLoad?: MasonryLazyLoadOptions;
+  masonryPlugins?: MasonryPlugin[];
   onVisibleIndex?: (index: number) => void;
   revealedIndicesRef?: React.RefObject<Set<number>>;
   measurementKey?: string;
@@ -377,13 +376,20 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
   top,
   left,
   width,
-  lazyLoad,
+  masonryPlugins,
   onVisibleIndex,
   revealedIndicesRef,
   measurementKey,
   children,
 }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
+  const localRevealedIndicesRef = React.useRef(new Set<number>());
+  const resolvedRevealedIndicesRef =
+    revealedIndicesRef ?? localRevealedIndicesRef;
+  const pluginItemEntry = React.useMemo(
+    () => masonryPlugins?.find((plugin) => plugin.renderItem),
+    [masonryPlugins]
+  );
 
   React.useLayoutEffect(() => {
     const el = ref.current;
@@ -405,24 +411,69 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
     return;
   }, [index, onHeight, measurementKey]);
 
+  React.useEffect(() => {
+    if (!onVisibleIndex) return;
+
+    const host = ref.current;
+    if (!host) return;
+
+    let sent = false;
+    const notify = () => {
+      if (sent) return;
+      sent = true;
+      onVisibleIndex(index);
+    };
+
+    if (typeof IntersectionObserver === 'undefined') {
+      notify();
+      return;
+    }
+
+    const root = host.closest('[data-rmg-viewport="true"]') as Element | null;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          notify();
+          io.disconnect();
+          break;
+        }
+      },
+      { root, rootMargin: '200px', threshold: 0.15 }
+    );
+
+    io.observe(host);
+    return () => io.disconnect();
+  }, [children, index, onVisibleIndex]);
+
+  const itemProps = {
+    className,
+    'data-rmg-idx': index,
+    style: {
+      position: 'absolute',
+      top: `${top}px`,
+      left,
+      width,
+      ['--rmg-intro-index' as any]: index,
+    },
+  } as React.HTMLAttributes<HTMLDivElement>;
+
+  if (pluginItemEntry?.renderItem) {
+    return pluginItemEntry.renderItem(
+      {
+        index,
+        itemRef: ref,
+        itemProps,
+        children,
+        revealedIndicesRef: resolvedRevealedIndicesRef,
+      },
+      pluginItemEntry.options
+    );
+  }
+
   return (
-    <LazyItemHost
-      ref={ref}
-      index={index}
-      lazyLoad={lazyLoad}
-      onVisibleIndex={onVisibleIndex}
-      revealedIndicesRef={revealedIndicesRef}
-      className={className}
-      data-rmg-idx={index}
-      style={{
-        position: 'absolute',
-        top: `${top}px`,
-        left,
-        width,
-        ['--rmg-intro-index' as any]: index,
-      }}
-    >
+    <div ref={ref} {...itemProps}>
       {children}
-    </LazyItemHost>
+    </div>
   );
 };

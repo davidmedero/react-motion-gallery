@@ -1,21 +1,20 @@
 export const source = String.raw`/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import {
-  GalleryCore,
-  Masonry,
-  toMediaItems,
-  useMasonryReady,
-  useFullscreenController,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { MasonrySkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
-import { fullscreenLazyLoad } from "../../../../../../packages/react-motion-gallery/src/fullscreen-lazy-load";
+import { GalleryCore } from "react-motion-gallery/core";
+import { toMediaItems } from "react-motion-gallery/media";
+import { Masonry } from "react-motion-gallery/masonry";
+import { useMasonryReady } from "react-motion-gallery/masonry/ready";
+import { masonryLazyLoad } from "react-motion-gallery/masonry/lazy-load";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
 import type {
   MasonrySkeletonSpec,
   SkeletonNode,
-} from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
+} from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-lazy-load-demo.module.css";
 import { masonryLazyLoadSkeletonText } from "./masonry-lazy-load.skeleton-text.generated";
 
@@ -322,11 +321,12 @@ export function MasonryLazyLoadDemo() {
           ref={masonryRef}
           columns={{ 0: 1, 720: 2, 1140: 3 }}
           gap={{ 0: 12, 1140: 18 }}
-          lazyLoad={{
-            enabled: true,
-            spinner: true,
-            spinnerClassName: styles.masonryLazySpinner,
-          }}
+          plugins={[
+            masonryLazyLoad({
+              spinner: true,
+              spinnerClassName: styles.masonryLazySpinner,
+            }),
+          ]}
         >
           {ITEMS.map((item, index) => (
           <MasonryLazyCard

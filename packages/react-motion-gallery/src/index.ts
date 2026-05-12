@@ -49,8 +49,9 @@ export type { SliderIndexChannel } from "./Gallery/slider/sliderSub";
 export type {
   GridHandle,
   GridItemProps,
-  GridLazyLoadOptions,
   GridOptions,
+  GridPlugin,
+  GridPluginKind,
   GridSpan,
   ResponsiveGridSpan,
   ResponsiveGridTemplate,
@@ -59,8 +60,9 @@ export type { GridReadyController } from "./grid-ready";
 export type {
   MasonryHandle,
   MasonryItemProps,
-  MasonryLazyLoadOptions,
   MasonryOptions,
+  MasonryPlugin,
+  MasonryPluginKind,
   MasonrySpan,
   ResponsiveMasonrySpan,
 } from "./Gallery/masonry/types";

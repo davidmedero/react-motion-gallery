@@ -6,7 +6,6 @@ import {
   type ResponsiveNumber,
 } from '../shared/responsive';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
-import { normalizeLazyLoad } from '../shared/lazy/LazyItemHost';
 import { useOptionalGalleryCore } from '../core';
 import { MasonryCore } from './Masonry';
 import { useMasonryLayoutSeed } from './MasonryLayoutSeedContext';
@@ -14,7 +13,7 @@ import type {
   FullscreenTrigger,
   IntroOptions,
   MasonryHandle,
-  MasonryLazyLoadOptions,
+  MasonryPlugin,
 } from './types';
 import type { ResponsiveMasonrySpan } from './types';
 
@@ -32,7 +31,7 @@ type MasonryOptions = {
     column?: string;
     item?: string;
   };
-  lazyLoad?: MasonryLazyLoadOptions;
+  plugins?: MasonryPlugin[];
 };
 
 export type MasonryLayoutProps = {
@@ -55,6 +54,14 @@ function getMasonryItemNodes(root: HTMLElement | null) {
   return Array.from(root.children).filter(
     (node): node is HTMLElement =>
       node instanceof HTMLElement && node.hasAttribute('data-rmg-idx')
+  );
+}
+
+function isMasonryPlugin(value: unknown): value is MasonryPlugin {
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    (value as MasonryPlugin).__rmgMasonryPlugin === true
   );
 }
 
@@ -124,19 +131,21 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
       revealedIndicesRef.current.clear();
     }, [items.length]);
 
-    const normalizedLazy = React.useMemo(
-      () => normalizeLazyLoad(masonry.lazyLoad),
-      [masonry.lazyLoad]
+    const pluginEntries = React.useMemo(
+      () => (masonry.plugins ?? []).filter(isMasonryPlugin),
+      [masonry.plugins]
+    );
+    const pluginBlocksMediaReady = React.useMemo(
+      () => pluginEntries.some((plugin) => plugin.blocksReady),
+      [pluginEntries]
     );
 
-    const lazyEnabled = normalizedLazy.enabled;
-
-    useMediaReady(!lazyEnabled, localRootRef as any, setMediaReady);
+    useMediaReady(!pluginBlocksMediaReady, localRootRef as any, setMediaReady);
 
     const viewportReady = stableViewportWidth > 0;
     const masonryCanMount = viewportReady;
 
-    const baseContentReady = lazyEnabled
+    const baseContentReady = pluginBlocksMediaReady
       ? clientReady && masonryCanMount
       : masonryCanMount && mediaReady;
     const contentReady = baseContentReady && layoutMeasured;
@@ -267,7 +276,7 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
             masonryAs={masonry.as ?? 'div'}
             masonryRootRef={mergedRootRef}
             breakpoints={breakpoints}
-            masonryLazyLoad={masonry.lazyLoad}
+            masonryPlugins={pluginEntries}
             masonryInitialHeights={layoutSeed?.initialHeights}
             responsiveViewportWidth={stableViewportWidth}
             onVisibleIndex={onVisibleIndex}

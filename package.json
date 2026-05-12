@@ -11,10 +11,10 @@
     "build": "lerna run build",
     "lint": "lerna run lint",
     "test": "lerna run test",
-    "storybook": "lerna run dev --scope @rmg/storybook",
     "analyze:skeleton-text": "npm run --silent analyze:skeleton-text --workspace packages/react-motion-gallery --",
     "generate:skeleton-text-module": "npm run --silent generate:skeleton-text-module --workspace packages/react-motion-gallery --",
-    "generate:skeleton-text-browser-module": "npm run --silent generate:skeleton-text-browser-module --workspace packages/react-motion-gallery --"
+    "generate:skeleton-text-browser-module": "npm run --silent generate:skeleton-text-browser-module --workspace packages/react-motion-gallery --",
+    "release:rmg": "node ./scripts/release-rmg.mjs"
   },
   "devDependencies": {
     "jsdom": "^27.0.1",

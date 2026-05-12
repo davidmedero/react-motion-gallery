@@ -2,16 +2,13 @@
 'use client';
 
 import * as React from "react";
-import {
-  GalleryCore,
-  Video,
-  toMediaItems,
-  useFullscreenController,
-  useGalleryCore,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
-import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import { GalleryCore, useGalleryCore } from "react-motion-gallery/core";
+import { toMediaItems } from "react-motion-gallery/media";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { Video } from "react-motion-gallery/video";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
 import styles from "./fullscreen-layout-agnostic-demo.module.css";
 
 type ScenarioKind = "article" | "figure" | "posterVideo" | "videoCard";

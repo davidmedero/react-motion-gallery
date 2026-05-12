@@ -12,6 +12,8 @@ import {
 import {
   getBillingCadenceOrDefault,
   getPlanIdOrDefault,
+  isBillingCadence,
+  isPlanId,
 } from "@/lib/billing/plans";
 import {
   StripeIntegrationError,
@@ -60,11 +62,14 @@ async function getOrigin(): Promise<string> {
 
 export async function requestMagicLinkAction(formData: FormData): Promise<void> {
   const email = parseEmail(formData.get("email"));
-  const plan = getPlanIdOrDefault(firstString(formData.get("plan")));
-  const billing = getBillingCadenceOrDefault(firstString(formData.get("billing")));
+  const planValue = firstString(formData.get("plan"));
+  const billingValue = firstString(formData.get("billing"));
+  const plan = isPlanId(planValue) ? planValue : undefined;
+  const billing = isBillingCadence(billingValue) ? billingValue : undefined;
+  const purchaseParams = plan && billing ? { billing, plan } : {};
 
   if (!email) {
-    redirect(accountPath({ auth: "invalid-email", billing, plan }));
+    redirect(accountPath({ auth: "invalid-email", ...purchaseParams }));
   }
 
   const origin = await getOrigin();
@@ -79,15 +84,14 @@ export async function requestMagicLinkAction(formData: FormData): Promise<void> 
     devMagicLink = result.delivered ? undefined : magicLink;
   } catch (error) {
     console.error(error);
-    redirect(accountPath({ auth: "email-failed", billing, plan }));
+    redirect(accountPath({ auth: "email-failed", ...purchaseParams }));
   }
 
   redirect(
     accountPath({
       auth: authStatus,
-      billing,
       dev_magic_link: devMagicLink,
-      plan,
+      ...purchaseParams,
     })
   );
 }

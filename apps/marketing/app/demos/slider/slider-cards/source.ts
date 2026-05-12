@@ -3,21 +3,19 @@ export const source = String.raw`/* eslint-disable @next/next/no-img-element */
 
 import {
   useSearchParams } from "next/navigation";
-import {
-  GalleryCore,
-  Slider,
-  useSliderReady,
-  toMediaItems,
-  useFullscreenController,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
-import type { SkeletonNode, SliderSkeletonSlot, SliderSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
-import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
-import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
-import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
-import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
+import { GalleryCore } from "react-motion-gallery/core";
+import { toMediaItems } from "react-motion-gallery/media";
+import { Slider } from "react-motion-gallery/slider";
+import { useSliderReady } from "react-motion-gallery/slider/ready";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
+import type { SkeletonNode, SliderSkeletonSlot, SliderSkeletonSpec } from "react-motion-gallery/skeleton/slider";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { sliderDots } from "react-motion-gallery/slider/dots";
+import { sliderArrows } from "react-motion-gallery/slider/arrows";
+import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
+import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-cards-demo.module.css";
 import {
   cardOnePrice,

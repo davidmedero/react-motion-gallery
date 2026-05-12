@@ -57,6 +57,7 @@ export type SliderScroll = {
   strictSnaps?: boolean;
   freeScroll?: boolean;
   loop?: boolean;
+  containScroll?: boolean;
 };
 
 export type SliderArrows = {

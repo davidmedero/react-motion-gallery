@@ -21,6 +21,7 @@ import { buildStableScopeId } from "../shared/stableScope";
 import {
   DEFAULT_SLIDER_RESTORE_TTL_MS,
   buildSliderRestoreScript,
+  getSliderRestoreVisibleSlots,
   readSliderRestoreStateFromWindow,
   writeSliderRestoreStateToWindow,
   type SliderRestoreRuntimeOptions,
@@ -214,6 +215,25 @@ function buildSliderShellScopeSelector(scopeId: string) {
   return `[data-rmg-scope="${scopeId}"] > [data-rmg-scope-shell="true"]`;
 }
 
+function removeSliderRestoreStyle(scopeId: string) {
+  if (typeof document === "undefined") return;
+
+  document
+    .querySelectorAll<HTMLStyleElement>("style[data-rmg-slider-restore-style]")
+    .forEach((style) => {
+      if (style.getAttribute("data-rmg-slider-restore-style") === scopeId) {
+        style.remove();
+      }
+    });
+}
+
+function buildScopedRestoredSliderHeightCss(scopeId: string, heightPx: number | null) {
+  if (heightPx == null || !Number.isFinite(heightPx) || heightPx <= 0) return "";
+
+  const h = Math.round((heightPx + Number.EPSILON) * 1000) / 1000;
+  return `${buildSliderShellScopeSelector(scopeId)}{--rmg-slider-initial-height:${h}px!important;--rmg-slider-row-height:${h}px!important;}`;
+}
+
 export function buildScopedInitialHeightCss(args: {
   scopeId: string;
   skeletonSpec: SliderSkeletonSpec;
@@ -385,6 +405,7 @@ export function SliderSkeleton({
     () => !shouldGateSliderRestore
   );
   const [sliderRestoreIndex, setSliderRestoreIndex] = React.useState<number | null>(null);
+  const [sliderRestoreHeightPx, setSliderRestoreHeightPx] = React.useState<number | null>(null);
   const contentReady =
     ready === true && (!shouldGateSliderRestore || sliderRestoreSettled);
   const hasSliderLayout = !!sliderLayout;
@@ -435,46 +456,6 @@ export function SliderSkeleton({
             )
       )
     : 0;
-  const sliderCountCss = React.useMemo(() => {
-    if (!sliderLayout) return { cssText: "", ssrBaseCount: sliderFallbackCount };
-    return buildScopedSkeletonCountCss({
-      scopeId,
-      responsiveCount: sliderVisibleCount,
-      fallbackCount: sliderFallbackCount,
-      breakpointMap: effectiveBreakpoints,
-      maxSlots: sliderMaxSlots,
-      visibleSlotsForCount: sliderCenterFirstSpacer
-        ? centerFirstVisibleSlotsForCount
-        : undefined,
-    });
-  }, [
-    effectiveBreakpoints,
-    scopeId,
-    sliderCenterFirstSpacer,
-    sliderFallbackCount,
-    sliderLayout,
-    sliderMaxSlots,
-    sliderVisibleCount,
-  ]);
-  const sliderInitialHeightCss = React.useMemo(() => {
-    if (!sliderLayout || !sliderSpec) return "";
-    return buildScopedInitialHeightCss({
-      scopeId,
-      skeletonSpec: sliderSpec,
-      responsiveCount: sliderVisibleCount,
-      fallbackCount: sliderCountCss.ssrBaseCount,
-      breakpointMap: effectiveBreakpoints,
-      centerFirstSpacer: sliderCenterFirstSpacer,
-    });
-  }, [
-    effectiveBreakpoints,
-    scopeId,
-    sliderCenterFirstSpacer,
-    sliderCountCss.ssrBaseCount,
-    sliderLayout,
-    sliderSpec,
-    sliderVisibleCount,
-  ]);
   const sliderRestoreRuntime: SliderRestoreRuntimeOptions | null = React.useMemo(() => {
     if (!sliderRestore || sliderRestore.enabled === false || !hasSliderLayout) return null;
     const itemCount = Math.max(0, Math.floor(sliderRestore.itemCount));
@@ -501,6 +482,64 @@ export function SliderSkeleton({
     sliderRestore?.key,
     sliderRestore?.ttlMs,
     sliderSlotCount,
+  ]);
+  const sliderCountCss = React.useMemo(() => {
+    if (!sliderLayout) return { cssText: "", ssrBaseCount: sliderFallbackCount };
+    return buildScopedSkeletonCountCss({
+      scopeId,
+      responsiveCount: sliderVisibleCount,
+      fallbackCount: sliderFallbackCount,
+      breakpointMap: effectiveBreakpoints,
+      maxSlots: sliderMaxSlots,
+      visibleSlotsForCount: sliderCenterFirstSpacer
+        ? centerFirstVisibleSlotsForCount
+        : undefined,
+      slotOrderForCount:
+        sliderRestoreIndex == null || !sliderRestoreRuntime?.enabled || !sliderRestore
+          ? undefined
+          : (count) =>
+              getSliderRestoreVisibleSlots({
+                activeIndex: sliderRestoreIndex,
+                visibleCount: count,
+                slotCount: sliderRestoreRuntime.skeletonSlotCount,
+                loop: sliderRestore.loop === true,
+                activeSlotOffset:
+                  sliderRestore.activeSlotOffset ??
+                  (typeof sliderLayout.initialHeightSlot === "number"
+                    ? sliderLayout.initialHeightSlot
+                    : 0),
+              }),
+    });
+  }, [
+    effectiveBreakpoints,
+    scopeId,
+    sliderCenterFirstSpacer,
+    sliderFallbackCount,
+    sliderLayout,
+    sliderMaxSlots,
+    sliderRestore,
+    sliderRestoreIndex,
+    sliderRestoreRuntime,
+    sliderVisibleCount,
+  ]);
+  const sliderInitialHeightCss = React.useMemo(() => {
+    if (!sliderLayout || !sliderSpec) return "";
+    return buildScopedInitialHeightCss({
+      scopeId,
+      skeletonSpec: sliderSpec,
+      responsiveCount: sliderVisibleCount,
+      fallbackCount: sliderCountCss.ssrBaseCount,
+      breakpointMap: effectiveBreakpoints,
+      centerFirstSpacer: sliderCenterFirstSpacer,
+    });
+  }, [
+    effectiveBreakpoints,
+    scopeId,
+    sliderCenterFirstSpacer,
+    sliderCountCss.ssrBaseCount,
+    sliderLayout,
+    sliderSpec,
+    sliderVisibleCount,
   ]);
   const sliderRestoreScript = React.useMemo(() => {
     if (!sliderRestoreRuntime?.enabled || !sliderRestore || !sliderLayout) return "";
@@ -534,12 +573,17 @@ export function SliderSkeleton({
     sliderRestoreRuntime,
     sliderVisibleCount,
   ]);
+  const sliderRestoreHeightCss = React.useMemo(
+    () => buildScopedRestoredSliderHeightCss(scopeId, sliderRestoreHeightPx),
+    [scopeId, sliderRestoreHeightPx]
+  );
 
   const appliedSliderRestoreKeyRef = React.useRef<string | null>(null);
 
   React.useLayoutEffect(() => {
     setSliderRestoreSettled(!shouldGateSliderRestore);
     setSliderRestoreIndex(null);
+    setSliderRestoreHeightPx(null);
   }, [shouldGateSliderRestore, sliderRestoreGateKey]);
 
   React.useLayoutEffect(() => {
@@ -558,13 +602,21 @@ export function SliderSkeleton({
         return;
       }
 
-      const state = readSliderRestoreStateFromWindow(sliderRestoreRuntime);
+      const state = readSliderRestoreStateFromWindow(
+        sliderRestoreRuntime,
+        window,
+        { requireNavigationRestore: false }
+      );
       if (!state) {
+        removeSliderRestoreStyle(scopeId);
         setSliderRestoreIndex(null);
+        setSliderRestoreHeightPx(null);
         setSliderRestoreSettled(true);
         return;
       }
       setSliderRestoreIndex(state.index);
+      setSliderRestoreHeightPx(state.heightPx ?? null);
+      removeSliderRestoreStyle(scopeId);
 
       const restoreKey = [
         sliderRestoreRuntime.storageKeyId,
@@ -572,6 +624,11 @@ export function SliderSkeleton({
         state.index,
         state.heightPx ?? "",
       ].join(":");
+
+      if (appliedSliderRestoreKeyRef.current !== restoreKey) {
+        handle.setIndex(state.index, "instant");
+      }
+
       if (appliedSliderRestoreKeyRef.current === restoreKey) {
         setSliderRestoreSettled(true);
         return;
@@ -609,8 +666,9 @@ export function SliderSkeleton({
     return () => {
       cancelled = true;
       if (rafId != null) window.cancelAnimationFrame(rafId);
+      removeSliderRestoreStyle(scopeId);
     };
-  }, [sliderRestoreHandleRef, sliderRestoreRuntime]);
+  }, [scopeId, sliderRestoreHandleRef, sliderRestoreRuntime]);
 
   React.useEffect(() => {
     if (!sliderRestoreRuntime?.enabled || !sliderRestoreHandleRef) return;
@@ -664,10 +722,14 @@ export function SliderSkeleton({
         role={ariaLabel ? "status" : undefined}
         aria-live={ariaLabel ? "polite" : undefined}
       >
-        {sliderCountCss.cssText || sliderInitialHeightCss ? (
+        {sliderCountCss.cssText || sliderInitialHeightCss || sliderRestoreHeightCss ? (
           <style
             dangerouslySetInnerHTML={{
-              __html: [sliderCountCss.cssText, sliderInitialHeightCss]
+              __html: [
+                sliderCountCss.cssText,
+                sliderInitialHeightCss,
+                sliderRestoreHeightCss,
+              ]
                 .filter(Boolean)
                 .join("\n"),
             }}

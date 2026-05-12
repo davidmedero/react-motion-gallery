@@ -2,21 +2,18 @@ export const source = String.raw`/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useSearchParams } from "next/navigation";
-import {
-  GalleryCore,
-  Grid,
-  toMediaItems,
-  useGridReady,
-  useFullscreenController,
-  type ResponsiveGridSpan,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { GridSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { GalleryCore } from "react-motion-gallery/core";
+import { toMediaItems } from "react-motion-gallery/media";
+import { Grid, type ResponsiveGridSpan } from "react-motion-gallery/grid";
+import { useGridReady } from "react-motion-gallery/grid/ready";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { GridSkeleton } from "react-motion-gallery/skeleton/grid";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import type {
   GridSkeletonSpec,
   SkeletonNode,
-} from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
+} from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-template-columns-demo.module.css";
 import {
   bridgeSpanBody,

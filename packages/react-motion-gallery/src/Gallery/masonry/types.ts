@@ -1,5 +1,4 @@
 import { type ResponsiveNumber } from "../shared/responsive";
-import type { GalleryLazyLoadOptions } from "../shared/types/lazy";
 
 export type IntroOptions = {
   renderIntro?: (
@@ -14,9 +13,29 @@ export type IntroOptions = {
 
 export type FullscreenTrigger = "item" | "media";
 
-export type MasonryLazyLoadOptions = GalleryLazyLoadOptions;
 export type MasonrySpan = number | "full";
 export type ResponsiveMasonrySpan = MasonrySpan | Record<string, MasonrySpan>;
+
+export type MasonryPluginKind = "lazy-load";
+
+export type MasonryPluginItemRenderArgs = {
+  index: number;
+  itemRef: React.Ref<HTMLDivElement>;
+  itemProps: React.HTMLAttributes<HTMLDivElement>;
+  children: React.ReactNode;
+  revealedIndicesRef: React.RefObject<Set<number>>;
+};
+
+export type MasonryPlugin = {
+  readonly __rmgMasonryPlugin: true;
+  readonly kind: MasonryPluginKind;
+  readonly options?: unknown;
+  readonly blocksReady?: boolean;
+  renderItem?: (
+    args: MasonryPluginItemRenderArgs,
+    options?: unknown
+  ) => React.ReactNode;
+};
 
 export type MasonryItemProps = {
   span?: ResponsiveMasonrySpan;
@@ -46,6 +65,6 @@ export type MasonryOptions = {
     column?: string;
     item?: string;
   };
-  lazyLoad?: MasonryLazyLoadOptions;
+  plugins?: MasonryPlugin[];
   intro?: IntroOptions;
 };

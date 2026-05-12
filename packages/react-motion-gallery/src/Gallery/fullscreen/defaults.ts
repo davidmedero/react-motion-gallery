@@ -45,6 +45,8 @@ export const DEFAULT_FULLSCREEN = {
     duration: 25,
     friction: 0.68,
     direction: "ltr",
+    skipSnaps: false,
+    strictSnaps: false,
   },
   zoom: {
     ...DEFAULT_ZOOM_PAN,

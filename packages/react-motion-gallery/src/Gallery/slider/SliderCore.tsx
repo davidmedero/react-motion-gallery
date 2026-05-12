@@ -77,6 +77,7 @@ const SliderCore = React.forwardRef<SliderCoreHandle, SliderCoreProps>(
         isReady={isReady}
         setIsReady={setIsReady}
         loop={scroll?.loop === true}
+        containScroll={scroll?.containScroll === true}
         freeScroll={scroll?.freeScroll === true}
         groupCells={scroll?.groupCells === true}
         centerAlign={align === "center"}

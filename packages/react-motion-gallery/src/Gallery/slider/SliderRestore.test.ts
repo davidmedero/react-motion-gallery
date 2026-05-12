@@ -148,6 +148,11 @@ describe("Slider restore state", () => {
     expect(readSliderRestoreStateFromWindow(runtime, backForwardWindow)?.index).toBe(2);
     expect(readSliderRestoreStateFromWindow(runtime, navigateWindow)).toBeNull();
     expect(
+      readSliderRestoreStateFromWindow(runtime, navigateWindow, {
+        requireNavigationRestore: false,
+      })?.index
+    ).toBe(2);
+    expect(
       readSliderRestoreStateFromWindow(
         {
           ...runtime,

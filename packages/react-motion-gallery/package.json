@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.20",
+  "version": "2.0.21",
   "description": "Composable React media gallery primitives for sliders, grids, masonry, fullscreen, video, zoom/pan, and stable skeleton loading",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "React Motion Gallery",
@@ -29,7 +29,7 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
-    "./styles.css": "./dist/index.css",
+    "./styles.css": "./dist/styles.css",
     "./media": {
       "types": "./dist/media.d.mts",
       "import": "./dist/media.mjs"
@@ -118,6 +118,10 @@
       "types": "./dist/grid-ready.d.mts",
       "import": "./dist/grid-ready.mjs"
     },
+    "./grid/lazy-load": {
+      "types": "./dist/grid-lazy-load.d.mts",
+      "import": "./dist/grid-lazy-load.mjs"
+    },
     "./masonry": {
       "types": "./dist/masonry.d.mts",
       "import": "./dist/masonry.mjs"
@@ -125,6 +129,10 @@
     "./masonry/ready": {
       "types": "./dist/masonry-ready.d.mts",
       "import": "./dist/masonry-ready.mjs"
+    },
+    "./masonry/lazy-load": {
+      "types": "./dist/masonry-lazy-load.d.mts",
+      "import": "./dist/masonry-lazy-load.mjs"
     },
     "./entries": {
       "types": "./dist/entries.d.mts",
@@ -222,8 +230,8 @@
     }
   },
   "scripts": {
-    "dev": "tsup --watch",
-    "build": "tsup",
+    "dev": "tsup --watch --onSuccess \"node ./scripts/merge_styles.mjs\"",
+    "build": "tsup && node ./scripts/merge_styles.mjs",
     "analyze:skeleton-text": "node --no-warnings --experimental-strip-types ./scripts/analyze_skeleton_text.ts",
     "generate:skeleton-text-module": "node --no-warnings --experimental-strip-types ./scripts/generate_skeleton_text_module.ts",
     "generate:skeleton-text-browser-module": "node --no-warnings --experimental-strip-types ./scripts/generate_skeleton_text_browser_module.ts",

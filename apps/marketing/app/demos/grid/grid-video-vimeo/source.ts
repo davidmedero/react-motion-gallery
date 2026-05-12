@@ -1,20 +1,17 @@
 export const source = String.raw`/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import {
-  GalleryCore,
-  Grid,
-  Video,
-  type MediaItem,
-  toMediaItems,
-  useGridReady,
-  useFullscreenController,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { GridSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
-import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
-import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
+import { GalleryCore } from "react-motion-gallery/core";
+import { type MediaItem, toMediaItems } from "react-motion-gallery/media";
+import { Grid } from "react-motion-gallery/grid";
+import { useGridReady } from "react-motion-gallery/grid/ready";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { Video } from "react-motion-gallery/video";
+import { GridSkeleton } from "react-motion-gallery/skeleton/grid";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
+import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-video-vimeo-demo.module.css";
 import { gridVideoVimeoSkeletonText } from "./grid-video-vimeo.skeleton-text.generated";
 

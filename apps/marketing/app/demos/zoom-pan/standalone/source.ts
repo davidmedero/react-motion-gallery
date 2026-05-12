@@ -1,11 +1,11 @@
 export const source = String.raw`'use client';
 
 import * as React from "react";
-import { ZoomPanImage } from "../../../../../../packages/react-motion-gallery/src";
+import { ZoomPanImage } from "react-motion-gallery/zoomPan";
 import {
   Skeleton,
   type SkeletonNode,
-} from "../../../../../../packages/react-motion-gallery/src/skeleton-base";
+} from "react-motion-gallery/skeleton/base";
 import styles from "./standalone-demo.module.css";
 
 const ZOOM_PAN_SKELETON: SkeletonNode = {

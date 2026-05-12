@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { G as GridHandle } from './types-BlFwyRVQ.mjs';
+import { G as GridHandle } from './types-Do4Pq-Td.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
-import './lazy-dGoYpcRa.mjs';
 
 type GridReadyController = {
     ref: React.RefCallback<GridHandle>;

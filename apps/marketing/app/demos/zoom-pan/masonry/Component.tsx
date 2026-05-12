@@ -1,13 +1,11 @@
 'use client';
 
-import {
-  GalleryCore,
-  Masonry,
-  useMasonryReady,
-  ZoomPanImage,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { MasonrySkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
-import type { MasonrySkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
+import { GalleryCore } from "react-motion-gallery/core";
+import { Masonry } from "react-motion-gallery/masonry";
+import { useMasonryReady } from "react-motion-gallery/masonry/ready";
+import { ZoomPanImage } from "react-motion-gallery/zoomPan";
+import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";
+import type { MasonrySkeletonSpec } from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-demo.module.css";
 
 const IMAGES = [

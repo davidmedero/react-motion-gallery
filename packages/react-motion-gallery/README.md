@@ -11,18 +11,20 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 <!-- bundle-size:start -->
 | Surface | JS gzip |
 | --- | --- |
-| `Entries` | 13.0kB |
+| `Entries` | 13.1kB |
 | `FullscreenThumbnailSlider` | 20.3kB |
 | `GalleryCore` | 2.6kB |
-| `Grid` | 8.8kB |
+| `Grid` | 6.3kB |
 | `grid/ready` | 323.0B |
-| `Masonry` | 8.9kB |
+| `grid/lazy-load` | 3.3kB |
+| `Masonry` | 6.5kB |
 | `masonry/ready` | 323.0B |
+| `masonry/lazy-load` | 3.3kB |
 | `Skeleton base` | 8.1kB |
-| `skeleton/slider` | 16.5kB |
+| `skeleton/slider` | 16.9kB |
 | `skeleton/grid` | 10.4kB |
 | `skeleton/masonry` | 17.8kB |
-| `Slider core` | 18.4kB |
+| `Slider core` | 18.7kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
 | `slider/dots` | 932.0B |
@@ -37,7 +39,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `slider/fullscreen` | 959.0B |
 | `ThumbnailSlider` | 18.9kB |
 | `useFullscreenController` | 4.9kB |
-| `fullscreen/slider` | 35.3kB |
+| `fullscreen/slider` | 35.8kB |
 | `fullscreen/controls` | 173.0B |
 | `fullscreen/captions` | 13.1kB |
 | `fullscreen/zoom-pan` | 9.9kB |
@@ -144,8 +146,10 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/slider/loading` | `sliderLoading` |
 | `react-motion-gallery/grid` | `Grid`, `Grid.Item`, grid types |
 | `react-motion-gallery/grid/ready` | `useGridReady` |
+| `react-motion-gallery/grid/lazy-load` | `gridLazyLoad` |
 | `react-motion-gallery/masonry` | `Masonry`, `Masonry.Item`, masonry types |
 | `react-motion-gallery/masonry/ready` | `useMasonryReady` |
+| `react-motion-gallery/masonry/lazy-load` | `masonryLazyLoad` |
 | `react-motion-gallery/entries` | `Entries`, `flattenEntries`, entry media container helpers |
 | `react-motion-gallery/skeleton/base` | Standalone `Skeleton` and generic skeleton authoring types |
 | `react-motion-gallery/skeleton/slider` | `SliderSkeleton` and slider skeleton authoring types |
@@ -786,17 +790,29 @@ export function BasicGrid() {
 | `rootClassName` | `string` | `—` | Class name for the grid root. |
 | `itemClassName` | `string` | `—` | Class name added to each wrapped grid item. |
 | `fullscreenTrigger` | `"item" \| "media"` | `"media"` | Opens fullscreen from the clicked media node or the entire item shell. |
-| `lazyLoad.enabled` | `boolean` | `—` | Enables lazy media loading. |
-| `lazyLoad.spinner` | `boolean \| ReactNode \| ((args) => ReactNode)` | `—` | Spinner override for lazy items. |
-| `lazyLoad.spinnerClassName` | `string` | `—` | Spinner wrapper class. |
-| `lazyLoad.spinnerStyle` | `React.CSSProperties` | `—` | Spinner wrapper style. |
+| `plugins` | `GridPlugin[]` | `[]` | Explicit first-party Grid features such as lazy-load. |
 | `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
 | `intro.staggerMs` | `number` | `60` | Reveal stagger for the fade-in. |
 | `intro.durationMs` | `number` | `600` | Intro fade duration. |
 | `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
 | `intro.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
 
-When `lazyLoad.enabled` is true, Grid rewrites trackable image `src` values into `data-rmg-lazy-src`, reveals them on viewport intersection, then fades them in after decode and spinner exit.
+### Grid plugins
+
+Import Grid plugins from their own subpaths and pass them to `plugins`.
+
+```typescript
+import { Grid } from "react-motion-gallery/grid";
+import { gridLazyLoad } from "react-motion-gallery/grid/lazy-load";
+
+<Grid plugins={[gridLazyLoad({ spinner: true })]}>{items}</Grid>;
+```
+
+| Import | Factory | Notes |
+| --- | --- | --- |
+| `react-motion-gallery/grid/lazy-load` | `gridLazyLoad(options)` | Rewrites trackable image `src` values into `data-rmg-lazy-src`, reveals them on viewport intersection, then fades them in after decode and spinner exit. |
+
+`gridLazyLoad()` enables lazy loading by default. Pass `{ enabled: false }` to make the plugin inert.
 
 Grid fullscreen behavior is provided by `GalleryCore` and `useFullscreenController`; Grid itself does not expose a ref-based imperative API.
 
@@ -941,17 +957,29 @@ export function BasicMasonry() {
 | `classNames.root` | `string` | `—` | Root class name. |
 | `classNames.column` | `string` | `—` | Retained for backwards compatibility with the legacy column-wrapper renderer. |
 | `classNames.item` | `string` | `—` | Item class name. |
-| `lazyLoad.enabled` | `boolean` | `—` | Enables lazy media loading. |
-| `lazyLoad.spinner` | `boolean \| ReactNode \| ((args) => ReactNode)` | `—` | Spinner override for lazy items. |
-| `lazyLoad.spinnerClassName` | `string` | `—` | Spinner wrapper class. |
-| `lazyLoad.spinnerStyle` | `React.CSSProperties` | `—` | Spinner wrapper style. |
+| `plugins` | `MasonryPlugin[]` | `[]` | Explicit first-party Masonry features such as lazy-load. |
 | `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
 | `intro.staggerMs` | `number` | `160` | Reveal stagger for the fade-in. |
 | `intro.durationMs` | `number` | `600` | Intro fade duration. |
 | `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
 | `intro.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
 
-When `lazyLoad.enabled` is true, Masonry uses the same image shell behavior as Slider: trackable image `src` values move into `data-rmg-lazy-src`, the real images load on intersection, and the item only fades in after decode and spinner exit.
+### Masonry plugins
+
+Import Masonry plugins from their own subpaths and pass them to `plugins`.
+
+```typescript
+import { Masonry } from "react-motion-gallery/masonry";
+import { masonryLazyLoad } from "react-motion-gallery/masonry/lazy-load";
+
+<Masonry plugins={[masonryLazyLoad({ spinner: true })]}>{items}</Masonry>;
+```
+
+| Import | Factory | Notes |
+| --- | --- | --- |
+| `react-motion-gallery/masonry/lazy-load` | `masonryLazyLoad(options)` | Uses the same image shell behavior as Slider: trackable image `src` values move into `data-rmg-lazy-src`, real images load on intersection, and items fade in after decode and spinner exit. |
+
+`masonryLazyLoad()` enables lazy loading by default. Pass `{ enabled: false }` to make the plugin inert.
 
 Masonry already accepts arbitrary React children, including text-containing JSX. The wrapper props are only for styling the built-in masonry item shell.
 

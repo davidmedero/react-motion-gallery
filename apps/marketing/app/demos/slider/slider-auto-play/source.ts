@@ -5,22 +5,19 @@ import {
   useEffect,
   useRef,
   type RefObject } from "react";
-import {
-  GalleryCore,
-  Slider,
-  useSliderReady,
-  type SliderHandle,
-  toMediaItems,
-  useFullscreenController,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
-import { sliderAutoPlay } from "../../../../../../packages/react-motion-gallery/src/slider-auto-play";
-import { sliderProgress } from "../../../../../../packages/react-motion-gallery/src/slider-progress";
-import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
-import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
-import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
+import { GalleryCore } from "react-motion-gallery/core";
+import { toMediaItems } from "react-motion-gallery/media";
+import { Slider, type SliderHandle } from "react-motion-gallery/slider";
+import { useSliderReady } from "react-motion-gallery/slider/ready";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { sliderAutoPlay } from "react-motion-gallery/slider/auto-play";
+import { sliderProgress } from "react-motion-gallery/slider/progress";
+import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
+import { sliderArrows } from "react-motion-gallery/slider/arrows";
+import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-auto-play-demo.module.css";
 
 const AUTO_PLAY_SPEED_MS = 2200;

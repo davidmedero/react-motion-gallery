@@ -1,5 +1,4 @@
 import type { ResponsiveNumber } from "../shared/responsive";
-import type { GalleryLazyLoadOptions } from "../shared/types/lazy";
 
 export type IntroOptions = {
   renderIntro?: (
@@ -14,10 +13,31 @@ export type IntroOptions = {
 
 type FullscreenTrigger = 'item' | 'media';
 
-export type GridLazyLoadOptions = GalleryLazyLoadOptions;
 export type GridSpan = number | "full";
 export type ResponsiveGridSpan = GridSpan | Record<string, GridSpan>;
 export type ResponsiveGridTemplate = string | Record<string, string>;
+
+export type GridPluginKind = "lazy-load";
+
+export type GridPluginItemRenderArgs = {
+  index: number;
+  key: React.Key;
+  itemProps: React.HTMLAttributes<HTMLDivElement>;
+  children: React.ReactNode;
+  registerExpandableImage: (index: number, node: HTMLImageElement | null) => void;
+  revealedIndicesRef: React.RefObject<Set<number>>;
+};
+
+export type GridPlugin = {
+  readonly __rmgGridPlugin: true;
+  readonly kind: GridPluginKind;
+  readonly options?: unknown;
+  readonly blocksReady?: boolean;
+  renderItem?: (
+    args: GridPluginItemRenderArgs,
+    options?: unknown
+  ) => React.ReactNode;
+};
 
 export type GridItemProps = {
   span?: ResponsiveGridSpan;
@@ -41,6 +61,6 @@ export type GridOptions = {
   rootClassName?: string;
   itemClassName?: string;
   fullscreenTrigger?: FullscreenTrigger;
-  lazyLoad?: GridLazyLoadOptions;
+  plugins?: GridPlugin[];
   intro?: IntroOptions;
 };

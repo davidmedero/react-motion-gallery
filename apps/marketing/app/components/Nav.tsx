@@ -48,7 +48,7 @@ export function Nav() {
 
           {/* GitHub */}
           <a
-            href="https://github.com/your-org-or-username/react-motion-gallery"
+            href="https://github.com/davidmedero/react-motion-gallery/tree/main/packages/react-motion-gallery"
             target="_blank"
             rel="noreferrer"
             aria-label="GitHub"

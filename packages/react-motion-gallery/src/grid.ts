@@ -4,8 +4,9 @@ export { useGridReady } from "./grid-ready";
 export type {
   GridHandle,
   GridItemProps,
-  GridLazyLoadOptions,
   GridOptions,
+  GridPlugin,
+  GridPluginKind,
   GridSpan,
   ResponsiveGridSpan,
   ResponsiveGridTemplate,

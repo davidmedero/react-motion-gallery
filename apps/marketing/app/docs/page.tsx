@@ -4,6 +4,7 @@ import type { JSX, ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CodeBlock } from "@/components/ui/code-block";
+import { DocsTableOfContents } from "./DocsTableOfContents";
 import styles from "./docs.module.css";
 
 export const metadata: Metadata = {
@@ -62,6 +63,72 @@ const entryPoints: EntryPoint[] = [
     description: "Slider readiness hook for stable skeleton and content reveal timing.",
   },
   {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/arrows",
+    imports: "sliderArrows",
+    description: "Arrow controls plugin for Slider navigation.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/dots",
+    imports: "sliderDots",
+    description: "Dot navigation plugin for slide position and selection.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/progress",
+    imports: "sliderProgress",
+    description: "Progress indicator plugin for Slider movement.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/scrollbar",
+    imports: "sliderScrollbar",
+    description: "Draggable scrollbar plugin for Slider navigation.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/auto-height",
+    imports: "sliderAutoHeight",
+    description: "Plugin that sizes Slider height to the active slide.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/lazy-load",
+    imports: "sliderLazyLoad",
+    description: "Slider lazy media plugin for image shells, spinners, and reveal readiness.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/parallax",
+    imports: "sliderParallax",
+    description: "Parallax transform plugin for slide media or custom layers.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/scale",
+    imports: "sliderScale",
+    description: "Scale effect plugin for active and neighboring slides.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/fade",
+    imports: "sliderFade",
+    description: "Fade transition plugin for slide opacity changes.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/crossfade",
+    imports: "sliderCrossfade",
+    description: "Crossfade transition plugin for overlapping slides.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/fullscreen",
+    imports: "sliderFullscreen",
+    description: "Slider plugin that opens GalleryCore fullscreen from base slides.",
+  },
+  {
     category: "Layout",
     entry: "react-motion-gallery/grid",
     imports: "Grid, Grid.Item",
@@ -72,6 +139,12 @@ const entryPoints: EntryPoint[] = [
     entry: "react-motion-gallery/grid/ready",
     imports: "useGridReady",
     description: "Grid readiness hook for stable Skeleton wrapper handoff.",
+  },
+  {
+    category: "Layout",
+    entry: "react-motion-gallery/grid/lazy-load",
+    imports: "gridLazyLoad",
+    description: "Grid lazy media plugin for opt-in image shells and spinners.",
   },
   {
     category: "Layout",
@@ -86,6 +159,12 @@ const entryPoints: EntryPoint[] = [
     description: "Masonry readiness hook for measured Skeleton wrapper handoff.",
   },
   {
+    category: "Layout",
+    entry: "react-motion-gallery/masonry/lazy-load",
+    imports: "masonryLazyLoad",
+    description: "Masonry lazy media plugin for opt-in image shells and spinners.",
+  },
+  {
     category: "Data",
     entry: "react-motion-gallery/entries",
     imports: "Entries, flattenEntries, entry media container helpers",
@@ -96,6 +175,24 @@ const entryPoints: EntryPoint[] = [
     entry: "react-motion-gallery/skeleton/base",
     imports: "Skeleton",
     description: "Standalone and wrapper skeletons that can mirror final layouts.",
+  },
+  {
+    category: "Loading",
+    entry: "react-motion-gallery/skeleton/slider",
+    imports: "SliderSkeleton",
+    description: "Slider-aware skeleton wrapper and measured initial-height helpers.",
+  },
+  {
+    category: "Loading",
+    entry: "react-motion-gallery/skeleton/grid",
+    imports: "GridSkeleton",
+    description: "Grid-aware skeleton wrapper for responsive tracks and item slots.",
+  },
+  {
+    category: "Loading",
+    entry: "react-motion-gallery/skeleton/masonry",
+    imports: "MasonrySkeleton",
+    description: "Masonry-aware skeleton wrapper for measured uneven layouts.",
   },
   {
     category: "Fullscreen",
@@ -249,6 +346,17 @@ const entryPointTabs = [
       'import "react-motion-gallery/styles.css";',
       'import SliderDefault, { Slider, createSliderIndexChannel } from "react-motion-gallery/slider";',
       'import { useSliderReady } from "react-motion-gallery/slider/ready";',
+      'import { sliderArrows } from "react-motion-gallery/slider/arrows";',
+      'import { sliderDots } from "react-motion-gallery/slider/dots";',
+      'import { sliderProgress } from "react-motion-gallery/slider/progress";',
+      'import { sliderScrollbar } from "react-motion-gallery/slider/scrollbar";',
+      'import { sliderAutoHeight } from "react-motion-gallery/slider/auto-height";',
+      'import { sliderLazyLoad } from "react-motion-gallery/slider/lazy-load";',
+      'import { sliderParallax } from "react-motion-gallery/slider/parallax";',
+      'import { sliderScale } from "react-motion-gallery/slider/scale";',
+      'import { sliderFade } from "react-motion-gallery/slider/fade";',
+      'import { sliderCrossfade } from "react-motion-gallery/slider/crossfade";',
+      'import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";',
     ].join("\n"),
   },
   {
@@ -260,6 +368,7 @@ const entryPointTabs = [
       'import "react-motion-gallery/styles.css";',
       'import GridDefault, { Grid } from "react-motion-gallery/grid";',
       'import { useGridReady } from "react-motion-gallery/grid/ready";',
+      'import { gridLazyLoad } from "react-motion-gallery/grid/lazy-load";',
     ].join("\n"),
   },
   {
@@ -271,6 +380,7 @@ const entryPointTabs = [
       'import "react-motion-gallery/styles.css";',
       'import MasonryDefault, { Masonry } from "react-motion-gallery/masonry";',
       'import { useMasonryReady } from "react-motion-gallery/masonry/ready";',
+      'import { masonryLazyLoad } from "react-motion-gallery/masonry/lazy-load";',
     ].join("\n"),
   },
   {
@@ -304,6 +414,9 @@ const entryPointTabs = [
     code: [
       'import "react-motion-gallery/styles.css";',
       'import SkeletonDefault, { Skeleton } from "react-motion-gallery/skeleton/base";',
+      'import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";',
+      'import { GridSkeleton } from "react-motion-gallery/skeleton/grid";',
+      'import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";',
       "",
       'import type { SkeletonNode } from "react-motion-gallery/skeleton/base";',
     ].join("\n"),
@@ -317,6 +430,13 @@ const entryPointTabs = [
       'import "react-motion-gallery/styles.css";',
       'import { useFullscreenController } from "react-motion-gallery/fullscreen";',
       'import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";',
+      'import { fullscreenControls } from "react-motion-gallery/fullscreen/controls";',
+      'import { fullscreenCaptions } from "react-motion-gallery/fullscreen/captions";',
+      'import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";',
+      'import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";',
+      'import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";',
+      'import { fullscreenCrossfade } from "react-motion-gallery/fullscreen/crossfade";',
+      'import { fullscreenThumbnails } from "react-motion-gallery/fullscreen/thumbnails";',
     ].join("\n"),
   },
   {
@@ -957,13 +1077,7 @@ export default async function DocsPage(): Promise<JSX.Element> {
       <div className={styles.docsShell}>
         <aside className={styles.toc} aria-label="README sections">
           <p>README</p>
-          <nav>
-            {tocItems.map((item) => (
-              <Link href={`#${item.id}`} key={item.id}>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <DocsTableOfContents items={tocItems} />
         </aside>
 
         <article className={styles.readmeArticle}>

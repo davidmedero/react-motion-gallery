@@ -2,18 +2,17 @@ export const source = String.raw`/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useSearchParams } from "next/navigation";
-import {
-  GalleryCore,
-  Grid,
-  toMediaItems,
-  useGridReady,
-  useFullscreenController,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { GridSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
-import { fullscreenLazyLoad } from "../../../../../../packages/react-motion-gallery/src/fullscreen-lazy-load";
-import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
+import { GalleryCore } from "react-motion-gallery/core";
+import { toMediaItems } from "react-motion-gallery/media";
+import { Grid } from "react-motion-gallery/grid";
+import { useGridReady } from "react-motion-gallery/grid/ready";
+import { gridLazyLoad } from "react-motion-gallery/grid/lazy-load";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { GridSkeleton } from "react-motion-gallery/skeleton/grid";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
+import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-lazy-load-demo.module.css";
 import { gridLazyLoadSkeletonText } from "./grid-lazy-load.skeleton-text.generated";
 
@@ -276,11 +275,13 @@ export function GridLazyLoadDemo() {
           minColumnWidth={220}
           gap={{ 0: 12, 900: 18 }}
           fullscreenTrigger="item"
-          lazyLoad={{
-            enabled: !showMeasuredContent,
-            spinner: true,
-            spinnerClassName: styles.spinner,
-          }}
+          plugins={[
+            gridLazyLoad({
+              enabled: !showMeasuredContent,
+              spinner: true,
+              spinnerClassName: styles.spinner,
+            }),
+          ]}
         >
           {ITEMS.map((item, index) => (
             <GridCard

@@ -32,6 +32,10 @@ export type SliderRestoreRuntimeOptions = {
   controlled?: boolean;
 };
 
+export type SliderRestoreReadOptions = {
+  requireNavigationRestore?: boolean;
+};
+
 export type SliderRestoreVisibleSlot = {
   slot: number;
   order: number;
@@ -184,10 +188,13 @@ export function validateSliderRestoreState(
 
 export function readSliderRestoreStateFromWindow(
   runtime: SliderRestoreRuntimeOptions | null | undefined,
-  win: Window = window
+  win: Window = window,
+  options: SliderRestoreReadOptions = {}
 ) {
   if (!runtime?.enabled || runtime.controlled) return null;
-  if (!isSliderRestoreNavigation(win)) return null;
+  if (options.requireNavigationRestore !== false && !isSliderRestoreNavigation(win)) {
+    return null;
+  }
 
   try {
     const raw = win.sessionStorage.getItem(

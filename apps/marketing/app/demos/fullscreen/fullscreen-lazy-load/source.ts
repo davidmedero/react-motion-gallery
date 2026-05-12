@@ -1,15 +1,12 @@
 export const source = String.raw`'use client';
 
 import * as React from "react";
-import {
-  GalleryCore,
-  toMediaItems,
-  useFullscreenController,
-  useGalleryCore,
-} from "../../../../../../packages/react-motion-gallery/src";
-import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
-import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
-import { fullscreenLazyLoad } from "../../../../../../packages/react-motion-gallery/src/fullscreen-lazy-load";
+import { GalleryCore, useGalleryCore } from "react-motion-gallery/core";
+import { toMediaItems } from "react-motion-gallery/media";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
 import styles from "./fullscreen-lazy-load-demo.module.css";
 
 const FULLSCREEN_ITEMS = toMediaItems([

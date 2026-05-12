@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { Grid, useGridReady } from "../../grid";
+import { gridLazyLoad } from "../../grid-lazy-load";
 import type { GridHandle } from "./types";
 
 function mount(node: React.ReactNode) {
@@ -24,6 +25,15 @@ function unmount(root: Root, container: HTMLElement) {
     root.unmount();
   });
   container.remove();
+}
+
+class IdleIntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
 }
 
 async function settle() {
@@ -54,6 +64,7 @@ beforeEach(() => {
 afterEach(() => {
   document.body.innerHTML = "";
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("useGridReady", () => {
@@ -116,6 +127,54 @@ describe("useGridReady", () => {
     });
 
     expect(container.querySelector("[data-ready='true']")).not.toBeNull();
+
+    unmount(root, container);
+  });
+
+  test("does not mark base grid images as lazy without the plugin", async () => {
+    vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+    vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(800);
+
+    const { root, container } = mount(
+      <Grid columns={1}>
+        <img src="/image-a.jpg" alt="Image A" />
+      </Grid>
+    );
+    await settle();
+
+    const image = container.querySelector("img[alt='Image A']") as HTMLImageElement;
+    expect(container.querySelector("[data-rmg-lazyload]")).toBeNull();
+    expect(image.getAttribute("data-rmg-lazy-src")).toBeNull();
+    expect(image.getAttribute("src")).toBe("/image-a.jpg");
+
+    unmount(root, container);
+  });
+
+  test("uses the lazy-load plugin without waiting for eager image decode", async () => {
+    vi.stubGlobal("IntersectionObserver", IdleIntersectionObserver);
+    vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(false);
+    vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(0);
+
+    function ReadyProbe() {
+      const grid = useGridReady();
+      return (
+        <>
+          <span data-ready={grid.ready ? "true" : "false"} />
+          <Grid ref={grid.ref} columns={1} plugins={[gridLazyLoad()]}>
+            <img src="/image-a.jpg" alt="Image A" />
+          </Grid>
+        </>
+      );
+    }
+
+    const { root, container } = mount(<ReadyProbe />);
+    await settle();
+
+    const image = container.querySelector("img[alt='Image A']") as HTMLImageElement;
+    expect(container.querySelector("[data-ready='true']")).not.toBeNull();
+    expect(container.querySelector("[data-rmg-lazyload]")).not.toBeNull();
+    expect(image.getAttribute("data-rmg-lazy-src")).toBe("/image-a.jpg");
+    expect(image.getAttribute("src")).toContain("data:image/gif");
 
     unmount(root, container);
   });

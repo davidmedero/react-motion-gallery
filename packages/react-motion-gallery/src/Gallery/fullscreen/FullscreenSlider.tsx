@@ -22,7 +22,7 @@ import { Vector1D, Vector1DType } from '../shared/motion/vector1d'
 import { ScrollBody, ScrollBodyType } from '../shared/motion/scrollBody'
 import { Limit, LimitType } from '../shared/motion/limit'
 import { ScrollLooper } from '../shared/motion/scrollLooper'
-import { BaseTarget, factorAbs, mathSign, ScrollTarget, ScrollTargetType } from '../shared/motion/scrollTarget'
+import { BaseTarget, factorAbs, ScrollTarget, ScrollTargetType } from '../shared/motion/scrollTarget'
 import { Animations, AnimationsType } from '../shared/motion/animations'
 import { EventStore } from '../shared/motion/eventStore'
 import { MediaItem } from '../shared/types/media'
@@ -43,6 +43,8 @@ import { DefaultChevronIcon } from './controls/DefaultChevronIcon'
 import { FullscreenOptions } from './types'
 import { getFsMediaContainer, getPrimaryImgEl } from '../zoomPan/core/dom'
 import { normalizeFullscreenSliderGap } from './transforms'
+import { resolveSliderReleaseSnapForce } from '../slider/snapRelease'
+import type { SliderSkipSnaps } from '../slider/types'
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
 function DragTracker(axis: AxisLike, ownerWindow: WindowType) {
@@ -140,6 +142,20 @@ export function shouldSuppressFullscreenLoopForScroll(args: {
   return Math.abs(distance) > 0.01 || fromIndex !== toIndex
 }
 
+export function resolveFullscreenReleaseSnapForce(args: {
+  force: number
+  fallbackDirection?: number
+  slideCount: number
+  currentIndex: number
+  dragStartIndex?: number
+  wrap: boolean
+  skipSnaps?: SliderSkipSnaps
+  strictSnaps?: boolean
+  scrollTarget: Pick<ScrollTargetType, 'byDistance' | 'byIndex'>
+}) {
+  return resolveSliderReleaseSnapForce(args)
+}
+
 interface FullscreenSliderProps {
   sub: FullscreenSliderSub
   children: ReactNode
@@ -174,6 +190,8 @@ interface FullscreenSliderProps {
   sliderGap?: number;
   sliderDuration: number;
   sliderFriction: number;
+  skipSnaps?: SliderSkipSnaps;
+  strictSnaps?: boolean;
   suppressLoopRef: React.RefObject<boolean>;
   fadeOpening: boolean;
   introFade?: boolean;
@@ -224,6 +242,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       sliderGap = 0,
       sliderDuration,
       sliderFriction,
+      skipSnaps,
+      strictSnaps,
       suppressLoopRef,
       fadeOpening,
       introFade,
@@ -288,6 +308,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const dragX = useRef(0)
     const previousDragX = useRef(0)
     const dragMoveTime = useRef<Date | null>(null)
+    const dragStartIndexRef = useRef(0)
+    const dragStartLocationRef = useRef(0)
+    const dragDisplacementRef = useRef(0)
     const activeTouchCount = useRef(0)
     const wasPinch = useRef(false)
     const appliedYRef = useRef(0)
@@ -1756,6 +1779,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         yTemp.current = 0
         dragStartY.current = 0
         dragYForClose.current = 0
+        dragStartIndexRef.current = selectedIndex.current || 0
+        dragStartLocationRef.current = targetRef.current?.get() ?? locationRef.current?.get() ?? 0
+        dragDisplacementRef.current = 0
 
         trackerX.pointerDown(evt as any)
         trackerY.pointerDown(evt as any)
@@ -1827,6 +1853,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         velocityX.current = diffX
         dragMoveTime.current = new Date()
         const totalDeltaX = (lastScroll - startPX) * sign
+        dragDisplacementRef.current = totalDeltaX
 
         if (!preventScroll && !isMouse && dragMode.current === 'x') {
           if (!('cancelable' in evt) || !(evt as any).cancelable) return
@@ -2005,16 +2032,25 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             return
           }
 
+          const releaseScrollTarget = fsScrollTarget
+
           function allowedForce(force: number): number {
-            const len = slides.current.length || 1
-            const curIndex = selectedIndex.current || 0
+            const currentPosition =
+              targetRef.current?.get() ?? locationRef.current?.get() ?? dragStartLocationRef.current
 
-            const dirIndex = mathSign(force) * -1
-            const nextIndex = ((curIndex + dirIndex) % len + len) % len
-
-            const dirBump = slides.current.length === 2 ? mathSign(force) : 0;
-            const nextTarget = fsScrollTarget!.byIndex(nextIndex, dirBump)
-            return nextTarget.distance
+            return resolveFullscreenReleaseSnapForce({
+              force,
+              fallbackDirection:
+                dragDisplacementRef.current ||
+                currentPosition - dragStartLocationRef.current,
+              slideCount: slides.current.length || 1,
+              currentIndex: selectedIndex.current || 0,
+              dragStartIndex: dragStartIndexRef.current,
+              wrap: cellCount > 1,
+              skipSnaps,
+              strictSnaps,
+              scrollTarget: releaseScrollTarget,
+            })
           }
           
           const isOutOfBounds = boundsRef.current?.passed()

@@ -12,12 +12,10 @@ import { canAccessCustomerBilling, getSession } from "@/lib/auth/session";
 import {
   type BillingCadence,
   type PlanId,
-  billingCadences,
-  billingPlans,
-  getBillingCadenceOrDefault,
   getBillingOption,
   getPlan,
-  getPlanIdOrDefault,
+  isBillingCadence,
+  isPlanId,
   stripePriceEnvKeys,
 } from "@/lib/billing/plans";
 import {
@@ -53,8 +51,25 @@ function firstParam(
   return Array.isArray(value) ? value[0] : value;
 }
 
-function selectionHref(plan: PlanId, billing: BillingCadence): string {
-  return `/account?plan=${plan}&billing=${billing}`;
+type PurchaseIntent = {
+  selectedBilling: BillingCadence;
+  selectedPlanId: PlanId;
+};
+
+function getPurchaseIntent(
+  params: Record<string, string | string[] | undefined>
+): PurchaseIntent | null {
+  const plan = firstParam(params, "plan");
+  const billing = firstParam(params, "billing");
+
+  if (!isPlanId(plan) || !isBillingCadence(billing)) {
+    return null;
+  }
+
+  return {
+    selectedBilling: billing,
+    selectedPlanId: plan,
+  };
 }
 
 function formatUnixDate(timestamp: number | undefined): string | null {
@@ -98,7 +113,7 @@ function accountNotice(params: Record<string, string | string[] | undefined>) {
   if (auth === "required") {
     return {
       tone: "warning" as const,
-      text: "Use the magic link sent to your email before continuing to checkout.",
+      text: "Sign in with a magic link before continuing to checkout.",
     };
   }
 
@@ -168,61 +183,54 @@ function accountNotice(params: Record<string, string | string[] | undefined>) {
   return null;
 }
 
-function PlanSelector(props: {
-  selectedBilling: BillingCadence;
-  selectedPlanId: PlanId;
+function PurchaseConfirmationPanel(props: {
+  purchaseIntent: PurchaseIntent;
+  signedIn: boolean;
 }) {
+  const plan = getPlan(props.purchaseIntent.selectedPlanId);
+  const option = getBillingOption(plan.id, props.purchaseIntent.selectedBilling);
+
   return (
-    <div className={styles.planSelector} aria-label="License type">
-      {billingPlans.map((plan) => (
-        <Link
-          aria-current={props.selectedPlanId === plan.id ? "true" : undefined}
-          className={styles.planChoice}
-          data-selected={props.selectedPlanId === plan.id ? "true" : undefined}
-          href={selectionHref(plan.id, props.selectedBilling)}
-          key={plan.id}
-        >
-          <span>{plan.name}</span>
-          <small>{plan.eyebrow}</small>
-        </Link>
-      ))}
-    </div>
+    <section className={styles.panel} aria-labelledby="package-title">
+      <div className={styles.panelHeader}>
+        <div>
+          <p className={styles.kicker}>Package</p>
+          <h2 id="package-title">Selected license</h2>
+        </div>
+        <CreditCard aria-hidden="true" />
+      </div>
+
+      <div className={styles.checkoutSummary}>
+        <div>
+          <span>Selected package</span>
+          <strong>
+            {plan.name} - {option.label}
+          </strong>
+          <small>
+            {option.price} - {option.detail}
+          </small>
+        </div>
+        {props.signedIn ? (
+          <form action={checkoutAction}>
+            <input name="plan" type="hidden" value={plan.id} />
+            <input name="billing" type="hidden" value={option.cadence} />
+            <button className={styles.primaryButton} type="submit">
+              Continue to checkout
+              <ArrowRight aria-hidden="true" />
+            </button>
+          </form>
+        ) : (
+          <a className={styles.secondaryButton} href="#account-email">
+            Sign in to checkout
+            <ArrowRight aria-hidden="true" />
+          </a>
+        )}
+      </div>
+    </section>
   );
 }
 
-function BillingSelector(props: {
-  selectedBilling: BillingCadence;
-  selectedPlanId: PlanId;
-}) {
-  const plan = getPlan(props.selectedPlanId);
-
-  return (
-    <div className={styles.billingSelector} aria-label="Billing cadence">
-      {billingCadences.map((cadence) => {
-        const option = getBillingOption(plan.id, cadence);
-
-        return (
-          <Link
-            aria-current={props.selectedBilling === cadence ? "true" : undefined}
-            className={styles.billingChoice}
-            data-selected={props.selectedBilling === cadence ? "true" : undefined}
-            href={selectionHref(plan.id, cadence)}
-            key={cadence}
-          >
-            <span>{option.label}</span>
-            <strong>{option.price}</strong>
-            <small>{option.detail}</small>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
-function SignedOutPanel(props: {
-  selectedBilling: BillingCadence;
-  selectedPlanId: PlanId;
-}) {
+function SignedOutPanel(props: { purchaseIntent: PurchaseIntent | null }) {
   return (
     <section className={styles.panel} aria-labelledby="signin-title">
       <div className={styles.panelHeader}>
@@ -234,8 +242,20 @@ function SignedOutPanel(props: {
       </div>
 
       <form action={requestMagicLinkAction} className={styles.signInForm}>
-        <input name="plan" type="hidden" value={props.selectedPlanId} />
-        <input name="billing" type="hidden" value={props.selectedBilling} />
+        {props.purchaseIntent ? (
+          <>
+            <input
+              name="plan"
+              type="hidden"
+              value={props.purchaseIntent.selectedPlanId}
+            />
+            <input
+              name="billing"
+              type="hidden"
+              value={props.purchaseIntent.selectedBilling}
+            />
+          </>
+        ) : null}
         <label htmlFor="account-email">Email</label>
         <div className={styles.emailRow}>
           <input
@@ -348,7 +368,7 @@ function AccountStatusPanel(props: {
       ) : (
         <div className={styles.emptyState}>
           <strong>No active license</strong>
-          <p>Choose a plan to start a subscription or buy lifetime access.</p>
+          <p>View pricing to start a subscription or buy lifetime access.</p>
         </div>
       )}
 
@@ -399,8 +419,7 @@ function RecentPurchasesPanel(props: { summary: AccountBillingSummary }) {
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
   const params = searchParams ? await searchParams : {};
-  const selectedPlanId = getPlanIdOrDefault(firstParam(params, "plan"));
-  const selectedBilling = getBillingCadenceOrDefault(firstParam(params, "billing"));
+  const purchaseIntent = getPurchaseIntent(params);
   const session = await getSession();
   const billingAccessEnabled = canAccessCustomerBilling(session);
   const summary =
@@ -459,25 +478,30 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           </div>
         ) : null}
 
-        <div className={styles.contentGrid} data-signed-in={session ? "true" : "false"}>
-          {session && summary ? (
-            <AccountStatusPanel
-              billingAccessEnabled={billingAccessEnabled}
-              email={session.email}
-              summary={summary}
+        <div
+          className={styles.contentGrid}
+          data-has-purchase={purchaseIntent ? "true" : "false"}
+          data-signed-in={session ? "true" : "false"}
+        >
+          {purchaseIntent ? (
+            <PurchaseConfirmationPanel
+              purchaseIntent={purchaseIntent}
+              signedIn={Boolean(session)}
             />
-          ) : session ? (
-            <AccountStatusPanel
-              billingAccessEnabled={billingAccessEnabled}
-              email={session.email}
-              summary={summary}
-            />
-          ) : (
-            <SignedOutPanel
-              selectedBilling={selectedBilling}
-              selectedPlanId={selectedPlanId}
-            />
-          )}
+          ) : null}
+
+          <div className={styles.accountColumn}>
+            {session ? (
+              <AccountStatusPanel
+                billingAccessEnabled={billingAccessEnabled}
+                email={session.email}
+                summary={summary}
+              />
+            ) : (
+              <SignedOutPanel purchaseIntent={purchaseIntent} />
+            )}
+            {summary ? <RecentPurchasesPanel summary={summary} /> : null}
+          </div>
         </div>
       </div>
     </main>

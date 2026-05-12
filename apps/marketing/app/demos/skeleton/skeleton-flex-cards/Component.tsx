@@ -5,7 +5,7 @@ import * as React from "react";
 import {
   Skeleton,
   type SkeletonNode,
-} from "../../../../../../packages/react-motion-gallery/src/skeleton-base";
+} from "react-motion-gallery/skeleton/base";
 import styles from "./skeleton-flex-cards-demo.module.css";
 
 type ProductCardItem = {
