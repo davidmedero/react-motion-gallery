@@ -17,4 +17,16 @@ export const css = String.raw`.slide_wrapper {
   display: block;
   aspect-ratio: 16 / 9;
   border-radius: 12px;
+}
+
+@media(max-width: 767px) {
+  .slider_viewport {
+    padding-bottom: 46px;
+  }
+}
+
+@media(min-width: 768px) {
+  .slider_viewport {
+    padding-bottom: 52px;
+  }
 }`;

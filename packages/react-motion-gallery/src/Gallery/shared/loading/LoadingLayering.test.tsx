@@ -1,16 +1,21 @@
+// @vitest-environment jsdom
+
 import * as React from "react";
 import { readFileSync } from "node:fs";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test, vi } from "vitest";
+import { beforeAll, describe, expect, test, vi } from "vitest";
 
 import EntryStyles from "../../entries/Entries.module.css";
-import { EntryList } from "../../entries/components/EntryList";
-import GridStyles from "../../grid/Grid.module.css";
-import Grid from "../../grid/index";
-import { Slider } from "../../slider/index";
-import SliderStyles from "../../slider/Slider.module.css";
-import ThumbnailSlider from "../../thumbnails/index";
+import {
+  EntryList,
+  resolveEntryLoadingVisualState,
+} from "../../entries/components/EntryList";
+import ThumbnailSlider, {
+  resolveThumbnailLoadingVisualState,
+} from "../../thumbnails/index";
 import ThumbnailStyles from "../../thumbnails/Thumbnails.module.css";
+import { resolveCompareLoadingLayerStyle } from "./force";
 
 vi.mock("../../entries/hooks/useEntryInView", () => ({
   useEntryInView: () => ({
@@ -30,28 +35,140 @@ vi.mock("../hooks/usePrefersReducedMotion", () => ({
   usePrefersReducedMotion: () => false,
 }));
 
+beforeAll(() => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+});
+
 function readCss(relativePath: string) {
   return readFileSync(new URL(relativePath, import.meta.url), "utf8");
 }
 
+function entryListElement(force?: any) {
+  return React.createElement(EntryList, {
+    enabled: true,
+    entries: {
+      items: [
+        {
+          key: "entry-alpha",
+          media: [
+            {
+              kind: "image",
+              src: "/entry-alpha.jpg",
+              alt: "Entry Alpha",
+            },
+          ],
+        },
+      ],
+      loading: {
+        enabled: true,
+        force,
+      },
+    },
+    fsEnabled: false,
+    openFullscreenAt: () => undefined,
+    entryFlatIndexRef: React.createRef<number[][] | null>(),
+    nodeFromMedia: (media: any) =>
+      React.createElement("img", {
+        src: media.src,
+        alt: media.alt ?? "",
+      }),
+    renderMediaContainer: ({ mediaNodes }: { mediaNodes: React.ReactNode[] }) =>
+      React.createElement("div", null, mediaNodes),
+    breakpoints: {},
+  });
+}
+
+function dispatchOpacityTransitionEnd(node: Element) {
+  const event = new Event("transitionend", { bubbles: true });
+  Object.defineProperty(event, "propertyName", { value: "opacity" });
+  node.dispatchEvent(event);
+}
+
 describe("loading layer stacking", () => {
+  test("keeps compare helpers consistent across thumbnails and entries", () => {
+    expect(
+      resolveThumbnailLoadingVisualState({
+        loadingActive: true,
+        loadingForced: {
+          showContent: true,
+          skeletonOpacity: 0.35,
+        },
+        contentReady: true,
+      })
+    ).toEqual({
+      compareMode: true,
+      contentBlocked: false,
+      loadingLayerOpacity: 0.35,
+    });
+
+    expect(
+      resolveEntryLoadingVisualState({
+        loadingActive: true,
+        loadingForced: {
+          showContent: true,
+          skeletonOpacity: 0.4,
+        },
+        shouldMountContent: true,
+        contentReady: true,
+        defaultReveal: false,
+      })
+    ).toEqual({
+      compareMode: true,
+      revealContent: true,
+      loadingLayerOpacity: 0.4,
+    });
+  });
+
+  test("only writes opacity vars inline when a non-default loading layer opacity is needed", () => {
+    expect(
+      resolveCompareLoadingLayerStyle({
+        exitMs: 600,
+        compareMode: false,
+        loadingLayerOpacity: 1,
+        opacityVarName: "--example-loading-opacity",
+      })
+    ).toEqual({
+      "--rmg-loading-fade-duration": "600ms",
+    });
+
+    expect(
+      resolveCompareLoadingLayerStyle({
+        exitMs: 600,
+        compareMode: true,
+        loadingLayerOpacity: 0.35,
+        opacityVarName: "--example-loading-opacity",
+      })
+    ).toEqual({
+      "--rmg-loading-fade-duration": "600ms",
+      "--example-loading-opacity": 0.35,
+    });
+
+    expect(
+      resolveCompareLoadingLayerStyle({
+        exitMs: 600,
+        compareMode: false,
+        loadingLayerOpacity: 1,
+        opacityVarName: "--example-loading-opacity",
+        hidden: true,
+      })
+    ).toEqual({
+      "--rmg-loading-fade-duration": "600ms",
+      "--example-loading-opacity": 0,
+    });
+  });
+
   test("uses always-above z-index values across the shared loading shells", () => {
-    const sliderCss = readCss("../../slider/Slider.module.css");
-    const gridCss = readCss("../../grid/Grid.module.css");
-    const masonryCss = readCss("../../masonry/Masonry.module.css");
+    const skeletonCss = readCss("../../skeleton/Skeleton.module.css");
     const thumbnailCss = readCss("../../thumbnails/Thumbnails.module.css");
 
-    expect(sliderCss).toMatch(/\.contentLayer\s*\{[^}]*z-index:\s*2;/s);
-    expect(sliderCss).toMatch(/\.loadingLayer\s*\{[^}]*z-index:\s*1;/s);
-
-    expect(gridCss).toMatch(/\.gridContentLayer\s*\{[^}]*z-index:\s*2;/s);
-    expect(gridCss).toMatch(/\.gridLoadingLayer\s*\{[^}]*z-index:\s*1;/s);
-
-    expect(masonryCss).toMatch(/\.masonryContentLayer\s*\{[^}]*z-index:\s*2;/s);
-    expect(masonryCss).toMatch(/\.masonryLoadingLayer\s*\{[^}]*z-index:\s*1;/s);
+    expect(skeletonCss).toMatch(/\.contentLayer\s*\{[^}]*z-index:\s*2;/s);
+    expect(skeletonCss).toMatch(/\.loadingLayer\s*\{[^}]*z-index:\s*1;/s);
+    expect(skeletonCss).toMatch(/\.loadingLayerOverlay\s*\{[^}]*overflow:\s*visible;/s);
 
     expect(thumbnailCss).toMatch(/\.thumbContentLayer\s*\{[^}]*z-index:\s*2;/s);
     expect(thumbnailCss).toMatch(/\.thumbLoadingLayer\s*\{[^}]*z-index:\s*1;/s);
+    expect(skeletonCss).toMatch(/\.loadingLayerCompare\s*\{[^}]*z-index:\s*3;/s);
+    expect(thumbnailCss).toMatch(/\.thumbLoadingLayerCompare\s*\{[^}]*z-index:\s*3;/s);
   });
 
   test("uses slider-style shimmer vars for built-in thumbnail placeholders", () => {
@@ -70,66 +187,7 @@ describe("loading layer stacking", () => {
     expect(thumbnailCss).not.toContain("--rmg-shimmer-");
   });
 
-  test("keeps grid, slider, and thumbnails rendering both content and loading wrappers during forced loading", () => {
-    const gridMarkup = renderToStaticMarkup(
-      React.createElement(
-        Grid,
-        {
-          columns: 1,
-          loading: {
-            force: true,
-            timing: {
-              exitMs: 700,
-            },
-          },
-        },
-        React.createElement("img", {
-          key: "grid-image",
-          src: "/alpha.jpg",
-          alt: "Alpha",
-        })
-      )
-    );
-
-    expect(gridMarkup).toContain(GridStyles.gridContentLayer);
-    expect(gridMarkup).toContain(GridStyles.gridContentBlocked);
-    expect(gridMarkup).toContain(GridStyles.gridLoadingLayer);
-    expect(gridMarkup).toContain('aria-hidden="true"');
-    expect(gridMarkup).toContain("--rmg-loading-fade-duration:700ms");
-
-    const sliderMarkup = renderToStaticMarkup(
-      React.createElement(
-        Slider,
-        {
-          layout: {
-            cellsPerSlide: 1,
-          },
-          controls: {
-            arrows: { enabled: false },
-            dots: { enabled: false },
-            progress: { enabled: false },
-            scrollbar: { enabled: false },
-          },
-          transitions: {
-            loading: {
-              force: true,
-              timing: {
-                exitMs: 900,
-              },
-            },
-          },
-        },
-        React.createElement("div", { key: "slide-1" }, "One"),
-        React.createElement("div", { key: "slide-2" }, "Two")
-      )
-    );
-
-    expect(sliderMarkup).toContain(SliderStyles.contentLayer);
-    expect(sliderMarkup).toContain(SliderStyles.contentBlocked);
-    expect(sliderMarkup).toContain(SliderStyles.loadingLayer);
-    expect(sliderMarkup).toContain('aria-hidden="true"');
-    expect(sliderMarkup).toContain("--rmg-loading-fade-duration:900ms");
-
+  test("keeps thumbnails rendering both content and loading wrappers during forced loading", () => {
     const thumbnailMarkup = renderToStaticMarkup(
       React.createElement(
         ThumbnailSlider,
@@ -158,13 +216,20 @@ describe("loading layer stacking", () => {
     expect(thumbnailMarkup).toContain("--rmg-loading-fade-duration:880ms");
   });
 
-  test("keeps mounted entries rendering both content and skeleton wrappers in the ready overlap state", () => {
+  test("keeps mounted entries rendering both content and skeleton wrappers in compare mode", () => {
     const entriesCss = readCss("../../entries/Entries.module.css");
 
-    expect(entriesCss).toMatch(
-      /\.entryRow\[data-rmg-entry-mounted="1"\]\s+\.entrySkeletonWrap\s*\{[^}]*z-index:\s*0;/s
-    );
+    expect(entriesCss).toMatch(/\.entrySkeletonWrap\s*\{[^}]*z-index:\s*0;/s);
     expect(entriesCss).toMatch(/\.entryInner\s*\{[^}]*z-index:\s*1;/s);
+    expect(entriesCss).toMatch(
+      /\.entryRow\[data-rmg-entry-compare="1"\]\s+\.entrySkeletonWrap\s*\{[^}]*z-index:\s*2;/s
+    );
+    expect(entriesCss).toMatch(
+      /\.entrySkeletonWrap\[data-rmg-entry-shimmer="off"\]\s*\{[^}]*--rmg-skel-shimmer-enabled:\s*0;/s
+    );
+    expect(entriesCss).toMatch(
+      /\.entrySkeletonWrap\[data-rmg-entry-shimmer="off"\]\s+\.entrySkelTile::after\s*\{[^}]*animation:\s*none;/s
+    );
 
     const markup = renderToStaticMarkup(
       React.createElement(EntryList, {
@@ -183,6 +248,10 @@ describe("loading layer stacking", () => {
           ],
           loading: {
             enabled: true,
+            force: {
+              showContent: true,
+              skeletonOpacity: 0.4,
+            },
           },
         },
         fsEnabled: false,
@@ -195,14 +264,83 @@ describe("loading layer stacking", () => {
           }),
         renderMediaContainer: ({ mediaNodes }) =>
           React.createElement("div", null, mediaNodes),
+        breakpoints: {},
       })
     );
 
     expect(markup).toContain('data-rmg-entry-ready="1"');
+    expect(markup).toContain('data-rmg-entry-compare="1"');
     expect(markup).toContain('data-rmg-entry-mounted="1"');
     expect(markup).toContain(EntryStyles.entrySkeletonWrap);
+    expect(markup).toContain(EntryStyles.entrySkeletonBody);
     expect(markup).toContain(EntryStyles.entryInner);
     expect(markup).toContain('aria-hidden="true"');
+    expect(markup).toContain("--rmg-entry-skeleton-opacity:0.4");
     expect(markup).toContain('alt="Entry Alpha"');
+  });
+
+  test("disables entry skeleton shimmer after the normal skeleton fade completes", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+
+    try {
+      await React.act(async () => {
+        root.render(entryListElement());
+      });
+
+      const skeleton = host.querySelector("[data-rmg-entry-skeleton]");
+      expect(skeleton?.getAttribute("data-rmg-entry-shimmer")).toBeNull();
+
+      await React.act(async () => {
+        dispatchOpacityTransitionEnd(skeleton!);
+      });
+
+      expect(
+        host
+          .querySelector("[data-rmg-entry-skeleton]")
+          ?.getAttribute("data-rmg-entry-shimmer")
+      ).toBe("off");
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      host.remove();
+    }
+  });
+
+  test("keeps entry skeleton shimmer active in compare mode", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+
+    try {
+      await React.act(async () => {
+        root.render(
+          entryListElement({
+            showContent: true,
+            skeletonOpacity: 0.4,
+          })
+        );
+      });
+
+      const skeleton = host.querySelector("[data-rmg-entry-skeleton]");
+      expect(skeleton?.getAttribute("data-rmg-entry-shimmer")).toBeNull();
+
+      await React.act(async () => {
+        dispatchOpacityTransitionEnd(skeleton!);
+      });
+
+      expect(
+        host
+          .querySelector("[data-rmg-entry-skeleton]")
+          ?.getAttribute("data-rmg-entry-shimmer")
+      ).toBeNull();
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      host.remove();
+    }
   });
 });

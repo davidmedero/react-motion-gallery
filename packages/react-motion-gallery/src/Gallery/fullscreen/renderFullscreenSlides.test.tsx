@@ -10,6 +10,7 @@ import {
 import {
   renderFullscreenSlides,
   renderFullscreenCrossfadeSlides,
+  shouldUseFsStaticInactiveVideo,
   shouldUseFsStaticVideoPreview,
 } from "./renderFullscreenSlides";
 
@@ -63,6 +64,12 @@ describe("fullscreen crossfade slide rendering", () => {
         renderMode: "crossfade",
       })
     ).toBe(true);
+    expect(
+      shouldUseFsStaticVideoPreview({
+        isClone: true,
+        renderMode: "track",
+      })
+    ).toBe(true);
 
     const slides = renderFullscreenCrossfadeSlides({
       items: [{ kind: "video", src: "https://example.com/alpha.mp4" } as any],
@@ -101,6 +108,235 @@ describe("fullscreen crossfade slide rendering", () => {
 
     expect(markup).toContain('data-rmg-fs-render-mode="crossfade"');
     expect(markup).toContain('data-rmg-video-snapshot="true"');
+  });
+
+  test("mounts inactive track video slides eagerly by default", () => {
+    expect(
+      shouldUseFsStaticInactiveVideo({
+        activeCanonicalIndex: 0,
+        canonicalIndex: 1,
+        lazyAllowed: false,
+        lazyEnabled: false,
+        liveReady: false,
+      })
+    ).toBe(false);
+
+    const slides = renderFullscreenSlides({
+      items: [
+        { kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any,
+        { kind: "video", src: "https://example.com/bravo.mp4", poster: "https://example.com/bravo.jpg" } as any,
+      ],
+      plyrList: [
+        {} as any,
+        {
+          source: {
+            type: "video",
+            poster: "https://example.com/bravo.jpg",
+            sources: [{ src: "https://example.com/bravo.mp4", type: "video/mp4" }],
+          },
+          options: {},
+        } as any,
+      ],
+      getTransform: () => "translateX(0%)",
+      imageRefs: { current: [React.createRef<HTMLDivElement>(), React.createRef<HTMLDivElement>()] },
+      playerRefs: { current: [] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      defaultPlayerStyle: {},
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      resolveFsCaptionPlacement: () => null,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      fsDecodedImagesRef: { current: new Set() },
+      fsCustomDecodedImagesRef: { current: new Set() },
+      fsCustomResolvedSrcByKeyRef: { current: new Map() },
+      fsPreparedVideosRef: { current: new Set() },
+      videoSnapshotStore: createEmptyVideoSnapshotStore(),
+      canonicalLength: 2,
+      activeCanonicalIndex: 0,
+      getMediaKey: (item) => String((item as any).src ?? ""),
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).toContain('data-rmg-live-video="true"');
+  });
+
+  test("uses static video previews for inactive lazy track video slides", () => {
+    expect(
+      shouldUseFsStaticInactiveVideo({
+        activeCanonicalIndex: 0,
+        canonicalIndex: 1,
+        lazyAllowed: false,
+        lazyEnabled: true,
+        liveReady: false,
+      })
+    ).toBe(true);
+
+    const slides = renderFullscreenSlides({
+      items: [
+        { kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any,
+        { kind: "video", src: "https://example.com/bravo.mp4", poster: "https://example.com/bravo.jpg" } as any,
+      ],
+      plyrList: [
+        {} as any,
+        {
+          source: {
+            type: "video",
+            poster: "https://example.com/bravo.jpg",
+            sources: [{ src: "https://example.com/bravo.mp4", type: "video/mp4" }],
+          },
+          options: {},
+        } as any,
+      ],
+      getTransform: () => "translateX(0%)",
+      imageRefs: { current: [React.createRef<HTMLDivElement>(), React.createRef<HTMLDivElement>()] },
+      playerRefs: { current: [] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      defaultPlayerStyle: {},
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      resolveFsCaptionPlacement: () => null,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      fsLazy: { videos: { enabled: true } },
+      fsDecodedImagesRef: { current: new Set() },
+      fsCustomDecodedImagesRef: { current: new Set() },
+      fsCustomResolvedSrcByKeyRef: { current: new Map() },
+      fsPreparedVideosRef: { current: new Set() },
+      videoSnapshotStore: createEmptyVideoSnapshotStore(),
+      canonicalLength: 2,
+      activeCanonicalIndex: 0,
+      getMediaKey: (item) => String((item as any).src ?? ""),
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).toContain('data-rmg-video-snapshot="true"');
+    expect(markup).not.toContain('data-rmg-live-video="true"');
+  });
+
+  test("keeps allowed inactive lazy track video slides live", () => {
+    expect(
+      shouldUseFsStaticInactiveVideo({
+        activeCanonicalIndex: 0,
+        canonicalIndex: 1,
+        lazyAllowed: true,
+        lazyEnabled: true,
+        liveReady: false,
+      })
+    ).toBe(false);
+
+    const slides = renderFullscreenSlides({
+      items: [
+        { kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any,
+        { kind: "video", src: "https://example.com/bravo.mp4", poster: "https://example.com/bravo.jpg" } as any,
+      ],
+      plyrList: [
+        {} as any,
+        {
+          source: {
+            type: "video",
+            poster: "https://example.com/bravo.jpg",
+            sources: [{ src: "https://example.com/bravo.mp4", type: "video/mp4" }],
+          },
+          options: {},
+        } as any,
+      ],
+      getTransform: () => "translateX(0%)",
+      imageRefs: { current: [React.createRef<HTMLDivElement>(), React.createRef<HTMLDivElement>()] },
+      playerRefs: { current: [] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      defaultPlayerStyle: {},
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      resolveFsCaptionPlacement: () => null,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      fsLazy: { videos: { enabled: true } },
+      fsLazyAllowedVideosRef: { current: new Set([1]) },
+      fsDecodedImagesRef: { current: new Set() },
+      fsCustomDecodedImagesRef: { current: new Set() },
+      fsCustomResolvedSrcByKeyRef: { current: new Map() },
+      fsPreparedVideosRef: { current: new Set() },
+      videoSnapshotStore: createEmptyVideoSnapshotStore(),
+      canonicalLength: 2,
+      activeCanonicalIndex: 0,
+      getMediaKey: (item) => String((item as any).src ?? ""),
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).toContain('data-rmg-live-video="true"');
+  });
+
+  test("keeps ready inactive lazy track video slides live", () => {
+    expect(
+      shouldUseFsStaticInactiveVideo({
+        activeCanonicalIndex: 0,
+        canonicalIndex: 1,
+        lazyAllowed: false,
+        lazyEnabled: true,
+        liveReady: true,
+      })
+    ).toBe(false);
+
+    const slides = renderFullscreenSlides({
+      items: [
+        { kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any,
+        { kind: "video", src: "https://example.com/bravo.mp4", poster: "https://example.com/bravo.jpg" } as any,
+      ],
+      plyrList: [
+        {} as any,
+        {
+          source: {
+            type: "video",
+            poster: "https://example.com/bravo.jpg",
+            sources: [{ src: "https://example.com/bravo.mp4", type: "video/mp4" }],
+          },
+          options: {},
+        } as any,
+      ],
+      getTransform: () => "translateX(0%)",
+      imageRefs: { current: [React.createRef<HTMLDivElement>(), React.createRef<HTMLDivElement>()] },
+      playerRefs: { current: [] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      defaultPlayerStyle: {},
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      resolveFsCaptionPlacement: () => null,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      fsLazy: { videos: { enabled: true } },
+      fsDecodedImagesRef: { current: new Set() },
+      fsCustomDecodedImagesRef: { current: new Set() },
+      fsCustomResolvedSrcByKeyRef: { current: new Map() },
+      fsPreparedVideosRef: { current: new Set(["video:https://example.com/bravo.mp4"]) },
+      videoSnapshotStore: createEmptyVideoSnapshotStore(),
+      canonicalLength: 2,
+      activeCanonicalIndex: 0,
+      getMediaKey: (item) => String((item as any).src ?? ""),
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).toContain('data-rmg-live-video="true"');
   });
 
   test("applies caption zoom fade styles to slide captions", () => {
@@ -190,6 +426,7 @@ describe("fullscreen crossfade slide rendering", () => {
     const markup = renderToStaticMarkup(<>{slides}</>);
 
     expect(markup).toContain('data-rmg-fs-media-viewport="true"');
+    expect(markup).toContain('data-rmg-zoom-pan-root="true"');
     expect(markup).toContain("flex:0 0 720px");
     expect(markup).toContain("width:720px");
     expect(markup).toContain("width:calc(100% - 720px)");

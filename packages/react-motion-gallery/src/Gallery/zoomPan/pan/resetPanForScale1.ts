@@ -54,7 +54,8 @@ type ResetZoomArgs = {
     imgW: number,
     imgH: number,
     viewW?: number,
-    viewH?: number
+    viewH?: number,
+    options?: { ignoreReserved?: boolean }
   ) => { x: LimitType; y: LimitType; povX: any; povY: any };
   panDuration: number;
   panFriction: number;
@@ -148,7 +149,8 @@ export function resetPanForScale1(args: ResetZoomArgs) {
     baseW,
     baseH,
     containerW,
-    containerH
+    containerH,
+    { ignoreReserved: true }
   );
 
   boundsX.current = ScrollBounds(

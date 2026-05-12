@@ -12,10 +12,12 @@ import {
   TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER,
   buildResponsiveTextCssRules,
   getResponsiveTextRenderState,
-  hasResponsiveTextLineCount,
-  hasResponsiveTextLineWidth,
+  type ResponsiveTextBarHeight,
+  type ResponsiveTextBarWidth,
+  type ResponsiveTextLineHeight,
   type ResponsiveTextLineCount,
-  type ResponsiveTextLineWidth,
+  type ResponsiveTextLastBarWidth,
+  type TextSkeletonResponsiveBy,
 } from "../../shared/skeleton/text";
 import { shimmerStyleVars } from "../../shared/skeleton/layout";
 import { buildStableScopeId } from "../../shared/stableScope";
@@ -55,6 +57,7 @@ export type SkeletonBaseStyleResponsive =
   | Record<string, SkeletonBaseStyle>;
 
 export type SkeletonContainerStyle = {
+  display?: React.CSSProperties["display"];
   gap?: SkeletonLength;
   padding?: SkeletonLength;
   align?: React.CSSProperties["alignItems"];
@@ -93,10 +96,12 @@ export type SkeletonNode =
     }
   | {
       kind: "text";
-      fontSize: number;
-      lineHeight: number;
+      barHeight: ResponsiveTextBarHeight;
+      barWidth?: ResponsiveTextBarWidth;
+      lineHeight: ResponsiveTextLineHeight;
       lines?: ResponsiveTextLineCount;
-      lineWidth?: ResponsiveTextLineWidth;
+      lastBarWidth?: ResponsiveTextLastBarWidth;
+      responsiveBy?: TextSkeletonResponsiveBy;
       style?: SkeletonBaseStyleResponsive;
       shimmer?: SkeletonShimmer;
     };
@@ -156,6 +161,14 @@ function nodeStyleVars(
   if (base?.height != null) s.height = cssLen(base.height);
   if (base?.maxHeight != null) s.maxHeight = cssLen(base.maxHeight);
 
+  if (base?.aspectRatio != null && base?.height == null) {
+    s.height = "auto";
+  }
+
+  if (base?.aspectRatio != null && base?.width == null && base?.height == null) {
+    s.width = "100%";
+  }
+
   if (base?.backgroundColor) (s as any)["--rmg-skel-bg"] = base.backgroundColor;
   if (base?.borderRadius != null) (s as any)["--rmg-skel-radius"] = cssLen(base.borderRadius);
   if (base?.overflow != null) s.overflow = base.overflow;
@@ -194,6 +207,7 @@ function containerStylesPlain(style?: SkeletonContainerStyle): React.CSSProperti
   const s: React.CSSProperties = {};
   if (!style) return s;
 
+  if (style.display != null) s.display = style.display;
   if (style.gap != null) (s as any).gap = cssLen(style.gap);
   if (style.padding != null) (s as any).padding = cssLen(style.padding);
   if (style.align) s.alignItems = style.align;
@@ -214,6 +228,7 @@ function escapeAttrValue(v: string) {
 type ResponsiveCssRule = {
   minWidth: number;
   css: string;
+  query?: "viewport" | "container";
   raw?: boolean;
 };
 
@@ -241,10 +256,12 @@ function collectResponsiveCss(
     case "text": {
       const rules = [
         ...buildResponsiveTextCssRules({
-          fontSize: node.fontSize,
+          barHeight: node.barHeight,
+          barWidth: node.barWidth,
           lineHeight: node.lineHeight,
           lines: node.lines,
-          lineWidth: node.lineWidth,
+          lastBarWidth: node.lastBarWidth,
+          responsiveBy: node.responsiveBy,
           breakpointMap,
         }).map((rule) => ({ ...rule, raw: true })),
         ...buildResponsiveTextStyleCssRules({
@@ -323,6 +340,8 @@ function buildResponsiveCssText(
 
       if (r.minWidth <= 0) {
         lines.push(cssText);
+      } else if (r.query === "container") {
+        lines.push(`@container (min-width:${r.minWidth}px){${cssText}}`);
       } else {
         lines.push(`@media (min-width:${r.minWidth}px){${cssText}}`);
       }
@@ -369,47 +388,57 @@ function TextNode({
   breakpointMap: BreakpointMap;
 }) {
   const renderState = getResponsiveTextRenderState({
-    fontSize: node.fontSize,
+    barHeight: node.barHeight,
+    barWidth: node.barWidth,
     lineHeight: node.lineHeight,
     lines: node.lines,
-    lineWidth: node.lineWidth,
+    lastBarWidth: node.lastBarWidth,
+    responsiveBy: node.responsiveBy,
     breakpointMap,
   });
   const inlineStyle = resolveInlineResponsiveBaseStyle(
     node.style,
     breakpointMap
   );
-  const hasResponsiveLines = hasResponsiveTextLineCount(
-    node.lines,
-    breakpointMap
+  const usesContainerQueries =
+    renderState.responsiveBy === "container" && renderState.usesResponsiveBarCss;
+  const usesResponsiveTextLayoutCss = renderState.states.some(
+    ({ state }) =>
+      state.lineCount !== renderState.baseState.lineCount ||
+      state.metrics.totalHeight !== renderState.baseState.metrics.totalHeight ||
+      state.metrics.barHeight !== renderState.baseState.metrics.barHeight ||
+      state.metrics.paddingBlock !== renderState.baseState.metrics.paddingBlock ||
+      state.metrics.rowGap !== renderState.baseState.metrics.rowGap
   );
-  const hasResponsiveLineWidth = hasResponsiveTextLineWidth(
-    node.lineWidth,
-    breakpointMap
+  const usesResponsiveBarWidthCss = renderState.states.some(
+    ({ state }) =>
+      state.lineCount !== renderState.baseState.lineCount ||
+      state.barWidths.length !== renderState.baseState.barWidths.length ||
+      state.barWidths.some(
+        (barWidth, index) => barWidth !== renderState.baseState.barWidths[index]
+      )
   );
-  const usesResponsiveLineCss =
-    hasResponsiveLines || hasResponsiveLineWidth;
   const nodeId = (node as any).__rmgNodeId as string | undefined;
   const wrapperStyle = textWrapperStyleVars(
-    inlineStyle,
-    hasResponsiveLines ? undefined : renderState.metrics.totalHeight
+    usesContainerQueries ? undefined : inlineStyle,
+    usesResponsiveTextLayoutCss ? undefined : renderState.metrics.totalHeight
   );
 
   const lineStyle: SkeletonBaseStyle = {
-    height: renderState.metrics.lineBarHeight,
+    height: renderState.metrics.barHeight,
     backgroundColor: inlineStyle?.backgroundColor,
     borderRadius: inlineStyle?.borderRadius,
   };
 
-  return (
+  const textNode = (
     <div
       data-rmg-skel-node={nodeId}
       data-rmg-skel-text="true"
       className={styles.entrySkelText}
       style={{
         ...wrapperStyle,
-        ...applyBoxMargins(inlineStyle),
-        ...(hasResponsiveLines
+        ...(usesContainerQueries ? null : applyBoxMargins(inlineStyle)),
+        ...(usesResponsiveTextLayoutCss
           ? null
           : {
               paddingBlock: `${renderState.metrics.paddingBlock}px`,
@@ -427,19 +456,32 @@ function TextNode({
           ].join(" ")}
           style={{
             ...nodeStyleVars(lineStyle, node.shimmer),
-            ...(usesResponsiveLineCss
+            ...(usesResponsiveBarWidthCss
               ? null
               : {
                   display:
                     index >= renderState.baseLines ? "none" : undefined,
-                  width:
-                    index === renderState.baseLines - 1
-                      ? renderState.baseLineWidth
-                      : "100%",
+                  width: "100%",
+                  maxWidth: renderState.baseState.barWidths[index] ?? "100%",
                 }),
           }}
         />
       ))}
+    </div>
+  );
+
+  if (!usesContainerQueries) return textNode;
+
+  return (
+    <div
+      data-rmg-skel-text-container="true"
+      style={{
+        ...textWrapperStyleVars(inlineStyle),
+        ...applyBoxMargins(inlineStyle),
+        containerType: "inline-size",
+      }}
+    >
+      {textNode}
     </div>
   );
 }

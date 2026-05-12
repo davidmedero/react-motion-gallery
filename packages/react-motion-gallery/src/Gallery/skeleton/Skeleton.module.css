@@ -1,0 +1,69 @@
+.shell {
+  display: grid;
+  position: relative;
+  width: 100%;
+}
+
+.contentLayer,
+.loadingLayer {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.contentLayer {
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--rmg-loading-fade-duration, 600ms) ease;
+  will-change: opacity;
+}
+
+.contentLayerVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.contentLayerBlocked {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.loadingLayer {
+  position: relative;
+  z-index: 1;
+  opacity: var(--rmg-standalone-skeleton-opacity, 1);
+  --rmg-masonry-skel-wrap-shadow-opacity: 1;
+  pointer-events: none;
+  transition: opacity var(--rmg-loading-fade-duration, 600ms) ease;
+  will-change: opacity;
+  overflow: hidden;
+}
+
+.loadingLayerOverlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.loadingLayerCompare {
+  z-index: 3;
+}
+
+.loadingLayerExit {
+  --rmg-standalone-skeleton-opacity: 0;
+  --rmg-masonry-skel-wrap-shadow-opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contentLayer,
+  .loadingLayer {
+    transition: none;
+  }
+}

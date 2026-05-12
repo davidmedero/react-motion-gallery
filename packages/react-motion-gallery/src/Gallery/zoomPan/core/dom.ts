@@ -110,8 +110,17 @@ export function gapAllEdges(
 ): boolean {
   const cw = containerRect.width;
   const ch = containerRect.height;
-  const iw = imgEl.offsetWidth;
-  const ih = imgEl.offsetHeight;
+  const imgRect = imgEl.getBoundingClientRect?.();
+  const iw = imgRect?.width || imgEl.offsetWidth;
+  const ih = imgRect?.height || imgEl.offsetHeight;
+  const EPSILON_PX = 1;
 
-  return cw > 0 && ch > 0 && iw > 0 && ih > 0 && iw < cw && ih < ch;
+  return (
+    cw > 0 &&
+    ch > 0 &&
+    iw > 0 &&
+    ih > 0 &&
+    iw < cw - EPSILON_PX &&
+    ih < ch - EPSILON_PX
+  );
 }

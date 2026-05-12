@@ -2,6 +2,7 @@ export const css = String.raw`.slide {
   width: 100cqw;
   max-width: 280px;
   display: block;
+  object-fit: cover;
   aspect-ratio: 2 / 3;
   border-radius: 12px;
 }`;

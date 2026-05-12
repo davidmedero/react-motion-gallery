@@ -1,0 +1,45 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=grid-video-html5&skeletonMeasure=content",
+  "outputFile": "./grid-video-html5.skeleton-text.generated.ts",
+  "moduleExportName": "gridVideoHtml5SkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1600,
+  "viewportHeight": 1800,
+  "settleMs": 120,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "gridVideoHtml5Item01Title",
+      "selector": "[data-skeleton-text-id='gridVideoHtml5Item01Title']"
+    },
+    {
+      "exportName": "gridVideoHtml5Item01Body",
+      "selector": "[data-skeleton-text-id='gridVideoHtml5Item01Body']"
+    },
+    {
+      "exportName": "gridVideoHtml5Item02Title",
+      "selector": "[data-skeleton-text-id='gridVideoHtml5Item02Title']"
+    },
+    {
+      "exportName": "gridVideoHtml5Item02Body",
+      "selector": "[data-skeleton-text-id='gridVideoHtml5Item02Body']"
+    },
+    {
+      "exportName": "gridVideoHtml5Item03Title",
+      "selector": "[data-skeleton-text-id='gridVideoHtml5Item03Title']"
+    },
+    {
+      "exportName": "gridVideoHtml5Item03Body",
+      "selector": "[data-skeleton-text-id='gridVideoHtml5Item03Body']"
+    },
+    {
+      "exportName": "gridVideoHtml5Item04Title",
+      "selector": "[data-skeleton-text-id='gridVideoHtml5Item04Title']"
+    },
+    {
+      "exportName": "gridVideoHtml5Item04Body",
+      "selector": "[data-skeleton-text-id='gridVideoHtml5Item04Body']"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+import {a}from'./chunk-V7DPXRZF.mjs';function l(){return a("thumbnails")}export{l as fullscreenThumbnails};

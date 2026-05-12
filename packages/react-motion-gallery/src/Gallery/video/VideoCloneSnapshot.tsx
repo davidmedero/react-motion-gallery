@@ -295,7 +295,7 @@ export function VideoCloneSnapshot(props: VideoCloneSnapshotProps) {
         position: 'relative',
         overflow: 'hidden',
         background: 'transparent',
-        pointerEvents: 'none',
+        pointerEvents: props.style?.pointerEvents ?? 'auto',
         ...(ratio ? { aspectRatio: String(ratio) } : {}),
       }}
       data-rmg-plyr="true"

@@ -1,38 +1,47 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderParallax } from "../../../../../../packages/react-motion-gallery/src/slider-parallax";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-parallax-demo.module.css";
 
 const SLIDES = [
   {
-    src: "https://picsum.photos/id/1010/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1010/2400/1350",
+    src: "https://picsum.photos/id/278/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/278/2400/1350",
   },
   {
-    src: "https://picsum.photos/id/1011/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1011/2400/1350",
+    src: "https://picsum.photos/id/279/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/279/2400/1350",
   },
   {
-    src: "https://picsum.photos/id/1012/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1012/2400/1350",
+    src: "https://picsum.photos/id/283/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/283/2400/1350",
   },
   {
-    src: "https://picsum.photos/id/1013/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1013/2400/1350",
+    src: "https://picsum.photos/id/287/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/287/2400/1350",
   },
   {
-    src: "https://picsum.photos/id/1015/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1015/2400/1350",
+    src: "https://picsum.photos/id/288/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/288/2400/1350",
   },
   {
-    src: "https://picsum.photos/id/1016/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1016/2400/1350",
+    src: "https://picsum.photos/id/289/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/289/2400/1350",
   },
 ];
 
@@ -48,6 +57,7 @@ function Slide({ src, i }: { src: string; i: number }) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -60,24 +70,13 @@ export function SliderParallaxDemo() {
   const media = toMediaItems(SLIDES.map((slide) => slide.src));
   const fullscreenMedia = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
-        align="center"
-        scroll={{
-          loop: true,
-          freeScroll: true
-        }}
-        effects={{
-          parallax: {
-            enabled: true,
-            borderRadius: "12px",
-          },
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: 3,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 3,
               mode: "peek",
               layout: {
                 kind: "slider",
@@ -100,9 +99,27 @@ export function SliderParallaxDemo() {
                   aspectRatio: "16 / 9",
                 },
               },
-            },
-          },
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        align="center"
+        scroll={{
+          loop: true,
+          freeScroll: true
         }}
+
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderDots(),
+          sliderParallax({
+            enabled: true,
+            borderRadius: "12px",
+          }),
+        ]}
       >
         {media.map((item, i) => (
           <Slide
@@ -110,9 +127,12 @@ export function SliderParallaxDemo() {
             src={item.kind === "image" ? item.src : ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

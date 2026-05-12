@@ -22,6 +22,9 @@ function DragTracker(axis: any, ownerWindow: WindowType) {
   return createDragTracker({ ownerWindow, axis });
 }
 
+const PAN_DRAG_ATTR = "data-rmg-pan-drag";
+const PAN_DRAG_STYLE_ID = "rmg-zoom-pan-drag-style";
+
 export function usePanDrag(d: PanRuntimeDeps) {
   const freeBoost = React.useMemo(() => ({ mouse: 400, touch: 400 }), []);
   const trackerRef = React.useRef<ReturnType<typeof DragTracker> | null>(null);
@@ -34,20 +37,14 @@ export function usePanDrag(d: PanRuntimeDeps) {
     [freeBoost]
   );
 
-  let injected = false;
-
   function ensurePanCursorStyle() {
-    if (injected) return;
-    injected = true;
+    if (document.getElementById(PAN_DRAG_STYLE_ID)) return;
 
     const style = document.createElement("style");
-    style.setAttribute("data-rmg-pan-cursor", "true");
+    style.id = PAN_DRAG_STYLE_ID;
     style.textContent = `
-      html.rmg-pan-grabbing,
-      html.rmg-pan-grabbing * {
-        cursor: grabbing !important;
-        user-select: none !important;
-      }
+      [data-rmg-zoom-pan-root="true"][${PAN_DRAG_ATTR}] { cursor: grabbing !important; }
+      [data-rmg-zoom-pan-root="true"][${PAN_DRAG_ATTR}] * { cursor: grabbing !important; }
     `;
     document.head.appendChild(style);
   }
@@ -57,10 +54,20 @@ export function usePanDrag(d: PanRuntimeDeps) {
   }, []);
 
   const setGrabbing = React.useCallback((on: boolean) => {
-    const root = document.documentElement;
-    if (on) root.classList.add("rmg-pan-grabbing");
-    else root.classList.remove("rmg-pan-grabbing");
-  }, []);
+    const root = d.currentImage.current;
+    if (!root) return;
+
+    if (on) {
+      if (!root.hasAttribute(PAN_DRAG_ATTR)) {
+        root.setAttribute(PAN_DRAG_ATTR, "");
+      }
+      return;
+    }
+
+    if (root.hasAttribute(PAN_DRAG_ATTR)) {
+      root.removeAttribute(PAN_DRAG_ATTR);
+    }
+  }, [d.currentImage]);
 
   const handlePanPointerStart = React.useCallback(
     (
@@ -235,9 +242,10 @@ export function usePanDrag(d: PanRuntimeDeps) {
     return () => {
       moveStore.clear();
       dragStore.clear();
+      d.currentImage.current?.removeAttribute(PAN_DRAG_ATTR);
       document.documentElement.classList.remove("rmg-pan-grabbing");
     };
-  }, [moveStore, dragStore]);
+  }, [d.currentImage, moveStore, dragStore]);
 
   return { handlePanPointerStart };
 }

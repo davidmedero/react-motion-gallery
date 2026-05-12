@@ -1,0 +1,66 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=masonry-video-html5&skeletonMeasure=content",
+  "outputFile": "./masonry-video-html5.skeleton-text.generated.ts",
+  "moduleExportName": "masonryVideoHtml5SkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1330,
+  "viewportHeight": 1800,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "readyExpression": "(() => { const body = document.querySelector(\"[data-skeleton-text-id='masonryVideoHtml5Item01Body']\"); const item = body?.closest(\"[data-rmg-idx]\"); const root = item?.parentElement; const columns = Number(getComputedStyle(root).getPropertyValue(\"--rmg-cols\")); const expected = window.innerWidth >= 1280 ? 4 : window.innerWidth >= 820 ? 2 : 1; return columns === expected; })()",
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "masonryVideoHtml5Item01Title",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item01Title']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item01Body",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item01Body']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item02Title",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item02Title']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item02Body",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item02Body']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item03Title",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item03Title']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item03Body",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item03Body']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item04Title",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item04Title']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item04Body",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item04Body']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item05Title",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item05Title']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item05Body",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item05Body']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item06Title",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item06Title']"
+    },
+    {
+      "exportName": "masonryVideoHtml5Item06Body",
+      "selector": "[data-skeleton-text-id='masonryVideoHtml5Item06Body']"
+    }
+  ]
+}

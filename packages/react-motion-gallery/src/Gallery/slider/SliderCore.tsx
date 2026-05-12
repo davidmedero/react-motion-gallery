@@ -1,0 +1,106 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import * as React from "react";
+import CoreSliderEngine from "./SliderCoreEngine";
+import createIndexChannel from "./sliderSub";
+import { DEFAULT_SLIDER } from "./defaults";
+import type {
+  SliderCoreHandle,
+  SliderDirection,
+  SliderElements,
+  SliderMotion,
+  SliderScroll,
+} from "./types";
+import type { SliderIndexChannel } from "./sliderSub";
+
+export type SliderCoreProps = {
+  children?: React.ReactNode;
+  cellCount: number;
+  gap: number;
+  cellsPerSlide?: number;
+  direction?: SliderDirection;
+  align?: "start" | "center";
+  scroll?: SliderScroll;
+  autoHeight?: boolean;
+  motion?: SliderMotion;
+  initialIndex?: number;
+  indexChannel: SliderIndexChannel;
+  indexChannelControlled?: boolean;
+  elements?: SliderElements;
+};
+
+function assignRef<T>(ref: React.ForwardedRef<T>, value: T | null) {
+  if (!ref) return;
+  if (typeof ref === "function") ref(value);
+  else (ref as React.RefObject<T | null>).current = value;
+}
+
+const SliderCore = React.forwardRef<SliderCoreHandle, SliderCoreProps>(
+  function SliderCore(props, forwardedRef) {
+    const {
+      children,
+      cellCount,
+      gap,
+      cellsPerSlide,
+      direction,
+      align,
+      scroll,
+      autoHeight,
+      motion,
+      initialIndex,
+      indexChannel,
+      indexChannelControlled,
+      elements,
+    } = props;
+
+    const [isReady, setIsReady] = React.useState(false);
+    const internalIndexChannel = React.useMemo(
+      () => createIndexChannel(initialIndex ?? 0, "instant"),
+      [initialIndex]
+    );
+
+    const coreRef = React.useCallback(
+      (handle: SliderCoreHandle | null) => {
+        assignRef(forwardedRef, handle);
+      },
+      [forwardedRef]
+    );
+
+    const resolvedMotion = { ...DEFAULT_SLIDER.motion, ...(motion ?? {}) };
+
+    return (
+      <CoreSliderEngine
+        ref={coreRef}
+        children={children}
+        cellCount={cellCount}
+        isReady={isReady}
+        setIsReady={setIsReady}
+        loop={scroll?.loop === true}
+        freeScroll={scroll?.freeScroll === true}
+        groupCells={scroll?.groupCells === true}
+        centerAlign={align === "center"}
+        gap={gap}
+        sliderViewportStyles={elements?.viewport?.style}
+        sliderViewportClassName={elements?.viewport?.className}
+        sliderContainerStyles={elements?.container?.style}
+        sliderContainerClassName={elements?.container?.className}
+        cellsPerSlide={cellsPerSlide}
+        direction={direction?.dir ?? "ltr"}
+        axis={direction?.axis ?? "x"}
+        skipSnaps={scroll?.skipSnaps}
+        strictSnaps={scroll?.strictSnaps}
+        autoHeight={autoHeight}
+        selectDuration={resolvedMotion.selectDuration}
+        freeScrollDuration={resolvedMotion.freeScrollDuration}
+        sliderFriction={resolvedMotion.friction}
+        initialIndex={initialIndex}
+        indexChannel={indexChannel ?? internalIndexChannel}
+        indexChannelControlled={indexChannelControlled}
+        sliderImagesReady
+      />
+    );
+  }
+);
+
+export default SliderCore;

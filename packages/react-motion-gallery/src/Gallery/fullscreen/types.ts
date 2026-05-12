@@ -5,12 +5,15 @@ import {
   BreakpointMap,
   ResponsiveCaptionPlacement,
   ResponsiveLength,
+  ResponsiveNumber,
 } from "../shared/responsive";
 import { SliderHandle } from "../slider/types";
 import { EntriesOptions, MediaEntryLink, SlideOwner } from "../entries";
 import { PlyrOptionsBuilder, PlyrSourceBuilder } from "../video/plyrTypes";
 import type { ZoomPanOptions } from "../zoomPan/types";
 import { FullscreenOpenMethod } from "../api/types";
+import type { CrossFade } from "../slider/types";
+import type { FullscreenRuntimeProps } from "./FullscreenRuntime";
 
 export type FsCounterArgs = { index: number; count: number };
 export type FsCaptionPlacement = "top" | "right" | "bottom" | "left";
@@ -89,6 +92,8 @@ export type FullscreenCaptionOptions = {
   render?: (args: FsCaptionRenderArgs) => React.ReactNode;
   layout?: "overlay" | "slide";
   overlayCrossfadeTarget?: "content" | "overlay";
+  overlayCrossfadeDurationMs?: number;
+  overlayCrossfadeEasing?: string;
   zoomFade?: boolean;
   zoomFadeDurationMs?: number;
   zoomFadeEasing?: string;
@@ -96,18 +101,18 @@ export type FullscreenCaptionOptions = {
   zoomOutTransform?: string;
 };
 
+export type FullscreenCrossfadeOptions = CrossFade;
+
 export type FullscreenEffectsOptions = {
   introDuration?: number;
   introEasing?: string;
   introFade?: boolean;
   introStickyNavSelector?: string;
-  controlsFade?: boolean;
-  dragFade?: boolean;
-  slideFadeDuration?: number;
-  slideFadeEasing?: string;
+  crossfade?: FullscreenCrossfadeOptions;
 };
 
 export type FullscreenSliderOptions = {
+  gap?: ResponsiveNumber;
   duration?: number;
   friction?: number;
   direction?: "ltr" | "rtl";
@@ -118,6 +123,7 @@ export type FullscreenZoomPanOptions = ZoomPanOptions;
 export type FullscreenVideoOptions = {
   source?: PlyrSourceBuilder;
   options?: PlyrOptionsBuilder;
+  playOnOpen?: boolean;
   style?: React.CSSProperties;
   className?: string;
 };
@@ -152,4 +158,54 @@ export type FullscreenOptions = {
   zoom?: FullscreenZoomPanOptions;
   effects?: FullscreenEffectsOptions;
   lazyLoad?: FullscreenLazyLoadOptions;
+};
+
+export type FullscreenPluginKind =
+  | "slider"
+  | "controls"
+  | "captions"
+  | "zoom-pan"
+  | "video"
+  | "lazy-load"
+  | "crossfade"
+  | "thumbnails";
+
+export type FullscreenPluginOptions = Partial<FullscreenOptions>;
+
+export type FullscreenRuntimeFeatures = {
+  useZoomPanRuntime?: (args: any) => {
+    isPinching: React.RefObject<boolean>;
+    isTouchPinching: React.RefObject<boolean>;
+    entryOverlayZoomMotion?: unknown;
+    captionZoomMotion?: unknown;
+    handlePanPointerStart: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => void;
+    handleZoomToggle: (
+      e: React.PointerEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => void;
+    resetAllZoomDom: (args?: { disableImageTransition?: boolean }) => void;
+    resetForSlideNavigation: () => void;
+    forceResetZoom?: () => void;
+  };
+  usePlyrProps?: (args: {
+    items: MediaItem[];
+    source?: FullscreenVideoOptions["source"];
+    options?: FullscreenVideoOptions["options"];
+  }) => unknown[];
+  defaultPlayerStyle?: React.CSSProperties;
+  createVideoSnapshotStore?: () => unknown;
+  renderSlides?: (args: any) => React.ReactNode[];
+  renderCrossfadeSlides?: (args: any) => React.ReactNode[];
+};
+
+export type FullscreenPlugin = {
+  readonly __rmgFullscreenPlugin: true;
+  readonly kind: FullscreenPluginKind;
+  readonly options?: FullscreenPluginOptions;
+  readonly runtime?: FullscreenRuntimeFeatures;
+  readonly RuntimeHost?: React.ComponentType<FullscreenRuntimeProps>;
+  readonly preload?: () => void;
 };

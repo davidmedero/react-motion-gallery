@@ -4,39 +4,47 @@
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   toMediaItems,
   useFullscreenController,
 } from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-free-scroll-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/1067/1200/1200",
-  "https://picsum.photos/id/1068/1200/1200",
-  "https://picsum.photos/id/1069/1200/1200",
-  "https://picsum.photos/id/1070/1200/1200",
-  "https://picsum.photos/id/1071/1200/1200",
-  "https://picsum.photos/id/1072/1200/1200",
-  "https://picsum.photos/id/1073/1200/1200",
-  "https://picsum.photos/id/1074/1200/1200",
-  "https://picsum.photos/id/1075/1200/1200",
-  "https://picsum.photos/id/1076/1200/1200",
-  "https://picsum.photos/id/1077/1200/1200",
-  "https://picsum.photos/id/1078/1200/1200",
+  "https://picsum.photos/id/83/1200/1200",
+  "https://picsum.photos/id/84/1200/1200",
+  "https://picsum.photos/id/85/1200/1200",
+  "https://picsum.photos/id/87/1200/1200",
+  "https://picsum.photos/id/89/1200/1200",
+  "https://picsum.photos/id/92/1200/1200",
+  "https://picsum.photos/id/93/1200/1200",
+  "https://picsum.photos/id/94/1200/1200",
+  "https://picsum.photos/id/95/1200/1200",
+  "https://picsum.photos/id/98/1200/1200",
+  "https://picsum.photos/id/100/1200/1200",
+  "https://picsum.photos/id/106/1200/1200",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/1067/2400/2400",
-  "https://picsum.photos/id/1068/2400/2400",
-  "https://picsum.photos/id/1069/2400/2400",
-  "https://picsum.photos/id/1070/2400/2400",
-  "https://picsum.photos/id/1071/2400/2400",
-  "https://picsum.photos/id/1072/2400/2400",
-  "https://picsum.photos/id/1073/2400/2400",
-  "https://picsum.photos/id/1074/2400/2400",
-  "https://picsum.photos/id/1075/2400/2400",
-  "https://picsum.photos/id/1076/2400/2400",
-  "https://picsum.photos/id/1077/2400/2400",
-  "https://picsum.photos/id/1078/2400/2400",
+  "https://picsum.photos/id/83/2400/2400",
+  "https://picsum.photos/id/84/2400/2400",
+  "https://picsum.photos/id/85/2400/2400",
+  "https://picsum.photos/id/87/2400/2400",
+  "https://picsum.photos/id/89/2400/2400",
+  "https://picsum.photos/id/92/2400/2400",
+  "https://picsum.photos/id/93/2400/2400",
+  "https://picsum.photos/id/94/2400/2400",
+  "https://picsum.photos/id/95/2400/2400",
+  "https://picsum.photos/id/98/2400/2400",
+  "https://picsum.photos/id/100/2400/2400",
+  "https://picsum.photos/id/106/2400/2400",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
@@ -52,6 +60,7 @@ function Slide({ src, i }: { src: string; i: number }) {
 function FullscreenAddon() {
 
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -64,17 +73,13 @@ export function SliderFreeScrollDemo() {
   const media = toMediaItems(URLS);
   const fullscreenMedia = toMediaItems(FS_URLS);
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
-        scroll={{
-          freeScroll: true,
-          groupCells: true
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: 4,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 4,
               mode: "peek",
               layout: {
                 kind: "slider",
@@ -92,9 +97,21 @@ export function SliderFreeScrollDemo() {
                   },
                 },
               },
-            },
-          },
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        scroll={{
+          freeScroll: true,
+          groupCells: true
         }}
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderDots(),
+        ]}
       >
         {media.map((item, i) => (
           <Slide
@@ -102,8 +119,10 @@ export function SliderFreeScrollDemo() {
             src={item.kind === "image" ? item.src : ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );

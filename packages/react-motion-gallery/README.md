@@ -1,24 +1,54 @@
 # React Motion Gallery
 
-Simple, motion-first React gallery primitives for sliders, grids, masonry layouts, fullscreen media, structured entries, and video. The package stays composable: `Slider`, `Grid`, and `Masonry` render children directly, `Entries` renders structured data, `GalleryCore` coordinates fullscreen state, and `Video` handles Plyr-backed video media.
+Composable React media gallery primitives for production interfaces: sliders, grids, masonry, structured entries, fullscreen, thumbnails, video, zoom/pan, and loading states that are designed around the layout they protect.
 
-## Export Gzip Sizes
+The package stays close to React composition. `Slider`, `Grid`, and `Masonry` render children directly; `Entries` renders structured data; `GalleryCore` coordinates fullscreen state; `Video` handles Plyr-backed media; `ZoomPanImage` gives you a standalone zoom surface; and `Skeleton` can be used inside or outside gallery layouts. For loading-state precision, the repo also includes a development-time browser measurement workflow that turns real rendered text into stable skeleton text authoring data, including reflow-sensitive layouts such as masonry.
 
-This table reports local gzip measurements for each exported runtime surface. The script rebundles one runtime export at a time from the published root entry, excludes peer and runtime externals, and gzips the resulting JS bundle. Run `npm run build && npm run size:readme` in `packages/react-motion-gallery` to refresh it.
+## Runtime Gzip Sizes
+
+This table reports local gzip measurements for selected runtime surfaces. Type-only imports are erased and add no JS; the responsive row measures `BREAKPOINT_MAP`, and feature subpath rows measure only that feature entry point. The script rebundles one export at a time from its published ESM entry point, excludes peer and runtime externals, and gzips the resulting JS bundle. If a surface creates async chunks, the row reports initial plus async JS. Run `npm run build && npm run size:readme` in `packages/react-motion-gallery` to refresh it.
 
 <!-- bundle-size:start -->
-| Export | JS gzip |
+| Surface | JS gzip |
 | --- | --- |
-| `Entries` | 9.3kB |
-| `FullscreenThumbnailSlider` | 18.8kB |
-| `GalleryCore` | 2.5kB |
-| `Grid` | 13.8kB |
-| `Masonry` | 16.2kB |
-| `Slider` | 38.4kB |
-| `ThumbnailSlider` | 17.4kB |
-| `useFullscreenController` | 55.5kB |
-| `Video` | 12.2kB |
-| `ZoomPanImage` | 8.5kB |
+| `Entries` | 13.0kB |
+| `FullscreenThumbnailSlider` | 20.3kB |
+| `GalleryCore` | 2.6kB |
+| `Grid` | 8.8kB |
+| `grid/ready` | 323.0B |
+| `Masonry` | 8.9kB |
+| `masonry/ready` | 323.0B |
+| `Skeleton base` | 8.1kB |
+| `skeleton/slider` | 16.5kB |
+| `skeleton/grid` | 10.4kB |
+| `skeleton/masonry` | 17.8kB |
+| `Slider core` | 18.4kB |
+| `slider/ready` | 894.0B |
+| `slider/arrows` | 1.2kB |
+| `slider/dots` | 932.0B |
+| `slider/progress` | 892.0B |
+| `slider/scrollbar` | 1.2kB |
+| `slider/auto-height` | 1.3kB |
+| `slider/lazy-load` | 3.9kB |
+| `slider/parallax` | 1.4kB |
+| `slider/scale` | 1.2kB |
+| `slider/fade` | 1.2kB |
+| `slider/crossfade` | 2.8kB |
+| `slider/fullscreen` | 959.0B |
+| `ThumbnailSlider` | 18.9kB |
+| `useFullscreenController` | 4.9kB |
+| `fullscreen/slider` | 35.3kB |
+| `fullscreen/controls` | 173.0B |
+| `fullscreen/captions` | 13.1kB |
+| `fullscreen/zoom-pan` | 9.9kB |
+| `fullscreen/video` | 16.3kB |
+| `fullscreen/lazy-load` | 13.1kB |
+| `fullscreen/crossfade` | 181.0B |
+| `fullscreen/thumbnails` | 160.0B |
+| `Video` | 12.7kB |
+| `ZoomPanImage` | 8.7kB |
+| `media / toMediaItems` | 260.0B |
+| `responsive / BREAKPOINT_MAP` | 85.0B |
 <!-- bundle-size:end -->
 
 ## Overview
@@ -43,6 +73,7 @@ Mental model:
 - `GalleryCore` and `useFullscreenController` power fullscreen behavior.
 - `Video` is the gallery-ready video primitive.
 - `ZoomPanImage` attaches click-to-zoom, drag pan, ctrl-wheel pinch, and touch pinch to one clipped image surface.
+- `Skeleton` renders standalone placeholders or wraps real content with shared loading-layer timing.
 
 `MediaItem` accepts three shapes:
 
@@ -54,7 +85,8 @@ Mental model:
 
 ```typescript
 import "react-motion-gallery/styles.css";
-import { Slider, toMediaItems, type MediaItem } from "react-motion-gallery";
+import { toMediaItems, type MediaItem } from "react-motion-gallery/media";
+import { Slider } from "react-motion-gallery/slider";
 
 const items: MediaItem[] = toMediaItems([
   "https://picsum.photos/id/1015/1600/900",
@@ -84,7 +116,93 @@ export function QuickStart() {
 
 Responsive numeric props in this package accept either a plain number or a breakpoint map like `{ 0: 1, md: 2, 1200: 3 }`. Named breakpoints resolve from the internal map: `xs: 0`, `sm: 600`, `md: 900`, `lg: 1200`, `xl: 1536`.
 
-The package root now exports the primary public components, helper functions, and companion prop types. Subpath entrypoints are also available when you want narrower imports: `react-motion-gallery/core`, `react-motion-gallery/slider`, `react-motion-gallery/grid`, `react-motion-gallery/masonry`, `react-motion-gallery/entries`, `react-motion-gallery/fullscreen`, `react-motion-gallery/thumbnails`, `react-motion-gallery/fullscreenThumbnails`, `react-motion-gallery/video`, and `react-motion-gallery/zoomPan`.
+The package root exports the primary public components, helper functions, and companion prop types. Use it when one module needs several gallery surfaces. Prefer subpaths for routes or components that only need one surface, such as `react-motion-gallery/media` or `react-motion-gallery/slider`.
+
+Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse, evaluate, and hydrate can improve first loads, cache misses, slower devices, and perceived speed.
+
+| Entry point | Main surface |
+| --- | --- |
+| `react-motion-gallery/media` | `toMediaItems`, `MediaItem`, `MediaInput` |
+| `react-motion-gallery/responsive` | `BREAKPOINT_MAP` and responsive value types |
+| `react-motion-gallery/core` | `GalleryCore`, `GalleryCoreProvider`, `useGalleryCore` |
+| `react-motion-gallery/slider` | `Slider`, `createSliderIndexChannel`, slider types |
+| `react-motion-gallery/slider/ready` | `useSliderReady` |
+| `react-motion-gallery/slider/arrows` | `sliderArrows` |
+| `react-motion-gallery/slider/dots` | `sliderDots` |
+| `react-motion-gallery/slider/progress` | `sliderProgress` |
+| `react-motion-gallery/slider/scrollbar` | `sliderScrollbar` |
+| `react-motion-gallery/slider/ripple` | `sliderRipple` |
+| `react-motion-gallery/slider/auto-play` | `sliderAutoPlay` |
+| `react-motion-gallery/slider/auto-scroll` | `sliderAutoScroll` |
+| `react-motion-gallery/slider/auto-height` | `sliderAutoHeight` |
+| `react-motion-gallery/slider/lazy-load` | `sliderLazyLoad` |
+| `react-motion-gallery/slider/parallax` | `sliderParallax` |
+| `react-motion-gallery/slider/scale` | `sliderScale` |
+| `react-motion-gallery/slider/fade` | `sliderFade` |
+| `react-motion-gallery/slider/crossfade` | `sliderCrossfade` |
+| `react-motion-gallery/slider/fullscreen` | `sliderFullscreen` |
+| `react-motion-gallery/slider/loading` | `sliderLoading` |
+| `react-motion-gallery/grid` | `Grid`, `Grid.Item`, grid types |
+| `react-motion-gallery/grid/ready` | `useGridReady` |
+| `react-motion-gallery/masonry` | `Masonry`, `Masonry.Item`, masonry types |
+| `react-motion-gallery/masonry/ready` | `useMasonryReady` |
+| `react-motion-gallery/entries` | `Entries`, `flattenEntries`, entry media container helpers |
+| `react-motion-gallery/skeleton/base` | Standalone `Skeleton` and generic skeleton authoring types |
+| `react-motion-gallery/skeleton/slider` | `SliderSkeleton` and slider skeleton authoring types |
+| `react-motion-gallery/skeleton/grid` | `GridSkeleton` and grid skeleton authoring types |
+| `react-motion-gallery/skeleton/masonry` | `MasonrySkeleton` and masonry skeleton authoring types |
+| `react-motion-gallery/fullscreen` | `useFullscreenController` and fullscreen types |
+| `react-motion-gallery/fullscreen/slider` | `fullscreenSlider` |
+| `react-motion-gallery/fullscreen/controls` | `fullscreenControls` |
+| `react-motion-gallery/fullscreen/captions` | `fullscreenCaptions` |
+| `react-motion-gallery/fullscreen/zoom-pan` | `fullscreenZoomPan` |
+| `react-motion-gallery/fullscreen/video` | `fullscreenVideo` |
+| `react-motion-gallery/fullscreen/lazy-load` | `fullscreenLazyLoad` |
+| `react-motion-gallery/fullscreen/crossfade` | `fullscreenCrossfade` |
+| `react-motion-gallery/fullscreen/thumbnails` | `fullscreenThumbnails` |
+| `react-motion-gallery/thumbnails` | `ThumbnailSlider`, thumbnail sync helpers |
+| `react-motion-gallery/fullscreenThumbnails` | `FullscreenThumbnailSlider` |
+| `react-motion-gallery/video` | `Video` and optional Plyr-backed video types |
+| `react-motion-gallery/zoomPan` | `ZoomPanImage` and zoom/pan types |
+
+## Acknowledgements
+
+React Motion Gallery's slider engine includes portions of code derived from [Embla Carousel](https://github.com/davidjerleke/embla-carousel), which is MIT licensed. Those portions have been substantially adapted for React Motion Gallery's React architecture, public API, transition system, fullscreen integration, loading layers, and media workflows.
+
+See [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) for the preserved Embla Carousel copyright and MIT license notice.
+
+## Core
+
+`GalleryCore` is the shared state boundary for fullscreen-aware galleries. Wrap a layout in it when you need shared breakpoints, a normalized fullscreen media list, fullscreen-open state, or programmatic fullscreen opening. `useGalleryCore()` is the public hook for reading that core state from descendants.
+
+### `GalleryCore` props
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `children` | `React.ReactNode` | `—` | The gallery tree using the shared core. |
+| `layout` | `"slider" \| "grid" \| "masonry" \| "entries"` | `—` | Declares the owning base layout. Omit it for standalone fullscreen/core usage. |
+| `breakpoints` | `Record<string, number>` | `xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536` | Breakpoint map shared with descendants. |
+| `fullscreenItems` | `MediaItem[] \| string[]` | `[]` | Normalized fullscreen media list. |
+| `nodes` | `ReactNode \| ReactNode[]` | `—` | Advanced initial node list used by the slider-backed imperative state. |
+
+### `useGalleryCore` API
+
+`GalleryApi` is the public alias for `GalleryCoreApi`. It covers core fullscreen state and programmatic fullscreen opening. Slider item mutation lives on `SliderHandle` and `SliderApi`.
+
+| Field / Method | Type | Notes |
+| --- | --- | --- |
+| `layout` | `"slider" \| "grid" \| "masonry" \| "entries" \| null` | Current owning layout, or `null` for standalone fullscreen/core usage. |
+| `effectiveBreakpoints` | `Record<string, number>` | Breakpoint map after merging custom `GalleryCore.breakpoints` with defaults. |
+| `normalizedItems` | `MediaItem[]` | Fullscreen item list normalized from `fullscreenItems`. |
+| `fsEnabled` | `boolean` | `true` when a mounted fullscreen controller has enabled fullscreen behavior. |
+| `setFsEnabled` | `(enabled: boolean) => void` | Enables or disables fullscreen behavior. Usually handled by `useFullscreenController`. |
+| `isFullscreenOpen` | `boolean` | `true` while fullscreen is open. |
+| `isFullscreenOpenRef` | `React.RefObject<boolean>` | Ref mirror for handlers that need the current fullscreen-open state. |
+| `setFullscreenOpen` | `(open: boolean) => void` | Updates fullscreen-open state. Usually handled by the fullscreen runtime. |
+| `openFullscreenAt` | `({ index, method?, event? }) => void` | Opens fullscreen at a normalized fullscreen item index. Pass the source event for scale-origin detection. |
+| `notifyBaseVisibleIndex` | `(index: number) => void` | Emits the visible base media index for fullscreen lazy-load/prewarm coordination. |
+| `notifyFsVisibleIndex` | `(index: number) => void` | Emits the active fullscreen index back to base media. |
+| `registerExpandableImage` | `(index: number, node: HTMLElement \| null) => void` | Registers an origin surface for layoutless scale transitions. |
 
 ## ZoomPanImage
 
@@ -108,10 +226,68 @@ export function ZoomPanCard() {
 
 `ZoomPanImage` is the lightweight standalone zoom surface. The component root is the clipping container, so border radius, aspect ratio, and overflow all live on the same element.
 
-## Slider
+## Skeleton
 
 ```typescript
-import { Slider } from "react-motion-gallery";
+import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
+
+const shellSkeleton: SkeletonNode = {
+  kind: "rect",
+  style: { width: "100%", height: 320 },
+};
+
+export function LoadingShell({ ready, children }: { ready: boolean; children: React.ReactNode }) {
+  return (
+    <Skeleton
+      layout={shellSkeleton}
+      ready={ready}
+      timing={{ exitMs: 520, minVisibleMs: 220 }}
+      force={false}
+      ariaLabel={ready ? undefined : "Loading content"}
+    >
+      {children}
+    </Skeleton>
+  );
+}
+```
+
+`Skeleton` can render a standalone placeholder by itself, or it can wrap real content and own the loading transition. Wrapper mode is enabled when `children` are provided.
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `layout` | `SkeletonNode` | `—` | Structured placeholder layout tree. |
+| `children` | `React.ReactNode` | `—` | Real content. When present, `Skeleton` renders content and loading layers. |
+| `ready` | `boolean` | `false` | Reveals content and exits the skeleton once true. |
+| `enabled` | `boolean` | `true` | Set false to render content immediately with no skeleton layer. |
+| `force` | `boolean \| { enabled?: boolean; showContent?: boolean; skeletonOpacity?: number }` | `false` | Keeps the skeleton visible. Set `showContent: true` to preview ready content under the skeleton, and tune the overlay with `skeletonOpacity`. |
+| `timing.exitMs` | `number` | `600` | Keeps the skeleton layer mounted for this long after exit starts and controls the opacity transition. |
+| `timing.minVisibleMs` | `number` | `220` | Minimum time the skeleton stays visible before exit can begin. |
+| `shellClassName` / `shellStyle` | `string` / `CSSProperties` | `—` | Wrapper-layer class and style for content+skeleton mode. |
+| `contentClassName` / `contentStyle` | `string` / `CSSProperties` | `—` | Content-layer class and style for wrapper mode. |
+
+The wrapper timing model matches the gallery loading layers: content begins fading in as soon as the skeleton exit starts; it does not wait for the skeleton to unmount.
+
+### Browser-measured skeleton text authoring
+
+Responsive text is one of the easiest places for a polished loading state to drift away from the real UI. React Motion Gallery's skeleton text workflow measures real DOM text in a live page with headless Chrome, then emits `lines`, `barWidth`, `lastBarWidth`, and optional `barHeight`/`lineHeight` values for the skeleton `text` nodes used by `Slider`, `Grid`, `Masonry`, `Entries`, and standalone `Skeleton` layouts.
+
+This is development-time authoring support, not production client code. It is especially useful for multiline cards, responsive grids, equal-height sliders, and reflow-sensitive masonry surfaces where a generic text placeholder can otherwise change row height, item height, or column packing when real content appears.
+
+```bash
+npm run --silent generate:skeleton-text-module -- \
+  --input ./path/to/example.skeleton-text.browser.manifest.json \
+  --analysis-output ./path/to/example.skeleton-text.measurements.json
+```
+
+Use `responsiveBy: "container"` when text wrapping follows the card or cell width more closely than the viewport. For equal-height card sliders, the browser analyzer can also measure all canonical slider items and emit `rowHeightCompensation` so unseen cards cannot surprise the skeleton row height. See [`docs/skeleton-text-authoring.md`](./docs/skeleton-text-authoring.md) for manifest fields, command options, and the Codex-friendly workflow.
+
+## Slider
+
+The default `Slider` is the small synchronous core: children, drag, wheel navigation, snapping, grouping, looping, index channels, intro, and the imperative ref API. Heavier behavior is opt-in through first-party plugins, so importing one feature, such as arrows or parallax, does not pull in the rest of the slider feature set. Structured slider skeletons and restore behavior are owned by `SliderSkeleton`, composed with `useSliderReady()`.
+
+```typescript
+import { Slider } from "react-motion-gallery/slider";
+import { sliderArrows } from "react-motion-gallery/slider/arrows";
 
 const slides = [
   "https://picsum.photos/id/1015/1600/900",
@@ -121,7 +297,7 @@ const slides = [
 
 export function BasicSlider() {
   return (
-    <Slider>
+    <Slider plugins={[sliderArrows()]}>
       {slides.map((src, index) => (
         <img key={src} src={src} alt={`Slide ${index + 1}`} style={{ width: "100%" }} />
       ))}
@@ -135,97 +311,89 @@ export function BasicSlider() {
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `children` | `React.ReactNode` | `—` | Slide content rendered in order. |
+| `initialIndex` | `number` | `0` | Selects the slide index used for the first layout and intro fade-in. |
 | `breakpoints` | `Record<string, number>` | `xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536` | Merged with the internal breakpoint map for responsive values. |
-| `expandableImageRefs` | `React.RefObject<(HTMLImageElement | null)[]>` | internal ref | Supplies origin images for fullscreen scale transitions. |
 | `indexChannel` | `SliderIndexChannel` | internal channel | Share index state with thumbnails or sibling sliders. |
+| `plugins` | `SliderPlugin[]` | `[]` | Explicit first-party slider features such as arrows, dots, auto-height, effects, fullscreen, or lazy-load. |
 
 ### Slider layout and scroll options
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `layout.gap` | `number` | `20` | Gap between cells. |
+| `layout.gap` | `number \| Record<string, number>` | `20` | Responsive gap between cells. |
 | `layout.cellsPerSlide` | `number \| Record<string, number>` | `—` | Groups multiple cells into a slide page. |
 | `direction.dir` | `"ltr" \| "rtl"` | `"ltr"` | Text direction and arrow direction. |
 | `direction.axis` | `"x" \| "y"` | `"x"` | Horizontal or vertical slider axis. |
 | `align` | `"start" \| "center"` | `"start"` | Slide alignment inside the viewport. |
 | `scroll.groupCells` | `boolean` | `false` | Scrolls by grouped cells instead of every cell. |
-| `scroll.skipSnaps` | `boolean` | `false` | Allows momentum to skip snap points. |
+| `scroll.skipSnaps` | `boolean \| { enabled?: boolean; threshold?: number }` | `false` | Allows momentum to skip snap points. Object form enables skip snaps by default and `threshold` requires release force to reach a multiple of the adjacent snap distance before multi-snap momentum is used. |
+| `scroll.strictSnaps` | `boolean` | `false` | Prevents one drag release from settling more than one snap away from where the drag started. Overrides `scroll.skipSnaps`. |
 | `scroll.freeScroll` | `boolean` | `false` | Enables free dragging instead of strict snapping. |
 | `scroll.loop` | `boolean` | `false` | Wraps around at the ends. |
 
-### Slider element and lazy-load options
+### Slider element and plugin options
+
+`elements`, `motion`, and `transitions.intro` stay in the core slider. Controls, autoplay, lazy media, effects, auto-height, fullscreen, and loading overlays are explicit plugin imports.
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `elements.viewport` | `ElementStyle` | `—` | Class and inline style for the viewport element. |
 | `elements.container` | `ElementStyle` | `—` | Class and inline style for the moving slider container. |
-| `lazyLoad.enabled` | `boolean` | `false` | Enables slide-level lazy image and video loading. |
-| `lazyLoad.spinner` | `boolean \| ReactNode \| ((args) => ReactNode)` | `true` | `false` disables the built-in spinner. |
-| `lazyLoad.spinnerClassName` | `string` | `""` | Applied to the spinner wrapper. |
-| `lazyLoad.spinnerStyle` | `React.CSSProperties` | `{}` | Inline styles for the spinner wrapper. |
-
-### Slider control options
-
-| Option | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `controls.arrows.enabled` | `boolean` | `true` | Toggles previous and next arrows. |
-| `controls.arrows.arrow` | `ElementStyle` | `{}` | Shared arrow class and style. |
-| `controls.arrows.prev` | `ElementStyle` | `{}` | Previous-arrow override. |
-| `controls.arrows.next` | `ElementStyle` | `{}` | Next-arrow override. |
-| `controls.arrows.render` | `(args) => ReactNode` | `—` | Custom renderer for both arrows. |
-| `controls.arrows.renderPrev` | `(args) => ReactNode` | `—` | Custom previous arrow. |
-| `controls.arrows.renderNext` | `(args) => ReactNode` | `—` | Custom next arrow. |
-| `controls.dots.enabled` | `boolean` | `true` | Toggles pagination dots. |
-| `controls.dots.root` | `ElementStyle` | `{}` | Dot container class and style. |
-| `controls.dots.dot` | `ElementStyle` | `{}` | Individual dot class and style. |
-| `controls.dots.render` | `(args) => ReactNode` | `—` | Full custom dots UI. |
-| `controls.progress.enabled` | `boolean` | `false` | Toggles the progress bar. |
-| `controls.progress.root` | `ElementStyle` | `{}` | Progress track class and style. |
-| `controls.progress.bar` | `ElementStyle` | `{}` | Progress fill class and style. |
-| `controls.progress.render` | `(args) => ReactNode` | `—` | Full custom progress UI. |
-| `controls.ripple.enabled` | `boolean` | `true` | Toggles control ripple feedback. |
-| `controls.ripple.className` | `string` | `""` | Custom ripple class. |
-
-### Slider auto and transition options
-
-| Option | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `auto.play.enabled` | `boolean` | `false` | Timed slide changes. |
-| `auto.play.speedMs` | `number` | `3000` | Delay between autoplay advances. |
-| `auto.play.pauseMs` | `number` | `1000` | Delay after interaction before autoplay resumes. |
-| `auto.play.pauseOnHover` | `boolean` | `true` | Pauses autoplay while hovering. |
-| `auto.scroll.enabled` | `boolean` | `false` | Continuous timed scrolling. |
-| `auto.scroll.speedMs` | `number` | `0.3` | Continuous auto-scroll speed. |
-| `auto.scroll.pauseMs` | `number` | `1000` | Delay after interaction before auto-scroll resumes. |
-| `auto.scroll.pauseOnHover` | `boolean` | `true` | Pauses while hovering. |
-| `transitions.loading.enabled` | `boolean` | `—` | Enables the loading skeleton layer. |
-| `transitions.loading.force` | `boolean` | `—` | Forces the loading layer to stay visible. |
-| `transitions.loading.skeletonCount` | `number \| Record<string, number>` | `—` | Responsive skeleton slot count. |
-| `transitions.loading.renderLoading` | `({ count }) => ReactNode` | `—` | Custom loading renderer. |
-| `transitions.loading.skeleton` | `SliderSkeletonSpec` | `—` | Built-in skeleton spec, including per-slot overrides with `layout.slots` and centered peek support via `centering: "first"`. |
-| `transitions.loading.timing.exitMs` | `number` | `600` | Keeps the loading layer mounted for this long after exit starts. |
-| `transitions.loading.timing.minVisibleMs` | `number` | `220` | Minimum time the loading layer stays visible before exit can begin. |
 | `transitions.intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
 | `transitions.intro.staggerMs` | `number` | `—` | Delay between item fade-ins. |
 | `transitions.intro.durationMs` | `number` | `—` | Intro fade duration. |
 | `transitions.intro.easing` | `string` | `—` | Intro fade easing. |
 
+### Slider plugins
+
+Each plugin is imported from its own subpath and passed to `plugins`. There is no aggregate controls or effects helper; this keeps one-feature imports as small as possible.
+
+```typescript
+import { Slider } from "react-motion-gallery/slider";
+import { sliderArrows } from "react-motion-gallery/slider/arrows";
+import { sliderParallax } from "react-motion-gallery/slider/parallax";
+
+<Slider plugins={[sliderArrows(), sliderParallax({ bleedPct: "8%" })]}>
+  {slides}
+</Slider>;
+```
+
+| Import | Factory | Notes |
+| --- | --- | --- |
+| `react-motion-gallery/slider/arrows` | `sliderArrows(options)` | Previous/next arrows. |
+| `react-motion-gallery/slider/dots` | `sliderDots(options)` | Pagination dots. |
+| `react-motion-gallery/slider/progress` | `sliderProgress(options)` | Progress bar or custom progress renderer. |
+| `react-motion-gallery/slider/scrollbar` | `sliderScrollbar(options)` | Range-style position control. |
+| `react-motion-gallery/slider/ripple` | `sliderRipple(options)` | Enables ripple feedback for controls that call `createRipple`. |
+| `react-motion-gallery/slider/auto-play` | `sliderAutoPlay(options)` | Timed slide changes. |
+| `react-motion-gallery/slider/auto-scroll` | `sliderAutoScroll(options)` | Timed continuous advancement. |
+| `react-motion-gallery/slider/auto-height` | `sliderAutoHeight(options)` | Measures active slide height and gates slider readiness until measured. |
+| `react-motion-gallery/slider/lazy-load` | `sliderLazyLoad(options)` | Adds lazy media attributes to slide images and videos. |
+| `react-motion-gallery/slider/parallax` | `sliderParallax(options)` | Parallax slide wrapper. |
+| `react-motion-gallery/slider/scale` | `sliderScale(options)` | Scales non-active slides. |
+| `react-motion-gallery/slider/fade` | `sliderFade(options)` | Fades non-active slides. |
+| `react-motion-gallery/slider/crossfade` | `sliderCrossfade(options)` | Enables crossfade-aware control navigation. |
+| `react-motion-gallery/slider/fullscreen` | `sliderFullscreen()` | Bridges a `GalleryCore layout="slider"` slider to fullscreen. |
+| `react-motion-gallery/slider/loading` | `sliderLoading(options)` | Basic custom loading overlay. Prefer `SliderSkeleton` for structured skeleton and restore. |
+
 ### Slider loading skeletons
 
-`transitions.loading.skeleton` lets you describe a placeholder layout that mirrors the final slider instead of falling back to generic blocks. This is especially useful for variable-width slides, mixed aspect ratios, and center-aligned peek carousels.
+Use `SliderSkeleton` to own slider loading. `useSliderReady()` exposes the slider ref plus a settled `ready` flag; `isSlidesBuilt()` remains a lower-level DOM-built signal and is not the right fade-out trigger.
 
 `layout.slots` is the per-slide override system. Define the shared placeholder once with `layout.item` and `layout.itemWrapStyle`, then override any individual slot with `slots[index]`. Slot `itemWrapStyle` values merge on top of the base wrap style, while `slot.item` can replace the placeholder node entirely for that slot.
 
 `itemWrapStyle` now supports wrapper-only `border` and `boxShadow` values. Wrapper `width`, `height`, and `aspectRatio` are treated as outer border-box dimensions, so the inner placeholder shrinks by the border thickness. Use simple uniform border shorthands such as `1px solid #cbd5e1` when you want the built-in sizing math to account for the border width.
 
-`text` nodes render one skeleton bar per `lines` value. `lines` can be a single number or a numeric min-width map such as `{ 0: 3, 767: 2, 1200: 1 }`. Use `lineWidth` to override the shortened final-line width; it defaults to `68%` of the text block width and can also be responsive with numeric min-width keys.
+`text` nodes render one skeleton bar per `lines` value. `barHeight` controls the bar height and can be a single number or a numeric min-width map. `lineHeight` remains the full line-box multiplier and now accepts the same numeric min-width maps. `lines` can be a single number or a numeric min-width map such as `{ 0: 3, 767: 2, 1200: 1 }`. Use `lastBarWidth` to override the shortened trailing bar width; it defaults to `68%` of the text block width and can also be responsive with numeric min-width keys.
 
-`centering: "first"` is designed for center-aligned peek sliders. When the real slider uses `align="center"` and the skeleton uses `mode: "peek"` with `layout.kind: "slider"`, the built-in skeleton renderer inserts the leading spacer needed to center the first visible placeholder. You should not add that spacer manually, and it does not apply when you replace the built-in skeleton with `transitions.loading.renderLoading`.
+`centering: "first"` is designed for center-aligned peek sliders. When the real slider uses `align="center"` and the skeleton uses `mode: "peek"` with `layout.kind: "slider"`, the skeleton renderer inserts the leading spacer needed to center the first visible placeholder. You should not add that spacer manually.
 
-When you provide `transitions.loading.timing`, `exitMs` controls both how long the loading layer remains mounted after exit starts and its opacity transition duration. The real slider intro begins as soon as the loading exit starts; it does not wait for the loading layer to finish unmounting.
+When you provide `SliderSkeleton.timing`, `exitMs` controls both how long the loading layer remains mounted after exit starts and its opacity transition duration.
 
 ```typescript
-import { Slider } from "react-motion-gallery";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
+import { Slider } from "react-motion-gallery/slider";
+import { useSliderReady } from "react-motion-gallery/slider/ready";
 
 const slides = [
   { src: "https://picsum.photos/id/1020/660/960", width: 220, height: 320 },
@@ -234,47 +402,47 @@ const slides = [
 ];
 
 export function VariableWidthSkeletonSlider() {
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
-    <Slider
-      align="center"
-      transitions={{
-        loading: {
-          skeletonCount: 2,
-          skeleton: {
-            mode: "peek",
-            centering: "first",
-            layout: {
-              kind: "slider",
-              direction: "row",
-              style: { gap: 20 },
-              item: {
-                kind: "rect",
-                style: {
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: 12,
-                },
-              },
-              slots: slides.map((slide) => ({
-                itemWrapStyle: {
-                  width: slide.width,
-                  height: slide.height,
-                },
-              })),
+    <SliderSkeleton
+      ready={sliderReady}
+      layout={{
+        mode: "peek",
+        centering: "first",
+        visibleCount: 2,
+        layout: {
+          kind: "slider",
+          direction: "row",
+          style: { gap: 20 },
+          item: {
+            kind: "rect",
+            style: {
+              width: "100%",
+              height: "100%",
+              borderRadius: 12,
             },
           },
+          slots: slides.map((slide) => ({
+            itemWrapStyle: {
+              width: slide.width,
+              height: slide.height,
+            },
+          })),
         },
       }}
     >
-      {slides.map((slide, index) => (
-        <img
-          key={slide.src}
-          src={slide.src}
-          alt={`Slide ${index + 1}`}
-          style={{ width: slide.width, height: slide.height, objectFit: "cover" }}
-        />
-      ))}
-    </Slider>
+      <Slider ref={sliderRef} align="center">
+        {slides.map((slide, index) => (
+          <img
+            key={slide.src}
+            src={slide.src}
+            alt={`Slide ${index + 1}`}
+            style={{ width: slide.width, height: slide.height, objectFit: "cover" }}
+          />
+        ))}
+      </Slider>
+    </SliderSkeleton>
   );
 }
 ```
@@ -285,6 +453,7 @@ export function VariableWidthSkeletonSlider() {
 | --- | --- | --- |
 | `mode` | `"fit" \| "peek"` | `"peek"` preserves partial next or previous slide visibility in the loading state. |
 | `centering` | `"first"` | Adds the leading spacer needed for the first visible slot when using the built-in centered peek skeleton flow. |
+| `visibleCount` | `number \| Record<string, number>` | Responsive count of visible skeleton slots. |
 | `className` | `string \| undefined` | Applied to the skeleton overlay root. |
 | `style` | `React.CSSProperties \| undefined` | Inline styles for the skeleton overlay root. |
 | `layout` | `SliderSkeletonNode \| undefined` | Structured placeholder layout tree. Use `kind: "slider"` to model slide tracks. |
@@ -298,7 +467,7 @@ export function VariableWidthSkeletonSlider() {
 | --- | --- | --- |
 | `kind` | `"slider"` | Slider-specific skeleton layout root. |
 | `style` | `SkeletonContainerStyle \| Record<string, SkeletonContainerStyle>` | Track-level container styles such as `gap`, `padding`, `align`, `justify`, `width`, and `maxWidth`. |
-| `count` | `number \| undefined` | Optional explicit slot count for the layout. Falls back to `transitions.loading.skeletonCount`. |
+| `count` | `number \| undefined` | Optional explicit slot count for the layout. Falls back to `visibleCount` on the surrounding slider skeleton spec. |
 | `item` | `SkeletonNode` | Default placeholder node rendered in each slot. |
 | `itemWrapStyle` | `SliderSkeletonWrapStyle \| undefined` | Shared wrapper size, margin, border, and box-shadow rules for every slot. Border sizing is border-box. |
 | `slots` | `SliderSkeletonSlot[] \| undefined` | Per-slot overrides for variable widths, heights, aspect ratios, or custom placeholder nodes. |
@@ -312,23 +481,15 @@ export function VariableWidthSkeletonSlider() {
 | `item` | `SkeletonNode \| undefined` | Replaces the base `layout.item` for one slot. |
 | `itemWrapStyle` | `SliderSkeletonWrapStyle \| undefined` | Merges on top of the base `layout.itemWrapStyle` for one slot, including wrapper borders and shadows. |
 
-`SkeletonNode` supports these building blocks: `rect`, `square`, `circle`, `text`, `media`, `row`, `col`, and `stack`. `text.lines` controls how many wrapped skeleton rows render for that text block, and `text.lineWidth` controls the trailing line width.
+`SkeletonNode` supports these building blocks: `rect`, `square`, `circle`, `text`, `media`, `row`, `col`, and `stack`. `text.barHeight` controls the bar height, `text.lines` controls how many wrapped skeleton rows render for that text block, and `text.lastBarWidth` controls the trailing bar width.
 
-### Slider motion and effect options
+### Slider motion options
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `motion.selectDuration` | `number` | `25` | Duration for snapped selection motion. |
 | `motion.freeScrollDuration` | `number` | `43` | Duration for free-scroll settling. |
 | `motion.friction` | `number` | `0.68` | Drag and settling friction. |
-| `effects.parallax.enabled` | `boolean` | `—` | Enables the parallax slide treatment. |
-| `effects.parallax.bleedPct` | `string` | `—` | Extra image bleed around the viewport. |
-| `effects.parallax.borderRadius` | `string` | `—` | Radius for the parallax frame. |
-| `effects.parallax.sideWidth` | `string` | `—` | Side crop width used by the effect. |
-| `effects.scale.enabled` | `boolean` | `—` | Scales neighboring slides. |
-| `effects.scale.amount` | `number` | `—` | Scale multiplier for the scale effect. |
-| `effects.fade.enabled` | `boolean` | `—` | Fades slides based on position. |
-| `effects.fade.minOpacity` | `number` | `0.36` | Minimum opacity used for the fade effect, clamped from `0` to `1`. |
 
 ### Slider render callback args
 
@@ -387,12 +548,22 @@ export function VariableWidthSkeletonSlider() {
 | `onSlidesBuilt` | `(cb: (nodes: HTMLElement[]) => void) => () => void` | Runs when slide nodes are ready. |
 | `whenSlidesBuilt` | `() => Promise<HTMLElement[]>` | Promise form of `onSlidesBuilt`. |
 | `isSlidesBuilt` | `() => boolean` | `true` once the slide list is ready. |
+| `onReady` | `(cb: (nodes: HTMLElement[]) => void) => () => void` | Runs when the slider has built, measured, committed its index, and all plugin ready gates have cleared. |
+| `whenReady` | `() => Promise<HTMLElement[]>` | Promise form of `onReady`. |
+| `isReady` | `() => boolean` | `true` once the settled slider ready signal has fired. |
 | `scrollNext` | `(mode?: IndexMode) => void` | Advances one step. |
 | `scrollPrev` | `(mode?: IndexMode) => void` | Moves backward one step. |
 | `canScrollNext` | `() => boolean` | Whether next navigation is available. |
 | `canScrollPrev` | `() => boolean` | Whether previous navigation is available. |
 | `scrollProgress` | `() => number` | Current progress from `0` to `1`. |
 | `cellsInView` | `() => number[]` | Canonical cell indexes currently visible. |
+| `append` | `(nodes: ReactNode \| ReactNode[]) => number` | Appends nodes and returns the new total count. |
+| `prepend` | `(nodes: ReactNode \| ReactNode[]) => number` | Prepends nodes and returns the new total count. |
+| `insert` | `(index: number, nodes: ReactNode \| ReactNode[]) => number` | Inserts nodes and returns the new total count. |
+| `remove` | `(indexOrPredicate: number \| ((i: number) => boolean)) => number` | Removes items and returns the new total count. |
+| `replace` | `(index: number, node: ReactNode) => void` | Replaces a node at an index. |
+| `setItems` | `(nodes: ReactNode[]) => number` | Replaces all nodes and returns the new total count. |
+| `onIndexChange` | `(cb: (i: number, meta: { mode: IndexMode }) => void) => () => void` | Subscribes to index changes. |
 | `getInternals` | `() => { slides, slider, visibleImages, selectedIndex, sliderX, sliderVelocity, isWrapping }` | Low-level internals used by fullscreen and advanced sync code. |
 
 ### `createSliderIndexChannel`
@@ -473,7 +644,7 @@ export function SliderWithThumbnails() {
 }
 ```
 
-The component forwards a ref to its outer thumbnail shell. The explicit `layout`, `scroll`, and `motion` defaults below are also exported as `DEFAULT_THUMBNAILS`.
+The component forwards a ref to its outer thumbnail shell.
 
 ### ThumbnailSlider component props
 
@@ -532,7 +703,7 @@ The component forwards a ref to its outer thumbnail shell. The explicit `layout`
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `transitions.loading.enabled` | `boolean` | `true` | Enables the thumbnail loading layer. |
-| `transitions.loading.force` | `boolean` | `false` | Forces the loading layer to remain visible. |
+| `transitions.loading.force` | `boolean \| { enabled?: boolean; showContent?: boolean; skeletonOpacity?: number }` | `false` | Forces the loading layer to remain visible. Set `showContent: true` to preview the real thumbnails under the skeleton, and tune the loading overlay with `skeletonOpacity`. |
 | `transitions.loading.skeletonCount` | `number \| Record<string, number>` | `—` | Responsive count for the built-in loading placeholders. |
 | `transitions.loading.mode` | `"fit" \| "peek"` | `"peek"` | `"peek"` keeps fixed-size thumbnail placeholders when width or height is explicitly set; `"fit"` divides the rail evenly across the visible count. |
 | `transitions.loading.elements.container` | `ElementStyle` | `—` | Class and inline style for the built-in loading overlay container. |
@@ -588,16 +759,28 @@ export function BasicGrid() {
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `children` | `React.ReactNode` | `—` | Grid items rendered in order. |
+| `children` | `React.ReactNode` | `—` | Grid items rendered in order. Wrap individual cards in `Grid.Item` when they need custom spans or wrapper props. |
 | `breakpoints` | `Record<string, number>` | `xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536` | Used to resolve responsive columns and gaps. |
 | `gridItemBaseClass` | `string` | `"rmg__grid-item"` | Internal item base class override. |
 | `renderMode` | `"wrap" \| "passthrough"` | `"wrap"` | `wrap` adds an item wrapper; `passthrough` keeps child structure closer to the source node. |
+
+### Grid.Item props
+
+`Grid.Item` is a metadata wrapper. It renders only its children, while Grid reads the wrapper props and applies them to the generated item shell.
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `children` | `React.ReactNode` | `—` | The grid card content. |
+| `span` | `number \| "full" \| Record<string, number \| "full">` | `1` | Per-item track span. `"full"` renders `grid-column: 1 / -1`; numeric values render `grid-column: span n / span n`. |
+| `className` | `string` | `—` | Extra class name merged onto the grid item wrapper. |
+| `style` | `React.CSSProperties` | `—` | Inline styles merged onto the grid item wrapper. |
 
 ### Grid options
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `columns` | `number \| Record<string, number>` | `—` | Fixed responsive column count. When omitted, Grid auto-fits using `minColumnWidth`. |
+| `templateColumns` | `string \| Record<string, string>` | `—` | Explicit `grid-template-columns` value. Takes precedence over `columns` and `minColumnWidth`. |
 | `minColumnWidth` | `number \| string` | `160` | Minimum width used by auto-fit mode. |
 | `gap` | `number \| Record<string, number>` | `8` | Responsive grid gap. |
 | `rootClassName` | `string` | `—` | Class name for the grid root. |
@@ -607,15 +790,9 @@ export function BasicGrid() {
 | `lazyLoad.spinner` | `boolean \| ReactNode \| ((args) => ReactNode)` | `—` | Spinner override for lazy items. |
 | `lazyLoad.spinnerClassName` | `string` | `—` | Spinner wrapper class. |
 | `lazyLoad.spinnerStyle` | `React.CSSProperties` | `—` | Spinner wrapper style. |
-| `loading.enabled` | `boolean` | `—` | Enables the loading layer. |
-| `loading.force` | `boolean` | `—` | Keeps the loading layer visible even when media is ready. |
-| `loading.renderLoading` | `({ count }) => ReactNode` | `—` | Custom loading renderer. |
-| `loading.skeleton` | `GridSkeletonSpec` | `—` | Built-in grid skeleton spec. |
-| `loading.timing.exitMs` | `number` | `600` | Keeps the loading layer mounted for this long after exit starts. |
-| `loading.timing.minVisibleMs` | `number` | `220` | Minimum time the loading layer stays visible before exit can begin. |
 | `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `intro.staggerMs` | `number` | `40` | Reveal stagger for the fade-in. |
-| `intro.durationMs` | `number` | `300` | Intro fade duration. |
+| `intro.staggerMs` | `number` | `60` | Reveal stagger for the fade-in. |
+| `intro.durationMs` | `number` | `600` | Intro fade duration. |
 | `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
 | `intro.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
 
@@ -623,9 +800,92 @@ When `lazyLoad.enabled` is true, Grid rewrites trackable image `src` values into
 
 Grid fullscreen behavior is provided by `GalleryCore` and `useFullscreenController`; Grid itself does not expose a ref-based imperative API.
 
-Grid skeleton `text` nodes use the same wrapped-line treatment as slider skeletons, including responsive `lines` maps and the configurable trailing `lineWidth`.
+Wrap a card in `Grid.Item` when it should span tracks or needs wrapper styling:
 
-Grid uses the same loading timing model as Slider: `loading.timing.exitMs` controls both how long the loading layer stays mounted after exit starts and its opacity transition, and the real grid intro begins as soon as exit starts.
+```typescript
+<Grid columns={{ 0: 1, 720: 6, 1100: 12 }} gap={{ 0: 12, 1100: 18 }}>
+  <Grid.Item span={{ 0: "full", 720: 3, 1100: 6 }} className="feature-card">
+    <FeatureCard />
+  </Grid.Item>
+  <Grid.Item span={{ 0: "full", 720: 3, 1100: 3 }}>
+    <ProductCard />
+  </Grid.Item>
+  <Grid.Item span="full">
+    <WideEditorialCard />
+  </Grid.Item>
+</Grid>
+```
+
+Grid spans require explicit tracks: use `columns` or `templateColumns`. If Grid is in auto-fit mode through `minColumnWidth`, item spans are ignored because there is no stable track count to span. Responsive span maps use the same breakpoint keys as responsive numeric props, so named keys such as `md` and numeric keys such as `900` are both valid.
+
+Use `templateColumns` when the tracks themselves need custom proportions:
+
+```typescript
+<Grid
+  templateColumns={{
+    0: "1fr",
+    900: "minmax(0, 1.4fr) minmax(0, 1fr)",
+    1200: "minmax(0, 2fr) repeat(2, minmax(0, 1fr))",
+  }}
+  gap={{ 0: 12, 1200: 18 }}
+>
+  <Grid.Item span={{ 0: "full", 900: 2 }}>
+    <FeatureCard />
+  </Grid.Item>
+</Grid>
+```
+
+Grid no longer owns loading UI. Use `useGridReady` and wrap Grid with `GridSkeleton`, the same composition pattern used by Slider and Masonry.
+
+Grid skeletons live in `react-motion-gallery/skeleton/grid`. Their `text` nodes use the same wrapped-line treatment as slider skeletons, including responsive `barHeight` and `lines` maps plus the configurable trailing `lastBarWidth`.
+
+Grid skeletons inherit real item spans by default. Slot overrides in the Skeleton layout can change individual placeholder nodes or wrapper styles without losing the span applied by `Grid.Item`.
+
+When Grid is wrapped in `GridSkeleton`, `GridSkeleton.timing.exitMs` controls both how long the loading layer stays mounted after exit starts and its opacity transition, and the real grid intro begins as soon as exit starts.
+
+```typescript
+import { Grid, useGridReady } from "react-motion-gallery";
+import { GridSkeleton, type GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
+
+const gridSkeleton: GridSkeletonSpec = {
+  radius: 14,
+  layout: {
+    kind: "grid",
+    count: 6,
+    item: {
+      kind: "rect",
+      style: { aspectRatio: "4 / 5" },
+    },
+  },
+};
+
+function GridWithSkeleton({ images }: { images: { src: string; alt: string }[] }) {
+  const { ref: gridRef, ready: gridReady } = useGridReady();
+
+  return (
+    <GridSkeleton
+      layout={gridSkeleton}
+      ready={gridReady}
+      timing={{ minVisibleMs: 220, exitMs: 600 }}
+      grid={{
+        count: images.length,
+        columns: { 0: 1, 640: 2, 960: 3 },
+        gap: { 0: 12, 960: 20 },
+      }}
+    >
+      <Grid
+        ref={gridRef}
+        columns={{ 0: 1, 640: 2, 960: 3 }}
+        gap={{ 0: 12, 960: 20 }}
+      >
+        {images.map((image) => (
+          <img key={image.src} src={image.src} alt={image.alt} />
+        ))}
+      </Grid>
+    </GridSkeleton>
+  );
+}
+```
 
 ## Masonry
 
@@ -654,8 +914,17 @@ export function BasicMasonry() {
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `children` | `React.ReactNode` | `—` | Masonry items rendered in order. |
+| `children` | `React.ReactNode` | `—` | Masonry items rendered in order. Wrap individual cards in `Masonry.Item` when they need custom spans or wrapper props. |
 | `breakpoints` | `Record<string, number>` | `xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536` | Used to resolve responsive columns and gaps. |
+
+### Masonry.Item props
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `children` | `React.ReactNode` | `—` | The masonry card content. |
+| `span` | `number \| "full" \| Record<string, number \| "full">` | `1` | Per-item track span. `"full"` resolves to the active column count and numeric values clamp to the current track count. |
+| `className` | `string` | `—` | Extra class name merged onto the masonry item wrapper. |
+| `style` | `React.CSSProperties` | `—` | Inline styles merged onto the masonry item wrapper. |
 
 ### Masonry options
 
@@ -663,135 +932,136 @@ export function BasicMasonry() {
 | --- | --- | --- | --- |
 | `columns` | `number \| Record<string, number>` | `—` | Responsive column count. |
 | `gap` | `number \| Record<string, number>` | `—` | Responsive gap between columns and items. |
-| `placement` | `"balanced" \| "roundRobin"` | `"balanced"` | `balanced` aims for even column heights. |
-| `estimatedItemHeight` | `number` | `—` | Hint used before measurements settle. |
+| `placement` | `"balanced" \| "roundRobin" \| "horizontalOrder"` | `"balanced"` | `balanced` packs into the shortest fitting column group, `roundRobin` cycles start columns deterministically, and `horizontalOrder` preserves a stronger left-to-right scan when spans are involved. |
+| `fullscreenTrigger` | `"item" \| "media"` | `"media"` | Opens fullscreen from the clicked media node or the entire masonry item shell. |
 | `itemWrapClassName` | `string` | `—` | Class name added to the masonry item wrapper. |
 | `itemWrapStyle` | `React.CSSProperties` | `—` | Inline styles applied to the masonry item wrapper. |
 | `as` | `React.ElementType` | `"div"` | Root HTML element or custom component. |
 | `rootRef` | `React.Ref<HTMLDivElement>` | `—` | Ref to the masonry root. |
 | `classNames.root` | `string` | `—` | Root class name. |
-| `classNames.column` | `string` | `—` | Column class name. |
+| `classNames.column` | `string` | `—` | Retained for backwards compatibility with the legacy column-wrapper renderer. |
 | `classNames.item` | `string` | `—` | Item class name. |
 | `lazyLoad.enabled` | `boolean` | `—` | Enables lazy media loading. |
 | `lazyLoad.spinner` | `boolean \| ReactNode \| ((args) => ReactNode)` | `—` | Spinner override for lazy items. |
 | `lazyLoad.spinnerClassName` | `string` | `—` | Spinner wrapper class. |
 | `lazyLoad.spinnerStyle` | `React.CSSProperties` | `—` | Spinner wrapper style. |
-| `loading.enabled` | `boolean` | `—` | Enables the loading layer. |
-| `loading.force` | `boolean` | `—` | Forces the loading layer to stay visible. |
-| `loading.renderLoading` | `({ count }) => ReactNode` | `—` | Custom loading renderer. |
-| `loading.skeleton` | `MasonrySkeletonSpec` | `—` | Built-in masonry skeleton spec. |
 | `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `intro.staggerMs` | `number` | `40` | Reveal stagger for the fade-in. |
-| `intro.durationMs` | `number` | `300` | Intro fade duration. |
+| `intro.staggerMs` | `number` | `160` | Reveal stagger for the fade-in. |
+| `intro.durationMs` | `number` | `600` | Intro fade duration. |
 | `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
 | `intro.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
 
 When `lazyLoad.enabled` is true, Masonry uses the same image shell behavior as Slider: trackable image `src` values move into `data-rmg-lazy-src`, the real images load on intersection, and the item only fades in after decode and spinner exit.
 
-Masonry already accepts arbitrary React children, including text-containing JSX. The new wrapper props are only for styling the built-in masonry item shell.
+Masonry already accepts arbitrary React children, including text-containing JSX. The wrapper props are only for styling the built-in masonry item shell.
 
-Masonry skeletons can now use a structured `layout` spec with the same inner node vocabulary as Grid skeletons, including `text` nodes and `itemWrapStyle`.
-
-`layout.slots` gives Masonry the same per-card override escape hatch that slider skeletons have. Use a slot when one card needs a different placeholder tree, wrapper styling, or outer height. `slot.ratio` maps to Masonry's card-height rhythm, while `slot.heightPx` lets you pin a specific shell height when you need an exact placeholder.
+Wrap a card in `Masonry.Item` when it needs its own span, wrapper `className`, or wrapper `style`:
 
 ```typescript
 <Masonry
-  columns={{ 0: 1, 700: 2, 1100: 3 }}
-  gap={{ 0: 12, 1100: 20 }}
-  itemWrapStyle={{
-    padding: "6px",
-    borderRadius: "28px",
-  }}
-  loading={{
-    enabled: true,
-    skeleton: {
-      ratios: [118, 126, 102, 146],
-      layout: {
-        kind: "masonry",
-        itemWrapStyle: {
-          padding: 14,
-          borderRadius: 20,
-          boxShadow: "0 18px 36px rgba(15, 23, 42, 0.08)",
-        },
-        item: {
-          kind: "col",
-          style: { gap: 12 },
-          children: [
-            {
-              kind: "rect",
-              style: { width: "100%", height: 180, borderRadius: 16 },
-            },
-            {
-              kind: "text",
-              fontSize: 12,
-              lineHeight: 1.4,
-              lines: 1,
-              lineWidth: "36%",
-              style: { width: "34%", borderRadius: 999 },
-            },
-            {
-              kind: "text",
-              fontSize: 18,
-              lineHeight: 1.35,
-              lines: { 0: 2, 900: 1 },
-              lineWidth: "64%",
-              style: { width: "88%" },
-            },
-            {
-              kind: "text",
-              fontSize: 14,
-              lineHeight: 1.55,
-              lines: 3,
-              lineWidth: "74%",
-              style: { width: "100%" },
-            },
-          ],
-        },
-        slots: [
-          {
-            ratio: 182,
-            item: {
-              kind: "col",
-              style: { gap: 12 },
-              children: [
-                {
-                  kind: "rect",
-                  style: { width: "100%", aspectRatio: "3 / 5", borderRadius: 16 },
-                },
-                {
-                  kind: "text",
-                  fontSize: 12,
-                  lineHeight: 1.4,
-                  lines: 1,
-                  lineWidth: "36%",
-                  style: { width: "28%", borderRadius: 999 },
-                },
-                {
-                  kind: "text",
-                  fontSize: 18,
-                  lineHeight: 1.35,
-                  lines: 1,
-                  lineWidth: "64%",
-                  style: { width: "72%" },
-                },
-                {
-                  kind: "text",
-                  fontSize: 14,
-                  lineHeight: 1.55,
-                  lines: 2,
-                  lineWidth: "78%",
-                  style: { width: "100%" },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  }}
+  columns={{ 0: 1, 760: 2, 1160: 4 }}
+  gap={{ 0: 12, 1160: 18 }}
+  placement="horizontalOrder"
 >
-  {items}
+  <Masonry.Item span={{ 0: 1, 760: 2, 1160: 2 }}>
+    <FeatureCard />
+  </Masonry.Item>
+  <Masonry.Item span={1}>
+    <StandardCard />
+  </Masonry.Item>
 </Masonry>
+```
+
+Choose a placement based on what should feel stable:
+
+- `balanced`: best when visual balance and the shortest overall columns matter most.
+- `roundRobin`: best when deterministic column assignment matters more than tight packing.
+- `horizontalOrder`: best when wider cards should still read in a mostly left-to-right order.
+
+Masonry no longer owns loading UI. Use `useMasonryReady` and wrap Masonry with `MasonrySkeleton`, the same composition pattern used by Slider and Grid.
+
+Masonry skeletons live in `react-motion-gallery/skeleton/masonry` and can use a structured `layout` spec with the same inner node vocabulary as Grid skeletons, including `text` nodes and `itemWrapStyle`.
+
+Live Masonry content mounts invisibly until the current item set has completed an initial measurement pass. The Skeleton wrapper stays visible during that handoff, so the first revealed layout is based on measured DOM geometry rather than approximate height hints.
+
+`layout.slots` gives Masonry the same per-card override escape hatch that slider skeletons have. Use a slot when one card needs a different placeholder tree, wrapper styling, span, or outer height. `slot.span` can override the corresponding `Masonry.Item` span for the placeholder, `slot.ratio` maps to Masonry's card-height rhythm, and `slot.heightPx` lets you pin a specific shell height when you need an exact placeholder.
+
+```typescript
+import { Masonry, useMasonryReady } from "react-motion-gallery";
+import {
+  MasonrySkeleton,
+  type MasonrySkeletonSpec,
+} from "react-motion-gallery/skeleton/masonry";
+
+const masonrySkeleton: MasonrySkeletonSpec = {
+  ratios: [118, 126, 102, 146],
+  layout: {
+    kind: "masonry",
+    itemWrapStyle: {
+      padding: 14,
+      borderRadius: 20,
+      boxShadow: "0 18px 36px rgba(15, 23, 42, 0.08)",
+    },
+    item: {
+      kind: "col",
+      style: { gap: 12 },
+      children: [
+        {
+          kind: "rect",
+          style: { width: "100%", height: 180, borderRadius: 16 },
+        },
+        {
+          kind: "text",
+          barHeight: 14,
+          lineHeight: 1.55,
+          lines: 3,
+          lastBarWidth: "74%",
+          style: { width: "100%" },
+        },
+      ],
+    },
+    slots: [
+      {
+        ratio: 182,
+        span: { 0: 1, 1100: 2 },
+        item: {
+          kind: "rect",
+          style: { width: "100%", aspectRatio: "3 / 5", borderRadius: 16 },
+        },
+      },
+    ],
+  },
+};
+
+function MasonryWithSkeleton({ items }: { items: React.ReactNode[] }) {
+  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
+
+  return (
+    <MasonrySkeleton
+      layout={masonrySkeleton}
+      ready={masonryReady}
+      timing={{ minVisibleMs: 220, exitMs: 600 }}
+      masonry={{
+        count: items.length,
+        columns: { 0: 1, 700: 2, 1100: 3 },
+        gap: { 0: 12, 1100: 20 },
+        placement: "balanced",
+      }}
+    >
+      <Masonry
+        ref={masonryRef}
+        columns={{ 0: 1, 700: 2, 1100: 3 }}
+        gap={{ 0: 12, 1100: 20 }}
+        itemWrapStyle={{
+          padding: "6px",
+          borderRadius: "28px",
+        }}
+      >
+        {items}
+      </Masonry>
+    </MasonrySkeleton>
+  );
+}
 ```
 
 ## Entries
@@ -863,6 +1133,16 @@ export function EntryGallery() {
 }
 ```
 
+### Entry loading, decode, and reveal flow
+
+When `loading.enabled` is true, entries use two viewport gates instead of one generic fade-in. `loading.nearMargin` marks a row as near the viewport, mounts the real entry content, and starts the entry media work early. `loading.viewMargin` and `loading.threshold` record when the row has actually entered view.
+
+With `loading.waitForDecode` enabled, an entry does not reveal as soon as it intersects. The built-in gate waits for every trackable media URL in that entry to load and decode; in the current entry-level gate, that means image media in the entry’s `media` array. It falls back after `loading.decodeTimeoutMs`, and entries without image media are decode-ready immediately. The row fades from skeleton to content only after both conditions are true: the row has entered view and the entry media decode gate is ready.
+
+Reveal timing is assigned when each entry becomes ready, so entries fade in by actual load/decode completion order as well as viewport intersection. A later row that loads quickly can take the next reveal slot while a slower row keeps its skeleton visible until its media is ready.
+
+Fullscreen close has a matching entry-aware path. If the user closes fullscreen from a slide whose owning entry has not been viewed yet, the runtime resolves the flattened fullscreen index back to the owner entry, shows a temporary loading spinner while that row mounts and decodes, scrolls the owner entry into view, forces the skeleton/content layers to their final revealed state, and then runs the close animation back to the now-visible entry media. This keeps the close animation from landing on an unrevealed skeleton or an offscreen row.
+
 ### `Entries` component props
 
 | Option | Type | Default | Notes |
@@ -886,11 +1166,14 @@ export function EntryGallery() {
 | `mediaLayout` | `"slider" \| "grid" \| "masonry"` | `"slider"` | Declares the intended media layout. |
 | `render.card` | `({ entry, entryIndex, media }) => ReactNode` | `—` | Wraps the media container in custom card UI. |
 | `render.media` | `({ entry, entryIndex, media, mediaIndex }) => ReactNode` | `—` | Custom media renderer per media item. |
-| `render.overlay` | `({ entry, entryIndex, mediaIndex, link, opacity, fsIndex, style, containerProps }) => ReactNode` | `—` | Renders fullscreen overlay content for the active entry slide. |
+| `render.overlay` | `({ entry, entryIndex, media, mediaIndex, link, opacity, fsIndex, style, containerProps }) => ReactNode` | `—` | Renders fullscreen overlay content for the active entry slide. |
 | `render.skeleton` | `({ entry, entryIndex }) => ReactNode` | `—` | Declared in the type, but the current runtime uses `loading.skeleton` instead. |
 | `overlay` | `ElementStyle` | `—` | Styles the fullscreen overlay container that wraps `render.overlay`. |
+| `overlay.overlayCrossfadeTarget` | `"content" \| "overlay"` | `"overlay"` | Selects whether fullscreen entry changes fade only the rendered overlay content or the whole overlay layer. |
+| `overlay.overlayCrossfadeDurationMs` | `number` | `300` | Duration for fullscreen entry overlay crossfades. |
+| `overlay.overlayCrossfadeEasing` | `string` | `"cubic-bezier(.4,0,.22,1)"` | Easing for fullscreen entry overlay crossfades. |
 | `loading.enabled` | `boolean` | `—` | Enables entry loading and decode gating. |
-| `loading.force` | `boolean` | `—` | Forces entry skeletons to remain visible. |
+| `loading.force` | `boolean \| { enabled?: boolean; showContent?: boolean; skeletonOpacity?: number }` | `—` | Forces entry skeletons to remain visible. Set `showContent: true` to preview mounted, ready entry content under the skeleton, and tune the loading overlay with `skeletonOpacity`. |
 | `loading.skeleton` | `EntrySkeletonSpec \| ((args) => EntrySkeletonSpec \| null \| undefined)` | `—` | Built-in skeleton spec or resolver. |
 | `loading.minHeight` | `number \| string` | `"260px"` | Minimum reserved height while loading. |
 | `loading.nearMargin` | `string` | `"700px 0px"` | Preload margin used before entries enter view. |
@@ -907,7 +1190,7 @@ export function EntryGallery() {
 | `entryList` | `ElementStyle` | `—` | Styles the entry list container. |
 | `entryRow` | `ElementStyle` | `—` | Styles each entry row container. |
 
-Entry skeleton `text` nodes also render wrapped line bars via `lines`, matching the slider and grid skeleton behavior, including responsive line counts and configurable trailing `lineWidth`.
+Entry skeleton `text` nodes also render wrapped line bars via `lines`, matching the slider and grid skeleton behavior, including responsive `barHeight` and line counts plus configurable trailing `lastBarWidth`.
 
 ### Entry-related callback and helper types
 
@@ -941,6 +1224,7 @@ Entry skeleton `text` nodes also render wrapped line bars via `lines`, matching 
 | --- | --- | --- |
 | `entry` | `EntryItem` | Entry owning the active fullscreen slide. |
 | `entryIndex` | `number` | Entry index. |
+| `media` | `MediaItem \| null` | Media item for the active fullscreen slide, when available. |
 | `mediaIndex` | `number \| null` | Media index inside the entry when available. |
 | `link` | `MediaEntryLink \| null` | Flattened link back to the entry/media pair. |
 | `opacity` | `number` | Overlay opacity supplied by the runtime. |
@@ -981,9 +1265,86 @@ Entry skeleton `text` nodes also render wrapped line bars via `lines`, matching 
 
 Fullscreen is compositional. `GalleryCore` owns the normalized fullscreen item list, your layout opens slides through that core, and `useFullscreenController` renders the portal UI.
 
+### Standalone fullscreen
+
+Use `GalleryCore` without a `layout` prop when your own markup owns the visible surface. Call `openFullscreenAt` with the matching item index, and render the fullscreen portal once inside the core.
+
+```typescript
+import * as React from "react";
+import { GalleryCore, useGalleryCore } from "react-motion-gallery/core";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { toMediaItems } from "react-motion-gallery/media";
+
+const images = [
+  {
+    src: "https://picsum.photos/id/1015/1600/900",
+    alt: "Mountain lake",
+  },
+  {
+    src: "https://picsum.photos/id/1018/1600/900",
+    alt: "Forest path",
+  },
+];
+
+const fullscreenItems = toMediaItems(images);
+
+function FullscreenPortal() {
+  const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider()],
+    fullscreen: { enabled: true },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+function ImageButton(props: {
+  image: (typeof images)[number];
+  index: number;
+}) {
+  const gallery = useGalleryCore();
+
+  const open = (event: React.MouseEvent<HTMLButtonElement>) => {
+    gallery.openFullscreenAt({
+      index: props.index,
+      event: event.nativeEvent,
+    });
+  };
+
+  return (
+    <button type="button" onClick={open}>
+      <img
+        src={props.image.src}
+        alt={props.image.alt}
+        style={{
+          display: "block",
+          width: 180,
+          aspectRatio: "16 / 9",
+          objectFit: "cover",
+        }}
+      />
+    </button>
+  );
+}
+
+export function StandaloneFullscreen() {
+  return (
+    <GalleryCore fullscreenItems={fullscreenItems}>
+      {images.map((image, index) => (
+        <ImageButton key={image.src} image={image} index={index} />
+      ))}
+      <FullscreenPortal />
+    </GalleryCore>
+  );
+}
+```
+
+### Slider fullscreen
+
 ```typescript
 import * as React from "react";
 import { GalleryCore, Slider, useFullscreenController } from "react-motion-gallery";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 
 const slides = [
   "https://picsum.photos/id/1015/1600/900",
@@ -993,6 +1354,7 @@ const slides = [
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider()],
     fullscreen: { enabled: true },
   });
 
@@ -1013,13 +1375,28 @@ export function SliderWithFullscreen() {
 }
 ```
 
+### Fullscreen lazy-load handshake
+
+Fullscreen keeps the base layout and fullscreen surface as separate render trees joined by one canonical index. The base layout can render thumbnails, cropped images, cards, or entries while `GalleryCore.fullscreenItems` provides the media that fullscreen renders for the same positions.
+
+That index is also the communication channel for lazy loading. When a base item becomes visible, `GalleryCore` emits a base-visible event. If `fullscreen.lazyLoad.images.enabled` or `fullscreen.lazyLoad.videos.enabled` is active through `fullscreenLazyLoad()`, the fullscreen runtime listens for that event and prewarms the matching fullscreen media: images are fetched and decoded with high priority, and videos can prewarm their poster/source before being force-mounted.
+
+Once the modal is open, the fullscreen slider index becomes the live gate. `fsSub` changes recompute which canonical image or video is allowed to mount or apply its source, then notify the lazy slide listeners. The active slide is always allowed; decoded images and prepared videos stay warm, and videos that were prewarmed from the base layout remain in the allowed set so navigation can land on prepared media.
+
+Fullscreen also emits its visible index back through `GalleryCore`. Base media primitives use the core fullscreen state to suspend while fullscreen is active, and can use the visible fullscreen index to prewarm their matching media. Captions, overlays, and thumbnail rails stay synchronized through the same index contract.
+
+For custom fullscreen images, `fullscreen.renderImage` must render a real descendant `<img>`. With `fullscreenLazyLoad({ images: { enabled: true } })`, that custom renderer participates in the same mount, spinner, load, and decode flow instead of mounting every fullscreen image eagerly.
+
 Add fullscreen thumbnails by rendering `FullscreenThumbnailSlider` with the bridge returned from `useFullscreenController`.
 
 ```typescript
 import { FullscreenThumbnailSlider, useFullscreenController } from "react-motion-gallery";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenThumbnails } from "react-motion-gallery/fullscreen/thumbnails";
 
 function FullscreenWithThumbs({ thumbs }: { thumbs: string[] }) {
   const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenThumbnails()],
     fullscreen: {
       enabled: true,
       slider: {
@@ -1047,6 +1424,7 @@ Set `fullscreen.slider.direction` when fullscreen should mirror RTL interaction:
 
 ```typescript
 useFullscreenController({
+  plugins: [fullscreenSlider()],
   fullscreen: {
     enabled: true,
     slider: {
@@ -1056,21 +1434,51 @@ useFullscreenController({
 });
 ```
 
-### `GalleryCore` props
+Set `fullscreen.slider.gap` to add space between fullscreen slides. It accepts the same responsive number form as the base slider, using the `GalleryCore.breakpoints` map for named breakpoint keys:
 
-| Option | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `children` | `React.ReactNode` | `—` | The gallery tree using the shared core. |
-| `layout` | `"slider" \| "grid" \| "masonry" \| "entries"` | `—` | Declares the owning base layout. |
-| `breakpoints` | `Record<string, number>` | `xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536` | Breakpoint map shared with descendants. |
-| `fullscreenItems` | `MediaItem[] \| string[]` | `[]` | Normalized fullscreen media list. |
-| `nodes` | `ReactNode \| ReactNode[]` | `—` | Advanced initial node list for imperative gallery state. |
+```typescript
+useFullscreenController({
+  plugins: [fullscreenSlider()],
+  fullscreen: {
+    enabled: true,
+    slider: {
+      gap: { 0: 12, md: 20, 1200: 28 },
+    },
+  },
+});
+```
+
+Import `fullscreenVideo` from `react-motion-gallery/fullscreen/video` for fullscreen video slides. Set `fullscreen.video.playOnOpen` to start a Plyr-backed fullscreen video when fullscreen opens directly onto that video slide:
+
+```typescript
+useFullscreenController({
+  plugins: [fullscreenSlider(), fullscreenVideo()],
+  fullscreen: {
+    enabled: true,
+    video: {
+      playOnOpen: true,
+    },
+  },
+});
+```
 
 ### `useFullscreenController` args
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
+| `plugins` | `FullscreenPlugin[]` | `[]` | Explicit first-party fullscreen features. At minimum, import `fullscreenSlider()` to mount the fullscreen runtime. |
 | `fullscreen` | `FullscreenOptions` | `—` | Fullscreen behavior and rendering options. |
+
+| Import | Factory | Notes |
+| --- | --- | --- |
+| `react-motion-gallery/fullscreen/slider` | `fullscreenSlider(options)` | Mounts the fullscreen slider runtime and accepts `fullscreen.slider` options. |
+| `react-motion-gallery/fullscreen/controls` | `fullscreenControls(options)` | Option plugin for close, arrows, and counter options. Use with `fullscreenSlider()`. |
+| `react-motion-gallery/fullscreen/captions` | `fullscreenCaptions(options)` | Adds caption rendering, placement, and caption motion runtime. Use with `fullscreenSlider()`. |
+| `react-motion-gallery/fullscreen/zoom-pan` | `fullscreenZoomPan(options)` | Adds fullscreen click zoom, pan, and pinch runtime. Use with `fullscreenSlider()`. |
+| `react-motion-gallery/fullscreen/video` | `fullscreenVideo(options)` | Adds fullscreen Plyr rendering, source/options, and `playOnOpen` runtime. Use with `fullscreenSlider()`. |
+| `react-motion-gallery/fullscreen/lazy-load` | `fullscreenLazyLoad(options)` | Adds fullscreen image and video lazy-load gates. Use with `fullscreenSlider()`. |
+| `react-motion-gallery/fullscreen/crossfade` | `fullscreenCrossfade(options)` | Option plugin for fullscreen crossfade controls, drag, and wheel behavior. Use with `fullscreenSlider()`. |
+| `react-motion-gallery/fullscreen/thumbnails` | `fullscreenThumbnails()` | Option-only plugin for fullscreen thumbnail bridge behavior. Use with `fullscreenSlider()`. |
 
 ### Recommended `useFullscreenController` return values
 
@@ -1092,9 +1500,10 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | --- | --- | --- | --- |
 | `enabled` | `boolean` | `false` | Master switch for fullscreen UI. |
 | `items` | `MediaItem[] \| string[]` | `—` | Declared in the type, but current fullscreen media resolution comes from `GalleryCore.fullscreenItems`. |
-| `renderImage` | `({ item, index, isZoomed, className, baseStyle }) => ReactNode` | `—` | Custom fullscreen image renderer. Must render a real descendant `<img>`. |
+| `renderImage` | `({ item, index, isZoomed, className, baseStyle }) => ReactNode` | `—` | Custom fullscreen image renderer. Must render a real descendant `<img>`. With `lazyLoad.images.enabled`, the renderer is mounted only when the slide is allowed and the runtime watches that descendant image for load/decode readiness. |
 | `video.source` | `(item: MediaItem, index: number) => Plyr.SourceInfo` | `—` | Builds fullscreen Plyr sources for video items. |
 | `video.options` | `Plyr.Options \| ((item: MediaItem, index: number) => Plyr.Options)` | `—` | Builds fullscreen Plyr options. |
+| `video.playOnOpen` | `boolean` | `false` | Attempts to play the fullscreen Plyr video when fullscreen opens directly onto a video slide. Browser autoplay rules still apply. |
 | `video.style` | `React.CSSProperties` | `—` | Fullscreen player inline style. |
 | `video.className` | `string` | `—` | Fullscreen player class. |
 | `controls.close.enabled` | `boolean` | `true` | Toggles the close button. |
@@ -1120,6 +1529,9 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `caption.breakpoint` | `number` | `—` | Viewport cutoff for switching placement logic. |
 | `caption.render` | `({ item, index, isZoomed }) => ReactNode` | `—` | Custom caption renderer. |
 | `caption.layout` | `"overlay" \| "slide"` | `—` | Chooses whether the caption overlays the media or lives in the slide layout. |
+| `caption.overlayCrossfadeTarget` | `"content" \| "overlay"` | `"content"` | Selects whether overlay caption changes fade only the rendered caption content or the whole overlay layer. |
+| `caption.overlayCrossfadeDurationMs` | `number` | `300` | Duration for fullscreen overlay caption crossfades. |
+| `caption.overlayCrossfadeEasing` | `string` | `"cubic-bezier(.4,0,.22,1)"` | Easing for fullscreen overlay caption crossfades. |
 | `caption.zoomFade` | `boolean` | `true` | Fades captions out on fullscreen zoom-in and back in on zoom-out. |
 | `caption.zoomFadeDurationMs` | `number` | `300` | Duration for fullscreen caption zoom fades. |
 | `caption.zoomFadeEasing` | `string` | `"cubic-bezier(.4,0,.22,1)"` | Easing for fullscreen caption zoom fades. |
@@ -1128,6 +1540,7 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `slider.duration` | `number` | `25` | Fullscreen slider motion duration. |
 | `slider.friction` | `number` | `0.68` | Fullscreen slider friction. |
 | `slider.direction` | `"ltr" \| "rtl"` | `"ltr"` | Fullscreen slider interaction direction. |
+| `slider.gap` | `number \| Record<string, number>` | `0` | Responsive pixel gap between fullscreen slides. Named keys resolve from `GalleryCore.breakpoints`. |
 | `zoom.clickZoomLevel` | `number` | `2.5` | Zoom level used for click-to-zoom. |
 | `zoom.maxZoomLevel` | `number` | `3` | Maximum allowed zoom level. |
 | `zoom.panDuration` | `number` | `43` | Pan settling duration. |
@@ -1135,17 +1548,26 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `effects.introDuration` | `number` | `300` | Open animation duration. |
 | `effects.introEasing` | `string` | `"cubic-bezier(.4,0,.22,1)"` | Open animation easing. |
 | `effects.introFade` | `boolean` | `false` | Forces fade intro behavior. |
-| `effects.slideFade` | `boolean` | `false` | Fades between fullscreen slides. |
-| `effects.slideFadeDuration` | `number` | `120` | Slide-fade duration. |
-| `effects.slideFadeEasing` | `string` | `"cubic-bezier(.4,0,.22,1)"` | Slide-fade easing. |
-| `lazyLoad.images.enabled` | `boolean` | `—` | Enables fullscreen image lazy loading. |
+| `effects.crossfade.controls` | `boolean` | `false` | Uses crossfade transitions for fullscreen arrow navigation and animated slide requests. Also enables wheel crossfade unless `effects.crossfade.wheel` is provided. |
+| `effects.crossfade.drag` | `boolean` | `false` | Scrubs adjacent fullscreen slides with crossfade during drag instead of moving the track. |
+| `effects.crossfade.wheel` | `boolean \| CrossFadeWheelOptions` | `effects.crossfade.controls` | Uses wheel or touchpad travel as a one-slide-at-a-time fullscreen crossfade gesture. Set `false` to keep arrow crossfades while using normal wheel scrolling. |
+| `effects.crossfade.wheel.enabled` | `boolean` | `true` when object form is used | Enables or disables fullscreen wheel crossfade when using the object form. |
+| `effects.crossfade.wheel.sensitivity` | `number` | `5` | Multiplies wheel delta into virtual drag progress. Higher values reach the commit threshold sooner. |
+| `effects.crossfade.wheel.commitThreshold` | `number` | `0.38` | Progress needed to commit to the previous or next fullscreen slide. Values are clamped from `0` to below `0.5`. |
+| `effects.crossfade.wheel.durationMs` | `number` | `effects.crossfade.durationMs` | Fade duration after fullscreen wheel crossfade commits. |
+| `effects.crossfade.wheel.sessionGapMs` | `number` | `24` | Short quiet window used to distinguish same-direction touchpad tail from a fresh fullscreen wheel gesture after a committed wheel crossfade. |
+| `effects.crossfade.durationMs` | `number` | `120` | Shared fullscreen crossfade duration for controls, drag release, and wheel commit unless wheel overrides it. |
+| `effects.crossfade.easing` | `string` | `"cubic-bezier(.4,0,.22,1)"` | Shared fullscreen crossfade easing. |
+| `lazyLoad.images.enabled` | `boolean` | `—` | Enables fullscreen image lazy loading. Base-visible indices predecode matching fullscreen images, and fullscreen index changes allow the active image slide to mount or apply its source. |
 | `lazyLoad.images.spinner` | `boolean \| ReactNode \| ((args) => ReactNode)` | `—` | Spinner override for fullscreen images. |
 | `lazyLoad.images.spinnerClassName` | `string` | `—` | Spinner class for image slides. |
 | `lazyLoad.images.spinnerStyle` | `React.CSSProperties` | `—` | Spinner style for image slides. |
-| `lazyLoad.videos.enabled` | `boolean` | `—` | Enables fullscreen video lazy loading. |
+| `lazyLoad.videos.enabled` | `boolean` | `—` | Opts fullscreen videos into lazy mounting. Base-visible indices prewarm matching video posters/sources and fullscreen index changes mount the active or already-prepared video slide. By default fullscreen Plyr videos mount eagerly in the hidden fullscreen tree. |
 | `lazyLoad.videos.spinner` | `boolean \| ReactNode \| ((args) => ReactNode)` | `—` | Spinner override for fullscreen videos. |
 | `lazyLoad.videos.spinnerClassName` | `string` | `—` | Spinner class for video slides. |
 | `lazyLoad.videos.spinnerStyle` | `React.CSSProperties` | `—` | Spinner style for video slides. |
+
+Fullscreen `effects.crossfade.wheel` uses the same `true`, `false`, or object form as slider wheel crossfade. Its `durationMs` default follows fullscreen `effects.crossfade.durationMs`, which defaults to `120`.
 
 ### Fullscreen callback and helper types
 
@@ -1254,37 +1676,6 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `style` | `React.CSSProperties \| undefined` | Slot container style. |
 | `fadeDurationMs` | `number \| undefined` | Slot fade duration. |
 | `fadeEasing` | `string \| undefined` | Slot fade easing. |
-
-### `GalleryApi`
-
-`GalleryApi` is exported as a type from the package root. The package also exposes `GalleryCore` and `useGalleryCore()` for core-context access, but it does not expose a dedicated hook that returns a `GalleryApi`-typed instance directly.
-
-| Method | Signature | Notes |
-| --- | --- | --- |
-| `rootNode` | `() => HTMLElement \| null` | Gallery root node. |
-| `containerNode` | `() => HTMLElement \| null` | Moving or content container node. |
-| `getViewportNode` | `() => HTMLDivElement \| null` | Viewport node. |
-| `slideNodes` | `() => HTMLElement[]` | Current slide elements. |
-| `onReady` | `(cb: (nodes: HTMLElement[]) => void) => () => void` | Subscribes to readiness. |
-| `whenReady` | `() => Promise<HTMLElement[]>` | Promise form of readiness. |
-| `isReady` | `() => boolean` | `true` after readiness resolves. |
-| `scrollTo` | `(index: number, jump?: boolean) => void` | Navigates to a slide. |
-| `scrollNext` | `(jump?: boolean) => void` | Advances to the next slide. |
-| `scrollPrev` | `(jump?: boolean) => void` | Moves to the previous slide. |
-| `canScrollNext` | `() => boolean` | Whether next navigation is available. |
-| `canScrollPrev` | `() => boolean` | Whether previous navigation is available. |
-| `getIndex` | `() => number` | Current active index. |
-| `selectCell` | `(index: number, jump?: boolean) => void` | Selects a cell by canonical index. |
-| `scrollProgress` | `() => number` | Scroll progress from `0` to `1`. |
-| `cellsInView` | `() => number[]` | Canonical cells currently visible. |
-| `append` | `(nodes: ReactNode \| ReactNode[]) => number` | Appends nodes and returns the new total count. |
-| `prepend` | `(nodes: ReactNode \| ReactNode[]) => number` | Prepends nodes and returns the new total count. |
-| `insert` | `(index: number, nodes: ReactNode \| ReactNode[]) => number` | Inserts nodes and returns the new total count. |
-| `remove` | `(indexOrPredicate: number \| ((i: number) => boolean)) => number` | Removes items and returns the new total count. |
-| `replace` | `(index: number, node: ReactNode) => void` | Replaces a node at an index. |
-| `setItems` | `(nodes: ReactNode[]) => number` | Replaces all nodes and returns the new total count. |
-| `onIndexChange` | `(cb: (i: number, meta: { mode: IndexMode }) => void) => () => void` | Subscribes to index changes. |
-| `openFullscreenAt` | `({ index, method?, event? }) => void` | Programmatically opens fullscreen at an index. |
 
 ## Video
 

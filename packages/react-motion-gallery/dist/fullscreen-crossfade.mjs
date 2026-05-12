@@ -1,0 +1,1 @@
+import {a}from'./chunk-V7DPXRZF.mjs';function r(e){return a("crossfade",{options:e?{effects:{crossfade:e}}:void 0})}export{r as fullscreenCrossfade};

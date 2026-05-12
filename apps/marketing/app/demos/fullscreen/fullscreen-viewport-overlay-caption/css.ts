@@ -8,11 +8,12 @@ export const css = String.raw`.slide {
 }
 
 .fullscreenCaption {
+  box-sizing: border-box;
   display: flex;
   align-items: flex-end;
   gap: 0.85rem;
   width: min(100%, 42rem);
-  padding: 0.25rem 0;
+  padding: clamp(18px, 3vw, 34px);
 }
 
 .fullscreenCaptionIndex {
@@ -23,16 +24,17 @@ export const css = String.raw`.slide {
   padding: 0.35rem 0.55rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.78);
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  margin-bottom: 12px;
 }
 
 .fullscreenCaptionBody {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.5rem;
 }
 
 .fullscreenCaptionTitle {
@@ -47,4 +49,5 @@ export const css = String.raw`.slide {
   font-size: 0.78rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}`;
+}
+`;

@@ -1,0 +1,1 @@
+function i(){let t=new Map;return {getOrCreate(e,s,r){let n=t.get(e);if(n)return n.value;let o=s();return t.set(e,{value:o,dispose:r?a=>r(a):void 0}),o},destroyAll(){for(let e of t.values())try{e.dispose?.(e.value);}catch{}t.clear();}}}export{i as a};

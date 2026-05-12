@@ -1,12 +1,22 @@
 export const css = String.raw`.cardSlide {
   width: 100%;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   gap: 12px;
   padding: 16px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 3px 6px rgba(15, 23, 42, 0.08);
   background-color: #fff;
+  height: 100%;
+}
+
+.cardFirstColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .cardSlideImage {
@@ -35,4 +45,20 @@ export const css = String.raw`.cardSlide {
   color: #155e75;
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+.slider_viewport {
+  padding-bottom: 52px;
+}
+
+@media(max-width: 499px) {
+  .slider_dots_root {
+    bottom: 3px;
+  }
+}
+
+@media(min-width: 500px) {
+  .slider_dots_root {
+    bottom: 0px;
+  }
 }`;

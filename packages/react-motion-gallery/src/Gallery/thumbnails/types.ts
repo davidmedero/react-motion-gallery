@@ -1,5 +1,6 @@
 import type * as React from "react";
 import type { BreakpointMap, ResponsiveNumber } from "../shared/responsive";
+import type { LoadingForceOptions } from "../shared/loading/force";
 import type { ArrowRenderArgs } from "../shared/types/controls";
 import { ElementStyle } from "../shared/types/elements";
 import type { LoadingTimingOptions } from "../shared/types/transitions";
@@ -25,7 +26,7 @@ export type ThumbnailLoadingRenderArgs = {
 
 export type ThumbnailLoadingOptions = {
   enabled?: boolean;
-  force?: boolean;
+  force?: LoadingForceOptions;
   skeletonCount?: ResponsiveNumber;
   mode?: ThumbnailSkeletonMode;
   renderLoading?: (args: ThumbnailLoadingRenderArgs) => React.ReactNode;

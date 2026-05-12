@@ -1,0 +1,75 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=skeleton-force-overlay&skeletonMeasure=content",
+  "outputFile": "./skeleton-force-overlay.skeleton-text.generated.ts",
+  "moduleExportName": "skeletonForceOverlaySkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1340,
+  "viewportHeight": 1800,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "readyExpression": "(() => Boolean(document.querySelector(\"[data-skeleton-text-id='forceOverlayTimeline03Detail']\")))()",
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "responsiveBy": "container",
+  "targets": [
+    {
+      "exportName": "forceOverlayHeaderTitle",
+      "selector": "[data-skeleton-text-id='forceOverlayHeaderTitle']"
+    },
+    {
+      "exportName": "forceOverlayHeaderMeta",
+      "selector": "[data-skeleton-text-id='forceOverlayHeaderMeta']"
+    },
+    {
+      "exportName": "forceOverlaySummary01Label",
+      "selector": "[data-skeleton-text-id='forceOverlaySummary01Label']"
+    },
+    {
+      "exportName": "forceOverlaySummary01Value",
+      "selector": "[data-skeleton-text-id='forceOverlaySummary01Value']"
+    },
+    {
+      "exportName": "forceOverlaySummary02Label",
+      "selector": "[data-skeleton-text-id='forceOverlaySummary02Label']"
+    },
+    {
+      "exportName": "forceOverlaySummary02Value",
+      "selector": "[data-skeleton-text-id='forceOverlaySummary02Value']"
+    },
+    {
+      "exportName": "forceOverlaySummary03Label",
+      "selector": "[data-skeleton-text-id='forceOverlaySummary03Label']"
+    },
+    {
+      "exportName": "forceOverlaySummary03Value",
+      "selector": "[data-skeleton-text-id='forceOverlaySummary03Value']"
+    },
+    {
+      "exportName": "forceOverlayTimeline01Title",
+      "selector": "[data-skeleton-text-id='forceOverlayTimeline01Title']"
+    },
+    {
+      "exportName": "forceOverlayTimeline01Detail",
+      "selector": "[data-skeleton-text-id='forceOverlayTimeline01Detail']"
+    },
+    {
+      "exportName": "forceOverlayTimeline02Title",
+      "selector": "[data-skeleton-text-id='forceOverlayTimeline02Title']"
+    },
+    {
+      "exportName": "forceOverlayTimeline02Detail",
+      "selector": "[data-skeleton-text-id='forceOverlayTimeline02Detail']"
+    },
+    {
+      "exportName": "forceOverlayTimeline03Title",
+      "selector": "[data-skeleton-text-id='forceOverlayTimeline03Title']"
+    },
+    {
+      "exportName": "forceOverlayTimeline03Detail",
+      "selector": "[data-skeleton-text-id='forceOverlayTimeline03Detail']"
+    }
+  ]
+}

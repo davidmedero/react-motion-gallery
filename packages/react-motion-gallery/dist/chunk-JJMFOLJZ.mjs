@@ -1,0 +1,1 @@
+var o={clickZoomLevel:2.5,maxZoomLevel:3,panDuration:43,panFriction:.68};export{o as a};

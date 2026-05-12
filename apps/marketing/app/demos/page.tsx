@@ -36,7 +36,5 @@ export default async function DemosPage({ searchParams }: DemosPageProps) {
   const resolvedSearchParams = await searchParams;
   const initialSearchParamsString = toSearchParamsString(resolvedSearchParams);
 
-  return (
-    <DemosPageClient initialSearchParamsString={initialSearchParamsString} />
-  );
+  return <DemosPageClient initialSearchParamsString={initialSearchParamsString} />;
 }

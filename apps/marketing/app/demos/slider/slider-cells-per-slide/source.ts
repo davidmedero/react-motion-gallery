@@ -1,42 +1,50 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-cells-per-slide-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/1025/1200/1200",
-  "https://picsum.photos/id/1026/1200/1200",
-  "https://picsum.photos/id/1027/1200/1200",
-  "https://picsum.photos/id/1028/1200/1200",
-  "https://picsum.photos/id/1029/1200/1200",
-  "https://picsum.photos/id/103/1200/1200",
-  "https://picsum.photos/id/1031/1200/1200",
-  "https://picsum.photos/id/1032/1200/1200",
-  "https://picsum.photos/id/1033/1200/1200",
-  "https://picsum.photos/id/104/1200/1200",
-  "https://picsum.photos/id/1035/1200/1200",
-  "https://picsum.photos/id/1036/1200/1200",
+  "https://picsum.photos/id/174/1200/1200",
+  "https://picsum.photos/id/176/1200/1200",
+  "https://picsum.photos/id/178/1200/1200",
+  "https://picsum.photos/id/179/1200/1200",
+  "https://picsum.photos/id/182/1200/1200",
+  "https://picsum.photos/id/184/1200/1200",
+  "https://picsum.photos/id/185/1200/1200",
+  "https://picsum.photos/id/186/1200/1200",
+  "https://picsum.photos/id/187/1200/1200",
+  "https://picsum.photos/id/188/1200/1200",
+  "https://picsum.photos/id/190/1200/1200",
+  "https://picsum.photos/id/191/1200/1200",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/1025/2400/2400",
-  "https://picsum.photos/id/1026/2400/2400",
-  "https://picsum.photos/id/1027/2400/2400",
-  "https://picsum.photos/id/1028/2400/2400",
-  "https://picsum.photos/id/1029/2400/2400",
-  "https://picsum.photos/id/103/2400/2400",
-  "https://picsum.photos/id/1031/2400/2400",
-  "https://picsum.photos/id/1032/2400/2400",
-  "https://picsum.photos/id/1033/2400/2400",
-  "https://picsum.photos/id/104/2400/2400",
-  "https://picsum.photos/id/1035/2400/2400",
-  "https://picsum.photos/id/1036/2400/2400",
+  "https://picsum.photos/id/174/2400/2400",
+  "https://picsum.photos/id/176/2400/2400",
+  "https://picsum.photos/id/178/2400/2400",
+  "https://picsum.photos/id/179/2400/2400",
+  "https://picsum.photos/id/182/2400/2400",
+  "https://picsum.photos/id/184/2400/2400",
+  "https://picsum.photos/id/185/2400/2400",
+  "https://picsum.photos/id/186/2400/2400",
+  "https://picsum.photos/id/187/2400/2400",
+  "https://picsum.photos/id/188/2400/2400",
+  "https://picsum.photos/id/190/2400/2400",
+  "https://picsum.photos/id/191/2400/2400",
 ];
 
 const CELLS_PER_SLIDE = {
@@ -58,6 +66,7 @@ function Slide({ src, i }: { src: string; i: number }) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -70,22 +79,13 @@ export function SliderCellsPerSlideDemo() {
   const media = toMediaItems(URLS);
   const fullscreenMedia = toMediaItems(FS_URLS);
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
+      <SliderSkeleton
         layout={{
-          cellsPerSlide: CELLS_PER_SLIDE,
-        }}
-        scroll={{
-          groupCells: true,
-        }}
-        transitions={{
-          loading: {
-            timing: {
-              exitMs: 600,
-            },
-            skeletonCount: CELLS_PER_SLIDE,
-            skeleton: {
+              visibleCount: CELLS_PER_SLIDE,
               mode: "fit",
               layout: {
                 kind: "slider",
@@ -102,9 +102,23 @@ export function SliderCellsPerSlideDemo() {
                   },
                 },
               },
-            },
-          },
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        layout={{
+          cellsPerSlide: CELLS_PER_SLIDE,
         }}
+        scroll={{
+          groupCells: true,
+        }}
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderDots(),
+        ]}
       >
         {media.map((item, i) => (
           <Slide
@@ -112,9 +126,12 @@ export function SliderCellsPerSlideDemo() {
             src={item.kind === "image" ? item.src : ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

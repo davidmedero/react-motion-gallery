@@ -3,26 +3,43 @@
 
 import * as React from "react";
 import { MasonryLayout } from "../../masonry/MasonryLayout";
+import { useMasonryReady } from "../../masonry/useMasonryReady";
+import { MasonrySkeleton as Skeleton } from "../../skeleton/masonry";
 import type { EntriesMediaContainerRender } from "../index";
 import { BREAKPOINT_MAP } from "../../shared/responsive";
 import { useOptionalGalleryCore } from "../../core";
-import type { IntroOptions, LoadingOptions } from "../../masonry/types";
+import { normalizeMasonryChild } from "../../masonry/item";
+import type { IntroOptions } from "../../masonry/types";
+import type { MasonrySkeletonSpec } from "../../skeleton/masonry";
+import type {
+  SkeletonForceOptions,
+  SkeletonTimingOptions,
+} from "../../skeleton/base";
+
+type EntriesMasonryLoadingOptions = {
+  enabled?: boolean;
+  force?: SkeletonForceOptions;
+  skeleton?: MasonrySkeletonSpec;
+  timing?: SkeletonTimingOptions;
+};
 
 export function createEntriesMasonryMedia(args: {
   masonryObject?: any;
-  masonryLoading?: LoadingOptions;
+  masonryLoading?: EntriesMasonryLoadingOptions;
   masonryIntro?: IntroOptions;
 }): EntriesMediaContainerRender {
   const { masonryObject, masonryLoading, masonryIntro } = args;
+  const masonryConfig = masonryObject ?? {};
 
-  function normalizeLoading(src?: LoadingOptions) {
+  function normalizeLoading(src?: EntriesMasonryLoadingOptions) {
+    if (!src) return null;
+
     return {
       enabled: src?.enabled,
       force: src?.force,
-      renderLoading: src?.renderLoading,
       skeleton: src?.skeleton,
       timing: src?.timing,
-    }
+    };
   }
 
   function normalizeIntro(src?: IntroOptions) {
@@ -32,30 +49,93 @@ export function createEntriesMasonryMedia(args: {
       durationMs: src?.durationMs ?? 300,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
       staggerLimit: src?.staggerLimit,
-    }
+    };
   }
 
-  const normalizedLoading = normalizeLoading(masonryLoading ?? masonryObject?.loading);
-  const normalizedIntro = normalizeIntro(masonryIntro ?? masonryObject?.intro);
+  const normalizedLoading = normalizeLoading(masonryLoading ?? masonryConfig.loading);
+  const normalizedIntro = normalizeIntro(masonryIntro ?? masonryConfig.intro);
 
   function EntriesMasonryMediaInner(props: { mediaNodes: React.ReactNode[] }) {
     const { mediaNodes } = props;
-
-    if (!Array.isArray(mediaNodes) || mediaNodes.length === 0) return null;
-
     const core = useOptionalGalleryCore();
     const breakpoints = core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP };
+    const masonryReady = useMasonryReady();
+    const normalized = React.useMemo(() => {
+      if (!Array.isArray(mediaNodes) || mediaNodes.length === 0) return [];
+
+      return mediaNodes.map((node, index) => {
+        const normalizedChild = normalizeMasonryChild(node);
+        const content = normalizedChild.node;
+
+        if (content == null) {
+          return {
+            key: `entries-masonry-${index}`,
+            node: null,
+            span: normalizedChild.layoutMeta?.span,
+          };
+        }
+
+        if (
+          normalizedChild.layoutMeta?.className ||
+          normalizedChild.layoutMeta?.style
+        ) {
+          return {
+            key: `entries-masonry-${index}`,
+            span: normalizedChild.layoutMeta?.span,
+            node: (
+              <div
+                className={normalizedChild.layoutMeta?.className}
+                style={normalizedChild.layoutMeta?.style}
+              >
+                {content}
+              </div>
+            ),
+          };
+        }
+
+        return {
+          key: `entries-masonry-${index}`,
+          node: content,
+          span: normalizedChild.layoutMeta?.span,
+        };
+      });
+    }, [mediaNodes]);
+    const filtered = normalized.filter((item) => item.node != null);
+
+    if (filtered.length === 0) return null;
+
+    const masonryNode = (
+      <MasonryLayout
+        ref={masonryReady.ref}
+        items={filtered.map((item) => (
+          <React.Fragment key={item.key}>{item.node}</React.Fragment>
+        ))}
+        itemSpans={filtered.map((item) => item.span)}
+        masonry={masonryConfig}
+        breakpoints={breakpoints}
+        intro={normalizedIntro}
+      />
+    );
+
+    if (!normalizedLoading?.skeleton) return masonryNode;
 
     return (
-      <MasonryLayout
-        items={mediaNodes}
-        masonry={masonryObject}
-        breakpoints={breakpoints}
-        loading={normalizedLoading}
-        intro={normalizedIntro}
-        skeletonCount={mediaNodes.length}
-        contentLayerMode="flow"
-      />
+      <Skeleton
+        layout={normalizedLoading.skeleton}
+        ready={masonryReady.ready}
+        enabled={normalizedLoading.enabled}
+        force={normalizedLoading.force}
+        timing={normalizedLoading.timing}
+        masonry={{
+          count: filtered.length,
+          columns: masonryConfig.columns,
+          gap: masonryConfig.gap,
+          placement: masonryConfig.placement,
+          spans: filtered.map((item) => item.span),
+        }}
+      >
+        {masonryNode}
+      </Skeleton>
     );
   }
 

@@ -20,7 +20,7 @@ describe("EntrySkeleton text nodes", () => {
             children: [
               {
                 kind: "text",
-                fontSize: 16,
+                barHeight: 16,
                 lineHeight: 1.5,
                 lines: 2,
                 style: {
@@ -47,7 +47,7 @@ describe("EntrySkeleton text nodes", () => {
             children: [
               {
                 kind: "text",
-                fontSize: 14,
+                barHeight: 14,
                 lineHeight: 1.5,
                 style: {
                   width: "50%",
@@ -71,14 +71,14 @@ describe("EntrySkeleton text nodes", () => {
             children: [
               {
                 kind: "text",
-                fontSize: 16,
+                barHeight: 16,
                 lineHeight: 1.5,
                 lines: {
                   0: 3,
                   767: 2,
                   1200: 1,
                 },
-                lineWidth: "56%",
+                lastBarWidth: "56%",
                 style: {
                   width: "88%",
                 },
@@ -91,9 +91,47 @@ describe("EntrySkeleton text nodes", () => {
 
     expect(markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(3);
     expect(markup).toContain("@media (min-width:767px)");
-    expect(markup).toContain("nth-child(n+3){display:none;}");
+    expect(markup).toContain(
+      'data-rmg-skel-text-line="true"]{display:none !important;height:16px !important;}'
+    );
     expect(markup).toContain("@media (min-width:1200px)");
-    expect(markup).toContain("nth-child(1){width:56%;}");
+    expect(markup).toContain("nth-child(1){max-width:56% !important;}");
+  });
+
+  test("renders container-query text CSS when responsiveBy is container", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(EntrySkeletonCard, {
+        spec: {
+          layout: {
+            kind: "stack",
+            children: [
+              {
+                kind: "text",
+                barHeight: 16,
+                lineHeight: 1.5,
+                responsiveBy: "container",
+                lines: {
+                  0: 3,
+                  360: 2,
+                },
+                barWidth: {
+                  0: ["180px", "160px", "90px"],
+                  360: ["320px", "120px"],
+                },
+                style: {
+                  width: "100%",
+                },
+              },
+            ],
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain('data-rmg-skel-text-container="true"');
+    expect(markup).toContain("container-type:inline-size");
+    expect(markup).toContain("@container (min-width:360px)");
+    expect(markup).toContain("nth-child(n+3){display:none !important;}");
   });
 
   test("emits responsive CSS for shape, text style, and media tile styles with custom aliases", () => {
@@ -119,7 +157,7 @@ describe("EntrySkeleton text nodes", () => {
               },
               {
                 kind: "text",
-                fontSize: 16,
+                barHeight: 16,
                 lineHeight: 1.5,
                 lines: 2,
                 style: {

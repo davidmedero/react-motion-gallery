@@ -6,9 +6,18 @@ import type { BreakpointMap } from "../shared/responsive";
 import { BREAKPOINT_MAP } from "../shared/responsive";
 import type { MediaItem } from "../shared/types/media";
 import { normalizeItemsInput } from "../shared/types/media";
-import type { SliderHandle } from "../slider/types";
+import type {
+  SliderHandle,
+  SliderNodeInput,
+  SliderRemoveTarget,
+} from "../slider/types";
 import { MediaEntryLink } from "../entries";
-import { FullscreenOpenMethod, FullscreenOpenRequest, OpenFullscreenAtArgs } from "../api/types";
+import type {
+  FullscreenOpenMethod,
+  FullscreenOpenRequest,
+  GalleryCoreApi,
+  OpenFullscreenAtArgs,
+} from "../api/types";
 
 function isImageItem(item: MediaItem | undefined | null): item is Extract<MediaItem, { kind: "image" }> {
   return !!item && (item as any).kind === "image";
@@ -209,31 +218,26 @@ export type FullscreenSourceAdapter = {
   getEntryContext?: () => FullscreenEntryContext;
 };
 
-export type GalleryCore = {
+export type GalleryCore = GalleryCoreApi & {
   layout: CoreLayout | null;
   layoutlessRootRef: React.RefObject<HTMLDivElement | null>;
   effectiveBreakpoints: BreakpointMap;
   cellsState: Cell[];
   cellsRef: React.RefObject<Cell[]>;
+  append(nodes: SliderNodeInput): number;
+  prepend(nodes: SliderNodeInput): number;
+  insert(index: number, nodes: SliderNodeInput): number;
+  remove(indexOrPredicate: SliderRemoveTarget): number;
+  replace(index: number, node: React.ReactNode): void;
+  setItems(nodes: React.ReactNode[]): number;
   normalizedItems: MediaItem[];
   setNormalizedItems: React.Dispatch<React.SetStateAction<MediaItem[]>>;
   sliderApiRef: React.RefObject<SliderHandle | null>;
-  append: (nodes: React.ReactNode | React.ReactNode[]) => number;
-  prepend: (nodes: React.ReactNode | React.ReactNode[]) => number;
-  insert: (index: number, nodes: React.ReactNode | React.ReactNode[]) => number;
-  remove: (index: number) => number;
-  replace: (index: number, node: React.ReactNode) => void;
-  setItems: (nodes: React.ReactNode[]) => number;
   requestFullscreenOpen: (req: FullscreenOpenRequest) => void;
   fsOpenSub: {
     emit(v: FullscreenOpenRequest): void;
     subscribe(fn: (v: FullscreenOpenRequest) => void): () => void;
   };
-  fsEnabled: boolean;
-  setFsEnabled: (enabled: boolean) => void;
-  isFullscreenOpen: boolean;
-  isFullscreenOpenRef: React.RefObject<boolean>;
-  setFullscreenOpen: (open: boolean) => void;
   registerFullscreenAdapter: (source: FullscreenSource, a: FullscreenSourceAdapter) => void;
   getFullscreenAdapter: (source: FullscreenSource) => FullscreenSourceAdapter | null;
   expandableImageRefs: React.RefObject<Array<HTMLImageElement | null>>;
@@ -249,7 +253,6 @@ export type GalleryCore = {
   };
   notifyFsVisibleIndex: (index: number) => void;
   resolveLayoutlessTarget: (index: number) => LayoutlessTarget;
-  openFullscreenAt: (args: OpenFullscreenAtArgs) => void;
 };
 
 export type GalleryCoreProps = {
@@ -392,11 +395,16 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     [newId]
   );
 
-  const remove = React.useCallback((index: number) => {
+  const remove = React.useCallback((indexOrPredicate: SliderRemoveTarget) => {
     const arr = cellsRef.current;
     if (!arr.length) return 0;
-    const i = clamp(index | 0, 0, arr.length - 1);
-    const next = arr.slice(0, i).concat(arr.slice(i + 1));
+    const next =
+      typeof indexOrPredicate === "function"
+        ? arr.filter((_, index) => !indexOrPredicate(index))
+        : (() => {
+            const i = clamp(indexOrPredicate | 0, 0, arr.length - 1);
+            return arr.slice(0, i).concat(arr.slice(i + 1));
+          })();
     commit(next);
     return next.length;
   }, []);

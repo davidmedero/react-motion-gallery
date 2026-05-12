@@ -1,30 +1,42 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-skip-snaps-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/1001/1600/900",
-  "https://picsum.photos/id/1002/1600/900",
-  "https://picsum.photos/id/1003/1600/900",
-  "https://picsum.photos/id/1004/1600/900",
-  "https://picsum.photos/id/1005/1600/900",
-  "https://picsum.photos/id/1006/1600/900",
+  "https://picsum.photos/id/107/1600/900",
+  "https://picsum.photos/id/108/1600/900",
+  "https://picsum.photos/id/109/1600/900",
+  "https://picsum.photos/id/110/1600/900",
+  "https://picsum.photos/id/112/1600/900",
+  "https://picsum.photos/id/116/1600/900",
+  "https://picsum.photos/id/118/1600/900",
+  "https://picsum.photos/id/120/1600/900",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/1001/2400/1350",
-  "https://picsum.photos/id/1002/2400/1350",
-  "https://picsum.photos/id/1003/2400/1350",
-  "https://picsum.photos/id/1004/2400/1350",
-  "https://picsum.photos/id/1005/2400/1350",
-  "https://picsum.photos/id/1006/2400/1350",
+  "https://picsum.photos/id/107/2400/1350",
+  "https://picsum.photos/id/108/2400/1350",
+  "https://picsum.photos/id/109/2400/1350",
+  "https://picsum.photos/id/110/2400/1350",
+  "https://picsum.photos/id/112/2400/1350",
+  "https://picsum.photos/id/116/2400/1350",
+  "https://picsum.photos/id/118/2400/1350",
+  "https://picsum.photos/id/120/2400/1350",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
@@ -40,6 +52,7 @@ function Slide({ src, i }: { src: string; i: number }) {
 function FullscreenAddon() {
 
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -52,16 +65,13 @@ export function SliderSkipSnapsDemo() {
   const media = toMediaItems(URLS);
   const fullscreenMedia = toMediaItems(FS_URLS);
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
-        scroll={{
-          skipSnaps: true,
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: 2,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 2,
               mode: "peek",
               layout: {
                 kind: "slider",
@@ -79,9 +89,20 @@ export function SliderSkipSnapsDemo() {
                   },
                 },
               },
-            },
-          },
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        scroll={{
+          skipSnaps: { threshold: 1.5 },
         }}
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderDots(),
+        ]}
       >
         {media.map((item, i) => (
           <Slide
@@ -89,9 +110,12 @@ export function SliderSkipSnapsDemo() {
             src={item.kind === "image" ? item.src : ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

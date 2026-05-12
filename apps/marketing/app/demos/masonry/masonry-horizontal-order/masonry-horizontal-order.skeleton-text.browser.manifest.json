@@ -1,0 +1,90 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=masonry-horizontal-order&skeletonMeasure=content",
+  "outputFile": "./masonry-horizontal-order.skeleton-text.generated.ts",
+  "moduleExportName": "masonryHorizontalOrderSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1340,
+  "viewportHeight": 1800,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "readyExpression": "(() => { const body = document.querySelector(\"[data-skeleton-text-id='masonryHorizontalOrderItem01Body']\"); const item = body?.closest(\"[data-rmg-idx]\"); const root = item?.parentElement; const columns = Number(getComputedStyle(root).getPropertyValue(\"--rmg-cols\")); const expected = window.innerWidth >= 1140 ? 4 : window.innerWidth >= 720 ? 2 : 1; return columns === expected; })()",
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "masonryHorizontalOrderItem01Badge",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem01Badge']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem01Title",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem01Title']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem01Body",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem01Body']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem02Badge",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem02Badge']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem02Title",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem02Title']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem02Body",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem02Body']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem03Badge",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem03Badge']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem03Title",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem03Title']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem03Body",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem03Body']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem04Badge",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem04Badge']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem04Title",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem04Title']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem04Body",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem04Body']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem05Badge",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem05Badge']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem05Title",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem05Title']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem05Body",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem05Body']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem06Badge",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem06Badge']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem06Title",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem06Title']"
+    },
+    {
+      "exportName": "masonryHorizontalOrderItem06Body",
+      "selector": "[data-skeleton-text-id='masonryHorizontalOrderItem06Body']"
+    }
+  ]
+}

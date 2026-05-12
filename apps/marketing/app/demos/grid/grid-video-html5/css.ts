@@ -1,4 +1,18 @@
-export const css = String.raw`/* app/globals.css or Demo.module.css */
+export const css = String.raw`@font-face {
+  font-family: "RMG Pretext Demo";
+  src: url("/fonts/tasa-orbiter/TASAOrbiter-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "RMG Pretext Demo";
+  src: url("/fonts/tasa-orbiter/TASAOrbiter-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
 
 .videoSlide {
   display: flex;
@@ -8,12 +22,14 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
   height: 100%;
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid rgba(11, 18, 32, 0.12);;
+  border: 1px solid rgba(11, 18, 32, 0.12);
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 3px 6px rgba(15, 23, 42, 0.08);
+  font-family: "RMG Pretext Demo", var(--font-display), serif;
 }
 
 .videoFrame {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
@@ -21,9 +37,22 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
   background: #0f172a;
 }
 
-.videoFrame > * {
+.videoFrame > :not(.open_fullscreen_icon) {
   width: 100%;
   height: 100%;
+}
+
+.videoFrame > .open_fullscreen_icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+  cursor: pointer;
 }
 
 .videoFrame :global(.plyr),
@@ -41,12 +70,16 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
 }
 
 .videoMetaTitle {
-  font-size: 1.12rem;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
   letter-spacing: -0.03em;
 }
 
 .videoMetaBody {
   margin: 0;
   color: rgba(11, 18, 32, 0.72);
-  line-height: 1.6;
-}`;
+  font-size: 14px;
+  line-height: 1.5;
+}
+`;

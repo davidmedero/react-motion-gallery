@@ -7,41 +7,88 @@ import {
   Video,
   type MediaItem,
   toMediaItems,
+  useGridReady,
   useFullscreenController,
 } from "../../../../../../packages/react-motion-gallery/src";
-import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/Gallery/grid/GridSkeleton";
+import { GridSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
 import styles from "./grid-video-vimeo-demo.module.css";
+import { gridVideoVimeoSkeletonText } from "./grid-video-vimeo.skeleton-text.generated";
+
+type SkeletonTextIds = {
+  title: string;
+  body: string;
+};
+
+type GeneratedSkeletonTextState = {
+  lines: number | Record<number, number>;
+  barWidth?: string | string[] | Record<number, string | string[]>;
+  lastBarWidth?: string | Record<number, string>;
+};
+
+type GeneratedSkeletonTextEntry = {
+  title: GeneratedSkeletonTextState;
+  body: GeneratedSkeletonTextState;
+};
 
 const ITEMS = [
   {
     kind: "video" as const,
     src: "https://vimeo.com/145140004",
     poster: "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
-    title: "Atlas Walkthrough",
-    body: "Vimeo embeds inherit the same layout, fullscreen, and loading system.",
+    title: "Lorem ipsum dolor sit amet",
+    body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     kind: "video" as const,
     src: "https://vimeo.com/113314928",
     poster: "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
-    title: "Signal Grade",
-    body: "Plyr options stay customizable while cards keep their editorial framing.",
+    title: "Ut enim ad minim veniam",
+    body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   },
   {
     kind: "video" as const,
     src: "https://vimeo.com/172833424",
     poster: "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
-    title: "Night Transit",
-    body: "Grid cards can mix motion, metadata, and fullscreen without custom wiring.",
+    title: "Duis aute irure dolor",
+    body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
   },
   {
     kind: "video" as const,
     src: "https://vimeo.com/130632032",
     poster: "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
-    title: "Quiet Surface",
-    body: "Responsive columns make video galleries feel deliberate instead of cramped.",
+    title: "Excepteur sint occaecat",
+    body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   },
 ];
+
+const GRID_VIDEO_VIMEO_TEXT_IDS: SkeletonTextIds[] = [
+  {
+    title: "gridVideoVimeoItem01Title",
+    body: "gridVideoVimeoItem01Body",
+  },
+  {
+    title: "gridVideoVimeoItem02Title",
+    body: "gridVideoVimeoItem02Body",
+  },
+  {
+    title: "gridVideoVimeoItem03Title",
+    body: "gridVideoVimeoItem03Body",
+  },
+  {
+    title: "gridVideoVimeoItem04Title",
+    body: "gridVideoVimeoItem04Body",
+  },
+];
+
+const GRID_VIDEO_VIMEO_SKELETON_TEXT: GeneratedSkeletonTextEntry[] =
+  GRID_VIDEO_VIMEO_TEXT_IDS.map((textIds) => ({
+    title: gridVideoVimeoSkeletonText[textIds.title]!,
+    body: gridVideoVimeoSkeletonText[textIds.body]!,
+  }));
 
 function buildVimeoSource(src: string, poster?: string) {
   return {
@@ -72,49 +119,78 @@ function buildVimeoFullscreenSource(item: MediaItem) {
   return buildVimeoSource(item.src, item.poster);
 }
 
+function createVimeoVideoSkeletonItem(index: number) {
+  const skeletonText =
+    GRID_VIDEO_VIMEO_SKELETON_TEXT[index] ??
+    GRID_VIDEO_VIMEO_SKELETON_TEXT[0]!;
+
+  return {
+    kind: "col" as const,
+    style: {
+      gap: 14,
+    },
+    children: [
+      {
+        kind: "rect" as const,
+        style: {
+          width: "100%",
+          aspectRatio: "16 / 9",
+          borderRadius: 12,
+        },
+      },
+      {
+        kind: "col" as const,
+        style: {
+          gap: 6,
+        },
+        children: [
+          {
+            kind: "text" as const,
+            barHeight: 18,
+            lineHeight: 1.63,
+            style: {
+              width: "100%",
+            },
+            ...skeletonText.title,
+          },
+          {
+            kind: "text" as const,
+            barHeight: 15,
+            lineHeight: 1.65,
+            style: {
+              width: "100%",
+            },
+            ...skeletonText.body,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+const VIMEO_VIDEO_SKELETON_SLOTS = ITEMS.map((_, index) => ({
+  item: createVimeoVideoSkeletonItem(index),
+}));
+
 const VIMEO_VIDEO_SKELETON: GridSkeletonSpec = {
   radius: 12,
   layout: {
     kind: "grid",
-    item: {
-      kind: "col",
-      style: {
-        gap: 12,
-      },
-      children: [
-        {
-          kind: "rect",
-          style: {
-            width: "100%",
-            aspectRatio: "16 / 9",
-            borderRadius: 12,
-          },
-        },
-        {
-          kind: "text",
-          fontSize: 18,
-          lineHeight: 1.2,
-          style: {
-            width: "66%",
-          },
-        },
-        {
-          kind: "text",
-          fontSize: 14,
-          lineHeight: 1.5,
-          lines: 2,
-          lineWidth: "52%",
-          style: {
-            width: "100%",
-          },
-        },
-      ],
+    itemWrapStyle: {
+      padding: 16,
+      borderRadius: 12,
+      border: "1px solid rgba(11, 18, 32, 0.12)",
+      backgroundColor: "rgba(255, 255, 255, 0.82)",
+      boxShadow: "0 3px 6px rgba(15, 23, 42, 0.08)",
     },
+    item: createVimeoVideoSkeletonItem(0),
+    slots: VIMEO_VIDEO_SKELETON_SLOTS,
   },
 };
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
       video: {
@@ -129,36 +205,65 @@ function FullscreenAddon() {
 
 export function GridVideoVimeoDemo() {
   const media = toMediaItems(ITEMS);
+  const { ref: gridRef, ready: gridReady } = useGridReady();
 
   return (
     <GalleryCore layout="grid" fullscreenItems={media}>
-      <Grid
-        columns={{ 0: 1, 900: 2 }}
-        gap={{ 0: 12, 900: 18 }}
-        fullscreenTrigger="item"
-        loading={{
-          enabled: true,
-          skeleton: VIMEO_VIDEO_SKELETON,
+      <GridSkeleton
+        layout={VIMEO_VIDEO_SKELETON}
+        ready={gridReady}
+        grid={{
+          count: ITEMS.length,
+          columns: { 0: 1, 900: 2 },
+          gap: { 0: 12, 900: 18 },
         }}
       >
-        {ITEMS.map((item) => (
-          <article key={item.src} className={styles.videoSlide}>
-            <div className={styles.videoFrame}>
-              <Video
-                src={item.src}
-                poster={item.poster}
-                source={buildVimeoSource(item.src, item.poster)}
-                options={VIMEO_OPTIONS}
-                alt={item.title}
-              />
-            </div>
-            <div className={styles.videoMeta}>
-              <strong className={styles.videoMetaTitle}>{item.title}</strong>
-              <p className={styles.videoMetaBody}>{item.body}</p>
-            </div>
-          </article>
-        ))}
-      </Grid>
+        <Grid
+          ref={gridRef}
+          columns={{ 0: 1, 900: 2 }}
+          gap={{ 0: 12, 900: 18 }}
+          fullscreenTrigger="item"
+        >
+          {ITEMS.map((item, index) => {
+            const textIds = GRID_VIDEO_VIMEO_TEXT_IDS[index]!;
+
+            return (
+              <article key={item.src} className={styles.videoSlide}>
+                <div className={styles.videoFrame}>
+                  <img
+                    src="/open-fullscreen.png"
+                    alt="Open fullscreen"
+                    width="24"
+                    height="24"
+                    className={styles.open_fullscreen_icon}
+                  />
+                  <Video
+                    src={item.src}
+                    poster={item.poster}
+                    source={buildVimeoSource(item.src, item.poster)}
+                    options={VIMEO_OPTIONS}
+                    alt={item.title}
+                  />
+                </div>
+                <div className={styles.videoMeta}>
+                  <strong
+                    className={styles.videoMetaTitle}
+                    data-skeleton-text-id={textIds.title}
+                  >
+                    {item.title}
+                  </strong>
+                  <p
+                    className={styles.videoMetaBody}
+                    data-skeleton-text-id={textIds.body}
+                  >
+                    {item.body}
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+        </Grid>
+      </GridSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );

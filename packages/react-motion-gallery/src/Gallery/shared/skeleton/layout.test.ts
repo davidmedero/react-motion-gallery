@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { BREAKPOINT_MAP } from "../responsive";
 import {
   buildResponsiveContainerStyleCssRules,
+  containerStylesPlain,
   collectResponsiveStyleBreakpoints,
   resolveInlineResponsiveContainerStyle,
   resolveResponsiveBaseStyleAtMinWidth,
@@ -188,5 +189,77 @@ describe("skeleton responsive style helpers", () => {
         raw: true,
       },
     ]);
+  });
+
+  test("serializes typed flex container and item style props", () => {
+    const plain = containerStylesPlain({
+      flexDirection: "row",
+      flexWrap: "wrap",
+      rowGap: 12,
+      columnGap: 18,
+      alignItems: "stretch",
+      alignContent: "space-between",
+      justifyContent: "center",
+      flex: "1 1 320px",
+      flexBasis: 320,
+      flexGrow: 2,
+      minWidth: 180,
+      minHeight: 120,
+      boxSizing: "border-box",
+      backgroundColor: "#fff",
+      borderRadius: 18,
+      margin: 8,
+    });
+
+    expect(plain).toMatchObject({
+      flexDirection: "row",
+      flexWrap: "wrap",
+      rowGap: "12px",
+      columnGap: "18px",
+      alignItems: "stretch",
+      alignContent: "space-between",
+      justifyContent: "center",
+      flex: "1 1 320px",
+      flexBasis: "320px",
+      flexGrow: 2,
+      minWidth: "180px",
+      minHeight: "120px",
+      boxSizing: "border-box",
+      backgroundColor: "#fff",
+      borderRadius: "18px",
+      margin: "8px",
+    });
+  });
+
+  test("builds responsive CSS for typed flex container and item props", () => {
+    const rules = buildResponsiveContainerStyleCssRules({
+      style: {
+        0: {
+          flexDirection: "column",
+          flex: "1 1 220px",
+          minWidth: 0,
+          rowGap: 12,
+        },
+        md: {
+          flexDirection: "row",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          columnGap: 18,
+          flexBasis: "320px",
+        },
+      },
+    });
+
+    expect(rules).toHaveLength(2);
+    expect(rules[0]?.css).toContain("flex-direction:column;");
+    expect(rules[0]?.css).toContain("flex:1 1 220px;");
+    expect(rules[0]?.css).toContain("min-width:0px;");
+    expect(rules[0]?.css).toContain("row-gap:12px;");
+    expect(rules[1]?.minWidth).toBe(BREAKPOINT_MAP.md);
+    expect(rules[1]?.css).toContain("flex-direction:row;");
+    expect(rules[1]?.css).toContain("flex-wrap:wrap;");
+    expect(rules[1]?.css).toContain("justify-content:space-between;");
+    expect(rules[1]?.css).toContain("column-gap:18px;");
+    expect(rules[1]?.css).toContain("flex-basis:320px;");
   });
 });

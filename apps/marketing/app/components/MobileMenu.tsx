@@ -106,8 +106,7 @@ export default function MobileMenu({ items }: { items: MenuItem[] }) {
     closeMenu()
   }
 
-  const common =
-    'block w-full text-center px-4 py-2 text-[#0A0A0A] hover:bg-blue-400/10 focus:bg-blue-400/10 outline-none'
+  const common = styles.item
 
   return (
     <div className="relative md:hidden">
@@ -120,7 +119,7 @@ export default function MobileMenu({ items }: { items: MenuItem[] }) {
         aria-controls="mobile-menu-panel"
         data-open={open}
         onClick={() => setOpen((v) => !v)}
-        className="p-5 rounded-md text-[#0A0A0A] focus:outline-none ring-2 ring-white cursor-pointer relative z-60"
+        className="p-5 rounded-md text-[rgb(var(--rmg-logo-shadow-rgb))] focus:outline-none cursor-pointer relative z-60"
       >
         <span className={`${styles.burger} ${styles.top}`} aria-hidden />
         <span className={`${styles.burger} ${styles.middle}`} aria-hidden />
@@ -151,15 +150,15 @@ export default function MobileMenu({ items }: { items: MenuItem[] }) {
           {items.map((item, i) => {
             if (item.type === 'scroll') {
               return (
-                <li key={item.label}>
+                <li key={item.label} style={{ ['--d' as any]: `${i * 55}ms` }}>
                   <button
                     ref={(el) => {
                       itemRefs.current[i] = el
                     }}
+                    type="button"
                     role="menuitem"
                     tabIndex={0}
                     className={common}
-                    style={{ cursor: 'pointer' }}
                     onKeyDown={(e) => onItemKeyDown(e, i)}
                     onClick={() => handleItemClick(item)}
                   >
@@ -168,6 +167,9 @@ export default function MobileMenu({ items }: { items: MenuItem[] }) {
                 </li>
               )
             }
+
+            const isCurrent =
+              pathname === item.href || pathname.startsWith(`${item.href}/`)
 
             return (
               <li key={item.label} style={{ ['--d' as any]: `${i * 55}ms` }}>
@@ -179,6 +181,8 @@ export default function MobileMenu({ items }: { items: MenuItem[] }) {
                   role="menuitem"
                   tabIndex={0}
                   className={common}
+                  data-current={isCurrent}
+                  aria-current={isCurrent ? 'page' : undefined}
                   onKeyDown={(e) => onItemKeyDown(e, i)}
                   onClick={() => handleItemClick(item)}
                 >

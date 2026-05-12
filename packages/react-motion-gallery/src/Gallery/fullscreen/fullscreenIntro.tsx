@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
+import { flushSync } from "react-dom";
 import { createRoot, Root } from "react-dom/client";
 import { findPrimaryTrackableImage } from "../shared/lazy/imageLifecycle";
 import { parseObjectPosition } from "../shared/transitions/objectPosition";
@@ -22,6 +23,7 @@ import {
   ResponsiveCaptionPlacement,
   ResponsiveLength,
 } from "../shared/responsive";
+import { readViewportWidth } from "../shared/hooks/useViewportWidth";
 
 type RefEl<T extends HTMLElement> = React.RefObject<T | null>;
 type ObjectFitMode = "contain" | "cover";
@@ -120,6 +122,23 @@ function createOverlay(
   overlay.style.transition = `opacity ${durationMs}ms ${easing}`;
 
   return overlay;
+}
+
+function clearFullscreenTrackOpacityTransition() {
+  const track = document.querySelector<HTMLElement>(".fullscreen_slider");
+  if (!track) return;
+
+  track.style.removeProperty("transition");
+}
+
+function forceFullscreenTrackOpacityStart(durationMs: number, easing: string) {
+  const track = document.querySelector<HTMLElement>(".fullscreen_slider");
+  if (!track) return;
+
+  track.style.transition = "none";
+  track.style.opacity = "0";
+  void track.offsetWidth;
+  track.style.transition = `opacity ${durationMs}ms ${easing}`;
 }
 
 function computeContentRect(args: {
@@ -764,10 +783,16 @@ function runFadeIntro(args: {
   });
 
   queueMicrotask(() => {
-    setFsFadeOpening(true);
-    setShowFullscreenSlider(true);
+    flushSync(() => {
+      setFsFadeOpening(true);
+      setShowFullscreenSlider(true);
+    });
 
-    requestAnimationFrame(() => setFsFadeOpening(false));
+    forceFullscreenTrackOpacityStart(durationMs, easing);
+
+    requestAnimationFrame(() => {
+      flushSync(() => setFsFadeOpening(false));
+    });
   });
 
   window.setTimeout(() => {
@@ -868,6 +893,8 @@ function runScaleIntro(args: {
     overlayCaptionRootRef,
     setShowFullscreenSlider,
   } = args;
+
+  clearFullscreenTrackOpacityTransition();
 
   const imgRect = originalImage.getBoundingClientRect();
 
@@ -1084,6 +1111,7 @@ function runScaleIntro(args: {
 
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
+    clearFullscreenTrackOpacityTransition();
     setShowFullscreenSlider(true);
 
     requestAnimationFrame(() => {
@@ -1131,7 +1159,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
 
   addShield?.(400);
 
-  const vw = document.documentElement.clientWidth;
+  const vw = readViewportWidth();
   const vh = window.innerHeight;
 
   let isVideoSlide = false;

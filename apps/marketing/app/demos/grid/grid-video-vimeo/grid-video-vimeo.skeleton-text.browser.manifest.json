@@ -1,0 +1,45 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=grid-video-vimeo&skeletonMeasure=content",
+  "outputFile": "./grid-video-vimeo.skeleton-text.generated.ts",
+  "moduleExportName": "gridVideoVimeoSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1600,
+  "viewportHeight": 1800,
+  "settleMs": 120,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "gridVideoVimeoItem01Title",
+      "selector": "[data-skeleton-text-id='gridVideoVimeoItem01Title']"
+    },
+    {
+      "exportName": "gridVideoVimeoItem01Body",
+      "selector": "[data-skeleton-text-id='gridVideoVimeoItem01Body']"
+    },
+    {
+      "exportName": "gridVideoVimeoItem02Title",
+      "selector": "[data-skeleton-text-id='gridVideoVimeoItem02Title']"
+    },
+    {
+      "exportName": "gridVideoVimeoItem02Body",
+      "selector": "[data-skeleton-text-id='gridVideoVimeoItem02Body']"
+    },
+    {
+      "exportName": "gridVideoVimeoItem03Title",
+      "selector": "[data-skeleton-text-id='gridVideoVimeoItem03Title']"
+    },
+    {
+      "exportName": "gridVideoVimeoItem03Body",
+      "selector": "[data-skeleton-text-id='gridVideoVimeoItem03Body']"
+    },
+    {
+      "exportName": "gridVideoVimeoItem04Title",
+      "selector": "[data-skeleton-text-id='gridVideoVimeoItem04Title']"
+    },
+    {
+      "exportName": "gridVideoVimeoItem04Body",
+      "selector": "[data-skeleton-text-id='gridVideoVimeoItem04Body']"
+    }
+  ]
+}

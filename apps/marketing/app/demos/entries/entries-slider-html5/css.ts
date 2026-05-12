@@ -1,0 +1,143 @@
+export const css = String.raw`.entryCard {
+  display: grid;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
+}
+
+.entryMeta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.entryKicker,
+.entryOverlayKicker {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.entryKicker {
+  color: rgba(14, 116, 144, 0.88);
+  background: rgba(224, 242, 254, 0.9);
+}
+
+.entryTitle {
+  margin: 12px 0 6px 0;
+  color: #0f172a;
+  font-size: 1.08rem;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.entryCount {
+  color: rgba(15, 23, 42, 0.56);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.entryBody {
+  margin: 0 0 12px 0;
+  color: rgba(15, 23, 42, 0.7);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.entryMedia {
+  min-width: 0;
+}
+
+.entrySliderMedia {
+  width: 100cqw;
+  max-width: 407px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  object-fit: cover;
+  border-radius: 16px;
+  background: #0f172a;
+}
+
+.entrySliderImage {
+  height: auto;
+  background: #dbeafe;
+}
+
+.entrySliderVideoFrame,
+.entrySliderVideoGuard,
+.entrySliderVideo {
+  height: 100%;
+}
+
+.entrySliderVideoGuard {
+  width: 100%;
+}
+
+.entryOverlay {
+  box-sizing: border-box;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 12px;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100%;
+  max-width: min(100%, 42rem);
+  padding: clamp(18px, 3vw, 34px);
+}
+
+@media(max-width: 1199px) {
+  .entryOverlay {
+    height: 100%;
+  }
+}
+
+.entryOverlayKicker {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.entryOverlayTitle {
+  color: #f8fafc;
+  font-size: clamp(1.05rem, 1.4vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.entryOverlayBody {
+  max-width: 34rem;
+  margin: -4px 0 0;
+  color: rgba(248, 250, 252, 0.86);
+  font-size: 0.95rem;
+  line-height: 1.58;
+}
+
+.entryOverlayMeta {
+  color: rgba(248, 250, 252, 0.82);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.entryOverlayDescription {
+  max-width: 32rem;
+  margin: -2px 0 0;
+  color: rgba(248, 250, 252, 0.76);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+`;

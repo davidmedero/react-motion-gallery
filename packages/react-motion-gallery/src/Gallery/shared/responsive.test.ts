@@ -1,9 +1,11 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  normalizeResponsiveNumberRules,
   parseLengthLike,
   resolveLengthFromResponsive,
   resolveNumberFromResponsive,
+  resolveResponsiveNumberRuleValue,
 } from "./responsive";
 
 describe("responsive length helpers", () => {
@@ -62,5 +64,41 @@ describe("responsive length helpers", () => {
   test("keeps the number-only responsive resolver unchanged for existing callers", () => {
     expect(resolveNumberFromResponsive({ 0: 2, 900: 4 }, 1, 800)).toBe(2);
     expect(resolveNumberFromResponsive({ 0: 2, 900: 4 }, 1, 1200)).toBe(4);
+  });
+
+  test("normalizes responsive number rules from named and numeric breakpoints", () => {
+    expect(
+      normalizeResponsiveNumberRules({
+        md: 640,
+        1200: 960,
+        0: 320,
+      })
+    ).toEqual([
+      { minWidth: 0, value: 320 },
+      { minWidth: 900, value: 640 },
+      { minWidth: 1200, value: 960 },
+    ]);
+  });
+
+  test("resolves responsive number rules using exact min-width boundaries", () => {
+    const rules = normalizeResponsiveNumberRules({
+      0: 320,
+      640: 640,
+      1024: 960,
+    });
+
+    expect(resolveResponsiveNumberRuleValue(rules, 639)).toBe(320);
+    expect(resolveResponsiveNumberRuleValue(rules, 640)).toBe(640);
+    expect(resolveResponsiveNumberRuleValue(rules, 1024)).toBe(960);
+  });
+
+  test("still normalizes standard responsive number rules for existing non-SSR callers", () => {
+    const rules = normalizeResponsiveNumberRules({
+      md: 640,
+      lg: 960,
+    });
+
+    expect(resolveResponsiveNumberRuleValue(rules, 899)).toBeUndefined();
+    expect(resolveResponsiveNumberRuleValue(rules, 900)).toBe(640);
   });
 });

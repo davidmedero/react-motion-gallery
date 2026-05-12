@@ -1,17 +1,26 @@
 import * as React from "react";
 import styles from "./Slider.module.css";
-import { BREAKPOINT_MAP, type BreakpointMap } from "../shared/responsive";
+import {
+  BREAKPOINT_MAP,
+  normalizeResponsiveNumberRules,
+  resolveResponsiveNumberRuleValue,
+  type BreakpointMap,
+  type ResponsiveNumber,
+} from "../shared/responsive";
 import {
   TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER,
   buildResponsiveTextCssRules,
   collectResponsiveTextBreakpoints,
   getTextSkeletonMetrics,
   getResponsiveTextRenderState,
-  hasResponsiveTextLineCount,
-  hasResponsiveTextLineWidth,
+  resolveResponsiveTextBarHeight,
+  resolveResponsiveTextLineHeight,
   resolveResponsiveTextLineCount,
+  type ResponsiveTextBarHeight,
+  type ResponsiveTextBarWidth,
+  type ResponsiveTextLineHeight,
   type ResponsiveTextLineCount,
-  type ResponsiveTextLineWidth,
+  type ResponsiveTextLastBarWidth,
 } from "../shared/skeleton/text";
 import {
   buildResponsiveBaseStyleCssRules,
@@ -48,6 +57,7 @@ export type SkeletonBaseStyle = {
   backgroundColor?: string;
   borderRadius?: SkeletonLength;
   overflow?: React.CSSProperties["overflow"];
+  margin?: SkeletonLength;
   marginTop?: SkeletonLength;
   marginRight?: SkeletonLength;
   marginBottom?: SkeletonLength;
@@ -67,6 +77,15 @@ export type SliderSkeletonWrapStyle = SkeletonBaseStyle & {
 };
 
 export type SkeletonContainerStyle = {
+  position?: React.CSSProperties["position"];
+  inset?: SkeletonLength;
+  insetBlock?: SkeletonLength;
+  insetInline?: SkeletonLength;
+  top?: SkeletonLength;
+  right?: SkeletonLength;
+  bottom?: SkeletonLength;
+  left?: SkeletonLength;
+  zIndex?: React.CSSProperties["zIndex"];
   gap?: SkeletonLength;
   padding?: SkeletonLength;
   align?: React.CSSProperties["alignItems"];
@@ -74,7 +93,28 @@ export type SkeletonContainerStyle = {
   wrap?: boolean;
   width?: SkeletonLength;
   maxWidth?: SkeletonLength;
+  height?: SkeletonLength;
+  minHeight?: SkeletonLength;
+  maxHeight?: SkeletonLength;
+  backgroundColor?: string;
+  borderRadius?: SkeletonLength;
+  border?: React.CSSProperties["border"];
+  boxShadow?: React.CSSProperties["boxShadow"];
+  margin?: SkeletonLength;
+  marginTop?: SkeletonLength;
+  marginRight?: SkeletonLength;
+  marginBottom?: SkeletonLength;
+  marginLeft?: SkeletonLength;
+  flex?: React.CSSProperties["flex"];
+  flexGrow?: React.CSSProperties["flexGrow"];
+  flexShrink?: React.CSSProperties["flexShrink"];
+  flexBasis?: SkeletonLength;
+  order?: React.CSSProperties["order"];
+  alignSelf?: React.CSSProperties["alignSelf"];
   overflow?: React.CSSProperties["overflow"];
+  transform?: React.CSSProperties["transform"];
+  pointerEvents?: React.CSSProperties["pointerEvents"];
+  opacity?: React.CSSProperties["opacity"];
 };
 
 export type SkeletonContainerStyleResponsive =
@@ -92,9 +132,13 @@ export type SliderSkeletonSliderNode = {
   count?: number;
   item: SkeletonNode;
   itemWrapStyle?: SliderSkeletonWrapStyle;
+  itemStretch?: boolean;
+  initialHeightSlot?: number;
+  rowHeightCompensation?: ResponsiveNumber;
   slots?: SliderSkeletonSlot[];
   direction?: "row" | "col";
   children?: SkeletonNode[];
+  overlays?: SkeletonNode[];
 };
 
 export type SliderSkeletonNode = SliderSkeletonSliderNode | SkeletonNode;
@@ -121,12 +165,22 @@ export type SkeletonNode =
         shimmer?: SkeletonShimmer;
       };
     } 
+  | {
+      kind: "sliderDots";
+      count: number;
+      style?: SkeletonContainerStyleResponsive;
+      dotStyle?: SkeletonBaseStyleResponsive;
+      activeStyle?: SkeletonBaseStyleResponsive;
+      inactiveStyle?: SkeletonBaseStyleResponsive;
+      shimmer?: SkeletonShimmer;
+    }
   | { 
       kind: "text";
-      fontSize: number;
-      lineHeight: number;
+      barHeight: ResponsiveTextBarHeight;
+      barWidth?: ResponsiveTextBarWidth;
+      lineHeight: ResponsiveTextLineHeight;
       lines?: ResponsiveTextLineCount;
-      lineWidth?: ResponsiveTextLineWidth;
+      lastBarWidth?: ResponsiveTextLastBarWidth;
       style?: SkeletonBaseStyleResponsive;
       shimmer?: SkeletonShimmer
     };
@@ -134,6 +188,7 @@ export type SkeletonNode =
 export type SliderSkeletonSpec = {
   mode?: "fit" | "peek";
   centering?: "first";
+  visibleCount?: ResponsiveNumber;
   className?: string;
   style?: React.CSSProperties;
   layout?: SliderSkeletonNode;
@@ -145,6 +200,7 @@ export type SliderSkeletonSpec = {
 export type SliderSkeletonCardProps = {
   count: number;
   maxSlots: number;
+  activeDotIndex?: number;
   rowStyle?: React.CSSProperties;
   spec?: SliderSkeletonSpec;
   breakpoints?: BreakpointMap;
@@ -160,12 +216,14 @@ function cssLen(v: SkeletonLength | undefined): string | undefined {
 
 function applyBoxMargins(style: SkeletonBaseStyle | undefined): React.CSSProperties {
   if (!style) return {};
+  const margin = cssLen(style.margin);
   const mt = cssLen(style.marginTop);
   const mr = cssLen(style.marginRight);
   const mb = cssLen(style.marginBottom);
   const ml = cssLen(style.marginLeft);
 
   const out: React.CSSProperties = {};
+  if (margin != null) out.margin = margin;
   if (mt != null) out.marginTop = mt;
   if (mr != null) out.marginRight = mr;
   if (mb != null) out.marginBottom = mb;
@@ -268,6 +326,24 @@ function textWrapperStyleVars(
   return s;
 }
 
+function isMaxContentWidth(value: unknown): boolean {
+  return typeof value === "string" && value.trim() === "max-content";
+}
+
+function styleUsesMaxContentWidth(style: unknown): boolean {
+  if (!style || typeof style !== "object") return false;
+
+  const plain = style as { width?: unknown };
+  if (isMaxContentWidth(plain.width)) return true;
+
+  return Object.values(style as Record<string, unknown>).some(
+    (value) =>
+      !!value &&
+      typeof value === "object" &&
+      isMaxContentWidth((value as { width?: unknown }).width)
+  );
+}
+
 function wrapStyleVars(base: SliderSkeletonWrapStyle | undefined): React.CSSProperties {
   const s = nodeStyleVars(base, undefined);
   delete (s as any)["--rmg-skel-bg"];
@@ -284,10 +360,48 @@ function wrapStyleVars(base: SliderSkeletonWrapStyle | undefined): React.CSSProp
   return s;
 }
 
+function splitSliderItemWrapStyles(itemWrapStyle: SliderSkeletonWrapStyle | undefined): {
+  outerStyle: React.CSSProperties | undefined;
+  innerStyle: React.CSSProperties | undefined;
+} {
+  if (!itemWrapStyle) {
+    return {
+      outerStyle: undefined,
+      innerStyle: undefined,
+    };
+  }
+
+  const innerStyle = wrapStyleVars(itemWrapStyle);
+  const outerStyle: React.CSSProperties = {};
+
+  if (innerStyle.boxShadow != null) {
+    (outerStyle as any)["--rmg-slider-skel-wrap-shadow"] = innerStyle.boxShadow;
+    delete innerStyle.boxShadow;
+  }
+
+  if (innerStyle.borderRadius != null) {
+    (outerStyle as any)["--rmg-slider-skel-wrap-shadow-radius"] = innerStyle.borderRadius;
+  }
+
+  return {
+    outerStyle: Object.keys(outerStyle).length ? outerStyle : undefined,
+    innerStyle,
+  };
+}
+
 function containerStylesPlain(style?: SkeletonContainerStyle): React.CSSProperties {
   const s: React.CSSProperties = {};
   if (!style) return s;
 
+  if (style.position != null) s.position = style.position;
+  if (style.inset != null) (s as any).inset = cssLen(style.inset);
+  if (style.insetBlock != null) (s as any).insetBlock = cssLen(style.insetBlock);
+  if (style.insetInline != null) (s as any).insetInline = cssLen(style.insetInline);
+  if (style.top != null) s.top = cssLen(style.top);
+  if (style.right != null) s.right = cssLen(style.right);
+  if (style.bottom != null) s.bottom = cssLen(style.bottom);
+  if (style.left != null) s.left = cssLen(style.left);
+  if (style.zIndex != null) s.zIndex = style.zIndex;
   if (style.gap != null) (s as any).gap = cssLen(style.gap);
   if (style.padding != null) (s as any).padding = cssLen(style.padding);
   if (style.align) s.alignItems = style.align;
@@ -296,9 +410,42 @@ function containerStylesPlain(style?: SkeletonContainerStyle): React.CSSProperti
 
   if (style.width != null) s.width = cssLen(style.width);
   if (style.maxWidth != null) s.maxWidth = cssLen(style.maxWidth);
+  if (style.height != null) s.height = cssLen(style.height);
+  if (style.minHeight != null) s.minHeight = cssLen(style.minHeight);
+  if (style.maxHeight != null) s.maxHeight = cssLen(style.maxHeight);
+  if (style.backgroundColor != null) s.backgroundColor = style.backgroundColor;
+  if (style.borderRadius != null) s.borderRadius = cssLen(style.borderRadius);
+  if (style.border != null) s.border = style.border;
+  if (style.boxShadow != null) s.boxShadow = style.boxShadow;
+  if (style.margin != null) s.margin = cssLen(style.margin);
+  if (style.marginTop != null) s.marginTop = cssLen(style.marginTop);
+  if (style.marginRight != null) s.marginRight = cssLen(style.marginRight);
+  if (style.marginBottom != null) s.marginBottom = cssLen(style.marginBottom);
+  if (style.marginLeft != null) s.marginLeft = cssLen(style.marginLeft);
+  if (style.flex != null) s.flex = style.flex;
+  if (style.flexGrow != null) s.flexGrow = style.flexGrow;
+  if (style.flexShrink != null) s.flexShrink = style.flexShrink;
+  if (style.flexBasis != null) s.flexBasis = cssLen(style.flexBasis);
+  if (style.order != null) s.order = style.order;
+  if (style.alignSelf != null) s.alignSelf = style.alignSelf;
   if (style.overflow != null) s.overflow = style.overflow;
+  if (style.transform != null) s.transform = style.transform;
+  if (style.pointerEvents != null) s.pointerEvents = style.pointerEvents;
+  if (style.opacity != null) s.opacity = style.opacity;
 
   return s;
+}
+
+function baseStylesPlain(style?: SkeletonBaseStyle): React.CSSProperties {
+  const s = nodeStyleVars(style, undefined);
+  delete (s as any)["--rmg-skel-bg"];
+  if (style?.backgroundColor != null) s.backgroundColor = style.backgroundColor;
+  if (style?.borderRadius != null) s.borderRadius = cssLen(style.borderRadius);
+  if (style?.overflow != null) s.overflow = style.overflow;
+  return {
+    ...s,
+    ...applyBoxMargins(style),
+  };
 }
 
 function escapeAttrValue(v: string) {
@@ -335,10 +482,12 @@ function collectResponsiveCss(
     case "text": {
       const rules = [
         ...buildResponsiveTextCssRules({
-          fontSize: node.fontSize,
+          barHeight: node.barHeight,
+          barWidth: node.barWidth,
           lineHeight: node.lineHeight,
           lines: node.lines,
-          lineWidth: node.lineWidth,
+          lastBarWidth: node.lastBarWidth,
+          fitContent: styleUsesMaxContentWidth(node.style),
           breakpointMap,
         }).map((rule) => ({ ...rule, raw: true })),
         ...buildResponsiveTextStyleCssRules({
@@ -364,6 +513,36 @@ function collectResponsiveCss(
           style: node.tile?.style,
           breakpointMap,
           selector: `${TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER} [data-rmg-skel-media-tile="true"]`,
+        }),
+      ];
+
+      if (!rules.length) return node;
+
+      const id = allocId();
+      out.push({ nodeId: id, rules });
+      return { ...(node as any), __rmgNodeId: id };
+    }
+
+    case "sliderDots": {
+      const rules = [
+        ...buildResponsiveContainerStyleCssRules({
+          style: node.style,
+          breakpointMap,
+        }),
+        ...buildResponsiveBaseStyleCssRules({
+          style: node.dotStyle,
+          breakpointMap,
+          selector: `${TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER} [data-rmg-skel-slider-dot]`,
+        }),
+        ...buildResponsiveBaseStyleCssRules({
+          style: node.activeStyle,
+          breakpointMap,
+          selector: `${TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER} [data-rmg-skel-dot-active="true"]`,
+        }),
+        ...buildResponsiveBaseStyleCssRules({
+          style: node.inactiveStyle,
+          breakpointMap,
+          selector: `${TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER} [data-rmg-skel-dot-active="false"]`,
         }),
       ];
 
@@ -404,13 +583,16 @@ function collectResponsiveCss(
       const children = node.children?.map((child) =>
         collectResponsiveCss(child, allocId, out, breakpointMap) as SkeletonNode
       );
+      const overlays = node.overlays?.map((child) =>
+        collectResponsiveCss(child, allocId, out, breakpointMap) as SkeletonNode
+      );
       const slots = node.slots?.map((slot) => ({
         ...slot,
         item: slot.item
           ? (collectResponsiveCss(slot.item, allocId, out, breakpointMap) as SkeletonNode)
           : undefined,
       }));
-      return { ...(node as any), ...(id ? { __rmgNodeId: id } : null), item, children, slots };
+      return { ...(node as any), ...(id ? { __rmgNodeId: id } : null), item, children, overlays, slots };
     }
 
     default: {
@@ -488,37 +670,45 @@ function TextNode({
   breakpointMap: BreakpointMap;
 }) {
   const renderState = getResponsiveTextRenderState({
-    fontSize: node.fontSize,
+    barHeight: node.barHeight,
+    barWidth: node.barWidth,
     lineHeight: node.lineHeight,
     lines: node.lines,
-    lineWidth: node.lineWidth,
+    lastBarWidth: node.lastBarWidth,
     breakpointMap,
   });
   const inlineStyle = resolveInlineResponsiveBaseStyle(
     node.style,
     breakpointMap
   );
-  const hasResponsiveLines = hasResponsiveTextLineCount(
-    node.lines,
-    breakpointMap
+  const usesResponsiveTextLayoutCss = renderState.states.some(
+    ({ state }) =>
+      state.lineCount !== renderState.baseState.lineCount ||
+      state.metrics.totalHeight !== renderState.baseState.metrics.totalHeight ||
+      state.metrics.barHeight !== renderState.baseState.metrics.barHeight ||
+      state.metrics.paddingBlock !== renderState.baseState.metrics.paddingBlock ||
+      state.metrics.rowGap !== renderState.baseState.metrics.rowGap
   );
-  const hasResponsiveLineWidth = hasResponsiveTextLineWidth(
-    node.lineWidth,
-    breakpointMap
+  const usesResponsiveBarWidthCss = renderState.states.some(
+    ({ state }) =>
+      state.lineCount !== renderState.baseState.lineCount ||
+      state.barWidths.length !== renderState.baseState.barWidths.length ||
+      state.barWidths.some(
+        (barWidth, index) => barWidth !== renderState.baseState.barWidths[index]
+      )
   );
-  const usesResponsiveLineCss =
-    hasResponsiveLines || hasResponsiveLineWidth;
   const nodeId = (node as any).__rmgNodeId as string | undefined;
   const wrapperStyle = textWrapperStyleVars(
     inlineStyle,
-    hasResponsiveLines ? undefined : renderState.metrics.totalHeight
+    usesResponsiveTextLayoutCss ? undefined : renderState.metrics.totalHeight
   );
 
   const lineStyle: SkeletonBaseStyle = {
-    height: renderState.metrics.lineBarHeight,
+    height: renderState.metrics.barHeight,
     backgroundColor: inlineStyle?.backgroundColor,
     borderRadius: inlineStyle?.borderRadius,
   };
+  const fitContent = isMaxContentWidth(inlineStyle?.width);
 
   return (
     <div
@@ -528,7 +718,7 @@ function TextNode({
       style={{
         ...wrapperStyle,
         ...applyBoxMargins(inlineStyle),
-        ...(hasResponsiveLines
+        ...(usesResponsiveTextLayoutCss
           ? null
           : {
               paddingBlock: `${renderState.metrics.paddingBlock}px`,
@@ -546,15 +736,15 @@ function TextNode({
           ].join(" ")}
           style={{
             ...nodeStyleVars(lineStyle, node.shimmer),
-            ...(usesResponsiveLineCss
+            ...(usesResponsiveBarWidthCss
               ? null
               : {
                   display:
                     index >= renderState.baseLines ? "none" : undefined,
-                  width:
-                    index === renderState.baseLines - 1
-                      ? renderState.baseLineWidth
-                      : "100%",
+                  width: fitContent
+                    ? renderState.baseState.barWidths[index] ?? "100%"
+                    : "100%",
+                  maxWidth: renderState.baseState.barWidths[index] ?? "100%",
                 }),
           }}
         />
@@ -566,9 +756,11 @@ function TextNode({
 function LayoutNode({
   node,
   breakpointMap,
+  activeDotIndex,
 }: {
   node: SkeletonNode;
   breakpointMap: BreakpointMap;
+  activeDotIndex?: number;
 }) {
   switch (node.kind) {
     case "rect":
@@ -613,6 +805,62 @@ function LayoutNode({
       );
     }
 
+    case "sliderDots": {
+      const count = Math.max(0, node.count | 0);
+      const nodeId = (node as any).__rmgNodeId as string | undefined;
+      const plainStyle = containerStylesPlain(
+        resolveInlineResponsiveContainerStyle(
+          node.style,
+          breakpointMap
+        )
+      );
+      const dotStyle = baseStylesPlain(
+        resolveInlineResponsiveBaseStyle(node.dotStyle, breakpointMap)
+      );
+      const activeStyle = baseStylesPlain(
+        resolveInlineResponsiveBaseStyle(node.activeStyle, breakpointMap)
+      );
+      const inactiveStyle = baseStylesPlain(
+        resolveInlineResponsiveBaseStyle(node.inactiveStyle, breakpointMap)
+      );
+      const activeIndex =
+        typeof activeDotIndex === "number" && Number.isFinite(activeDotIndex)
+          ? Math.max(0, Math.min(count - 1, Math.floor(activeDotIndex)))
+          : 0;
+
+      return (
+        <div
+          data-rmg-skel-node={nodeId}
+          data-rmg-skel-slider-dots="true"
+          data-rmg-skel-dot-active-style={JSON.stringify(activeStyle)}
+          data-rmg-skel-dot-inactive-style={JSON.stringify(inactiveStyle)}
+          className={styles.sliderSkeletonGroup}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            ...(plainStyle || {}),
+          }}
+        >
+          {Array.from({ length: count }).map((_, i) => {
+            const active = i === activeIndex;
+            return (
+              <div
+                key={i}
+                data-rmg-skel-slider-dot={i}
+                data-rmg-skel-dot-active={active ? "true" : "false"}
+                className={styles.sliderSkeleton}
+                style={{
+                  ...shimmerStyleVars(node.shimmer),
+                  ...dotStyle,
+                  ...(active ? activeStyle : inactiveStyle),
+                }}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
     case "stack":
     case "row":
     case "col": {
@@ -637,7 +885,12 @@ function LayoutNode({
           }}
         >
           {node.children.map((child, i) => (
-            <LayoutNode key={i} node={child} breakpointMap={breakpointMap} />
+            <LayoutNode
+              key={i}
+              node={child}
+              breakpointMap={breakpointMap}
+              activeDotIndex={activeDotIndex}
+            />
           ))}
         </div>
       );
@@ -833,10 +1086,12 @@ function clampMaxSizeExpr(
 }
 
 function marginsTBExpr(style?: SkeletonBaseStyle): string | null {
+  const margin = toCssLen(style?.margin);
   const mt = toCssLen(style?.marginTop);
   const mb = toCssLen(style?.marginBottom);
-  if (!mt && !mb) return null;
-  return sumExpr([mt ?? "0px", mb ?? "0px"]);
+  if (margin && !mt && !mb) return scaleExpr(margin, 2);
+  if (!margin && !mt && !mb) return null;
+  return sumExpr([mt ?? margin ?? "0px", mb ?? margin ?? "0px"]);
 }
 
 function parsePaddingShorthand(
@@ -975,6 +1230,23 @@ function buildSliderSlotContentWidthExpr(
   return subExpr(outerWidthExpr, borderX);
 }
 
+function resolveSliderRowHeightCompensationExpr(
+  slider: SliderSkeletonSliderNode,
+  responsiveMinWidth = 0,
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+): string | null {
+  const value = resolveResponsiveNumberRuleValue(
+    normalizeResponsiveNumberRules(slider.rowHeightCompensation, breakpointMap),
+    responsiveMinWidth
+  );
+
+  if (value == null || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  return `${value}px`;
+}
+
 function sliderRowHeightExpr(
   slider: SliderSkeletonSliderNode,
   visibleCount: number,
@@ -990,6 +1262,11 @@ function sliderRowHeightExpr(
 
   const gap = gapExpr(stylePlain) ?? "0px";
   const padY = containerPaddingYExpr(stylePlain) ?? "0px";
+  const compensation = resolveSliderRowHeightCompensationExpr(
+    slider,
+    responsiveMinWidth,
+    breakpointMap
+  );
   const count = Math.max(1, visibleCount | 0);
   const dir = slider.direction ?? "row";
 
@@ -1046,13 +1323,22 @@ function sliderRowHeightExpr(
 
   const rowH =
     dir === "row"
-      ? maxExpr(slotHeights)
+      ? (() => {
+          const heightSlot = slider.initialHeightSlot;
+          if (heightSlot == null) return maxExpr(slotHeights);
+
+          const slotIndex = Math.min(
+            Math.max(0, Math.trunc(heightSlot)),
+            Math.max(0, count - 1)
+          );
+          return slotHeights[slotIndex] ?? maxExpr(slotHeights);
+        })()
       : sumExpr([
           sumExpr(slotHeights),
           count > 1 ? mulExpr(gap, String(count - 1)) : "0px",
         ]);
 
-  return sumExpr([rowH, padY]);
+  return sumExpr([rowH, padY, compensation]);
 }
 
 function sliderChildrenHeightExpr(
@@ -1132,6 +1418,35 @@ function nodeHeightExpr(
     }
   }
 
+  if (node.kind === "sliderDots") {
+    const plain = resolveContainerStyleAtMinWidth(
+      node.style,
+      responsiveMinWidth,
+      breakpointMap
+    );
+    const dot = resolveResponsiveBaseStyleAtMinWidth(
+      node.dotStyle,
+      responsiveMinWidth,
+      breakpointMap
+    );
+    const active = resolveResponsiveBaseStyleAtMinWidth(
+      node.activeStyle,
+      responsiveMinWidth,
+      breakpointMap
+    );
+    const inactive = resolveResponsiveBaseStyleAtMinWidth(
+      node.inactiveStyle,
+      responsiveMinWidth,
+      breakpointMap
+    );
+    const heights = [dot, active, inactive]
+      .map((style) => sumExpr([toCssLen(style?.height), marginsTBExpr(style)]))
+      .filter((height): height is string => !!height);
+    const dotH = maxExpr(heights);
+    if (!dotH) return containerPaddingYExpr(plain);
+    return sumExpr([dotH, containerPaddingYExpr(plain)]);
+  }
+
   if (node.kind === "row" || node.kind === "col" || node.kind === "stack") {
     const dir = node.kind === "row" ? "row" : "col";
     const plain = resolveContainerStyleAtMinWidth(
@@ -1167,8 +1482,18 @@ function nodeHeightExpr(
       breakpointMap
     );
     const metrics = getTextSkeletonMetrics({
-      fontSize: node.fontSize,
-      lineHeight: node.lineHeight,
+      barHeight: resolveResponsiveTextBarHeight(
+        node.barHeight,
+        typeof node.barHeight === "number" ? node.barHeight : 0,
+        responsiveMinWidth,
+        breakpointMap
+      ),
+      lineHeight: resolveResponsiveTextLineHeight(
+        node.lineHeight,
+        typeof node.lineHeight === "number" ? node.lineHeight : 1,
+        responsiveMinWidth,
+        breakpointMap
+      ),
       lines: resolveResponsiveTextLineCount(
         node.lines,
         1,
@@ -1308,12 +1633,16 @@ function collectSliderTextBreakpointsInto(
     case "square":
     case "circle":
     case "media":
+    case "sliderDots":
       return;
 
     case "text":
       for (const minWidth of collectResponsiveTextBreakpoints({
+        barHeight: node.barHeight,
+        barWidth: node.barWidth,
+        lineHeight: node.lineHeight,
         lines: node.lines,
-        lineWidth: node.lineWidth,
+        lastBarWidth: node.lastBarWidth,
         breakpointMap,
       })) {
         out.add(minWidth);
@@ -1331,6 +1660,9 @@ function collectSliderTextBreakpointsInto(
     case "slider":
       collectSliderTextBreakpointsInto(node.item, out, breakpointMap);
       for (const child of node.children ?? []) {
+        collectSliderTextBreakpointsInto(child, out, breakpointMap);
+      }
+      for (const child of node.overlays ?? []) {
         collectSliderTextBreakpointsInto(child, out, breakpointMap);
       }
       for (const slot of node.slots ?? []) {
@@ -1361,6 +1693,12 @@ function collectSliderBaseStyleBreakpointsInto(
       collectResponsiveStyleBreakpoints(node.tile?.style, out, breakpointMap);
       return;
 
+    case "sliderDots":
+      collectResponsiveStyleBreakpoints(node.dotStyle, out, breakpointMap);
+      collectResponsiveStyleBreakpoints(node.activeStyle, out, breakpointMap);
+      collectResponsiveStyleBreakpoints(node.inactiveStyle, out, breakpointMap);
+      return;
+
     case "text":
       collectResponsiveStyleBreakpoints(node.style, out, breakpointMap);
       return;
@@ -1376,6 +1714,9 @@ function collectSliderBaseStyleBreakpointsInto(
     case "slider":
       collectSliderBaseStyleBreakpointsInto(node.item, out, breakpointMap);
       for (const child of node.children ?? []) {
+        collectSliderBaseStyleBreakpointsInto(child, out, breakpointMap);
+      }
+      for (const child of node.overlays ?? []) {
         collectSliderBaseStyleBreakpointsInto(child, out, breakpointMap);
       }
       for (const slot of node.slots ?? []) {
@@ -1414,6 +1755,10 @@ function collectSliderContainerBreakpointsInto(
       collectResponsiveContainerBreakpoints(node.style, out, breakpointMap);
       return;
 
+    case "sliderDots":
+      collectResponsiveContainerBreakpoints(node.style, out, breakpointMap);
+      return;
+
     case "stack":
     case "row":
     case "col":
@@ -1429,8 +1774,61 @@ function collectSliderContainerBreakpointsInto(
       for (const child of node.children ?? []) {
         collectSliderContainerBreakpointsInto(child, out, breakpointMap);
       }
+      for (const child of node.overlays ?? []) {
+        collectSliderContainerBreakpointsInto(child, out, breakpointMap);
+      }
       for (const slot of node.slots ?? []) {
         if (slot.item) collectSliderContainerBreakpointsInto(slot.item, out, breakpointMap);
+      }
+      return;
+
+    default: {
+      const _exhaustive: never = node;
+      return _exhaustive;
+    }
+  }
+}
+
+function collectSliderCompensationBreakpointsInto(
+  node: SliderSkeletonNode,
+  out: Set<number>,
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+) {
+  switch (node.kind) {
+    case "rect":
+    case "square":
+    case "circle":
+    case "media":
+    case "sliderDots":
+    case "text":
+      return;
+
+    case "stack":
+    case "row":
+    case "col":
+      for (const child of node.children) {
+        collectSliderCompensationBreakpointsInto(child, out, breakpointMap);
+      }
+      return;
+
+    case "slider":
+      for (const rule of normalizeResponsiveNumberRules(
+        node.rowHeightCompensation,
+        breakpointMap
+      )) {
+        out.add(rule.minWidth);
+      }
+      collectSliderCompensationBreakpointsInto(node.item, out, breakpointMap);
+      for (const child of node.children ?? []) {
+        collectSliderCompensationBreakpointsInto(child, out, breakpointMap);
+      }
+      for (const child of node.overlays ?? []) {
+        collectSliderCompensationBreakpointsInto(child, out, breakpointMap);
+      }
+      for (const slot of node.slots ?? []) {
+        if (slot.item) {
+          collectSliderCompensationBreakpointsInto(slot.item, out, breakpointMap);
+        }
       }
       return;
 
@@ -1474,9 +1872,21 @@ export function collectResponsiveSliderBaseStyleBreakpoints(
     .sort((a, b) => a - b);
 }
 
+export function collectResponsiveSliderCompensationBreakpoints(
+  layout: SliderSkeletonNode,
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+): number[] {
+  const out = new Set<number>();
+  collectSliderCompensationBreakpointsInto(layout, out, breakpointMap);
+  return Array.from(out)
+    .filter((minWidth) => minWidth > 0)
+    .sort((a, b) => a - b);
+}
+
 export function SliderSkeletonCard({
   count,
   maxSlots,
+  activeDotIndex,
   rowStyle,
   spec,
   breakpoints,
@@ -1546,8 +1956,10 @@ export function SliderSkeletonCard({
   const slotCount = sliderNode.count != null ? Math.max(0, sliderNode.count | 0) : Math.max(0, count | 0);
   const dir = sliderNode.direction ?? "row";
   const footerChildren = sliderNode.children ?? [];
+  const overlayChildren = sliderNode.overlays ?? [];
   const forceCenterRow = centerFirst && dir === "row";
   const renderLeadingSpacer = hasLeadingSpacer && dir === "row";
+  const stretchItems = sliderNode.itemStretch ?? true;
 
   const slotsToRender = Math.max(0, maxSlots | 0);
 
@@ -1604,6 +2016,7 @@ export function SliderSkeletonCard({
                 }
               : resolveSliderSlot(sliderNode, realSlotIndex);
             const itemWrap = slot.itemWrapStyle;
+            const { outerStyle, innerStyle } = splitSliderItemWrapStyles(itemWrap);
 
             return (
               <div
@@ -1614,21 +2027,38 @@ export function SliderSkeletonCard({
                 data-rmg-skel-center-first-spacer={isSpacer ? "true" : undefined}
                 style={{
                   boxSizing: "border-box",
-                  ...(itemWrap ? wrapStyleVars(itemWrap) : null),
                   ...(itemWrap ? applyBoxMargins(itemWrap) : null),
+                  ...(outerStyle ?? null),
                   ...(dir === "col"
                     ? {
                         flex: "0 0 auto",
                         height: "auto",
                       }
+                    : stretchItems
+                      ? {
+                          height: "100%",
+                        }
                     : {
-                        height: "100%",
+                        alignSelf: "flex-start",
+                        height: "auto",
                       }),
                   minWidth: 0,
                   minHeight: 0,
                 }}
               >
-                <LayoutNode node={slot.item} breakpointMap={effectiveBreakpoints} />
+                <div
+                  className={styles.sliderSkeletonItemInner}
+                  style={{
+                    ...(innerStyle ?? null),
+                    ...(dir === "row" && !stretchItems ? { height: "auto" } : null),
+                  }}
+                >
+                  <LayoutNode
+                    node={slot.item}
+                    breakpointMap={effectiveBreakpoints}
+                    activeDotIndex={activeDotIndex}
+                  />
+                </div>
               </div>
             );
           })}
@@ -1641,11 +2071,25 @@ export function SliderSkeletonCard({
                 key={`rmg-slider-skel-extra-${i}`}
                 node={child}
                 breakpointMap={effectiveBreakpoints}
+                activeDotIndex={activeDotIndex}
               />
             ))}
           </div>
         ) : null}
       </div>
+
+      {overlayChildren.length ? (
+        <div className={styles.sliderSkeletonOverlays} data-rmg-skel-part="overlays">
+          {overlayChildren.map((child, i) => (
+            <LayoutNode
+              key={`rmg-slider-skel-overlay-${i}`}
+              node={child}
+              breakpointMap={effectiveBreakpoints}
+              activeDotIndex={activeDotIndex}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,0 +1,112 @@
+.masonryHorizontalCard {
+  display: grid;
+  gap: 12px;
+  padding: 10px 10px 14px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+
+.masonryHorizontalMedia {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #e7edf3;
+}
+
+.masonryHorizontalImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.masonryHorizontalIndex {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline-start: 10px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(11, 18, 32, 0.78);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.masonryHorizontalMedia > .open_fullscreen_icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+  cursor: pointer;
+}
+
+.masonryHorizontalVideo {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.masonryHorizontalVideo :global(.plyr),
+.masonryHorizontalVideo :global(.plyr__video-wrapper),
+.masonryHorizontalVideo :global(.plyr__video-wrapper--fixed-ratio),
+.masonryHorizontalVideo :global(.plyr__poster),
+.masonryHorizontalVideo :global(video) {
+  width: 100%;
+  height: 100%;
+}
+
+.masonryHorizontalVideo :global(.plyr__poster) {
+  background-size: cover;
+}
+
+.masonryHorizontalVideo :global(.plyr__video-wrapper--fixed-ratio) {
+  aspect-ratio: auto;
+}
+
+.masonryHorizontalVideo :global(video) {
+  object-fit: cover;
+}
+
+.masonryHorizontalMeta {
+  display: grid;
+  gap: 5px;
+  padding: 0 4px;
+}
+
+.masonryHorizontalBadge {
+  color: rgba(21, 94, 117, 0.78);
+  font-size: 11.84px;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.masonryHorizontalTitle {
+  font-size: 16.32px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.masonryHorizontalBody {
+  margin: 0;
+  color: rgba(11, 18, 32, 0.72);
+  font-size: 14.72px;
+  line-height: 1.55;
+}

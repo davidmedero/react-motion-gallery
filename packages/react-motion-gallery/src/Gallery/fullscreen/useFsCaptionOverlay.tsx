@@ -16,9 +16,12 @@ import {
   resolveLengthFromResponsive,
   ResponsiveCaptionPlacement,
 } from '../shared/responsive';
+import { OverlayContentHeightStack } from '../shared/OverlayContentHeightStack';
 
 const CAPTION_OVERLAY_OPACITY_VAR = '--rmg-fs-caption-overlay-opacity';
-const CAPTION_CROSSFADE_EASING = 'cubic-bezier(.4,0,.22,1)';
+const DEFAULT_CAPTION_CROSSFADE_DURATION_MS = 300;
+const DEFAULT_CAPTION_CROSSFADE_EASING = 'cubic-bezier(.4,0,.22,1)';
+const CONTENT_CROSSFADE_OPACITY_EASING = 'linear';
 
 type FsSubLike = {
   get: () => number;
@@ -49,11 +52,20 @@ type UseFsCaptionOverlayReturn = {
   setOpacity: (next: number) => void;
 };
 
+type FsCaptionOverlayProps = Omit<UseFsCaptionOverlayArgs, 'interactive'> & {
+  interactive?: boolean;
+};
+
 type CaptionOverlayLayer = {
   key: number;
   index: number;
   opacity: number;
 };
+
+function normalizeCaptionOverlayIndex(index: number, length: number): number {
+  if (!length) return index;
+  return ((index % length) + length) % length;
+}
 
 type RenderFsCaptionOverlayTreeArgs = {
   layers: CaptionOverlayLayer[];
@@ -64,6 +76,8 @@ type RenderFsCaptionOverlayTreeArgs = {
   viewportWidth: number;
   viewportHeight: number;
   fadeOutMs: number;
+  fadeOutEasing: string;
+  overlayOpacity?: number;
   resolveFsCaptionPlacement: (
     placement: ResponsiveCaptionPlacement | undefined,
     breakpoint: number | undefined,
@@ -84,8 +98,27 @@ type CaptionShellElement = React.ReactElement<CaptionShellProps>;
 
 export function resolveFsCaptionOverlayCrossfadeTarget(
   caption: FullscreenCaptionOptions | undefined
-): "content" | "overlay" {
-  return caption?.overlayCrossfadeTarget ?? "content";
+): 'content' | 'overlay' {
+  return caption?.overlayCrossfadeTarget ?? 'content';
+}
+
+export function resolveFsCaptionOverlayCrossfadeDurationMs(
+  caption: FullscreenCaptionOptions | undefined,
+  fallback = DEFAULT_CAPTION_CROSSFADE_DURATION_MS
+): number {
+  const duration = caption?.overlayCrossfadeDurationMs;
+  return typeof duration === 'number' && Number.isFinite(duration)
+    ? Math.max(0, duration)
+    : fallback;
+}
+
+export function resolveFsCaptionOverlayCrossfadeEasing(
+  caption: FullscreenCaptionOptions | undefined
+): string {
+  const easing = caption?.overlayCrossfadeEasing;
+  return typeof easing === 'string' && easing.trim()
+    ? easing
+    : DEFAULT_CAPTION_CROSSFADE_EASING;
 }
 
 function buildCaptionOverlayShellStyle(args: {
@@ -94,9 +127,18 @@ function buildCaptionOverlayShellStyle(args: {
   viewportHeight: number;
   placement: FsCaptionPlacement | null | undefined;
   fadeOutMs: number;
+  fadeOutEasing: string;
   opacity: string;
 }): React.CSSProperties {
-  const { caption, viewportWidth, viewportHeight, placement, fadeOutMs, opacity } = args;
+  const {
+    caption,
+    viewportWidth,
+    viewportHeight,
+    placement,
+    fadeOutMs,
+    fadeOutEasing,
+    opacity,
+  } = args;
 
   return {
     position: 'fixed',
@@ -111,7 +153,7 @@ function buildCaptionOverlayShellStyle(args: {
     opacity: opacity as any,
     transition:
       fadeOutMs > 0
-        ? `opacity ${fadeOutMs}ms ${CAPTION_CROSSFADE_EASING}`
+        ? `opacity ${fadeOutMs}ms ${fadeOutEasing}`
         : undefined,
     willChange: fadeOutMs > 0 ? 'opacity' : undefined,
     pointerEvents: 'none',
@@ -139,16 +181,27 @@ function buildCaptionOverlaySurfaceStyle(args: {
 function buildCaptionContentLayerStyle(args: {
   opacity: number;
   fadeOutMs: number;
+  fadeOutEasing: string;
   stacked: boolean;
+  active: boolean;
 }): React.CSSProperties {
-  const { opacity, fadeOutMs, stacked } = args;
+  const { opacity, fadeOutMs, fadeOutEasing, stacked, active } = args;
 
   return {
-    ...(stacked ? { gridArea: '1 / 1' } : {}),
+    ...(stacked
+      ? {
+          gridArea: '1 / 1',
+          minWidth: 0,
+          position: 'relative',
+          zIndex: active ? 1 : 2,
+        }
+      : null),
     opacity,
     transition:
       fadeOutMs > 0
-        ? `opacity ${fadeOutMs}ms ${CAPTION_CROSSFADE_EASING}`
+        ? `opacity ${fadeOutMs}ms ${
+            stacked ? CONTENT_CROSSFADE_OPACITY_EASING : fadeOutEasing
+          }`
         : undefined,
     willChange: fadeOutMs > 0 ? 'opacity' : undefined,
     pointerEvents: 'none',
@@ -226,8 +279,14 @@ export function renderFsCaptionOverlayTree(
     viewportWidth,
     viewportHeight,
     fadeOutMs,
+    fadeOutEasing,
     resolveFsCaptionPlacement,
   } = args;
+  const overlayOpacity = args.overlayOpacity;
+  const overlayOpacityValue =
+    overlayOpacity == null
+      ? `var(${CAPTION_OVERLAY_OPACITY_VAR}, 1)`
+      : String(overlayOpacity);
 
   const renderCaption = caption?.render;
   if (typeof renderCaption !== 'function' || !layers.length) {
@@ -274,6 +333,9 @@ export function renderFsCaptionOverlayTree(
     const stableCaptionShell = canUseStableShell
       ? renderedLayers[activeLayerIndex]?.node ?? null
       : null;
+    const activeLayer = renderedLayers[activeLayerIndex]?.layer;
+    const activeLayerKey = activeLayer?.key ?? 'active';
+    const activeLayerReady = (activeLayer?.opacity ?? 1) > 0;
 
     return (
       <div
@@ -286,7 +348,8 @@ export function renderFsCaptionOverlayTree(
           viewportHeight,
           placement: effectivePlacement,
           fadeOutMs,
-          opacity: `var(${CAPTION_OVERLAY_OPACITY_VAR}, 1)`,
+          fadeOutEasing,
+          opacity: overlayOpacityValue,
         })}
         aria-hidden={captionZoomMotion.interactive ? undefined : true}
       >
@@ -298,11 +361,11 @@ export function renderFsCaptionOverlayTree(
             ? React.cloneElement(
                 stableCaptionShell,
                 stableCaptionShell.props,
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr)',
-                  }}
+                <OverlayContentHeightStack
+                  activeKey={activeLayerKey}
+                  activeReady={activeLayerReady}
+                  durationMs={fadeOutMs}
+                  easing={fadeOutEasing}
                 >
                   {renderedLayers.map(({ layer, node }, layerIndex) => {
                     const contentChildren =
@@ -314,10 +377,16 @@ export function renderFsCaptionOverlayTree(
                       <div
                         key={layer.key}
                         data-rmg-fs-caption-content="true"
+                        data-rmg-overlay-height-layer-key={String(layer.key)}
+                        data-rmg-overlay-height-active={
+                          layerIndex === activeLayerIndex ? 'true' : undefined
+                        }
                         style={buildCaptionContentLayerStyle({
                           opacity: layer.opacity,
                           fadeOutMs,
+                          fadeOutEasing,
                           stacked: true,
+                          active: layerIndex === activeLayerIndex,
                         })}
                         aria-hidden={
                           layerIndex === activeLayerIndex && captionZoomMotion.interactive
@@ -329,23 +398,29 @@ export function renderFsCaptionOverlayTree(
                       </div>
                     );
                   })}
-                </div>
+                </OverlayContentHeightStack>
               )
             : (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr)',
-                  }}
+                <OverlayContentHeightStack
+                  activeKey={activeLayerKey}
+                  activeReady={activeLayerReady}
+                  durationMs={fadeOutMs}
+                  easing={fadeOutEasing}
                 >
                   {renderedLayers.map(({ layer, node }, layerIndex) => (
                     <div
                       key={layer.key}
                       data-rmg-fs-caption-content="true"
+                      data-rmg-overlay-height-layer-key={String(layer.key)}
+                      data-rmg-overlay-height-active={
+                        layerIndex === activeLayerIndex ? 'true' : undefined
+                      }
                       style={buildCaptionContentLayerStyle({
                         opacity: layer.opacity,
                         fadeOutMs,
+                        fadeOutEasing,
                         stacked: true,
+                        active: layerIndex === activeLayerIndex,
                       })}
                       aria-hidden={
                         layerIndex === activeLayerIndex && captionZoomMotion.interactive
@@ -356,7 +431,7 @@ export function renderFsCaptionOverlayTree(
                       {node}
                     </div>
                   ))}
-                </div>
+                </OverlayContentHeightStack>
               )}
         </div>
       </div>
@@ -378,7 +453,11 @@ export function renderFsCaptionOverlayTree(
               viewportHeight,
               placement: effectivePlacement,
               fadeOutMs,
-              opacity: `calc(var(${CAPTION_OVERLAY_OPACITY_VAR}, 1) * ${layer.opacity})`,
+              fadeOutEasing,
+              opacity:
+                overlayOpacity == null
+                  ? `calc(var(${CAPTION_OVERLAY_OPACITY_VAR}, 1) * ${layer.opacity})`
+                  : String(overlayOpacity * layer.opacity),
             })}
             aria-hidden={
               layerIndex === activeLayerIndex && captionZoomMotion.interactive
@@ -395,7 +474,9 @@ export function renderFsCaptionOverlayTree(
                 style={buildCaptionContentLayerStyle({
                   opacity: 1,
                   fadeOutMs: 0,
+                  fadeOutEasing,
                   stacked: false,
+                  active: true,
                 })}
               >
                 {node}
@@ -403,6 +484,224 @@ export function renderFsCaptionOverlayTree(
             </div>
           </div>
         );
+      })}
+    </>
+  );
+}
+
+export function FsCaptionOverlay(props: FsCaptionOverlayProps) {
+  const {
+    enabled,
+    fsSub,
+    items,
+    caption,
+    isZoomed,
+    captionZoomMotion,
+    viewportWidth,
+    viewportHeight,
+    closing,
+    fadeOutMs: fadeOutMsProp,
+    resolveFsCaptionPlacement,
+  } = props;
+
+  const fadeOutMs = resolveFsCaptionOverlayCrossfadeDurationMs(caption, fadeOutMsProp);
+  const fadeOutEasing = resolveFsCaptionOverlayCrossfadeEasing(caption);
+  const [layers, setLayers] = React.useState<CaptionOverlayLayer[]>(() => [
+    {
+      key: 1,
+      index: normalizeCaptionOverlayIndex(fsSub.get(), items.length),
+      opacity: 1,
+    },
+  ]);
+  const [overlayOpacity, setOverlayOpacity] = React.useState(0);
+  const layersRef = React.useRef<CaptionOverlayLayer[]>(layers);
+  const fsIndexRef = React.useRef<number>(
+    normalizeCaptionOverlayIndex(fsSub.get(), items.length)
+  );
+  const layerKeyRef = React.useRef(1);
+  const swapJobRef = React.useRef<{
+    raf1: number;
+    raf2: number;
+    timeout: number | null;
+  }>({ raf1: 0, raf2: 0, timeout: null });
+  const visibilityJobRef = React.useRef<{
+    raf1: number;
+    raf2: number;
+    timeout: number | null;
+  }>({ raf1: 0, raf2: 0, timeout: null });
+
+  const cancelSwapJob = React.useCallback(() => {
+    const job = swapJobRef.current;
+    if (job.raf1) cancelAnimationFrame(job.raf1);
+    if (job.raf2) cancelAnimationFrame(job.raf2);
+    if (job.timeout != null) window.clearTimeout(job.timeout);
+    swapJobRef.current = { raf1: 0, raf2: 0, timeout: null };
+  }, []);
+
+  const cancelVisibilityJob = React.useCallback(() => {
+    const job = visibilityJobRef.current;
+    if (job.raf1) cancelAnimationFrame(job.raf1);
+    if (job.raf2) cancelAnimationFrame(job.raf2);
+    if (job.timeout != null) window.clearTimeout(job.timeout);
+    visibilityJobRef.current = { raf1: 0, raf2: 0, timeout: null };
+  }, []);
+
+  const commitLayers = React.useCallback((nextLayers: CaptionOverlayLayer[]) => {
+    layersRef.current = nextLayers;
+    setLayers(nextLayers);
+  }, []);
+
+  const normalizeFsIndex = React.useCallback((index: number) => {
+    return normalizeCaptionOverlayIndex(index, items.length);
+  }, [items.length]);
+
+  const buildLayer = React.useCallback((index: number, opacity = 1): CaptionOverlayLayer => ({
+    key: ++layerKeyRef.current,
+    index,
+    opacity,
+  }), []);
+
+  const getCurrentVisibleLayer = React.useCallback((fallbackIndex: number) => {
+    const current = layersRef.current;
+    const visibleLayer = current.reduce<CaptionOverlayLayer | null>((best, layer) => {
+      if (!best || layer.opacity > best.opacity) return layer;
+      return best;
+    }, null);
+
+    return visibleLayer ?? buildLayer(fallbackIndex);
+  }, [buildLayer]);
+
+  const showCaptionForIndex = React.useCallback((index: number) => {
+    const activeLayer = layersRef.current[layersRef.current.length - 1];
+    commitLayers([activeLayer ? { ...activeLayer, index, opacity: 1 } : buildLayer(index)]);
+  }, [buildLayer, commitLayers]);
+
+  const crossfadeCaptionToIndex = React.useCallback((nextIndex: number) => {
+    if (closing) return;
+
+    cancelSwapJob();
+
+    const outgoing = getCurrentVisibleLayer(fsIndexRef.current);
+    const incoming = buildLayer(nextIndex, 0);
+
+    commitLayers([{ ...outgoing, opacity: 1 }, incoming]);
+
+    if (fadeOutMs <= 0) {
+      commitLayers([{ ...incoming, opacity: 1 }]);
+      return;
+    }
+
+    swapJobRef.current.raf1 = requestAnimationFrame(() => {
+      swapJobRef.current.raf1 = 0;
+      swapJobRef.current.raf2 = requestAnimationFrame(() => {
+        swapJobRef.current.raf2 = 0;
+        commitLayers([{ ...outgoing, opacity: 0 }, { ...incoming, opacity: 1 }]);
+
+        swapJobRef.current.timeout = window.setTimeout(() => {
+          commitLayers([{ ...incoming, opacity: 1 }]);
+          swapJobRef.current = { raf1: 0, raf2: 0, timeout: null };
+        }, fadeOutMs);
+      });
+    });
+  }, [
+    buildLayer,
+    cancelSwapJob,
+    closing,
+    commitLayers,
+    fadeOutMs,
+    getCurrentVisibleLayer,
+  ]);
+
+  React.useEffect(() => {
+    if (!enabled) {
+      cancelSwapJob();
+      cancelVisibilityJob();
+      setOverlayOpacity(0);
+      commitLayers([]);
+      return;
+    }
+
+    if (closing) {
+      cancelSwapJob();
+      cancelVisibilityJob();
+      setOverlayOpacity(0);
+
+      if (fadeOutMs <= 0) {
+        commitLayers([]);
+      } else {
+        visibilityJobRef.current.timeout = window.setTimeout(() => {
+          commitLayers([]);
+          visibilityJobRef.current = { raf1: 0, raf2: 0, timeout: null };
+        }, fadeOutMs);
+      }
+
+      return;
+    }
+
+    cancelVisibilityJob();
+
+    const start = normalizeFsIndex(fsSub.get());
+    fsIndexRef.current = start;
+    showCaptionForIndex(start);
+    setOverlayOpacity(0);
+    visibilityJobRef.current.raf1 = requestAnimationFrame(() => {
+      visibilityJobRef.current.raf1 = 0;
+      visibilityJobRef.current.raf2 = requestAnimationFrame(() => {
+        visibilityJobRef.current.raf2 = 0;
+        setOverlayOpacity(1);
+      });
+    });
+
+    const off = fsSub.onEvent((event) => {
+      if (event.type !== 'internalIndex') return;
+
+      const next = normalizeFsIndex(event.index);
+      if (next === fsIndexRef.current) return;
+
+      fsIndexRef.current = next;
+      crossfadeCaptionToIndex(next);
+    });
+
+    return () => {
+      cancelSwapJob();
+      cancelVisibilityJob();
+      off();
+    };
+  }, [
+    cancelSwapJob,
+    cancelVisibilityJob,
+    closing,
+    crossfadeCaptionToIndex,
+    enabled,
+    fadeOutMs,
+    fsSub,
+    normalizeFsIndex,
+    showCaptionForIndex,
+  ]);
+
+  React.useEffect(() => {
+    return () => {
+      cancelSwapJob();
+      cancelVisibilityJob();
+    };
+  }, [cancelSwapJob, cancelVisibilityJob]);
+
+  if (!layers.length) return null;
+
+  return (
+    <>
+      {renderFsCaptionOverlayTree({
+        layers,
+        items,
+        caption,
+        isZoomed,
+        captionZoomMotion,
+        viewportWidth,
+        viewportHeight,
+        fadeOutMs,
+        fadeOutEasing,
+        overlayOpacity,
+        resolveFsCaptionPlacement,
       })}
     </>
   );
@@ -490,7 +789,7 @@ export function useFsCaptionOverlay(
     viewportHeight,
     interactive,
     closing,
-    fadeOutMs = 300,
+    fadeOutMs: fadeOutMsProp,
     resolveFsCaptionPlacement,
   } = args;
 
@@ -507,6 +806,8 @@ export function useFsCaptionOverlay(
   });
   const layerKeyRef = React.useRef(0);
   const layersRef = React.useRef<CaptionOverlayLayer[]>([]);
+  const fadeOutMs = resolveFsCaptionOverlayCrossfadeDurationMs(caption, fadeOutMsProp);
+  const fadeOutEasing = resolveFsCaptionOverlayCrossfadeEasing(caption);
 
   const setCaptionOverlayOpacity = React.useCallback((next: number) => {
     const el = mountRef.current;
@@ -618,23 +919,25 @@ export function useFsCaptionOverlay(
       const root = rootRef.current;
       if (!root) return;
 
-      root.render(
-        renderFsCaptionOverlayTree({
-          layers,
-          items,
-          caption,
-          isZoomed,
-          captionZoomMotion,
-          viewportWidth,
-          viewportHeight,
-          fadeOutMs,
-          resolveFsCaptionPlacement,
-        })
-      );
+      const tree = renderFsCaptionOverlayTree({
+        layers,
+        items,
+        caption,
+        isZoomed,
+        captionZoomMotion,
+        viewportWidth,
+        viewportHeight,
+        fadeOutMs,
+        fadeOutEasing,
+        resolveFsCaptionPlacement,
+      });
+
+      root.render(tree);
     },
     [
       caption,
       fadeOutMs,
+      fadeOutEasing,
       interactive,
       items,
       isZoomed,
@@ -675,13 +978,21 @@ export function useFsCaptionOverlay(
 
       commitLayers([{ ...outgoing, opacity: 1 }, incoming]);
 
-      swapJobRef.current.raf = requestAnimationFrame(() => {
-        commitLayers([{ ...outgoing, opacity: 0 }, { ...incoming, opacity: 1 }]);
+      if (fadeOutMs <= 0) {
+        commitLayers([{ ...incoming, opacity: 1 }]);
+        return;
+      }
 
-        swapJobRef.current.t = window.setTimeout(() => {
-          commitLayers([{ ...incoming, opacity: 1 }]);
-          swapJobRef.current = { t: null, raf: 0 };
-        }, fadeOutMs);
+      swapJobRef.current.raf = requestAnimationFrame(() => {
+        swapJobRef.current.raf = requestAnimationFrame(() => {
+          swapJobRef.current.raf = 0;
+          commitLayers([{ ...outgoing, opacity: 0 }, { ...incoming, opacity: 1 }]);
+
+          swapJobRef.current.t = window.setTimeout(() => {
+            commitLayers([{ ...incoming, opacity: 1 }]);
+            swapJobRef.current = { t: null, raf: 0 };
+          }, fadeOutMs);
+        });
       });
     },
     [buildLayer, cancelSwapJob, commitLayers, closing, fadeOutMs]

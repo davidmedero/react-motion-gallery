@@ -1,0 +1,90 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=masonry-lazy-load&skeletonMeasure=content",
+  "outputFile": "./masonry-lazy-load.skeleton-text.generated.ts",
+  "moduleExportName": "masonryLazyLoadSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1330,
+  "viewportHeight": 1800,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "readyExpression": "(() => { const body = document.querySelector(\"[data-skeleton-text-id='masonryLazyItem01Body']\"); const item = body?.closest(\"[data-rmg-idx]\"); const root = item?.parentElement; const columns = Number(getComputedStyle(root).getPropertyValue(\"--rmg-cols\")); const expected = window.innerWidth >= 1140 ? 3 : window.innerWidth >= 720 ? 2 : 1; return columns === expected; })()",
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "masonryLazyItem01Badge",
+      "selector": "[data-skeleton-text-id='masonryLazyItem01Badge']"
+    },
+    {
+      "exportName": "masonryLazyItem01Title",
+      "selector": "[data-skeleton-text-id='masonryLazyItem01Title']"
+    },
+    {
+      "exportName": "masonryLazyItem01Body",
+      "selector": "[data-skeleton-text-id='masonryLazyItem01Body']"
+    },
+    {
+      "exportName": "masonryLazyItem02Badge",
+      "selector": "[data-skeleton-text-id='masonryLazyItem02Badge']"
+    },
+    {
+      "exportName": "masonryLazyItem02Title",
+      "selector": "[data-skeleton-text-id='masonryLazyItem02Title']"
+    },
+    {
+      "exportName": "masonryLazyItem02Body",
+      "selector": "[data-skeleton-text-id='masonryLazyItem02Body']"
+    },
+    {
+      "exportName": "masonryLazyItem03Badge",
+      "selector": "[data-skeleton-text-id='masonryLazyItem03Badge']"
+    },
+    {
+      "exportName": "masonryLazyItem03Title",
+      "selector": "[data-skeleton-text-id='masonryLazyItem03Title']"
+    },
+    {
+      "exportName": "masonryLazyItem03Body",
+      "selector": "[data-skeleton-text-id='masonryLazyItem03Body']"
+    },
+    {
+      "exportName": "masonryLazyItem04Badge",
+      "selector": "[data-skeleton-text-id='masonryLazyItem04Badge']"
+    },
+    {
+      "exportName": "masonryLazyItem04Title",
+      "selector": "[data-skeleton-text-id='masonryLazyItem04Title']"
+    },
+    {
+      "exportName": "masonryLazyItem04Body",
+      "selector": "[data-skeleton-text-id='masonryLazyItem04Body']"
+    },
+    {
+      "exportName": "masonryLazyItem05Badge",
+      "selector": "[data-skeleton-text-id='masonryLazyItem05Badge']"
+    },
+    {
+      "exportName": "masonryLazyItem05Title",
+      "selector": "[data-skeleton-text-id='masonryLazyItem05Title']"
+    },
+    {
+      "exportName": "masonryLazyItem05Body",
+      "selector": "[data-skeleton-text-id='masonryLazyItem05Body']"
+    },
+    {
+      "exportName": "masonryLazyItem06Badge",
+      "selector": "[data-skeleton-text-id='masonryLazyItem06Badge']"
+    },
+    {
+      "exportName": "masonryLazyItem06Title",
+      "selector": "[data-skeleton-text-id='masonryLazyItem06Title']"
+    },
+    {
+      "exportName": "masonryLazyItem06Body",
+      "selector": "[data-skeleton-text-id='masonryLazyItem06Body']"
+    }
+  ]
+}

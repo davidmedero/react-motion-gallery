@@ -1,0 +1,52 @@
+import * as react_jsx_runtime from 'react/jsx-runtime';
+import * as React from 'react';
+import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
+import { L as LoadingForceOptions } from './force-C5m1QpdF.mjs';
+import { L as LoadingTimingOptions } from './transitions-DU3ftmIq.mjs';
+import { S as SkeletonNode, a as SkeletonLength, b as SkeletonShimmer } from './layout-DoYnPD0I.mjs';
+export { e as SkeletonBaseStyle, f as SkeletonBaseStyleResponsive, g as SkeletonContainerStyle, h as SkeletonContainerStyleResponsive } from './layout-DoYnPD0I.mjs';
+export { R as ResponsiveTextBarHeight, a as ResponsiveTextBarWidth, d as ResponsiveTextLastBarWidth, c as ResponsiveTextLineCount, b as ResponsiveTextLineHeight, T as TextSkeletonResponsiveBy } from './text-BBcRGVzn.mjs';
+
+type SkeletonForceOptions = LoadingForceOptions;
+type SkeletonTimingOptions = LoadingTimingOptions;
+type SkeletonFrameProps = {
+    skeletonNode: React.ReactNode;
+    children?: React.ReactNode;
+    ready?: boolean;
+    enabled?: boolean;
+    force?: SkeletonForceOptions;
+    timing?: SkeletonTimingOptions;
+    shellClassName?: string;
+    shellStyle?: React.CSSProperties;
+    loadingShellStyle?: React.CSSProperties | null;
+    contentClassName?: string;
+    contentStyle?: React.CSSProperties;
+    contentOwnsWrapperLayout?: boolean;
+    loadingLayerFirst?: boolean;
+    contentWrapper?: (children: React.ReactNode) => React.ReactNode;
+    shellDataAttributes?: Record<string, string | boolean | undefined>;
+};
+type SkeletonProps = {
+    layout: SkeletonNode;
+    children?: React.ReactNode;
+    breakpoints?: BreakpointMap;
+    className?: string;
+    style?: React.CSSProperties;
+    shellClassName?: string;
+    shellStyle?: React.CSSProperties;
+    contentClassName?: string;
+    contentStyle?: React.CSSProperties;
+    backgroundColor?: string;
+    radius?: SkeletonLength;
+    shimmer?: SkeletonShimmer;
+    disableShimmer?: boolean;
+    ariaLabel?: string;
+    ready?: boolean;
+    enabled?: boolean;
+    force?: SkeletonForceOptions;
+    timing?: SkeletonTimingOptions;
+};
+declare function SkeletonFrame({ skeletonNode, children, ready, enabled, force, timing, shellClassName, shellStyle, loadingShellStyle, contentClassName, contentStyle, contentOwnsWrapperLayout, loadingLayerFirst, contentWrapper, shellDataAttributes, }: SkeletonFrameProps): react_jsx_runtime.JSX.Element;
+declare function Skeleton({ layout, children, breakpoints, className, style, shellClassName, shellStyle, contentClassName, contentStyle, backgroundColor, radius, shimmer, disableShimmer, ariaLabel, ready, enabled, force, timing, }: SkeletonProps): react_jsx_runtime.JSX.Element;
+
+export { Skeleton, type SkeletonForceOptions, SkeletonFrame, type SkeletonFrameProps, SkeletonLength, SkeletonNode, type SkeletonProps, SkeletonShimmer, type SkeletonTimingOptions, Skeleton as default };

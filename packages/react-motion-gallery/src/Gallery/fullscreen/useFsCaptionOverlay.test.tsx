@@ -9,6 +9,8 @@ import {
 import type { FsCaptionRenderArgs } from "./types";
 import {
   renderFsCaptionOverlayTree,
+  resolveFsCaptionOverlayCrossfadeDurationMs,
+  resolveFsCaptionOverlayCrossfadeEasing,
   resolveFsCaptionOverlayCrossfadeTarget,
 } from "./useFsCaptionOverlay";
 
@@ -37,6 +39,7 @@ function createBaseArgs() {
     viewportWidth: 1280,
     viewportHeight: 720,
     fadeOutMs: 300,
+    fadeOutEasing: "cubic-bezier(.4,0,.22,1)",
     resolveFsCaptionPlacement: () => "bottom" as const,
   };
 }
@@ -44,12 +47,32 @@ function createBaseArgs() {
 describe("overlay caption crossfade rendering", () => {
   test("defaults overlay captions to content-only crossfades", () => {
     expect(resolveFsCaptionOverlayCrossfadeTarget(undefined)).toBe("content");
+    expect(resolveFsCaptionOverlayCrossfadeDurationMs(undefined)).toBe(300);
+    expect(resolveFsCaptionOverlayCrossfadeEasing(undefined)).toBe("cubic-bezier(.4,0,.22,1)");
     expect(
       resolveFsCaptionOverlayCrossfadeTarget({
         layout: "overlay",
         render: () => null,
       })
     ).toBe("content");
+  });
+
+  test("resolves overlay caption crossfade duration and easing", () => {
+    expect(
+      resolveFsCaptionOverlayCrossfadeDurationMs({
+        overlayCrossfadeDurationMs: 520,
+      })
+    ).toBe(520);
+    expect(
+      resolveFsCaptionOverlayCrossfadeDurationMs({
+        overlayCrossfadeDurationMs: -80,
+      })
+    ).toBe(0);
+    expect(
+      resolveFsCaptionOverlayCrossfadeEasing({
+        overlayCrossfadeEasing: "linear",
+      })
+    ).toBe("linear");
   });
 
   test("renders one stable shell and one stable surface for content crossfades", () => {
@@ -66,11 +89,52 @@ describe("overlay caption crossfade rendering", () => {
     const stack = stableCaptionRoot.props.children as React.ReactElement<any>;
     const layers = Children.toArray(stack.props.children) as React.ReactElement<any>[];
 
+    expect(stack.props.activeKey).toBe(2);
+    expect(stack.props.activeReady).toBe(false);
+    expect(stack.props.durationMs).toBe(300);
+    expect(stack.props.easing).toBe("cubic-bezier(.4,0,.22,1)");
     expect(layers).toHaveLength(2);
     expect(layers.every((layer) => layer.props["data-rmg-fs-caption-content"] === "true")).toBe(
       true
     );
+    expect(layers.map((layer) => layer.props["data-rmg-overlay-height-layer-key"])).toEqual([
+      "1",
+      "2",
+    ]);
+    expect(layers[1]?.props["data-rmg-overlay-height-active"]).toBe("true");
     expect(layers.map((layer) => layer.props.style.opacity)).toEqual([1, 0]);
+    expect(layers[0]?.props.style.transition).toBe("opacity 300ms linear");
+    expect(layers[1]?.props.style.transition).toBe("opacity 300ms linear");
+    expect(layers[0]?.props.style.position).toBe("relative");
+    expect(layers[0]?.props.style.zIndex).toBe(2);
+    expect(layers[1]?.props.style.position).toBe("relative");
+    expect(layers[1]?.props.style.zIndex).toBe(1);
+  });
+
+  test("keeps outgoing layout height until the incoming caption starts fading in", () => {
+    const tree = renderFsCaptionOverlayTree({
+      ...createBaseArgs(),
+      layers: [
+        { key: 1, index: 0, opacity: 0 },
+        { key: 2, index: 1, opacity: 1 },
+      ],
+    }) as React.ReactElement<any>;
+
+    const surface = tree.props.children as React.ReactElement<any>;
+    const stableCaptionRoot = surface.props.children as React.ReactElement<any>;
+    const stack = stableCaptionRoot.props.children as React.ReactElement<any>;
+    const layers = Children.toArray(stack.props.children) as React.ReactElement<any>[];
+
+    expect(stack.props.activeKey).toBe(2);
+    expect(stack.props.activeReady).toBe(true);
+    expect(layers.map((layer) => layer.props["data-rmg-overlay-height-layer-key"])).toEqual([
+      "1",
+      "2",
+    ]);
+    expect(layers[0]?.props.style.position).toBe("relative");
+    expect(layers[0]?.props.style.zIndex).toBe(2);
+    expect(layers[1]?.props.style.position).toBe("relative");
+    expect(layers[1]?.props.style.zIndex).toBe(1);
   });
 
   test("keeps a stable rendered caption root and only crossfades its children in content mode", () => {
@@ -115,7 +179,8 @@ describe("overlay caption crossfade rendering", () => {
     }) as React.ReactElement<any>;
 
     const surface = tree.props.children as React.ReactElement<any>;
-    const stack = surface.props.children as React.ReactElement<any>;
+    const stableCaptionRoot = surface.props.children as React.ReactElement<any>;
+    const stack = stableCaptionRoot.props.children as React.ReactElement<any>;
     const layers = Children.toArray(stack.props.children) as React.ReactElement<any>[];
 
     expect(surface.props.style.opacity).toBe(0);

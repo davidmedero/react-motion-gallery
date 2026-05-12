@@ -74,6 +74,7 @@ export function handleZoomToggle(
   const willBeZoomed = s1 > ZOOM_EPS;
 
   if (wasZoomed && !willBeZoomed) {
+    ctx.suppressLoopRef.current = false;
     ctx.resetAllZoomDom();
   }
 

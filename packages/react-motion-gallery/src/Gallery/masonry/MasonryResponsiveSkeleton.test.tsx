@@ -4,7 +4,7 @@ import { describe, expect, test } from "vitest";
 
 import { BREAKPOINT_MAP } from "../shared/responsive";
 import { buildMasonrySkeletonPrediction } from "./prediction";
-import { MasonrySkeletonCard } from "./MasonrySkeleton";
+import { MasonrySkeletonCard } from "../skeleton/MasonrySkeleton";
 
 const CUSTOM_BREAKPOINTS = {
   ...BREAKPOINT_MAP,
@@ -43,7 +43,7 @@ describe("Masonry responsive node styles", () => {
                 },
                 {
                   kind: "text",
-                  fontSize: 16,
+                  barHeight: 16,
                   lineHeight: 1.5,
                   lines: 2,
                   style: {

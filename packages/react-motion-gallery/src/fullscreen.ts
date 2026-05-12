@@ -1,9 +1,17 @@
 export { useFullscreenController } from "./Gallery/fullscreen";
-export { DEFAULT_FULLSCREEN } from "./Gallery/fullscreen/defaults";
 
-export type { GalleryApi, IndexMode } from "./Gallery/api/types";
+export type { GalleryApi, GalleryCoreApi, IndexMode } from "./Gallery/api/types";
 export type {
+  FullscreenCaptionOptions,
+  FullscreenControlsOptions,
+  FullscreenCrossfadeOptions,
+  FullscreenLazyLoadOptions,
   FullscreenOptions,
+  FullscreenPlugin,
+  FullscreenPluginKind,
+  FullscreenSliderOptions,
+  FullscreenVideoOptions,
+  FullscreenZoomPanOptions,
   FsCaptionPlacement,
   FsIntroRequest,
 } from "./Gallery/fullscreen/types";

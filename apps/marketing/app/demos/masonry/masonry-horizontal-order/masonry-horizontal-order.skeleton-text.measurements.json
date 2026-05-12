@@ -1,0 +1,702 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=masonry-horizontal-order&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1340,
+    "viewportHeight": 1800,
+    "viewportWorkers": 8,
+    "settleMs": 120,
+    "stableGeometryFrames": 4,
+    "readyExpression": "(() => { const body = document.querySelector(\"[data-skeleton-text-id='masonryHorizontalOrderItem01Body']\"); const item = body?.closest(\"[data-rmg-idx]\"); const root = item?.parentElement; const columns = Number(getComputedStyle(root).getPropertyValue(\"--rmg-cols\")); const expected = window.innerWidth >= 1140 ? 4 : window.innerWidth >= 720 ? 2 : 1; return columns === expected; })()",
+    "lineMeasurementMethod": "domRange",
+    "includeTextMetrics": true,
+    "breakpointStrategy": "lineChanges",
+    "barWidthUnit": "px"
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem01Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 216,
+          "toViewport": 745,
+          "fromWidthPx": 216,
+          "toWidthPx": 745,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "46px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem01Title",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 216,
+          "toViewport": 745,
+          "fromWidthPx": 216,
+          "toWidthPx": 745,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "215px",
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem01Body",
+      "lines": {
+        "0": 4,
+        "225": 3,
+        "354": 2,
+        "663": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 216,
+          "toViewport": 224,
+          "fromWidthPx": 216,
+          "toWidthPx": 224,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 225,
+          "toViewport": 353.5,
+          "fromWidthPx": 225,
+          "toWidthPx": 353.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 354,
+          "toViewport": 662,
+          "fromWidthPx": 354,
+          "toWidthPx": 662,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 663,
+          "toViewport": 745,
+          "fromWidthPx": 663,
+          "toWidthPx": 745,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "189px",
+          "165px",
+          "199px",
+          "97px"
+        ],
+        "225": [
+          "219px",
+          "225px",
+          "210px"
+        ],
+        "354": [
+          "304px",
+          "354px"
+        ],
+        "663": "662px"
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem02Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 610.25,
+          "fromWidthPx": 152,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "43px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem02Title",
+      "lines": {
+        "0": 2,
+        "199.484": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 199,
+          "fromWidthPx": 152,
+          "toWidthPx": 199,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 199.484,
+          "toViewport": 610.25,
+          "fromWidthPx": 199.484375,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "137px",
+          "58px"
+        ],
+        "199.484": "199px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem02Body",
+      "lines": {
+        "0": 5,
+        "288": 2,
+        "172.5": 4,
+        "200.453": 3,
+        "575.687": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 172.25,
+          "fromWidthPx": 152,
+          "toWidthPx": 172.25,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 172.5,
+          "toViewport": 199.968,
+          "fromWidthPx": 172.5,
+          "toWidthPx": 199.96875,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 200.453,
+          "toViewport": 287.531,
+          "fromWidthPx": 200.453125,
+          "toWidthPx": 287.53125,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 288,
+          "toViewport": 574.75,
+          "fromWidthPx": 288,
+          "toWidthPx": 574.75,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 575.687,
+          "toViewport": 610.25,
+          "fromWidthPx": 575.6875,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "89px",
+          "139px",
+          "142px",
+          "111px",
+          "77px"
+        ],
+        "288": [
+          "283px",
+          "288px"
+        ],
+        "172.5": [
+          "89px",
+          "139px",
+          "162px",
+          "172px"
+        ],
+        "200.453": [
+          "174px",
+          "200px",
+          "193px"
+        ],
+        "575.687": "575px"
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem03Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 610.25,
+          "fromWidthPx": 152,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "46px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem03Title",
+      "lines": {
+        "0": 2,
+        "161": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 160.75,
+          "fromWidthPx": 152,
+          "toWidthPx": 160.75,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 161,
+          "toViewport": 610.25,
+          "fromWidthPx": 161,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "116px",
+          "41px"
+        ],
+        "161": "161px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem03Body",
+      "lines": {
+        "0": 4,
+        "196.25": 3,
+        "265.734": 2,
+        "522.906": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 196.125,
+          "fromWidthPx": 152,
+          "toWidthPx": 196.125,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 196.25,
+          "toViewport": 265.25,
+          "fromWidthPx": 196.25,
+          "toWidthPx": 265.25,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 265.734,
+          "toViewport": 521.937,
+          "fromWidthPx": 265.734375,
+          "toWidthPx": 521.9375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 522.906,
+          "toViewport": 610.25,
+          "fromWidthPx": 522.90625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "128px",
+          "134px",
+          "110px",
+          "138px"
+        ],
+        "196.25": [
+          "196px",
+          "180px",
+          "138px"
+        ],
+        "265.734": [
+          "266px",
+          "253px"
+        ],
+        "522.906": "523px"
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem04Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 216,
+          "toViewport": 745,
+          "fromWidthPx": 216,
+          "toWidthPx": 745,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "39px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem04Title",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 216,
+          "toViewport": 745,
+          "fromWidthPx": 216,
+          "toWidthPx": 745,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "192px",
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem04Body",
+      "lines": {
+        "0": 3,
+        "295": 2,
+        "581.468": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 216,
+          "toViewport": 294,
+          "fromWidthPx": 216,
+          "toWidthPx": 294,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 295,
+          "toViewport": 581.062,
+          "fromWidthPx": 295,
+          "toWidthPx": 581.0625,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 581.468,
+          "toViewport": 745,
+          "fromWidthPx": 581.46875,
+          "toWidthPx": 745,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "214px",
+          "176px",
+          "182px"
+        ],
+        "295": [
+          "282px",
+          "295px"
+        ],
+        "581.468": "581px"
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem05Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 610.25,
+          "fromWidthPx": 152,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "29px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem05Title",
+      "lines": {
+        "0": 2,
+        "192.5": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 192.281,
+          "fromWidthPx": 152,
+          "toWidthPx": 192.28125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 192.5,
+          "toViewport": 610.25,
+          "fromWidthPx": 192.5,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "148px",
+          "40px"
+        ],
+        "192.5": "192px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem05Body",
+      "lines": {
+        "0": 6,
+        "164": 5,
+        "348": 2,
+        "173.75": 4,
+        "255.64": 3
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 163.75,
+          "fromWidthPx": 152,
+          "toWidthPx": 163.75,
+          "lineCount": 6
+        },
+        {
+          "fromViewport": 164,
+          "toViewport": 173.562,
+          "fromWidthPx": 164,
+          "toWidthPx": 173.5625,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 173.75,
+          "toViewport": 255.171,
+          "fromWidthPx": 173.75,
+          "toWidthPx": 255.171875,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 255.64,
+          "toViewport": 347.5,
+          "fromWidthPx": 255.640625,
+          "toWidthPx": 347.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 348,
+          "toViewport": 610.25,
+          "fromWidthPx": 348,
+          "toWidthPx": 610.25,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "115px",
+          "136px",
+          "89px",
+          "83px",
+          "151px",
+          "61px"
+        ],
+        "164": [
+          "153px",
+          "98px",
+          "89px",
+          "164px",
+          "135px"
+        ],
+        "348": [
+          "348px",
+          "303px"
+        ],
+        "173.75": [
+          "174px",
+          "170px",
+          "164px",
+          "135px"
+        ],
+        "255.64": [
+          "255px",
+          "176px",
+          "216px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem06Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 610.25,
+          "fromWidthPx": 152,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "51px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem06Title",
+      "lines": {
+        "0": 2,
+        "236.453": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 236,
+          "fromWidthPx": 152,
+          "toWidthPx": 236,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 236.453,
+          "toViewport": 610.25,
+          "fromWidthPx": 236.453125,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "142px",
+          "90px"
+        ],
+        "236.453": "236px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryHorizontalOrderItem06Body",
+      "lines": {
+        "0": 5,
+        "193.5": 4,
+        "203.328": 3,
+        "302.406": 2,
+        "583.375": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 152,
+          "toViewport": 193.25,
+          "fromWidthPx": 152,
+          "toWidthPx": 193.25,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 193.5,
+          "toViewport": 202.843,
+          "fromWidthPx": 193.5,
+          "toWidthPx": 202.84375,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 203.328,
+          "toViewport": 302,
+          "fromWidthPx": 203.328125,
+          "toWidthPx": 302,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 302.406,
+          "toViewport": 582.406,
+          "fromWidthPx": 302.40625,
+          "toWidthPx": 582.40625,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 583.375,
+          "toViewport": 610.25,
+          "fromWidthPx": 583.375,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "115px",
+          "132px",
+          "121px",
+          "143px",
+          "56px"
+        ],
+        "193.5": [
+          "115px",
+          "193px",
+          "160px",
+          "103px"
+        ],
+        "203.328": [
+          "195px",
+          "177px",
+          "203px"
+        ],
+        "302.406": [
+          "277px",
+          "302px"
+        ],
+        "583.375": "583px"
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    }
+  ]
+}

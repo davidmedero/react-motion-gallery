@@ -1,0 +1,90 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=masonry-round-robin&skeletonMeasure=content",
+  "outputFile": "./masonry-round-robin.skeleton-text.generated.ts",
+  "moduleExportName": "masonryRoundRobinSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1340,
+  "viewportHeight": 1800,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "readyExpression": "(() => { const body = document.querySelector(\"[data-skeleton-text-id='masonryRoundRobinItem01Body']\"); const item = body?.closest(\"[data-rmg-idx]\"); const root = item?.parentElement; const columns = Number(getComputedStyle(root).getPropertyValue(\"--rmg-cols\")); const expected = window.innerWidth >= 1140 ? 3 : window.innerWidth >= 720 ? 2 : 1; return columns === expected; })()",
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "masonryRoundRobinItem01Badge",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem01Badge']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem01Title",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem01Title']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem01Body",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem01Body']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem02Badge",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem02Badge']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem02Title",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem02Title']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem02Body",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem02Body']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem03Badge",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem03Badge']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem03Title",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem03Title']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem03Body",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem03Body']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem04Badge",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem04Badge']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem04Title",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem04Title']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem04Body",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem04Body']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem05Badge",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem05Badge']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem05Title",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem05Title']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem05Body",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem05Body']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem06Badge",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem06Badge']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem06Title",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem06Title']"
+    },
+    {
+      "exportName": "masonryRoundRobinItem06Body",
+      "selector": "[data-skeleton-text-id='masonryRoundRobinItem06Body']"
+    }
+  ]
+}

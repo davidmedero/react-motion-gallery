@@ -1,15 +1,5 @@
-import { ResponsiveNumber } from "../shared/responsive";
+import type { ResponsiveNumber } from "../shared/responsive";
 import type { GalleryLazyLoadOptions } from "../shared/types/lazy";
-import type { LoadingTimingOptions } from "../shared/types/transitions";
-import type { GridSkeletonSpec } from "./GridSkeleton";
-
-export type LoadingOptions = {
-  enabled?: boolean;
-  force?: boolean;
-  renderLoading?: (args: { count: number }) => React.ReactNode;
-  skeleton?: GridSkeletonSpec;
-  timing?: LoadingTimingOptions;
-};
 
 export type IntroOptions = {
   renderIntro?: (
@@ -36,6 +26,13 @@ export type GridItemProps = {
   children?: React.ReactNode;
 };
 
+export type GridHandle = {
+  getRootNode: () => HTMLElement | null;
+  getItemNodes: () => HTMLElement[];
+  isReady: () => boolean;
+  onReady: (callback: (nodes: HTMLElement[]) => void) => () => void;
+};
+
 export type GridOptions = {
   columns?: ResponsiveNumber;
   templateColumns?: ResponsiveGridTemplate;
@@ -45,6 +42,5 @@ export type GridOptions = {
   itemClassName?: string;
   fullscreenTrigger?: FullscreenTrigger;
   lazyLoad?: GridLazyLoadOptions;
-  loading?: LoadingOptions;
   intro?: IntroOptions;
 };

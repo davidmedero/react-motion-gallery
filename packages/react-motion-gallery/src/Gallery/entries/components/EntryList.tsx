@@ -9,6 +9,11 @@ import { EntrySkeletonCard, EntrySkeletonSpec } from "./EntrySkeleton";
 import { useNormalizedEntriesIntro, useNormalizedEntriesLoading } from "../normalize";
 import { MediaItem } from "../../shared/types/media";
 import { SliderHandle } from "../../slider/types";
+import {
+  resolveCompareLoadingLayerVisualState,
+  resolveLoadingForceOptions,
+  type LoadingForceOptions,
+} from "../../shared/loading/force";
 
 const SKELETON_EXIT_MS = 220;
 const INTRO_OVERLAP_MS = 220;
@@ -22,6 +27,7 @@ type Props = {
   nodeFromMedia: (m: MediaItem) => React.ReactNode;
   renderMediaContainer: (args: {
     entryIndex: number;
+    entryInView?: boolean;
     mediaNodes: React.ReactNode[];
     entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
   }) => React.ReactNode;
@@ -29,6 +35,55 @@ type Props = {
   registerExpandableImage?: (globalIndex: number, node: HTMLImageElement | HTMLVideoElement | null) => void;
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
 };
+
+export function resolveEntryLoadingVisualState(args: {
+  loadingActive: boolean;
+  loadingForced?: LoadingForceOptions;
+  shouldMountContent: boolean;
+  contentReady: boolean;
+  defaultReveal: boolean;
+}) {
+  const compareState = resolveCompareLoadingLayerVisualState({
+    loadingActive: args.loadingActive && args.shouldMountContent,
+    loadingForced: args.loadingForced,
+    contentReady: args.contentReady,
+  });
+  const resolvedForce = resolveLoadingForceOptions(args.loadingForced);
+  const forcedLoading = args.loadingActive && resolvedForce.enabled;
+
+  return {
+    compareMode: compareState.compareMode,
+    revealContent: compareState.compareMode
+      ? true
+      : forcedLoading
+        ? false
+        : args.defaultReveal,
+    loadingLayerOpacity: compareState.loadingLayerOpacity,
+  };
+}
+
+function splitEntrySkeletonWrapStyle(
+  style: React.CSSProperties | undefined
+): React.CSSProperties | undefined {
+  if (!style) return undefined;
+
+  const nextStyle = { ...style } as React.CSSProperties & Record<string, unknown>;
+
+  if (nextStyle.boxShadow != null) {
+    nextStyle["--rmg-entry-skel-wrap-shadow"] = nextStyle.boxShadow;
+    delete nextStyle.boxShadow;
+  }
+
+  if (nextStyle.borderRadius != null) {
+    nextStyle["--rmg-entry-skel-wrap-shadow-radius"] = nextStyle.borderRadius;
+  }
+
+  return nextStyle;
+}
+
+function getEntryKey(entry: any, entryIndex: number) {
+  return String((entry as any).key ?? (entry as any).id ?? entryIndex);
+}
 
 export function EntryList({
   enabled,
@@ -94,6 +149,35 @@ export function EntryList({
 
   const items = entries.items ?? [];
   const len = items.length;
+  const entryKeys = React.useMemo(
+    () => items.map((entry, entryIndex) => getEntryKey(entry, entryIndex)),
+    [items]
+  );
+  const entryKeySignature = entryKeys.join("\u0000");
+  const [shimmerDisabledEntryKeys, setShimmerDisabledEntryKeys] =
+    React.useState<Set<string>>(() => new Set());
+
+  React.useEffect(() => {
+    setShimmerDisabledEntryKeys((prev) => {
+      if (prev.size === 0) return prev;
+
+      const currentKeys = new Set(
+        entryKeySignature ? entryKeySignature.split("\u0000") : []
+      );
+      let changed = false;
+      const next = new Set<string>();
+
+      prev.forEach((entryKey) => {
+        if (currentKeys.has(entryKey)) {
+          next.add(entryKey);
+        } else {
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [entryKeySignature]);
 
   const revealOrderRef = React.useRef<number>(0);
   const revealOrderByEntryRef = React.useRef<number[]>([]);
@@ -105,13 +189,17 @@ export function EntryList({
   const loadingN = useNormalizedEntriesLoading(entries);
   const introN = useNormalizedEntriesIntro(entries);
 
-  const loadingOpts = (entries as any)?.loading as { enabled?: boolean; force?: boolean } | undefined;
+  const loadingOpts = (entries as any)?.loading as
+    | {
+        enabled?: boolean;
+        force?: LoadingForceOptions;
+      }
+    | undefined;
   const loadingEnabled = loadingOpts?.enabled ?? true;
-  const loadingForce = loadingOpts?.force ?? false;
+  const loadingForce = resolveLoadingForceOptions(loadingOpts?.force);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const loadingActive = enabled && loadingEnabled;
-  const forceLoading = loadingActive && loadingForce;
 
   const { nearView, everInView, setEntryRef } = useEntryInView(len, {
     root: null,
@@ -120,18 +208,31 @@ export function EntryList({
     threshold: loadingN.threshold,
   });
 
-  const decodeGateEnabled = loadingActive && !forceLoading;
+  const decodeGateEnabled =
+    loadingActive && (!loadingForce.enabled || loadingForce.showContent);
 
   const { decodedReady } = useEntryDecodeReady(decodeGateEnabled, items as any, nearView, {
     timeoutMs: loadingN.decodeTimeoutMs,
   });
 
-  const showGlobalLoading = loadingActive && (forceLoading || len === 0);
   const resolvedSkeletonExitMs = prefersReducedMotion ? 0 : SKELETON_EXIT_MS;
   const introUnlockDelayMs = Math.max(0, resolvedSkeletonExitMs - INTRO_OVERLAP_MS);
-  const [introUnlocked, setIntroUnlocked] = React.useState(() => !showGlobalLoading);
+  const [introUnlocked, setIntroUnlocked] = React.useState(
+    () => !(loadingActive && (loadingForce.enabled || len === 0))
+  );
+  const markEntryShimmerDisabled = React.useCallback((entryKey: string) => {
+    setShimmerDisabledEntryKeys((prev) => {
+      if (prev.has(entryKey)) return prev;
+
+      const next = new Set(prev);
+      next.add(entryKey);
+      return next;
+    });
+  }, []);
 
   let anyReveal = false;
+  let anyCompareMode = false;
+  const currentlyRevealableEntryKeys: string[] = [];
 
   const entryRows = !len
     ? null
@@ -141,22 +242,37 @@ export function EntryList({
         const isDecoded = decodedReady[entryIndex] ?? false;
 
         const shouldMountContent = hasEver || isNear;
+        const mountedContentReady =
+          shouldMountContent && (loadingN.waitForDecode ? isDecoded : true);
+        const defaultReveal = loadingActive
+          ? hasEver && (loadingN.waitForDecode ? isDecoded : true)
+          : shouldMountContent;
+        const entryLoadingVisualState = resolveEntryLoadingVisualState({
+          loadingActive,
+          loadingForced: loadingOpts?.force,
+          shouldMountContent,
+          contentReady: mountedContentReady,
+          defaultReveal,
+        });
+        const reveal = entryLoadingVisualState.revealContent;
 
-        const reveal = forceLoading
-          ? false
-          : loadingActive
-            ? hasEver && (loadingN.waitForDecode ? isDecoded : true)
-            : shouldMountContent;
+        if (entryLoadingVisualState.compareMode) {
+          anyCompareMode = true;
+        }
 
         if (reveal) {
           anyReveal = true;
         }
 
-        const showSkeleton = forceLoading
-          ? true
-          : loadingActive
-            ? shouldMountContent && !reveal
-            : false;
+        const entryKey = entryKeys[entryIndex] ?? getEntryKey(entry, entryIndex);
+        const shimmerDisabled =
+          reveal &&
+          !entryLoadingVisualState.compareMode &&
+          shimmerDisabledEntryKeys.has(entryKey);
+
+        if (reveal && !entryLoadingVisualState.compareMode) {
+          currentlyRevealableEntryKeys.push(entryKey);
+        }
 
         let contentNode: React.ReactNode = null;
 
@@ -252,7 +368,12 @@ export function EntryList({
             );
           });
 
-          const mediaContainer = renderMediaContainer({ entryIndex, mediaNodes, entrySliderRefs });
+          const mediaContainer = renderMediaContainer({
+            entryIndex,
+            entryInView: hasEver,
+            mediaNodes,
+            entrySliderRefs,
+          });
 
           contentNode =
             typeof entries.render?.card === "function"
@@ -270,6 +391,7 @@ export function EntryList({
 
         const spec = resolveEntrySkeletonSpec(entry, entryIndex);
         const skelWrap = loadingN.skeletonWrap;
+        const skeletonWrapStyle = splitEntrySkeletonWrapStyle(skelWrap?.style);
 
         if (reveal && revealOrderByEntryRef.current[entryIndex] === -1) {
           revealOrderByEntryRef.current[entryIndex] = revealOrderRef.current++;
@@ -280,9 +402,10 @@ export function EntryList({
 
         return (
           <div
-            key={(entry as any).key ?? (entry as any).id ?? entryIndex}
+            key={entryKey}
             ref={setEntryRef(entryIndex)}
             data-rmg-entry-ready={reveal ? "1" : "0"}
+            data-rmg-entry-compare={entryLoadingVisualState.compareMode ? "1" : "0"}
             data-rmg-entry-mounted={shouldMountContent ? "1" : "0"}
             className={[styles.entryRow, entries.entryRow?.className].filter(Boolean).join(" ")}
             data-rmg-entry-owner={entryIndex}
@@ -296,13 +419,31 @@ export function EntryList({
             {loadingActive ? (
               <div
                 className={[styles.entrySkeletonWrap, skelWrap?.className].filter(Boolean).join(" ")}
-                style={skelWrap?.style}
-                aria-hidden={showSkeleton ? undefined : true}
+                style={{
+                  ["--rmg-entry-skeleton-opacity" as any]: entryLoadingVisualState.loadingLayerOpacity,
+                  ...(skeletonWrapStyle ?? {}),
+                }}
+                aria-hidden="true"
                 data-rmg-entry-skeleton
+                data-rmg-entry-shimmer={shimmerDisabled ? "off" : undefined}
+                onTransitionEnd={(event) => {
+                  if (
+                    event.currentTarget !== event.target ||
+                    event.propertyName !== "opacity" ||
+                    !reveal ||
+                    entryLoadingVisualState.compareMode
+                  ) {
+                    return;
+                  }
+
+                  markEntryShimmerDisabled(entryKey);
+                }}
               >
-                {skeletonOverride ?? (
-                  <EntrySkeletonCard spec={spec} breakpoints={breakpoints} />
-                )}
+                <div className={styles.entrySkeletonBody}>
+                  {skeletonOverride ?? (
+                    <EntrySkeletonCard spec={spec} breakpoints={breakpoints} />
+                  )}
+                </div>
               </div>
             ) : null}
 
@@ -310,6 +451,37 @@ export function EntryList({
           </div>
         );
       });
+
+  const currentlyRevealableEntryKeySignature =
+    currentlyRevealableEntryKeys.join("\u0000");
+
+  React.useEffect(() => {
+    setShimmerDisabledEntryKeys((prev) => {
+      if (prev.size === 0) return prev;
+
+      const currentKeys = new Set(
+        currentlyRevealableEntryKeySignature
+          ? currentlyRevealableEntryKeySignature.split("\u0000")
+          : []
+      );
+      let changed = false;
+      const next = new Set<string>();
+
+      prev.forEach((entryKey) => {
+        if (currentKeys.has(entryKey)) {
+          next.add(entryKey);
+        } else {
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [currentlyRevealableEntryKeySignature]);
+
+  const showGlobalLoading =
+    loadingActive &&
+    (len === 0 || (loadingForce.enabled && !anyCompareMode && !anyReveal));
 
   React.useEffect(() => {
     if (showGlobalLoading) {

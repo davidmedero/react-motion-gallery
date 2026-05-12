@@ -1,12 +1,65 @@
+// @vitest-environment jsdom
+
 import * as React from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
+import { MasonrySkeleton } from "../skeleton/masonry";
 import {
   MasonrySkeletonCard,
   resolveActiveFlexStateKey,
-} from "./MasonrySkeleton";
+} from "../skeleton/MasonrySkeleton";
+
+function makeDomRect(width: number, height = 0): DOMRect {
+  return {
+    x: 0,
+    y: 0,
+    width,
+    height,
+    top: 0,
+    right: width,
+    bottom: height,
+    left: 0,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
+class MockResizeObserver {
+  callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+  }
+
+  observe(target: Element) {
+    this.callback(
+      [
+        {
+          target,
+          contentRect: makeDomRect(962),
+        } as ResizeObserverEntry,
+      ],
+      this as unknown as ResizeObserver
+    );
+  }
+
+  unobserve() {}
+
+  disconnect() {}
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  delete (globalThis as any).IS_REACT_ACT_ENVIRONMENT;
+});
+
+beforeEach(() => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
 
 describe("MasonrySkeleton layout and text nodes", () => {
   test("resolves the active responsive masonry variant from viewport width", () => {
@@ -45,8 +98,29 @@ describe("MasonrySkeleton layout and text nodes", () => {
     );
 
     expect(markup).toContain("legacy-skeleton");
-    expect(markup).toContain("height:192px");
+    expect(markup).toContain("container-type:inline-size");
+    expect(markup).toContain("height:43px");
     expect(markup).not.toContain('data-rmg-skel-text="true"');
+  });
+
+  test("applies responsive masonry spans to the positioned skeleton items", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 2,
+        columns: { 0: 1, 900: 4 },
+        gap: 16,
+        heightsPx: [240, 180],
+        spans: [{ 0: "full", 900: 2 }, 1],
+        placement: "horizontalOrder",
+        viewportWidth: 1000,
+      })
+    );
+
+    expect(markup).toContain('data-rmg-mskel-variant="c4_g16"');
+    expect(markup).toContain("--rmg-cols:4");
+    expect(markup).toContain("--rmg-mskel-width-0:calc(");
+    expect(markup).toContain("var(--rmg-gap)");
+    expect(markup).toContain("left:calc(");
   });
 
   test("renders masonry layout text nodes with wrapper styling", () => {
@@ -64,7 +138,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
             item: {
               kind: "text",
-              fontSize: 16,
+              barHeight: 16,
               lineHeight: 1.5,
               lines: 2,
               style: {
@@ -80,8 +154,466 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup.match(/data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(2);
     expect(markup).toContain("padding:12px");
     expect(markup).toContain("border-radius:18px");
-    expect(markup).toContain("box-shadow:0 8px 24px");
+    expect(markup).toContain("--rmg-masonry-skel-wrap-shadow:0 8px 24px");
+    expect(markup).not.toContain("box-shadow:0 8px 24px");
     expect(markup).toContain(sharedSkeletonStyles.skelCardShimmer);
+  });
+
+  test("auto-measures layout width for container-keyed masonry text prediction", async () => {
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function getBoundingClientRectMock() {
+        return this.hasAttribute("data-rmg-skeleton-scope")
+          ? makeDomRect(962)
+          : makeDomRect(0);
+      }
+    );
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    let root: Root | null = createRoot(container);
+
+    try {
+      await React.act(async () => {
+        root?.render(
+          <MasonrySkeleton
+            layout={{
+              layout: {
+                kind: "masonry",
+                itemWrapStyle: { padding: 10 },
+                slots: [
+                  {},
+                  {
+                    span: { 0: 1, 1140: 2 },
+                    item: {
+                      kind: "rect",
+                      style: { width: "100%", aspectRatio: "4 / 5" },
+                    },
+                  },
+                ],
+                item: {
+                  kind: "col",
+                  style: { gap: 12 },
+                  children: [
+                    {
+                      kind: "rect",
+                      style: { width: "100%", aspectRatio: "5 / 4" },
+                    },
+                    {
+                      kind: "text",
+                      barHeight: 14.72,
+                      lineHeight: 1.55,
+                      lines: { 0: 4, 240: 1 },
+                      responsiveBy: "container",
+                    },
+                  ],
+                },
+              },
+            }}
+            masonry={{
+              count: 2,
+              columns: { 0: 1, 1140: 4 },
+              gap: { 0: 12, 1140: 18 },
+              placement: "horizontalOrder",
+              viewportWidth: 1600,
+            }}
+          />
+        );
+      });
+
+      const variant = container.querySelector(
+        '[data-rmg-mskel-variant="c4_g18"]'
+      );
+      const variantStyle = variant?.getAttribute("style") ?? "";
+
+      expect(variantStyle).toContain("103.264");
+      expect(variantStyle).not.toContain("34.816");
+    } finally {
+      await React.act(async () => {
+        root?.unmount();
+      });
+      root = null;
+      container.remove();
+    }
+  });
+
+  test("reserves wrapped masonry shell height before streamed content", () => {
+    const markup = renderToStaticMarkup(
+      <MasonrySkeleton
+        layout={{
+          layout: {
+            kind: "masonry",
+            itemWrapStyle: { padding: 10 },
+            item: {
+              kind: "rect",
+              style: { width: "100%", aspectRatio: "4 / 5" },
+            },
+            slots: [{ span: { 0: 1, 1140: 2 } }, {}],
+          },
+        }}
+        ready={false}
+        masonry={{
+          count: 2,
+          columns: { 0: 1, 1140: 4 },
+          gap: { 0: 12, 1140: 18 },
+          placement: "horizontalOrder",
+        }}
+      >
+        <div data-live-masonry-placeholder="true" style={{ height: 0 }} />
+      </MasonrySkeleton>
+    );
+
+    const reserveStyleIndex = markup.indexOf("[data-rmg-masonry-skeleton-shell");
+    const wrapperIndex = markup.indexOf("data-rmg-skeleton-wrapper");
+    const loadingIndex = markup.indexOf("data-rmg-skeleton-loading-layer");
+    const contentIndex = markup.indexOf("data-rmg-skeleton-content-layer");
+
+    expect(reserveStyleIndex).toBeGreaterThanOrEqual(0);
+    expect(wrapperIndex).toBeGreaterThanOrEqual(0);
+    expect(loadingIndex).toBeGreaterThanOrEqual(0);
+    expect(contentIndex).toBeGreaterThanOrEqual(0);
+    expect(reserveStyleIndex).toBeLessThan(wrapperIndex);
+    expect(loadingIndex).toBeLessThan(contentIndex);
+    expect(markup).toContain("data-rmg-masonry-skeleton-shell=");
+    expect(markup).toContain("min-height:calc(");
+  });
+
+  test("keeps single-span structured masonry skeletons in flow layout", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 4,
+        columns: { 0: 1, 720: 2, 1140: 3 },
+        gap: { 0: 12, 1140: 18 },
+        spec: {
+          layout: {
+            kind: "masonry",
+            itemWrapStyle: {
+              padding: 12,
+            },
+            item: {
+              kind: "col",
+              style: {
+                gap: 12,
+              },
+              children: [
+                {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    aspectRatio: "4 / 5",
+                  },
+                },
+                {
+                  kind: "text",
+                  barHeight: 14,
+                  lineHeight: 1.5,
+                  lines: 2,
+                  style: {
+                    width: "88%",
+                  },
+                },
+              ],
+            },
+            slots: [
+              {},
+              {
+                item: {
+                  kind: "col",
+                  style: {
+                    gap: 12,
+                  },
+                  children: [
+                    {
+                      kind: "rect",
+                      style: {
+                        width: "100%",
+                        aspectRatio: "3 / 5",
+                      },
+                    },
+                    {
+                      kind: "text",
+                      barHeight: 14,
+                      lineHeight: 1.5,
+                      lines: 3,
+                      style: {
+                        width: "88%",
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain("display:flex");
+    expect(markup).not.toContain("height:max(");
+    expect(markup).not.toContain("position:absolute;top:calc(");
+  });
+
+  test("does not add a trailing bottom gap to flow-layout masonry columns", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 4,
+        columns: 2,
+        gap: 12,
+        viewportWidth: 900,
+        spec: {
+          layout: {
+            kind: "masonry",
+            item: {
+              kind: "rect",
+              style: {
+                width: "100%",
+                height: 120,
+              },
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain("margin-bottom:12px");
+    expect(markup).toContain("margin-bottom:0px");
+  });
+
+  test("uses positioned layout for structured masonry skeletons when spans are present", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 3,
+        columns: { 0: 1, 900: 3 },
+        gap: 16,
+        viewportWidth: 1200,
+        spec: {
+          layout: {
+            kind: "masonry",
+            itemWrapStyle: {
+              padding: 12,
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100%",
+                aspectRatio: "4 / 5",
+              },
+            },
+            slots: [
+              {
+                span: 2,
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    aspectRatio: "16 / 9",
+                  },
+                },
+              },
+              {},
+              {},
+            ],
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain("height:calc(");
+    expect(markup).toContain("position:absolute;top:");
+    expect(markup).toContain("height:calc(");
+    expect(markup).not.toContain("min-height:");
+  });
+
+  test("emits container-query scaffold overrides for SSR positioned masonry skeletons", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 6,
+        columns: { 0: 1, 1140: 4 },
+        gap: { 0: 12, 1140: 18 },
+        placement: "horizontalOrder",
+        spec: {
+          layout: {
+            kind: "masonry",
+            itemWrapStyle: { padding: 10 },
+            item: {
+              kind: "col",
+              style: { gap: 12 },
+              children: [
+                {
+                  kind: "rect",
+                  style: { width: "100%", aspectRatio: "5 / 4" },
+                },
+                {
+                  kind: "col",
+                  style: { gap: 5, padding: "0 4px" },
+                  children: [
+                    {
+                      kind: "text",
+                      barHeight: 16.32,
+                      lineHeight: 1.2,
+                      lines: { 0: 2, 199.484: 1 },
+                      responsiveBy: "container",
+                    },
+                    {
+                      kind: "text",
+                      barHeight: 14.72,
+                      lineHeight: 1.55,
+                      lines: { 0: 5, 172.5: 4, 200.453: 3, 288: 2 },
+                      responsiveBy: "container",
+                    },
+                  ],
+                },
+              ],
+            },
+            slots: [
+              {
+                span: { 0: 1, 1140: 2 },
+                item: {
+                  kind: "rect",
+                  style: { width: "100%", aspectRatio: "4 / 5" },
+                },
+              },
+              {},
+              {},
+              {
+                span: { 0: 1, 1140: 2 },
+                item: {
+                  kind: "rect",
+                  style: { width: "100%", aspectRatio: "16 / 10" },
+                },
+              },
+              {},
+              {},
+            ],
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain('data-rmg-mskel-index="1"');
+    expect(markup).toContain("@container (min-width:856px)");
+    expect(markup).toContain(
+      '--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (147.43200000000002px)) + (20)) !important;'
+    );
+    expect(markup).toContain(
+      '> [data-rmg-mskel-index="4"]{top:calc((var(--rmg-mskel-height-1)) + (18px)) !important;'
+    );
+  });
+
+  test("keeps SSR span scaffold top and shell-height formulas compact", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 8,
+        columns: { 0: 1, 760: 2, 1160: 4 },
+        gap: { 0: 12, 1160: 18 },
+        spec: {
+          radius: 20,
+          layout: {
+            kind: "masonry",
+            itemWrapStyle: {
+              padding: "12px 12px 16px",
+              borderRadius: 28,
+              backgroundColor: "rgba(255, 255, 255, 0.98)",
+              border: "1px solid rgba(15, 23, 42, 0.08)",
+              boxShadow: "0 24px 54px rgba(15, 23, 42, 0.1)",
+            },
+            item: {
+              kind: "col",
+              style: {
+                gap: 14,
+              },
+              children: [
+                {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    aspectRatio: "16 / 11",
+                    borderRadius: 20,
+                  },
+                },
+                {
+                  kind: "col",
+                  style: {
+                    gap: 6,
+                    padding: "0 4px",
+                  },
+                  children: [
+                    {
+                      kind: "rect",
+                      style: {
+                        width: 56,
+                        height: 2,
+                        marginBottom: 1,
+                        borderRadius: 999,
+                      },
+                    },
+                    {
+                      kind: "text",
+                      barHeight: 11.84,
+                      lineHeight: 1.35,
+                      lines: 1,
+                      lastBarWidth: "100%",
+                      style: {
+                        width: "24%",
+                        borderRadius: 999,
+                      },
+                    },
+                    {
+                      kind: "text",
+                      barHeight: 16.32,
+                      lineHeight: 1.2,
+                      lines: 1,
+                      lastBarWidth: "100%",
+                      style: {
+                        width: "42%",
+                      },
+                    },
+                    {
+                      kind: "text",
+                      barHeight: 14.72,
+                      lineHeight: 1.55,
+                      lines: 1,
+                      lastBarWidth: "100%",
+                      style: {
+                        width: "74%",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            slots: [
+              { span: { 0: 1, 760: 2, 1160: 2 } },
+              {},
+              {},
+              { span: { 0: 1, 1160: 2 } },
+              { span: { 0: 1, 760: 2, 1160: 2 } },
+              {},
+              {},
+              { span: { 0: 1, 1160: 2 } },
+            ],
+          },
+        },
+      })
+    );
+
+    const variantMatch = markup.match(
+      /<div data-rmg-mskel-variant="c4_g18" style="([^"]+)"/
+    );
+
+    expect(variantMatch?.[1]).toBeTruthy();
+
+    const variantStyle = variantMatch![1];
+
+    expect(variantStyle.length).toBeLessThan(6000);
+    expect(variantStyle).toContain("--rmg-mskel-colw:calc(");
+    expect(variantStyle).toContain("--rmg-mskel-width-3:calc(");
+    expect(variantStyle).toContain("--rmg-mskel-height-3:calc(");
+    expect(variantStyle).toContain("height:calc(");
+    expect(variantStyle).not.toContain("max(");
+    expect(variantStyle).not.toContain("--rmg-mskel-top-");
+    expect(variantStyle).not.toContain("--rmg-mskel-bottom-");
+    expect(variantStyle).not.toContain("--rmg-mskel-shell-height");
   });
 
   test("supports per-slot masonry skeleton overrides for layout and height ratios", () => {
@@ -97,7 +629,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
             item: {
               kind: "text",
-              fontSize: 12,
+              barHeight: 12,
               lineHeight: 1.5,
               style: {
                 width: "60%",
@@ -121,7 +653,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
                     },
                     {
                       kind: "text",
-                      fontSize: 14,
+                      barHeight: 14,
                       lineHeight: 1.5,
                       lines: 2,
                       style: {
@@ -143,7 +675,8 @@ describe("MasonrySkeleton layout and text nodes", () => {
       })
     );
 
-    expect(markup).toContain("min-height:360px");
+    expect(markup).toContain("height:220px");
+    expect(markup).toContain("height:var(--rmg-mskel-height-0)");
     expect(markup).toContain("border-radius:20px");
     expect(markup.match(/data-rmg-skel-text="true"/g) ?? []).toHaveLength(2);
   });
@@ -173,7 +706,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
                 },
                 {
                   kind: "text",
-                  fontSize: 16,
+                  barHeight: 16,
                   lineHeight: 1.5,
                   lines: 2,
                   shimmer: {
@@ -197,7 +730,31 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).not.toContain("--rmg-skel-shimmer-opacity:0.41");
   });
 
-  test("renders responsive text CSS and respects explicit heights with layout enabled", () => {
+  test("omits masonry card shimmer once the loading fade has completed", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 1,
+        ratios: [80],
+        disableShimmer: true,
+        spec: {
+          highlightColor: "#ffffff",
+          shimmer: {
+            durationMs: 933,
+          },
+        },
+        classNames: {
+          item: "legacy-skeleton",
+        },
+      })
+    );
+
+    expect(markup).toContain("legacy-skeleton");
+    expect(markup).not.toContain(sharedSkeletonStyles.skelCardShimmer);
+    expect(markup).not.toContain("--rmg-skel-shimmer-duration:933ms");
+    expect(markup).not.toContain("--rmg-skel-shimmer-c2:#ffffff");
+  });
+
+  test("renders responsive text CSS from the structured layout path", () => {
     const markup = renderToStaticMarkup(
       React.createElement(MasonrySkeletonCard, {
         count: 1,
@@ -207,14 +764,14 @@ describe("MasonrySkeleton layout and text nodes", () => {
             kind: "masonry",
             item: {
               kind: "text",
-              fontSize: 16,
+              barHeight: 16,
               lineHeight: 1.5,
               lines: {
                 0: 3,
                 767: 2,
                 1200: 1,
               },
-              lineWidth: "56%",
+              lastBarWidth: "56%",
               style: {
                 width: "88%",
               },
@@ -224,12 +781,60 @@ describe("MasonrySkeleton layout and text nodes", () => {
       })
     );
 
-    expect(markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(3);
+    expect(
+      (markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).length
+    ).toBeGreaterThanOrEqual(3);
     expect(markup).toContain("@media (min-width:767px)");
-    expect(markup).toContain("nth-child(n+3){display:none;}");
+    expect(markup).toContain(
+      '[data-rmg-skel-text-line="true"]{display:none !important;height:16px !important;}'
+    );
+    expect(markup).toContain(
+      "nth-child(-n+2){display:block !important;width:100% !important;max-width:100% !important;}"
+    );
     expect(markup).toContain("@media (min-width:1200px)");
-    expect(markup).toContain("nth-child(1){width:56%;}");
-    expect(markup).toContain("min-height:300px");
+    expect(markup).toContain("nth-child(1){max-width:56% !important;}");
+    expect(markup).toContain("height:72px");
+  });
+
+  test("keeps multi-line masonry text when only lastBarWidth is responsive", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 1,
+        heightsPx: [300],
+        spec: {
+          layout: {
+            kind: "masonry",
+            item: {
+              kind: "text",
+              barHeight: 14.72,
+              lineHeight: 1.55,
+              lines: {
+                0: 3,
+                900: 3,
+              },
+              lastBarWidth: {
+                0: "50%",
+                900: "20%",
+              },
+              style: {
+                width: "100%",
+              },
+            },
+          },
+        },
+      })
+    );
+
+    expect(
+      (markup.match(/data-rmg-skel-text-line="true"/g) ?? []).length
+    ).toBeGreaterThanOrEqual(3);
+    expect(markup).toMatch(/height:68\.448/);
+    expect(markup).toContain(
+      "nth-child(-n+3){display:block !important;width:100% !important;max-width:100% !important;}"
+    );
+    expect(markup).toContain("@media (min-width:900px)");
+    expect(markup).toContain("nth-child(3){max-width:20% !important;}");
+    expect(markup).toContain("height:68.44800000000001px");
   });
 
   test("grows the masonry shell when structured content is taller than the fallback ratio", () => {
@@ -259,7 +864,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
                 },
                 {
                   kind: "text",
-                  fontSize: 18,
+                  barHeight: 18,
                   lineHeight: 1.35,
                   lines: 2,
                   style: {
@@ -268,7 +873,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
                 },
                 {
                   kind: "text",
-                  fontSize: 14,
+                  barHeight: 14,
                   lineHeight: 1.55,
                   lines: 3,
                   style: {
@@ -282,8 +887,8 @@ describe("MasonrySkeleton layout and text nodes", () => {
       })
     );
 
-    expect(markup).toContain("min-height:370px");
-    expect(markup).not.toContain("min-height:132px");
+    expect(markup).toContain("height:var(--rmg-mskel-height-0)");
+    expect(markup).not.toContain("height:132px");
   });
 
   test("uses percentage-width aspect ratio media and text blocks to infer shell height", () => {
@@ -312,7 +917,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
                 },
                 {
                   kind: "text",
-                  fontSize: 18,
+                  barHeight: 18,
                   lineHeight: 1.35,
                   lines: 2,
                   style: {
@@ -321,7 +926,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
                 },
                 {
                   kind: "text",
-                  fontSize: 14,
+                  barHeight: 14,
                   lineHeight: 1.55,
                   lines: 3,
                   style: {
@@ -335,8 +940,8 @@ describe("MasonrySkeleton layout and text nodes", () => {
       })
     );
 
-    expect(markup).toContain("min-height:425px");
-    expect(markup).not.toContain("min-height:132px");
+    expect(markup).toContain("height:var(--rmg-mskel-height-0)");
+    expect(markup).not.toContain("height:132px");
   });
 
   test("renders structured masonry skeleton items in round-robin placement", () => {
@@ -349,7 +954,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             kind: "masonry",
             item: {
               kind: "text",
-              fontSize: 14,
+              barHeight: 14,
               lineHeight: 1.5,
               style: {
                 width: "72%",
@@ -362,5 +967,115 @@ describe("MasonrySkeleton layout and text nodes", () => {
 
     expect(markup.match(/data-rmg-skel-text="true"/g) ?? []).toHaveLength(2);
     expect(markup).toContain('data-rmg-mskel-variant="c4_g8"');
+  });
+
+  test("keeps span-positioned masonry scaffold CSS linear with custom properties", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 8,
+        columns: { 0: 1, 760: 2, 1160: 4 },
+        gap: { 0: 12, 1160: 18 },
+        placement: "balanced",
+        spec: {
+          radius: 20,
+          layout: {
+            kind: "masonry",
+            itemWrapStyle: {
+              padding: "12px 12px 16px",
+              borderRadius: 28,
+              backgroundColor: "rgba(255, 255, 255, 0.98)",
+              border: "1px solid rgba(15, 23, 42, 0.08)",
+              boxShadow: "0 24px 54px rgba(15, 23, 42, 0.1)",
+            },
+            item: {
+              kind: "col",
+              style: {
+                gap: 14,
+              },
+              children: [
+                {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    aspectRatio: "16 / 11",
+                    borderRadius: 20,
+                  },
+                },
+                {
+                  kind: "col",
+                  style: {
+                    gap: 6,
+                    padding: "0 4px",
+                  },
+                  children: [
+                    {
+                      kind: "rect",
+                      style: {
+                        width: 56,
+                        height: 2,
+                        marginBottom: 1,
+                        borderRadius: 999,
+                      },
+                    },
+                    {
+                      kind: "text",
+                      barHeight: 11.84,
+                      lineHeight: 1.35,
+                      lines: 1,
+                      lastBarWidth: "100%",
+                      style: {
+                        width: "24%",
+                        borderRadius: 999,
+                      },
+                    },
+                    {
+                      kind: "text",
+                      barHeight: 16.32,
+                      lineHeight: 1.2,
+                      lines: 1,
+                      lastBarWidth: "100%",
+                      style: {
+                        width: "42%",
+                      },
+                    },
+                    {
+                      kind: "text",
+                      barHeight: 14.72,
+                      lineHeight: 1.55,
+                      lines: 1,
+                      lastBarWidth: "100%",
+                      style: {
+                        width: "74%",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            slots: [
+              { span: { 0: 1, 760: 2, 1160: 2 } },
+              {},
+              {},
+              { span: { 0: 1, 1160: 2 } },
+              { span: { 0: 1, 760: 2, 1160: 2 } },
+              {},
+              {},
+              { span: { 0: 1, 1160: 2 } },
+            ],
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain("height:calc(");
+    expect(markup).toContain("--rmg-mskel-colw:calc(");
+    expect(markup).toContain("--rmg-mskel-width-0:");
+    expect(markup).toContain("width:var(--rmg-mskel-width-0)");
+    expect(markup).toContain("height:var(--rmg-mskel-height-0)");
+    expect(markup).toContain("--rmg-mskel-height-0:");
+    expect(markup).toContain("top:0px");
+    expect(markup).not.toContain("position:absolute;top:max(calc(calc(");
+    expect(markup).not.toContain("max(");
+    expect(markup).not.toContain("--rmg-mskel-bottom-");
   });
 });

@@ -42,6 +42,7 @@ import {
 import { DefaultChevronIcon } from './controls/DefaultChevronIcon'
 import { FullscreenOptions } from './types'
 import { getFsMediaContainer, getPrimaryImgEl } from '../zoomPan/core/dom'
+import { normalizeFullscreenSliderGap } from './transforms'
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
 function DragTracker(axis: AxisLike, ownerWindow: WindowType) {
@@ -85,17 +86,22 @@ type FullscreenCrossfadeState = {
 };
 
 export function shouldUseFullscreenZoomedSourceSnapshot(args: {
-  controlsFade: boolean
+  controls?: boolean
+  controlsFade?: boolean
   trigger: FullscreenCrossfadeTrigger
   isZoomed: boolean
 }) {
-  const { controlsFade, trigger, isZoomed } = args
-  return controlsFade && trigger !== 'drag' && isZoomed
+  const { trigger, isZoomed } = args
+  const controls = args.controls ?? args.controlsFade ?? false
+  return controls && trigger !== 'drag' && isZoomed
 }
 
 export function shouldStartFullscreenCrossfade(args: {
-  controlsFade: boolean
-  dragFade: boolean
+  controls?: boolean
+  drag?: boolean
+  wheel?: boolean
+  controlsFade?: boolean
+  dragFade?: boolean
   showFullscreenSlider: boolean
   busy: boolean
   trigger: FullscreenCrossfadeTrigger
@@ -105,8 +111,6 @@ export function shouldStartFullscreenCrossfade(args: {
   toIndex: number
 }) {
   const {
-    controlsFade,
-    dragFade,
     showFullscreenSlider,
     busy,
     trigger,
@@ -115,13 +119,25 @@ export function shouldStartFullscreenCrossfade(args: {
     fromIndex,
     toIndex,
   } = args
+  const controls = args.controls ?? args.controlsFade ?? false
+  const drag = args.drag ?? args.dragFade ?? false
+  const wheel = args.wheel ?? false
 
   if (!showFullscreenSlider || busy || !hasCrossfadeSlides) return false
   if (fromIndex === toIndex) return false
-  if (trigger === 'wheel') return false
+  if (trigger === 'wheel') return wheel
   if (trigger === 'requestSet' && mode === 'instant') return false
-  if (trigger === 'drag') return dragFade
-  return controlsFade
+  if (trigger === 'drag') return drag
+  return controls
+}
+
+export function shouldSuppressFullscreenLoopForScroll(args: {
+  distance: number
+  fromIndex: number
+  toIndex: number
+}) {
+  const { distance, fromIndex, toIndex } = args
+  return Math.abs(distance) > 0.01 || fromIndex !== toIndex
 }
 
 interface FullscreenSliderProps {
@@ -155,6 +171,7 @@ interface FullscreenSliderProps {
   overlayDivRef: RefObject<HTMLDivElement | null>
   direction?: 'ltr' | 'rtl';
   isWrapping: RefObject<boolean>
+  sliderGap?: number;
   sliderDuration: number;
   sliderFriction: number;
   suppressLoopRef: React.RefObject<boolean>;
@@ -204,6 +221,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       rightChevronRef,
       overlayDivRef,
       direction,
+      sliderGap = 0,
       sliderDuration,
       sliderFriction,
       suppressLoopRef,
@@ -274,6 +292,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const wasPinch = useRef(false)
     const appliedYRef = useRef(0)
     const overlayOpacityRef = useRef(1)
+    const gapPx = normalizeFullscreenSliderGap(sliderGap)
     const publishedIndexRef = useRef<number>(sub.get())
     type DragMode = 'none' | 'x' | 'y'
     const dragMode = useRef<DragMode>('none')
@@ -358,6 +377,10 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       isWheelLocked,
     } = useWheelLock()
 
+    function measureSlideStep(track: HTMLElement | null) {
+      return (track?.clientWidth || 1) + gapPx
+    }
+
     function syncLoopGeometry(per: number, len: number) {
       const safeLen = len || 1
       const W = per * safeLen
@@ -413,7 +436,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         return;
       }
 
-      const per = track.clientWidth || 1;
+      const per = measureSlideStep(track);
       const len = slides.current.length || 1;
       syncLoopGeometry(per, len)
 
@@ -896,7 +919,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     }
 
     function perSlide() {
-      return perSlideRef.current || slider.current?.clientWidth || 1
+      return perSlideRef.current || measureSlideStep(slider.current)
     }
     function slideCount() {
       return slides.current.length || 1
@@ -955,7 +978,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       setTimeout(() => {
         if (!slider.current) return
-        const per = perSlideRef.current || slider.current.clientWidth
+        const per = perSlideRef.current || measureSlideStep(slider.current)
         const startX = -per * startIndex
         x.current = startX
         y.current = 0
@@ -1503,7 +1526,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       const axis = Axis();
       axisRef.current = axis;
 
-      const per = perSlideRef.current || track.clientWidth || 1;
+      const per = perSlideRef.current || measureSlideStep(track);
       const len = slides.current.length || 1;
 
       const counterMax = len - 1;
@@ -1600,7 +1623,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       if (cellCount === 1) {
         const cw = (track as any)['clientWidth'] as number;
-        const per = track.clientWidth || 1;
+        const per = measureSlideStep(track);
         perSlideRef.current = per;
 
         const len = slides.current.length || 1;
@@ -2074,7 +2097,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         const track = slider.current
         if (!track) return
         const containerWidth = track.clientWidth
-        const contentWidth = (slides.current.length || 1) * (perSlideRef.current || containerWidth)
+        const contentWidth =
+          (slides.current.length || 1) *
+          (perSlideRef.current || measureSlideStep(track))
         const canScrollHorizontally = contentWidth > containerWidth
         const isHorizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY)
         if (!isHorizontal || !canScrollHorizontally) return

@@ -1,0 +1,404 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=entries-slider-html5&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1340,
+    "viewportHeight": 1800,
+    "viewportWorkers": 8,
+    "settleMs": 120,
+    "stableGeometryFrames": 4,
+    "lineMeasurementMethod": "domRange",
+    "includeTextMetrics": true,
+    "breakpointStrategy": "lineChanges",
+    "barWidthUnit": "px",
+    "entries": {
+      "entrySelector": "[data-rmg-entry-owner]",
+      "expectedEntryCount": 3,
+      "mountedAttribute": "data-rmg-entry-mounted",
+      "mountedValue": "1",
+      "readyAttribute": "data-rmg-entry-ready",
+      "readyValue": "1"
+    }
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry01Section",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 67.281,
+          "toViewport": 67.281,
+          "fromWidthPx": 67.28125,
+          "toWidthPx": 67.28125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "47px",
+      "barHeight": 11.52,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry01Title",
+      "lines": {
+        "0": 2,
+        "208.296": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 127.484,
+          "toViewport": 207.484,
+          "fromWidthPx": 127.484375,
+          "toWidthPx": 207.484375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 208.296,
+          "toViewport": 208.296,
+          "fromWidthPx": 208.296875,
+          "toWidthPx": 208.296875,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "100px",
+          "104px"
+        ],
+        "208.296": "208px"
+      },
+      "barHeight": 17.28,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry01Count",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 62.515,
+          "toViewport": 62.515,
+          "fromWidthPx": 62.515625,
+          "toWidthPx": 62.515625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "63px",
+      "barHeight": 12.48,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry01Body",
+      "lines": {
+        "0": 4,
+        "233": 3,
+        "366": 2,
+        "684": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 206,
+          "toViewport": 232,
+          "fromWidthPx": 206,
+          "toWidthPx": 232,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 233,
+          "toViewport": 365,
+          "fromWidthPx": 233,
+          "toWidthPx": 365,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 366,
+          "toViewport": 683,
+          "fromWidthPx": 366,
+          "toWidthPx": 683,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 684,
+          "toViewport": 924,
+          "fromWidthPx": 684,
+          "toWidthPx": 924,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "195px",
+          "170px",
+          "206px",
+          "100px"
+        ],
+        "233": [
+          "226px",
+          "232px",
+          "217px"
+        ],
+        "366": [
+          "314px",
+          "365px"
+        ],
+        "684": "684px"
+      },
+      "barHeight": 15.2,
+      "lineHeight": 1.65
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry02Section",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 64.328,
+          "toViewport": 64.328,
+          "fromWidthPx": 64.328125,
+          "toWidthPx": 64.328125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "44px",
+      "barHeight": 11.52,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry02Title",
+      "lines": {
+        "0": 2,
+        "193.468": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 127.484,
+          "toViewport": 192.484,
+          "fromWidthPx": 127.484375,
+          "toWidthPx": 192.484375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 193.468,
+          "toViewport": 193.468,
+          "fromWidthPx": 193.46875,
+          "toWidthPx": 193.46875,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "83px",
+          "106px"
+        ],
+        "193.468": "193px"
+      },
+      "barHeight": 17.28,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry02Count",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 62.515,
+          "toViewport": 62.515,
+          "fromWidthPx": 62.515625,
+          "toWidthPx": 62.515625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "63px",
+      "barHeight": 12.48,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry02Body",
+      "lines": {
+        "0": 4,
+        "207": 3,
+        "298": 2,
+        "594.093": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 206,
+          "toViewport": 206,
+          "fromWidthPx": 206,
+          "toWidthPx": 206,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 207,
+          "toViewport": 297,
+          "fromWidthPx": 207,
+          "toWidthPx": 297,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 298,
+          "toViewport": 593.531,
+          "fromWidthPx": 298,
+          "toWidthPx": 593.53125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 594.093,
+          "toViewport": 924,
+          "fromWidthPx": 594.09375,
+          "toWidthPx": 924,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "179px",
+          "155px",
+          "166px",
+          "80px"
+        ],
+        "207": [
+          "179px",
+          "207px",
+          "199px"
+        ],
+        "298": [
+          "292px",
+          "297px"
+        ],
+        "594.093": "594px"
+      },
+      "barHeight": 15.2,
+      "lineHeight": 1.65
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry03Section",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 66.75,
+          "toViewport": 66.75,
+          "fromWidthPx": 66.75,
+          "toWidthPx": 66.75,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "47px",
+      "barHeight": 11.52,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry03Title",
+      "lines": {
+        "0": 2,
+        "154.375": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 127.687,
+          "toViewport": 153.687,
+          "fromWidthPx": 127.6875,
+          "toWidthPx": 153.6875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 154.375,
+          "toViewport": 154.375,
+          "fromWidthPx": 154.375,
+          "toWidthPx": 154.375,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "111px",
+          "39px"
+        ],
+        "154.375": "154px"
+      },
+      "barHeight": 17.28,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry03Count",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 62.312,
+          "toViewport": 62.312,
+          "fromWidthPx": 62.3125,
+          "toWidthPx": 62.3125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "62px",
+      "barHeight": 12.48,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderHtml5Entry03Body",
+      "lines": {
+        "0": 3,
+        "275": 2,
+        "539.781": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 206,
+          "toViewport": 274,
+          "fromWidthPx": 206,
+          "toWidthPx": 274,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 275,
+          "toViewport": 539.375,
+          "fromWidthPx": 275,
+          "toWidthPx": 539.375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 539.781,
+          "toViewport": 924,
+          "fromWidthPx": 539.78125,
+          "toWidthPx": 924,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "203px",
+          "186px",
+          "143px"
+        ],
+        "275": [
+          "274px",
+          "261px"
+        ],
+        "539.781": "540px"
+      },
+      "barHeight": 15.2,
+      "lineHeight": 1.65
+    }
+  ]
+}

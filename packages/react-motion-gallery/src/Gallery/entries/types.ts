@@ -1,5 +1,6 @@
 import { ElementStyle } from "../shared/types/elements";
 import { MediaItem } from "../shared/types/media";
+import type { LoadingForceOptions } from "../shared/loading/force";
 import type {
   ResponsiveCaptionPlacement,
   ResponsiveLength,
@@ -26,6 +27,7 @@ export type MediaEntryLink = {
 export type EntryOverlayRenderArgs = {
   entry: EntryItem;
   entryIndex: number;
+  media: MediaItem | null;
   mediaIndex: number | null;
   link: MediaEntryLink | null;
   opacity: number;
@@ -39,6 +41,9 @@ export type EntryOverlayStyle = ElementStyle & {
   height?: ResponsiveLength;
   placement?: ResponsiveCaptionPlacement;
   breakpoint?: number;
+  overlayCrossfadeTarget?: "content" | "overlay";
+  overlayCrossfadeDurationMs?: number;
+  overlayCrossfadeEasing?: string;
   zoomFade?: boolean;
   zoomFadeDurationMs?: number;
   zoomFadeEasing?: string;
@@ -61,7 +66,7 @@ export type EntrySkeletonResolverArgs = {
 
 export type EntriesLoadingOptions = {
   enabled?: boolean;
-  force?: boolean;
+  force?: LoadingForceOptions;
   skeleton?:
     | EntrySkeletonSpec
     | ((args: EntrySkeletonResolverArgs) => EntrySkeletonSpec | null | undefined);

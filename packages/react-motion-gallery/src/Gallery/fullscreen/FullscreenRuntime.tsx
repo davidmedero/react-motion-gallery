@@ -3,45 +3,34 @@
 import * as React from 'react';
 import { FullscreenModal } from './FullscreenModal';
 import { FullscreenSlider } from './FullscreenSlider';
-import { FsEntryOverlayMount } from '../entries/overlay/FsEntryOverlayMount';
+import { FsEntryOverlay } from '../entries/overlay/useFsEntryOverlay';
 import type { FullscreenSliderHandle } from './FullscreenSlider';
 import type { EntriesOptions, MediaEntryLink } from '../entries/types';
 import type { APITypes } from 'plyr-react';
 import type { FullscreenThumbnailSlotLayout } from '../fullscreenThumbnails/types';
 import { MediaItem } from '../shared/types/media';
 import { runFullscreenIntro } from './fullscreenIntro';
-import { FsCaptionPlacement, FsIntroRequest, FullscreenOptions } from './types';
-import { Root } from 'react-dom/client';
-import { usePlyrProps } from '../video/usePlyrProps';
 import {
-  renderFullscreenCrossfadeSlides,
-  renderFullscreenSlides,
-} from './renderFullscreenSlides';
+  FsCaptionPlacement,
+  FsIntroRequest,
+  FullscreenOptions,
+  FullscreenPlugin,
+  FullscreenRuntimeFeatures,
+} from './types';
+import type { Root } from 'react-dom/client';
+import {
+  renderFullscreenBaseCrossfadeSlides,
+  renderFullscreenBaseSlides,
+} from './renderFullscreenBaseSlides';
 import { createSingleTransform, createWrappedTransform } from './transforms';
-import { defaultPlayerStyle } from '../video/fullscreenPlayerStyle';
-import { usePanRuntime } from '../zoomPan/pan';
-import { rebuildPanBodiesFn } from '../zoomPan/core/rebuildPanBodies';
-import { ScrollBounds, ScrollBoundsType } from '../shared/motion/scrollBounds';
-import { ScrollBody, ScrollBodyType } from '../shared/motion/scrollBody';
-import { Vector1D, Vector1DType } from '../shared/motion/vector1d';
-import { PanAxis as Axis, PanAxisType as AxisType } from '../shared/types/axis';
-import { AnimationsType } from '../shared/motion/animations';
-import { boundsForCurrent as boundsForCurrentFn } from '../zoomPan/core/boundsForCurrent';
-import { useGlobalPinchZoom } from '../zoomPan/zoom/useGlobalPinchZoom';
 import { useWrappedItemsAndRefs } from './hooks/useWrappedItemsAndRefs';
-import { forceResetZoom as forceResetZoomFn } from '../zoomPan/zoom/forceResetZoom';
-import { resetZoomForSlideChange as resetZoomForSlideChangeFn } from '../zoomPan/zoom/resetZoomForSlideChange';
-import { resetPanForScale1 as resetPanForScale1Fn } from '../zoomPan/pan/resetPanForScale1';
-import { useFsEntryOverlay } from '../entries/overlay/useFsEntryOverlay';
-import { useFsCaptionOverlay } from './useFsCaptionOverlay';
-import { useFullscreenCaptionZoomMotion } from './captionZoomMotion';
-import { baseFitSize, distance, midpoint } from '../zoomPan/core/utils';
-import { zoomTo } from '../zoomPan/zoom/zoomTo';
-import { findImgAtPoint, getFullscreenTwinImages, getPrimaryImgEl, readDataIndex } from '../zoomPan/core/dom';
+import type { ScrollBoundsType } from '../shared/motion/scrollBounds';
+import type { ScrollBodyType } from '../shared/motion/scrollBody';
+import type { Vector1DType } from '../shared/motion/vector1d';
+import type { PanAxisType as AxisType } from '../shared/types/axis';
+import type { AnimationsType } from '../shared/motion/animations';
+import { FsCaptionOverlay } from './useFsCaptionOverlay';
 import { useOptionalGalleryCore } from '../core';
-import {
-  createVideoSnapshotStore,
-} from '../video/videoSnapshotStore';
 import { FullscreenOpenMethod } from '../api/types';
 import {
   isEntryOwnerReady,
@@ -49,9 +38,6 @@ import {
   waitForEntryOwnerReady,
 } from './entryOwnerReady';
 import {
-  effectiveViewportHeight,
-  effectiveViewportWidth,
-  resolveLengthFromResponsive,
   ResponsiveCaptionPlacement,
 } from '../shared/responsive';
 
@@ -72,7 +58,6 @@ export type FullscreenRuntimeProps = {
   >;
   sliderForFullscreen: React.RefObject<HTMLDivElement | null>;
   isWrappingForFullscreen: React.RefObject<boolean>;
-  wrappedItems: MediaItem[];
   setClosingModal: React.Dispatch<React.SetStateAction<boolean>>;
   closingModal: boolean;
   closeButtonRef: React.RefObject<HTMLElement | null>;
@@ -98,21 +83,19 @@ export type FullscreenRuntimeProps = {
   isZoomClick: React.RefObject<boolean>;
   isZoomed: boolean;
   windowSize: any;
-  handleZoomToggle: (zoomCtx: any, e: any, imageRef: any) => void;
   imageRefs: React.RefObject<React.RefObject<HTMLDivElement | null>[]>;
+  wrappedItems: MediaItem[];
+  setWrappedItems: React.Dispatch<React.SetStateAction<MediaItem[]>>;
   scale: number;
   isZooming: React.RefObject<boolean>;
-  wrappedModePlyrRefs: React.RefObject<(APITypes | null)[]>;
   singleModePlyrRefs: React.RefObject<(APITypes | null)[]>;
+  wrappedModePlyrRefs: React.RefObject<(APITypes | null)[]>;
   direction: 'ltr' | 'rtl';
+  sliderGap?: number;
   sliderDuration: number;
   sliderFriction: number;
   suppressLoopRef: React.RefObject<boolean>;
   fsFadeOpening: boolean;
-  controlsFade: boolean;
-  dragFade: boolean;
-  slideFadeDuration: number;
-  slideFadeEasing: any;
   normalizedItems: MediaItem[];
   fsThumbContainerRef: React.RefObject<HTMLDivElement | null>;
   fullscreenThumbnailSlot: FullscreenThumbnailSlotLayout | null;
@@ -132,6 +115,7 @@ export type FullscreenRuntimeProps = {
     viewportWidth: number
   ) => FsCaptionPlacement | null;
   requestFsCloseRef: React.RefObject<null | (() => void)>;
+  cancelFsCloseRef: React.RefObject<null | (() => void)>;
   suppressNextClickRef: React.RefObject<boolean>;
   currentImage: React.RefObject<HTMLDivElement | null>;
   scaleRef: React.RefObject<number>;
@@ -155,12 +139,47 @@ export type FullscreenRuntimeProps = {
   previousZoom: React.RefObject<{ x: number; y: number }>;
   panRef: React.RefObject<{ x: number; y: number }>;
   changingSlides: React.RefObject<boolean>;
-  setWrappedItems: React.Dispatch<React.SetStateAction<MediaItem[]>>;
   fsIndexRef: React.RefObject<number>;
   entriesObject: EntriesOptions;
   syncFullscreenSourceFromIndex: (nextIndex: number) => void;
   setFullscreenOpen: (open: boolean) => void;
+  runtimePlugins?: FullscreenPlugin[];
 };
+
+const EMPTY_RUNTIME_PLUGINS: FullscreenPlugin[] = [];
+const EMPTY_PLAYER_STYLE: React.CSSProperties = {};
+
+function useEmptyPlyrProps(_args?: unknown) {
+  return React.useMemo(() => [], []);
+}
+
+function useNoopZoomPanRuntime() {
+  const isPinching = React.useRef(false);
+  const isTouchPinching = React.useRef(false);
+  const noop = React.useCallback(() => {}, []);
+
+  return React.useMemo(
+    () => ({
+      isPinching,
+      isTouchPinching,
+      entryOverlayZoomMotion: undefined,
+      captionZoomMotion: undefined,
+      handlePanPointerStart: noop,
+      handleZoomToggle: noop,
+      resetAllZoomDom: noop,
+      resetForSlideNavigation: noop,
+      forceResetZoom: noop,
+    }),
+    [isPinching, isTouchPinching, noop]
+  );
+}
+
+function mergeRuntimeFeatures(plugins: FullscreenPlugin[]): FullscreenRuntimeFeatures {
+  return plugins.reduce<FullscreenRuntimeFeatures>((merged, plugin) => {
+    if (!plugin.runtime) return merged;
+    return { ...merged, ...plugin.runtime };
+  }, {});
+}
 
 function canonicalIndexOf(active: number, len: number) {
   return ((active % len) + len) % len;
@@ -194,6 +213,109 @@ function pausePlyrApi(api: APITypes | null) {
   } catch {}
 }
 
+export function getFullscreenVideoOpenRefIndex(args: {
+  canonicalIndex: number;
+  canonicalLength: number;
+}) {
+  const { canonicalIndex, canonicalLength } = args;
+
+  if (!Number.isFinite(canonicalIndex)) return null;
+  if (!Number.isFinite(canonicalLength) || canonicalLength <= 0) return null;
+
+  const normalizedIndex = canonicalIndexOf(canonicalIndex, canonicalLength);
+  return canonicalLength > 1 ? normalizedIndex + 1 : normalizedIndex;
+}
+
+export function shouldPlayFullscreenVideoOnOpen(args: {
+  enabled?: boolean;
+  showFullscreenModal: boolean;
+  showFullscreenSlider: boolean;
+  closingModal: boolean;
+  item?: MediaItem | null;
+}) {
+  return (
+    !!args.enabled &&
+    args.showFullscreenModal &&
+    args.showFullscreenSlider &&
+    !args.closingModal &&
+    args.item?.kind === 'video'
+  );
+}
+
+function playPlyrApi(api: APITypes | null) {
+  const player: APITypes["plyr"] | null = api?.plyr ?? null;
+  if (!player || typeof player.play !== 'function') return false;
+
+  try {
+    const playResult = player.play();
+    if (
+      playResult &&
+      typeof (playResult as Promise<void>).catch === 'function'
+    ) {
+      (playResult as Promise<void>).catch(() => {});
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function fullscreenThumbnailSlotLayoutStyle(
+  style: React.CSSProperties | undefined
+): React.CSSProperties | undefined {
+  if (!style) return undefined;
+
+  const {
+    width,
+    height,
+    minWidth,
+    minHeight,
+    maxWidth,
+    maxHeight,
+    flex,
+    flexBasis,
+    flexGrow,
+    flexShrink,
+    alignSelf,
+    margin,
+    marginTop,
+    marginRight,
+    marginBottom,
+    marginLeft,
+    marginBlock,
+    marginBlockStart,
+    marginBlockEnd,
+    marginInline,
+    marginInlineStart,
+    marginInlineEnd,
+  } = style;
+
+  return {
+    width,
+    height,
+    minWidth,
+    minHeight,
+    maxWidth,
+    maxHeight,
+    flex,
+    flexBasis,
+    flexGrow,
+    flexShrink,
+    alignSelf,
+    margin,
+    marginTop,
+    marginRight,
+    marginBottom,
+    marginLeft,
+    marginBlock,
+    marginBlockStart,
+    marginBlockEnd,
+    marginInline,
+    marginInlineStart,
+    marginInlineEnd,
+  };
+}
+
 export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const {
     fsEnabled,
@@ -208,7 +330,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     slidesForFullscreen,
     sliderForFullscreen,
     isWrappingForFullscreen,
-    wrappedItems,
     setClosingModal,
     closeButtonRef,
     counterRef,
@@ -229,24 +350,22 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     isZoomClick,
     isZoomed,
     windowSize,
-    handleZoomToggle,
     imageRefs,
+    wrappedItems,
+    setWrappedItems,
     scale,
     showFullscreenSlider,
     isZooming,
-    wrappedModePlyrRefs,
     singleModePlyrRefs,
+    wrappedModePlyrRefs,
     closingModal,
     duplicateImgRef,
     direction,
+    sliderGap,
     sliderDuration,
     sliderFriction,
     suppressLoopRef,
     fsFadeOpening,
-    controlsFade,
-    dragFade,
-    slideFadeDuration,
-    slideFadeEasing,
     normalizedItems,
     fsThumbContainerRef,
     fullscreenThumbnailSlot,
@@ -262,6 +381,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     addShield,
     resolveFsCaptionPlacement,
     requestFsCloseRef,
+    cancelFsCloseRef,
     suppressNextClickRef,
     currentImage,
     scaleRef,
@@ -285,15 +405,31 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     previousZoom,
     panRef,
     changingSlides,
-    setWrappedItems,
     fsIndexRef,
     entriesObject,
     syncFullscreenSourceFromIndex,
     setFullscreenOpen,
+    runtimePlugins = EMPTY_RUNTIME_PLUGINS,
   } = props;
 
+  const runtimeFeatures = React.useMemo(
+    () => mergeRuntimeFeatures(runtimePlugins),
+    [runtimePlugins]
+  );
+  const renderSlides =
+    runtimeFeatures.renderSlides ?? renderFullscreenBaseSlides;
+  const renderCrossfadeSlides =
+    runtimeFeatures.renderCrossfadeSlides ?? renderFullscreenBaseCrossfadeSlides;
+  const useFullscreenPlyrProps =
+    runtimeFeatures.usePlyrProps ?? useEmptyPlyrProps;
+  const useFullscreenZoomPanRuntime =
+    runtimeFeatures.useZoomPanRuntime ?? useNoopZoomPanRuntime;
+  const fullscreenDefaultPlayerStyle =
+    runtimeFeatures.defaultPlayerStyle ?? EMPTY_PLAYER_STYLE;
+  const hasVideoRuntime = !!runtimeFeatures.usePlyrProps;
+
   const fsLazyImagesEnabled = !!fs.lazyLoad?.images?.enabled;
-  const fsLazyVideosEnabled = !!fs.lazyLoad?.videos?.enabled;
+  const fsLazyVideosEnabled = hasVideoRuntime && !!fs.lazyLoad?.videos?.enabled;
   const fsAllowedImagesRef = React.useRef<Set<number>>(new Set());
   const fsAllowedVideosRef = React.useRef<Set<number>>(new Set());
   const fsLazyImageListenersRef = React.useRef(new Set<() => void>());
@@ -303,7 +439,9 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const fsCustomDecodedImagesRef = React.useRef(new Set<string>());
   const fsCustomResolvedSrcByKeyRef = React.useRef(new Map<string, string>());
   const fsPreparedVideosRef = React.useRef(new Set<string>());
+  const fsPreloadedVideosRef = React.useRef(new Set<string>());
   const fsForceMountVideosRef = React.useRef<Set<number>>(new Set());
+  const [fsActiveRenderIndex, setFsActiveRenderIndex] = React.useState(0);
   const [latchedIntroMethod, setLatchedIntroMethod] =
     React.useState<FullscreenOpenMethod | null>(null);
   const [latchedIntroIndex, setLatchedIntroIndex] =
@@ -314,9 +452,13 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     () => fullscreenMediaSignature(normalizedItems),
     [normalizedItems]
   );
-  const fullscreenVideoSnapshotStoreRef = React.useRef<ReturnType<typeof createVideoSnapshotStore> | null>(null);
-  if (!fullscreenVideoSnapshotStoreRef.current) {
-    fullscreenVideoSnapshotStoreRef.current = createVideoSnapshotStore();
+  const fullscreenVideoSnapshotStoreRef = React.useRef<unknown | null>(null);
+  if (
+    !fullscreenVideoSnapshotStoreRef.current &&
+    runtimeFeatures.createVideoSnapshotStore
+  ) {
+    fullscreenVideoSnapshotStoreRef.current =
+      runtimeFeatures.createVideoSnapshotStore();
   }
   const fullscreenVideoSnapshotStore = fullscreenVideoSnapshotStoreRef.current;
 
@@ -349,7 +491,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   );
 
   const resetFsSessionState = React.useCallback(() => {
-    fsPreparedVideosRef.current.clear();
     fsForceMountVideosRef.current.clear();
     fsAllowedVideosRef.current = new Set<number>();
     fsAllowedImagesRef.current = new Set<number>();
@@ -400,6 +541,37 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     }
   }, [fsLazyImagesEnabled, fsLazyVideosEnabled, fsSub, showFullscreenModal, recomputeAllowedAndNotify]);
 
+  React.useEffect(() => {
+    if (!fsSub) return;
+
+    const setActive = (value: number) => {
+      if (typeof value !== 'number' || !Number.isFinite(value)) return;
+      setFsActiveRenderIndex(value);
+    };
+
+    if (showFullscreenModal) {
+      const current = fsSub.get?.();
+      if (typeof current === 'number') setActive(current);
+    }
+
+    if (typeof fsSub.subscribe === 'function') {
+      const off = fsSub.subscribe((value: number) => setActive(value));
+      return () => off?.();
+    }
+
+    if (typeof fsSub.onEvent === 'function') {
+      const off = fsSub.onEvent((evt: any) => {
+        if (typeof evt === 'number') setActive(evt);
+        else if (typeof evt?.index === 'number') setActive(evt.index);
+        else {
+          const current = fsSub.get?.();
+          if (typeof current === 'number') setActive(current);
+        }
+      });
+      return () => off?.();
+    }
+  }, [fsSub, showFullscreenModal]);
+
   function nextZ() {
     const w = window as any;
     if (!w.__rmgZ) w.__rmgZ = 9999;
@@ -431,8 +603,10 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     if (prevMediaSignatureRef.current === mediaSignature) return;
 
     prevMediaSignatureRef.current = mediaSignature;
+    fsPreparedVideosRef.current.clear();
+    fsPreloadedVideosRef.current.clear();
     resetFsSessionState();
-    fullscreenVideoSnapshotStore.reset();
+    (fullscreenVideoSnapshotStore as any)?.reset?.();
 
     if (showFullscreenModal) {
       syncFsSessionToCurrentIndex();
@@ -491,270 +665,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     clearFsIntroReq();
   }, [entriesObject.overlay, fsIntroReq, fullscreenThumbnailSlot, hasEntriesViewportOverlay]);
 
-  const boundsForCurrent = React.useCallback(
-    (
-      scaleNum: number,
-      imgW: number,
-      imgH: number,
-      viewW?: number,
-      viewH?: number
-    ) => {
-      const viewportWidth = effectiveViewportWidth(windowSize.width);
-      const viewportHeight = effectiveViewportHeight(windowSize.height);
-
-      const isSlideCaption = fs.caption?.layout !== "overlay";
-      const overlayHasExplicitDims =
-        fs.caption?.layout === "overlay" &&
-        (fs.caption?.width != null || fs.caption?.height != null);
-
-      const effectivePlacement =
-        isSlideCaption || overlayHasExplicitDims
-          ? resolveFsCaptionPlacement(
-              fs.caption?.placement,
-              fs.caption?.breakpoint,
-              viewportWidth
-            )
-          : null;
-
-      const resolvedCaptionWidth =
-        fs.caption?.width == null
-          ? undefined
-          : resolveLengthFromResponsive(
-              fs.caption.width,
-              280,
-              viewportWidth,
-              viewportWidth
-            );
-
-      const resolvedCaptionHeight =
-        fs.caption?.height == null
-          ? undefined
-          : resolveLengthFromResponsive(
-              fs.caption.height,
-              200,
-              viewportWidth,
-              viewportHeight
-            );
-
-      const effectiveEntryOverlayPlacement = hasEntriesViewportOverlay
-        ? resolveFsCaptionPlacement(
-            entriesObject.overlay?.placement,
-            entriesObject.overlay?.breakpoint,
-            viewportWidth
-          )
-        : null;
-
-      const resolvedEntryOverlayWidth =
-        !hasEntriesViewportOverlay || entriesObject.overlay?.width == null
-          ? undefined
-          : resolveLengthFromResponsive(
-              entriesObject.overlay.width,
-              280,
-              viewportWidth,
-              viewportWidth
-            );
-
-      const resolvedEntryOverlayHeight =
-        !hasEntriesViewportOverlay || entriesObject.overlay?.height == null
-          ? undefined
-          : resolveLengthFromResponsive(
-              entriesObject.overlay.height,
-              200,
-              viewportWidth,
-              viewportHeight
-            );
-
-      const reservedLeft =
-        (effectivePlacement === 'left'
-          ? (isSlideCaption ? (resolvedCaptionWidth ?? 280) : (resolvedCaptionWidth ?? 0))
-          : 0) +
-        (effectiveEntryOverlayPlacement === 'left' ? (resolvedEntryOverlayWidth ?? 0) : 0);
-
-      const reservedRight =
-        (effectivePlacement === 'right'
-          ? (isSlideCaption ? (resolvedCaptionWidth ?? 280) : (resolvedCaptionWidth ?? 0))
-          : 0) +
-        (effectiveEntryOverlayPlacement === 'right' ? (resolvedEntryOverlayWidth ?? 0) : 0);
-
-      const reservedTop =
-        (effectivePlacement === 'top'
-          ? (isSlideCaption ? (resolvedCaptionHeight ?? 200) : (resolvedCaptionHeight ?? 0))
-          : 0) +
-        (effectiveEntryOverlayPlacement === 'top' ? (resolvedEntryOverlayHeight ?? 0) : 0);
-
-      const reservedBottom =
-        (effectivePlacement === 'bottom'
-          ? (isSlideCaption ? (resolvedCaptionHeight ?? 200) : (resolvedCaptionHeight ?? 0))
-          : 0) +
-        (effectiveEntryOverlayPlacement === 'bottom'
-          ? (resolvedEntryOverlayHeight ?? 0)
-          : 0);
-
-      return boundsForCurrentFn({
-        scale: scaleNum,
-        imgW,
-        imgH,
-        currentImageEl: currentImage.current,
-        viewW,
-        viewH,
-        reservedLeft,
-        reservedRight,
-        reservedTop,
-        reservedBottom,
-      });
-    },
-    [
-      currentImage,
-      entriesObject.overlay,
-      entriesObject.render?.overlay,
-      fs.caption,
-      hasEntriesViewportOverlay,
-      layout,
-      resolveFsCaptionPlacement,
-      windowSize.height,
-      windowSize.width,
-    ]
-  );
-
-  React.useEffect(() => {
-    axisRef.current = Axis();
-  }, []);
-
-  function renderPan(xPx: number, yPx: number) {
-    if (changingSlides.current) return;
-    if (!currentImage.current) return;
-
-    const twinImages = getFullscreenTwinImages(currentImage.current);
-    if (!twinImages.length) return;
-
-    const transform = `translate3d(${xPx}px, ${yPx}px, 0) scale(${scaleRef.current})`;
-    twinImages.forEach((img) => {
-      img.style.transform = transform;
-    });
-  }
-
-  function stopPanMotionForSlideReset() {
-    animRef.current?.stop();
-
-    bodyX.current?.useDuration(0).useFriction(1).sync();
-    bodyY.current?.useDuration(0).useFriction(1).sync();
-
-    const x = 0;
-    const y = 0;
-
-    locX.current?.set(x);
-    prevX.current?.set(x);
-    offX.current?.set(x);
-    tgtX.current?.set(x);
-
-    locY.current?.set(y);
-    prevY.current?.set(y);
-    offY.current?.set(y);
-    tgtY.current?.set(y);
-  }
-
-  function resetPanForScale1() {
-    resetPanForScale1Fn({
-      currentImage,
-      locX,
-      prevX,
-      offX,
-      tgtX,
-      locY,
-      prevY,
-      offY,
-      tgtY,
-      bodyX,
-      bodyY,
-      boundsX,
-      boundsY,
-      ScrollBody,
-      ScrollBounds,
-      baseFitSize,
-      boundsForCurrent,
-      panDuration: fs.zoom?.panDuration!,
-      panFriction: fs.zoom?.panFriction!,
-      animRef,
-    });
-  }
-
-  function resetZoomForSlideChange(args?: { disableImageTransition?: boolean }) {
-    const disableImageTransition = !!args?.disableImageTransition;
-
-    resetZoomForSlideChangeFn({
-      setScale,
-      zoomState: {
-        previousZoom,
-        panRef,
-        scaleRef,
-        suppressLoopRef,
-        changingSlides,
-      },
-      imageRefs,
-      resetPan: resetPanForScale1,
-      stopPanMotion: stopPanMotionForSlideReset,
-      transition: disableImageTransition ? "none" : undefined,
-      unlockDelayMs: disableImageTransition ? 0 : undefined,
-    });
-  }
-
-  function resetZoomForSlideNavigation() {
-    resetZoomForSlideChange({ disableImageTransition: dragFade });
-  }
-
-  function onForceResetZoom() {
-    forceResetZoomFn({
-      setScale,
-      zoomState: {
-        previousZoom,
-        panRef,
-        scaleRef,
-      },
-      imageRefs,
-      resetPan: resetPanForScale1,
-    });
-  }
-
-  const zoomCtx = React.useMemo(
-    () => ({
-      fs,
-      currentImage,
-      scaleRef,
-      setScale,
-      previousZoom,
-      suppressLoopRef,
-      locX,
-      prevX,
-      offX,
-      tgtX,
-      locY,
-      prevY,
-      offY,
-      tgtY,
-      bodyX,
-      bodyY,
-      boundsX,
-      boundsY,
-      Vector1D,
-      ScrollBody,
-      ScrollBounds,
-      boundsForCurrent,
-      renderPan,
-      animRef,
-      panRef,
-      resetAllZoomDom: resetZoomForSlideChange,
-    }),
-    [
-      fs,
-      setScale,
-      Vector1D,
-      ScrollBody,
-      ScrollBounds,
-      boundsForCurrent,
-      renderPan,
-    ]
-  );
-
   useWrappedItemsAndRefs({
     normalizedItems,
     wrappedItems,
@@ -762,56 +672,45 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     imageRefs,
   });
 
-  const rebuildPanBodies = React.useCallback(() => {
-    rebuildPanBodiesFn({
-      fs,
-      currentImage,
-      scaleRef,
-      locX,
-      prevX,
-      offX,
-      tgtX,
-      locY,
-      prevY,
-      offY,
-      tgtY,
-      bodyX,
-      bodyY,
-      boundsX,
-      boundsY,
-      Vector1D,
-      ScrollBody,
-      ScrollBounds,
-      boundsForCurrent,
-    } as any);
-  }, [boundsForCurrent, fs, fs.zoom?.panDuration, fs.zoom?.panFriction]);
+  React.useEffect(() => {
+    cells.current = [];
+  }, [cells, mediaSignature, wrappedItems.length]);
 
-  const { isPinching, isTouchPinching } = useGlobalPinchZoom({
-    scaleRef,
-    zoomCtx,
-    zoomTo,
-    isZoomed,
+  const zoomRuntime = useFullscreenZoomPanRuntime({
+    fs,
+    entriesObject,
+    hasEntriesViewportOverlay,
+    layout,
+    resolveFsCaptionPlacement,
+    windowSize,
     currentImage,
-    imageRefs,
-    fullscreenSliderApi,
-    rebuildPanBodies,
-    baseFitSize,
-    boundsForCurrent,
-    ScrollBounds,
-    boundsX,
-    boundsY,
+    scaleRef,
+    setScale,
+    previousZoom,
+    suppressLoopRef,
+    locX,
+    prevX,
     offX,
-    offY,
     tgtX,
+    locY,
+    prevY,
+    offY,
     tgtY,
     bodyX,
     bodyY,
+    boundsX,
+    boundsY,
     animRef,
-    panDuration: fs.zoom?.panDuration!,
-    findImgAtPoint,
-    readDataIndex,
-    distance,
-    midpoint,
+    panRef,
+    imageRefs,
+    changingSlides,
+    fullscreenSliderApi,
+    isZoomed,
+    pointerDownRef,
+    interactionModeRef,
+    axisRef,
+    suppressNextClickRef,
+    closingModal,
   });
 
   React.useEffect(() => {
@@ -870,77 +769,35 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     syncFullscreenSourceFromIndex,
   ]);
 
-  const entryOverlayZoomMotion = useFullscreenCaptionZoomMotion({
-    caption: {
-      zoomFade: entriesObject.overlay?.zoomFade,
-      zoomFadeDurationMs: entriesObject.overlay?.zoomFadeDurationMs,
-      zoomFadeEasing: entriesObject.overlay?.zoomFadeEasing,
-      zoomInTransform: entriesObject.overlay?.zoomInTransform,
-      zoomOutTransform: entriesObject.overlay?.zoomOutTransform,
-    },
-    isZoomed,
-  });
-
-  const { setMountEl: setFsEntryOverlayMountEl, setOpacity: setFsEntryOverlayOpacity } =
-    useFsEntryOverlay({
-      enabled: !!showFullscreenModal && layout === 'entries',
-      fsSub,
-      entriesObject,
-      entryMapRef,
-      syncFullscreenSourceFromIndex,
-      resetAllZoomDom: resetZoomForSlideChange,
-      closing: !!closingModal,
-      overlayZoomMotion: entryOverlayZoomMotion,
-      viewportWidth: windowSize.width,
-      viewportHeight: windowSize.height,
-      resolveFsCaptionPlacement,
-    });
-
   const showFsCaptionOverlayMount =
     !!showFullscreenModal &&
     fs.caption?.layout === 'overlay' &&
     typeof fs.caption?.render === 'function';
 
-  const captionZoomMotion = useFullscreenCaptionZoomMotion({
-    caption: fs.caption,
-    isZoomed,
-  });
+  const fullscreenSliderGap = normalizedItems.length > 1 ? sliderGap ?? 0 : 0;
 
-  const { setMountEl: setFsCaptionOverlayMountEl } = useFsCaptionOverlay({
-    enabled: showFsCaptionOverlayMount,
-    fsSub,
+  const singlePlyrProps = useFullscreenPlyrProps({
     items: normalizedItems,
-    caption: fs.caption,
-    isZoomed,
-    captionZoomMotion,
-    viewportWidth: windowSize.width,
-    viewportHeight: windowSize.height,
-    interactive: !!showFullscreenSlider,
-    closing: !!closingModal,
-    resolveFsCaptionPlacement,
+    source: fs.video?.source,
+    options: fs.video?.options,
   });
-
-  const isRtl = direction === 'rtl';
-  const sign = isRtl ? -1 : 1;
-
-  const wrappedPlyrProps = usePlyrProps({
+  const wrappedPlyrProps = useFullscreenPlyrProps({
     items: wrappedItems,
     source: fs.video?.source,
     options: fs.video?.options,
   });
 
-  const singlePlyrProps = usePlyrProps({
-    items: normalizedItems,
-    source: fs.video?.source,
-    options: fs.video?.options,
-  });
-
-  const wrappedTransform = React.useMemo(
-    () => createWrappedTransform({ length: wrappedItems.length, sign }),
-    [wrappedItems.length, sign]
-  );
-
   const singleTransform = React.useMemo(() => createSingleTransform(), []);
+  const wrappedTransformSign = direction === 'rtl' ? -1 : 1;
+  const wrappedTransform = React.useMemo(
+    () =>
+      createWrappedTransform({
+        length: wrappedItems.length,
+        sign: wrappedTransformSign,
+        gap: fullscreenSliderGap,
+      }),
+    [fullscreenSliderGap, wrappedItems.length, wrappedTransformSign]
+  );
   const crossfadeImageRefs = React.useMemo(
     () =>
       normalizedItems.map(
@@ -952,33 +809,15 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const crossfadeCellsRef = React.useRef<
     { element: HTMLElement; index: number }[]
   >([]);
-
-  const pan = usePanRuntime({
-    fs,
-    isZoomed,
-    zoomCtx,
-    currentImage,
-    rebuildPanBodies,
-    renderPan,
-    handleZoomToggle,
-    suppressNextClickRef,
-    pointerDownRef,
-    interactionModeRef,
-    boundsX,
-    boundsY,
-    bodyX,
-    bodyY,
-    locX,
-    locY,
-    prevX,
-    prevY,
-    offX,
-    offY,
-    tgtX,
-    tgtY,
-    axisRef,
-    animRef,
-  });
+  const handlePanPointerStart = zoomRuntime.handlePanPointerStart;
+  const handleZoomToggle = zoomRuntime.handleZoomToggle;
+  const resetZoomForSlideNavigation = zoomRuntime.resetForSlideNavigation;
+  const resetZoomForSlideChange = zoomRuntime.resetAllZoomDom;
+  const onForceResetZoom = zoomRuntime.forceResetZoom ?? zoomRuntime.resetAllZoomDom;
+  const isPinching = zoomRuntime.isPinching;
+  const isTouchPinching = zoomRuntime.isTouchPinching;
+  const captionZoomMotion = zoomRuntime.captionZoomMotion as any;
+  const entryOverlayZoomMotion = zoomRuntime.entryOverlayZoomMotion as any;
 
   function mediaKey(item: MediaItem) {
     const any = item as any;
@@ -987,7 +826,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
 
   React.useEffect(() => {
     return () => {
-      fullscreenVideoSnapshotStore.destroy();
+      (fullscreenVideoSnapshotStore as any)?.destroy?.();
     };
   }, [fullscreenVideoSnapshotStore]);
 
@@ -995,83 +834,93 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const openingCanonicalIndex = canonicalLen
     ? canonicalIndexOf(latchedIntroIndex, canonicalLen)
     : null;
+  const currentFsRenderIndex = (() => {
+    const current = fsSub.get?.();
+    return typeof current === "number" && Number.isFinite(current)
+      ? current
+      : fsActiveRenderIndex;
+  })();
+  const activeCanonicalIndex = canonicalLen
+    ? canonicalIndexOf(currentFsRenderIndex, canonicalLen)
+    : null;
   const openingTargetKind =
     openingCanonicalIndex != null
       ? normalizedItems[openingCanonicalIndex]?.kind ?? null
       : null;
   const deferLiveVideoUntilVisible =
-    !!openingInProgress && openingTargetKind !== "video";
+    fsLazyVideosEnabled && !!openingInProgress && openingTargetKind !== "video";
+  const playOnOpenKeyRef = React.useRef<string | null>(null);
 
-  const wrappedFullscreenSlides = renderFullscreenSlides({
-    items: wrappedItems,
-    plyrList: wrappedPlyrProps,
-    getTransform: wrappedTransform,
-    imageRefs,
-    playerRefs: wrappedModePlyrRefs,
-    cells,
-    isZoomed,
+  React.useEffect(() => {
+    if (showFullscreenModal) return;
+    playOnOpenKeyRef.current = null;
+  }, [showFullscreenModal]);
+
+  React.useEffect(() => {
+    if (!canonicalLen) return;
+
+    const canonicalIndex = canonicalIndexOf(latchedIntroIndex, canonicalLen);
+    const item = normalizedItems[canonicalIndex] ?? null;
+
+    if (
+      !shouldPlayFullscreenVideoOnOpen({
+        enabled: fs.video?.playOnOpen,
+        showFullscreenModal,
+        showFullscreenSlider,
+        closingModal,
+        item,
+      })
+    ) {
+      return;
+    }
+
+    const refIndex = getFullscreenVideoOpenRefIndex({
+      canonicalIndex,
+      canonicalLength: canonicalLen,
+    });
+    if (refIndex == null) return;
+
+    const playRefs =
+      canonicalLen > 1 ? wrappedModePlyrRefs : singleModePlyrRefs;
+    const sessionKey = `${mediaSignature}|${canonicalIndex}|${latchedIntroIndex}`;
+    if (playOnOpenKeyRef.current === sessionKey) return;
+    playOnOpenKeyRef.current = sessionKey;
+
+    let cancelled = false;
+    let rafId: number | null = null;
+    const deadline = performance.now() + 1600;
+
+    const attempt = () => {
+      if (cancelled) return;
+
+      const api = playRefs.current[refIndex] ?? null;
+
+      if (playPlyrApi(api)) return;
+      if (performance.now() >= deadline) return;
+
+      rafId = window.requestAnimationFrame(attempt);
+    };
+
+    rafId = window.requestAnimationFrame(attempt);
+
+    return () => {
+      cancelled = true;
+      if (rafId != null) window.cancelAnimationFrame(rafId);
+    };
+  }, [
+    canonicalLen,
+    closingModal,
+    fs.video?.playOnOpen,
+    latchedIntroIndex,
+    mediaSignature,
+    normalizedItems,
+    showFullscreenModal,
     showFullscreenSlider,
-    defaultPlayerStyle,
-    fsVideoStyle: fs.video?.style,
-    fsVideoClassName: fs.video?.className,
-    onPanPointerDown: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => pan.handlePanPointerStart(e, imageRef),
-    onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
-      if (suppressNextClickRef.current) {
-        suppressNextClickRef.current = false;
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    },
-    renderCaption: fs.caption?.render,
-    captionClassName: fs.caption?.className,
-    captionStyle: fs.caption?.style,
-    captionZoomMotion,
-    fsCaptionPlacement: fs.caption?.placement,
-    fsCaptionWidth: fs.caption?.width,
-    fsCaptionHeight: fs.caption?.height,
-    fsCaptionBreakpoint: fs.caption?.breakpoint,
-    fsCaptionLayout: fs.caption?.layout,
-    fsViewportOverlayPlacement: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.placement
-      : undefined,
-    fsViewportOverlayWidth: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.width
-      : undefined,
-    fsViewportOverlayHeight: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.height
-      : undefined,
-    fsViewportOverlayBreakpoint: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.breakpoint
-      : undefined,
-    viewportWidth: windowSize.width,
-    viewportHeight: windowSize.height,
-    resolveFsCaptionPlacement,
-    styles: {
-      imgMargin: styles.imgMargin,
-      fullscreenImages: styles.fullscreenImages,
-    },
-    renderImage: fs.renderImage as any,
-    fsLazy: fs.lazyLoad,
-    fsLazyAllowedImagesRef: fsAllowedImagesRef,
-    fsLazyListenersImagesRef: fsLazyImageListenersRef,
-    fsLazyAllowedVideosRef: fsAllowedVideosRef,
-    fsLazyListenersVideosRef: fsLazyVideoListenersRef,
-    fsDecodedImagesRef: fsDecodedImagesRef,
-    fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
-    fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
-    fsPreparedVideosRef: fsPreparedVideosRef,
-    videoSnapshotStore: fullscreenVideoSnapshotStore,
-    canonicalLength: canonicalLen,
-    openingCanonicalIndex,
-    openingInProgress,
-    deferLiveVideoUntilVisible,
-    getMediaKey: mediaKey,
-  });
+    singleModePlyrRefs,
+    wrappedModePlyrRefs,
+  ]);
 
-  const oneFullscreenSlide = renderFullscreenSlides({
+  const oneFullscreenSlide = renderSlides({
     items: normalizedItems,
     plyrList: singlePlyrProps,
     getTransform: singleTransform,
@@ -1080,13 +929,13 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     cells,
     isZoomed,
     showFullscreenSlider,
-    defaultPlayerStyle,
+    defaultPlayerStyle: fullscreenDefaultPlayerStyle,
     fsVideoStyle: fs.video?.style,
     fsVideoClassName: fs.video?.className,
     onPanPointerDown: (
       e: React.PointerEvent<HTMLDivElement>,
       imageRef: React.RefObject<HTMLDivElement | null>
-    ) => pan.handlePanPointerStart(e, imageRef),
+    ) => handlePanPointerStart(e, imageRef),
     onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
       if (suppressNextClickRef.current) {
         suppressNextClickRef.current = false;
@@ -1134,13 +983,84 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fsPreparedVideosRef: fsPreparedVideosRef,
     videoSnapshotStore: fullscreenVideoSnapshotStore,
     canonicalLength: canonicalLen,
+    activeCanonicalIndex,
     openingCanonicalIndex,
     openingInProgress,
     deferLiveVideoUntilVisible,
     getMediaKey: mediaKey,
   });
 
-  const fullscreenCrossfadeSlides = renderFullscreenCrossfadeSlides({
+  const wrappedFullscreenSlides = renderSlides({
+    items: wrappedItems,
+    plyrList: wrappedPlyrProps,
+    getTransform: wrappedTransform,
+    imageRefs,
+    playerRefs: wrappedModePlyrRefs,
+    cells,
+    isZoomed,
+    showFullscreenSlider,
+    defaultPlayerStyle: fullscreenDefaultPlayerStyle,
+    fsVideoStyle: fs.video?.style,
+    fsVideoClassName: fs.video?.className,
+    onPanPointerDown: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handlePanPointerStart(e, imageRef),
+    onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
+      if (suppressNextClickRef.current) {
+        suppressNextClickRef.current = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },
+    renderCaption: fs.caption?.render,
+    captionClassName: fs.caption?.className,
+    captionStyle: fs.caption?.style,
+    captionZoomMotion,
+    fsCaptionPlacement: fs.caption?.placement,
+    fsCaptionWidth: fs.caption?.width,
+    fsCaptionHeight: fs.caption?.height,
+    fsCaptionBreakpoint: fs.caption?.breakpoint,
+    fsCaptionLayout: fs.caption?.layout,
+    fsViewportOverlayPlacement: hasEntriesViewportOverlay
+      ? entriesObject.overlay?.placement
+      : undefined,
+    fsViewportOverlayWidth: hasEntriesViewportOverlay
+      ? entriesObject.overlay?.width
+      : undefined,
+    fsViewportOverlayHeight: hasEntriesViewportOverlay
+      ? entriesObject.overlay?.height
+      : undefined,
+    fsViewportOverlayBreakpoint: hasEntriesViewportOverlay
+      ? entriesObject.overlay?.breakpoint
+      : undefined,
+    viewportWidth: windowSize.width,
+    viewportHeight: windowSize.height,
+    resolveFsCaptionPlacement,
+    styles: {
+      imgMargin: styles.imgMargin,
+      fullscreenImages: styles.fullscreenImages,
+    },
+    renderImage: fs.renderImage as any,
+    fsLazy: fs.lazyLoad,
+    fsLazyAllowedImagesRef: fsAllowedImagesRef,
+    fsLazyListenersImagesRef: fsLazyImageListenersRef,
+    fsLazyAllowedVideosRef: fsAllowedVideosRef,
+    fsLazyListenersVideosRef: fsLazyVideoListenersRef,
+    fsDecodedImagesRef: fsDecodedImagesRef,
+    fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
+    fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
+    fsPreparedVideosRef: fsPreparedVideosRef,
+    videoSnapshotStore: fullscreenVideoSnapshotStore,
+    canonicalLength: canonicalLen,
+    activeCanonicalIndex,
+    openingCanonicalIndex,
+    openingInProgress,
+    deferLiveVideoUntilVisible,
+    getMediaKey: mediaKey,
+  });
+
+  const fullscreenCrossfadeSlides = renderCrossfadeSlides({
     items: normalizedItems,
     plyrList: singlePlyrProps,
     getTransform: singleTransform,
@@ -1149,13 +1069,13 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     cells: crossfadeCellsRef,
     isZoomed,
     showFullscreenSlider: true,
-    defaultPlayerStyle,
+    defaultPlayerStyle: fullscreenDefaultPlayerStyle,
     fsVideoStyle: fs.video?.style,
     fsVideoClassName: fs.video?.className,
     onPanPointerDown: (
       e: React.PointerEvent<HTMLDivElement>,
       imageRef: React.RefObject<HTMLDivElement | null>
-    ) => pan.handlePanPointerStart(e, imageRef),
+    ) => handlePanPointerStart(e, imageRef),
     onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
       if (suppressNextClickRef.current) {
         suppressNextClickRef.current = false;
@@ -1212,12 +1132,16 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const pauseAllFullscreenPlayers = React.useCallback(() => {
     const seenApis = new Set<APITypes>();
 
-    for (const refs of [wrappedModePlyrRefs.current, singleModePlyrRefs.current]) {
-      for (const api of refs) {
-        if (!api || seenApis.has(api)) continue;
-        seenApis.add(api);
-        pausePlyrApi(api);
-      }
+    for (const api of singleModePlyrRefs.current) {
+      if (!api || seenApis.has(api)) continue;
+      seenApis.add(api);
+      pausePlyrApi(api);
+    }
+
+    for (const api of wrappedModePlyrRefs.current) {
+      if (!api || seenApis.has(api)) continue;
+      seenApis.add(api);
+      pausePlyrApi(api);
     }
 
     if (typeof document === 'undefined') return;
@@ -1242,18 +1166,6 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     if (showFullscreenModal) return;
     pauseAllFullscreenPlayers();
   }, [showFullscreenModal, pauseAllFullscreenPlayers]);
-
-  React.useEffect(() => {
-    if (animRef.current) {
-      animRef.current.stop();
-      setScale(1);
-      previousZoom.current.x = 0;
-      previousZoom.current.y = 0;
-      panRef.current = { x: 0, y: 0 };
-      scaleRef.current = 1;
-      setFsEntryOverlayOpacity(0);
-    }
-  }, [closingModal]);
 
   const idlePreloadedImagesRef = React.useRef(new Set<string>());
 
@@ -1374,7 +1286,8 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       if (!item || item.kind !== 'video') return;
 
       const key = mediaKey(item);
-      if (fsPreparedVideosRef.current.has(key)) return;
+      if (fsPreloadedVideosRef.current.has(key)) return;
+      fsPreloadedVideosRef.current.add(key);
 
       const poster = (item as any).poster ?? (item as any).thumbSrc ?? null;
 
@@ -1416,9 +1329,9 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       }
 
       fsForceMountVideosRef.current.add(canonicalIndex);
+      fsAllowedVideosRef.current.add(canonicalIndex);
       notifyFsLazyVideos();
 
-      fsPreparedVideosRef.current.add(key);
     },
     [normalizedItems]
   );
@@ -1458,11 +1371,8 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       : fullscreenThumbnailPosition === 'top'
       ? 'column-reverse'
       : 'column';
-  const fullscreenThumbnailFadeDuration =
-    fullscreenThumbnailSlot?.fadeDurationMs ?? 300;
-  const fullscreenThumbnailFadeEasing =
-    fullscreenThumbnailSlot?.fadeEasing ?? 'cubic-bezier(.4,0,.22,1)';
-  const fullscreenThumbnailOpen = showFullscreenModal && !closingModal;
+  const fullscreenThumbnailSlotBaseStyle =
+    fullscreenThumbnailSlotLayoutStyle(fullscreenThumbnailSlot?.style);
   const cellCount = normalizedItems.length;
 
   return (
@@ -1498,6 +1408,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           introDuration={introDuration}
           introEasing={introEasing}
           requestFsCloseRef={requestFsCloseRef}
+          cancelFsCloseRef={cancelFsCloseRef}
           fs={fs}
           styles={styles}
           syncFullscreenSourceFromIndex={syncFullscreenSourceFromIndex}
@@ -1530,9 +1441,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                 isZoomed={isZoomed}
                 windowSize={windowSize}
                 show={showFullscreenModal}
-                handleZoomToggle={(e, imageRef) =>
-                  handleZoomToggle(zoomCtx as any, e as any, imageRef as any)
-                }
+                handleZoomToggle={handleZoomToggle}
                 imageRefs={imageRefs.current}
                 cells={cells}
                 isPinching={isPinching}
@@ -1540,8 +1449,16 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                 isTouchPinching={isTouchPinching}
                 showFullscreenSlider={showFullscreenSlider}
                 isZooming={isZooming}
-                plyrRefs={wrappedModePlyrRefs}
-                plyrRef={singleModePlyrRefs}
+                plyrRefs={
+                  normalizedItems.length > 1
+                    ? wrappedModePlyrRefs
+                    : singleModePlyrRefs
+                }
+                plyrRef={
+                  normalizedItems.length > 1
+                    ? wrappedModePlyrRefs
+                    : singleModePlyrRefs
+                }
                 closingModal={closingModal}
                 counterRef={counterRef}
                 leftChevronRef={leftChevronRef}
@@ -1549,15 +1466,16 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                 overlayDivRef={overlayDivRef}
                 direction={direction}
                 isWrapping={isWrappingForFullscreen}
+                sliderGap={fullscreenSliderGap}
                 sliderDuration={sliderDuration}
                 sliderFriction={sliderFriction}
                 suppressLoopRef={suppressLoopRef}
                 fadeOpening={fsFadeOpening}
                 introFade={introFade}
-                controlsFade={controlsFade}
-                dragFade={dragFade}
-                slideFadeDuration={slideFadeDuration}
-                slideFadeEasing={slideFadeEasing}
+                controlsFade={!!fs.effects?.crossfade?.controls}
+                dragFade={!!fs.effects?.crossfade?.drag}
+                slideFadeDuration={fs.effects?.crossfade?.durationMs}
+                slideFadeEasing={fs.effects?.crossfade?.easing}
                 normalizedItems={normalizedItems}
                 crossfadeSlides={fullscreenCrossfadeSlides}
                 introDuration={introDuration}
@@ -1568,34 +1486,60 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                 fs={fs}
                 chromeStyles={styles}
               >
-                {normalizedItems.length > 1 ? wrappedFullscreenSlides : oneFullscreenSlide}
+                {normalizedItems.length > 1
+                  ? wrappedFullscreenSlides
+                  : oneFullscreenSlide}
               </FullscreenSlider>
             </div>
 
             {fullscreenThumbnailSlot && (
               <div
                 ref={setFullscreenThumbnailMountEl}
-                className={fullscreenThumbnailSlot.className}
                 style={{
                   flex: '0 0 auto',
+                  position: 'relative',
+                  zIndex: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition:
-                    `background-color ${fullscreenThumbnailFadeDuration}ms ${fullscreenThumbnailFadeEasing}`,
-                  backgroundColor: fullscreenThumbnailOpen
-                    ? 'rgba(255,255,255,1)'
-                    : 'rgba(255,255,255,0)',
-                  ...(fullscreenThumbnailSlot.style || {}),
+                  overflow: 'visible',
+                  backgroundColor: 'transparent',
+                  ...(fullscreenThumbnailSlotBaseStyle || {}),
                 }}
               />
             )}
           </div>
 
           {showFsCaptionOverlayMount ? (
-            <FsEntryOverlayMount setMountEl={setFsCaptionOverlayMountEl} />
+            <FsCaptionOverlay
+              enabled={showFsCaptionOverlayMount}
+              fsSub={fsSub}
+              items={normalizedItems}
+              caption={fs.caption}
+              isZoomed={isZoomed}
+              captionZoomMotion={captionZoomMotion}
+              viewportWidth={windowSize.width}
+              viewportHeight={windowSize.height}
+              interactive={!!showFullscreenSlider}
+              closing={!!closingModal}
+              resolveFsCaptionPlacement={resolveFsCaptionPlacement}
+            />
           ) : null}
-          {showFsEntryOverlayMount ? <FsEntryOverlayMount setMountEl={setFsEntryOverlayMountEl} /> : null}
+          {showFsEntryOverlayMount ? (
+            <FsEntryOverlay
+              enabled={showFsEntryOverlayMount}
+              fsSub={fsSub}
+              entriesObject={entriesObject}
+              entryMapRef={entryMapRef}
+              syncFullscreenSourceFromIndex={syncFullscreenSourceFromIndex}
+              resetAllZoomDom={resetZoomForSlideChange}
+              closing={!!closingModal}
+              overlayZoomMotion={entryOverlayZoomMotion}
+              viewportWidth={windowSize.width}
+              viewportHeight={windowSize.height}
+              resolveFsCaptionPlacement={resolveFsCaptionPlacement}
+            />
+          ) : null}
         </FullscreenModal>
       )}
     </>

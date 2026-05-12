@@ -1,0 +1,922 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=grid-min-column-width&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1600,
+    "viewportHeight": 1800,
+    "viewportWorkers": 16,
+    "settleMs": 120,
+    "breakpointStrategy": "lineOrBarChanges",
+    "barWidthUnit": "px"
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem01Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "41px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem01Title",
+      "lines": {
+        "0": 2,
+        "221.656": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 221.5,
+          "fromWidthPx": 220,
+          "toWidthPx": 221.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 221.656,
+          "toViewport": 451.625,
+          "fromWidthPx": 221.65625,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "176px",
+          "41px"
+        ],
+        "221.656": "222px"
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem01Body",
+      "lines": {
+        "0": 4,
+        "225": 3,
+        "354": 2,
+        "358": 2,
+        "240.921": 3,
+        "250.656": 3,
+        "268.171": 3,
+        "304.484": 3,
+        "430.5": 2,
+        "447.781": 2
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 224.75,
+          "fromWidthPx": 220,
+          "toWidthPx": 224.75,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 225,
+          "toViewport": 353,
+          "fromWidthPx": 225,
+          "toWidthPx": 353,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 354,
+          "toViewport": 451.625,
+          "fromWidthPx": 354,
+          "toWidthPx": 451.625,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "219px",
+          "207px",
+          "178px",
+          "46px"
+        ],
+        "225": [
+          "219px",
+          "225px",
+          "210px"
+        ],
+        "354": [
+          "304px",
+          "354px"
+        ],
+        "358": [
+          "358px",
+          "300px"
+        ],
+        "240.921": [
+          "241px",
+          "203px",
+          "210px"
+        ],
+        "250.656": [
+          "241px",
+          "251px",
+          "163px"
+        ],
+        "268.171": [
+          "241px",
+          "268px",
+          "145px"
+        ],
+        "304.484": [
+          "304px",
+          "304px",
+          "46px"
+        ],
+        "430.5": [
+          "430px",
+          "228px"
+        ],
+        "447.781": [
+          "448px",
+          "210px"
+        ]
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem02Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "38px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem02Title",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "205px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem02Body",
+      "lines": {
+        "0": 3,
+        "283": 3,
+        "288": 2,
+        "379": 2,
+        "399": 2,
+        "220.75": 3,
+        "232.281": 3,
+        "257.328": 3,
+        "310.734": 2,
+        "328.484": 2,
+        "419.937": 2
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 287.843,
+          "fromWidthPx": 220,
+          "toWidthPx": 287.84375,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 288,
+          "toViewport": 451.625,
+          "fromWidthPx": 288,
+          "toWidthPx": 451.625,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "174px",
+          "200px",
+          "193px"
+        ],
+        "283": [
+          "283px",
+          "206px",
+          "77px"
+        ],
+        "288": [
+          "283px",
+          "288px"
+        ],
+        "379": [
+          "378px",
+          "193px"
+        ],
+        "399": [
+          "399px",
+          "172px"
+        ],
+        "220.75": [
+          "174px",
+          "221px",
+          "172px"
+        ],
+        "232.281": [
+          "232px",
+          "183px",
+          "151px"
+        ],
+        "257.328": [
+          "232px",
+          "257px",
+          "77px"
+        ],
+        "310.734": [
+          "311px",
+          "260px"
+        ],
+        "328.484": [
+          "328px",
+          "243px"
+        ],
+        "419.937": [
+          "420px",
+          "151px"
+        ]
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem03Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "41px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem03Title",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "166px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem03Body",
+      "lines": {
+        "0": 3,
+        "224": 3,
+        "359": 2,
+        "381": 2,
+        "228.921": 3,
+        "265.765": 2,
+        "310.734": 2,
+        "424.75": 2
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 265.656,
+          "fromWidthPx": 220,
+          "toWidthPx": 265.65625,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 265.765,
+          "toViewport": 451.625,
+          "fromWidthPx": 265.765625,
+          "toWidthPx": 451.625,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "196px",
+          "180px",
+          "138px"
+        ],
+        "224": [
+          "196px",
+          "224px",
+          "94px"
+        ],
+        "359": [
+          "359px",
+          "160px"
+        ],
+        "381": [
+          "380px",
+          "138px"
+        ],
+        "228.921": [
+          "229px",
+          "228px",
+          "57px"
+        ],
+        "265.765": [
+          "266px",
+          "253px"
+        ],
+        "310.734": [
+          "311px",
+          "208px"
+        ],
+        "424.75": [
+          "424px",
+          "94px"
+        ]
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem04Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "35px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem04Title",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "198px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem04Body",
+      "lines": {
+        "0": 3,
+        "295": 2,
+        "395": 2,
+        "437": 2,
+        "255.5": 3,
+        "256.656": 3,
+        "282.093": 3,
+        "329.453": 2
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 294.89,
+          "fromWidthPx": 220,
+          "toWidthPx": 294.890625,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 295,
+          "toViewport": 451.625,
+          "fromWidthPx": 295,
+          "toWidthPx": 451.625,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "214px",
+          "218px",
+          "141px"
+        ],
+        "295": [
+          "282px",
+          "295px"
+        ],
+        "395": [
+          "395px",
+          "182px"
+        ],
+        "437": [
+          "436px",
+          "141px"
+        ],
+        "255.5": [
+          "214px",
+          "255px",
+          "103px"
+        ],
+        "256.656": [
+          "257px",
+          "255px",
+          "61px"
+        ],
+        "282.093": [
+          "282px",
+          "230px",
+          "61px"
+        ],
+        "329.453": [
+          "329px",
+          "248px"
+        ]
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem05Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "25px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem05Title",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "198px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem05Body",
+      "lines": {
+        "0": 4,
+        "348": 2,
+        "436": 2,
+        "238.531": 4,
+        "255.328": 3,
+        "256.671": 3,
+        "300.328": 3,
+        "331.375": 3
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 255,
+          "fromWidthPx": 220,
+          "toWidthPx": 255,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 255.328,
+          "toViewport": 347,
+          "fromWidthPx": 255.328125,
+          "toWidthPx": 347,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 348,
+          "toViewport": 451.625,
+          "fromWidthPx": 348,
+          "toWidthPx": 451.625,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "174px",
+          "170px",
+          "208px",
+          "91px"
+        ],
+        "348": [
+          "348px",
+          "303px"
+        ],
+        "436": [
+          "435px",
+          "216px"
+        ],
+        "238.531": [
+          "174px",
+          "170px",
+          "239px",
+          "61px"
+        ],
+        "255.328": [
+          "255px",
+          "176px",
+          "216px"
+        ],
+        "256.671": [
+          "255px",
+          "257px",
+          "135px"
+        ],
+        "300.328": [
+          "255px",
+          "300px",
+          "91px"
+        ],
+        "331.375": [
+          "255px",
+          "331px",
+          "61px"
+        ]
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem06Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "46px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem06Title",
+      "lines": {
+        "0": 2,
+        "243.328": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 243,
+          "fromWidthPx": 220,
+          "toWidthPx": 243,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 243.328,
+          "toViewport": 451.625,
+          "fromWidthPx": 243.328125,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "146px",
+          "93px"
+        ],
+        "243.328": "243px"
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem06Body",
+      "lines": {
+        "0": 3,
+        "268": 3,
+        "277": 3,
+        "313": 2,
+        "343": 2,
+        "376": 2,
+        "220.75": 3,
+        "251.328": 3,
+        "302.25": 2
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 302.093,
+          "fromWidthPx": 220,
+          "toWidthPx": 302.09375,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 302.25,
+          "toViewport": 451.625,
+          "fromWidthPx": 302.25,
+          "toWidthPx": 451.625,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "195px",
+          "177px",
+          "203px"
+        ],
+        "268": [
+          "251px",
+          "268px",
+          "56px"
+        ],
+        "277": [
+          "277px",
+          "242px",
+          "56px"
+        ],
+        "313": [
+          "313px",
+          "267px"
+        ],
+        "343": [
+          "342px",
+          "237px"
+        ],
+        "376": [
+          "376px",
+          "203px"
+        ],
+        "220.75": [
+          "221px",
+          "151px",
+          "203px"
+        ],
+        "251.328": [
+          "251px",
+          "221px",
+          "103px"
+        ],
+        "302.25": [
+          "277px",
+          "302px"
+        ]
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem07Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "40px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem07Title",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "217px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem07Body",
+      "lines": {
+        "0": 3,
+        "345": 2,
+        "351": 2,
+        "408": 2,
+        "441": 2,
+        "224.656": 3,
+        "241.328": 3,
+        "263.328": 3,
+        "266.562": 3
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 344,
+          "fromWidthPx": 220,
+          "toWidthPx": 344,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 345,
+          "toViewport": 451.625,
+          "fromWidthPx": 345,
+          "toWidthPx": 451.625,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "204px",
+          "199px",
+          "200px"
+        ],
+        "345": [
+          "263px",
+          "344px"
+        ],
+        "351": [
+          "351px",
+          "257px"
+        ],
+        "408": [
+          "408px",
+          "200px"
+        ],
+        "441": [
+          "440px",
+          "167px"
+        ],
+        "224.656": [
+          "225px",
+          "212px",
+          "167px"
+        ],
+        "241.328": [
+          "225px",
+          "241px",
+          "137px"
+        ],
+        "263.328": [
+          "263px",
+          "236px",
+          "104px"
+        ],
+        "266.562": [
+          "263px",
+          "267px",
+          "73px"
+        ]
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem08Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 451.625,
+          "fromWidthPx": 220,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "50px"
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem08Title",
+      "lines": {
+        "0": 2,
+        "249.328": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 249.093,
+          "fromWidthPx": 220,
+          "toWidthPx": 249.09375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 249.328,
+          "toViewport": 451.625,
+          "fromWidthPx": 249.328125,
+          "toWidthPx": 451.625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "154px",
+          "92px"
+        ],
+        "249.328": "249px"
+      }
+    },
+    {
+      "kind": "text",
+      "exportName": "gridMinColumnWidthItem08Body",
+      "lines": {
+        "0": 3,
+        "313": 3,
+        "316": 2,
+        "363": 2,
+        "417": 2,
+        "435": 2,
+        "236.609": 3
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 220,
+          "toViewport": 315.531,
+          "fromWidthPx": 220,
+          "toWidthPx": 315.53125,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 316,
+          "toViewport": 451.625,
+          "fromWidthPx": 316,
+          "toWidthPx": 451.625,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "211px",
+          "219px",
+          "185px"
+        ],
+        "313": [
+          "211px",
+          "313px",
+          "91px"
+        ],
+        "316": [
+          "316px",
+          "304px"
+        ],
+        "363": [
+          "362px",
+          "258px"
+        ],
+        "417": [
+          "417px",
+          "203px"
+        ],
+        "435": [
+          "435px",
+          "185px"
+        ],
+        "236.609": [
+          "211px",
+          "237px",
+          "168px"
+        ]
+      }
+    }
+  ]
+}

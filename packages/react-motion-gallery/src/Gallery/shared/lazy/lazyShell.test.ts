@@ -254,6 +254,18 @@ describe("lazy shell helpers", () => {
     expect(host.hasAttribute(LAZY_LOADED_ATTR)).toBe(false);
   });
 
+  test("remarking a restored shell hides the pending image again", () => {
+    const { host, img, src } = createLazyHost();
+
+    markLazyImageShell(host as unknown as HTMLElement);
+    restoreLazyImageShell(host as unknown as HTMLElement);
+    markLazyImageShell(host as unknown as HTMLElement);
+
+    expect(img.getAttribute(LAZY_ATTR)).toBe(src);
+    expect(img.src).toBe(RMG_BLANK);
+    expect(img.style.opacity).toBe("0");
+  });
+
   test("does not render a spinner when lazy loading is disabled", () => {
     const lazy = normalizeLazyLoad({ enabled: false, spinner: true });
     const resolved = resolveLazySpinnerNode({ lazy, kind: "image", isClone: false });

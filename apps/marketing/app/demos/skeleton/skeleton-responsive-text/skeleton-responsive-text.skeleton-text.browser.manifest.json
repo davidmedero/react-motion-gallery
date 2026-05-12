@@ -1,0 +1,63 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=skeleton-responsive-text&skeletonMeasure=content",
+  "outputFile": "./skeleton-responsive-text.skeleton-text.generated.ts",
+  "moduleExportName": "skeletonResponsiveTextSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1340,
+  "viewportHeight": 1800,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "readyExpression": "(() => Boolean(document.querySelector(\"[data-skeleton-text-id='responsiveTextItem03Body']\")))()",
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "responsiveBy": "container",
+  "targets": [
+    {
+      "exportName": "responsiveTextHeaderTitle",
+      "selector": "[data-skeleton-text-id='responsiveTextHeaderTitle']"
+    },
+    {
+      "exportName": "responsiveTextHeaderMeta",
+      "selector": "[data-skeleton-text-id='responsiveTextHeaderMeta']"
+    },
+    {
+      "exportName": "responsiveTextItem01Label",
+      "selector": "[data-skeleton-text-id='responsiveTextItem01Label']"
+    },
+    {
+      "exportName": "responsiveTextItem01Title",
+      "selector": "[data-skeleton-text-id='responsiveTextItem01Title']"
+    },
+    {
+      "exportName": "responsiveTextItem01Body",
+      "selector": "[data-skeleton-text-id='responsiveTextItem01Body']"
+    },
+    {
+      "exportName": "responsiveTextItem02Label",
+      "selector": "[data-skeleton-text-id='responsiveTextItem02Label']"
+    },
+    {
+      "exportName": "responsiveTextItem02Title",
+      "selector": "[data-skeleton-text-id='responsiveTextItem02Title']"
+    },
+    {
+      "exportName": "responsiveTextItem02Body",
+      "selector": "[data-skeleton-text-id='responsiveTextItem02Body']"
+    },
+    {
+      "exportName": "responsiveTextItem03Label",
+      "selector": "[data-skeleton-text-id='responsiveTextItem03Label']"
+    },
+    {
+      "exportName": "responsiveTextItem03Title",
+      "selector": "[data-skeleton-text-id='responsiveTextItem03Title']"
+    },
+    {
+      "exportName": "responsiveTextItem03Body",
+      "selector": "[data-skeleton-text-id='responsiveTextItem03Body']"
+    }
+  ]
+}

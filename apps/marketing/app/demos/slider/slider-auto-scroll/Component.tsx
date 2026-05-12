@@ -4,43 +4,52 @@
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   toMediaItems,
   useFullscreenController,
 } from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderAutoScroll } from "../../../../../../packages/react-motion-gallery/src/slider-auto-scroll";
+import { sliderProgress } from "../../../../../../packages/react-motion-gallery/src/slider-progress";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-auto-scroll-demo.module.css";
 
 const SLIDES = [
   {
-    src: "https://picsum.photos/id/1055/1200/1200",
-    fullscreenSrc: "https://picsum.photos/id/1055/2400/2400",
+    src: "https://picsum.photos/id/235/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/235/2400/2400",
   },
   {
-    src: "https://picsum.photos/id/1056/1200/1200",
-    fullscreenSrc: "https://picsum.photos/id/1056/2400/2400",
+    src: "https://picsum.photos/id/243/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/243/2400/2400",
   },
   {
-    src: "https://picsum.photos/id/1057/1200/1200",
-    fullscreenSrc: "https://picsum.photos/id/1057/2400/2400",
+    src: "https://picsum.photos/id/244/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/244/2400/2400",
   },
   {
-    src: "https://picsum.photos/id/1058/1200/1200",
-    fullscreenSrc: "https://picsum.photos/id/1058/2400/2400",
+    src: "https://picsum.photos/id/247/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/247/2400/2400",
   },
   {
-    src: "https://picsum.photos/id/1059/1200/1200",
-    fullscreenSrc: "https://picsum.photos/id/1059/2400/2400",
+    src: "https://picsum.photos/id/249/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/249/2400/2400",
   },
   {
-    src: "https://picsum.photos/id/1060/1200/1200",
-    fullscreenSrc: "https://picsum.photos/id/1060/2400/2400",
+    src: "https://picsum.photos/id/251/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/251/2400/2400",
   },
   {
-    src: "https://picsum.photos/id/1061/1200/1200",
-    fullscreenSrc: "https://picsum.photos/id/1061/2400/2400",
+    src: "https://picsum.photos/id/254/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/254/2400/2400",
   },
   {
-    src: "https://picsum.photos/id/1062/1200/1200",
-    fullscreenSrc: "https://picsum.photos/id/1062/2400/2400",
+    src: "https://picsum.photos/id/255/1200/1200",
+    fullscreenSrc: "https://picsum.photos/id/255/2400/2400",
   },
 ];
 
@@ -59,6 +68,7 @@ function Slide({ src, i }: { src: string; i: number }) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -68,40 +78,13 @@ function FullscreenAddon() {
 }
 
 export function SliderAutoScrollDemo() {
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={FULLSCREEN_MEDIA}>
-      <Slider
-        align="center"
-        scroll={{
-          loop: true,
-        }}
-        auto={{
-          scroll: {
-            enabled: true,
-          },
-        }}
-        controls={{
-          dots: {
-            enabled: false,
-          },
-          progress: {
-            enabled: true,
-            root: {
-              style: {
-                bottom: "0px",
-              },
-            },
-          },
-        }}
-        elements={{
-          viewport: {
-            className: styles.slider_viewport
-          }
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: 3,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 3,
               mode: "peek",
               layout: {
                 kind: "slider",
@@ -150,9 +133,38 @@ export function SliderAutoScrollDemo() {
                   },
                 ],
               },
-            },
-          },
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        align="center"
+        scroll={{
+          loop: true,
         }}
+
+
+        elements={{
+          viewport: {
+            className: styles.slider_viewport
+          }
+        }}
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderProgress({
+            enabled: true,
+            root: {
+              style: {
+                bottom: "0px",
+              },
+            },
+          }),
+          sliderAutoScroll({
+            enabled: true,
+          }),
+        ]}
       >
         {MEDIA.map((item, i) => (
           <Slide
@@ -160,8 +172,10 @@ export function SliderAutoScrollDemo() {
             src={item.kind === "image" ? item.src : ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );

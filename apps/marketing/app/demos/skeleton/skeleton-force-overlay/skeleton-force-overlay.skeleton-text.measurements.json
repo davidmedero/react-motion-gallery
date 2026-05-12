@@ -1,0 +1,540 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=skeleton-force-overlay&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1340,
+    "viewportHeight": 1800,
+    "viewportWorkers": 8,
+    "settleMs": 120,
+    "stableGeometryFrames": 4,
+    "readyExpression": "(() => Boolean(document.querySelector(\"[data-skeleton-text-id='forceOverlayTimeline03Detail']\")))()",
+    "lineMeasurementMethod": "domRange",
+    "includeTextMetrics": true,
+    "breakpointStrategy": "lineChanges",
+    "barWidthUnit": "px"
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "forceOverlayHeaderTitle",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 206,
+          "toViewport": 786,
+          "fromWidthPx": 206,
+          "toWidthPx": 786,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "181px",
+      "barHeight": 20,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlayHeaderMeta",
+      "lines": {
+        "0": 2,
+        "253": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 206,
+          "toViewport": 252.562,
+          "fromWidthPx": 206,
+          "toWidthPx": 252.5625,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 253,
+          "toViewport": 786,
+          "fromWidthPx": 253,
+          "toWidthPx": 786,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "199px",
+          "50px"
+        ],
+        "253": "253px"
+      },
+      "barHeight": 12,
+      "lineHeight": 1.35
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlaySummary01Label",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 122,
+          "toViewport": 283,
+          "fromWidthPx": 122,
+          "toWidthPx": 283,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "37px",
+      "barHeight": 12,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlaySummary01Value",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 122,
+          "toViewport": 283,
+          "fromWidthPx": 122,
+          "toWidthPx": 283,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "46px",
+      "barHeight": 34,
+      "lineHeight": 1
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlaySummary02Label",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 122,
+          "toViewport": 283,
+          "fromWidthPx": 122,
+          "toWidthPx": 283,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "37px",
+      "barHeight": 12,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlaySummary02Value",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 122,
+          "toViewport": 283,
+          "fromWidthPx": 122,
+          "toWidthPx": 283,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "44px",
+      "barHeight": 34,
+      "lineHeight": 1
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlaySummary03Label",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 122,
+          "toViewport": 445.125,
+          "fromWidthPx": 122,
+          "toWidthPx": 445.125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "32px",
+      "barHeight": 12,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlaySummary03Value",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 122,
+          "toViewport": 445.125,
+          "fromWidthPx": 122,
+          "toWidthPx": 445.125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "38px",
+      "barHeight": 34,
+      "lineHeight": 1
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlayTimeline01Title",
+      "lines": {
+        "0": 2,
+        "255": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 136,
+          "toViewport": 254,
+          "fromWidthPx": 136,
+          "toWidthPx": 254,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 255,
+          "toViewport": 854,
+          "fromWidthPx": 255,
+          "toWidthPx": 854,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "119px",
+          "133px"
+        ],
+        "255": "255px"
+      },
+      "barHeight": 13,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlayTimeline01Detail",
+      "lines": {
+        "0": 6,
+        "155": 5,
+        "177": 4,
+        "224": 3,
+        "639": 1,
+        "338.812": 2
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 136,
+          "toViewport": 154,
+          "fromWidthPx": 136,
+          "toWidthPx": 154,
+          "lineCount": 6
+        },
+        {
+          "fromViewport": 155,
+          "toViewport": 176,
+          "fromWidthPx": 155,
+          "toWidthPx": 176,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 177,
+          "toViewport": 223,
+          "fromWidthPx": 177,
+          "toWidthPx": 223,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 224,
+          "toViewport": 338,
+          "fromWidthPx": 224,
+          "toWidthPx": 338,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 338.812,
+          "toViewport": 638,
+          "fromWidthPx": 338.8125,
+          "toWidthPx": 638,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 639,
+          "toViewport": 854,
+          "fromWidthPx": 639,
+          "toWidthPx": 854,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "81px",
+          "135px",
+          "117px",
+          "119px",
+          "134px",
+          "39px"
+        ],
+        "155": [
+          "155px",
+          "127px",
+          "96px",
+          "128px",
+          "122px"
+        ],
+        "177": [
+          "155px",
+          "127px",
+          "172px",
+          "177px"
+        ],
+        "224": [
+          "218px",
+          "224px",
+          "191px"
+        ],
+        "639": "639px",
+        "338.812": [
+          "338px",
+          "298px"
+        ]
+      },
+      "barHeight": 12,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlayTimeline02Title",
+      "lines": {
+        "0": 2,
+        "244": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 136,
+          "toViewport": 243,
+          "fromWidthPx": 136,
+          "toWidthPx": 243,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 244,
+          "toViewport": 854,
+          "fromWidthPx": 244,
+          "toWidthPx": 854,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "132px",
+          "109px"
+        ],
+        "244": "244px"
+      },
+      "barHeight": 13,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlayTimeline02Detail",
+      "lines": {
+        "0": 6,
+        "142": 5,
+        "172": 4,
+        "227": 3,
+        "624": 1,
+        "310.968": 2
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 136,
+          "toViewport": 141,
+          "fromWidthPx": 136,
+          "toWidthPx": 141,
+          "lineCount": 6
+        },
+        {
+          "fromViewport": 142,
+          "toViewport": 171,
+          "fromWidthPx": 142,
+          "toWidthPx": 171,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 172,
+          "toViewport": 226,
+          "fromWidthPx": 172,
+          "toWidthPx": 226,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 227,
+          "toViewport": 310,
+          "fromWidthPx": 227,
+          "toWidthPx": 310,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 310.968,
+          "toViewport": 623,
+          "fromWidthPx": 310.96875,
+          "toWidthPx": 623,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 624,
+          "toViewport": 854,
+          "fromWidthPx": 624,
+          "toWidthPx": 854,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "136px",
+          "96px",
+          "117px",
+          "122px",
+          "114px",
+          "25px"
+        ],
+        "142": [
+          "136px",
+          "96px",
+          "117px",
+          "122px",
+          "142px"
+        ],
+        "172": [
+          "136px",
+          "172px",
+          "165px",
+          "142px"
+        ],
+        "227": [
+          "189px",
+          "202px",
+          "226px"
+        ],
+        "624": "623px",
+        "310.968": [
+          "310px",
+          "310px"
+        ]
+      },
+      "barHeight": 12,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlayTimeline03Title",
+      "lines": {
+        "0": 2,
+        "263": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 136,
+          "toViewport": 262,
+          "fromWidthPx": 136,
+          "toWidthPx": 262,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 263,
+          "toViewport": 854,
+          "fromWidthPx": 263,
+          "toWidthPx": 854,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "129px",
+          "131px"
+        ],
+        "263": "263px"
+      },
+      "barHeight": 13,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "forceOverlayTimeline03Detail",
+      "lines": {
+        "0": 5,
+        "162": 4,
+        "216": 3,
+        "301": 2,
+        "602": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 136,
+          "toViewport": 161,
+          "fromWidthPx": 136,
+          "toWidthPx": 161,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 162,
+          "toViewport": 215,
+          "fromWidthPx": 162,
+          "toWidthPx": 215,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 216,
+          "toViewport": 300,
+          "fromWidthPx": 216,
+          "toWidthPx": 300,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 301,
+          "toViewport": 601,
+          "fromWidthPx": 301,
+          "toWidthPx": 601,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 602,
+          "toViewport": 854,
+          "fromWidthPx": 602,
+          "toWidthPx": 854,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "121px",
+          "134px",
+          "103px",
+          "109px",
+          "122px"
+        ],
+        "162": [
+          "161px",
+          "151px",
+          "158px",
+          "122px"
+        ],
+        "216": [
+          "216px",
+          "184px",
+          "196px"
+        ],
+        "301": [
+          "300px",
+          "298px"
+        ],
+        "602": "601px"
+      },
+      "barHeight": 12,
+      "lineHeight": 1.2
+    }
+  ]
+}

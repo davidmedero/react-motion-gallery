@@ -1,30 +1,38 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-y-axis-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/1019/1600/900",
-  "https://picsum.photos/id/1020/1600/900",
-  "https://picsum.photos/id/1021/1600/900",
-  "https://picsum.photos/id/1022/1600/900",
-  "https://picsum.photos/id/1023/1600/900",
-  "https://picsum.photos/id/1024/1600/900",
+  "https://picsum.photos/id/162/1600/900",
+  "https://picsum.photos/id/164/1600/900",
+  "https://picsum.photos/id/165/1600/900",
+  "https://picsum.photos/id/166/1600/900",
+  "https://picsum.photos/id/167/1600/900",
+  "https://picsum.photos/id/168/1600/900",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/1019/2400/1350",
-  "https://picsum.photos/id/1020/2400/1350",
-  "https://picsum.photos/id/1021/2400/1350",
-  "https://picsum.photos/id/1022/2400/1350",
-  "https://picsum.photos/id/1023/2400/1350",
-  "https://picsum.photos/id/1024/2400/1350",
+  "https://picsum.photos/id/162/2400/1350",
+  "https://picsum.photos/id/164/2400/1350",
+  "https://picsum.photos/id/165/2400/1350",
+  "https://picsum.photos/id/166/2400/1350",
+  "https://picsum.photos/id/167/2400/1350",
+  "https://picsum.photos/id/168/2400/1350",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
@@ -39,6 +47,7 @@ function Slide({ src, i }: { src: string; i: number }) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -51,24 +60,13 @@ function SliderYAxisGallery() {
   const media = toMediaItems(URLS);
   const fullscreenMedia = toMediaItems(FS_URLS);
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
-        direction={{
-          axis: "y",
-        }}
-        elements={{
-          viewport: {
-            style: {
-              height: "100cqh",
-              maxHeight: "530px",
-            },
-          },
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: 3,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 3,
               mode: "peek",
               layout: {
                 kind: "slider",
@@ -89,9 +87,28 @@ function SliderYAxisGallery() {
                   aspectRatio: "16 / 7",
                 },
               },
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        direction={{
+          axis: "y",
+        }}
+        elements={{
+          viewport: {
+            style: {
+              height: "100cqh",
+              maxHeight: "530px",
             },
           },
         }}
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderDots(),
+        ]}
       >
         {media.map((item, i) => (
           <Slide
@@ -99,8 +116,10 @@ function SliderYAxisGallery() {
             src={item.kind === "image" ? item.src : ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );
@@ -112,4 +131,5 @@ export function SliderYAxisDemo() {
       <SliderYAxisGallery />
     </div>
   );
-}`;
+}
+`;

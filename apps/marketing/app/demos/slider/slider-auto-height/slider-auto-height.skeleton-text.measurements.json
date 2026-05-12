@@ -1,0 +1,938 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=slider-auto-height&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1340,
+    "viewportHeight": 1600,
+    "viewportWorkers": 8,
+    "settleMs": 120,
+    "stableGeometryFrames": 4,
+    "readyExpression": "(() => { const target = document.querySelector(\"[data-skeleton-item-id='autoHeightOne'] [data-skeleton-role='copy']\"); return !!target && target.getBoundingClientRect().width > 0; })()",
+    "lineMeasurementMethod": "domRange",
+    "includeTextMetrics": true,
+    "breakpointStrategy": "lineChanges",
+    "barWidthUnit": "px"
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "autoHeightOneKicker",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 195,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "85px",
+      "barHeight": 12.16,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightOneTitle",
+      "lines": {
+        "0": 2,
+        "330": 1,
+        "641": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 329,
+          "fromWidthPx": 195,
+          "toWidthPx": 204,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 330,
+          "toViewport": 1340,
+          "fromWidthPx": 205,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "142px",
+          "56px"
+        ],
+        "330": "205px",
+        "641": "205px"
+      },
+      "barHeight": {
+        "0": 23.2,
+        "330": 23.2,
+        "641": 32
+      },
+      "lineHeight": 1.1
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightOneCopy",
+      "lines": {
+        "0": 5,
+        "323": 4,
+        "386": 3,
+        "489": 2,
+        "641": 2,
+        "768": 3,
+        "786": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 322,
+          "fromWidthPx": 195,
+          "toWidthPx": 197,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 323,
+          "toViewport": 385,
+          "fromWidthPx": 198,
+          "toWidthPx": 260,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 386,
+          "toViewport": 488,
+          "fromWidthPx": 261,
+          "toWidthPx": 363,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 489,
+          "toViewport": 767,
+          "fromWidthPx": 364,
+          "toWidthPx": 518,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 785,
+          "fromWidthPx": 369.28125,
+          "toWidthPx": 385.625,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 786,
+          "toViewport": 1340,
+          "fromWidthPx": 386.5625,
+          "toWidthPx": 518,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "153px",
+          "129px",
+          "155px",
+          "189px",
+          "67px"
+        ],
+        "323": [
+          "197px",
+          "191px",
+          "168px",
+          "141px"
+        ],
+        "386": [
+          "197px",
+          "244px",
+          "260px"
+        ],
+        "489": [
+          "363px",
+          "342px"
+        ],
+        "641": [
+          "363px",
+          "342px"
+        ],
+        "768": [
+          "305px",
+          "292px",
+          "150px"
+        ],
+        "786": [
+          "386px",
+          "364px"
+        ]
+      },
+      "barHeight": {
+        "0": 15.04,
+        "323": 15.04,
+        "386": 15.04,
+        "489": 15.04,
+        "641": 16,
+        "768": 16,
+        "786": 16
+      },
+      "lineHeight": 1.45
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightOneFooter",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 101.1875,
+          "toWidthPx": 101.1875,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "81px",
+      "barHeight": 12.8,
+      "lineHeight": 1.25
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightTwoKicker",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 195,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "65px",
+      "barHeight": 12.16,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightTwoTitle",
+      "lines": {
+        "0": 2,
+        "415": 1,
+        "641": 1,
+        "768": 2,
+        "799": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 414,
+          "fromWidthPx": 195,
+          "toWidthPx": 289,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 415,
+          "toViewport": 767,
+          "fromWidthPx": 290,
+          "toWidthPx": 518,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 798,
+          "fromWidthPx": 369.28125,
+          "toWidthPx": 398.09375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 799,
+          "toViewport": 1340,
+          "fromWidthPx": 399.0625,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "152px",
+          "131px"
+        ],
+        "415": "289px",
+        "641": "289px",
+        "768": [
+          "210px",
+          "180px"
+        ],
+        "799": "399px"
+      },
+      "barHeight": {
+        "0": 23.2,
+        "415": 23.2,
+        "641": 32,
+        "768": 32,
+        "799": 32
+      },
+      "lineHeight": 1.1
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightTwoCopy",
+      "lines": {
+        "0": 6,
+        "323": 5,
+        "355": 4,
+        "432": 3,
+        "562": 2,
+        "641": 2,
+        "768": 3,
+        "877": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 322,
+          "fromWidthPx": 195,
+          "toWidthPx": 197,
+          "lineCount": 6
+        },
+        {
+          "fromViewport": 323,
+          "toViewport": 354,
+          "fromWidthPx": 198,
+          "toWidthPx": 229,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 355,
+          "toViewport": 431,
+          "fromWidthPx": 230,
+          "toWidthPx": 306,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 432,
+          "toViewport": 561,
+          "fromWidthPx": 307,
+          "toWidthPx": 436,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 562,
+          "toViewport": 767,
+          "fromWidthPx": 452,
+          "toWidthPx": 518,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 876,
+          "fromWidthPx": 369.28125,
+          "toWidthPx": 472.96875,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 877,
+          "toViewport": 1340,
+          "fromWidthPx": 473.9375,
+          "toWidthPx": 518,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "153px",
+          "129px",
+          "155px",
+          "189px",
+          "182px",
+          "47px"
+        ],
+        "323": [
+          "197px",
+          "191px",
+          "168px",
+          "154px",
+          "148px"
+        ],
+        "355": [
+          "197px",
+          "221px",
+          "230px",
+          "215px"
+        ],
+        "432": [
+          "286px",
+          "274px",
+          "307px"
+        ],
+        "562": [
+          "445px",
+          "426px"
+        ],
+        "641": [
+          "445px",
+          "426px"
+        ],
+        "768": [
+          "305px",
+          "292px",
+          "326px"
+        ],
+        "877": [
+          "474px",
+          "454px"
+        ]
+      },
+      "barHeight": {
+        "0": 15.04,
+        "323": 15.04,
+        "355": 15.04,
+        "432": 15.04,
+        "562": 15.04,
+        "641": 16,
+        "768": 16,
+        "877": 16
+      },
+      "lineHeight": 1.45
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightTwoFooter",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 72.375,
+          "toWidthPx": 72.375,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "52px",
+      "barHeight": 12.8,
+      "lineHeight": 1.25
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightThreeKicker",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 195,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "65px",
+      "barHeight": 12.16,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightThreeTitle",
+      "lines": {
+        "0": 2,
+        "417": 1,
+        "641": 1,
+        "768": 2,
+        "803": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 416,
+          "fromWidthPx": 195,
+          "toWidthPx": 291,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 417,
+          "toViewport": 767,
+          "fromWidthPx": 292,
+          "toWidthPx": 518,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 802,
+          "fromWidthPx": 369.28125,
+          "toWidthPx": 401.9375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 803,
+          "toViewport": 1340,
+          "fromWidthPx": 402.90625,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "135px",
+          "151px"
+        ],
+        "417": "292px",
+        "641": "292px",
+        "768": [
+          "349px",
+          "45px"
+        ],
+        "803": "402px"
+      },
+      "barHeight": {
+        "0": 23.2,
+        "417": 23.2,
+        "641": 32,
+        "768": 32,
+        "803": 32
+      },
+      "lineHeight": 1.1
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightThreeCopy",
+      "lines": {
+        "0": 4,
+        "356": 3,
+        "462": 2,
+        "641": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 355,
+          "fromWidthPx": 195,
+          "toWidthPx": 230,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 356,
+          "toViewport": 461,
+          "fromWidthPx": 231,
+          "toWidthPx": 336,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 462,
+          "toViewport": 1340,
+          "fromWidthPx": 337,
+          "toWidthPx": 518,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "153px",
+          "129px",
+          "187px",
+          "146px"
+        ],
+        "356": [
+          "197px",
+          "191px",
+          "231px"
+        ],
+        "462": [
+          "286px",
+          "337px"
+        ],
+        "641": [
+          "286px",
+          "337px"
+        ]
+      },
+      "barHeight": {
+        "0": 15.04,
+        "356": 15.04,
+        "462": 15.04,
+        "641": 16
+      },
+      "lineHeight": 1.45
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightThreeFooter",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 76.390625,
+          "toWidthPx": 76.390625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "56px",
+      "barHeight": 12.8,
+      "lineHeight": 1.25
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightFourKicker",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 195,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "57px",
+      "barHeight": 12.16,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightFourTitle",
+      "lines": {
+        "0": 2,
+        "387": 1,
+        "641": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 386,
+          "fromWidthPx": 195,
+          "toWidthPx": 261,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 387,
+          "toViewport": 1340,
+          "fromWidthPx": 262,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "177px",
+          "78px"
+        ],
+        "387": "262px",
+        "641": "262px"
+      },
+      "barHeight": {
+        "0": 23.2,
+        "387": 23.2,
+        "641": 32
+      },
+      "lineHeight": 1.1
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightFourCopy",
+      "lines": {
+        "0": 7,
+        "323": 6,
+        "353": 5,
+        "412": 4,
+        "489": 3,
+        "641": 3,
+        "768": 4,
+        "786": 3
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 322,
+          "fromWidthPx": 195,
+          "toWidthPx": 197,
+          "lineCount": 7
+        },
+        {
+          "fromViewport": 323,
+          "toViewport": 352,
+          "fromWidthPx": 198,
+          "toWidthPx": 227,
+          "lineCount": 6
+        },
+        {
+          "fromViewport": 353,
+          "toViewport": 411,
+          "fromWidthPx": 228,
+          "toWidthPx": 286,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 412,
+          "toViewport": 488,
+          "fromWidthPx": 287,
+          "toWidthPx": 363,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 489,
+          "toViewport": 767,
+          "fromWidthPx": 364,
+          "toWidthPx": 518,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 785,
+          "fromWidthPx": 369.28125,
+          "toWidthPx": 385.625,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 786,
+          "toViewport": 1340,
+          "fromWidthPx": 386.5625,
+          "toWidthPx": 518,
+          "lineCount": 3
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "153px",
+          "129px",
+          "155px",
+          "189px",
+          "182px",
+          "168px",
+          "55px"
+        ],
+        "323": [
+          "197px",
+          "191px",
+          "168px",
+          "154px",
+          "162px",
+          "163px"
+        ],
+        "353": [
+          "197px",
+          "221px",
+          "212px",
+          "182px",
+          "227px"
+        ],
+        "412": [
+          "286px",
+          "274px",
+          "256px",
+          "227px"
+        ],
+        "489": [
+          "363px",
+          "356px",
+          "329px"
+        ],
+        "641": [
+          "363px",
+          "356px",
+          "329px"
+        ],
+        "768": [
+          "305px",
+          "292px",
+          "341px",
+          "173px"
+        ],
+        "786": [
+          "386px",
+          "379px",
+          "350px"
+        ]
+      },
+      "barHeight": {
+        "0": 15.04,
+        "323": 15.04,
+        "353": 15.04,
+        "412": 15.04,
+        "489": 15.04,
+        "641": 16,
+        "768": 16,
+        "786": 16
+      },
+      "lineHeight": 1.45
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightFourFooter",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 74.421875,
+          "toWidthPx": 74.421875,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "54px",
+      "barHeight": 12.8,
+      "lineHeight": 1.25
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightFiveKicker",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 195,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "49px",
+      "barHeight": 12.16,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightFiveTitle",
+      "lines": {
+        "0": 2,
+        "329": 1,
+        "641": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 328,
+          "fromWidthPx": 195,
+          "toWidthPx": 203,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 329,
+          "toViewport": 1340,
+          "fromWidthPx": 204,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "128px",
+          "70px"
+        ],
+        "329": "204px",
+        "641": "204px"
+      },
+      "barHeight": {
+        "0": 23.2,
+        "329": 23.2,
+        "641": 32
+      },
+      "lineHeight": 1.1
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightFiveCopy",
+      "lines": {
+        "0": 3,
+        "323": 2,
+        "518": 1,
+        "641": 1,
+        "768": 2,
+        "819": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 322,
+          "fromWidthPx": 195,
+          "toWidthPx": 197,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 323,
+          "toViewport": 517,
+          "fromWidthPx": 198,
+          "toWidthPx": 392,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 518,
+          "toViewport": 767,
+          "fromWidthPx": 393,
+          "toWidthPx": 518,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 818,
+          "fromWidthPx": 369.28125,
+          "toWidthPx": 417.28125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 819,
+          "toViewport": 1340,
+          "fromWidthPx": 418.25,
+          "toWidthPx": 518,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "153px",
+          "129px",
+          "102px"
+        ],
+        "323": [
+          "197px",
+          "191px"
+        ],
+        "518": "393px",
+        "641": "393px",
+        "768": [
+          "305px",
+          "108px"
+        ],
+        "819": "418px"
+      },
+      "barHeight": {
+        "0": 15.04,
+        "323": 15.04,
+        "518": 15.04,
+        "641": 16,
+        "768": 16,
+        "819": 16
+      },
+      "lineHeight": 1.45
+    },
+    {
+      "kind": "text",
+      "exportName": "autoHeightFiveFooter",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 63.34375,
+          "toWidthPx": 63.34375,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "43px",
+      "barHeight": 12.8,
+      "lineHeight": 1.25
+    },
+    {
+      "kind": "responsiveNumber",
+      "exportName": "sliderAutoHeightRowHeightCompensation",
+      "value": {
+        "0": 43.616,
+        "330": 69.136,
+        "353": 47.328,
+        "386": 69.136,
+        "387": 47.328,
+        "415": 25.52,
+        "417": 21.808,
+        "641": 23.2,
+        "768": 35.2,
+        "786": 58.4,
+        "799": 35.2,
+        "803": 23.2
+      }
+    }
+  ]
+}

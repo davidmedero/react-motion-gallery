@@ -6,7 +6,7 @@ import { GridLayout } from "./GridLayout";
 import { BREAKPOINT_MAP } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import type { BreakpointMap } from "../shared/responsive";
-import type { GridOptions, IntroOptions, LoadingOptions } from "./types";
+import type { GridHandle, GridOptions, IntroOptions } from "./types";
 import { useOptionalGalleryCore } from "../core";
 import { GridItem, normalizeGridChild, type GridCell } from "./item";
 
@@ -17,11 +17,16 @@ type Props = GridOptions & {
   renderMode?: "wrap" | "passthrough";
 };
 
-type GridComponent = ((props: Props) => React.JSX.Element) & {
+type GridComponent = React.ForwardRefExoticComponent<
+  Props & React.RefAttributes<GridHandle>
+> & {
   Item: typeof GridItem;
 };
 
-export function GridLayoutRuntime(props: Props) {
+export const GridLayoutRuntime = React.forwardRef<GridHandle, Props>(function GridLayoutRuntime(
+  props,
+  forwardedRef
+) {
   const { children, breakpoints, gridItemBaseClass, renderMode, ...gridOptions } = props;
 
   const core = useOptionalGalleryCore();
@@ -57,18 +62,6 @@ export function GridLayoutRuntime(props: Props) {
   }, []);
 
   const [cellsState] = React.useState<GridCell[]>(initialCells);
-
-  function normalizeLoading(src?: LoadingOptions) {
-    return {
-      enabled: src?.enabled,
-      force: src?.force,
-      renderLoading: src?.renderLoading,
-      skeleton: src?.skeleton,
-      timing: src?.timing,
-    };
-  }
-
-  const gridLoading = React.useMemo(() => normalizeLoading(gridObject.loading), [gridObject.loading]);
 
   function normalizeIntro(src?: IntroOptions) {
     return {
@@ -135,11 +128,11 @@ export function GridLayoutRuntime(props: Props) {
 
   return (
     <GridLayout
+      ref={forwardedRef}
       cells={cellsState}
       grid={gridObject}
       breakpoints={effectiveBreakpoints}
       viewportWidth={vw}
-      loading={gridLoading}
       intro={gridIntro}
       enableFullscreen={!!core?.fsEnabled}
       onOpen={onOpen}
@@ -148,10 +141,12 @@ export function GridLayoutRuntime(props: Props) {
       renderMode={renderMode}
     />
   );
-}
+});
 
 export const Grid = Object.assign(GridLayoutRuntime, {
   Item: GridItem,
 }) as GridComponent;
 
+export { useGridReady } from "./useGridReady";
+export type { GridReadyController } from "./useGridReady";
 export default Grid;

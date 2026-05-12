@@ -1,25 +1,37 @@
-export const css = String.raw`/* app/globals.css or Demo.module.css */
-
-.masonryVimeoCard {
+export const css = String.raw`.masonryVimeoCard {
   display: grid;
   gap: 14px;
   padding: 12px 12px 14px;
   border-radius: 22px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
 }
 
 .masonryVimeoFrame {
+  position: relative;
   width: 100%;
   overflow: hidden;
   border-radius: 18px;
-  background: #020617;
+  background: rgba(255, 255, 255, 0.96);
 }
 
-.masonryVimeoFrame > * {
+.masonryVimeoFrame > :not(.open_fullscreen_icon) {
   width: 100%;
   height: 100%;
+}
+
+.masonryVimeoFrame > .open_fullscreen_icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+  cursor: pointer;
 }
 
 .masonryVimeoVideo {
@@ -29,6 +41,7 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
 
 .masonryVimeoFrame :global(.plyr),
 .masonryVimeoFrame :global(.plyr__video-wrapper),
+.masonryVimeoFrame :global(.plyr__video-wrapper--fixed-ratio),
 .masonryVimeoFrame :global(.plyr__poster),
 .masonryVimeoFrame :global(video),
 .masonryVimeoFrame :global(iframe) {
@@ -38,6 +51,10 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
 
 .masonryVimeoFrame :global(.plyr__poster) {
   background-size: cover;
+}
+
+.masonryVimeoFrame :global(.plyr__video-wrapper--fixed-ratio) {
+  aspect-ratio: auto;
 }
 
 .masonryVimeoMeta {
@@ -55,4 +72,5 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
   color: rgba(11, 18, 32, 0.72);
   font-size: 0.92rem;
   line-height: 1.6;
-}`;
+}
+`;

@@ -7,7 +7,8 @@ import { BREAKPOINT_MAP } from "../shared/responsive";
 import { useOptionalGalleryCore } from "../core";
 import { createRmgSlideStoreBag } from "../shared/slideStoreBag";
 import { DEFAULT_MASONRY } from "./defaults";
-import type { IntroOptions, LoadingOptions, MasonryOptions } from "./types";
+import { MasonryItem, normalizeMasonryChild, type MasonryCell } from "./item";
+import type { IntroOptions, MasonryHandle, MasonryOptions } from "./types";
 import { MasonryLayout } from "./MasonryLayout";
 import { buildMasonryChildren } from "./buildMasonryChildren";
 
@@ -15,8 +16,11 @@ type Props = MasonryOptions & {
   children?: React.ReactNode;
   breakpoints?: BreakpointMap;
 };
-
-type Cell = { id: string; node: React.ReactNode };
+type MasonryComponent = React.ForwardRefExoticComponent<
+  Props & React.RefAttributes<MasonryHandle>
+> & {
+  Item: typeof MasonryItem;
+};
 
 function isImgEl(el: unknown): el is HTMLImageElement {
   return el instanceof HTMLImageElement;
@@ -30,16 +34,6 @@ function findImgInside(host: HTMLElement | null): HTMLImageElement | null {
   return isImgEl(img) ? img : null;
 }
 
-function normalizeLoading(src?: LoadingOptions) {
-  return {
-    enabled: src?.enabled,
-    force: src?.force,
-    renderLoading: src?.renderLoading,
-    skeleton: src?.skeleton,
-    timing: src?.timing,
-  };
-}
-
 function normalizeIntro(src?: IntroOptions) {
   return {
     renderIntro: src?.renderIntro,
@@ -49,7 +43,10 @@ function normalizeIntro(src?: IntroOptions) {
   };
 }
 
-export default function Masonry(props: Props) {
+const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
+  props,
+  forwardedRef
+) {
   const { children, breakpoints, ...masonryOptions } = props;
 
   const core = useOptionalGalleryCore();
@@ -83,16 +80,29 @@ export default function Masonry(props: Props) {
   const idSeqRef = React.useRef(0);
   const newId = React.useCallback(() => `rmg-${++idSeqRef.current}`, []);
 
-  const initialCells = React.useMemo<Cell[]>(() => {
+  const initialCells = React.useMemo<MasonryCell[]>(() => {
     const kids = React.Children.toArray(children);
-    return kids.map((n) => ({ id: newId(), node: n }));
+    const next: MasonryCell[] = [];
+
+    for (const child of kids) {
+      const normalized = normalizeMasonryChild(child);
+      if (normalized.node == null) continue;
+
+      next.push({
+        id: newId(),
+        node: normalized.node,
+        layoutMeta: normalized.layoutMeta,
+      });
+    }
+
+    return next;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [localCellsState] = React.useState<Cell[]>(initialCells);
+  const [localCellsState] = React.useState<MasonryCell[]>(initialCells);
 
-  const coreCells = (core?.cellsState as any as Cell[] | undefined) ?? undefined;
-  const cellsState: Cell[] =
+  const coreCells = (core?.cellsState as any as MasonryCell[] | undefined) ?? undefined;
+  const cellsState: MasonryCell[] =
     coreCells && coreCells.length > 0 ? coreCells : localCellsState;
 
   const expandableImageRefs =
@@ -146,12 +156,6 @@ export default function Masonry(props: Props) {
     [core, enableFullscreen, normalizedItems.length, expandableImageRefs]
   );
 
-  const masonryLoading = React.useMemo(() => {
-    return normalizeLoading(
-      (masonryObject as any).loading ?? (masonryObject as any).transitions?.loading
-    );
-  }, [masonryObject]);
-
   const masonryIntro = React.useMemo(() => {
     return normalizeIntro(
       (masonryObject as any).intro ?? (masonryObject as any).transitions?.intro
@@ -201,12 +205,20 @@ export default function Masonry(props: Props) {
 
   return (
     <MasonryLayout
-      items={masonryChildren}
+      ref={forwardedRef}
+      items={masonryChildren.map((item) => item.node)}
+      itemSpans={masonryChildren.map((item) => item.span)}
       masonry={masonryObject as any}
       breakpoints={effectiveBreakpoints}
-      loading={masonryLoading as any}
       intro={masonryIntro as any}
-      skeletonCount={cellsState.length}
     />
   );
-}
+});
+
+const Masonry = Object.assign(MasonryImpl, {
+  Item: MasonryItem,
+}) as MasonryComponent;
+
+export default Masonry;
+export { useMasonryReady } from "./useMasonryReady";
+export type { MasonryReadyController } from "./useMasonryReady";

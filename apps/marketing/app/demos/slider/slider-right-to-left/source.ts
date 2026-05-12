@@ -1,30 +1,38 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-right-to-left-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/1049/1600/900",
-  "https://picsum.photos/id/1050/1600/900",
-  "https://picsum.photos/id/1051/1600/900",
-  "https://picsum.photos/id/1052/1600/900",
-  "https://picsum.photos/id/1053/1600/900",
-  "https://picsum.photos/id/1054/1600/900",
+  "https://picsum.photos/id/33/1600/900",
+  "https://picsum.photos/id/37/1600/900",
+  "https://picsum.photos/id/42/1600/900",
+  "https://picsum.photos/id/43/1600/900",
+  "https://picsum.photos/id/46/1600/900",
+  "https://picsum.photos/id/49/1600/900",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/1049/2400/1350",
-  "https://picsum.photos/id/1050/2400/1350",
-  "https://picsum.photos/id/1051/2400/1350",
-  "https://picsum.photos/id/1052/2400/1350",
-  "https://picsum.photos/id/1053/2400/1350",
-  "https://picsum.photos/id/1054/2400/1350",
+  "https://picsum.photos/id/33/2400/1350",
+  "https://picsum.photos/id/37/2400/1350",
+  "https://picsum.photos/id/42/2400/1350",
+  "https://picsum.photos/id/43/2400/1350",
+  "https://picsum.photos/id/46/2400/1350",
+  "https://picsum.photos/id/49/2400/1350",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
@@ -40,6 +48,7 @@ function Slide({ src, i }: { src: string; i: number }) {
 function FullscreenAddon() {
 
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -52,16 +61,13 @@ export function SliderRightToLeftDemo() {
   const media = toMediaItems(URLS);
   const fullscreenMedia = toMediaItems(FS_URLS);
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
-        direction={{
-          dir: "rtl",
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: 2,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 2,
               mode: "peek",
               style: {
                 direction: "rtl",
@@ -82,9 +88,20 @@ export function SliderRightToLeftDemo() {
                   },
                 },
               },
-            },
-          },
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        direction={{
+          dir: "rtl",
         }}
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderDots(),
+        ]}
       >
         {media.map((item, i) => (
           <Slide
@@ -92,9 +109,12 @@ export function SliderRightToLeftDemo() {
             src={item.kind === "image" ? item.src : ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

@@ -22,6 +22,11 @@
   pointer-events: auto;
 }
 
+:global([data-rmg-fs-root="true"][data-rmg-fs-closing="true"]),
+:global([data-rmg-fs-root="true"][data-rmg-fs-closing="true"] *) {
+  pointer-events: none !important;
+}
+
 .duplicateImg {
   position: fixed;
   display: none;

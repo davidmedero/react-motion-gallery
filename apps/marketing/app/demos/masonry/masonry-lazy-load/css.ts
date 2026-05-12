@@ -1,20 +1,18 @@
-export const css = String.raw`/* app/globals.css or Demo.module.css */
-
-.masonryLazyCard {
+export const css = String.raw`.masonryLazyCard {
   display: grid;
   gap: 12px;
   padding: 10px 10px 14px;
   border-radius: 22px;
   border: 1px solid rgba(125, 211, 252, 0.3);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 18px 36px rgba(14, 165, 233, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
 }
 
 .masonryLazyMedia {
   width: 100%;
   overflow: hidden;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(186, 230, 253, 0.36), rgba(224, 242, 254, 0.86));
+  background: #fff;
 }
 
 .masonryLazyMedia > * {
@@ -26,33 +24,6 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
-  background: rgba(125, 211, 252, 0.14);
-}
-
-.masonryLazyVideo {
-  width: 100%;
-  height: 100%;
-}
-
-.masonryLazyVideo :global(.plyr),
-.masonryLazyVideo :global(.plyr__video-wrapper),
-.masonryLazyVideo :global(.plyr__video-wrapper--fixed-ratio),
-.masonryLazyVideo :global(.plyr__poster),
-.masonryLazyVideo :global(video) {
-  width: 100%;
-  height: 100%;
-}
-
-.masonryLazyVideo :global(.plyr__poster) {
-  background-size: cover;
-}
-
-.masonryLazyVideo :global(.plyr__video-wrapper--fixed-ratio) {
-  aspect-ratio: auto;
-}
-
-.masonryLazyVideo :global(video) {
   object-fit: cover;
 }
 
@@ -98,18 +69,12 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
   filter: drop-shadow(0 10px 24px rgba(3, 105, 161, 0.28));
 }
 
-.masonryLazyVideoSpinner {
-  width: 46px;
-  height: 46px;
-  border-radius: 999px;
-  background: conic-gradient(
-    from 180deg,
-    #cffafe,
-    #67bee5,
-    #0ea5e9,
-    #0284c7,
-    #0369a1,
-    #cffafe
-  );
-  filter: drop-shadow(0 10px 24px rgba(3, 105, 161, 0.28));
+.masonryRoot {
+  margin-bottom: -12px;
+}
+
+@media(min-width: 1140px) {
+  .masonryRoot {
+    margin-bottom: -18px;
+  }
 }`;

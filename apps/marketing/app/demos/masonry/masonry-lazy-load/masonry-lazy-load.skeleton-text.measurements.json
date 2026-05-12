@@ -1,0 +1,1179 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=masonry-lazy-load&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1330,
+    "viewportHeight": 1800,
+    "viewportWorkers": 8,
+    "settleMs": 120,
+    "stableGeometryFrames": 4,
+    "readyExpression": "(() => { const body = document.querySelector(\"[data-skeleton-text-id='masonryLazyItem01Body']\"); const item = body?.closest(\"[data-rmg-idx]\"); const root = item?.parentElement; const columns = Number(getComputedStyle(root).getPropertyValue(\"--rmg-cols\")); const expected = window.innerWidth >= 1140 ? 3 : window.innerWidth >= 720 ? 2 : 1; return columns === expected; })()",
+    "lineMeasurementMethod": "canvasGreedy",
+    "includeTextMetrics": true,
+    "breakpointStrategy": "lineChanges",
+    "barWidthUnit": "px"
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem01Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1330,
+          "fromWidthPx": 214,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "45px",
+      "barHeight": 11.84,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem01Title",
+      "lines": {
+        "0": 1,
+        "768": 2,
+        "847": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 767,
+          "fromWidthPx": 214,
+          "toWidthPx": 306.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 846,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 207.09375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 847,
+          "toViewport": 1330,
+          "fromWidthPx": 207.5625,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": "207px",
+        "768": [
+          "165px",
+          "39px"
+        ],
+        "847": "207px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem01Body",
+      "lines": {
+        "0": 4,
+        "331": 3,
+        "460": 2,
+        "720": 3,
+        "768": 5,
+        "805": 4,
+        "884": 3,
+        "1140": 4,
+        "1167": 3
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 330,
+          "fromWidthPx": 214,
+          "toWidthPx": 224,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 331,
+          "toViewport": 459,
+          "fromWidthPx": 225,
+          "toWidthPx": 353,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 460,
+          "toViewport": 719,
+          "fromWidthPx": 354,
+          "toWidthPx": 608.25,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 720,
+          "toViewport": 767,
+          "fromWidthPx": 283.609375,
+          "toWidthPx": 306.171875,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 804,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 186.921875,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 805,
+          "toViewport": 883,
+          "fromWidthPx": 187.40625,
+          "toWidthPx": 224.84375,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 884,
+          "toViewport": 1139,
+          "fromWidthPx": 225.328125,
+          "toWidthPx": 350.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1140,
+          "toViewport": 1166,
+          "fromWidthPx": 215.984375,
+          "toWidthPx": 224.65625,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 1167,
+          "toViewport": 1330,
+          "fromWidthPx": 224.984375,
+          "toWidthPx": 278.65625,
+          "lineCount": 3
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "189px",
+          "165px",
+          "199px",
+          "97px"
+        ],
+        "331": [
+          "219px",
+          "225px",
+          "210px"
+        ],
+        "460": [
+          "304px",
+          "354px"
+        ],
+        "720": [
+          "241px",
+          "268px",
+          "145px"
+        ],
+        "768": [
+          "160px",
+          "140px",
+          "139px",
+          "161px",
+          "46px"
+        ],
+        "805": [
+          "160px",
+          "140px",
+          "187px",
+          "163px"
+        ],
+        "884": [
+          "219px",
+          "225px",
+          "210px"
+        ],
+        "1140": [
+          "189px",
+          "165px",
+          "199px",
+          "97px"
+        ],
+        "1167": [
+          "219px",
+          "225px",
+          "210px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem02Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1330,
+          "fromWidthPx": 214,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "42px",
+      "barHeight": 11.84,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem02Title",
+      "lines": {
+        "0": 1,
+        "768": 2,
+        "815": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 767,
+          "fromWidthPx": 214,
+          "toWidthPx": 306.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 814,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 191.734375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 815,
+          "toViewport": 1330,
+          "fromWidthPx": 192.203125,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": "192px",
+        "768": [
+          "132px",
+          "57px"
+        ],
+        "815": "192px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem02Body",
+      "lines": {
+        "0": 3,
+        "394": 2,
+        "685": 1,
+        "720": 3,
+        "730": 2,
+        "768": 5,
+        "774": 4,
+        "832": 3,
+        "1014": 2,
+        "1140": 3
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 393,
+          "fromWidthPx": 214,
+          "toWidthPx": 287,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 394,
+          "toViewport": 684,
+          "fromWidthPx": 288,
+          "toWidthPx": 574.65625,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 685,
+          "toViewport": 719,
+          "fromWidthPx": 575.625,
+          "toWidthPx": 608.25,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 720,
+          "toViewport": 729,
+          "fromWidthPx": 283.609375,
+          "toWidthPx": 287.921875,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 730,
+          "toViewport": 767,
+          "fromWidthPx": 288.40625,
+          "toWidthPx": 306.171875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 773,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 172.046875,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 774,
+          "toViewport": 831,
+          "fromWidthPx": 172.53125,
+          "toWidthPx": 199.890625,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 832,
+          "toViewport": 1013,
+          "fromWidthPx": 200.375,
+          "toWidthPx": 287.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1014,
+          "toViewport": 1139,
+          "fromWidthPx": 288,
+          "toWidthPx": 350.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1140,
+          "toViewport": 1330,
+          "fromWidthPx": 215.984375,
+          "toWidthPx": 278.65625,
+          "lineCount": 3
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "174px",
+          "200px",
+          "193px"
+        ],
+        "394": [
+          "283px",
+          "288px"
+        ],
+        "685": "575px",
+        "720": [
+          "283px",
+          "206px",
+          "77px"
+        ],
+        "730": [
+          "283px",
+          "288px"
+        ],
+        "768": [
+          "89px",
+          "139px",
+          "162px",
+          "91px",
+          "77px"
+        ],
+        "774": [
+          "89px",
+          "139px",
+          "162px",
+          "172px"
+        ],
+        "832": [
+          "174px",
+          "200px",
+          "193px"
+        ],
+        "1014": [
+          "283px",
+          "288px"
+        ],
+        "1140": [
+          "174px",
+          "200px",
+          "193px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem03Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1330,
+          "fromWidthPx": 214,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "45px",
+      "barHeight": 11.84,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem03Title",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1330,
+          "fromWidthPx": 214,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "154px",
+      "barHeight": 16.32,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem03Body",
+      "lines": {
+        "0": 3,
+        "372": 2,
+        "630": 1,
+        "720": 2,
+        "768": 4,
+        "824": 3,
+        "969": 2,
+        "1140": 3,
+        "1290": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 371,
+          "fromWidthPx": 214,
+          "toWidthPx": 265,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 372,
+          "toViewport": 629,
+          "fromWidthPx": 266,
+          "toWidthPx": 521.84375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 630,
+          "toViewport": 719,
+          "fromWidthPx": 522.8125,
+          "toWidthPx": 608.25,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 720,
+          "toViewport": 767,
+          "fromWidthPx": 283.609375,
+          "toWidthPx": 306.171875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 823,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 196.046875,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 824,
+          "toViewport": 968,
+          "fromWidthPx": 196.53125,
+          "toWidthPx": 265.640625,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 969,
+          "toViewport": 1139,
+          "fromWidthPx": 266.125,
+          "toWidthPx": 350.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1140,
+          "toViewport": 1289,
+          "fromWidthPx": 215.984375,
+          "toWidthPx": 265.65625,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1290,
+          "toViewport": 1330,
+          "fromWidthPx": 265.984375,
+          "toWidthPx": 278.65625,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "196px",
+          "180px",
+          "138px"
+        ],
+        "372": [
+          "266px",
+          "253px"
+        ],
+        "630": "523px",
+        "720": [
+          "266px",
+          "253px"
+        ],
+        "768": [
+          "128px",
+          "134px",
+          "154px",
+          "94px"
+        ],
+        "824": [
+          "196px",
+          "180px",
+          "138px"
+        ],
+        "969": [
+          "266px",
+          "253px"
+        ],
+        "1140": [
+          "196px",
+          "180px",
+          "138px"
+        ],
+        "1290": [
+          "266px",
+          "253px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem04Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1330,
+          "fromWidthPx": 214,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "38px",
+      "barHeight": 11.84,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem04Title",
+      "lines": {
+        "0": 1,
+        "768": 2,
+        "801": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 767,
+          "fromWidthPx": 214,
+          "toWidthPx": 306.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 800,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 185,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 801,
+          "toViewport": 1330,
+          "fromWidthPx": 185.484375,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": "185px",
+        "768": [
+          "110px",
+          "71px"
+        ],
+        "801": "185px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem04Body",
+      "lines": {
+        "0": 3,
+        "401": 2,
+        "691": 1,
+        "720": 3,
+        "744": 2,
+        "768": 4,
+        "827": 3,
+        "1028": 2,
+        "1140": 3
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 400,
+          "fromWidthPx": 214,
+          "toWidthPx": 294,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 401,
+          "toViewport": 690,
+          "fromWidthPx": 295,
+          "toWidthPx": 580.40625,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 691,
+          "toViewport": 719,
+          "fromWidthPx": 581.375,
+          "toWidthPx": 608.25,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 720,
+          "toViewport": 743,
+          "fromWidthPx": 283.609375,
+          "toWidthPx": 294.640625,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 744,
+          "toViewport": 767,
+          "fromWidthPx": 295.125,
+          "toWidthPx": 306.171875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 826,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 197.484375,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 827,
+          "toViewport": 1027,
+          "fromWidthPx": 197.96875,
+          "toWidthPx": 294.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1028,
+          "toViewport": 1139,
+          "fromWidthPx": 295,
+          "toWidthPx": 350.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1140,
+          "toViewport": 1330,
+          "fromWidthPx": 215.984375,
+          "toWidthPx": 278.65625,
+          "lineCount": 3
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "198px",
+          "193px",
+          "182px"
+        ],
+        "401": [
+          "282px",
+          "295px"
+        ],
+        "691": "581px",
+        "720": [
+          "282px",
+          "230px",
+          "61px"
+        ],
+        "744": [
+          "282px",
+          "295px"
+        ],
+        "768": [
+          "164px",
+          "161px",
+          "157px",
+          "86px"
+        ],
+        "827": [
+          "198px",
+          "193px",
+          "182px"
+        ],
+        "1028": [
+          "282px",
+          "295px"
+        ],
+        "1140": [
+          "214px",
+          "176px",
+          "182px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem05Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1330,
+          "fromWidthPx": 214,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "28px",
+      "barHeight": 11.84,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem05Title",
+      "lines": {
+        "0": 1,
+        "768": 2,
+        "800": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 767,
+          "fromWidthPx": 214,
+          "toWidthPx": 306.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 799,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 184.53125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 800,
+          "toViewport": 1330,
+          "fromWidthPx": 185,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": "185px",
+        "768": [
+          "142px",
+          "39px"
+        ],
+        "800": "185px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem05Body",
+      "lines": {
+        "0": 4,
+        "362": 3,
+        "454": 2,
+        "720": 3,
+        "768": 5,
+        "777": 4,
+        "947": 3,
+        "1134": 2,
+        "1140": 4,
+        "1258": 3
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 361,
+          "fromWidthPx": 214,
+          "toWidthPx": 255,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 362,
+          "toViewport": 453,
+          "fromWidthPx": 256,
+          "toWidthPx": 347,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 454,
+          "toViewport": 719,
+          "fromWidthPx": 348,
+          "toWidthPx": 608.25,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 720,
+          "toViewport": 767,
+          "fromWidthPx": 283.609375,
+          "toWidthPx": 306.171875,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 776,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 173.484375,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 777,
+          "toViewport": 946,
+          "fromWidthPx": 173.96875,
+          "toWidthPx": 255.09375,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 947,
+          "toViewport": 1133,
+          "fromWidthPx": 255.5625,
+          "toWidthPx": 347.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1134,
+          "toViewport": 1139,
+          "fromWidthPx": 348,
+          "toWidthPx": 350.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1140,
+          "toViewport": 1257,
+          "fromWidthPx": 215.984375,
+          "toWidthPx": 254.984375,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 1258,
+          "toViewport": 1330,
+          "fromWidthPx": 255.328125,
+          "toWidthPx": 278.65625,
+          "lineCount": 3
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "174px",
+          "170px",
+          "208px",
+          "91px"
+        ],
+        "362": [
+          "255px",
+          "176px",
+          "216px"
+        ],
+        "454": [
+          "348px",
+          "303px"
+        ],
+        "720": [
+          "255px",
+          "257px",
+          "135px"
+        ],
+        "768": [
+          "153px",
+          "98px",
+          "88px",
+          "164px",
+          "135px"
+        ],
+        "777": [
+          "174px",
+          "170px",
+          "164px",
+          "135px"
+        ],
+        "947": [
+          "255px",
+          "176px",
+          "216px"
+        ],
+        "1134": [
+          "348px",
+          "303px"
+        ],
+        "1140": [
+          "174px",
+          "170px",
+          "208px",
+          "91px"
+        ],
+        "1258": [
+          "255px",
+          "176px",
+          "216px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem06Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1330,
+          "fromWidthPx": 214,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "50px",
+      "barHeight": 11.84,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem06Title",
+      "lines": {
+        "0": 2,
+        "335": 1,
+        "768": 2,
+        "891": 1,
+        "1140": 2,
+        "1177": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 334,
+          "fromWidthPx": 214,
+          "toWidthPx": 228,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 335,
+          "toViewport": 767,
+          "fromWidthPx": 229,
+          "toWidthPx": 306.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 890,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 228.203125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 891,
+          "toViewport": 1139,
+          "fromWidthPx": 228.6875,
+          "toWidthPx": 350.5,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 1140,
+          "toViewport": 1176,
+          "fromWidthPx": 215.984375,
+          "toWidthPx": 227.984375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1177,
+          "toViewport": 1330,
+          "fromWidthPx": 228.328125,
+          "toWidthPx": 278.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "138px",
+          "87px"
+        ],
+        "335": "228px",
+        "768": [
+          "138px",
+          "87px"
+        ],
+        "891": "228px",
+        "1140": [
+          "138px",
+          "87px"
+        ],
+        "1177": "228px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryLazyItem06Body",
+      "lines": {
+        "0": 3,
+        "409": 2,
+        "694": 1,
+        "720": 3,
+        "759": 2,
+        "768": 5,
+        "818": 4,
+        "839": 3,
+        "1043": 2,
+        "1140": 3
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 408,
+          "fromWidthPx": 214,
+          "toWidthPx": 302,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 409,
+          "toViewport": 693,
+          "fromWidthPx": 303,
+          "toWidthPx": 583.28125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 694,
+          "toViewport": 719,
+          "fromWidthPx": 584.25,
+          "toWidthPx": 608.25,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 720,
+          "toViewport": 758,
+          "fromWidthPx": 283.609375,
+          "toWidthPx": 301.84375,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 759,
+          "toViewport": 767,
+          "fromWidthPx": 302.328125,
+          "toWidthPx": 306.171875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 817,
+          "fromWidthPx": 169.640625,
+          "toWidthPx": 193.171875,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 818,
+          "toViewport": 838,
+          "fromWidthPx": 193.640625,
+          "toWidthPx": 203.25,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 839,
+          "toViewport": 1042,
+          "fromWidthPx": 203.734375,
+          "toWidthPx": 302,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1043,
+          "toViewport": 1139,
+          "fromWidthPx": 302.5,
+          "toWidthPx": 350.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1140,
+          "toViewport": 1330,
+          "fromWidthPx": 215.984375,
+          "toWidthPx": 278.65625,
+          "lineCount": 3
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "195px",
+          "177px",
+          "203px"
+        ],
+        "409": [
+          "277px",
+          "302px"
+        ],
+        "694": "583px",
+        "720": [
+          "277px",
+          "242px",
+          "56px"
+        ],
+        "759": [
+          "277px",
+          "302px"
+        ],
+        "768": [
+          "115px",
+          "158px",
+          "95px",
+          "143px",
+          "56px"
+        ],
+        "818": [
+          "115px",
+          "193px",
+          "160px",
+          "103px"
+        ],
+        "839": [
+          "195px",
+          "177px",
+          "203px"
+        ],
+        "1043": [
+          "277px",
+          "302px"
+        ],
+        "1140": [
+          "195px",
+          "177px",
+          "203px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    }
+  ]
+}

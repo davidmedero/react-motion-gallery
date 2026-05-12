@@ -1,60 +1,82 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
+import {
+  useState } from "react";
 import {
   FullscreenThumbnailSlider,
   GalleryCore,
   Slider,
+  useSliderReady,
+  ThumbnailSlider,
+  createSliderIndexChannel,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
 import styles from "./fullscreen-thumbnails-demo.module.css";
 
 const SLIDES = [
   {
-    slideSrc: "https://picsum.photos/id/1043/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1043/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1043/320/200",
+    slideSrc: "https://picsum.photos/id/910/900/1350",
+    fullscreenSrc: "https://picsum.photos/id/910/1600/2400",
+    thumbSrc: "https://picsum.photos/id/910/240/360",
   },
   {
-    slideSrc: "https://picsum.photos/id/1044/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1044/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1044/320/200",
+    slideSrc: "https://picsum.photos/id/912/900/1350",
+    fullscreenSrc: "https://picsum.photos/id/912/1600/2400",
+    thumbSrc: "https://picsum.photos/id/912/240/360",
   },
   {
-    slideSrc: "https://picsum.photos/id/1045/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1045/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1045/320/200",
+    slideSrc: "https://picsum.photos/id/913/900/1350",
+    fullscreenSrc: "https://picsum.photos/id/913/1600/2400",
+    thumbSrc: "https://picsum.photos/id/913/240/360",
   },
   {
-    slideSrc: "https://picsum.photos/id/1046/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1046/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1046/320/200",
+    slideSrc: "https://picsum.photos/id/914/900/1350",
+    fullscreenSrc: "https://picsum.photos/id/914/1600/2400",
+    thumbSrc: "https://picsum.photos/id/914/240/360",
   },
   {
-    slideSrc: "https://picsum.photos/id/1047/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1047/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1047/320/200",
+    slideSrc: "https://picsum.photos/id/916/900/1350",
+    fullscreenSrc: "https://picsum.photos/id/916/1600/2400",
+    thumbSrc: "https://picsum.photos/id/916/240/360",
   },
   {
-    slideSrc: "https://picsum.photos/id/1048/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1048/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1048/320/200",
+    slideSrc: "https://picsum.photos/id/918/900/1350",
+    fullscreenSrc: "https://picsum.photos/id/918/1600/2400",
+    thumbSrc: "https://picsum.photos/id/918/240/360",
   },
 ];
 
-function Slide({ src, i }: { src: string; i: number }) {
+function Slide({ slide, i }: { slide: (typeof SLIDES)[number]; i: number }) {
+  return (
+    <div className={styles.slideFrame}>
+      <img
+        src={slide.slideSrc}
+        alt={\`Slide \${i + 1}\`}
+        className={styles.slide}
+      />
+    </div>
+  );
+}
+
+function Thumb({ src, i }: { src: string; i: number }) {
   return (
     <img
       src={src}
-      alt={\`Slide \${i + 1}\`}
-      className={styles.slide}
+      alt={\`Thumbnail \${i + 1}\`}
+      className={styles.thumbnailImage}
     />
   );
 }
 
 function FullscreenThumbnailsAddon() {
   const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -69,17 +91,21 @@ function FullscreenThumbnailsAddon() {
           thumbSrc: slide.thumbSrc,
           alt: \`Thumbnail \${i + 1}\`,
         }))}
-        position="bottom"
+        position="left"
         thumbnailsCenter
-        thumbnailWidth={96}
-        thumbnailHeight={60}
+        thumbnailWidth={72}
+        thumbnailHeight={108}
         containerStyle={{
-          width: "100dvw",
-          padding: "8px 12px",
+          width: 112,
+          height: "100dvh",
+          padding: "18px 20px",
           overflow: "visible",
+          background: "rgba(8, 13, 24, 0.82)",
+          borderRight: "1px solid rgba(255, 255, 255, 0.12)",
+          boxShadow: "18px 0 48px rgba(0, 0, 0, 0.24)",
         }}
         thumbnailItemClassName={styles.fullscreenThumbnailThumb}
-        gap={12}
+        gap={10}
         centerActiveThumb
         showArrows
       />
@@ -88,48 +114,119 @@ function FullscreenThumbnailsAddon() {
 }
 
 export function FullscreenThumbnailsDemo() {
-  const media = toMediaItems(SLIDES.map((slide) => slide.slideSrc));
+  const [indexChannel] = useState(() => createSliderIndexChannel());
   const fullscreenMedia = toMediaItems(
     SLIDES.map((slide) => slide.fullscreenSrc)
   );
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
-        transitions={{
-          loading: {
-            skeletonCount: 2,
-            skeleton: {
-              mode: "peek",
+      <div className={styles.demoShell}>
+        <div className={styles.thumbnailRailSlot}>
+          <ThumbnailSlider
+            indexChannel={indexChannel}
+            options={{
               layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
+                position: "left",
+                gap: 10,
+                center: true,
+                thumbnail: {
+                  width: 72,
+                  height: 108,
                 },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    maxWidth: "550px",
-                    aspectRatio: "16 / 9",
-                    borderRadius: 12,
+                container: {
+                  width: 72,
+                  height: "100%",
+                },
+              },
+              scroll: {
+                centerActiveThumb: true,
+              },
+              controls: {
+                enabled: true,
+              },
+              elements: {
+                container: {
+                  className: styles.thumbnailRail,
+                },
+                thumbnail: {
+                  className: styles.thumbnailThumb,
+                },
+              },
+              transitions: {
+                loading: {
+                  skeletonCount: 5,
+                  elements: {
+                    container: {
+                      className: styles.thumbnailSkeletonContainer,
+                    },
+                    thumbnail: {
+                      className: styles.thumbnailSkeletonThumb,
+                    },
                   },
                 },
               },
-            },
-          },
-        }}
+            }}
+          >
+            {SLIDES.map((slide, i) => (
+              <Thumb
+                key={\`thumb-\${slide.thumbSrc}\`}
+                src={slide.thumbSrc}
+                i={i}
+              />
+            ))}
+          </ThumbnailSlider>
+        </div>
+
+        <div className={styles.sliderColumn}>
+          <SliderSkeleton
+        layout={{
+              visibleCount: 2,
+                  mode: "peek",
+                  layout: {
+                    kind: "slider",
+                    direction: "row",
+                    style: {
+                      gap: 20,
+                    },
+                    item: {
+                      kind: "rect",
+                      style: {
+                        width: "100cqw",
+                        maxWidth: "360px",
+                        aspectRatio: "2 / 3",
+                        borderRadius: 12,
+                      },
+                    },
+                  },
+                }}
+        ready={sliderReady}
       >
-        {media.map((item, i) => (
-          <Slide
-            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
-            src={SLIDES[i]?.slideSrc ?? ""}
-            i={i}
-          />
+      <Slider
+        ref={sliderRef}
+            indexChannel={indexChannel}
+
+        plugins={[
+          sliderFullscreen(),
+        ]}
+      >
+            {SLIDES.map((slide, i) => (
+              <Slide
+                key={\`img-\${slide.slideSrc}-\${i}\`}
+                slide={slide}
+                i={i}
+              />
+          
         ))}
-      </Slider>
+          </Slider>
+      </SliderSkeleton>
+        </div>
+      </div>
+
       <FullscreenThumbnailsAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

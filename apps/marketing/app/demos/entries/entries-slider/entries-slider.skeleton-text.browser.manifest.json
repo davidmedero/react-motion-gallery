@@ -1,0 +1,68 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=entries-slider&skeletonMeasure=content",
+  "outputFile": "./entries-slider.skeleton-text.generated.ts",
+  "moduleExportName": "entriesSliderSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1090,
+  "viewportHeight": 1800,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "entries": {
+    "expectedEntryCount": 3
+  },
+  "targets": [
+    {
+      "exportName": "entriesSliderEntry01Section",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry01Section']"
+    },
+    {
+      "exportName": "entriesSliderEntry01Title",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry01Title']"
+    },
+    {
+      "exportName": "entriesSliderEntry01Count",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry01Count']"
+    },
+    {
+      "exportName": "entriesSliderEntry01Body",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry01Body']"
+    },
+    {
+      "exportName": "entriesSliderEntry02Section",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry02Section']"
+    },
+    {
+      "exportName": "entriesSliderEntry02Title",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry02Title']"
+    },
+    {
+      "exportName": "entriesSliderEntry02Count",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry02Count']"
+    },
+    {
+      "exportName": "entriesSliderEntry02Body",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry02Body']"
+    },
+    {
+      "exportName": "entriesSliderEntry03Section",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry03Section']"
+    },
+    {
+      "exportName": "entriesSliderEntry03Title",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry03Title']"
+    },
+    {
+      "exportName": "entriesSliderEntry03Count",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry03Count']"
+    },
+    {
+      "exportName": "entriesSliderEntry03Body",
+      "selector": "[data-skeleton-text-id='entriesSliderEntry03Body']"
+    }
+  ]
+}

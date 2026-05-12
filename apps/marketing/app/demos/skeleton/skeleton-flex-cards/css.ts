@@ -1,0 +1,160 @@
+export const css = String.raw`.shell {
+  width: 100%;
+}
+
+.stage {
+  display: grid;
+  width: 100%;
+}
+
+.skeleton {
+  width: 100%;
+}
+
+.cardGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+  align-content: stretch;
+}
+
+.card {
+  container-type: inline-size;
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+}
+
+.productImage {
+  position: relative;
+  width: 100%;
+  height: auto;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.productImage img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.productImage span {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.66);
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cardCopy {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.32;
+}
+
+.titleLine,
+.titleWide {
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titleLine:first-child {
+  width: 100%;
+}
+
+.titleLine:nth-child(2) {
+  width: 72%;
+}
+
+.titleWide {
+  display: none;
+}
+
+.cardMetaRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardMeta {
+  flex: 1 1 auto;
+  width: var(--detail-width, 52%);
+  max-width: var(--detail-width, 52%);
+  margin: 0;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardButton {
+  width: 58px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@container (min-width: 280px) {
+  .titleLine {
+    display: none;
+  }
+
+  .titleWide {
+    display: block;
+    width: 78%;
+  }
+}
+`;

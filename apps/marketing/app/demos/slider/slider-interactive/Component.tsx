@@ -5,15 +5,20 @@ import * as React from "react";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   createSliderIndexChannel,
   useGalleryCore,
   type GalleryApi,
   type SliderHandle,
   type SliderIndexChannel,
 } from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-interactive-demo.module.css";
 
-const INITIAL_IMAGE_IDS = [1025, 1035, 1043, 1050, 1062, 1074];
+const INITIAL_IMAGE_IDS = [478, 479, 480, 481, 482, 483];
 
 type RemoveMode = "index" | "even" | "odd";
 
@@ -88,30 +93,12 @@ function useInteractiveGalleryApi(args: {
       },
       scrollProgress: () => sliderRef.current?.scrollProgress() ?? 0,
       cellsInView: () => sliderRef.current?.cellsInView() ?? [],
-      append: core.append,
-      prepend: core.prepend,
-      insert: core.insert,
-      remove: (indexOrPredicate) => {
-        if (typeof indexOrPredicate === "number") {
-          return core.remove(indexOrPredicate);
-        }
-
-        const nextNodes: React.ReactNode[] = [];
-        let removedAny = false;
-
-        core.cellsRef.current.forEach((cell, index) => {
-          if (indexOrPredicate(index)) {
-            removedAny = true;
-            return;
-          }
-
-          nextNodes.push(cell.node);
-        });
-
-        return removedAny ? core.setItems(nextNodes) : core.cellsRef.current.length;
-      },
-      replace: core.replace,
-      setItems: core.setItems,
+      append: (nodes) => sliderRef.current?.append(nodes) ?? 0,
+      prepend: (nodes) => sliderRef.current?.prepend(nodes) ?? 0,
+      insert: (index, nodes) => sliderRef.current?.insert(index, nodes) ?? 0,
+      remove: (indexOrPredicate) => sliderRef.current?.remove(indexOrPredicate) ?? 0,
+      replace: (index, node) => sliderRef.current?.replace(index, node),
+      setItems: (nodes) => sliderRef.current?.setItems(nodes) ?? 0,
       onIndexChange: (cb) =>
         indexChannel.subscribe(() => {
           const { index, mode } = indexChannel.get();
@@ -129,7 +116,7 @@ function InteractiveSliderCanvas() {
   const api = useInteractiveGalleryApi({ sliderRef, indexChannel });
 
   const [appendValue, setAppendValue] = React.useState("1080, 1081");
-  const [prependValue, setPrependValue] = React.useState("1011");
+  const [prependValue, setPrependValue] = React.useState("484");
   const [insertIndex, setInsertIndex] = React.useState("2");
   const [insertValue, setInsertValue] = React.useState("1039");
   const [removeMode, setRemoveMode] = React.useState<RemoveMode>("index");
@@ -273,42 +260,20 @@ function InteractiveSliderCanvas() {
     [api, createSlideNode, setItemsValue]
   );
 
+  const { ref: sliderReadyRef, ready: sliderReady } = useSliderReady();
+  const setSliderRef = React.useCallback(
+    (handle: SliderHandle | null) => {
+      sliderReadyRef(handle);
+      sliderRef.current = handle;
+    },
+    [sliderReadyRef]
+  );
+
   return (
     <div className={styles.shell}>
-      <Slider
-        ref={sliderRef}
-        indexChannel={indexChannel}
+      <SliderSkeleton
         layout={{
-          gap: 14,
-          cellsPerSlide: {
-            xs: 1,
-            md: 2,
-          },
-        }}
-        controls={{
-          arrows: {
-            enabled: true,
-          },
-          dots: {
-            enabled: true,
-            root: {
-              style: {
-                bottom: "5px"
-              }
-            }
-          },
-        }}
-        elements={{
-          viewport: {
-            style: {
-              paddingBottom: "52px"
-            }
-          }
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: { xs: 1, md: 2 },
-            skeleton: {
+              visibleCount: { xs: 1, md: 2 },
               mode: "fit",
               layout: {
                 kind: "slider",
@@ -332,7 +297,7 @@ function InteractiveSliderCanvas() {
                     },
                     {
                       kind: "text",
-                      fontSize: 14,
+                      barHeight: 14,
                       lineHeight: 1.1,
                       style: {
                         width: "30%",
@@ -376,12 +341,45 @@ function InteractiveSliderCanvas() {
                   backgroundColor: "#fff",
                 }
               },
-            },
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={setSliderRef}
+        indexChannel={indexChannel}
+        layout={{
+          gap: 14,
+          cellsPerSlide: {
+            xs: 1,
+            md: 2,
           },
         }}
+
+        elements={{
+          viewport: {
+            style: {
+              paddingBottom: "52px"
+            }
+          }
+        }}
+        plugins={[
+          sliderRipple(),
+          sliderArrows({
+            enabled: true,
+          }),
+          sliderDots({
+            enabled: true,
+            root: {
+              style: {
+                bottom: "5px"
+              }
+            }
+          }),
+        ]}
       >
         {initialNodes}
       </Slider>
+      </SliderSkeleton>
 
       <div className={styles.metaBar}>
         <span className={styles.metaPill}>index {activeIndex}</span>

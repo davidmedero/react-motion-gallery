@@ -14,7 +14,8 @@ export type BuildDotsNodeArgs = {
   dotsContainerRef: React.RefObject<HTMLDivElement | null>;
   dotRefs: React.RefObject<Array<HTMLElement | null>>;
   isScrolling: React.RefObject<boolean>;
-  goToIndex: (i: number) => void;
+  goToIndex: (i: number, opts?: { preferCrossfade?: boolean }) => void;
+  preferCrossfade?: boolean;
   renderDots?: (args: DotsRenderArgs) => React.ReactNode;
   createRipple: (el: HTMLElement) => void;
   styles: Record<string, string>;
@@ -116,6 +117,7 @@ export function buildDotsNode(args: BuildDotsNodeArgs) {
     dotRefs,
     isScrolling,
     goToIndex,
+    preferCrossfade,
     renderDots,
     createRipple,
     styles,
@@ -142,7 +144,9 @@ export function buildDotsNode(args: BuildDotsNodeArgs) {
     hidden: dotsHidden,
     goTo: (i: number) => {
       isScrolling.current = false;
-      requestAnimationFrame(() => goToIndex(i));
+      requestAnimationFrame(() =>
+        goToIndex(i, preferCrossfade ? { preferCrossfade: true } : undefined)
+      );
     },
     getDotRef: (i: number) => (el: HTMLDivElement | null) => {
       dotRefs.current[i] = el;

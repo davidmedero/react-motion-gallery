@@ -12,13 +12,8 @@ export const css = String.raw`.slide {
   border-radius: 10px;
 }
 
-.thumbnailSkeletonContainer {
-  padding: 4px;
-}
-
 .thumbnailSkeletonThumb {
   border-radius: 12px;
-  box-shadow: inset 0 0 0 1px rgba(11, 18, 32, 0.08);
 }
 
 .fullscreenThumbnailThumb {

@@ -1,6 +1,7 @@
 .demoCanvasSliderYAxis {
   height: min(520px, calc(100dvh - 345px));
   min-height: 320px;
+  overflow: hidden;
 }
 
 .slide {

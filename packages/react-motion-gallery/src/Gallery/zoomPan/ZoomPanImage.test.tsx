@@ -687,7 +687,7 @@ describe("ZoomPanImage", () => {
 
     await React.act(async () => {
       root.render(
-        <RootGrid columns={2} loading={{ enabled: false }}>
+        <RootGrid columns={2}>
           <ZoomPanImage src="/alpha.jpg" alt="Alpha" />
           <ZoomPanImage src="/beta.jpg" alt="Beta" />
         </RootGrid>
@@ -745,7 +745,7 @@ describe("ZoomPanImage", () => {
 
     await React.act(async () => {
       root.render(
-        <RootMasonry columns={2} gap={12} loading={{ enabled: false }}>
+        <RootMasonry columns={2} gap={12}>
           <ZoomPanImage src="/alpha.jpg" alt="Alpha" />
           <ZoomPanImage src="/beta.jpg" alt="Beta" />
         </RootMasonry>

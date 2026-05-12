@@ -6,7 +6,13 @@ import {
   buildFullscreenCaptionZoomMotion,
   resolveFullscreenCaptionZoomSettings,
 } from '../../fullscreen/captionZoomMotion';
-import { renderFsEntryOverlayTree } from './useFsEntryOverlay';
+import {
+  renderFsEntryOverlayTree,
+  resolveFsEntryOverlayCrossfadeDurationMs,
+  resolveFsEntryOverlayCrossfadeEasing,
+  resolveFsEntryOverlayCrossfadeTarget,
+  shouldCrossfadeEntryOverlayIndexChange,
+} from './useFsEntryOverlay';
 
 function createBaseArgs() {
   return {
@@ -41,11 +47,67 @@ function createBaseArgs() {
     viewportWidth: 1280,
     viewportHeight: 720,
     fadeOutMs: 300,
+    fadeOutEasing: 'cubic-bezier(.4,0,.22,1)',
     resolveFsCaptionPlacement: () => null,
   };
 }
 
 describe('fullscreen entry overlay rendering', () => {
+  test('defaults entry overlays to whole-overlay crossfades', () => {
+    expect(resolveFsEntryOverlayCrossfadeTarget(undefined)).toBe('overlay');
+    expect(resolveFsEntryOverlayCrossfadeTarget(createBaseArgs().entriesObject)).toBe('overlay');
+    expect(resolveFsEntryOverlayCrossfadeDurationMs(undefined)).toBe(300);
+    expect(resolveFsEntryOverlayCrossfadeEasing(undefined)).toBe('cubic-bezier(.4,0,.22,1)');
+  });
+
+  test('resolves entry overlay crossfade duration and easing', () => {
+    expect(
+      resolveFsEntryOverlayCrossfadeDurationMs({
+        overlay: {
+          overlayCrossfadeDurationMs: 520,
+        },
+      })
+    ).toBe(520);
+    expect(
+      resolveFsEntryOverlayCrossfadeDurationMs({
+        overlay: {
+          overlayCrossfadeDurationMs: -80,
+        },
+      })
+    ).toBe(0);
+    expect(
+      resolveFsEntryOverlayCrossfadeEasing({
+        overlay: {
+          overlayCrossfadeEasing: 'linear',
+        },
+      })
+    ).toBe('linear');
+  });
+
+  test('content target crossfades every fullscreen index change', () => {
+    expect(
+      shouldCrossfadeEntryOverlayIndexChange({
+        prevEntryIndex: 1,
+        nextEntryIndex: 1,
+        crossfadeTarget: 'content',
+      })
+    ).toBe(true);
+    expect(
+      shouldCrossfadeEntryOverlayIndexChange({
+        prevEntryIndex: 1,
+        nextEntryIndex: 1,
+        crossfadeTarget: 'overlay',
+      })
+    ).toBe(false);
+    expect(
+      shouldCrossfadeEntryOverlayIndexChange({
+        prevEntryIndex: 1,
+        nextEntryIndex: 2,
+        crossfadeTarget: 'overlay',
+      })
+    ).toBe(true);
+  });
+
   test('defaults entry overlays to the existing bottom placement', () => {
     const tree = renderFsEntryOverlayTree(createBaseArgs()) as React.ReactElement<any>;
     const shells = Children.toArray(tree.props.children) as React.ReactElement<any>[];
@@ -62,6 +124,27 @@ describe('fullscreen entry overlay rendering', () => {
     expect(surface.props.style.background).toBe(
       'linear-gradient(to top, rgba(0,0,0,0.75), transparent)'
     );
+  });
+
+  test('passes the active media item to entry overlay renderers', () => {
+    const seen: unknown[] = [];
+    renderFsEntryOverlayTree({
+      ...createBaseArgs(),
+      layers: [{ key: 1, index: 1, opacity: 1 }],
+      entriesObject: {
+        ...createBaseArgs().entriesObject,
+        render: {
+          overlay: ({ media }) => {
+            seen.push(media);
+            return <span />;
+          },
+        },
+      },
+    });
+
+    expect(seen).toEqual([
+      { kind: 'image', src: 'https://example.com/bravo.jpg', alt: 'Bravo' },
+    ]);
   });
 
   test('resolves viewport-relative entry overlay widths for side placements', () => {
@@ -117,6 +200,8 @@ describe('fullscreen entry overlay rendering', () => {
       },
       viewportWidth: 1440,
       viewportHeight: 900,
+      fadeOutMs: 520,
+      fadeOutEasing: 'linear',
       resolveFsCaptionPlacement: () => 'top',
     }) as React.ReactElement<any>;
 
@@ -128,8 +213,92 @@ describe('fullscreen entry overlay rendering', () => {
     expect(shell?.props.style.left).toBe(0);
     expect(shell?.props.style.right).toBe(0);
     expect(shell?.props.style.height).toBe(225);
+    expect(shell?.props.style.transition).toBe('opacity 520ms linear');
     expect(surface.props.style.background).toBe(
       'linear-gradient(to bottom, rgba(0,0,0,0.75), transparent)'
     );
+  });
+
+  test('renders one stable shell and only fades entry overlay content when requested', () => {
+    const tree = renderFsEntryOverlayTree({
+      ...createBaseArgs(),
+      entriesObject: {
+        ...createBaseArgs().entriesObject,
+        overlay: {
+          overlayCrossfadeTarget: 'content',
+        },
+        render: {
+          overlay: ({ entry }: { entry: { title: string } }) => (
+            <div className="entry-overlay-shell" data-shell="true">
+              <span>{entry.title}</span>
+            </div>
+          ),
+        },
+      },
+    }) as React.ReactElement<any>;
+
+    expect(tree.type).toBe('div');
+    expect(tree.props['data-rmg-fs-entry-overlay']).toBe('true');
+    expect(String(tree.props.style.opacity)).toBe('var(--rmg-entry-overlay-opacity, 1)');
+
+    const surface = tree.props.children as React.ReactElement<any>;
+    expect(surface.props['data-rmg-fs-entry-overlay-surface']).toBe('true');
+
+    const stack = surface.props.children as React.ReactElement<any>;
+    const contentLayers = Children.toArray(stack.props.children) as React.ReactElement<any>[];
+
+    expect(stack.props.activeKey).toBe(2);
+    expect(stack.props.activeReady).toBe(false);
+    expect(stack.props.durationMs).toBe(300);
+    expect(stack.props.easing).toBe('cubic-bezier(.4,0,.22,1)');
+    expect(contentLayers).toHaveLength(2);
+    expect(
+      contentLayers.every((layer) => layer.props['data-rmg-fs-entry-overlay-content'] === 'true')
+    ).toBe(true);
+    expect(
+      contentLayers.map((layer) => layer.props['data-rmg-overlay-height-layer-key'])
+    ).toEqual(['1', '2']);
+    expect(contentLayers[1]?.props['data-rmg-overlay-height-active']).toBe('true');
+    expect(contentLayers.map((layer) => layer.props.style.opacity)).toEqual([1, 0]);
+    expect(contentLayers[0]?.props.style.transition).toBe('opacity 300ms linear');
+    expect(contentLayers[1]?.props.style.transition).toBe('opacity 300ms linear');
+    expect(contentLayers[0]?.props.style.position).toBe('relative');
+    expect(contentLayers[0]?.props.style.zIndex).toBe(2);
+    expect(contentLayers[1]?.props.style.position).toBe('relative');
+    expect(contentLayers[1]?.props.style.zIndex).toBe(1);
+    expect(contentLayers[0]?.props.children.props.className).toBe('entry-overlay-shell');
+    expect(contentLayers[1]?.props.children.props.className).toBe('entry-overlay-shell');
+    expect(contentLayers[0]?.props.children.props.children.type).toBe('span');
+    expect(contentLayers[1]?.props.children.props.children.type).toBe('span');
+  });
+
+  test('keeps entry overlay height stable until the incoming content starts fading in', () => {
+    const tree = renderFsEntryOverlayTree({
+      ...createBaseArgs(),
+      layers: [
+        { key: 1, index: 0, opacity: 0 },
+        { key: 2, index: 1, opacity: 1 },
+      ],
+      entriesObject: {
+        ...createBaseArgs().entriesObject,
+        overlay: {
+          overlayCrossfadeTarget: 'content',
+        },
+      },
+    }) as React.ReactElement<any>;
+
+    const surface = tree.props.children as React.ReactElement<any>;
+    const stack = surface.props.children as React.ReactElement<any>;
+    const contentLayers = Children.toArray(stack.props.children) as React.ReactElement<any>[];
+
+    expect(stack.props.activeKey).toBe(2);
+    expect(stack.props.activeReady).toBe(true);
+    expect(
+      contentLayers.map((layer) => layer.props['data-rmg-overlay-height-layer-key'])
+    ).toEqual(['1', '2']);
+    expect(contentLayers[0]?.props.style.position).toBe('relative');
+    expect(contentLayers[0]?.props.style.zIndex).toBe(2);
+    expect(contentLayers[1]?.props.style.position).toBe('relative');
+    expect(contentLayers[1]?.props.style.zIndex).toBe(1);
   });
 });

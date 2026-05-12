@@ -183,6 +183,7 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
       const img = getPrimaryImgEl(container);
       if (!img) return;
 
+      if (img.style.transition) img.style.transition = "";
       img.style.transform = `translate3d(${xPx}px, ${yPx}px, 0) scale(${scaleRef.current})`;
     }, []);
 

@@ -15,15 +15,21 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  opacity: 1;
+  opacity: var(--rmg-thumb-loading-opacity, 1);
+  --rmg-thumb-skel-shadow-opacity: 1;
   pointer-events: none;
   transition: opacity var(--rmg-loading-fade-duration, 600ms) ease;
   will-change: opacity;
   overflow: hidden;
 }
 
+.thumbLoadingLayerCompare {
+  z-index: 3;
+}
+
 .thumbLoadingLayerExit {
-  opacity: 0;
+  --rmg-thumb-loading-opacity: 0;
+  --rmg-thumb-skel-shadow-opacity: 0;
 }
 
 .thumbSkeletonOverlay {
@@ -36,23 +42,49 @@
   justify-content: center;
 }
 
+.thumbSkeletonOverlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rmg-thumb-skel-shadow-radius, 6px);
+  box-shadow: var(--rmg-thumb-skel-shadow, none);
+  opacity: var(--rmg-thumb-skel-shadow-opacity, 1);
+  transition: opacity calc(var(--rmg-loading-fade-duration, 600ms) * 0.45) ease-out;
+  pointer-events: none;
+}
+
 .thumbSkeletonRow {
+  position: relative;
+  z-index: 1;
   display: flex;
   width: 100%;
   height: 100%;
 }
 
 .thumbSkeleton {
+  --rmg-thumb-skel-shadow-radius: var(--rmg-skel-radius, 6px);
   border-radius: 6px;
   overflow: hidden;
   position: relative;
   background: var(--rmg-skel-bg, #e5e5e5);
 }
 
+.thumbSkeleton::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rmg-thumb-skel-shadow-radius, var(--rmg-skel-radius, 6px));
+  box-shadow: var(--rmg-thumb-skel-shadow, none);
+  opacity: var(--rmg-thumb-skel-shadow-opacity, 1);
+  transition: opacity calc(var(--rmg-loading-fade-duration, 600ms) * 0.45) ease-out;
+  pointer-events: none;
+}
+
 .thumbSkeleton::after {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   opacity: calc(var(--rmg-skel-shimmer-enabled, 1) * var(--rmg-skel-shimmer-opacity, 1));
   filter: var(--rmg-skel-shimmer-filter, none);
   background-image: linear-gradient(
@@ -85,6 +117,14 @@
   }
 
   .thumbLoadingLayer {
+    transition: none;
+  }
+
+  .thumbSkeleton::before {
+    transition: none;
+  }
+
+  .thumbSkeletonOverlay::before {
     transition: none;
   }
 }

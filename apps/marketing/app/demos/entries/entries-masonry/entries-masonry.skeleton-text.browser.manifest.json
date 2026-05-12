@@ -1,0 +1,68 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=entries-masonry&skeletonMeasure=content",
+  "outputFile": "./entries-masonry.skeleton-text.generated.ts",
+  "moduleExportName": "entriesMasonrySkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1090,
+  "viewportHeight": 5000,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "entries": {
+    "expectedEntryCount": 3
+  },
+  "targets": [
+    {
+      "exportName": "entriesMasonryEntry01Section",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry01Section']"
+    },
+    {
+      "exportName": "entriesMasonryEntry01Title",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry01Title']"
+    },
+    {
+      "exportName": "entriesMasonryEntry01Count",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry01Count']"
+    },
+    {
+      "exportName": "entriesMasonryEntry01Body",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry01Body']"
+    },
+    {
+      "exportName": "entriesMasonryEntry02Section",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry02Section']"
+    },
+    {
+      "exportName": "entriesMasonryEntry02Title",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry02Title']"
+    },
+    {
+      "exportName": "entriesMasonryEntry02Count",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry02Count']"
+    },
+    {
+      "exportName": "entriesMasonryEntry02Body",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry02Body']"
+    },
+    {
+      "exportName": "entriesMasonryEntry03Section",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry03Section']"
+    },
+    {
+      "exportName": "entriesMasonryEntry03Title",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry03Title']"
+    },
+    {
+      "exportName": "entriesMasonryEntry03Count",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry03Count']"
+    },
+    {
+      "exportName": "entriesMasonryEntry03Body",
+      "selector": "[data-skeleton-text-id='entriesMasonryEntry03Body']"
+    }
+  ]
+}

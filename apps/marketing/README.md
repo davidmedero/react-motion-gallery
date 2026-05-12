@@ -18,6 +18,25 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Billing Environment
+
+Stripe recommends restricted API keys for server-side integrations. Set
+`STRIPE_API_KEY` to a restricted key (`rk_test_` or `rk_live_`) rather than an
+unrestricted secret key. The app still accepts `STRIPE_SECRET_KEY` as a legacy
+fallback.
+
+This app currently calls these Stripe endpoints:
+
+- `GET /v1/customers`
+- `POST /v1/checkout/sessions`
+- `GET /v1/subscriptions`
+- `GET /v1/checkout/sessions`
+- `POST /v1/billing_portal/sessions`
+
+Create and test a sandbox restricted key with read/write permissions that match
+those endpoints, then mirror the same permissions for the live restricted key.
+Keep `STRIPE_WEBHOOK_SECRET` separate; webhook signing secrets are not API keys.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

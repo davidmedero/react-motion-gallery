@@ -7,19 +7,24 @@ export const css = String.raw`.slide {
   border-radius: 12px;
 }
 
+@media (max-width: 1199px) {
+  .fullscreenCaption {
+    width: 100%;
+    height: 100% !important;
+    padding-bottom: 30px !important;
+  }
+}
+
 .fullscreenCaption {
+  position: relative;
   box-sizing: border-box;
   width: 100%;
-  height: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: clamp(1rem, 2vw, 2rem);
-  background:
-    linear-gradient(180deg, rgba(7, 11, 19, 0.12), rgba(7, 11, 19, 0.78)),
-    rgba(8, 10, 16, 0.12);
-  backdrop-filter: blur(18px);
+  justify-content: center;
+  padding: clamp(18px, 3vw, 34px);
+  overflow: visible;
 }
 
 .fullscreenCaptionEyebrow {
@@ -33,12 +38,14 @@ export const css = String.raw`.slide {
   font-size: clamp(1.35rem, 1.8vw, 1.9rem);
   letter-spacing: -0.04em;
   line-height: 1;
+  margin-top: 10px;
 }
 
 .fullscreenCaptionCopy {
-  margin: 0;
+  margin-top: 10px;
   max-width: 30ch;
   color: rgba(255, 255, 255, 0.74);
   font-size: 0.92rem;
   line-height: 1.62;
-}`;
+}
+`;

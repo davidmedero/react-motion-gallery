@@ -7,3 +7,8 @@ export type {
   FsVisibleIndexEvent,
   FullscreenSource,
 } from "./Gallery/core";
+export type {
+  GalleryApi,
+  GalleryCoreApi,
+  GalleryLayoutApi,
+} from "./Gallery/api/types";

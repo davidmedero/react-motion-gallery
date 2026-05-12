@@ -1,14 +1,105 @@
-.slide {
+.demoShell {
+  width: min(100%, 560px);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 360px);
+  justify-content: center;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.thumbnailRailSlot {
+  min-height: 0;
+  height: 100%;
+  display: grid;
+}
+
+.thumbnailRailSlot > div,
+.thumbnailRailSlot > div > div {
+  min-height: 0;
+  height: 100%;
+}
+
+.sliderColumn {
+  min-width: 0;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 2 / 3;
+  container-type: inline-size;
+}
+
+.slideFrame {
   width: 100cqw;
-  max-width: 550px;
+  max-width: 360px;
+  display: grid;
+  place-items: center;
+}
+
+.slide {
+  width: 100%;
   display: block;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2 / 3;
   object-fit: cover;
   border-radius: 12px;
+}
+
+.thumbnailRail {
+  height: 100%;
+}
+
+.thumbnailThumb {
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.thumbnailSkeletonContainer {
+  height: 100%;
+  border-radius: 14px;
+}
+
+.thumbnailSkeletonThumb {
+  border-radius: 10px;
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .fullscreenThumbnailThumb {
   overflow: hidden;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.12);
+}
+
+.fullscreenThumbnailThumb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fullscreenThumbnailThumb::after {
+  box-sizing: border-box;
+  border: 3px solid rgba(186, 230, 253, 0.9);
+  box-shadow: none;
+  opacity: 0;
+  transition:
+    opacity 220ms cubic-bezier(.2, .7, .2, 1),
+    transform 220ms cubic-bezier(.2, .7, .2, 1);
+  transform: scale(0.985);
+  transform-origin: center;
+  will-change: opacity, transform;
+  z-index: 2;
+}
+
+.fullscreenThumbnailThumb[data-active="true"]::after {
+  opacity: 1;
+  transform: scale(1);
 }

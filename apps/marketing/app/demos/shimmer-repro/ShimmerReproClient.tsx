@@ -3,10 +3,14 @@
 import {
   GalleryCore,
   Masonry,
+  Skeleton,
   Video,
   toMediaItems,
+  useMasonryReady,
   useFullscreenController,
 } from "../../../../../packages/react-motion-gallery/src";
+import { fullscreenSlider } from "../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
 import styles from "./ShimmerRepro.module.css";
 
 const items = [
@@ -119,10 +123,10 @@ function createBalancedSkeletonItem(args: {
       },
       {
         kind: "text" as const,
-        fontSize: 11,
+        barHeight: 11,
         lineHeight: 1.4,
         lines: 1,
-        lineWidth: "40%",
+        lastBarWidth: "40%",
         style: {
           width: args.badgeWidth,
           borderRadius: 999,
@@ -130,20 +134,20 @@ function createBalancedSkeletonItem(args: {
       },
       {
         kind: "text" as const,
-        fontSize: 14,
+        barHeight: 14,
         lineHeight: 1.2,
         lines: args.titleLines ?? { 0: 2, 900: 1 },
-        lineWidth: args.titleLineWidth ?? "66%",
+        lastBarWidth: args.titleLineWidth ?? "66%",
         style: {
           width: args.titleWidth,
         },
       },
       {
         kind: "text" as const,
-        fontSize: 14,
+        barHeight: 14,
         lineHeight: 1.4,
         lines: args.bodyLines ?? 2,
-        lineWidth: args.bodyLineWidth ?? "50%",
+        lastBarWidth: args.bodyLineWidth ?? "50%",
         style: {
           width: args.bodyWidth,
         },
@@ -277,6 +281,7 @@ function MasonryBalancedCard(props: { item: (typeof items)[number] }) {
 
 function MasonryBalancedFullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -286,6 +291,8 @@ function MasonryBalancedFullscreenAddon() {
 }
 
 export default function ShimmerReproClient() {
+  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
+
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
@@ -300,21 +307,28 @@ export default function ShimmerReproClient() {
 
         <section className={styles.canvas} aria-label="Balanced masonry repro">
           <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
-            <Masonry
-              columns={{ 0: 1, 720: 2, 1140: 3 }}
-              gap={{ 0: 12, 1140: 18 }}
-              loading={{
-                enabled: true,
-                skeleton: balancedSkeleton,
+            <Skeleton
+              layout={balancedSkeleton}
+              ready={masonryReady}
+              masonry={{
+                count: items.length,
+                columns: { 0: 1, 720: 2, 1140: 3 },
+                gap: { 0: 12, 1140: 18 },
               }}
             >
-              {items.map((item) => (
+              <Masonry
+                ref={masonryRef}
+                columns={{ 0: 1, 720: 2, 1140: 3 }}
+                gap={{ 0: 12, 1140: 18 }}
+              >
+                {items.map((item) => (
                 <MasonryBalancedCard
                   key={item.kind === "image" ? item.src : item.poster}
                   item={item}
                 />
-              ))}
-            </Masonry>
+                ))}
+              </Masonry>
+            </Skeleton>
             <MasonryBalancedFullscreenAddon />
           </GalleryCore>
         </section>

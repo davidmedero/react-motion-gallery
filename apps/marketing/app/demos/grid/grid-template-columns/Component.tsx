@@ -1,230 +1,268 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import type { CSSProperties } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   GalleryCore,
   Grid,
   toMediaItems,
+  useGridReady,
   useFullscreenController,
+  type ResponsiveGridSpan,
 } from "../../../../../../packages/react-motion-gallery/src";
-import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/Gallery/grid/GridSkeleton";
+import { GridSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import type {
+  GridSkeletonSpec,
+  SkeletonNode,
+} from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
 import styles from "./grid-template-columns-demo.module.css";
+import {
+  bridgeSpanBody,
+  bridgeSpanTitle,
+  counterweightBody,
+  counterweightTitle,
+  edgeSlotBody,
+  edgeSlotTitle,
+  finalRailBody,
+  finalRailTitle,
+  leadTrackBody,
+  leadTrackTitle,
+  narrowRailBody,
+  narrowRailTitle,
+} from "./grid-template-columns.skeleton-text.generated";
 
-const ITEMS = [
+type DemoItem = {
+  imageSrc: string;
+  fullscreenSrc: string;
+  title: string;
+  body: string;
+  ratio: string;
+  span: ResponsiveGridSpan;
+};
+
+type GeneratedSkeletonTextState = {
+  lines: number | Record<number, number>;
+  barWidth?: string | string[] | Record<number, string | string[]>;
+  lastBarWidth?: string | Record<number, string>;
+};
+
+type GeneratedSkeletonTextEntry = {
+  title: GeneratedSkeletonTextState;
+  body: GeneratedSkeletonTextState;
+};
+
+type SkeletonTextIds = {
+  title: string;
+  body: string;
+};
+
+const ITEMS: DemoItem[] = [
   {
-    imageSrc: "https://picsum.photos/id/1060/1600/1200",
-    fullscreenSrc: "https://picsum.photos/id/1060/2400/1800",
-    badge: "Campaign",
-    meta: "Hero Spread",
-    eyebrow: "Feature",
-    title: "Spring materials story",
+    imageSrc: "https://picsum.photos/id/502/1800/1240",
+    fullscreenSrc: "https://picsum.photos/id/502/2400/1653",
+    title: "Lorem ipsum dolor sit amet",
     body:
-      "Lead with a wider editorial card, then let the supporting notes settle into the remaining tracks.",
-    chips: ["Stone", "Oak", "Daylight"],
-    stats: [
-      { label: "Shots", value: "24" },
-      { label: "Rooms", value: "6" },
-    ],
-    variant: "feature",
-    accent: "#155e75",
-    accentSoft: "rgba(21, 94, 117, 0.14)",
-    span: { 0: "full" as const, 1200: 2 },
+      "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    ratio: "16 / 11",
+    span: { 0: "full", 820: 2, 1200: 2 },
   },
   {
-    imageSrc: "https://picsum.photos/id/1062/1400/1100",
-    fullscreenSrc: "https://picsum.photos/id/1062/2400/1885",
-    badge: "Editorial",
-    meta: "Desk Notes",
-    eyebrow: "Research",
-    title: "Layered references",
+    imageSrc: "https://picsum.photos/id/503/1200/1500",
+    fullscreenSrc: "https://picsum.photos/id/503/2400/3000",
+    title: "Ut enim ad minim veniam",
     body:
-      "A note-heavy card can sit in the narrow column without losing hierarchy or breathing room.",
-    chips: ["Moodboard", "Props"],
-    notes: [
-      "Pin detail crops close to the lead story.",
-      "Keep layout notes in the narrow rail.",
-    ],
-    variant: "note",
-    accent: "#7c2d12",
-    accentSoft: "rgba(124, 45, 18, 0.16)",
-    span: { 0: "full" as const, 1200: 1 },
+      "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    ratio: "4 / 5",
+    span: { 0: "full", 820: 1, 1200: 1 },
   },
   {
-    imageSrc: "https://picsum.photos/id/1064/1500/1100",
-    fullscreenSrc: "https://picsum.photos/id/1064/2400/1760",
-    badge: "Lookbook",
-    meta: "Wide Card",
-    eyebrow: "Layout",
-    title: "Room-set follow up",
+    imageSrc: "https://picsum.photos/id/506/1200/1500",
+    fullscreenSrc: "https://picsum.photos/id/506/2400/3000",
+    title: "Duis aute irure dolor",
     body:
-      "The second row can still feel cinematic by flipping the media and copy arrangement for contrast.",
-    chips: ["Dining", "Neutral", "Shadow"],
-    stats: [
-      { label: "Angles", value: "11" },
-      { label: "Assets", value: "42" },
-    ],
-    variant: "wide",
-    accent: "#92400e",
-    accentSoft: "rgba(146, 64, 14, 0.14)",
-    span: { 0: "full" as const, 1200: 2 },
+      "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+    ratio: "4 / 5",
+    span: { 0: "full", 820: 1, 1200: 1 },
   },
   {
-    imageSrc: "https://picsum.photos/id/1065/1200/1500",
-    fullscreenSrc: "https://picsum.photos/id/1065/2400/3000",
-    badge: "Casting",
-    meta: "Compact",
-    eyebrow: "Faces",
-    title: "Quiet portrait",
-    body: "Compact cards keep the last column from feeling like leftover space.",
-    chips: ["Wardrobe", "Natural"],
-    variant: "compact",
-    accent: "#1d4ed8",
-    accentSoft: "rgba(29, 78, 216, 0.12)",
-    span: { 0: "full" as const, 1200: 1 },
+    imageSrc: "https://picsum.photos/id/507/1800/1125",
+    fullscreenSrc: "https://picsum.photos/id/507/2400/1500",
+    title: "Excepteur sint occaecat",
+    body:
+      "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+    ratio: "16 / 10",
+    span: { 0: "full", 820: 2, 1200: 2 },
   },
   {
-    imageSrc: "https://picsum.photos/id/1067/1200/1500",
-    fullscreenSrc: "https://picsum.photos/id/1067/2400/3000",
-    badge: "Palette",
-    meta: "Compact",
-    eyebrow: "Color",
-    title: "Finish study",
-    body: "A second compact tile rounds out the grid without flattening the column rhythm.",
-    chips: ["Warm Grey", "Plaster"],
-    variant: "compact",
-    accent: "#047857",
-    accentSoft: "rgba(4, 120, 87, 0.12)",
-    span: { 0: "full" as const, 1200: 1 },
+    imageSrc: "https://picsum.photos/id/508/1200/1500",
+    fullscreenSrc: "https://picsum.photos/id/508/2400/3000",
+    title: "Sed ut perspiciatis unde",
+    body:
+      "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",
+    ratio: "5 / 6",
+    span: { 0: "full", 820: 1, 1200: 1 },
+  },
+  {
+    imageSrc: "https://picsum.photos/id/509/1200/1500",
+    fullscreenSrc: "https://picsum.photos/id/509/2400/3000",
+    title: "Nemo enim ipsam voluptatem",
+    body:
+      "Quia voluptas sit aspernatur aut odit aut fugit sed quia consequuntur magni dolores.",
+    ratio: "4 / 5",
+    span: { 0: "full", 820: 1, 1200: 1 },
   },
 ];
 
-const VARIANT_CLASS_NAMES: Record<(typeof ITEMS)[number]["variant"], string> = {
-  feature: styles.cardFeature,
-  wide: styles.cardWide,
-  note: styles.cardNote,
-  compact: styles.cardCompact,
-};
-
+// The slim second and fourth tracks create deliberate side rails that
+// uniform `columns` + `span` values cannot represent.
 const TEMPLATE_COLUMNS = {
   0: "minmax(0, 1fr)",
-  820: "minmax(0, 1.2fr) minmax(240px, 0.8fr)",
-  1200: "minmax(0, 1.55fr) minmax(0, 0.95fr) minmax(220px, 0.72fr)",
+  820: "minmax(0, 1.18fr) minmax(220px, 0.82fr)",
+  1200:
+    "minmax(0, 1.42fr) minmax(148px, 0.48fr) minmax(0, 1.08fr) minmax(180px, 0.42fr)",
 };
 
+const GRID_TEMPLATE_COLUMNS_SKELETON_TEXT: GeneratedSkeletonTextEntry[] = [
+  {
+    title: leadTrackTitle,
+    body: leadTrackBody,
+  },
+  {
+    title: narrowRailTitle,
+    body: narrowRailBody,
+  },
+  {
+    title: edgeSlotTitle,
+    body: edgeSlotBody,
+  },
+  {
+    title: bridgeSpanTitle,
+    body: bridgeSpanBody,
+  },
+  {
+    title: counterweightTitle,
+    body: counterweightBody,
+  },
+  {
+    title: finalRailTitle,
+    body: finalRailBody,
+  },
+];
+
+const GRID_TEMPLATE_COLUMNS_TEXT_IDS: SkeletonTextIds[] = [
+  {
+    title: "leadTrackTitle",
+    body: "leadTrackBody",
+  },
+  {
+    title: "narrowRailTitle",
+    body: "narrowRailBody",
+  },
+  {
+    title: "edgeSlotTitle",
+    body: "edgeSlotBody",
+  },
+  {
+    title: "bridgeSpanTitle",
+    body: "bridgeSpanBody",
+  },
+  {
+    title: "counterweightTitle",
+    body: "counterweightBody",
+  },
+  {
+    title: "finalRailTitle",
+    body: "finalRailBody",
+  },
+];
+
+function createTemplateSkeletonItem(item: DemoItem, index: number): SkeletonNode {
+  const skeletonText = GRID_TEMPLATE_COLUMNS_SKELETON_TEXT[index]!;
+
+  return {
+    kind: "col" as const,
+    style: {
+      gap: 14,
+    },
+    children: [
+      {
+        kind: "rect" as const,
+        style: {
+          width: "100%",
+          aspectRatio: item.ratio,
+          borderRadius: 18,
+        },
+      },
+      {
+        kind: "col" as const,
+        style: {
+          gap: 8,
+          padding: "0 2px 2px",
+        },
+        children: [
+          {
+            kind: "text" as const,
+            barHeight: 16,
+            lineHeight: 1.2,
+            ...skeletonText.title,
+          },
+          {
+            kind: "text" as const,
+            barHeight: 14,
+            lineHeight: 1.62,
+            ...skeletonText.body,
+          },
+        ],
+      },
+    ],
+  };
+}
+
 const GRID_TEMPLATE_COLUMNS_SKELETON: GridSkeletonSpec = {
-  radius: 20,
+  radius: 22,
   layout: {
     kind: "grid",
-    item: {
-      kind: "col",
-      style: {
-        gap: 14,
-      },
-      children: [
-        {
-          kind: "rect",
-          style: {
-            width: "100%",
-            aspectRatio: "4 / 5",
-            borderRadius: 20,
-          },
-        },
-        {
-          kind: "text",
-          fontSize: 12,
-          lineHeight: 1.2,
-          style: {
-            width: "38%",
-          },
-        },
-        {
-          kind: "text",
-          fontSize: 18,
-          lineHeight: 1.1,
-          lines: 2,
-          lineWidth: "64%",
-          style: {
-            width: "92%",
-          },
-        },
-        {
-          kind: "text",
-          fontSize: 14,
-          lineHeight: 1.6,
-          lines: 3,
-          lineWidth: "58%",
-          style: {
-            width: "100%",
-          },
-        },
-      ],
+    itemWrapStyle: {
+      padding: 14,
+      borderRadius: 22,
+      border: "1px solid rgba(15, 23, 42, 0.08)",
+      backgroundColor: "rgba(255, 255, 255, 0.96)",
+      boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+      height: "100%"
     },
+    item: createTemplateSkeletonItem(ITEMS[0]!, 0),
+    slots: ITEMS.map((item, index) => ({
+      span: item.span,
+      item: createTemplateSkeletonItem(item, index),
+    })),
   },
 };
 
-function TemplateColumnsCard(props: {
-  item: (typeof ITEMS)[number];
+function TemplateColumnsTile(props: {
+  item: DemoItem;
   index: number;
 }) {
-  const { item, index } = props;
-  const cardStyle = {
-    "--grid-template-accent": item.accent,
-    "--grid-template-accent-soft": item.accentSoft,
-  } as CSSProperties;
+  const { item } = props;
+  const textIds = GRID_TEMPLATE_COLUMNS_TEXT_IDS[props.index]!;
 
   return (
-    <article
-      className={[styles.card, VARIANT_CLASS_NAMES[item.variant]].join(" ")}
-      style={cardStyle}
-    >
-      <div className={styles.mediaWrap}>
-        <img src={item.imageSrc} alt={item.title} className={styles.media} />
-        <div className={styles.mediaShade} />
-        <span className={styles.mediaEyebrow}>{item.eyebrow}</span>
-        <span className={styles.mediaIndex}>
-          {String(index + 1).padStart(2, "0")}
-        </span>
+    <article className={styles.tile}>
+      <div className={styles.tileMedia} style={{ aspectRatio: item.ratio }}>
+        <img src={item.imageSrc} alt={item.title} className={styles.tileImage} />
       </div>
 
-      <div className={styles.content}>
-        <div className={styles.header}>
-          <span className={styles.badge}>{item.badge}</span>
-          <span className={styles.meta}>{item.meta}</span>
-        </div>
-
-        <strong className={styles.title}>{item.title}</strong>
-        <p className={styles.body}>{item.body}</p>
-
-        {item.stats ? (
-          <dl className={styles.stats}>
-            {item.stats.map((stat) => (
-              <div key={stat.label} className={styles.stat}>
-                <dt className={styles.statLabel}>{stat.label}</dt>
-                <dd className={styles.statValue}>{stat.value}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
-
-        {item.notes ? (
-          <ul className={styles.notes}>
-            {item.notes.map((note) => (
-              <li key={note} className={styles.note}>
-                <span className={styles.noteIndex}>Note</span>
-                <span className={styles.noteText}>{note}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        <div className={styles.chips}>
-          {item.chips.map((chip) => (
-            <span key={chip} className={styles.chip}>
-              {chip}
-            </span>
-          ))}
-        </div>
+      <div className={styles.tileCopy}>
+        <strong
+          className={styles.tileTitle}
+          data-skeleton-text-id={textIds.title}
+        >
+          {item.title}
+        </strong>
+        <p className={styles.tileBody} data-skeleton-text-id={textIds.body}>
+          {item.body}
+        </p>
       </div>
     </article>
   );
@@ -232,6 +270,7 @@ function TemplateColumnsCard(props: {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -242,23 +281,34 @@ function FullscreenAddon() {
 
 export function GridTemplateColumnsDemo() {
   const fullscreenMedia = toMediaItems(ITEMS.map((item) => item.fullscreenSrc));
+  const { ref: gridRef, ready: gridReady } = useGridReady();
 
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
-      <Grid
-        templateColumns={TEMPLATE_COLUMNS}
-        gap={{ 0: 12, 820: 14, 1200: 18 }}
-        loading={{
-          enabled: true,
-          skeleton: GRID_TEMPLATE_COLUMNS_SKELETON,
+      <GridSkeleton
+        layout={GRID_TEMPLATE_COLUMNS_SKELETON}
+        ready={gridReady}
+        timing={{ exitMs: 1200 }}
+        grid={{
+          count: ITEMS.length,
+          templateColumns: TEMPLATE_COLUMNS,
+          gap: { 0: 12, 820: 16, 1200: 18 },
+          allowItemSpans: true,
         }}
       >
-        {ITEMS.map((item, index) => (
-          <Grid.Item key={item.imageSrc} span={item.span}>
-            <TemplateColumnsCard item={item} index={index} />
-          </Grid.Item>
-        ))}
-      </Grid>
+        <Grid
+          ref={gridRef}
+          templateColumns={TEMPLATE_COLUMNS}
+          gap={{ 0: 12, 820: 16, 1200: 18 }}
+          fullscreenTrigger="item"
+        >
+          {ITEMS.map((item, index) => (
+            <Grid.Item key={item.imageSrc} span={item.span}>
+              <TemplateColumnsTile item={item} index={index} />
+            </Grid.Item>
+          ))}
+        </Grid>
+      </GridSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );

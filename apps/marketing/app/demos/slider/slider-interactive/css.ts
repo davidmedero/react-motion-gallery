@@ -3,16 +3,6 @@ export const css = String.raw`.shell {
   gap: 10px;
 }
 
-.sliderFrame {
-  padding: 12px;
-  border: 1px solid #dbe4f0;
-  border-radius: 20px;
-  background:
-    radial-gradient(circle at top left, rgba(253, 230, 138, 0.18), transparent 34%),
-    linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
-}
-
 .metaBar {
   display: flex;
   flex-wrap: wrap;
@@ -45,9 +35,8 @@ export const css = String.raw`.shell {
   gap: 8px;
   padding: 10px;
   border: 1px solid #dbe4f0;
-  border-radius: 16px;
+  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
 }
 
 .controlForm {
@@ -96,7 +85,7 @@ export const css = String.raw`.shell {
 .actionButton {
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, #0f766e, #155e75);
+  background-color: #67bee5;;
   color: #fff;
   cursor: pointer;
   font: inherit;
@@ -106,28 +95,19 @@ export const css = String.raw`.shell {
   min-height: 40px;
   padding: 0 14px;
   white-space: nowrap;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease;
-  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.18);
+  transition: background-color 160ms ease;
 }
 
 .actionButton:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 11px 22px rgba(13, 148, 136, 0.2);
-}
-
-.actionButton:active {
-  transform: translateY(0);
+  background-color: #54a3c7;
 }
 
 .slideCard {
   width: 100%;
   overflow: hidden;
   border: 1px solid #dbe4f0;
-  border-radius: 18px;
+  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .slideImage {
@@ -177,4 +157,5 @@ export const css = String.raw`.shell {
   .actionButton {
     width: 100%;
   }
-}`;
+}
+`;

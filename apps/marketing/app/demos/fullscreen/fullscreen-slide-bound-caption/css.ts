@@ -11,6 +11,7 @@ export const css = String.raw`.slide {
   display: grid;
   gap: 0.75rem;
   width: min(100%, 32rem);
+  padding-left: 20px;
 }
 
 .fullscreenCaptionEyebrow {
@@ -32,4 +33,5 @@ export const css = String.raw`.slide {
   color: rgba(255, 255, 255, 0.74);
   font-size: 0.95rem;
   line-height: 1.65;
-}`;
+}
+`;

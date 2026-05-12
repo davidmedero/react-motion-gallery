@@ -4,13 +4,10 @@ export const css = String.raw`.shell {
 
 .entryCard {
   display: grid;
-  gap: 16px;
   padding: 18px;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 22px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96)),
-    linear-gradient(135deg, rgba(125, 211, 252, 0.12), rgba(250, 204, 21, 0.08));
+  border-radius: 16px;
+  background: #fff;
   box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
 }
 
@@ -39,7 +36,7 @@ export const css = String.raw`.shell {
 }
 
 .entryTitle {
-  margin: 8px 0 0;
+  margin: 12px 0 6px 0;
   color: #0f172a;
   font-size: 1.08rem;
   line-height: 1.2;
@@ -56,7 +53,7 @@ export const css = String.raw`.shell {
 }
 
 .entryBody {
-  margin: 0;
+  margin: 0 0 12px 0;
   color: rgba(15, 23, 42, 0.7);
   font-size: 0.95rem;
   line-height: 1.65;
@@ -67,20 +64,31 @@ export const css = String.raw`.shell {
 }
 
 .entrySliderImage {
-  width: 100%;
+  width: 100cqw;
+  max-width: 407px;
   display: block;
-  aspect-ratio: 16 / 10;
   object-fit: cover;
   border-radius: 16px;
   background: #dbeafe;
 }
 
 .entryOverlay {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  max-width: 36rem;
+  box-sizing: border-box;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 12px;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100%;
+  padding: clamp(18px, 3vw, 34px);
+  max-width: min(100%, 42rem);
+}
+
+@media(max-width: 1199) {
+  .entryOverlay {
+    height: 100%;
+  }
 }
 
 .entryOverlayKicker {
@@ -91,9 +99,19 @@ export const css = String.raw`.shell {
 
 .entryOverlayTitle {
   color: #f8fafc;
-  font-size: 1rem;
+  font-size: clamp(1.05rem, 1.4vw, 1.45rem);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.entryOverlayBody {
+  max-width: 34rem;
+  margin: -4px 0 0;
+  color: rgba(248, 250, 252, 0.86);
+  font-size: 0.95rem;
+  line-height: 1.58;
 }
 
 .entryOverlayMeta {
@@ -102,12 +120,11 @@ export const css = String.raw`.shell {
   font-weight: 600;
 }
 
-@media (max-width: 640px) {
-  .entryMeta {
-    flex-direction: column;
-  }
-
-  .entryCount {
-    white-space: normal;
-  }
-}`;
+.entryOverlayDescription {
+  max-width: 32rem;
+  margin: -2px 0 0;
+  color: rgba(248, 250, 252, 0.76);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+`;

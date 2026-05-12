@@ -1,20 +1,19 @@
 .masonryRoot {
-  display: flex;
-  align-items: flex-start;
+  position: relative;
   width: 100%;
-  column-gap: var(--rmg-masonry-gap, 8px);
 }
 
 .masonryCol {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  pointer-events: none;
 }
 
 .masonryItem {
-  position: relative;
+  position: absolute;
   display: block;
+  min-width: 0;
 }
 
 .masonryItem img,
@@ -24,42 +23,9 @@
   object-fit: cover;
 }
 
-.masonryShell {
-  display: grid;
-  position: relative;
-  width: 100%;
-}
-
 .masonryShellFrame {
   width: 100%;
   container-type: inline-size;
-}
-
-.masonryContentLayer,
-.masonryLoadingLayer {
-  grid-area: 1 / 1;
-  min-width: 0;
-}
-
-.masonryContentLayer {
-  position: relative;
-  z-index: 2;
-}
-
-.masonryContentBlocked {
-  pointer-events: none;
-}
-
-.masonryLoadingLayer {
-  position: relative;
-  z-index: 1;
-  opacity: 1;
-  pointer-events: none;
-  will-change: opacity;
-}
-
-.masonryLoadingLayerExit {
-  opacity: 0;
 }
 
 .introContainer {
@@ -73,7 +39,7 @@
       var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
 }
 
-.introContainer [data-rmg-idx] {
+.introContainer > [data-rmg-idx] {
   opacity: 0;
   transition:
     opacity 600ms cubic-bezier(.4, 0, .22, 1);
@@ -83,54 +49,6 @@
   will-change: opacity;
 }
 
-.introContainer.introActive [data-rmg-idx] {
+.introContainer.introActive > [data-rmg-idx] {
   opacity: 1;
-}
-
-.masonrySkeletonOverlay {
-  position: relative;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-}
-
-.masonrySkeletonRoot {
-  width: 100%;
-}
-
-.masonrySkeletonCol {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.masonrySkeletonItem {
-  display: block;
-  width: 100%;
-  break-inside: avoid;
-  page-break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-  margin-bottom: var(--rmg-mskel-gap);
-  border-radius: var(--rmg-skel-radius, 12px);
-  background: var(--rmg-skel-bg, #e5e5e5);
-  position: relative;
-}
-
-.masonrySkeletonLayoutItem {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  break-inside: avoid;
-  page-break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-  position: relative;
-  box-sizing: border-box;
-  border-radius: var(--rmg-skel-radius, 12px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .masonryLoadingLayer {
-    transition: none;
-  }
 }

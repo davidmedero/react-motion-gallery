@@ -3,48 +3,91 @@
 import {
   GalleryCore,
   Masonry,
+  useMasonryReady,
   ZoomPanImage,
 } from "../../../../../../packages/react-motion-gallery/src";
+import { MasonrySkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
+import type { MasonrySkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
 import styles from "./masonry-demo.module.css";
 
 const IMAGES = [
   {
-    src: "https://picsum.photos/id/1060/1200/1500",
+    src: "https://picsum.photos/id/830/1200/1500",
     alt: "A misty shoreline with dark rocks",
     ratio: "4 / 5",
   },
   {
-    src: "https://picsum.photos/id/1061/1200/1680",
+    src: "https://picsum.photos/id/848/1200/1680",
     alt: "A narrow street washed in morning light",
     ratio: "5 / 7",
   },
   {
-    src: "https://picsum.photos/id/1062/1200/1320",
+    src: "https://picsum.photos/id/849/1200/1320",
     alt: "A table setting with layered glassware",
     ratio: "10 / 11",
   },
   {
-    src: "https://picsum.photos/id/1063/1200/1800",
+    src: "https://picsum.photos/id/851/1200/1800",
     alt: "Tall palms framing a pale sky",
     ratio: "2 / 3",
   },
   {
-    src: "https://picsum.photos/id/1064/1200/1440",
+    src: "https://picsum.photos/id/852/1200/1440",
     alt: "A striped awning over a bright storefront",
     ratio: "5 / 6",
   },
   {
-    src: "https://picsum.photos/id/1065/1200/1560",
+    src: "https://picsum.photos/id/853/1200/1560",
     alt: "A sculptural stairwell with deep shadows",
     ratio: "10 / 13",
   },
 ];
 
+function createZoomPanMasonrySkeletonItem(ratio: string) {
+  return {
+    kind: "rect",
+    style: {
+      width: "100%",
+      aspectRatio: ratio,
+      borderRadius: 20,
+      overflow: "hidden",
+    },
+  } as const;
+}
+
+const ZOOM_PAN_MASONRY_SKELETON = {
+  radius: 20,
+  className: styles.masonryRoot,
+  layout: {
+    kind: "masonry",
+    item: createZoomPanMasonrySkeletonItem(IMAGES[0]!.ratio),
+    slots: IMAGES.map((image) => ({
+      item: createZoomPanMasonrySkeletonItem(image.ratio),
+    })),
+  },
+} satisfies MasonrySkeletonSpec;
+
 export function ZoomPanMasonryDemo() {
+  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
+
   return (
     <GalleryCore layout="masonry">
-      <Masonry columns={{ 0: 1, 700: 2, 1080: 3 }} gap={{ 0: 12, 960: 16 }}>
-        {IMAGES.map((image) => (
+      <MasonrySkeleton
+        layout={ZOOM_PAN_MASONRY_SKELETON}
+        ready={masonryReady}
+        masonry={{
+          count: IMAGES.length,
+          columns: { 0: 1, 700: 2, 1080: 3 },
+          gap: { 0: 12, 960: 16 },
+        }}
+      >
+        <Masonry
+          ref={masonryRef}
+          columns={{ 0: 1, 700: 2, 1080: 3 }}
+          gap={{ 0: 12, 960: 16 }}
+          intro={{ staggerMs: 60 }}
+        >
+          {IMAGES.map((image) => (
           <ZoomPanImage
             key={image.src}
             src={image.src}
@@ -57,8 +100,9 @@ export function ZoomPanMasonryDemo() {
               maxZoomLevel: 3.25,
             }}
           />
-        ))}
-      </Masonry>
+          ))}
+        </Masonry>
+      </MasonrySkeleton>
     </GalleryCore>
   );
 }

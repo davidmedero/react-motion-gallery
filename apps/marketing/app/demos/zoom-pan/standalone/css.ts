@@ -1,15 +1,33 @@
-export const css = String.raw`/* app/globals.css or Demo.module.css */
+export const css = String.raw`.shell {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
 
-.zoomPanStandalone {
-  width: min(100%, 464px);
-  aspect-ratio: 4 / 5;
+.frame {
+  width: min(100%, 962px);
+  aspect-ratio: 962 / 580;
   max-height: 580px;
+  border-radius: 16px;
   overflow: hidden;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.34), transparent 48%),
-    linear-gradient(160deg, #102033 0%, #0f2f3b 52%, #14243c 100%);
-  box-shadow:
-    0 28px 60px rgba(9, 19, 32, 0.26),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-}`;
+  display: grid;
+  background: transparent;
+}
+
+.content,
+.zoomPan {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.skeletonSurface {
+  width: 100%;
+  height: 100%;
+}
+
+.image {
+  border-radius: inherit;
+}
+`;

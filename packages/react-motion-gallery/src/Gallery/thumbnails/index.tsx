@@ -14,6 +14,12 @@ import {
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { usePrefersReducedMotion } from "../shared/hooks/usePrefersReducedMotion";
 import { useLoadingLayerState } from "../shared/hooks/useLoadingLayerState";
+import {
+  resolveCompareLoadingLayerStyle,
+  resolveCompareLoadingLayerVisualState,
+  resolveLoadingForceOptions,
+  type LoadingForceOptions,
+} from "../shared/loading/force";
 import { resolveLoadingTiming } from "../shared/loading/timing";
 import { buildScopedSkeletonCountCss } from "../shared/skeleton/buildScopedSkeletonCountCss";
 import { buildStableScopeId } from "../shared/stableScope";
@@ -43,6 +49,14 @@ type UseScopedSkeletonArgs = {
   defaultNode: (maxSlots: number, baseCount: number) => React.ReactNode;
 };
 
+export function resolveThumbnailLoadingVisualState(args: {
+  loadingActive: boolean;
+  loadingForced?: LoadingForceOptions;
+  contentReady: boolean;
+}) {
+  return resolveCompareLoadingLayerVisualState(args);
+}
+
 function maxResolvedSkeletonCount(
   responsiveCount: ThumbnailLoadingOptions["skeletonCount"],
   fallbackCount: number,
@@ -62,6 +76,25 @@ function toCssLengthValue(value: number | string | undefined): string | undefine
 
 function isPercentCssValue(value: string | undefined) {
   return typeof value === "string" && /%$/.test(value.trim());
+}
+
+function splitThumbnailSkeletonStyle(
+  style: React.CSSProperties | undefined
+): React.CSSProperties | undefined {
+  if (!style) return undefined;
+
+  const nextStyle = { ...style } as React.CSSProperties & Record<string, unknown>;
+
+  if (nextStyle.boxShadow != null) {
+    nextStyle["--rmg-thumb-skel-shadow"] = nextStyle.boxShadow;
+    delete nextStyle.boxShadow;
+  }
+
+  if (nextStyle.borderRadius != null) {
+    nextStyle["--rmg-thumb-skel-shadow-radius"] = nextStyle.borderRadius;
+  }
+
+  return nextStyle;
 }
 
 function resolveThumbnailSkeletonGap(
@@ -139,10 +172,10 @@ function useScopedSkeleton(args: UseScopedSkeletonArgs) {
   } = args;
 
   const loadingEnabled = loading.enabled ?? true;
-  const loadingForced = loading.force ?? false;
+  const loadingForced = resolveLoadingForceOptions(loading.force);
 
   const showLoading =
-    enabled && loadingEnabled && (loadingForced || showLoadingFallback);
+    enabled && loadingEnabled && (loadingForced.enabled || showLoadingFallback);
 
   const { cssText, ssrBaseCount } = React.useMemo(() => {
     if (!enabled || !loadingEnabled) {
@@ -366,7 +399,9 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
             style={{
               height: thumbsObject.layout?.container?.height,
               width: thumbsObject.layout?.container?.width,
-              ...(thumbsLoading.elements?.container?.style ?? {}),
+              ...(splitThumbnailSkeletonStyle(
+                thumbsLoading.elements?.container?.style
+              ) ?? {}),
             }}
           >
             <div
@@ -394,7 +429,9 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
                     flex: "0 0 auto",
                     width: isHorizontalThumbs ? mainAxisSize : "100%",
                     height: isHorizontalThumbs ? "100%" : mainAxisSize,
-                    ...(thumbsLoading.elements?.thumbnail?.style ?? {}),
+                    ...(splitThumbnailSkeletonStyle(
+                      thumbsLoading.elements?.thumbnail?.style
+                    ) ?? {}),
                   }}
                 />
               ))}
@@ -424,6 +461,29 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
       exitMs: loadingTiming.exitMs,
       minVisibleMs: loadingTiming.minVisibleMs,
     });
+    const loadingVisualState = React.useMemo(
+      () =>
+        resolveThumbnailLoadingVisualState({
+          loadingActive: thumbsSkeleton.showLoading,
+          loadingForced: thumbsLoading.force,
+          contentReady: thumbsReady,
+        }),
+      [thumbsLoading.force, thumbsReady, thumbsSkeleton.showLoading]
+    );
+    const loadingLayerStyle = React.useMemo(
+      () =>
+        resolveCompareLoadingLayerStyle({
+          exitMs: loadingTiming.exitMs,
+          compareMode: loadingVisualState.compareMode,
+          loadingLayerOpacity: loadingVisualState.loadingLayerOpacity,
+          opacityVarName: "--rmg-thumb-loading-opacity",
+        }),
+      [
+        loadingTiming.exitMs,
+        loadingVisualState.compareMode,
+        loadingVisualState.loadingLayerOpacity,
+      ]
+    );
 
     const clampIndex = React.useCallback(
       (index: number) => {
@@ -513,7 +573,7 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
           <div
             className={[
               styles.thumbContentLayer,
-              showLoadingLayer ? styles.thumbContentBlocked : "",
+              loadingVisualState.contentBlocked ? styles.thumbContentBlocked : "",
             ].filter(Boolean).join(" ")}
           >
             <ThumbnailSliderCore
@@ -540,7 +600,6 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
               sliderFriction={thumbsObject.motion?.friction}
               loadingOptions={thumbsLoading}
               introOptions={thumbsObject.transitions?.intro}
-              introUnlocked={introUnlocked}
               breakpointMap={thumbsObject.breakpointMap ?? effectiveBreakpoints}
               rippleEnabled={thumbsObject.controls?.ripple?.enabled}
               rippleClassName={thumbsObject.controls?.ripple?.className}
@@ -557,6 +616,7 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
               crossfade={thumbsObject.transitions?.crossfade}
               onReadyChange={handleThumbReadyChange}
               onSelectThumb={handleThumbSelect}
+              introUnlocked={introUnlocked || loadingVisualState.compareMode}
             >
               {thumbChildren}
             </ThumbnailSliderCore>
@@ -565,11 +625,10 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
             <div
               className={[
                 styles.thumbLoadingLayer,
+                loadingVisualState.compareMode ? styles.thumbLoadingLayerCompare : "",
                 loadingExiting ? styles.thumbLoadingLayerExit : "",
               ].filter(Boolean).join(" ")}
-              style={{
-                ["--rmg-loading-fade-duration" as any]: `${loadingTiming.exitMs}ms`,
-              }}
+              style={loadingLayerStyle}
               aria-hidden="true"
             >
               {thumbsSkeleton.node ?? persistedLoadingNodeRef.current}

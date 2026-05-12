@@ -1,0 +1,387 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=entries-slider&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1090,
+    "viewportHeight": 1800,
+    "viewportWorkers": 8,
+    "settleMs": 120,
+    "stableGeometryFrames": 4,
+    "lineMeasurementMethod": "canvasGreedy",
+    "includeTextMetrics": true,
+    "breakpointStrategy": "lineChanges",
+    "barWidthUnit": "px"
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry01Section",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1090,
+          "fromWidthPx": 67.28125,
+          "toWidthPx": 67.28125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "46px",
+      "barHeight": 11.52,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry01Title",
+      "lines": 2,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1090,
+          "fromWidthPx": 127.484375,
+          "toWidthPx": 208.296875,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": [
+        "100px",
+        "105px"
+      ],
+      "barHeight": 17.28,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry01Count",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1090,
+          "fromWidthPx": 62.515625,
+          "toWidthPx": 62.515625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "61px",
+      "barHeight": 12.48,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry01Body",
+      "lines": {
+        "0": 4,
+        "347": 3,
+        "480": 2,
+        "1088": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 346,
+          "fromWidthPx": 206,
+          "toWidthPx": 232,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 347,
+          "toViewport": 479,
+          "fromWidthPx": 233,
+          "toWidthPx": 365,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 480,
+          "toViewport": 1087,
+          "fromWidthPx": 366,
+          "toWidthPx": 683,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1088,
+          "toViewport": 1090,
+          "fromWidthPx": 684,
+          "toWidthPx": 686,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "195px",
+          "170px",
+          "206px",
+          "100px"
+        ],
+        "347": [
+          "226px",
+          "232px",
+          "217px"
+        ],
+        "480": [
+          "314px",
+          "365px"
+        ],
+        "1088": "684px"
+      },
+      "barHeight": 15.2,
+      "lineHeight": 1.65
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry02Section",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1090,
+          "fromWidthPx": 64.328125,
+          "toWidthPx": 64.328125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "43px",
+      "barHeight": 11.52,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry02Title",
+      "lines": 2,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1090,
+          "fromWidthPx": 127.6875,
+          "toWidthPx": 193.46875,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": [
+        "83px",
+        "107px"
+      ],
+      "barHeight": 17.28,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry02Count",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1090,
+          "fromWidthPx": 62.3125,
+          "toWidthPx": 62.3125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "61px",
+      "barHeight": 12.48,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry02Body",
+      "lines": {
+        "0": 4,
+        "321": 3,
+        "412": 2,
+        "713": 1,
+        "768": 2,
+        "998": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 320,
+          "fromWidthPx": 206,
+          "toWidthPx": 206,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 321,
+          "toViewport": 411,
+          "fromWidthPx": 207,
+          "toWidthPx": 297,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 412,
+          "toViewport": 712,
+          "fromWidthPx": 298,
+          "toWidthPx": 593.53125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 713,
+          "toViewport": 767,
+          "fromWidthPx": 594.5,
+          "toWidthPx": 646.34375,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 997,
+          "fromWidthPx": 373.28125,
+          "toWidthPx": 593.125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 998,
+          "toViewport": 1090,
+          "fromWidthPx": 594.09375,
+          "toWidthPx": 686,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "179px",
+          "155px",
+          "166px",
+          "80px"
+        ],
+        "321": [
+          "179px",
+          "207px",
+          "199px"
+        ],
+        "412": [
+          "292px",
+          "297px"
+        ],
+        "713": "594px",
+        "768": [
+          "339px",
+          "250px"
+        ],
+        "998": "594px"
+      },
+      "barHeight": 15.2,
+      "lineHeight": 1.65
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry03Section",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1090,
+          "fromWidthPx": 66.75,
+          "toWidthPx": 66.75,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "45px",
+      "barHeight": 11.52,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry03Title",
+      "lines": 2,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1090,
+          "fromWidthPx": 127.09375,
+          "toWidthPx": 154.375,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": [
+        "111px",
+        "40px"
+      ],
+      "barHeight": 17.28,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry03Count",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1090,
+          "fromWidthPx": 62.90625,
+          "toWidthPx": 62.90625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "62px",
+      "barHeight": 12.48,
+      "lineHeight": 1.5
+    },
+    {
+      "kind": "text",
+      "exportName": "entriesSliderEntry03Body",
+      "lines": {
+        "0": 3,
+        "389": 2,
+        "656": 1,
+        "768": 2,
+        "942": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 388,
+          "fromWidthPx": 206,
+          "toWidthPx": 274,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 389,
+          "toViewport": 655,
+          "fromWidthPx": 275,
+          "toWidthPx": 538.8125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 656,
+          "toViewport": 767,
+          "fromWidthPx": 539.78125,
+          "toWidthPx": 646.34375,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 941,
+          "fromWidthPx": 373.28125,
+          "toWidthPx": 539.375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 942,
+          "toViewport": 1090,
+          "fromWidthPx": 540.34375,
+          "toWidthPx": 686,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "203px",
+          "186px",
+          "143px"
+        ],
+        "389": [
+          "274px",
+          "261px"
+        ],
+        "656": "540px",
+        "768": [
+          "371px",
+          "165px"
+        ],
+        "942": "540px"
+      },
+      "barHeight": 15.2,
+      "lineHeight": 1.65
+    }
+  ]
+}

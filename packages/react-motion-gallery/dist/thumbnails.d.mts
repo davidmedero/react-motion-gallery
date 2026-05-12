@@ -1,12 +1,11 @@
 import * as React from 'react';
-import { S as SliderIndexChannel } from './sliderSub-Bo6Y8as_.mjs';
-import { c as BreakpointMap, I as IndexMode } from './responsive-D_xhZmVI.mjs';
-import { f as ThumbnailsOptions, h as ThumbnailSelectMeta } from './types-CHUayqcj.mjs';
-export { R as ResponsivePosition, j as ThumbnailContainerLayout, e as ThumbnailIntroOptions, i as ThumbnailLayout, a as ThumbnailLoadingElements, c as ThumbnailLoadingOptions, b as ThumbnailLoadingRenderArgs, T as ThumbnailPosition, d as ThumbnailSkeletonMode, p as ThumbnailsControls, l as ThumbnailsElements, k as ThumbnailsLayout, n as ThumbnailsMotion, o as ThumbnailsRipple, m as ThumbnailsScroll, q as ThumbnailsTransitions } from './types-CHUayqcj.mjs';
-import './plyrTypes-Cq4C3ul5.mjs';
-import 'plyr';
-import './types-Dhh8xfHo.mjs';
-import './controls-SpWg1Kgt.mjs';
+import { q as SliderIndexChannel, I as IndexMode } from './types-CfvTYIyd.mjs';
+import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
+import { f as ThumbnailsOptions, h as ThumbnailSelectMeta } from './types-DP7ogmr4.mjs';
+export { R as ResponsivePosition, j as ThumbnailContainerLayout, e as ThumbnailIntroOptions, i as ThumbnailLayout, a as ThumbnailLoadingElements, c as ThumbnailLoadingOptions, b as ThumbnailLoadingRenderArgs, T as ThumbnailPosition, d as ThumbnailSkeletonMode, p as ThumbnailsControls, l as ThumbnailsElements, k as ThumbnailsLayout, n as ThumbnailsMotion, o as ThumbnailsRipple, m as ThumbnailsScroll, q as ThumbnailsTransitions } from './types-DP7ogmr4.mjs';
+import './force-C5m1QpdF.mjs';
+import './media.mjs';
+import './transitions-DU3ftmIq.mjs';
 
 type Props = {
     options?: ThumbnailsOptions;
@@ -68,6 +67,4 @@ type ThumbnailSyncBridge = {
 };
 declare function createThumbnailSyncBridge(args: CreateThumbnailSyncBridgeArgs): ThumbnailSyncBridge;
 
-declare const DEFAULT_THUMBNAILS: Required<Pick<ThumbnailsOptions, "layout" | "scroll" | "motion">>;
-
-export { DEFAULT_THUMBNAILS, ThumbnailSlider, type ThumbnailSyncBridge, ThumbnailsOptions, createThumbnailSyncBridge, ThumbnailSlider as default };
+export { ThumbnailSlider, type ThumbnailSyncBridge, ThumbnailsOptions, createThumbnailSyncBridge, ThumbnailSlider as default };

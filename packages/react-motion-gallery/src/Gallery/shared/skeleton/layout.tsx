@@ -6,10 +6,12 @@ import {
   TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER,
   buildResponsiveTextCssRules,
   getResponsiveTextRenderState,
-  hasResponsiveTextLineCount,
-  hasResponsiveTextLineWidth,
+  type ResponsiveTextBarHeight,
+  type ResponsiveTextBarWidth,
+  type ResponsiveTextLineHeight,
   type ResponsiveTextLineCount,
-  type ResponsiveTextLineWidth,
+  type ResponsiveTextLastBarWidth,
+  type TextSkeletonResponsiveBy,
 } from "./text";
 
 export type SkeletonLength = number | string;
@@ -28,16 +30,25 @@ export type SkeletonShimmer = {
 
 export type SkeletonBaseStyle = {
   width?: SkeletonLength;
+  minWidth?: SkeletonLength;
   maxWidth?: SkeletonLength;
   height?: SkeletonLength;
+  minHeight?: SkeletonLength;
   maxHeight?: SkeletonLength;
   backgroundColor?: string;
   borderRadius?: SkeletonLength;
   overflow?: React.CSSProperties["overflow"];
+  margin?: SkeletonLength;
   marginTop?: SkeletonLength;
   marginRight?: SkeletonLength;
   marginBottom?: SkeletonLength;
   marginLeft?: SkeletonLength;
+  boxSizing?: React.CSSProperties["boxSizing"];
+  flex?: React.CSSProperties["flex"];
+  flexGrow?: React.CSSProperties["flexGrow"];
+  flexShrink?: React.CSSProperties["flexShrink"];
+  flexBasis?: SkeletonLength;
+  order?: React.CSSProperties["order"];
   alignSelf?: React.CSSProperties["alignSelf"];
   aspectRatio?: SkeletonLength;
   scale?: number;
@@ -54,19 +65,72 @@ export type SkeletonWrapStyle = SkeletonBaseStyle & {
 };
 
 export type SkeletonContainerStyle = {
+  position?: React.CSSProperties["position"];
+  inset?: SkeletonLength;
+  insetBlock?: SkeletonLength;
+  insetInline?: SkeletonLength;
+  top?: SkeletonLength;
+  right?: SkeletonLength;
+  bottom?: SkeletonLength;
+  left?: SkeletonLength;
+  zIndex?: React.CSSProperties["zIndex"];
+  display?: React.CSSProperties["display"];
+  flexDirection?: React.CSSProperties["flexDirection"];
+  aspectRatio?: SkeletonLength;
   gap?: SkeletonLength;
+  rowGap?: SkeletonLength;
+  columnGap?: SkeletonLength;
   padding?: SkeletonLength;
   align?: React.CSSProperties["alignItems"];
+  alignItems?: React.CSSProperties["alignItems"];
+  alignContent?: React.CSSProperties["alignContent"];
   justify?: React.CSSProperties["justifyContent"];
+  justifyContent?: React.CSSProperties["justifyContent"];
   wrap?: boolean;
+  flexWrap?: React.CSSProperties["flexWrap"];
   width?: SkeletonLength;
+  minWidth?: SkeletonLength;
   maxWidth?: SkeletonLength;
+  height?: SkeletonLength;
+  minHeight?: SkeletonLength;
+  maxHeight?: SkeletonLength;
+  backgroundColor?: string;
+  borderRadius?: SkeletonLength;
+  border?: React.CSSProperties["border"];
+  boxShadow?: React.CSSProperties["boxShadow"];
+  margin?: SkeletonLength;
+  marginTop?: SkeletonLength;
+  marginRight?: SkeletonLength;
+  marginBottom?: SkeletonLength;
+  marginLeft?: SkeletonLength;
+  boxSizing?: React.CSSProperties["boxSizing"];
+  flex?: React.CSSProperties["flex"];
+  flexGrow?: React.CSSProperties["flexGrow"];
+  flexShrink?: React.CSSProperties["flexShrink"];
+  flexBasis?: SkeletonLength;
+  order?: React.CSSProperties["order"];
+  alignSelf?: React.CSSProperties["alignSelf"];
   overflow?: React.CSSProperties["overflow"];
+  transform?: React.CSSProperties["transform"];
+  pointerEvents?: React.CSSProperties["pointerEvents"];
+  opacity?: React.CSSProperties["opacity"];
 };
 
 export type SkeletonContainerStyleResponsive =
   | SkeletonContainerStyle
   | Record<string, SkeletonContainerStyle>;
+
+type SkeletonTextNode = {
+  kind: "text";
+  barHeight: ResponsiveTextBarHeight;
+  barWidth?: ResponsiveTextBarWidth;
+  lineHeight: ResponsiveTextLineHeight;
+  lines?: ResponsiveTextLineCount;
+  lastBarWidth?: ResponsiveTextLastBarWidth;
+  responsiveBy?: TextSkeletonResponsiveBy;
+  style?: SkeletonBaseStyleResponsive;
+  shimmer?: SkeletonShimmer;
+};
 
 export type SkeletonNode =
   | {
@@ -90,15 +154,7 @@ export type SkeletonNode =
         shimmer?: SkeletonShimmer;
       };
     }
-  | {
-      kind: "text";
-      fontSize: number;
-      lineHeight: number;
-      lines?: ResponsiveTextLineCount;
-      lineWidth?: ResponsiveTextLineWidth;
-      style?: SkeletonBaseStyleResponsive;
-      shimmer?: SkeletonShimmer;
-    };
+  | SkeletonTextNode;
 
 export type SkeletonLayoutRoot<TKind extends string> = {
   kind: TKind;
@@ -111,6 +167,7 @@ export type SkeletonLayoutRoot<TKind extends string> = {
 export type ResponsiveCssRule = {
   minWidth: number;
   css: string;
+  query?: "viewport" | "container";
   raw?: boolean;
 };
 
@@ -281,17 +338,55 @@ export function applyBoxMargins(
 ): React.CSSProperties {
   if (!style) return {};
 
+  const margin = cssLen(style.margin);
   const mt = cssLen(style.marginTop);
   const mr = cssLen(style.marginRight);
   const mb = cssLen(style.marginBottom);
   const ml = cssLen(style.marginLeft);
 
   const out: React.CSSProperties = {};
+  if (margin != null) out.margin = margin;
   if (mt != null) out.marginTop = mt;
   if (mr != null) out.marginRight = mr;
   if (mb != null) out.marginBottom = mb;
   if (ml != null) out.marginLeft = ml;
   return out;
+}
+
+function applyFlexItemStyleVars(
+  out: React.CSSProperties,
+  style: Pick<
+    SkeletonBaseStyle,
+    "flex" | "flexGrow" | "flexShrink" | "flexBasis" | "order" | "alignSelf" | "boxSizing"
+  > | undefined
+) {
+  if (!style) return;
+
+  if (style.flex != null) out.flex = style.flex;
+  if (style.flexGrow != null) out.flexGrow = style.flexGrow;
+  if (style.flexShrink != null) out.flexShrink = style.flexShrink;
+  if (style.flexBasis != null) out.flexBasis = cssLen(style.flexBasis);
+  if (style.order != null) out.order = style.order;
+  if (style.alignSelf) out.alignSelf = style.alignSelf;
+  if (style.boxSizing != null) out.boxSizing = style.boxSizing;
+}
+
+function appendFlexItemDecls(
+  decls: string[],
+  style: Pick<
+    SkeletonBaseStyle,
+    "flex" | "flexGrow" | "flexShrink" | "flexBasis" | "order" | "alignSelf" | "boxSizing"
+  > | undefined
+) {
+  if (!style) return;
+
+  if (style.flex != null) decls.push(`flex:${style.flex};`);
+  if (style.flexGrow != null) decls.push(`flex-grow:${style.flexGrow};`);
+  if (style.flexShrink != null) decls.push(`flex-shrink:${style.flexShrink};`);
+  if (style.flexBasis != null) decls.push(`flex-basis:${cssLen(style.flexBasis)};`);
+  if (style.order != null) decls.push(`order:${style.order};`);
+  if (style.alignSelf) decls.push(`align-self:${style.alignSelf};`);
+  if (style.boxSizing != null) decls.push(`box-sizing:${style.boxSizing};`);
 }
 
 export function nodeStyleVars(
@@ -303,13 +398,20 @@ export function nodeStyleVars(
   if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio as any;
 
   const w = cssLen(base?.width);
+  const minW = cssLen(base?.minWidth);
   const mw = cssLen(base?.maxWidth);
   const h = cssLen(base?.height);
+  const minH = cssLen(base?.minHeight);
   const mh = cssLen(base?.maxHeight);
 
   if (w != null) {
     (s as any).inlineSize = w;
     (s as any).width = w;
+  }
+
+  if (minW != null) {
+    (s as any).minInlineSize = minW;
+    (s as any).minWidth = minW;
   }
 
   if (mw != null) {
@@ -318,6 +420,7 @@ export function nodeStyleVars(
   }
 
   if (h != null) s.height = h;
+  if (minH != null) s.minHeight = minH;
   if (mh != null) s.maxHeight = mh;
 
   if (base?.aspectRatio != null && base?.height == null) {
@@ -333,7 +436,7 @@ export function nodeStyleVars(
   if (base?.backgroundColor) (s as any)["--rmg-skel-bg"] = base.backgroundColor;
   if (base?.borderRadius != null) (s as any)["--rmg-skel-radius"] = cssLen(base.borderRadius);
   if (base?.overflow != null) s.overflow = base.overflow;
-  if (base?.alignSelf) s.alignSelf = base.alignSelf;
+  applyFlexItemStyleVars(s, base);
   if (base?.scale != null) s.transform = `scale(${base.scale})`;
 
   Object.assign(s, shimmerStyleVars(shimmer));
@@ -345,11 +448,13 @@ function appendBoxMarginDecls(
   decls: string[],
   style: SkeletonBaseStyle | undefined
 ) {
+  const margin = cssLen(style?.margin);
   const mt = cssLen(style?.marginTop);
   const mr = cssLen(style?.marginRight);
   const mb = cssLen(style?.marginBottom);
   const ml = cssLen(style?.marginLeft);
 
+  if (margin != null) decls.push(`margin:${margin};`);
   if (mt != null) decls.push(`margin-top:${mt};`);
   if (mr != null) decls.push(`margin-right:${mr};`);
   if (mb != null) decls.push(`margin-bottom:${mb};`);
@@ -361,8 +466,10 @@ function baseStyleToCssDecls(style: SkeletonBaseStyle | undefined): string {
 
   const decls: string[] = [];
   const w = cssLen(style.width);
+  const minW = cssLen(style.minWidth);
   const mw = cssLen(style.maxWidth);
   const h = cssLen(style.height);
+  const minH = cssLen(style.minHeight);
   const mh = cssLen(style.maxHeight);
 
   if (style.aspectRatio != null) {
@@ -374,12 +481,18 @@ function baseStyleToCssDecls(style: SkeletonBaseStyle | undefined): string {
     decls.push(`width:${w};`);
   }
 
+  if (minW != null) {
+    decls.push(`min-inline-size:${minW};`);
+    decls.push(`min-width:${minW};`);
+  }
+
   if (mw != null) {
     decls.push(`max-inline-size:${mw};`);
     decls.push(`max-width:${mw};`);
   }
 
   if (h != null) decls.push(`height:${h};`);
+  if (minH != null) decls.push(`min-height:${minH};`);
   if (mh != null) decls.push(`max-height:${mh};`);
 
   if (style.aspectRatio != null && style.height == null) {
@@ -401,7 +514,7 @@ function baseStyleToCssDecls(style: SkeletonBaseStyle | undefined): string {
     decls.push(`--rmg-skel-radius:${cssLen(style.borderRadius)};`);
   }
   if (style.overflow != null) decls.push(`overflow:${style.overflow};`);
-  if (style.alignSelf) decls.push(`align-self:${style.alignSelf};`);
+  appendFlexItemDecls(decls, style);
   if (style.scale != null) decls.push(`transform:scale(${style.scale});`);
 
   appendBoxMarginDecls(decls, style);
@@ -415,6 +528,7 @@ function textWrapperStyleToCssDecls(
 
   const decls: string[] = [];
   const w = cssLen(style.width);
+  const minW = cssLen(style.minWidth);
   const mw = cssLen(style.maxWidth);
 
   if (w != null) {
@@ -422,12 +536,17 @@ function textWrapperStyleToCssDecls(
     decls.push(`width:${w};`);
   }
 
+  if (minW != null) {
+    decls.push(`min-inline-size:${minW};`);
+    decls.push(`min-width:${minW};`);
+  }
+
   if (mw != null) {
     decls.push(`max-inline-size:${mw};`);
     decls.push(`max-width:${mw};`);
   }
 
-  if (style.alignSelf) decls.push(`align-self:${style.alignSelf};`);
+  appendFlexItemDecls(decls, style);
   if (style.scale != null) decls.push(`transform:scale(${style.scale});`);
 
   appendBoxMarginDecls(decls, style);
@@ -505,6 +624,7 @@ function textWrapperStyleVars(
   }
 
   const w = cssLen(base?.width);
+  const minW = cssLen(base?.minWidth);
   const mw = cssLen(base?.maxWidth);
 
   if (w != null) {
@@ -512,15 +632,38 @@ function textWrapperStyleVars(
     (s as any).width = w;
   }
 
+  if (minW != null) {
+    (s as any).minInlineSize = minW;
+    (s as any).minWidth = minW;
+  }
+
   if (mw != null) {
     (s as any).maxInlineSize = mw;
     (s as any).maxWidth = mw;
   }
 
-  if (base?.alignSelf) s.alignSelf = base.alignSelf;
+  applyFlexItemStyleVars(s, base);
   if (base?.scale != null) s.transform = `scale(${base.scale})`;
 
   return s;
+}
+
+function isMaxContentWidth(value: unknown): boolean {
+  return typeof value === "string" && value.trim() === "max-content";
+}
+
+function styleUsesMaxContentWidth(style: unknown): boolean {
+  if (!style || typeof style !== "object") return false;
+
+  const plain = style as { width?: unknown };
+  if (isMaxContentWidth(plain.width)) return true;
+
+  return Object.values(style as Record<string, unknown>).some(
+    (value) =>
+      !!value &&
+      typeof value === "object" &&
+      isMaxContentWidth((value as { width?: unknown }).width)
+  );
 }
 
 export function wrapStyleVars(
@@ -548,15 +691,54 @@ export function containerStylesPlain(
   const s: React.CSSProperties = {};
   if (!style) return s;
 
+  if (style.position != null) s.position = style.position;
+  if (style.inset != null) (s as any).inset = cssLen(style.inset);
+  if (style.insetBlock != null) (s as any).insetBlock = cssLen(style.insetBlock);
+  if (style.insetInline != null) (s as any).insetInline = cssLen(style.insetInline);
+  if (style.top != null) s.top = cssLen(style.top);
+  if (style.right != null) s.right = cssLen(style.right);
+  if (style.bottom != null) s.bottom = cssLen(style.bottom);
+  if (style.left != null) s.left = cssLen(style.left);
+  if (style.zIndex != null) s.zIndex = style.zIndex;
+  if (style.display != null) s.display = style.display;
+  if (style.flexDirection != null) s.flexDirection = style.flexDirection;
   if (style.gap != null) (s as any).gap = cssLen(style.gap);
+  if (style.rowGap != null) (s as any).rowGap = cssLen(style.rowGap);
+  if (style.columnGap != null) (s as any).columnGap = cssLen(style.columnGap);
   if (style.padding != null) (s as any).padding = cssLen(style.padding);
-  if (style.align) s.alignItems = style.align;
-  if (style.justify) s.justifyContent = style.justify;
-  if (style.wrap) s.flexWrap = "wrap";
+  if (style.align ?? style.alignItems) s.alignItems = style.alignItems ?? style.align;
+  if (style.alignContent != null) s.alignContent = style.alignContent;
+  if (style.justify ?? style.justifyContent) {
+    s.justifyContent = style.justifyContent ?? style.justify;
+  }
+  if (style.aspectRatio != null) (s as any).aspectRatio = style.aspectRatio as any;
+  if (style.flexWrap != null) {
+    s.flexWrap = style.flexWrap;
+  } else if (style.wrap) {
+    s.flexWrap = "wrap";
+  }
 
   if (style.width != null) s.width = cssLen(style.width);
+  if (style.minWidth != null) s.minWidth = cssLen(style.minWidth);
   if (style.maxWidth != null) s.maxWidth = cssLen(style.maxWidth);
+  if (style.height != null) s.height = cssLen(style.height);
+  if (style.minHeight != null) s.minHeight = cssLen(style.minHeight);
+  if (style.maxHeight != null) s.maxHeight = cssLen(style.maxHeight);
+  if (style.aspectRatio != null && style.height == null) s.height = "auto";
+  if (style.backgroundColor != null) s.backgroundColor = style.backgroundColor;
+  if (style.borderRadius != null) s.borderRadius = cssLen(style.borderRadius);
+  if (style.border != null) s.border = style.border;
+  if (style.boxShadow != null) s.boxShadow = style.boxShadow;
+  if (style.margin != null) s.margin = cssLen(style.margin);
+  if (style.marginTop != null) s.marginTop = cssLen(style.marginTop);
+  if (style.marginRight != null) s.marginRight = cssLen(style.marginRight);
+  if (style.marginBottom != null) s.marginBottom = cssLen(style.marginBottom);
+  if (style.marginLeft != null) s.marginLeft = cssLen(style.marginLeft);
+  applyFlexItemStyleVars(s, style as SkeletonBaseStyle);
   if (style.overflow != null) s.overflow = style.overflow;
+  if (style.transform != null) s.transform = style.transform;
+  if (style.pointerEvents != null) s.pointerEvents = style.pointerEvents;
+  if (style.opacity != null) s.opacity = style.opacity;
 
   return s;
 }
@@ -626,14 +808,53 @@ export function sanitizeIdForAttr(id: string) {
 
 function containerStyleToCssDecls(style: SkeletonContainerStyle): string {
   const decls: string[] = [];
+  if (style.position != null) decls.push(`position:${style.position};`);
+  if (style.inset != null) decls.push(`inset:${cssLen(style.inset)};`);
+  if (style.insetBlock != null) decls.push(`inset-block:${cssLen(style.insetBlock)};`);
+  if (style.insetInline != null) decls.push(`inset-inline:${cssLen(style.insetInline)};`);
+  if (style.top != null) decls.push(`top:${cssLen(style.top)};`);
+  if (style.right != null) decls.push(`right:${cssLen(style.right)};`);
+  if (style.bottom != null) decls.push(`bottom:${cssLen(style.bottom)};`);
+  if (style.left != null) decls.push(`left:${cssLen(style.left)};`);
+  if (style.zIndex != null) decls.push(`z-index:${style.zIndex};`);
+  if (style.display != null) decls.push(`display:${style.display};`);
+  if (style.flexDirection != null) decls.push(`flex-direction:${style.flexDirection};`);
   if (style.gap != null) decls.push(`gap:${cssLen(style.gap)};`);
+  if (style.rowGap != null) decls.push(`row-gap:${cssLen(style.rowGap)};`);
+  if (style.columnGap != null) decls.push(`column-gap:${cssLen(style.columnGap)};`);
   if (style.padding != null) decls.push(`padding:${cssLen(style.padding)};`);
-  if (style.align) decls.push(`align-items:${style.align};`);
-  if (style.justify) decls.push(`justify-content:${style.justify};`);
-  if (style.wrap) decls.push(`flex-wrap:wrap;`);
+  if (style.align ?? style.alignItems) {
+    decls.push(`align-items:${style.alignItems ?? style.align};`);
+  }
+  if (style.alignContent != null) decls.push(`align-content:${style.alignContent};`);
+  if (style.justify ?? style.justifyContent) {
+    decls.push(`justify-content:${style.justifyContent ?? style.justify};`);
+  }
+  if (style.aspectRatio != null) {
+    decls.push(`aspect-ratio:${String(style.aspectRatio)};`);
+  }
+  if (style.flexWrap != null) {
+    decls.push(`flex-wrap:${style.flexWrap};`);
+  } else if (style.wrap) {
+    decls.push(`flex-wrap:wrap;`);
+  }
   if (style.width != null) decls.push(`width:${cssLen(style.width)};`);
+  if (style.minWidth != null) decls.push(`min-width:${cssLen(style.minWidth)};`);
   if (style.maxWidth != null) decls.push(`max-width:${cssLen(style.maxWidth)};`);
+  if (style.height != null) decls.push(`height:${cssLen(style.height)};`);
+  if (style.minHeight != null) decls.push(`min-height:${cssLen(style.minHeight)};`);
+  if (style.maxHeight != null) decls.push(`max-height:${cssLen(style.maxHeight)};`);
+  if (style.aspectRatio != null && style.height == null) decls.push("height:auto;");
+  if (style.backgroundColor != null) decls.push(`background-color:${style.backgroundColor};`);
+  if (style.borderRadius != null) decls.push(`border-radius:${cssLen(style.borderRadius)};`);
+  if (style.border != null) decls.push(`border:${style.border};`);
+  if (style.boxShadow != null) decls.push(`box-shadow:${style.boxShadow};`);
+  appendBoxMarginDecls(decls, style as SkeletonBaseStyle);
+  appendFlexItemDecls(decls, style as SkeletonBaseStyle);
   if (style.overflow != null) decls.push(`overflow:${style.overflow};`);
+  if (style.transform != null) decls.push(`transform:${style.transform};`);
+  if (style.pointerEvents != null) decls.push(`pointer-events:${style.pointerEvents};`);
+  if (style.opacity != null) decls.push(`opacity:${style.opacity};`);
   return decls.join("");
 }
 
@@ -774,13 +995,21 @@ export function collectResponsiveCss<TKind extends string>(
 
     case "text": {
       const textNode = node as Extract<SkeletonNode, { kind: "text" }>;
-      const rules = [
-        ...buildResponsiveTextCssRules({
-          fontSize: textNode.fontSize,
+      const renderState =
+        (textNode as any).__rmgTextRenderState ??
+        getResponsiveTextRenderState({
+          barHeight: textNode.barHeight,
+          barWidth: textNode.barWidth,
           lineHeight: textNode.lineHeight,
           lines: textNode.lines,
-          lineWidth: textNode.lineWidth,
+          lastBarWidth: textNode.lastBarWidth,
+          responsiveBy: textNode.responsiveBy,
           breakpointMap,
+        });
+      const rules = [
+        ...buildResponsiveTextCssRules({
+          renderState,
+          fitContent: styleUsesMaxContentWidth(textNode.style),
         }).map((rule) => ({ ...rule, raw: true })),
         ...buildResponsiveTextStyleCssRules({
           style: textNode.style,
@@ -788,11 +1017,18 @@ export function collectResponsiveCss<TKind extends string>(
         }),
       ];
 
-      if (!rules.length) return node;
+      if (!rules.length && !(textNode as any).__rmgTextRenderState) {
+        return node;
+      }
 
-      const id = allocId();
-      out.push({ nodeId: id, rules });
-      return { ...(textNode as any), __rmgNodeId: id };
+      const id = rules.length ? allocId() : undefined;
+      if (id && rules.length) out.push({ nodeId: id, rules });
+
+      return {
+        ...(textNode as any),
+        ...(id ? { __rmgNodeId: id } : null),
+        __rmgTextRenderState: renderState,
+      };
     }
 
     case "media": {
@@ -863,6 +1099,8 @@ export function buildResponsiveCssText(args: {
 
       if (rule.minWidth <= 0) {
         lines.push(cssText);
+      } else if (rule.query === "container") {
+        lines.push(`@container (min-width:${rule.minWidth}px){${cssText}}`);
       } else {
         lines.push(`@media (min-width:${rule.minWidth}px){${cssText}}`);
       }
@@ -927,53 +1165,47 @@ function TextNode({
   node: Extract<SkeletonNode, { kind: "text" }>;
   breakpointMap: BreakpointMap;
 } & SkeletonRenderOptions) {
-  const renderState = getResponsiveTextRenderState({
-    fontSize: node.fontSize,
-    lineHeight: node.lineHeight,
-    lines: node.lines,
-    lineWidth: node.lineWidth,
-    breakpointMap,
-  });
+  const renderState =
+    (node as any).__rmgTextRenderState ??
+    getResponsiveTextRenderState({
+      barHeight: node.barHeight,
+      barWidth: node.barWidth,
+      lineHeight: node.lineHeight,
+      lines: node.lines,
+      lastBarWidth: node.lastBarWidth,
+      responsiveBy: node.responsiveBy,
+      breakpointMap,
+    });
   const inlineStyle = resolveInlineResponsiveBaseStyle(
     node.style,
     breakpointMap
   );
-  const hasResponsiveLines = hasResponsiveTextLineCount(
-    node.lines,
-    breakpointMap
-  );
-  const hasResponsiveLineWidth = hasResponsiveTextLineWidth(
-    node.lineWidth,
-    breakpointMap
-  );
-  const usesResponsiveLineCss =
-    hasResponsiveLines || hasResponsiveLineWidth;
   const nodeId = (node as any).__rmgNodeId as string | undefined;
+  const usesContainerQueries =
+    renderState.responsiveBy === "container" && renderState.usesResponsiveBarCss;
   const wrapperStyle = textWrapperStyleVars(
-    inlineStyle,
-    hasResponsiveLines ? undefined : renderState.metrics.totalHeight
+    usesContainerQueries ? undefined : inlineStyle,
+    renderState.baseState.metrics.totalHeight
   );
+  const marginStyle = applyBoxMargins(inlineStyle);
 
   const lineStyle: SkeletonBaseStyle = {
-    height: renderState.metrics.lineBarHeight,
+    height: renderState.baseState.metrics.barHeight,
     backgroundColor: inlineStyle?.backgroundColor,
     borderRadius: inlineStyle?.borderRadius,
   };
+  const fitContent = isMaxContentWidth(inlineStyle?.width);
 
-  return (
+  const textNode = (
     <div
       data-rmg-skel-node={nodeId}
       data-rmg-skel-text="true"
       className={styles.skelText}
       style={{
         ...wrapperStyle,
-        ...applyBoxMargins(inlineStyle),
-        ...(hasResponsiveLines
-          ? null
-          : {
-              paddingBlock: `${renderState.metrics.paddingBlock}px`,
-              rowGap: `${renderState.metrics.rowGap}px`,
-            }),
+        ...(usesContainerQueries ? null : marginStyle),
+        paddingBlock: `${renderState.baseState.metrics.paddingBlock}px`,
+        rowGap: `${renderState.baseState.metrics.rowGap}px`,
       }}
     >
       {Array.from({ length: renderState.maxLines }).map((_, index) => (
@@ -989,18 +1221,30 @@ function TextNode({
             .join(" ")}
           style={{
             ...renderNodeStyleVars(lineStyle, node.shimmer, disableShimmer),
-            ...(usesResponsiveLineCss
-              ? null
-              : {
-                  display: index >= renderState.baseLines ? "none" : undefined,
-                  width:
-                    index === renderState.baseLines - 1
-                      ? renderState.baseLineWidth
-                      : "100%",
-                }),
+            display:
+              index >= renderState.baseState.lineCount ? "none" : undefined,
+            width: fitContent
+              ? renderState.baseState.barWidths[index] ?? "100%"
+              : "100%",
+            maxWidth: renderState.baseState.barWidths[index] ?? "100%",
           }}
         />
       ))}
+    </div>
+  );
+
+  if (!usesContainerQueries) return textNode;
+
+  return (
+    <div
+      data-rmg-skel-text-container="true"
+      style={{
+        ...textWrapperStyleVars(inlineStyle),
+        ...marginStyle,
+        containerType: "inline-size",
+      }}
+    >
+      {textNode}
     </div>
   );
 }

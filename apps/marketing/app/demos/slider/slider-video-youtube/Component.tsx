@@ -4,11 +4,20 @@
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   Video,
   type MediaItem,
   toMediaItems,
   useFullscreenController,
 } from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import { sliderScrollbar } from "../../../../../../packages/react-motion-gallery/src/slider-scrollbar";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-video-youtube-demo.module.css";
 
 export function SliderVideoYoutubeDemo() {
@@ -86,6 +95,7 @@ function Slide({
         width="24"
         height="24"
         className={styles.open_fullscreen_icon}
+        data-rmg-fullscreen-trigger
       />
       <Video
         src={src}
@@ -102,6 +112,7 @@ function Slide({
 function FullscreenAddon() {
 
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
       video: {
@@ -116,38 +127,13 @@ function FullscreenAddon() {
 
 const MEDIA = toMediaItems(URLS);
 
-return (
+const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
+  return (
   <GalleryCore layout="slider" fullscreenItems={MEDIA}>
-    <Slider
-      controls={{
-        dots: {
-          enabled: false,
-        },
-        scrollbar: {
-          enabled: true,
-          root: {
-            style: {
-              bottom: "0px"
-            }
-          }
-        },
-        arrows: {
-          arrow: {
-            style: {
-              top: "43%"
-            }
-          }
-        }
-      }}
-      elements={{
-        viewport: {
-          className: styles.slider_viewport
-        }
-      }}
-      transitions={{
-        loading: {
-          skeletonCount: 2,
-          skeleton: {
+    <SliderSkeleton
+        layout={{
+              visibleCount: 2,
             mode: "peek",
             layout: {
               kind: "slider",
@@ -155,6 +141,7 @@ return (
               style: {
                 gap: 20,
               },
+              itemStretch: false,
               item: {
                 kind: "rect",
                 style: {
@@ -164,38 +151,98 @@ return (
                   borderRadius: 12,
                 },
               },
-              children: [
+              rowHeightCompensation: {
+                0: 46,
+                768: 52,
+              },
+              overlays: [
                 {
-                  kind: "col",
+                  kind: "stack",
                   style: {
-                    0: {
-                      width: "100%",
-                      padding: "14px 0 0",
-                    },
-                    768: {
-                      width: "100%",
-                      padding: "20px 0 0",
-                    },
+                    position: "absolute",
+                    left: "50%",
+                    bottom: 0,
+                    transform: "translateX(-50%)",
+                    width: "min(60%, 28rem)",
+                    height: 16,
+                    zIndex: 3,
                   },
                   children: [
                     {
-                      kind: "rect",
+                      kind: "row",
                       style: {
-                        width: "min(60%, 28rem)",
+                        position: "absolute",
+                        left: 0,
+                        top: 5,
+                        width: "100%",
+                        height: 6,
+                        borderRadius: 999,
+                        backgroundColor: "rgba(15, 23, 42, 0.16)",
+                      },
+                      children: [],
+                    },
+                    {
+                      kind: "row",
+                      style: {
+                        position: "absolute",
+                        left: 0,
+                        top: 5,
+                        width: 0,
+                        height: 6,
+                        borderRadius: 999,
+                        backgroundColor: "rgba(80, 163, 255, 0.28)",
+                      },
+                      children: [],
+                    },
+                    {
+                      kind: "row",
+                      style: {
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        width: 16,
                         height: 16,
                         borderRadius: 999,
-                        alignSelf: "center",
-                        marginTop: "16px"
+                        backgroundColor: "rgb(80, 163, 255)",
+                        boxShadow: "0 4px 14px rgba(80, 163, 255, 0.28)",
                       },
+                      children: [],
                     },
                   ],
                 },
               ],
-            }
-          }
+            },
+          }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+
+      elements={{
+        viewport: {
+          className: styles.slider_viewport
         }
       }}
-    >
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows({
+          arrow: {
+            style: {
+              top: "43%"
+            }
+          }
+        }),
+          sliderScrollbar({
+          enabled: true,
+          root: {
+            style: {
+              bottom: "0px"
+            }
+          }
+        }),
+        ]}
+      >
       {MEDIA.map((m, i) => {
         return (
           <Slide
@@ -204,9 +251,11 @@ return (
             poster={m.kind === "video" ? m.poster : ""}
             i={i}
           />
-        );
+        )
+      ;
       })}
     </Slider>
+      </SliderSkeleton>
     <FullscreenAddon />
   </GalleryCore>
 );

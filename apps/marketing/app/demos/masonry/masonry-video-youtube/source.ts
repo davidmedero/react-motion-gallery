@@ -1,61 +1,241 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Masonry,
   Video,
   type MediaItem,
   toMediaItems,
+  useMasonryReady,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { MasonrySkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import type {
+  MasonrySkeletonSpec,
+  SkeletonNode,
+} from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
 import styles from "./masonry-video-youtube-demo.module.css";
+import { masonryVideoHtml5SkeletonText } from "../masonry-video-html5/masonry-video-html5.skeleton-text.generated";
 
-const ITEMS = [
+type SkeletonTextIds = {
+  title: string;
+  body: string;
+};
+
+type GeneratedSkeletonTextState = {
+  lines: number | Record<number, number>;
+  barWidth?: string | string[] | Record<number, string | string[]>;
+  lastBarWidth?: string | Record<number, string>;
+  barHeight?: number | Record<number, number>;
+  lineHeight?: number | Record<number, number>;
+  responsiveBy?: "viewport" | "container";
+};
+
+type GeneratedSkeletonTextEntry = {
+  title: GeneratedSkeletonTextState;
+  body: GeneratedSkeletonTextState;
+};
+
+type MasonryVideoItem = {
+  kind: "video";
+  src: string;
+  poster: string;
+  title: string;
+  body: string;
+  ratio: string;
+  span: number | Record<string, number>;
+};
+
+const ITEMS: MasonryVideoItem[] = [
   {
-    kind: "video",
+    kind: "video" as const,
     src: "zT5RMvM0gaI",
     poster: "https://i.ytimg.com/vi/zT5RMvM0gaI/hqdefault.jpg",
-    title: "Pattern Study",
-    body: "The player sits inside a taller pin instead of a repeated 16:9 row.",
-    ratio: "4 / 5",
+    title: "Lorem ipsum dolor sit amet",
+    body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    ratio: "16 / 10",
+    span: { 0: 1, 1280: 2 },
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "c2h1T06-3vQ",
     poster: "https://i.ytimg.com/vi/c2h1T06-3vQ/hqdefault.jpg",
-    title: "Street Layers",
-    body: "Each video pin keeps its own source builder and fullscreen handoff.",
-    ratio: "3 / 4",
+    title: "Ut enim ad minim veniam",
+    body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    ratio: "21 / 10",
+    span: { 0: 1, 1280: 2 },
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "mTM7F-5999Q",
     poster: "https://i.ytimg.com/vi/mTM7F-5999Q/hqdefault.jpg",
-    title: "River Light",
-    body: "A squarer tile helps break the rhythm so the wall does not feel grid locked.",
-    ratio: "1 / 1",
+    title: "Duis aute irure dolor",
+    body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+    ratio: "16 / 10",
+    span: { 0: 1, 1280: 2 },
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "cJLL_gNpBb8",
     poster: "https://i.ytimg.com/vi/cJLL_gNpBb8/hqdefault.jpg",
-    title: "Cloud Motion",
-    body: "Provider-specific options stay local to this demo.",
-    ratio: "5 / 4",
+    title: "Excepteur sint occaecat",
+    body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+    ratio: "16 / 10",
+    span: { 0: 1, 1280: 2 },
+  },
+  {
+    kind: "video" as const,
+    src: "IxF55qB4CuQ",
+    poster: "https://i.ytimg.com/vi/IxF55qB4CuQ/hqdefault.jpg",
+    title: "Sed ut perspiciatis unde",
+    body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
+    ratio: "16 / 10",
+    span: { 0: 1, 1280: 2 },
+  },
+  {
+    kind: "video" as const,
+    src: "IGOaJnvQdng",
+    poster: "https://i.ytimg.com/vi/IGOaJnvQdng/hqdefault.jpg",
+    title: "Nemo enim ipsam voluptatem",
+    body: "Quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores.",
+    ratio: "21 / 10",
+    span: { 0: 1, 1280: 2 },
   },
 ];
 
-const YOUTUBE_SKELETON = {
-  heightsPx: [360, 404, 312, 388],
+const VIDEO_CARD_METRICS = {
+  cardGapPx: 14,
+  cardPadding: "12px 12px 14px",
+  cardRadiusPx: 22,
+  frameRadiusPx: 18,
+  metaGapPx: 6,
+  title: {
+    barHeight: 16.64,
+    lineHeight: 1.2,
+  },
+  body: {
+    barHeight: 14.72,
+    lineHeight: 1.6,
+  },
+} as const;
+
+const MASONRY_VIDEO_TEXT_IDS: SkeletonTextIds[] = [
+  {
+    title: "masonryVideoHtml5Item01Title",
+    body: "masonryVideoHtml5Item01Body",
+  },
+  {
+    title: "masonryVideoHtml5Item02Title",
+    body: "masonryVideoHtml5Item02Body",
+  },
+  {
+    title: "masonryVideoHtml5Item03Title",
+    body: "masonryVideoHtml5Item03Body",
+  },
+  {
+    title: "masonryVideoHtml5Item04Title",
+    body: "masonryVideoHtml5Item04Body",
+  },
+  {
+    title: "masonryVideoHtml5Item05Title",
+    body: "masonryVideoHtml5Item05Body",
+  },
+  {
+    title: "masonryVideoHtml5Item06Title",
+    body: "masonryVideoHtml5Item06Body",
+  },
+];
+
+const MASONRY_VIDEO_SKELETON_TEXT: GeneratedSkeletonTextEntry[] =
+  MASONRY_VIDEO_TEXT_IDS.map((textIds) => ({
+    title: masonryVideoHtml5SkeletonText[textIds.title]!,
+    body: masonryVideoHtml5SkeletonText[textIds.body]!,
+  }));
+
+function createVideoSkeletonItem(args: {
+  item: MasonryVideoItem;
+  skeletonText: GeneratedSkeletonTextEntry;
+}): SkeletonNode {
+  return {
+    kind: "col",
+    style: {
+      gap: VIDEO_CARD_METRICS.cardGapPx,
+    },
+    children: [
+      {
+        kind: "rect",
+        style: {
+          width: "100%",
+          aspectRatio: args.item.ratio,
+          borderRadius: VIDEO_CARD_METRICS.frameRadiusPx,
+        },
+      },
+      {
+        kind: "col",
+        style: {
+          gap: VIDEO_CARD_METRICS.metaGapPx,
+        },
+        children: [
+          {
+            kind: "text",
+            barHeight: VIDEO_CARD_METRICS.title.barHeight,
+            lineHeight: VIDEO_CARD_METRICS.title.lineHeight,
+            ...args.skeletonText.title,
+            style: {
+              width: "100%",
+            },
+          },
+          {
+            kind: "text",
+            barHeight: VIDEO_CARD_METRICS.body.barHeight,
+            lineHeight: VIDEO_CARD_METRICS.body.lineHeight,
+            ...args.skeletonText.body,
+            style: {
+              width: "100%",
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+const YOUTUBE_SKELETON: MasonrySkeletonSpec = {
   radius: 18,
+  layout: {
+    kind: "masonry",
+    itemWrapStyle: {
+      padding: VIDEO_CARD_METRICS.cardPadding,
+      borderRadius: VIDEO_CARD_METRICS.cardRadiusPx,
+      border: "1px solid rgba(15, 23, 42, 0.08)",
+      backgroundColor: "rgba(255, 255, 255, 0.96)",
+      boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+    },
+    item: createVideoSkeletonItem({
+      item: ITEMS[0]!,
+      skeletonText: MASONRY_VIDEO_SKELETON_TEXT[0]!,
+    }),
+    slots: ITEMS.map((item, index) => ({
+      span: item.span,
+      item: createVideoSkeletonItem({
+        item,
+        skeletonText:
+          MASONRY_VIDEO_SKELETON_TEXT[index] ??
+          MASONRY_VIDEO_SKELETON_TEXT[0]!,
+      }),
+    })),
+  },
 };
 
 function buildMasonryYoutubeSource(src: string, poster?: string) {
   return {
-    type: "video",
+    type: "video" as const,
     poster,
-    sources: [{ src, provider: "youtube" }],
+    sources: [{ src, provider: "youtube" as const }],
   };
 }
 
@@ -80,12 +260,20 @@ function MasonryYoutubeCard(props: {
   title: string;
   body: string;
   ratio: string;
+  skeletonTextIds: SkeletonTextIds;
 }) {
-  const { src, poster, title, body, ratio } = props;
+  const { src, poster, title, body, ratio, skeletonTextIds } = props;
 
   return (
     <article className={styles.masonryYoutubeCard}>
       <div className={styles.masonryYoutubeFrame} style={{ aspectRatio: ratio }}>
+        <img
+          src="/open-fullscreen.png"
+          alt="Open fullscreen"
+          width="24"
+          height="24"
+          className={styles.open_fullscreen_icon}
+        />
         <Video
           src={src}
           poster={poster}
@@ -97,8 +285,18 @@ function MasonryYoutubeCard(props: {
         />
       </div>
       <div className={styles.masonryYoutubeMeta}>
-        <strong className={styles.masonryYoutubeTitle}>{title}</strong>
-        <p className={styles.masonryYoutubeBody}>{body}</p>
+        <strong
+          className={styles.masonryYoutubeTitle}
+          data-skeleton-text-id={skeletonTextIds.title}
+        >
+          {title}
+        </strong>
+        <p
+          className={styles.masonryYoutubeBody}
+          data-skeleton-text-id={skeletonTextIds.body}
+        >
+          {body}
+        </p>
       </div>
     </article>
   );
@@ -106,6 +304,7 @@ function MasonryYoutubeCard(props: {
 
 function MasonryYoutubeFullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
       video: {
@@ -121,28 +320,43 @@ function MasonryYoutubeFullscreenAddon() {
 export function MasonryVideoYoutubeDemo() {
   const media = toMediaItems(ITEMS);
 
+  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
+
   return (
     <GalleryCore layout="masonry" fullscreenItems={media}>
-      <Masonry
-        columns={{ 0: 1, 900: 2, 1260: 3 }}
-        gap={{ 0: 12, 1260: 18 }}
-        estimatedItemHeight={340}
-        loading={{
-          enabled: true,
-          skeleton: YOUTUBE_SKELETON,
+      <MasonrySkeleton
+        layout={YOUTUBE_SKELETON}
+        ready={masonryReady}
+        timing={{ exitMs: 2000 }}
+        masonry={{
+          count: ITEMS.length,
+          columns: { 0: 1, 820: 2, 1280: 4 },
+          gap: { 0: 14, 820: 18, 1280: 20 },
+          placement: "balanced",
         }}
       >
-        {ITEMS.map((item) => (
-          <MasonryYoutubeCard
-            key={item.src}
-            src={item.src}
-            poster={item.poster}
-            title={item.title}
-            body={item.body}
-            ratio={item.ratio}
-          />
-        ))}
-      </Masonry>
+        <Masonry
+          ref={masonryRef}
+          columns={{ 0: 1, 820: 2, 1280: 4 }}
+          gap={{ 0: 14, 820: 18, 1280: 20 }}
+          placement="balanced"
+        >
+          {ITEMS.map((item, index) => (
+          <Masonry.Item key={item.src} span={item.span}>
+            <MasonryYoutubeCard
+              src={item.src}
+              poster={item.poster}
+              title={item.title}
+              body={item.body}
+              ratio={item.ratio}
+              skeletonTextIds={
+                MASONRY_VIDEO_TEXT_IDS[index] ?? MASONRY_VIDEO_TEXT_IDS[0]!
+              }
+            />
+          </Masonry.Item>
+          ))}
+        </Masonry>
+      </MasonrySkeleton>
       <MasonryYoutubeFullscreenAddon />
     </GalleryCore>
   );

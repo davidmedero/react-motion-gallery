@@ -1,0 +1,156 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=slider-auto-height&skeletonMeasure=content",
+  "outputFile": "./slider-auto-height.skeleton-text.generated.ts",
+  "moduleExportName": "sliderAutoHeightSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1340,
+  "viewportHeight": 1600,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "readyExpression": "(() => { const target = document.querySelector(\"[data-skeleton-item-id='autoHeightOne'] [data-skeleton-role='copy']\"); return !!target && target.getBoundingClientRect().width > 0; })()",
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "slider": {
+    "itemSelector": "[data-skeleton-item-id]",
+    "canonicalItemIdAttribute": "data-skeleton-item-id",
+    "cloneAttribute": "data-rmg-clone",
+    "cloneValue": "true",
+    "roles": [
+      {
+        "role": "kicker",
+        "selector": "[data-skeleton-role='kicker']",
+        "barHeight": 12,
+        "lineHeight": 1.2
+      },
+      {
+        "role": "title",
+        "selector": "[data-skeleton-role='title']",
+        "barHeight": 32,
+        "lineHeight": 1.1
+      },
+      {
+        "role": "copy",
+        "selector": "[data-skeleton-role='copy']",
+        "barHeight": 16,
+        "lineHeight": 1.45
+      },
+      {
+        "role": "footer",
+        "selector": "[data-skeleton-role='footer']",
+        "barHeight": 12,
+        "lineHeight": 1.25
+      }
+    ],
+    "trackedItems": [
+      {
+        "itemId": "autoHeightOne",
+        "roles": [
+          {
+            "role": "kicker",
+            "exportName": "autoHeightOneKicker"
+          },
+          {
+            "role": "title",
+            "exportName": "autoHeightOneTitle"
+          },
+          {
+            "role": "copy",
+            "exportName": "autoHeightOneCopy"
+          },
+          {
+            "role": "footer",
+            "exportName": "autoHeightOneFooter"
+          }
+        ]
+      },
+      {
+        "itemId": "autoHeightTwo",
+        "roles": [
+          {
+            "role": "kicker",
+            "exportName": "autoHeightTwoKicker"
+          },
+          {
+            "role": "title",
+            "exportName": "autoHeightTwoTitle"
+          },
+          {
+            "role": "copy",
+            "exportName": "autoHeightTwoCopy"
+          },
+          {
+            "role": "footer",
+            "exportName": "autoHeightTwoFooter"
+          }
+        ]
+      },
+      {
+        "itemId": "autoHeightThree",
+        "roles": [
+          {
+            "role": "kicker",
+            "exportName": "autoHeightThreeKicker"
+          },
+          {
+            "role": "title",
+            "exportName": "autoHeightThreeTitle"
+          },
+          {
+            "role": "copy",
+            "exportName": "autoHeightThreeCopy"
+          },
+          {
+            "role": "footer",
+            "exportName": "autoHeightThreeFooter"
+          }
+        ]
+      },
+      {
+        "itemId": "autoHeightFour",
+        "roles": [
+          {
+            "role": "kicker",
+            "exportName": "autoHeightFourKicker"
+          },
+          {
+            "role": "title",
+            "exportName": "autoHeightFourTitle"
+          },
+          {
+            "role": "copy",
+            "exportName": "autoHeightFourCopy"
+          },
+          {
+            "role": "footer",
+            "exportName": "autoHeightFourFooter"
+          }
+        ]
+      },
+      {
+        "itemId": "autoHeightFive",
+        "roles": [
+          {
+            "role": "kicker",
+            "exportName": "autoHeightFiveKicker"
+          },
+          {
+            "role": "title",
+            "exportName": "autoHeightFiveTitle"
+          },
+          {
+            "role": "copy",
+            "exportName": "autoHeightFiveCopy"
+          },
+          {
+            "role": "footer",
+            "exportName": "autoHeightFiveFooter"
+          }
+        ]
+      }
+    ],
+    "rowHeightCompensationExportName": "sliderAutoHeightRowHeightCompensation"
+  }
+}

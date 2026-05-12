@@ -2,7 +2,6 @@
 "use client";
 
 export * from "./types";
-export * from "./defaults";
 export * from "./hooks/useEntryInView";
 export * from "./hooks/useEntryDecodeReady";
 export * from "./normalize";
@@ -19,6 +18,7 @@ import { SliderHandle } from "../slider/types";
 
 export type EntriesMediaContainerRender = (args: {
   entryIndex: number;
+  entryInView?: boolean;
   mediaNodes: React.ReactNode[];
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
 }) => React.ReactNode;

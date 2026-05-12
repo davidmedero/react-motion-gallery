@@ -1,3 +1,7 @@
+import type { BreakpointMap } from "../shared/responsive";
+import type { MediaItem } from "../shared/types/media";
+import type { SliderApi } from "../slider/types";
+
 export type IndexMode = "animated" | "instant";
 
 export type FullscreenOpenMethod = "fade" | "scale";
@@ -19,7 +23,22 @@ export type FullscreenOpenRequest = {
   event?: Event;
 };
 
-export interface GalleryApi {
+export interface GalleryCoreApi {
+  layout: "slider" | "grid" | "masonry" | "entries" | null;
+  effectiveBreakpoints: BreakpointMap;
+  normalizedItems: MediaItem[];
+  fsEnabled: boolean;
+  setFsEnabled: (enabled: boolean) => void;
+  isFullscreenOpen: boolean;
+  isFullscreenOpenRef: React.RefObject<boolean>;
+  setFullscreenOpen: (open: boolean) => void;
+  openFullscreenAt: (args: OpenFullscreenAtArgs) => void;
+  notifyBaseVisibleIndex: (index: number) => void;
+  notifyFsVisibleIndex: (index: number) => void;
+  registerExpandableImage: (index: number, node: HTMLElement | null) => void;
+}
+
+export interface GalleryLayoutApi {
   rootNode(): HTMLElement | null;
   containerNode(): HTMLElement | null;
   getViewportNode: () => HTMLDivElement | null;
@@ -36,12 +55,8 @@ export interface GalleryApi {
   selectCell(index: number, jump?: boolean): void;
   scrollProgress(): number;
   cellsInView(): number[];
-  append(nodes: React.ReactNode | React.ReactNode[]): number;
-  prepend(nodes: React.ReactNode | React.ReactNode[]): number;
-  insert(index: number, nodes: React.ReactNode | React.ReactNode[]): number;
-  remove(indexOrPredicate: number | ((i: number) => boolean)): number;
-  replace(index: number, node: React.ReactNode): void;
-  setItems(nodes: React.ReactNode[]): number;
-  onIndexChange(cb: (i: number, meta: { mode: IndexMode }) => void): () => void;
+}
+
+export interface GalleryApi extends GalleryLayoutApi, SliderApi {
   openFullscreenAt: (args: OpenFullscreenAtArgs) => void;
 }

@@ -1,0 +1,63 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=grid-template-columns&skeletonMeasure=content",
+  "outputFile": "./grid-template-columns.skeleton-text.generated.ts",
+  "moduleExportName": "gridTemplateColumnsSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1340,
+  "viewportHeight": 1800,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "lineMeasurementMethod": "domRange",
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "leadTrackTitle",
+      "selector": "[data-skeleton-text-id='leadTrackTitle']"
+    },
+    {
+      "exportName": "leadTrackBody",
+      "selector": "[data-skeleton-text-id='leadTrackBody']"
+    },
+    {
+      "exportName": "narrowRailTitle",
+      "selector": "[data-skeleton-text-id='narrowRailTitle']"
+    },
+    {
+      "exportName": "narrowRailBody",
+      "selector": "[data-skeleton-text-id='narrowRailBody']"
+    },
+    {
+      "exportName": "edgeSlotTitle",
+      "selector": "[data-skeleton-text-id='edgeSlotTitle']"
+    },
+    {
+      "exportName": "edgeSlotBody",
+      "selector": "[data-skeleton-text-id='edgeSlotBody']"
+    },
+    {
+      "exportName": "bridgeSpanTitle",
+      "selector": "[data-skeleton-text-id='bridgeSpanTitle']"
+    },
+    {
+      "exportName": "bridgeSpanBody",
+      "selector": "[data-skeleton-text-id='bridgeSpanBody']"
+    },
+    {
+      "exportName": "counterweightTitle",
+      "selector": "[data-skeleton-text-id='counterweightTitle']"
+    },
+    {
+      "exportName": "counterweightBody",
+      "selector": "[data-skeleton-text-id='counterweightBody']"
+    },
+    {
+      "exportName": "finalRailTitle",
+      "selector": "[data-skeleton-text-id='finalRailTitle']"
+    },
+    {
+      "exportName": "finalRailBody",
+      "selector": "[data-skeleton-text-id='finalRailBody']"
+    }
+  ]
+}

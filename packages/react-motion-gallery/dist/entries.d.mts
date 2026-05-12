@@ -1,20 +1,29 @@
-import { a as EntriesMediaContainerRender } from './index-CwwxTQKa.mjs';
-export { D as DEFAULT_ENTRIES, E as Entries, b as EntriesProps, E as default, f as flattenEntries, n as nodeFromMediaDefault } from './index-CwwxTQKa.mjs';
+import { a as EntriesMediaContainerRender } from './index-YphJztdR.mjs';
+export { E as Entries, b as EntriesProps, E as default, f as flattenEntries, n as nodeFromMediaDefault } from './index-YphJztdR.mjs';
 import * as React from 'react';
-import { a as SliderHandle, S as SliderOptions } from './types-DY058l5M.mjs';
-import { L as LoadingOptions, I as IntroOptions } from './types-XEr8LRal.mjs';
-import { L as LoadingOptions$1, I as IntroOptions$1 } from './types-VULXzSa2.mjs';
-import { E as EntriesOptions } from './types-_1D0QtfD.mjs';
-export { h as EntriesLoadingOptions, f as EntryCardRenderArgs, a as EntryItem, e as EntryMediaLayout, b as EntryMediaRenderArgs, c as EntryOverlayRenderArgs, d as EntryOverlayStyle, i as EntrySkeletonRenderArgs, g as EntrySkeletonResolverArgs, I as IntroOptions, M as MediaEntryLink, S as SlideOwner } from './types-_1D0QtfD.mjs';
+import { j as SliderHandle, i as SliderOptions } from './types-CfvTYIyd.mjs';
+import { I as IntroOptions } from './types-BlFwyRVQ.mjs';
+import { b as GridSkeletonSpec } from './GridSkeleton-Dn7N-TEh.mjs';
+import { SkeletonForceOptions, SkeletonTimingOptions } from './skeleton-base.mjs';
+import { I as IntroOptions$1 } from './types-DWzjXjYR.mjs';
+import { b as MasonrySkeletonSpec } from './MasonrySkeleton-ftJdtDLs.mjs';
+import { E as EntriesOptions } from './responsive-Ch5b4LC-.mjs';
+export { u as EntriesLoadingOptions, s as EntryCardRenderArgs, n as EntryItem, r as EntryMediaLayout, o as EntryMediaRenderArgs, p as EntryOverlayRenderArgs, q as EntryOverlayStyle, v as EntrySkeletonRenderArgs, t as EntrySkeletonResolverArgs, I as IntroOptions, M as MediaEntryLink, S as SlideOwner } from './responsive-Ch5b4LC-.mjs';
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { c as BreakpointMap } from './responsive-D_xhZmVI.mjs';
-import { M as MediaItem } from './plyrTypes-Cq4C3ul5.mjs';
-import './controls-SpWg1Kgt.mjs';
-import './text-Cl2tR8oO.mjs';
-import './sliderSub-Bo6Y8as_.mjs';
-import './layout-CR6f2aPH.mjs';
-import './types-Dhh8xfHo.mjs';
+import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
+import { L as LoadingForceOptions } from './force-C5m1QpdF.mjs';
+import { MediaItem } from './media.mjs';
+import './lazy-dGoYpcRa.mjs';
+import './layout-DoYnPD0I.mjs';
+import './text-BBcRGVzn.mjs';
+import './transitions-DU3ftmIq.mjs';
+import './types-DP7ogmr4.mjs';
+import './plyrTypes-DhzgHNfX.mjs';
 import 'plyr';
+import './types-Dhh8xfHo.mjs';
+import 'plyr-react';
+import './types-B7AiQJkM.mjs';
+import 'react-dom/client';
 
 type UseEntryInViewOpts = IntersectionObserverInit & {
     nearMargin?: string;
@@ -73,12 +82,24 @@ type Props = {
     nodeFromMedia: (m: MediaItem) => React.ReactNode;
     renderMediaContainer: (args: {
         entryIndex: number;
+        entryInView?: boolean;
         mediaNodes: React.ReactNode[];
         entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
     }) => React.ReactNode;
     breakpoints: BreakpointMap;
     registerExpandableImage?: (globalIndex: number, node: HTMLImageElement | HTMLVideoElement | null) => void;
     entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
+};
+declare function resolveEntryLoadingVisualState(args: {
+    loadingActive: boolean;
+    loadingForced?: LoadingForceOptions;
+    shouldMountContent: boolean;
+    contentReady: boolean;
+    defaultReveal: boolean;
+}): {
+    compareMode: boolean;
+    revealContent: boolean;
+    loadingLayerOpacity: number;
 };
 declare function EntryList({ enabled, entries, fsEnabled, openFullscreenAt, entryFlatIndexRef, nodeFromMedia, renderMediaContainer, breakpoints, registerExpandableImage, entrySliderRefs, }: Props): string | number | bigint | boolean | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | react_jsx_runtime.JSX.Element | null | undefined;
 
@@ -93,16 +114,28 @@ type EntriesSliderMediaOptions = {
 };
 declare function createEntriesSliderMedia(opts?: EntriesSliderMediaOptions): EntriesMediaContainerRender;
 
+type EntriesGridLoadingOptions = {
+    enabled?: boolean;
+    force?: SkeletonForceOptions;
+    skeleton?: GridSkeletonSpec;
+    timing?: SkeletonTimingOptions;
+};
 declare function createEntriesGridMedia(args: {
     gridObject?: any;
-    gridLoading?: LoadingOptions;
+    gridLoading?: EntriesGridLoadingOptions;
     gridIntro?: IntroOptions;
 }): EntriesMediaContainerRender;
 
+type EntriesMasonryLoadingOptions = {
+    enabled?: boolean;
+    force?: SkeletonForceOptions;
+    skeleton?: MasonrySkeletonSpec;
+    timing?: SkeletonTimingOptions;
+};
 declare function createEntriesMasonryMedia(args: {
     masonryObject?: any;
-    masonryLoading?: LoadingOptions$1;
+    masonryLoading?: EntriesMasonryLoadingOptions;
     masonryIntro?: IntroOptions$1;
 }): EntriesMediaContainerRender;
 
-export { EntriesMediaContainerRender, EntriesOptions, EntryList, type UseEntryInViewOpts, createEntriesGridMedia, createEntriesMasonryMedia, createEntriesSliderMedia, useEntryDecodeReady, useEntryInView, useNormalizedEntriesIntro, useNormalizedEntriesLoading };
+export { EntriesMediaContainerRender, EntriesOptions, EntryList, type UseEntryInViewOpts, createEntriesGridMedia, createEntriesMasonryMedia, createEntriesSliderMedia, resolveEntryLoadingVisualState, useEntryDecodeReady, useEntryInView, useNormalizedEntriesIntro, useNormalizedEntriesLoading };

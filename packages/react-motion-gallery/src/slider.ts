@@ -1,7 +1,27 @@
-export { Slider, Slider as default } from "./Gallery/slider";
+export { Slider, Slider as default } from "./Gallery/slider/default";
 export { createSliderIndexChannel } from "./Gallery/slider/sliderSub";
-export { DEFAULT_SLIDER } from "./Gallery/slider/defaults";
+export { useSliderReady } from "./slider-ready";
 
+export type {
+  SliderApi,
+  SliderItemsApi,
+  SliderNodeInput,
+  SliderRemoveTarget,
+} from "./Gallery/slider/types";
 export type { IndexMode } from "./Gallery/api/types";
-export type { SliderOptions, SliderHandle, ResponsiveHeightRule } from "./Gallery/slider/types";
+export type {
+  CrossFade,
+  CrossFadeWheel,
+  CrossFadeWheelOptions,
+  SliderAutoHeight,
+  SliderAutoPlayTimer,
+  SliderSkipSnaps,
+  SliderSkipSnapsOptions,
+  SliderOptions,
+  SliderHandle,
+  SliderPlugin,
+  SliderPluginKind,
+  ResponsiveHeightRule,
+} from "./Gallery/slider/types";
+export type { SliderReadyController } from "./slider-ready";
 export type { SliderIndexChannel } from "./Gallery/slider/sliderSub";

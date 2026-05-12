@@ -1,0 +1,1417 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=masonry-spans&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1340,
+    "viewportHeight": 2000,
+    "viewportWorkers": 8,
+    "settleMs": 250,
+    "stableGeometryFrames": 12,
+    "lineMeasurementMethod": "domRange",
+    "includeTextMetrics": true,
+    "breakpointStrategy": "lineChanges",
+    "barWidthUnit": "px",
+    "masonry": {
+      "anchorSelector": "[data-skeleton-text-id='masonrySpansItem01Body']",
+      "itemSelector": "[data-rmg-idx]",
+      "expectedItemCount": 8,
+      "columns": {
+        "0": 1,
+        "760": 2,
+        "1160": 4
+      }
+    }
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem01Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 444,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "46px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem01Title",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 444,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "215px",
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem01Body",
+      "lines": {
+        "0": 4,
+        "329": 3,
+        "458": 2,
+        "1057": 1,
+        "1160": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 328,
+          "fromWidthPx": 216,
+          "toWidthPx": 224,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 329,
+          "toViewport": 457,
+          "fromWidthPx": 225,
+          "toWidthPx": 353,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 458,
+          "toViewport": 1056,
+          "fromWidthPx": 354,
+          "toWidthPx": 662,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1057,
+          "toViewport": 1159,
+          "fromWidthPx": 663,
+          "toWidthPx": 765,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1340,
+          "fromWidthPx": 360,
+          "toWidthPx": 444,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "189px",
+          "165px",
+          "199px",
+          "97px"
+        ],
+        "329": [
+          "219px",
+          "225px",
+          "210px"
+        ],
+        "458": [
+          "304px",
+          "354px"
+        ],
+        "1057": "662px",
+        "1160": [
+          "358px",
+          "300px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem02Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 199,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "43px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem02Title",
+      "lines": {
+        "0": 1,
+        "768": 2,
+        "826": 1,
+        "1160": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 767,
+          "fromWidthPx": 216,
+          "toWidthPx": 308.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 825,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 199,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 826,
+          "toViewport": 1159,
+          "fromWidthPx": 199.484375,
+          "toWidthPx": 362.5,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1340,
+          "fromWidthPx": 157,
+          "toWidthPx": 199,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": "199px",
+        "768": [
+          "137px",
+          "58px"
+        ],
+        "826": "199px",
+        "1160": [
+          "137px",
+          "58px"
+        ]
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem02Body",
+      "lines": {
+        "0": 3,
+        "392": 2,
+        "683": 1,
+        "760": 2,
+        "768": 5,
+        "770": 4,
+        "828": 3,
+        "1010": 2,
+        "1160": 5,
+        "1222": 4
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 391,
+          "fromWidthPx": 216,
+          "toWidthPx": 287,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 392,
+          "toViewport": 682,
+          "fromWidthPx": 288,
+          "toWidthPx": 574.75,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 683,
+          "toViewport": 759,
+          "fromWidthPx": 575.6875,
+          "toWidthPx": 648.65625,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 760,
+          "toViewport": 767,
+          "fromWidthPx": 304.8125,
+          "toWidthPx": 308.171875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 769,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 172.125,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 770,
+          "toViewport": 827,
+          "fromWidthPx": 172.609375,
+          "toWidthPx": 199.96875,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 828,
+          "toViewport": 1009,
+          "fromWidthPx": 200.453125,
+          "toWidthPx": 287.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1010,
+          "toViewport": 1159,
+          "fromWidthPx": 288,
+          "toWidthPx": 362.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1221,
+          "fromWidthPx": 157,
+          "toWidthPx": 172.25,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 1222,
+          "toViewport": 1340,
+          "fromWidthPx": 172.5,
+          "toWidthPx": 199,
+          "lineCount": 4
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "174px",
+          "200px",
+          "193px"
+        ],
+        "392": [
+          "283px",
+          "288px"
+        ],
+        "683": "575px",
+        "760": [
+          "283px",
+          "288px"
+        ],
+        "768": [
+          "89px",
+          "139px",
+          "162px",
+          "91px",
+          "77px"
+        ],
+        "770": [
+          "89px",
+          "139px",
+          "162px",
+          "172px"
+        ],
+        "828": [
+          "174px",
+          "200px",
+          "193px"
+        ],
+        "1010": [
+          "283px",
+          "288px"
+        ],
+        "1160": [
+          "89px",
+          "139px",
+          "142px",
+          "111px",
+          "77px"
+        ],
+        "1222": [
+          "89px",
+          "139px",
+          "162px",
+          "172px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem03Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 199,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "46px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem03Title",
+      "lines": {
+        "0": 1,
+        "1160": 2,
+        "1176": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1159,
+          "fromWidthPx": 216,
+          "toWidthPx": 362.5,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1175,
+          "fromWidthPx": 157,
+          "toWidthPx": 160.75,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1176,
+          "toViewport": 1340,
+          "fromWidthPx": 161,
+          "toWidthPx": 199,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": "161px",
+        "1160": [
+          "116px",
+          "41px"
+        ],
+        "1176": "161px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem03Body",
+      "lines": {
+        "0": 3,
+        "370": 2,
+        "628": 1,
+        "760": 2,
+        "768": 4,
+        "820": 3,
+        "964": 2,
+        "1160": 4,
+        "1317": 3
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 369,
+          "fromWidthPx": 216,
+          "toWidthPx": 265,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 370,
+          "toViewport": 627,
+          "fromWidthPx": 266,
+          "toWidthPx": 521.9375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 628,
+          "toViewport": 759,
+          "fromWidthPx": 522.90625,
+          "toWidthPx": 648.65625,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 760,
+          "toViewport": 767,
+          "fromWidthPx": 304.8125,
+          "toWidthPx": 308.171875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 819,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 196.125,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 820,
+          "toViewport": 963,
+          "fromWidthPx": 196.609375,
+          "toWidthPx": 265.25,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 964,
+          "toViewport": 1159,
+          "fromWidthPx": 265.734375,
+          "toWidthPx": 362.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1316,
+          "fromWidthPx": 157,
+          "toWidthPx": 196,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 1317,
+          "toViewport": 1340,
+          "fromWidthPx": 196.25,
+          "toWidthPx": 199,
+          "lineCount": 3
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "196px",
+          "180px",
+          "138px"
+        ],
+        "370": [
+          "266px",
+          "253px"
+        ],
+        "628": "523px",
+        "760": [
+          "266px",
+          "253px"
+        ],
+        "768": [
+          "128px",
+          "134px",
+          "154px",
+          "94px"
+        ],
+        "820": [
+          "196px",
+          "180px",
+          "138px"
+        ],
+        "964": [
+          "266px",
+          "253px"
+        ],
+        "1160": [
+          "128px",
+          "134px",
+          "154px",
+          "94px"
+        ],
+        "1317": [
+          "196px",
+          "180px",
+          "138px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem04Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 444,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "39px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem04Title",
+      "lines": {
+        "0": 1,
+        "768": 2,
+        "811": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 767,
+          "fromWidthPx": 216,
+          "toWidthPx": 308.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 810,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 191.8125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 811,
+          "toViewport": 1340,
+          "fromWidthPx": 192.28125,
+          "toWidthPx": 444,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": "192px",
+        "768": [
+          "115px",
+          "74px"
+        ],
+        "811": "192px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem04Body",
+      "lines": {
+        "0": 3,
+        "399": 2,
+        "689": 1,
+        "760": 2,
+        "768": 4,
+        "823": 3,
+        "1024": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 398,
+          "fromWidthPx": 216,
+          "toWidthPx": 294,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 399,
+          "toViewport": 688,
+          "fromWidthPx": 295,
+          "toWidthPx": 580.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 689,
+          "toViewport": 759,
+          "fromWidthPx": 581.46875,
+          "toWidthPx": 648.65625,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 760,
+          "toViewport": 767,
+          "fromWidthPx": 304.8125,
+          "toWidthPx": 308.171875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 822,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 197.5625,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 823,
+          "toViewport": 1023,
+          "fromWidthPx": 198.046875,
+          "toWidthPx": 294.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1024,
+          "toViewport": 1340,
+          "fromWidthPx": 295,
+          "toWidthPx": 444,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "214px",
+          "176px",
+          "182px"
+        ],
+        "399": [
+          "282px",
+          "295px"
+        ],
+        "689": "581px",
+        "760": [
+          "282px",
+          "295px"
+        ],
+        "768": [
+          "164px",
+          "161px",
+          "157px",
+          "86px"
+        ],
+        "823": [
+          "198px",
+          "193px",
+          "182px"
+        ],
+        "1024": [
+          "282px",
+          "295px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem05Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 444,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "29px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem05Title",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 444,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "192px",
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem05Body",
+      "lines": {
+        "0": 4,
+        "360": 3,
+        "452": 2,
+        "766": 1,
+        "768": 2,
+        "1050": 1,
+        "1160": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 359,
+          "fromWidthPx": 216,
+          "toWidthPx": 255,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 360,
+          "toViewport": 451,
+          "fromWidthPx": 256,
+          "toWidthPx": 347,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 452,
+          "toViewport": 765,
+          "fromWidthPx": 348,
+          "toWidthPx": 654.40625,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 766,
+          "toViewport": 767,
+          "fromWidthPx": 655.375,
+          "toWidthPx": 656.34375,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 1049,
+          "fromWidthPx": 383.28125,
+          "toWidthPx": 655,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1050,
+          "toViewport": 1159,
+          "fromWidthPx": 656,
+          "toWidthPx": 765,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1340,
+          "fromWidthPx": 360,
+          "toWidthPx": 444,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "174px",
+          "170px",
+          "208px",
+          "91px"
+        ],
+        "360": [
+          "255px",
+          "176px",
+          "216px"
+        ],
+        "452": [
+          "348px",
+          "303px"
+        ],
+        "766": "655px",
+        "768": [
+          "348px",
+          "303px"
+        ],
+        "1050": "655px",
+        "1160": [
+          "348px",
+          "303px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem06Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 199,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "51px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem06Title",
+      "lines": {
+        "0": 2,
+        "341": 1,
+        "768": 2,
+        "903": 1,
+        "1160": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 340,
+          "fromWidthPx": 216,
+          "toWidthPx": 236,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 341,
+          "toViewport": 767,
+          "fromWidthPx": 237,
+          "toWidthPx": 308.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 902,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 235.96875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 903,
+          "toViewport": 1159,
+          "fromWidthPx": 236.453125,
+          "toWidthPx": 362.5,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1340,
+          "fromWidthPx": 157,
+          "toWidthPx": 199,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "142px",
+          "90px"
+        ],
+        "341": "236px",
+        "768": [
+          "142px",
+          "90px"
+        ],
+        "903": "236px",
+        "1160": [
+          "142px",
+          "90px"
+        ]
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem06Body",
+      "lines": {
+        "0": 3,
+        "407": 2,
+        "691": 1,
+        "760": 2,
+        "768": 5,
+        "814": 4,
+        "834": 3,
+        "1039": 2,
+        "1160": 5,
+        "1306": 4
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 406,
+          "fromWidthPx": 216,
+          "toWidthPx": 302,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 407,
+          "toViewport": 690,
+          "fromWidthPx": 303,
+          "toWidthPx": 582.40625,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 691,
+          "toViewport": 759,
+          "fromWidthPx": 583.375,
+          "toWidthPx": 648.65625,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 760,
+          "toViewport": 767,
+          "fromWidthPx": 304.8125,
+          "toWidthPx": 308.171875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 813,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 193.25,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 814,
+          "toViewport": 833,
+          "fromWidthPx": 193.734375,
+          "toWidthPx": 202.84375,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 834,
+          "toViewport": 1038,
+          "fromWidthPx": 203.328125,
+          "toWidthPx": 302,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1039,
+          "toViewport": 1159,
+          "fromWidthPx": 302.5,
+          "toWidthPx": 362.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1305,
+          "fromWidthPx": 157,
+          "toWidthPx": 193.25,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 1306,
+          "toViewport": 1340,
+          "fromWidthPx": 193.5,
+          "toWidthPx": 199,
+          "lineCount": 4
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "195px",
+          "177px",
+          "203px"
+        ],
+        "407": [
+          "277px",
+          "302px"
+        ],
+        "691": "583px",
+        "760": [
+          "277px",
+          "302px"
+        ],
+        "768": [
+          "115px",
+          "158px",
+          "95px",
+          "143px",
+          "56px"
+        ],
+        "814": [
+          "115px",
+          "193px",
+          "160px",
+          "103px"
+        ],
+        "834": [
+          "195px",
+          "177px",
+          "203px"
+        ],
+        "1039": [
+          "277px",
+          "302px"
+        ],
+        "1160": [
+          "115px",
+          "132px",
+          "121px",
+          "143px",
+          "56px"
+        ],
+        "1306": [
+          "115px",
+          "193px",
+          "160px",
+          "103px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem07Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 199,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "45px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem07Title",
+      "lines": {
+        "0": 1,
+        "768": 2,
+        "850": 1,
+        "1160": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 767,
+          "fromWidthPx": 216,
+          "toWidthPx": 308.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 849,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 210.53125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 850,
+          "toViewport": 1159,
+          "fromWidthPx": 211,
+          "toWidthPx": 362.5,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1340,
+          "fromWidthPx": 157,
+          "toWidthPx": 199,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": "211px",
+        "768": [
+          "100px",
+          "108px"
+        ],
+        "850": "211px",
+        "1160": [
+          "100px",
+          "108px"
+        ]
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem07Body",
+      "lines": {
+        "0": 3,
+        "449": 2,
+        "721": 1,
+        "760": 3,
+        "768": 5,
+        "771": 4,
+        "837": 3,
+        "1123": 2,
+        "1160": 5,
+        "1224": 4
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 448,
+          "fromWidthPx": 216,
+          "toWidthPx": 344,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 449,
+          "toViewport": 720,
+          "fromWidthPx": 345,
+          "toWidthPx": 611.21875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 721,
+          "toViewport": 759,
+          "fromWidthPx": 612.1875,
+          "toWidthPx": 648.65625,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 760,
+          "toViewport": 767,
+          "fromWidthPx": 304.8125,
+          "toWidthPx": 308.171875,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 770,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 172.609375,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 771,
+          "toViewport": 836,
+          "fromWidthPx": 173.09375,
+          "toWidthPx": 204.28125,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 837,
+          "toViewport": 1122,
+          "fromWidthPx": 204.765625,
+          "toWidthPx": 344,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1123,
+          "toViewport": 1159,
+          "fromWidthPx": 344.5,
+          "toWidthPx": 362.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 1160,
+          "toViewport": 1223,
+          "fromWidthPx": 157,
+          "toWidthPx": 172.75,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 1224,
+          "toViewport": 1340,
+          "fromWidthPx": 173,
+          "toWidthPx": 199,
+          "lineCount": 4
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "204px",
+          "199px",
+          "200px"
+        ],
+        "449": [
+          "263px",
+          "344px"
+        ],
+        "721": "612px",
+        "760": [
+          "263px",
+          "267px",
+          "73px"
+        ],
+        "768": [
+          "164px",
+          "95px",
+          "140px",
+          "122px",
+          "73px"
+        ],
+        "771": [
+          "164px",
+          "95px",
+          "173px",
+          "167px"
+        ],
+        "837": [
+          "204px",
+          "199px",
+          "200px"
+        ],
+        "1123": [
+          "263px",
+          "344px"
+        ],
+        "1160": [
+          "131px",
+          "128px",
+          "140px",
+          "122px",
+          "73px"
+        ],
+        "1224": [
+          "164px",
+          "95px",
+          "173px",
+          "167px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem08Badge",
+      "lines": 1,
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 1340,
+          "fromWidthPx": 216,
+          "toWidthPx": 444,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "56px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem08Title",
+      "lines": {
+        "0": 2,
+        "347": 1,
+        "768": 2,
+        "915": 1
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 346,
+          "fromWidthPx": 216,
+          "toWidthPx": 242,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 347,
+          "toViewport": 767,
+          "fromWidthPx": 243,
+          "toWidthPx": 308.171875,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 914,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 241.734375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 915,
+          "toViewport": 1340,
+          "fromWidthPx": 242.203125,
+          "toWidthPx": 444,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "149px",
+          "89px"
+        ],
+        "347": "242px",
+        "768": [
+          "149px",
+          "89px"
+        ],
+        "915": "242px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonrySpansItem08Body",
+      "lines": {
+        "0": 3,
+        "420": 2,
+        "734": 1,
+        "760": 3,
+        "768": 4,
+        "851": 3,
+        "1066": 2
+      },
+      "segments": [
+        {
+          "fromViewport": 320,
+          "toViewport": 419,
+          "fromWidthPx": 216,
+          "toWidthPx": 315,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 420,
+          "toViewport": 733,
+          "fromWidthPx": 316,
+          "toWidthPx": 623.6875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 734,
+          "toViewport": 759,
+          "fromWidthPx": 624.65625,
+          "toWidthPx": 648.65625,
+          "lineCount": 1
+        },
+        {
+          "fromViewport": 760,
+          "toViewport": 767,
+          "fromWidthPx": 304.8125,
+          "toWidthPx": 308.171875,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 768,
+          "toViewport": 850,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 211,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 851,
+          "toViewport": 1065,
+          "fromWidthPx": 211.484375,
+          "toWidthPx": 315.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 1066,
+          "toViewport": 1340,
+          "fromWidthPx": 316,
+          "toWidthPx": 444,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "211px",
+          "201px",
+          "203px"
+        ],
+        "420": [
+          "316px",
+          "304px"
+        ],
+        "734": "624px",
+        "760": [
+          "211px",
+          "237px",
+          "168px"
+        ],
+        "768": [
+          "166px",
+          "146px",
+          "132px",
+          "168px"
+        ],
+        "851": [
+          "211px",
+          "201px",
+          "203px"
+        ],
+        "1066": [
+          "316px",
+          "304px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 'use client';
 
+import {
+  DEMO_CANVAS_SHELL_CSS_VARS,
+  DEMO_CANVAS_SHELL_RESPONSIVE_CSS,
+} from "@/lib/demo-canvas-shell";
 import { CodeBlock } from "@/components/ui/code-block";
 import { ChevronDown } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -55,6 +59,9 @@ import { css as sliderFreeScrollCss } from "./slider/slider-free-scroll/css";
 import { SliderSkipSnapsDemo } from "./slider/slider-skip-snaps/Component";
 import { source as sliderSkipSnapsSource } from "./slider/slider-skip-snaps/source";
 import { css as sliderSkipSnapsCss } from "./slider/slider-skip-snaps/css";
+import { SliderStrictSnapsDemo } from "./slider/slider-strict-snaps/Component";
+import { source as sliderStrictSnapsSource } from "./slider/slider-strict-snaps/source";
+import { css as sliderStrictSnapsCss } from "./slider/slider-strict-snaps/css";
 import { SliderCenterAlignDemo } from "./slider/slider-center-align/Component";
 import { source as sliderCenterAlignSource } from "./slider/slider-center-align/source";
 import { css as sliderCenterAlignCss } from "./slider/slider-center-align/css";
@@ -79,6 +86,9 @@ import { css as sliderAutoScrollCss } from "./slider/slider-auto-scroll/css";
 import { SliderAutoPlayDemo } from "./slider/slider-auto-play/Component";
 import { source as sliderAutoPlaySource } from "./slider/slider-auto-play/source";
 import { css as sliderAutoPlayCss } from "./slider/slider-auto-play/css";
+import { SliderAutoHeightDemo } from "./slider/slider-auto-height/Component";
+import { source as sliderAutoHeightSource } from "./slider/slider-auto-height/source";
+import { css as sliderAutoHeightCss } from "./slider/slider-auto-height/css";
 import { SliderParallaxDemo } from "./slider/slider-parallax/Component";
 import { source as sliderParallaxSource } from "./slider/slider-parallax/source";
 import { css as sliderParallaxCss } from "./slider/slider-parallax/css";
@@ -121,6 +131,12 @@ import { css as gridVideoVimeoCss } from "./grid/grid-video-vimeo/css";
 import { MasonryBalancedDemo } from "./masonry/masonry-balanced/Component";
 import { source as masonryBalancedSource } from "./masonry/masonry-balanced/source";
 import { css as masonryBalancedCss } from "./masonry/masonry-balanced/css";
+import { MasonrySpansDemo } from "./masonry/masonry-spans/Component";
+import { source as masonrySpansSource } from "./masonry/masonry-spans/source";
+import { css as masonrySpansCss } from "./masonry/masonry-spans/css";
+import { MasonryHorizontalOrderDemo } from "./masonry/masonry-horizontal-order/Component";
+import { source as masonryHorizontalOrderSource } from "./masonry/masonry-horizontal-order/source";
+import { css as masonryHorizontalOrderCss } from "./masonry/masonry-horizontal-order/css";
 import { MasonryRoundRobinDemo } from "./masonry/masonry-round-robin/Component";
 import { source as masonryRoundRobinSource } from "./masonry/masonry-round-robin/source";
 import { css as masonryRoundRobinCss } from "./masonry/masonry-round-robin/css";
@@ -139,6 +155,9 @@ import { css as masonryVideoVimeoCss } from "./masonry/masonry-video-vimeo/css";
 import { EntriesSliderDemo } from "./entries/entries-slider/Component";
 import { source as entriesSliderSource } from "./entries/entries-slider/source";
 import { css as entriesSliderCss } from "./entries/entries-slider/css";
+import { EntriesSliderHtml5Demo } from "./entries/entries-slider-html5/Component";
+import { source as entriesSliderHtml5Source } from "./entries/entries-slider-html5/source";
+import { css as entriesSliderHtml5Css } from "./entries/entries-slider-html5/css";
 import { EntriesGridDemo } from "./entries/entries-grid/Component";
 import { source as entriesGridSource } from "./entries/entries-grid/source";
 import { css as entriesGridCss } from "./entries/entries-grid/css";
@@ -151,6 +170,9 @@ import { css as fullscreenSlideBoundCaptionCss } from "./fullscreen/fullscreen-s
 import { FullscreenThumbnailsDemo } from "./fullscreen/fullscreen-thumbnails/Component";
 import { source as fullscreenThumbnailsSource } from "./fullscreen/fullscreen-thumbnails/source";
 import { css as fullscreenThumbnailsCss } from "./fullscreen/fullscreen-thumbnails/css";
+import { FullscreenCaptionThumbnailsDemo } from "./fullscreen/fullscreen-caption-thumbnails/Component";
+import { source as fullscreenCaptionThumbnailsSource } from "./fullscreen/fullscreen-caption-thumbnails/source";
+import { css as fullscreenCaptionThumbnailsCss } from "./fullscreen/fullscreen-caption-thumbnails/css";
 import { FullscreenFadeEffectsDemo } from "./fullscreen/fullscreen-fade-effects/Component";
 import { source as fullscreenFadeEffectsSource } from "./fullscreen/fullscreen-fade-effects/source";
 import { css as fullscreenFadeEffectsCss } from "./fullscreen/fullscreen-fade-effects/css";
@@ -166,6 +188,18 @@ import { css as fullscreenLazyLoadCss } from "./fullscreen/fullscreen-lazy-load/
 import { FullscreenLayoutAgnosticDemo } from "./fullscreen/fullscreen-layout-agnostic/Component";
 import { source as fullscreenLayoutAgnosticSource } from "./fullscreen/fullscreen-layout-agnostic/source";
 import { css as fullscreenLayoutAgnosticCss } from "./fullscreen/fullscreen-layout-agnostic/css";
+import { SkeletonFlexCardsDemo } from "./skeleton/skeleton-flex-cards/Component";
+import { source as skeletonFlexCardsSource } from "./skeleton/skeleton-flex-cards/source";
+import { css as skeletonFlexCardsCss } from "./skeleton/skeleton-flex-cards/css";
+import { SkeletonAppShellDemo } from "./skeleton/skeleton-app-shell/Component";
+import { source as skeletonAppShellSource } from "./skeleton/skeleton-app-shell/source";
+import { css as skeletonAppShellCss } from "./skeleton/skeleton-app-shell/css";
+import { SkeletonResponsiveTextDemo } from "./skeleton/skeleton-responsive-text/Component";
+import { source as skeletonResponsiveTextSource } from "./skeleton/skeleton-responsive-text/source";
+import { css as skeletonResponsiveTextCss } from "./skeleton/skeleton-responsive-text/css";
+import { SkeletonForceOverlayDemo } from "./skeleton/skeleton-force-overlay/Component";
+import { source as skeletonForceOverlaySource } from "./skeleton/skeleton-force-overlay/source";
+import { css as skeletonForceOverlayCss } from "./skeleton/skeleton-force-overlay/css";
 import { ZoomPanStandaloneDemo } from "./zoom-pan/standalone/Component";
 import { source as zoomPanStandaloneSource } from "./zoom-pan/standalone/source";
 import { css as zoomPanStandaloneCss } from "./zoom-pan/standalone/css";
@@ -180,7 +214,14 @@ import { source as zoomPanMasonrySource } from "./zoom-pan/masonry/source";
 import { css as zoomPanMasonryCss } from "./zoom-pan/masonry/css";
 
 type DemoComponent = () => ReactElement | null;
-type DemoCategoryId = "slider" | "grid" | "masonry" | "entries" | "zoom-pan" | "fullscreen";
+type DemoCategoryId =
+  | "slider"
+  | "grid"
+  | "masonry"
+  | "entries"
+  | "zoom-pan"
+  | "fullscreen"
+  | "skeleton";
 
 type DemoNavItem =
   | {
@@ -210,6 +251,17 @@ type DemoDefinition = {
   Component: DemoComponent;
   source: string;
   css: string;
+  sourceFilename?: string;
+  cssFilename?: string;
+  extraCodeTabs?: DemoCodeFileTab[];
+};
+
+type DemoCodeFileTab = {
+  id: string;
+  label: string;
+  code: string;
+  filename?: string;
+  language?: string;
 };
 
 type SidebarExpansionState = {
@@ -248,34 +300,49 @@ function resolveExpandedCategories(
 }
 
 function normalizeDemoSource(code: string) {
-  return code.replaceAll("\\`", "`").replaceAll("\\${", "${");
+  return code
+    .replaceAll("\\`", "`")
+    .replaceAll("\\${", "${");
 }
 
-function DemoCodeBlock(props: {
+function basename(path: string) {
+  const parts = path.split("/");
+  return parts[parts.length - 1] ?? path;
+}
+
+const DemoCodeBlock = memo(function DemoCodeBlock(props: {
   demo: DemoDefinition;
   typescriptCode: string;
 }): JSX.Element {
   const { demo, typescriptCode } = props;
   const normalizedTypescriptCode = normalizeDemoSource(typescriptCode);
   const normalizedCssCode = normalizeDemoSource(demo.css);
+  const normalizedExtraTabs = (demo.extraCodeTabs ?? []).map((tab) => ({
+    ...tab,
+    code: normalizeDemoSource(tab.code),
+  }));
+  const sourceFilename = demo.sourceFilename ?? `${demo.title}.tsx`;
+  const cssFilename = demo.cssFilename ?? `${demo.title}.css`;
 
   return (
     <CodeBlock
       className={styles.codeBlock}
       code={normalizedTypescriptCode}
+      disableAnimations
       tabs={[
         {
           id: "typescript",
-          label: "TypeScript",
+          label: basename(sourceFilename),
           code: normalizedTypescriptCode,
-          filename: `${demo.title}.tsx`,
+          filename: sourceFilename,
           language: "tsx",
         },
+        ...normalizedExtraTabs,
         {
           id: "css",
-          label: "CSS",
+          label: basename(cssFilename),
           code: normalizedCssCode,
-          filename: `${demo.title}.css`,
+          filename: cssFilename,
           language: "css",
         },
       ]}
@@ -283,7 +350,7 @@ function DemoCodeBlock(props: {
       aria-label={`${demo.title} code example`}
     />
   );
-}
+});
 
 const SelectedDemoPane = memo(function SelectedDemoPane(props: {
   selectedCategoryLabel: string;
@@ -297,9 +364,9 @@ const SelectedDemoPane = memo(function SelectedDemoPane(props: {
     selectedDemoCanvasClassName,
     selectedDemoSource,
   } = props;
-  const [activeTab, setActiveTab] = useState<DemoCanvasTab>("preview");
+  const [displayedTab, setDisplayedTab] = useState<DemoCanvasTab>("preview");
   const SelectedDemoComponent = selectedDemo.Component;
-  const isPreviewTab = activeTab === "preview";
+  const isDisplayingPreviewTab = displayedTab === "preview";
 
   return (
     <section className={styles.demoCard}>
@@ -320,37 +387,33 @@ const SelectedDemoPane = memo(function SelectedDemoPane(props: {
         <div
           className={styles.demoCanvasTabList}
           aria-label={`${selectedDemo.title} demo view`}
-          data-active-tab={activeTab}
+          data-active-tab={displayedTab}
         >
           <span aria-hidden="true" className={styles.demoCanvasTabIndicator} />
           <button
             type="button"
-            className={cx(
-              styles.demoCanvasTab,
-              isPreviewTab && styles.demoCanvasTabActive
-            )}
-            aria-pressed={isPreviewTab}
-            onClick={() => setActiveTab("preview")}
+            className={styles.demoCanvasTab}
+            data-tab="preview"
+            aria-pressed={isDisplayingPreviewTab}
+            onClick={() => setDisplayedTab("preview")}
           >
             Preview
           </button>
           <button
             type="button"
-            className={cx(
-              styles.demoCanvasTab,
-              !isPreviewTab && styles.demoCanvasTabActive
-            )}
-            aria-pressed={!isPreviewTab}
-            onClick={() => setActiveTab("code")}
+            className={styles.demoCanvasTab}
+            data-tab="code"
+            aria-pressed={!isDisplayingPreviewTab}
+            onClick={() => setDisplayedTab("code")}
           >
             Code
           </button>
         </div>
 
         <div className={styles.demoCanvasPanel}>
-          {isPreviewTab ? (
+          {isDisplayingPreviewTab ? (
             <div
-              className={`${cx(styles.demoCanvas, selectedDemoCanvasClassName)} shadow-sm border border-slate-200`}
+              className={`${cx(styles.demoCanvas, selectedDemoCanvasClassName)} shadow-sm`}
             >
               <SelectedDemoComponent />
             </div>
@@ -600,7 +663,7 @@ const DEMOS: DemoDefinition[] = [
     id: "slider-loop",
     title: "Loop",
     eyebrow: "Slider",
-    tags: ["center","fullscreen","skeleton"],
+    tags: ["center", "initialIndex", "fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderLoopDemo,
     source: sliderLoopSource,
@@ -707,6 +770,16 @@ const DEMOS: DemoDefinition[] = [
     css: sliderSkipSnapsCss,
   },
   {
+    id: "slider-strict-snaps",
+    title: "Strict Snaps",
+    eyebrow: "Slider",
+    tags: ["loop","center-align","fullscreen","skeleton"],
+    categoryId: "slider",
+    Component: SliderStrictSnapsDemo,
+    source: sliderStrictSnapsSource,
+    css: sliderStrictSnapsCss,
+  },
+  {
     id: "slider-center-align",
     title: "Center Align",
     eyebrow: "Slider",
@@ -787,6 +860,16 @@ const DEMOS: DemoDefinition[] = [
     css: sliderAutoPlayCss,
   },
   {
+    id: "slider-auto-height",
+    title: "Auto Height",
+    eyebrow: "Slider",
+    tags: ["center","loop","fullscreen","skeleton"],
+    categoryId: "slider",
+    Component: SliderAutoHeightDemo,
+    source: sliderAutoHeightSource,
+    css: sliderAutoHeightCss,
+  },
+  {
     id: "slider-parallax",
     title: "Parallax",
     eyebrow: "Slider",
@@ -850,7 +933,7 @@ const DEMOS: DemoDefinition[] = [
     id: "grid-columns",
     title: "Spans",
     eyebrow: "Grid",
-    tags: ["fullscreen","skeleton","span","grid.item"],
+    tags: ["fullscreen","responsive","skeleton","span","grid.item"],
     categoryId: "grid",
     Component: GridColumnsDemo,
     source: gridColumnsSource,
@@ -895,6 +978,8 @@ const DEMOS: DemoDefinition[] = [
     Component: GridVideoHtml5Demo,
     source: gridVideoHtml5Source,
     css: gridVideoHtml5Css,
+    sourceFilename: "Component.tsx",
+    cssFilename: "grid-video-html5-demo.module.css",
   },
   {
     id: "grid-video-youtube",
@@ -925,6 +1010,32 @@ const DEMOS: DemoDefinition[] = [
     Component: MasonryBalancedDemo,
     source: masonryBalancedSource,
     css: masonryBalancedCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-balanced-demo.module.css",
+  },
+  {
+    id: "masonry-spans",
+    title: "Spans",
+    eyebrow: "Masonry",
+    tags: ["balanced","span","video","fullscreen","skeleton","masonry.item"],
+    categoryId: "masonry",
+    Component: MasonrySpansDemo,
+    source: masonrySpansSource,
+    css: masonrySpansCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-spans-demo.module.css",
+  },
+  {
+    id: "masonry-horizontal-order",
+    title: "Horizontal Order",
+    eyebrow: "Masonry",
+    tags: ["horizontal-order","span","video","fullscreen","skeleton"],
+    categoryId: "masonry",
+    Component: MasonryHorizontalOrderDemo,
+    source: masonryHorizontalOrderSource,
+    css: masonryHorizontalOrderCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-horizontal-order-demo.module.css",
   },
   {
     id: "masonry-round-robin",
@@ -987,6 +1098,18 @@ const DEMOS: DemoDefinition[] = [
     css: entriesSliderCss,
   },
   {
+    id: "entries-slider-html5",
+    title: "Slider + HTML5",
+    eyebrow: "Entries",
+    tags: ["slider","html5","video","fullscreen"],
+    categoryId: "entries",
+    Component: EntriesSliderHtml5Demo,
+    source: entriesSliderHtml5Source,
+    css: entriesSliderHtml5Css,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-slider-html5-demo.module.css",
+  },
+  {
     id: "entries-grid",
     title: "Grid",
     eyebrow: "Entries",
@@ -1007,8 +1130,18 @@ const DEMOS: DemoDefinition[] = [
     css: entriesMasonryCss,
   },
   {
+    id: "fullscreen-layout-agnostic",
+    title: "Standalone",
+    eyebrow: "Fullscreen",
+    tags: ["openFullscreenAt","api","scale","custom-markup"],
+    categoryId: "fullscreen",
+    Component: FullscreenLayoutAgnosticDemo,
+    source: fullscreenLayoutAgnosticSource,
+    css: fullscreenLayoutAgnosticCss,
+  },
+  {
     id: "fullscreen-slide-bound-caption",
-    title: "Slide-Bound Caption",
+    title: "Slide Caption",
     eyebrow: "Fullscreen",
     tags: ["captions","slide","responsive"],
     categoryId: "fullscreen",
@@ -1027,6 +1160,18 @@ const DEMOS: DemoDefinition[] = [
     css: fullscreenThumbnailsCss,
   },
   {
+    id: "fullscreen-caption-thumbnails",
+    title: "Caption + Thumbnails",
+    eyebrow: "Fullscreen",
+    tags: ["captions","overlay","thumbnails","responsive"],
+    categoryId: "fullscreen",
+    Component: FullscreenCaptionThumbnailsDemo,
+    source: fullscreenCaptionThumbnailsSource,
+    css: fullscreenCaptionThumbnailsCss,
+    sourceFilename: "CaptionThumbnails.tsx",
+    cssFilename: "caption-thumbnails-demo.module.css",
+  },
+  {
     id: "fullscreen-fade-effects",
     title: "Fade Effects",
     eyebrow: "Fullscreen",
@@ -1038,7 +1183,7 @@ const DEMOS: DemoDefinition[] = [
   },
   {
     id: "fullscreen-viewport-overlay-caption",
-    title: "Viewport Overlay Caption",
+    title: "Overlay Caption",
     eyebrow: "Fullscreen",
     tags: ["overlay","captions","viewport"],
     categoryId: "fullscreen",
@@ -1048,7 +1193,7 @@ const DEMOS: DemoDefinition[] = [
   },
   {
     id: "fullscreen-viewport-overlay-caption-sized",
-    title: "Viewport Overlay Caption (Sized)",
+    title: "Overlay Caption (Sized)",
     eyebrow: "Fullscreen",
     tags: ["overlay","captions","responsive"],
     categoryId: "fullscreen",
@@ -1058,7 +1203,7 @@ const DEMOS: DemoDefinition[] = [
   },
   {
     id: "fullscreen-lazy-load",
-    title: "LazyLoad",
+    title: "Lazy Load",
     eyebrow: "Fullscreen",
     tags: ["lazy-load","media"],
     categoryId: "fullscreen",
@@ -1067,14 +1212,52 @@ const DEMOS: DemoDefinition[] = [
     css: fullscreenLazyLoadCss,
   },
   {
-    id: "fullscreen-layout-agnostic",
-    title: "Layout Agnostic",
-    eyebrow: "Fullscreen",
-    tags: ["openFullscreenAt","api","scale","custom-markup"],
-    categoryId: "fullscreen",
-    Component: FullscreenLayoutAgnosticDemo,
-    source: fullscreenLayoutAgnosticSource,
-    css: fullscreenLayoutAgnosticCss,
+    id: "skeleton-flex-cards",
+    title: "Flex Cards",
+    eyebrow: "Skeleton",
+    tags: ["standalone","flex","text","responsive"],
+    categoryId: "skeleton",
+    Component: SkeletonFlexCardsDemo,
+    source: skeletonFlexCardsSource,
+    css: skeletonFlexCardsCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "skeleton-flex-cards-demo.module.css",
+  },
+  {
+    id: "skeleton-app-shell",
+    title: "App Shell",
+    eyebrow: "Skeleton",
+    tags: ["standalone","flex","dashboard","nested"],
+    categoryId: "skeleton",
+    Component: SkeletonAppShellDemo,
+    source: skeletonAppShellSource,
+    css: skeletonAppShellCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "skeleton-app-shell-demo.module.css",
+  },
+  {
+    id: "skeleton-responsive-text",
+    title: "Responsive Text",
+    eyebrow: "Skeleton",
+    tags: ["standalone","text","container-query","responsive"],
+    categoryId: "skeleton",
+    Component: SkeletonResponsiveTextDemo,
+    source: skeletonResponsiveTextSource,
+    css: skeletonResponsiveTextCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "skeleton-responsive-text-demo.module.css",
+  },
+  {
+    id: "skeleton-force-overlay",
+    title: "Force Overlay",
+    eyebrow: "Skeleton",
+    tags: ["standalone","force","compare","opacity"],
+    categoryId: "skeleton",
+    Component: SkeletonForceOverlayDemo,
+    source: skeletonForceOverlaySource,
+    css: skeletonForceOverlayCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "skeleton-force-overlay-demo.module.css",
   },
   {
     id: "zoom-pan-standalone",
@@ -1124,7 +1307,7 @@ const DEMO_CATEGORIES: DemoCategory[] = [
   {
     "id": "slider",
     "label": "Slider",
-    "description": "Base carousel variants covering motion, direction, grouping, media, and navigation layers.",
+    "description": "A motion-first slider primitive where drag, wheel, and fullscreen handoffs feel continuous.",
     "items": [
       {
         "type": "demo",
@@ -1165,6 +1348,10 @@ const DEMO_CATEGORIES: DemoCategory[] = [
       },
       {
         "type": "demo",
+        "demoId": "slider-strict-snaps"
+      },
+      {
+        "type": "demo",
         "demoId": "slider-center-align"
       },
       {
@@ -1197,6 +1384,10 @@ const DEMO_CATEGORIES: DemoCategory[] = [
       },
       {
         "type": "demo",
+        "demoId": "slider-auto-height"
+      },
+      {
+        "type": "demo",
         "demoId": "slider-parallax"
       },
       {
@@ -1224,7 +1415,7 @@ const DEMO_CATEGORIES: DemoCategory[] = [
   {
     "id": "grid",
     "label": "Grid",
-    "description": "Row-based gallery surfaces for explicit columns, auto-fit sizing, lazy media, and video cards.",
+    "description": "Predictable media grids with responsive spans and fullscreen handoffs built into the layout.",
     "items": [
       {
         "type": "demo",
@@ -1257,11 +1448,19 @@ const DEMO_CATEGORIES: DemoCategory[] = [
   {
     "id": "masonry",
     "label": "Masonry",
-    "description": "Waterfall layouts for uneven heights, alternative placement rules, and mixed video walls.",
+    "description": "Server-predicted masonry layouts that keep height and placement stable through hydration, then refine with live measurements.",
     "items": [
       {
         "type": "demo",
         "demoId": "masonry-balanced"
+      },
+      {
+        "type": "demo",
+        "demoId": "masonry-spans"
+      },
+      {
+        "type": "demo",
+        "demoId": "masonry-horizontal-order"
       },
       {
         "type": "demo",
@@ -1286,11 +1485,15 @@ const DEMO_CATEGORIES: DemoCategory[] = [
   {
     "id": "entries",
     "label": "Entries",
-    "description": "Structured editorial rows whose internal media blocks can be sliders, grids, or masonry collections.",
+    "description": "Structured editorial rows whose text, metadata, and media blocks can render as sliders, grids, or masonry galleries.",
     "items": [
       {
         "type": "demo",
         "demoId": "entries-slider"
+      },
+      {
+        "type": "demo",
+        "demoId": "entries-slider-html5"
       },
       {
         "type": "demo",
@@ -1328,8 +1531,12 @@ const DEMO_CATEGORIES: DemoCategory[] = [
   {
     "id": "fullscreen",
     "label": "Fullscreen",
-    "description": "Fullscreen controller demos for slide-bound captions, viewport overlays, thumbnail rails, layout-agnostic triggers, and lazy media loading.",
+    "description": "Fullscreen controller demos for standalone triggers, slide-bound captions, viewport overlays, thumbnail rails, and lazy media loading.",
     "items": [
+      {
+        "type": "demo",
+        "demoId": "fullscreen-layout-agnostic"
+      },
       {
         "type": "demo",
         "demoId": "fullscreen-slide-bound-caption"
@@ -1348,15 +1555,38 @@ const DEMO_CATEGORIES: DemoCategory[] = [
       },
       {
         "type": "demo",
+        "demoId": "fullscreen-caption-thumbnails"
+      },
+      {
+        "type": "demo",
         "demoId": "fullscreen-fade-effects"
       },
       {
         "type": "demo",
         "demoId": "fullscreen-lazy-load"
+      }
+    ]
+  },
+  {
+    "id": "skeleton",
+    "label": "Skeleton",
+    "description": "Standalone skeleton primitives for real readiness, app shells, responsive media, and forced compare overlays without importing a gallery layout.",
+    "items": [
+      {
+        "type": "demo",
+        "demoId": "skeleton-flex-cards"
       },
       {
         "type": "demo",
-        "demoId": "fullscreen-layout-agnostic"
+        "demoId": "skeleton-app-shell"
+      },
+      {
+        "type": "demo",
+        "demoId": "skeleton-responsive-text"
+      },
+      {
+        "type": "demo",
+        "demoId": "skeleton-force-overlay"
       }
     ]
   }
@@ -1534,7 +1764,12 @@ function DemosPageContent(props: {
   );
 
   return (
-    <div className={styles.page}>
+    <div
+      className={styles.page}
+      data-demo-canvas-shell=""
+      style={DEMO_CANVAS_SHELL_CSS_VARS}
+    >
+      <style dangerouslySetInnerHTML={{ __html: DEMO_CANVAS_SHELL_RESPONSIVE_CSS }} />
       <div className={styles.shell}>
         <div className={styles.layout}>
           <aside className={styles.sidebar}>

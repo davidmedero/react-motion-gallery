@@ -1,13 +1,17 @@
 import * as React from "react";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { DefaultDotsFactory } from "./dots";
+import { buildDotsNode, DefaultDotsFactory } from "./dots";
 
 function readSliderCss() {
   return readFileSync(new URL("../Slider.module.css", import.meta.url), "utf8");
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("slider dots defaults", () => {
   test("keeps default placement in CSS instead of inline container styles", () => {
@@ -64,5 +68,54 @@ describe("slider dots defaults", () => {
     expect(css).toMatch(
       /:where\(\.dotsRootY\)\s*\{[^}]*top:\s*50%;[^}]*left:\s*10px;[^}]*transform:\s*translateY\(-50%\);/s
     );
+  });
+
+  test("opts dot navigation into crossfade when slider controls prefer it", () => {
+    const goToIndex = vi.fn();
+    const isScrolling = { current: true };
+    let goTo: ((index: number) => void) | undefined;
+
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
+
+    buildDotsNode({
+      AX: { main: "x", clientKey: "clientWidth" },
+      slider: { current: null },
+      sliderWidth: { current: 0 },
+      wrap: true,
+      showDots: true,
+      selectedIndex: { current: 0 },
+      slides: {
+        current: [
+          { cells: [], target: 0 },
+          { cells: [], target: 100 },
+        ],
+      },
+      dotsContainerRef: { current: null },
+      dotRefs: { current: [] },
+      isScrolling,
+      goToIndex,
+      preferCrossfade: true,
+      renderDots: (args) => {
+        goTo = args.goTo;
+        return null;
+      },
+      createRipple: vi.fn(),
+      styles: {
+        dotsRoot: "dotsRoot",
+        dotsRootX: "dotsRootX",
+        dotsRootY: "dotsRootY",
+        pagination_dot: "pagination_dot",
+        active: "active",
+        inactive: "inactive",
+      },
+    });
+
+    goTo?.(1);
+
+    expect(isScrolling.current).toBe(false);
+    expect(goToIndex).toHaveBeenCalledWith(1, { preferCrossfade: true });
   });
 });

@@ -1,68 +1,78 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useSyncExternalStore } from "react";
+import {
+  useState,
+  useSyncExternalStore } from "react";
 import {
   FullscreenThumbnailSlider,
   GalleryCore,
   Slider,
+  useSliderReady,
   ThumbnailSlider,
   createSliderIndexChannel,
   toMediaItems,
   useFullscreenController,
 } from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-thumbnails-demo.module.css";
 
 const SLIDES = [
   {
-    slideSrc: "https://picsum.photos/id/1037/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1037/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1037/320/200",
+    slideSrc: "https://picsum.photos/id/193/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/193/2400/1350",
+    thumbSrc: "https://picsum.photos/id/193/320/200",
   },
   {
-    slideSrc: "https://picsum.photos/id/1038/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1038/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1038/320/200",
+    slideSrc: "https://picsum.photos/id/196/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/196/2400/1350",
+    thumbSrc: "https://picsum.photos/id/196/320/200",
   },
   {
-    slideSrc: "https://picsum.photos/id/1039/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1039/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1039/320/200",
+    slideSrc: "https://picsum.photos/id/197/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/197/2400/1350",
+    thumbSrc: "https://picsum.photos/id/197/320/200",
   },
   {
-    slideSrc: "https://picsum.photos/id/1040/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1040/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1040/320/200",
+    slideSrc: "https://picsum.photos/id/198/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/198/2400/1350",
+    thumbSrc: "https://picsum.photos/id/198/320/200",
   },
   {
-    slideSrc: "https://picsum.photos/id/1041/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1041/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1041/320/200",
+    slideSrc: "https://picsum.photos/id/202/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/202/2400/1350",
+    thumbSrc: "https://picsum.photos/id/202/320/200",
   },
   {
-    slideSrc: "https://picsum.photos/id/1042/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1042/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1042/320/200",
+    slideSrc: "https://picsum.photos/id/204/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/204/2400/1350",
+    thumbSrc: "https://picsum.photos/id/204/320/200",
   },
   {
-    slideSrc: "https://picsum.photos/id/1043/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1043/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1043/320/200",
+    slideSrc: "https://picsum.photos/id/206/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/206/2400/1350",
+    thumbSrc: "https://picsum.photos/id/206/320/200",
   },
   {
-    slideSrc: "https://picsum.photos/id/1044/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1044/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1044/320/200",
+    slideSrc: "https://picsum.photos/id/213/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/213/2400/1350",
+    thumbSrc: "https://picsum.photos/id/213/320/200",
   },
   {
-    slideSrc: "https://picsum.photos/id/1045/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1045/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1045/320/200",
+    slideSrc: "https://picsum.photos/id/215/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/215/2400/1350",
+    thumbSrc: "https://picsum.photos/id/215/320/200",
   },
   {
-    slideSrc: "https://picsum.photos/id/1047/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/1047/2400/1350",
-    thumbSrc: "https://picsum.photos/id/1047/320/200",
+    slideSrc: "https://picsum.photos/id/217/1600/900",
+    fullscreenSrc: "https://picsum.photos/id/217/2400/1350",
+    thumbSrc: "https://picsum.photos/id/217/320/200",
   },
 ];
 
@@ -105,6 +115,7 @@ function useDocumentClientWidth() {
 function FullscreenAddon() {
   const viewportWidth = useDocumentClientWidth();
   const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
       effects: {
@@ -130,6 +141,7 @@ function FullscreenAddon() {
           width: viewportWidth || undefined,
           padding: "8px 12px",
           overflow: "visible",
+          background: "#fff"
         }}
         thumbnailItemClassName={styles.fullscreenThumbnailThumb}
         gap={12}
@@ -147,19 +159,13 @@ export function SliderThumbnailsDemo() {
     SLIDES.map((slide) => slide.fullscreenSrc)
   );
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
-        indexChannel={indexChannel}
-        controls={{
-          dots: {
-            enabled: false,
-          },
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: 2,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 2,
               mode: "peek",
               layout: {
                 kind: "slider",
@@ -177,9 +183,19 @@ export function SliderThumbnailsDemo() {
                   },
                 },
               },
-            },
-          },
-        }}
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        indexChannel={indexChannel}
+
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderDots(),
+        ]}
       >
         {media.map((item, i) => (
           <Slide
@@ -187,8 +203,10 @@ export function SliderThumbnailsDemo() {
             src={SLIDES[i]?.slideSrc ?? ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
 
       <ThumbnailSlider
         indexChannel={indexChannel}
@@ -219,6 +237,10 @@ export function SliderThumbnailsDemo() {
           },
           transitions: {
             loading: {
+              // force: {
+              //   showContent: true,
+              //   skeletonOpacity: 0.5,
+              // },
               skeletonCount: 9,
               elements: {
                 container: {

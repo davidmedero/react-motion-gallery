@@ -35,6 +35,7 @@ import {
   ResponsiveCaptionPlacement,
   ResponsiveLength,
 } from "../shared/responsive";
+import { readViewportWidth } from "../shared/hooks/useViewportWidth";
 
 type ResolvedPlyrOptions = NonNullable<PlyrProp>["options"];
 export type RenderFullscreenSlidesMode = "track" | "crossfade";
@@ -94,6 +95,7 @@ type RenderFullscreenSlidesArgs = {
   fsLazyAllowedVideosRef?: React.RefObject<Set<number>>;
   fsLazyListenersVideosRef?: React.RefObject<Set<() => void>>;
   canonicalLength?: number;
+  activeCanonicalIndex?: number | null;
   openingCanonicalIndex?: number | null;
   openingInProgress?: boolean;
   deferLiveVideoUntilVisible?: boolean;
@@ -116,6 +118,22 @@ export function shouldUseFsStaticVideoPreview(args: {
   renderMode?: RenderFullscreenSlidesMode;
 }) {
   return args.isClone || args.renderMode === "crossfade";
+}
+
+export function shouldUseFsStaticInactiveVideo(args: {
+  activeCanonicalIndex?: number | null;
+  canonicalIndex: number;
+  lazyAllowed?: boolean;
+  lazyEnabled: boolean;
+  liveReady: boolean;
+}) {
+  return (
+    args.lazyEnabled &&
+    !args.liveReady &&
+    !args.lazyAllowed &&
+    args.activeCanonicalIndex != null &&
+    args.canonicalIndex !== args.activeCanonicalIndex
+  );
 }
 
 function isWrappedItems(itemsLen: number, canonicalLen: number) {
@@ -277,6 +295,7 @@ function FsLazyCustomImageContent(props: {
   item: Extract<MediaItem, { kind: "image" }>;
   renderedIndex: number;
   canonicalIndex: number;
+  activeCanonicalIndex?: number | null;
   isClone: boolean;
   openingCanonicalIndex?: number | null;
   openingInProgress?: boolean;
@@ -295,6 +314,7 @@ function FsLazyCustomImageContent(props: {
     item,
     renderedIndex,
     canonicalIndex,
+    activeCanonicalIndex,
     isClone,
     openingCanonicalIndex,
     openingInProgress,
@@ -1076,7 +1096,7 @@ function FsLiveVideoContent(props: {
   const visibleRef = React.useRef(false);
 
   const computeAllowed = React.useCallback(() => {
-    if (seenBefore) return true;
+    if (seenBefore || readyRef.current) return true;
     if (!lazyEnabled) return true;
     return !!fsLazyAllowedRef?.current?.has(canonicalIndex);
   }, [seenBefore, lazyEnabled, fsLazyAllowedRef, canonicalIndex]);
@@ -1153,7 +1173,7 @@ function FsLiveVideoContent(props: {
   );
 
   React.useLayoutEffect(() => {
-    if (seenBefore) {
+    if (seenBefore || readyRef.current) {
       setWrapVisible(true);
       syncSpinner(false);
       revealedRef.current = true;
@@ -1167,7 +1187,7 @@ function FsLiveVideoContent(props: {
   }, [seenBefore, setWrapVisible, syncSpinner, everMounted]);
 
   React.useEffect(() => {
-    if (seenBefore) return;
+    if (seenBefore || readyRef.current) return;
 
     const tryReveal = () => {
       if (revealedRef.current) return true;
@@ -1401,12 +1421,33 @@ function FsLiveVideoContent(props: {
     )
   ) : null;
 
+  const livePreview = videoSnapshotStore ? (
+    <VideoCloneSnapshot
+      canonicalIndex={canonicalIndex}
+      store={videoSnapshotStore}
+      src={src}
+      poster={poster}
+      source={plyr?.source ?? undefined}
+      options={effectivePlyrOptions}
+      className={["rmg__player", fsVideoClassName].filter(Boolean).join(" ")}
+      style={{
+        ...defaultPlayerStyle,
+        ...(fsVideoStyle ?? {}),
+        zIndex: 1,
+        pointerEvents: "none",
+        visibility: showFullscreenSlider ? "visible" : "hidden",
+        opacity: showFullscreenSlider ? 1 : 0,
+      }}
+    />
+  ) : null;
+
   return (
     <>
       <div
         ref={gateRef}
         style={{ position: "absolute", inset: 0, pointerEvents: showFullscreenSlider ? "auto" : "none" }}
       />
+      {livePreview}
       {spinnerEl}
       <div
         ref={playerWrapRef}
@@ -1422,6 +1463,7 @@ function FsLiveVideoContent(props: {
           willChange: "opacity",
         }}
         className={["rmg__player", fsVideoClassName].filter(Boolean).join(" ")}
+        data-rmg-live-video="true"
         data-rmg-plyr="true"
         data-rmg-plyr-index={String(renderedIndex)}
         data-rmg-plyr-provider={provider}
@@ -1442,6 +1484,7 @@ function FsSlide(props: {
   item: MediaItem;
   index: number;
   canonicalIndex: number;
+  activeCanonicalIndex?: number | null;
   isClone: boolean;
   openingCanonicalIndex?: number | null;
   openingInProgress?: boolean;
@@ -1499,6 +1542,7 @@ function FsSlide(props: {
     item,
     index,
     canonicalIndex,
+    activeCanonicalIndex,
     isClone,
     openingCanonicalIndex,
     openingInProgress,
@@ -1552,10 +1596,26 @@ function FsSlide(props: {
 
   const isNode = item.kind === "node";
   const shouldDeferLiveVideo = !!deferLiveVideoUntilVisible && !showFullscreenSlider;
+  const liveVideoKey =
+    item.kind === "video" ? `video:${getMediaKey(item)}` : null;
+  const liveVideoReady =
+    liveVideoKey != null && fsPreparedVideosRef.current.has(liveVideoKey);
+  const liveVideoLazyAllowed =
+    item.kind === "video" &&
+    !!fsLazyAllowedVideosRef?.current?.has(canonicalIndex);
+  const shouldUseStaticInactiveVideo =
+    item.kind === "video" &&
+    shouldUseFsStaticInactiveVideo({
+      activeCanonicalIndex,
+      canonicalIndex,
+      lazyAllowed: liveVideoLazyAllowed,
+      lazyEnabled: !!fsLazy?.videos?.enabled,
+      liveReady: liveVideoReady,
+    });
   const shouldRenderStaticVideo = shouldUseFsStaticVideoPreview({
     isClone,
     renderMode,
-  });
+  }) || shouldUseStaticInactiveVideo;
 
   const baseImgStyle: React.CSSProperties = {
     maxWidth: "100%",
@@ -1651,7 +1711,10 @@ function FsSlide(props: {
           el &&
           !cells.current.some((c) => c.element === el)
         ) {
-          cells.current.push({ element: el as unknown as HTMLElement, index });
+          cells.current.push({
+            element: el as unknown as HTMLElement,
+            index,
+          });
         }
       }}
       style={{
@@ -1720,6 +1783,7 @@ function FsSlide(props: {
 
         <div
           ref={imageRef}
+          data-rmg-zoom-pan-root="true"
           data-rmg-fs-media="true"
           data-rmg-fs-media-viewport="true"
           onPointerDown={
@@ -1895,6 +1959,7 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
     fsLazyAllowedVideosRef,
     fsLazyListenersVideosRef,
     canonicalLength,
+    activeCanonicalIndex,
     openingCanonicalIndex,
     openingInProgress,
     deferLiveVideoUntilVisible,
@@ -1909,7 +1974,7 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
 
   const vw = effectiveViewportWidth(
     opts.viewportWidth ??
-      (typeof window !== "undefined" ? document.documentElement.clientWidth : 0)
+      (typeof window !== "undefined" ? readViewportWidth() : 0)
   );
   const vh = effectiveViewportHeight(
     opts.viewportHeight ??
@@ -1992,6 +2057,7 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
         item={item}
         index={index}
         canonicalIndex={canonicalIndex}
+        activeCanonicalIndex={activeCanonicalIndex}
         isClone={isClone}
         openingCanonicalIndex={openingCanonicalIndex}
         openingInProgress={openingInProgress}

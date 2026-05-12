@@ -4,6 +4,7 @@ import {
   buildSliderScrollSnaps,
   fitsWithinSliderViewport,
   getSliderCenterOffset,
+  resolveSliderMeasuredSize,
   roundSliderLayoutMetric,
   resolveSliderContentSpan,
   shouldEnableSliderLoop,
@@ -40,6 +41,28 @@ describe("slider layout stability helpers", () => {
   test("rounds small geometry jitter out of signatures", () => {
     expect(roundSliderLayoutMetric(319.994)).toBe(319.99);
     expect(roundSliderLayoutMetric(319.995)).toBe(320);
+  });
+
+  test("prefers child margin extent when descendant margins overflow the slide shell", () => {
+    expect(
+      resolveSliderMeasuredSize({
+        rectSize: 550,
+        scale: 1,
+        offsetSize: 550,
+        marginExtentSize: 590,
+      })
+    ).toBe(590);
+  });
+
+  test("normalizes scaled rects before comparing them with intrinsic layout size", () => {
+    expect(
+      resolveSliderMeasuredSize({
+        rectSize: 632.5,
+        scale: 1.15,
+        offsetSize: 550,
+        marginExtentSize: 590,
+      })
+    ).toBe(590);
   });
 
   test("measures content span from the resolved loop state", () => {

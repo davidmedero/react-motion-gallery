@@ -1,0 +1,109 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=grid-lazy-load&skeletonMeasure=content",
+  "outputFile": "./grid-lazy-load.skeleton-text.generated.ts",
+  "moduleExportName": "gridLazyLoadSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1600,
+  "viewportHeight": 1800,
+  "settleMs": 120,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "gridLazyLoadItem01Badge",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem01Badge']"
+    },
+    {
+      "exportName": "gridLazyLoadItem01Title",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem01Title']"
+    },
+    {
+      "exportName": "gridLazyLoadItem01Body",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem01Body']"
+    },
+    {
+      "exportName": "gridLazyLoadItem02Badge",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem02Badge']"
+    },
+    {
+      "exportName": "gridLazyLoadItem02Title",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem02Title']"
+    },
+    {
+      "exportName": "gridLazyLoadItem02Body",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem02Body']"
+    },
+    {
+      "exportName": "gridLazyLoadItem03Badge",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem03Badge']"
+    },
+    {
+      "exportName": "gridLazyLoadItem03Title",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem03Title']"
+    },
+    {
+      "exportName": "gridLazyLoadItem03Body",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem03Body']"
+    },
+    {
+      "exportName": "gridLazyLoadItem04Badge",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem04Badge']"
+    },
+    {
+      "exportName": "gridLazyLoadItem04Title",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem04Title']"
+    },
+    {
+      "exportName": "gridLazyLoadItem04Body",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem04Body']"
+    },
+    {
+      "exportName": "gridLazyLoadItem05Badge",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem05Badge']"
+    },
+    {
+      "exportName": "gridLazyLoadItem05Title",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem05Title']"
+    },
+    {
+      "exportName": "gridLazyLoadItem05Body",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem05Body']"
+    },
+    {
+      "exportName": "gridLazyLoadItem06Badge",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem06Badge']"
+    },
+    {
+      "exportName": "gridLazyLoadItem06Title",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem06Title']"
+    },
+    {
+      "exportName": "gridLazyLoadItem06Body",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem06Body']"
+    },
+    {
+      "exportName": "gridLazyLoadItem07Badge",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem07Badge']"
+    },
+    {
+      "exportName": "gridLazyLoadItem07Title",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem07Title']"
+    },
+    {
+      "exportName": "gridLazyLoadItem07Body",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem07Body']"
+    },
+    {
+      "exportName": "gridLazyLoadItem08Badge",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem08Badge']"
+    },
+    {
+      "exportName": "gridLazyLoadItem08Title",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem08Title']"
+    },
+    {
+      "exportName": "gridLazyLoadItem08Body",
+      "selector": "[data-skeleton-text-id='gridLazyLoadItem08Body']"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+function l(n,e={}){return {__rmgFullscreenPlugin:true,kind:n,options:e.options,runtime:e.runtime,RuntimeHost:e.RuntimeHost,preload:e.preload}}export{l as a};

@@ -18,6 +18,22 @@ function clampIndex(index: number, len: number) {
   return Math.max(0, Math.min(len - 1, whole));
 }
 
+export function resolveFullscreenThumbnailClosedTransform(
+  position: FullscreenThumbnailSliderProps["position"]
+) {
+  switch (position) {
+    case "left":
+      return "translateX(-8px)";
+    case "right":
+      return "translateX(8px)";
+    case "top":
+      return "translateY(-8px)";
+    case "bottom":
+    default:
+      return "translateY(8px)";
+  }
+}
+
 export default function FullscreenThumbnailSlider({
   bridge,
   items,
@@ -150,7 +166,9 @@ export default function FullscreenThumbnailSlider({
   const isOpen = visible && !invisible;
 
   const opacity = isOpen ? 1 : 0;
-  const transform = isOpen ? "translateY(0)" : "translateY(8px)";
+  const transform = isOpen
+    ? "translate3d(0, 0, 0)"
+    : resolveFullscreenThumbnailClosedTransform(position);
   const pointerEvents: React.CSSProperties["pointerEvents"] =
     isOpen ? "auto" : "none";
 

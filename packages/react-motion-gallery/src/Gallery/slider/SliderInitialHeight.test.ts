@@ -3,8 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import { BREAKPOINT_MAP } from "../shared/responsive";
+import { Skeleton, buildScopedInitialHeightCss } from "../skeleton";
 import type { SliderSkeletonSpec } from "./SliderSkeleton";
-import { Slider, buildScopedInitialHeightCss } from "./index";
+import Slider from "./default";
 
 const CARDS_SKELETON_SPEC: SliderSkeletonSpec = {
   mode: "fit",
@@ -32,7 +33,7 @@ const CARDS_SKELETON_SPEC: SliderSkeletonSpec = {
         },
         {
           kind: "text",
-          fontSize: 16,
+          barHeight: 16,
           lineHeight: 1.2,
           style: {
             width: "76%",
@@ -40,7 +41,7 @@ const CARDS_SKELETON_SPEC: SliderSkeletonSpec = {
         },
         {
           kind: "text",
-          fontSize: 14,
+          barHeight: 14,
           lineHeight: 1.1,
           style: {
             width: "34%",
@@ -82,7 +83,7 @@ const RESPONSIVE_SCOPE_SKELETON_SPEC: SliderSkeletonSpec = {
     },
     item: {
       kind: "text",
-      fontSize: 16,
+      barHeight: 16,
       lineHeight: 1.25,
       lines: {
         0: 3,
@@ -256,6 +257,36 @@ function extractDeclaration(ruleBlock: string, prop: string) {
   return match?.[1].trim() ?? null;
 }
 
+function renderSkeletonSliderMarkup(args: {
+  skeletonSpec?: SliderSkeletonSpec;
+  visibleCount?: SliderSkeletonSpec["visibleCount"];
+  sliderProps?: React.ComponentProps<typeof Slider>;
+}) {
+  const skeletonSpec = args.skeletonSpec ?? CARDS_SKELETON_SPEC;
+  const sliderProps = args.sliderProps ?? {};
+
+  return renderToStaticMarkup(
+    React.createElement(
+      Skeleton,
+      {
+        ready: false,
+        layout: {
+          ...skeletonSpec,
+          visibleCount: args.visibleCount,
+        },
+      },
+      React.createElement(
+        Slider,
+        sliderProps,
+        React.createElement("div", { key: "slide-1" }, "One"),
+        React.createElement("div", { key: "slide-2" }, "Two"),
+        React.createElement("div", { key: "slide-3" }, "Three"),
+        React.createElement("div", { key: "slide-4" }, "Four")
+      )
+    )
+  );
+}
+
 describe("Slider initial height CSS", () => {
   test("scopes cards-like initial-height CSS with data-rmg-scope selectors", () => {
     const css = buildScopedInitialHeightCss({
@@ -290,32 +321,14 @@ describe("Slider initial height CSS", () => {
   });
 
   test("renders scoped initial-height CSS alongside matching SSR slider scope markup", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(
-        Slider,
-        {
-          layout: {
-            cellsPerSlide: CARDS_COUNT,
-          },
-          controls: {
-            arrows: { enabled: false },
-            dots: { enabled: false },
-            progress: { enabled: false },
-            scrollbar: { enabled: false },
-          },
-          transitions: {
-            loading: {
-              force: true,
-              skeletonCount: CARDS_COUNT,
-              skeleton: CARDS_SKELETON_SPEC,
-            },
-          },
+    const markup = renderSkeletonSliderMarkup({
+      visibleCount: CARDS_COUNT,
+      sliderProps: {
+        layout: {
+          cellsPerSlide: CARDS_COUNT,
         },
-        React.createElement("div", { key: "card-1" }, "One"),
-        React.createElement("div", { key: "card-2" }, "Two"),
-        React.createElement("div", { key: "card-3" }, "Three")
-      )
-    );
+      },
+    });
 
     const scopeMatch = markup.match(/data-rmg-scope="([^"]+)"/);
     expect(scopeMatch?.[1]).toBeTruthy();
@@ -323,7 +336,6 @@ describe("Slider initial height CSS", () => {
     const scopeId = scopeMatch![1];
     const shellSelector = `[data-rmg-scope="${scopeId}"] > [data-rmg-scope-shell="true"]`;
 
-    expect(scopeId).toMatch(/^rmg-slider-/);
     expect(scopeId).not.toContain(":");
     expect(markup).toContain(`data-rmg-scope="${scopeId}"`);
     expect(markup).toContain(shellSelector);
@@ -343,7 +355,7 @@ describe("Slider initial height CSS", () => {
           direction: "row",
           item: {
             kind: "text",
-            fontSize: 16,
+            barHeight: 16,
             lineHeight: 1.5,
             lines: {
               0: 3,
@@ -363,6 +375,35 @@ describe("Slider initial height CSS", () => {
     expect(css).toContain("--rmg-slider-row-height:48px;");
     expect(css).toContain("@media (min-width:1200px)");
     expect(css).toContain("--rmg-slider-row-height:24px;");
+  });
+
+  test("includes responsive text line-height breakpoints in scoped initial-height CSS", () => {
+    const css = buildScopedInitialHeightCss({
+      scopeId: "rmg-slider-responsive-line-height",
+      skeletonSpec: {
+        mode: "fit",
+        layout: {
+          kind: "slider",
+          direction: "row",
+          item: {
+            kind: "text",
+            barHeight: 16,
+            lineHeight: {
+              0: 1.25,
+              900: 1.5,
+            },
+            lines: 2,
+          },
+        },
+      } satisfies SliderSkeletonSpec,
+      responsiveCount: 1,
+      fallbackCount: 1,
+      breakpointMap: BREAKPOINT_MAP,
+    });
+
+    expect(css).toContain("--rmg-slider-row-height:40px;");
+    expect(css).toContain("@media (min-width:900px)");
+    expect(css).toContain("--rmg-slider-row-height:48px;");
   });
 
   test("includes responsive container-style breakpoints in scoped initial-height CSS", () => {
@@ -415,78 +456,17 @@ describe("Slider initial height CSS", () => {
     );
   });
 
-  test("preserves explicit viewport height while still reserving skeleton extras", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(
-        Slider,
-        {
-          elements: {
-            viewport: {
-              style: {
-                height: 320,
-              },
-            },
-          },
-          layout: {
-            cellsPerSlide: CARDS_COUNT,
-          },
-          controls: {
-            arrows: { enabled: false },
-            dots: { enabled: false },
-            progress: { enabled: false },
-            scrollbar: { enabled: false },
-          },
-          transitions: {
-            loading: {
-              force: true,
-              skeletonCount: CARDS_COUNT,
-              skeleton: CARDS_SKELETON_SPEC,
-            },
-          },
-        },
-        React.createElement("div", { key: "card-1" }, "One"),
-        React.createElement("div", { key: "card-2" }, "Two"),
-        React.createElement("div", { key: "card-3" }, "Three")
-      )
-    );
-
-    expect(markup).toContain("--rmg-slider-initial-height:320px;");
-    expect(markup).toContain("--rmg-slider-row-height:320px;");
-    expect(markup).toContain("--rmg-slider-extras-height:");
-  });
-
   test("roots built-in responsive skeleton CSS in the outer slider loading scope", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(
-        Slider,
-        {
-          controls: {
-            arrows: { enabled: false },
-            dots: { enabled: false },
-            progress: { enabled: false },
-            scrollbar: { enabled: false },
-          },
-          transitions: {
-            loading: {
-              force: true,
-              skeletonCount: RESPONSIVE_LOADING_COUNT,
-              skeleton: RESPONSIVE_SCOPE_SKELETON_SPEC,
-            },
-          },
-        },
-        React.createElement("div", { key: "slide-1" }, "One"),
-        React.createElement("div", { key: "slide-2" }, "Two"),
-        React.createElement("div", { key: "slide-3" }, "Three"),
-        React.createElement("div", { key: "slide-4" }, "Four")
-      )
-    );
+    const markup = renderSkeletonSliderMarkup({
+      skeletonSpec: RESPONSIVE_SCOPE_SKELETON_SPEC,
+      visibleCount: RESPONSIVE_LOADING_COUNT,
+    });
 
     const scopeMatch = markup.match(/data-rmg-scope="([^"]+)"/);
     expect(scopeMatch?.[1]).toBeTruthy();
 
     const scopeId = scopeMatch![1];
-    const builtInScopeSelector =
-      `[data-rmg-scope="${scopeId}"] > [data-rmg-scope-shell="true"] [data-rmg-skel-part="overlay"]`;
+    const builtInScopeSelector = `[data-rmg-scope="${scopeId}"]`;
 
     expect(markup).not.toContain("data-rmg-slider-skel-scope=");
     expect(markup).toContain(`${builtInScopeSelector} [data-rmg-skel-node="n1"]`);
@@ -494,30 +474,10 @@ describe("Slider initial height CSS", () => {
   });
 
   test("keeps responsive slot visibility rooted in the outer slider scope at 900px+", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(
-        Slider,
-        {
-          controls: {
-            arrows: { enabled: false },
-            dots: { enabled: false },
-            progress: { enabled: false },
-            scrollbar: { enabled: false },
-          },
-          transitions: {
-            loading: {
-              force: true,
-              skeletonCount: RESPONSIVE_LOADING_COUNT,
-              skeleton: RESPONSIVE_SCOPE_SKELETON_SPEC,
-            },
-          },
-        },
-        React.createElement("div", { key: "slide-1" }, "One"),
-        React.createElement("div", { key: "slide-2" }, "Two"),
-        React.createElement("div", { key: "slide-3" }, "Three"),
-        React.createElement("div", { key: "slide-4" }, "Four")
-      )
-    );
+    const markup = renderSkeletonSliderMarkup({
+      skeletonSpec: RESPONSIVE_SCOPE_SKELETON_SPEC,
+      visibleCount: RESPONSIVE_LOADING_COUNT,
+    });
 
     const scopeMatch = markup.match(/data-rmg-scope="([^"]+)"/);
     expect(scopeMatch?.[1]).toBeTruthy();
@@ -527,38 +487,19 @@ describe("Slider initial height CSS", () => {
   });
 
   test("preserves centered peek spacer behavior after moving responsive skeleton CSS to the outer scope", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(
-        Slider,
-        {
-          align: "center",
-          controls: {
-            arrows: { enabled: false },
-            dots: { enabled: false },
-            progress: { enabled: false },
-            scrollbar: { enabled: false },
-          },
-          transitions: {
-            loading: {
-              force: true,
-              skeletonCount: RESPONSIVE_LOADING_COUNT,
-              skeleton: CENTER_FIRST_SCOPE_SKELETON_SPEC,
-            },
-          },
-        },
-        React.createElement("div", { key: "slide-1" }, "One"),
-        React.createElement("div", { key: "slide-2" }, "Two"),
-        React.createElement("div", { key: "slide-3" }, "Three"),
-        React.createElement("div", { key: "slide-4" }, "Four")
-      )
-    );
+    const markup = renderSkeletonSliderMarkup({
+      skeletonSpec: CENTER_FIRST_SCOPE_SKELETON_SPEC,
+      visibleCount: RESPONSIVE_LOADING_COUNT,
+      sliderProps: {
+        align: "center",
+      },
+    });
 
     const scopeMatch = markup.match(/data-rmg-scope="([^"]+)"/);
     expect(scopeMatch?.[1]).toBeTruthy();
 
     const scopeId = scopeMatch![1];
-    const builtInScopeSelector =
-      `[data-rmg-scope="${scopeId}"] > [data-rmg-scope-shell="true"] [data-rmg-skel-part="overlay"]`;
+    const builtInScopeSelector = `[data-rmg-scope="${scopeId}"]`;
 
     expect(markup).not.toContain("data-rmg-slider-skel-scope=");
     expect(markup).toContain('data-rmg-skel-center-first-spacer="true"');
@@ -566,29 +507,10 @@ describe("Slider initial height CSS", () => {
     expect(markup).toContain(`${builtInScopeSelector} [data-rmg-skel-node="n1"]`);
   });
 
-  test("keeps only the outer data-rmg-scope while the inner slider core still renders scoped base CSS", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(
-        Slider,
-        {
-          controls: {
-            arrows: { enabled: false },
-            dots: { enabled: false },
-            progress: { enabled: false },
-            scrollbar: { enabled: false },
-          },
-          transitions: {
-            loading: {
-              enabled: false,
-            },
-          },
-        },
-        React.createElement("div", { key: "slide-1" }, "One"),
-        React.createElement("div", { key: "slide-2" }, "Two")
-      )
-    );
+  test("keeps only the outer data-rmg-scope while the inner slider core still renders its own scope marker", () => {
+    const markup = renderSkeletonSliderMarkup({});
 
-    const outerScopeMatches = markup.match(/data-rmg-scope="/g) ?? [];
+    const outerScopeMatches = markup.match(/<div data-rmg-scope="/g) ?? [];
     expect(outerScopeMatches).toHaveLength(1);
 
     const innerScopeMatch = markup.match(/data-rmg-slider-core-scope="([^"]+)"/);
@@ -596,6 +518,6 @@ describe("Slider initial height CSS", () => {
 
     const innerScope = innerScopeMatch?.[1];
     expect(innerScope).toBeTruthy();
-    expect(markup).toContain(`[data-rmg-slider-core-scope="${innerScope}"]`);
+    expect(markup).toContain(`data-rmg-slider-core-scope="${innerScope}"`);
   });
 });

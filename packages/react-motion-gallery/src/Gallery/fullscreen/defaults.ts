@@ -1,8 +1,8 @@
-import {
-  DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_DURATION_MS,
-  DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_EASING,
-} from "./captionZoomMotion";
 import { DEFAULT_ZOOM_PAN } from "../zoomPan/defaults";
+
+const DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_DURATION_MS = 300;
+const DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_EASING =
+  "cubic-bezier(.4,0,.22,1)";
 
 export const DEFAULT_FULLSCREEN = {
   enabled: false,
@@ -33,12 +33,15 @@ export const DEFAULT_FULLSCREEN = {
     introDuration: 300,
     introEasing: "cubic-bezier(.4,0,.22,1)",
     introFade: false,
-    controlsFade: false,
-    dragFade: false,
-    slideFadeDuration: 120,
-    slideFadeEasing: "cubic-bezier(.4,0,.22,1)",
+    crossfade: {
+      controls: false,
+      drag: false,
+      durationMs: 120,
+      easing: "cubic-bezier(.4,0,.22,1)",
+    },
   },
   slider: {
+    gap: 0,
     duration: 25,
     friction: 0.68,
     direction: "ltr",
@@ -48,6 +51,8 @@ export const DEFAULT_FULLSCREEN = {
   },
   caption: {
     overlayCrossfadeTarget: "content",
+    overlayCrossfadeDurationMs: 300,
+    overlayCrossfadeEasing: "cubic-bezier(.4,0,.22,1)",
     zoomFade: true,
     zoomFadeDurationMs: DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_DURATION_MS,
     zoomFadeEasing: DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_EASING,

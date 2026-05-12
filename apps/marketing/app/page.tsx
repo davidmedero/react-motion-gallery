@@ -7,21 +7,16 @@ import { FsDiagramWithCaptionRight, FsDiagramWithEntriesOverlayBottom, FsDiagram
 function PageCodeBlock(props: { code: string; language?: string }): JSX.Element {
   const { code, language = "tsx" } = props;
 
-  return <CodeBlock className="max-w-3xl" code={code} language={language} />;
+  return <CodeBlock className="rmgGlassCodeBlock max-w-3xl" code={code} language={language} />;
 }
 
 export default function Home() {
 
   return (
-    <> 
+    <main className="rmgHome">
       <p className="home-intro">
         <span className="intro-line">
-          A high-performance gallery library with fluid motion,
-          responsive layouts, seamless transitions, and immersive fullscreen experiences.
-        </span>
-
-        <span className="intro-subline">
-          Engineered to be modular, feature-rich, and production-ready — yet remarkably easy to use.
+          A composable and deeply customizable gallery system for React with stunning animations, layout primitives, SSR-stable skeletons and rich fullscreen API.
         </span>
       </p>
       <section className="rmgLayouts" aria-labelledby="rmg-layouts-title">
@@ -31,7 +26,7 @@ export default function Home() {
               Four Primary Layouts
             </h2>
             <p className="rmgCard__desc max-w-125">
-              All layouts share fully customizable breakpoints, loading states, intro animations and fullscreen transitions.
+              These cover the core gallery patterns while sharing responsive controls, loading states, reveal transitions, and fullscreen sync.
             </p>
           </header>
 
@@ -41,7 +36,7 @@ export default function Home() {
               <div className="rmgCard__top">
                 <h3 className="rmgCard__title">Slider</h3>
                 <p className="rmgCard__desc">
-                  Powered by a robust animation engine with an extensive API and baked in wheel support.
+                  A complete slider library with a batteries-included API and polished animation engine.
                 </p>
               </div>
 
@@ -71,7 +66,7 @@ export default function Home() {
               <div className="rmgCard__top">
                 <h3 className="rmgCard__title">Grid</h3>
                 <p className="rmgCard__desc">
-                  Simplified CSS-Grid system that resolves columns from breakpoints or minmax.
+                  Direct-child CSS Grid layout with auto-fill columns, explicit responsive tracks, and item spans.
                 </p>
               </div>
 
@@ -91,7 +86,7 @@ export default function Home() {
               <div className="rmgCard__top">
                 <h3 className="rmgCard__title">Masonry</h3>
                 <p className="rmgCard__desc">
-                  JS based Pinterest-style layout with various placement and styling options.
+                  Measured, server-predicted layouts for uneven cards, with balanced, round-robin, horizontal-order placement and responsive spans.
                 </p>
               </div>
 
@@ -123,7 +118,7 @@ export default function Home() {
               <div className="rmgCard__top">
                 <h3 className="rmgCard__title">Entries</h3>
                 <p className="rmgCard__desc">
-                  Content blocks for arbitrary markup and embedded media (slider, grid or masonry).
+                  Structured editorial rows where each entry can own text, metadata, and an embedded slider, grid, or masonry gallery.
                 </p>
               </div>
 
@@ -182,21 +177,21 @@ export default function Home() {
               Fullscreen Mode
             </h2>
             <p className="rmgCard__desc max-w-140">
-              A fullscreen carousel featuring composable UI layers and shared context with the base layout.
+              A fullscreen carousel that can run standalone or stay synced with a base layout, featuring composable UI layers and image inspection.
             </p>
           </header>
           <div style={{ marginBottom: '20px' }}></div>
-          <section className="space-y-10 text-slate-700">
+          <section className="space-y-10 text-[rgb(var(--rmg-logo-shadow-rgb))]">
             <h3 className="rmgLayouts__subheader">Content &amp; Navigation Layers</h3>
 
             <div className="space-y-6 mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Captions */}
+                {/* Captions - Slide */}
                 <div className="rmgCard">
                   <div className="rmgCard__top">
-                    <h4 className="rmgCard__title">Captions</h4>
+                    <h4 className="rmgCard__title">Captions - Slide</h4>
                     <p className="rmgCard__desc">
-                      Slide-bound UI regions that participate in slide layout.
+                      Captions that render as part of the fullscreen slide.
                     </p>
                   </div>
 
@@ -210,7 +205,7 @@ export default function Home() {
                   <div className="rmgCard__top">
                     <h4 className="rmgCard__title">Thumbnails</h4>
                     <p className="rmgCard__desc">
-                      Visual navigation and media indexing with full control over placement, sizing, alignment, and styling.
+                      A synced navigation rail that can sit alongside slide or overlay captions.
                     </p>
                   </div>
 
@@ -219,12 +214,12 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Entry Overlays */}
+                {/* Captions - Overlay */}
                 <div className="rmgCard">
                   <div className="rmgCard__top">
-                    <h4 className="rmgCard__title">Entry Overlays</h4>
+                    <h4 className="rmgCard__title">Captions - Overlay</h4>
                     <p className="rmgCard__desc">
-                      Overlay-based UI regions that sit above the carousel.
+                      Viewport-attached caption panels layered over fullscreen content.
                     </p>
                   </div>
 
@@ -238,35 +233,14 @@ export default function Home() {
               </p>
 
               <ul className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-md">
-                <li className="rounded-md bg-slate-100 px-3 py-2 text-center text-sm font-medium">Top</li>
-                <li className="rounded-md bg-slate-100 px-3 py-2 text-center text-sm font-medium">Right</li>
-                <li className="rounded-md bg-slate-100 px-3 py-2 text-center text-sm font-medium">Bottom</li>
-                <li className="rounded-md bg-slate-100 px-3 py-2 text-center text-sm font-medium">Left</li>
+                <li className="rounded-md bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-3 py-2 text-center text-sm font-medium">Top</li>
+                <li className="rounded-md bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-3 py-2 text-center text-sm font-medium">Right</li>
+                <li className="rounded-md bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-3 py-2 text-center text-sm font-medium">Bottom</li>
+                <li className="rounded-md bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-3 py-2 text-center text-sm font-medium">Left</li>
               </ul>
 
-              <p className="font-medium">
-                <span className="font-extrabold">You can mix and match freely,</span>
-                <span className="ml-1">and combine them in any configuration.</span>
-              </p>
-            </div>
-
-            <h4 className="rmgLayouts__h4">Using the Caption Layout as an Entry Surface</h4>
-
-            <div className="space-y-6">
               <p className="leading-relaxed max-w-3xl">
-                The captions system can also be used purely as a layout surface,
-                even when no caption content is provided.
-              </p>
-
-              <p className="font-medium">You can configure caption placement and sizing:</p>
-
-              <PageCodeBlock language="ts" code={`fullscreenCaptionPlacement?: 'top' | 'right' | 'bottom' | 'left';
-fullscreenCaptionWidth?: number;
-fullscreenCaptionHeight?: number;`} />
-
-              <p className="leading-relaxed max-w-3xl">
-                and then manually position an entry overlay inside that caption region,
-                effectively reusing the caption block as a structured layout container.
+                Caption <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">width</code> and <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">height</code> accept numeric pixel values, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">px</code> strings, percentage strings, and responsive maps. Percent widths resolve against the viewport width, while percent heights resolve against the viewport height.
               </p>
             </div>
 
@@ -285,12 +259,12 @@ fullscreenCaptionHeight?: number;`} />
 
               <ul className="list-disc pl-5 space-y-1">
                 <li>Default slide <strong>transform</strong></li>
-                <li><strong>Fade</strong> transition</li>
+                <li><strong>Crossfade</strong> request</li>
               </ul>
 
               <p className="leading-relaxed max-w-3xl">
                 Transition duration and easing are fully customizable,
-                with <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">0ms</code> producing an instant slide change.
+                with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">0ms</code> producing an instant slide change.
               </p>
 
               <h4 className="rmgLayouts__h4">Close</h4>
@@ -303,15 +277,15 @@ fullscreenCaptionHeight?: number;`} />
                   <li>
                     <strong>Slider:</strong> On close, the base slider instantly snaps to the slide that corresponds to the current
                     fullscreen index (including when the slide/thumb isn&apos;t currently in view), ensuring the closing transform animation
-                    lands correctly and preventing fullscreen media from “flying” out of the viewport.
+                    lands correctly and preventing fullscreen content from “flying” out of the viewport.
                   </li>
                   <li>
                     <strong>Grid / Masonry:</strong> On close, the page scrolls to center the corresponding thumb in the viewport so the
                     fullscreen-to-thumb transform always resolves cleanly.
                   </li>
                   <li>
-                    <strong>Entries:</strong> On close, the page scroll centers the owning entry (the entry that contains the media),
-                    so the fullscreen media returns to the correct context every time.
+                    <strong>Entries:</strong> On close, the page scroll centers the entry that owns the active fullscreen slide,
+                    so the fullscreen content returns to the correct context every time.
                   </li>
                 </ul>
 
@@ -324,8 +298,8 @@ fullscreenCaptionHeight?: number;`} />
 
               <h4 className="rmgLayouts__h4">Open & Close Transitions</h4>
                 <p className="leading-relaxed max-w-3xl">
-                  The opening and closing transitions originate directly from the thumbnail&apos;s visible crop, animating both the <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">clip-path</code> and the image in perfect sync to create a seamless, cinematic morph into fullscreen. On open, React Motion Gallery uses two clippers: we clip the image container itself, and the outer clipper comes from the nearest ancestor above the source image whose computed overflow clips content, so viewport-style masking stays intact throughout the transition. Transitions can be <strong>transform-based</strong> (default) or a <strong>fade</strong> effect.
-                  Duration and easing are customizable for both, with <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">0ms</code> producing an instant change.
+                  The opening and closing transitions originate directly from the thumbnail&apos;s visible crop, animating both the <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">clip-path</code> and rendered fullscreen surface in perfect sync to create a seamless, cinematic morph into fullscreen. React Motion Gallery uses a nested clip stack: one clipper for the media crop plus up to two clipping ancestors, preserving thumb, container and viewport masks through the transition. Transitions can be <strong>transform-based</strong> (default) or a <strong>fade</strong> effect.
+                  Duration and easing are customizable for both, with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">0ms</code> producing an instant change.
                 </p>
             </div>
 
@@ -373,27 +347,31 @@ fullscreenCaptionHeight?: number;`} />
               </ul>
             </div>
 
-            <h3 className="rmgLayouts__subheader">Rendering Fullscreen Media</h3>
+            <h3 className="rmgLayouts__subheader">Rendering Fullscreen Content</h3>
             <div className="space-y-6 mt-6">
               <p className="leading-relaxed max-w-3xl">
-                Fullscreen rendering is driven by a dedicated media list, which keeps your base layout and fullscreen experience intentionally <strong>decoupled</strong>.
+                Fullscreen rendering is driven by a dedicated indexed item list, which keeps your base layout and fullscreen experience intentionally <strong>decoupled</strong>.
               </p>
 
               <p className="leading-relaxed max-w-3xl">
-                You can provide a simple list of URLs or supply fully structured media items with metadata.
+                You can provide a simple list of URLs for image-first galleries, structured image or video items with metadata, or <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">kind: &quot;node&quot;</code> items for arbitrary React markup.
               </p>
 
               <p className="leading-relaxed max-w-3xl">
-                The base layout can render anything while fullscreen can render the best possible media for zooming. The only shared connection is the <strong>index</strong>, which keeps navigation, thumbnails, and transitions perfectly aligned.
+                The base layout can render one thing while fullscreen renders its own content for the same position. The only shared contract is the <strong>index</strong>, which keeps navigation, thumbnails, captions, and transitions perfectly aligned.
+              </p>
+
+              <p className="leading-relaxed max-w-3xl">
+                That index contract also powers the lazy-load handshake. As the base layout observes visible items, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">GalleryCore</code> publishes the matching index so fullscreen can prewarm the full-resolution image or video before the modal opens. Once fullscreen is open, the fullscreen slider publishes its active index back through the same core, keeping lazy slides, thumbnail rails, captions, overlays, and base media state in sync.
               </p>
 
               <p className="leading-relaxed max-w-3xl">
                 If you want Next.js image optimization in fullscreen, render your
-                own <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">Image</code> via{" "}
-                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreen.renderImage</code>.
+                own <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Image</code> via{" "}
+                <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">fullscreen.renderImage</code>.
                 To opt custom renders into the built-in fullscreen spinner and
                 decode flow, also enable{" "}
-                <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreen.lazyLoad.images.enabled</code>.
+                <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">fullscreen.lazyLoad.images.enabled</code>.
               </p>
 
               <PageCodeBlock code={`import Image from "next/image";
@@ -436,54 +414,52 @@ fullscreen: {
           <h3 className="rmgLayouts__subheader">Engine</h3>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              Animations run on a <strong>fixed timestep</strong> with <strong>alpha interpolation</strong>, so motion stays consistent across devices with different refresh rates.
+              Slider motion runs on a <strong>fixed timestep</strong> with <strong>alpha interpolation</strong>, keeping the simulation stable while rendering smoothly across different refresh rates.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Interaction is powered by a custom <strong>DragTracker</strong> that treats even the tiniest directional velocity as an intentional slide change, giving the slider an effortless feel. At the same time, a stillness guard prevents slide changes when the gesture ends in a true stop.
+              Interaction is powered by a custom <strong>DragTracker</strong> that samples recent movement, carries release velocity into snap resolution, and still treats a true stop as stillness. Flicks feel intentional without making tiny paused gestures accidentally advance.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              DragTracker solves a common slider issue where momentum abruptly “hits a wall” or stays on the same slide after a flick. It always maintains continuous velocity across the release phase, allowing momentum to resolve cleanly into the final snap.
+              That release model avoids the common “flick into a wall” feeling: momentum continues through the handoff, then resolves into the final snap instead of abruptly dying on the current slide.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              <strong>Looping</strong> is powered by a responsive clone + vector rebase system.
+              <strong>Looping</strong> is handled by responsive clones plus vector rebasing. Clone counts scale from a minimum buffer to the number of cells visible in the viewport, so the loop seam has enough content to stay covered during fast drags.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              The Loop engine solves a common loop artifact where sliders briefly reveal empty gaps at the seam. The engine prevents that in two ways: it enforces a minimum of two clones per side, and it scales the clone count to match how many cells are visible inside the slider&apos;s viewport. The result is a loop that always has enough “buffer” content to fill the viewport, even during fast flicks.
+              Looping automatically disables when there is only one item or the content already fits inside the viewport, avoiding unnecessary clones when the track cannot actually scroll.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Video slide clones are non-interactive snapshots of their original slides rather than second live players. Each snapshot is refreshed from the original player whenever it becomes ready or changes media state, including play, pause, seek, end, and media load events.
-            </p>
-
-            <p className="leading-relaxed max-w-3xl">
-              Loop is automatically disabled if the content width is less than or equal to the viewport width or if there is only one item in the slider.
+              Video clones are non-interactive snapshots of the original slide rather than extra live players. Snapshots refresh as playback state changes, so looping video galleries stay visually coherent without running duplicate players.
             </p>
           </div>
           <h3 className="rmgLayouts__subheader !mt-6">Base Slider</h3>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              By default, the Base Slider uses <strong>one cell per slide</strong>. When <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">groupCells</code> is enabled, the slider automatically groups cells based on what is visible inside the slider&apos;s viewport. As the slider&apos;s viewport resizes, slides are rebuilt so they stay accurate across breakpoints and layout changes. When looping is disabled, the final snap target clamps to the maximum scroll position so you never overshoot past the end of the track.
+              By default, the Base Slider uses <strong>one cell per slide</strong>. When <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">groupCells</code> is enabled, the slider automatically groups cells based on what is visible inside the slider&apos;s viewport. As the slider&apos;s viewport resizes, slides are rebuilt so they stay accurate across breakpoints and layout changes. When looping is disabled, the final snap target clamps to the maximum scroll position so you never overshoot past the end of the track.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
               Many layout and presentation props support responsive customization out of the box. Properties like{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">cellsPerSlide</code>,{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">gap</code>, and{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">skeletonCount</code> accept breakpoint-aware values.
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">layout.cellsPerSlide</code>,{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">layout.gap</code>, and the standalone{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Skeleton</code> slider layout accept breakpoint-aware values.
             </p>
 
             <PageCodeBlock code={`// Using default breakpoint keys (xs / sm / md / lg / xl)
 <Slider
-  cellsPerSlide={{
-    xs: 1,
-    sm: 2,
-    md: 3,
-    lg: 4,
-    xl: 5,
+  layout={{
+    cellsPerSlide: {
+      xs: 1,
+      sm: 2,
+      md: 3,
+      lg: 4,
+      xl: 5,
+    },
   }}
 >
   {children}
@@ -491,53 +467,52 @@ fullscreen: {
 
 // Using custom breakpoint values (explicit viewport widths)
 <Slider
-  cellsPerSlide={{
-    0: 1,       // mobile
-    640: 2,     // small tablets
-    768: 3,     // tablets
-    1024: 4,    // desktops
-    1280: 5,    // large screens
+  layout={{
+    cellsPerSlide: {
+      0: 1,       // mobile
+      640: 2,     // small tablets
+      768: 3,     // tablets
+      1024: 4,    // desktops
+      1280: 5,    // large screens
+    },
   }}
 >
   {children}
 </Slider>`} />
 
             <p className="leading-relaxed max-w-3xl">
-              In addition, any prop that accepts a <strong>ClassName</strong> can be fully customized through your own stylesheets, giving you complete control over responsive behavior using standard CSS media queries. This includes containers, viewports, thumbnail regions, and individual thumbnail items.
+              Any styling hook that accepts a <strong>className</strong> can be driven by your own stylesheets and media queries, including containers, viewports, thumbnail regions, controls, and individual thumbnail items.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Visual polish is built in — no plugins required. Effects like <strong>parallax</strong>, <strong>scale</strong>, and{" "} <strong>fade</strong> integrate directly with the motion engine.
+              Visual effects are first-class rather than plugin-only: <strong>parallax</strong>, <strong>scale</strong>, <strong>fade</strong>, and <strong>crossfade</strong> integrate directly with slider motion.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              For UI, you can use the built-in arrows, dots, progress, and ripple — or supply your own renderers and styles.
+              For UI, you can use the built-in arrows, dots, progress, scrollbar, and ripple — or supply your own renderers and styles.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              The Base Slider also exposes a powerful imperative API for advanced experiences: scroll to any index, jump instantly, read progress, detect which cells are in view, and even <strong>append / prepend / insert / remove / replace</strong> slides at runtime. It&apos;s perfect for product galleries, feeds, or any UI that needs to update dynamically without rebuilding the whole component.
+              The Base Slider exposes an imperative handle for advanced surfaces: move to an index, jump instantly, scroll next or previous, read progress, detect visible cells, and access the current root, viewport, container, and slide nodes.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              React Motion Gallery includes native <strong>wheel and trackpad scrolling</strong> support built directly into the Base Slider.
-              Unlike most slider libraries that require an external plugin or adapter, wheel input is handled by the core engine itself.
-              Horizontal/Vertical intent is detected automatically, momentum is preserved, and scrolling integrates seamlessly with other gesture interactions.
+              When Slider is used as the primary layout inside <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">GalleryCore</code>, the shared gallery API can manage the item list too, including append, prepend, insert, remove, replace, and set-all operations.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Trackpad gestures feel natural and responsive, with built-in safeguards to prevent accidental page scrolling while interacting with the slider. Wheel interaction temporarily pauses <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">autoScroll</code>/<code className="rounded bg-slate-100 px-1 py-0.5 text-sm">autoPlay</code> and respects scroll limits when <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">loop</code> is disabled.
+              Wheel and trackpad input are handled by the core slider engine. It detects horizontal or vertical intent, preserves momentum, temporarily pauses <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">autoScroll</code>/<code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">autoPlay</code>, and respects scroll limits when <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">loop</code> is disabled.
             </p>
 
           </div>
           <h3 className="rmgLayouts__subheader !mt-6">Thumbnails Slider</h3>
             <div className="space-y-4 mt-4">
               <p className="leading-relaxed max-w-3xl">
-                The Thumbnails Slider is a purpose-built, lightweight companion to the Base Slider. It reuses the same core motion engine and is <strong>free-scroll by default</strong>. Free-scroll can be disabled for normal snap behavior.
+                The Thumbnails Slider is a lightweight companion to the Base Slider. It reuses the same motion primitives, runs <strong>free-scroll by default</strong>, and can switch back to normal snap behavior when you want stricter navigation.
               </p>
 
               <p className="leading-relaxed max-w-3xl">
-                Even though it&apos;s light, thumbnails slider still offers options for groupCells, loop and skipSnaps.
-                Clicking a thumbnail triggers the Base Slider to animate to the selected index, and centers the active thumb when appropriate.
+                It still supports <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">groupCells</code>, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">loop</code>, and <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">skipSnaps</code>. Clicking a thumbnail animates the Base Slider to that index, and the active thumbnail can be centered when the strip has room to scroll.
               </p>
 
               <p className="leading-relaxed max-w-3xl">
@@ -548,178 +523,245 @@ fullscreen: {
               </p>
 
               <p className="leading-relaxed max-w-3xl">
-                Has built-in wheel/trackpad support.
+                Wheel and trackpad support are built in here too, following the thumbnail strip&apos;s active axis.
               </p>
             </div>
           <h3 className="rmgLayouts__subheader !mt-6">Fullscreen Slider</h3>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              The Fullscreen Slider is also a lighter version of the Base Slider and uses the same core motion engine.
+              The Fullscreen Slider is a lighter snap-focused slider built for modal viewing. It shares the motion primitives without carrying every Base Slider layout option into fullscreen.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              It supports{" "}
-              <strong>normal snap-only behavior</strong> (one media item per snap) to keep bundle size and runtime overhead low.
+              It uses <strong>one fullscreen item per snap</strong>, loops by default when more than one slide exists, and keeps the runtime focused on inspection, navigation, and close behavior.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Looping is default behavior and it&apos;s only disabled when there is one slide.
-            </p>
-
-            <p className="leading-relaxed max-w-3xl">
-              Horizontal drag is prioritized for slide changes, while vertical drag can be used for a natural “pull-to-close” gesture — including fade feedback tied to
+              Horizontal drag is prioritized for slide changes, while vertical drag can become a natural “pull-to-close” gesture, including fade feedback tied to
               distance, plus a smooth snap-back when the close threshold isn&apos;t met.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Videos are treated as first-class slides: dragging doesn&apos; trigger Plyr controls/events, and media near the active slide is automatically paused to prevent multiple players from running at once.
+              Videos are treated as first-class slides: dragging doesn&apos;t trigger Plyr controls/events, and players near the active slide are automatically paused to prevent multiple players from running at once.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Optional slide fading can be enabled so index changes can crossfade instead of translating when desired.
+              Fullscreen index changes can use normal scroll motion or crossfade requests, with duration and easing configurable when desired.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              The fullscreen slider automatically adopts RTL mode if it&apos;s enabled in the Base Slider.
+              Wheel and trackpad input are built in, including the same optional crossfade wheel gesture used by the Base Slider.
             </p>
-
-            <p className="leading-relaxed max-w-3xl">
-              Has built-in wheel/trackpad support.
-              </p>
           </div>
           <h3 className="rmgLayouts__subheader !mt-6">Fullscreen Thumbnails Slider</h3>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              The Fullscreen Thumbnails Slider is a lightweight <strong>wrapper around the Thumbnails Slider</strong>. It reuses the exact same small, thumbnail engine (to avoid duplicating slider logic), but wires it directly into the
+              The Fullscreen Thumbnails Slider is a lightweight <strong>wrapper around the Thumbnails Slider</strong>. It reuses the same thumbnail engine, but wires it directly into the
               fullscreen index system so thumbnails always stay in sync with the active fullscreen slide.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
               Under the hood it creates a dedicated <strong>index channel</strong> that listens to fullscreen events and instantly updates the thumbnail highlight/scroll position. Clicking a thumbnail then calls{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fsSub.requestSet(idx, &apos;animated&apos;)</code> so fullscreen navigates with the normal snap animation.
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">fsSub.requestSet(idx, &apos;animated&apos;)</code> so fullscreen navigates with the normal snap animation.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              It also includes a built-in “polish layer” for UI: the entire strip can be faded and slightly translated in/out via{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">visible</code> /{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">invisible</code>, with{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">pointerEvents</code> automatically disabled while hidden so it never blocks the fullscreen media.
+              It also includes a small visibility layer for UI polish: the strip can fade and translate in or out via{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">visible</code> /{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">invisible</code>, with{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">pointerEvents</code> automatically disabled while hidden so it never blocks the fullscreen content.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Like the base thumbnail strip, it can be positioned on any side (<strong>top / right / bottom / left</strong>), supports centering for “short” thumbnail rows, and exposes styling hooks for spacing, dimensions, and per-thumb className/style.
+              Like the base thumbnail strip, it can sit on any side (<strong>top / right / bottom / left</strong>), supports centering for short rows, and exposes styling hooks for spacing, dimensions, and per-thumb className/style.
             </p>
           </div>
         </div>
       </section>
-      <section className="rmgLayouts" aria-labelledby="rmg-layout-details-title">
+      <section className="rmgLayouts">
         <div className="rmgLayouts__inner">
           <header className="rmgLayouts__header">
-            <h2 className="rmgLayouts__title" id="rmg-layout-details-title">
-              Grid, Masonry, and Entries
+            <h2 className="rmgLayouts__title">
+              Grid
             </h2>
-            <p className="rmgCard__desc max-w-140">
-              Three non-slider surfaces cover clean grids, waterfall layouts, and structured editorial feeds while still plugging into the same fullscreen and transition system.
-            </p>
           </header>
 
-          <h3 className="rmgLayouts__subheader">Grid</h3>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              <strong>Grid</strong> is the simplest direct-child layout. Render your items in order, let the component auto-fit with{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">minColumnWidth</code>, or lock in explicit column counts per breakpoint with{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">columns</code>.
+              <strong>Grid</strong> is the direct-child layout for ordered gallery items. With no track config it builds an auto-fill grid from{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">minColumnWidth</code>; use{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">columns</code> for responsive equal-width tracks, or{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">templateColumns</code> for custom CSS Grid templates.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              It stays very close to native CSS Grid behavior, which makes it ideal for product walls, image boards, lookbooks, and any gallery where consistent rows matter more than scroll physics.
+              Reach for <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">columns</code> when you want a known track count: <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">columns=&#123;12&#125;</code> gives you a familiar 12-track grid for feature spans, while smaller responsive counts work well for simple rows. Use{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">templateColumns</code> for asymmetric columns, sidebar-style compositions, or breakpoint-specific track definitions. When both are present,{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">templateColumns</code> wins over <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">columns</code> and <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">minColumnWidth</code>.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              When Grid is used inside <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">GalleryCore</code>, every item can still open fullscreen. You can decide whether the trigger should come from the clicked media node or the full item shell via{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">fullscreenTrigger=&quot;media&quot; | &quot;item&quot;</code>.
+              Spans require explicit tracks. Wrap a child in <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Grid.Item</code> and set <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">span</code> to a number, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">&quot;full&quot;</code>, or a responsive map. In auto-fill <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">minColumnWidth</code> mode, spans are ignored because the track count is fluid.
             </p>
 
-            <PageCodeBlock code={`<Grid
-  minColumnWidth={220}
-  gap={{ 0: 10, 900: 18 }}
-  fullscreenTrigger="item"
-  lazyLoad={{ enabled: true }}
-  loading={{
-    enabled: true,
-    skeleton: {
-      radius: 14,
-      layout: {
-        kind: "grid",
-        count: 6,
-        item: {
-          kind: "rect",
-          style: { aspectRatio: "4 / 5" },
+            <p className="leading-relaxed max-w-3xl">
+              Inside <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">GalleryCore</code>, each grid item can open fullscreen. Keep the default{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">fullscreenTrigger=&quot;media&quot;</code> to open from the clicked media node, or switch to{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">fullscreenTrigger=&quot;item&quot;</code> to make the full item shell interactive.
+            </p>
+
+            <PageCodeBlock code={`function GridGallery({ images }) {
+  const { ref: gridRef, ready: gridReady } = useGridReady();
+
+  return (
+    <Skeleton
+      ready={gridReady}
+      layout={{
+        radius: 14,
+        layout: {
+          kind: "grid",
+          count: images.length,
+          item: {
+            kind: "rect",
+            style: { aspectRatio: "4 / 5" },
+          },
         },
-      },
-    },
-  }}
->
-  {images.map((image) => (
-    <img key={image.src} src={image.src} alt={image.alt} />
-  ))}
-</Grid>`} />
+      }}
+      grid={{
+        count: images.length,
+        minColumnWidth: 220,
+        gap: { 0: 10, 900: 18 },
+      }}
+    >
+      <Grid
+        ref={gridRef}
+        minColumnWidth={220}
+        gap={{ 0: 10, 900: 18 }}
+        fullscreenTrigger="item"
+        lazyLoad={{ enabled: true }}
+      >
+        {images.map((image) => (
+          <img key={image.src} src={image.src} alt={image.alt} />
+        ))}
+      </Grid>
+    </Skeleton>
+  );
+}`} />
           </div>
+</div>
+      </section>
 
-          <h3 className="rmgLayouts__subheader !mt-6">Masonry</h3>
+      <section className="rmgLayouts">
+        <div className="rmgLayouts__inner">
+          <header className="rmgLayouts__header">
+            <h2 className="rmgLayouts__title">
+              Masonry
+            </h2>
+          </header>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              <strong>Masonry</strong> is the waterfall layout for uneven media. It uses measured item heights rather than pure CSS columns, so it can keep columns balanced as images settle and aspect ratios vary.
+              <strong>Masonry</strong> is built for galleries whose cards resolve to different heights. It renders from a deterministic, server-predicted track model, then measures live items and refines placement as images, videos, text, and responsive spans settle.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Use <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">placement=&quot;balanced&quot;</code> when you want visually even columns, or switch to{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">roundRobin</code> when preserving a simple left-to-right distribution matters more than balance.{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">estimatedItemHeight</code> gives the layout a better first guess before measurements settle.
+              Use <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">placement=&quot;balanced&quot;</code> to pack each card into the shortest fitting column group,{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">roundRobin</code> for deterministic column cycling, or{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">horizontalOrder</code> when wide cards should still read in a stronger left-to-right sequence. Live content stays hidden until the current item set has produced a real measurement pass, so visible placement is based on actual card geometry rather than height guesses.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              The component also exposes root, column, and item class hooks, a custom root element via{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">as</code>, and the same lazy-load, loading, intro, and fullscreen integration used by the other layouts.
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Masonry.Item</code> carries per-card layout metadata. A card can span multiple tracks, span{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">&quot;full&quot;</code>, change span by breakpoint, and add wrapper class or style overrides while the placement engine clamps wide cards to the active column count.
             </p>
 
-            <PageCodeBlock code={`<Masonry
-  columns={{ 0: 1, 700: 2, 1100: 3 }}
-  gap={{ 0: 12, 1100: 20 }}
-  placement="balanced"
-  estimatedItemHeight={280}
-  lazyLoad={{ enabled: true }}
-  loading={{
-    enabled: true,
-    skeleton: {
-      ratios: [55, 90, 130, 75],
-      radius: 12,
-    },
-  }}
->
-  {cards.map((card) => (
-    <img key={card.id} src={card.src} alt={card.alt} />
-  ))}
-</Masonry>`} />
+            <p className="leading-relaxed max-w-3xl">
+              Pair Masonry with the standalone <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Skeleton</code> wrapper when you want a loading state. The Skeleton core is Masonry-aware: ratios or explicit heights seed card rhythm, structured slots can override spans and placeholder trees, and the real Masonry layout still owns measurement and readiness.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Masonry also keeps the shared gallery contracts: arbitrary React children, intro reveal, fullscreen triggers from the media node or whole item shell, root and item class hooks, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">rootRef</code>, and a custom root element via{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">as</code>.
+            </p>
+
+            <PageCodeBlock code={`function MasonryGallery({ cards }) {
+  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
+
+  return (
+    <Skeleton
+      ready={masonryReady}
+      layout={{
+        ratios: [55, 90, 130, 75],
+        radius: 12,
+        layout: {
+          kind: "masonry",
+          item: {
+            kind: "rect",
+            style: { width: "100%", height: "100%" },
+          },
+          slots: [{ span: { 0: "full", 1100: 2 } }],
+        },
+      }}
+      masonry={{
+        count: cards.length,
+        columns: { 0: 1, 700: 2, 1100: 3 },
+        gap: { 0: 12, 1100: 20 },
+        placement: "balanced",
+      }}
+    >
+      <Masonry
+        ref={masonryRef}
+        columns={{ 0: 1, 700: 2, 1100: 3 }}
+        gap={{ 0: 12, 1100: 20 }}
+        placement="balanced"
+        lazyLoad={{ enabled: true }}
+      >
+        {cards.map((card) => (
+          <Masonry.Item key={card.id} span={card.featured ? { 0: "full", 1100: 2 } : 1}>
+            <img src={card.src} alt={card.alt} />
+          </Masonry.Item>
+        ))}
+      </Masonry>
+    </Skeleton>
+  );
+}`} />
           </div>
-
-          <h3 className="rmgLayouts__subheader !mt-6">Entries</h3>
+</div>
+      </section>
+      <section className="rmgLayouts">
+        <div className="rmgLayouts__inner">
+          <header className="rmgLayouts__header">
+            <h2 className="rmgLayouts__title">
+              Entries
+            </h2>
+          </header>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              <strong>Entries</strong> is the structured-data surface. Instead of rendering anonymous children, you pass records with arbitrary fields plus a{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">media</code> array, then decide how each entry should render through{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">render.card</code>,{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">render.media</code>, and{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">render.overlay</code>.
+              <strong>Entries</strong> is the structured-data surface for record-driven galleries. Instead of rendering anonymous children, you pass records with arbitrary fields plus a{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">media</code> array, then shape the row with{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">render.card</code>, render each media item with{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">render.media</code>, and render fullscreen entry context with{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">render.overlay</code>. That makes it a natural fit for product and customer reviews, editorial feeds, case studies, or any UI where the media belongs to a richer record.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
               Each entry&apos;s media can be laid out as a slider, grid, or masonry block through{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">renderMediaContainer</code>. Under the hood, the runtime flattens entry media into one fullscreen index space while still preserving which entry owns each slide.
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">renderMediaContainer</code>. Under the hood, the runtime flattens every entry&apos;s media into one fullscreen index space while preserving the entry and local media index for each slide.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              That ownership model is what makes fullscreen overlays, close-to-origin scrolling, and per-entry slider synchronization all work without forcing your base UI into a rigid schema.
+              That ownership model is what makes fullscreen overlays, scroll-to-entry close behavior, and per-entry slider synchronization work without forcing your base UI into a rigid schema.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Entry loading uses two IntersectionObserver windows. <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">nearMargin</code> mounts the row and starts media work before it reaches the viewport, while <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">viewMargin</code> and <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">threshold</code> mark the actual reveal gate. With <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">waitForDecode</code> enabled, an entry with trackable media stays on its skeleton until every tracked media URL has loaded and decoded; the current entry-level gate tracks image media and falls back at the decode timeout.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              The fade-in order follows readiness, not just DOM order. Rows become revealable when their in-view gate and decode gate are both satisfied, then receive the next intro delay slot based on when they actually finished loading. Fast entries can fade in while slower entries keep their skeleton layer visible.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              The fullscreen close path uses the same readiness contract. If someone opens fullscreen, navigates to a slide owned by an entry they have not viewed yet, and closes from there, React Motion Gallery resolves the slide back to its owner entry, shows a temporary loading spinner while that entry mounts and decodes, scrolls the row into view, forces the skeleton and content layers into their final revealed state, and only then runs the close animation back to the now-visible media.
             </p>
 
             <PageCodeBlock code={`const flat = flattenEntries(entries);
@@ -764,28 +806,33 @@ fullscreen: {
             <h2 className="rmgLayouts__title" id="rmg-video-title">
               Video
             </h2>
-            <p className="rmgCard__desc max-w-140">
-              Video is treated as a first-class gallery primitive, not a bolted-on iframe or an afterthought inside image-only sliders.
-            </p>
           </header>
 
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              <strong>Video</strong> is a Plyr-backed component that can live inside <strong>Slider</strong>, <strong>Grid</strong>, <strong>Masonry</strong>, <strong>Entries</strong>, and fullscreen flows. You can pass a direct Plyr source, build one from{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">src</code>, or resolve player options per index.
+              <strong>Video</strong> is the gallery-aware, Plyr-backed primitive you can use standalone, inside one of the four primary layouts (<strong>Slider</strong>, <strong>Grid</strong>, <strong>Masonry</strong>, or <strong>Entries</strong>), or in fullscreen flows. It can build a default MP4 Plyr source from{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">src</code> and{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">poster</code>, accept a full Plyr source, or use a{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">sourceBuilder</code>; player options can be fixed or resolved from{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">{"{ src, index }"}</code>. Plyr mounts lazily by default, uses{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">preload: &quot;none&quot;</code> unless autoplay is enabled, and exposes a replaceable video spinner.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              In looping sliders, cloned video slides are rendered as synchronized snapshots instead of duplicate live players. That keeps the seam visually continuous while avoiding multiple active players fighting over controls, playback state, or network work.
+              Looping sliders and fullscreen clone/crossfade previews render non-interactive snapshots instead of extra live players. HTML5/MP4 snapshots can refresh from the current frame and control state, while YouTube and Vimeo fall back to poster-backed snapshots. That keeps loop and transition previews visually coherent without duplicating playback, controls, or network work.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              In fullscreen, nearby inactive players are automatically paused, drag gestures are guarded so they do not leak into Plyr controls, and image/video lazy-loading can be configured independently.
+              Fullscreen coordinates the base and fullscreen players: the base player is suspended while fullscreen is open, offscreen fullscreen players are paused, inactive/lazy video slides can stay static until needed, and drag/post-drag events are guarded around Plyr controls. Fullscreen lazy loading is split between{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad.images</code> and{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad.videos</code>, while standalone{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Video</code> keeps its own{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad</code> controls.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Video support is optional. If you never render <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">Video</code>, you do not need the <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">plyr</code> or{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">plyr-react</code> peer dependencies at all.
+              Video support is optional. If you never render <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Video</code>, you do not need the <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">plyr</code> or{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">plyr-react</code> peer dependencies.
             </p>
 
             <PageCodeBlock code={`<div style={{ width: "100%", aspectRatio: "16 / 9" }}>
@@ -809,62 +856,82 @@ fullscreen: {
         <div className="rmgLayouts__inner">
           <header className="rmgLayouts__header">
             <h2 className="rmgLayouts__title" id="rmg-loading-title">
-              Loading, Skeletons, and Lazy Media
+              Skeletons
             </h2>
-            <p className="rmgCard__desc max-w-140">
-              The library does not treat loading as one generic spinner. Each surface has a loading model that matches how that layout actually appears on screen.
-            </p>
           </header>
-
-          <h3 className="rmgLayouts__subheader">Skeleton Layers</h3>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              <strong>Slider</strong>, <strong>Grid</strong>, <strong>Masonry</strong>, <strong>entries</strong>, and <strong>thumbnails</strong> each expose a dedicated loading layer. You can replace the whole thing with{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">renderLoading</code>, or use the built-in skeleton systems to describe placeholders that actually resemble your finished UI.
+              <strong>Slider</strong>, <strong>Grid</strong>, and <strong>Masonry</strong> now keep loading UI outside the layout runtime. Compose them with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Skeleton</code> and the matching readiness hook: <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">useSliderReady</code>, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">useGridReady</code>, or <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">useMasonryReady</code>. Entries and thumbnails still keep their specialized loading layers because they own row/thumbnail-specific viewport behavior.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Slider and Grid skeletons use a small composable node DSL with shapes like{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">rect</code>,{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">circle</code>,{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">text</code>,{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">row</code>, and{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">stack</code>. Masonry uses a purpose-built skeleton spec based on ratios, explicit heights, placement mode, border radius, and shimmer settings so the placeholder already reads like a masonry wall.
+              During development, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Skeleton.force</code> can keep the skeleton layer visible for visual comparison. Pass an object with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">enabled</code>, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">showContent</code>, and <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">skeletonOpacity</code> to preview the ready UI underneath a translucent skeleton, making spacing, text bars, and layout drift easy to spot before shipping.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Entry loading is intentionally different. Entry rows can reserve a minimum height, resolve a different skeleton per entry, preload before they enter view, and wait for image decode before revealing the real content. That makes feed-like UIs feel much more deliberate than a simple fade-in-on-load.
+              The shared <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">Skeleton.timing</code> controls make skeletons feel intentional instead of flickery. <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">minVisibleMs</code> keeps the loading layer on screen for a minimum amount of time before it can exit, while <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">exitMs</code> controls the fade-out duration and how long the exiting layer remains mounted once real content is ready.
             </p>
 
-            <PageCodeBlock code={`<Slider
-  transitions={{
-    loading: {
-      enabled: true,
-      skeletonCount: { 0: 1, 900: 3 },
-      skeleton: {
-        mode: "fit",
-        layout: {
-          kind: "slider",
-          count: 3,
-          item: {
-            kind: "stack",
-            children: [
-              { kind: "rect", style: { aspectRatio: "4 / 5" } },
-              {
-                kind: "text",
-                fontSize: 16,
-                lineHeight: 1.35,
-                lines: { 0: 2, 900: 1 },
-                lineWidth: "56%",
-                style: { width: "88%" },
-              },
-            ],
+            <p className="leading-relaxed max-w-3xl">
+              Slider, Grid, and Masonry skeleton layouts use a small composable node DSL with shapes like{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">rect</code>,{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">circle</code>,{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">text</code>,{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">row</code>, and{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">stack</code>. Masonry adds a layout-aware spec on top: ratios or explicit heights seed card rhythm, placement follows the same balanced, round-robin, or horizontal-order model as the real layout, and per-slot overrides can change spans, wrapper styling, heights, ratios, or the placeholder tree itself.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              During skeleton development, the browser-measured text workflow can scan a live page in headless Chrome and generate the exact{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lines</code>,{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">barWidth</code>,{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lastBarWidth</code>, and text metric values (<code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">barHeight</code>, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lineHeight</code>) used by skeleton{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">text</code> nodes. That keeps responsive cards, entries, equal-height sliders, and reflow-sensitive masonry placeholders aligned with the real content instead of hand-guessed bars.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              The browser manifest can define the viewport scan range with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">viewportMin</code> and <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">viewportMax</code>, set the scan height with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">viewportHeight</code>, and split work across multiple browser pages with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">viewportWorkers</code>. You can have an AI agent add selectors, write the manifest, run the generator, and wire the generated sidecar with a simple prompt, or run the script yourself to produce the same <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">.skeleton-text.generated.ts</code> module.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Entry loading is intentionally different because rows use two observer windows instead of a single fade-in. <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">nearMargin</code> mounts the row and starts image decode before it reaches the viewport, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">viewMargin</code> records when the row has actually entered view, and <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">threshold</code>, <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">waitForDecode</code>, and <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">decodeTimeoutMs</code> decide when the skeleton can hand off to content.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Each entry can reserve row height with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">loading.minHeight</code>, resolve a shared or per-entry structured skeleton from <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">loading.skeleton</code>, override the skeleton with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">render.skeleton</code>, style the wrapper with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">loading.skeletonWrap</code>, and tune force/compare states with <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">loading.force</code>.
+            </p>
+
+            <PageCodeBlock code={`const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
+<Skeleton
+  ready={sliderReady}
+  force={{ enabled: false, showContent: true, skeletonOpacity: 0.45 }}
+  timing={{ minVisibleMs: 220, exitMs: 600 }}
+  layout={{
+    mode: "fit",
+    visibleCount: { 0: 1, 900: 3 },
+    layout: {
+      kind: "slider",
+      count: 3,
+      item: {
+        kind: "stack",
+        children: [
+          { kind: "rect", style: { aspectRatio: "4 / 5" } },
+          {
+            kind: "text",
+            barHeight: 16,
+            lineHeight: 1.35,
+            lines: { 0: 2, 900: 1 },
+            lastBarWidth: "56%",
+            style: { width: "88%" },
           },
-        },
+        ],
       },
     },
   }}
-/>
+>
+  <Slider ref={sliderRef}>{slides}</Slider>
+</Skeleton>
 
 <Entries
   entries={{
@@ -879,23 +946,34 @@ fullscreen: {
   renderMediaContainer={({ mediaNodes }) => <Grid>{mediaNodes}</Grid>}
 />`} />
           </div>
-
-          <h3 className="rmgLayouts__subheader !mt-6">Shared Lazy Loading</h3>
+</div>
+      </section>
+          <section className="rmgLayouts" aria-labelledby="rmg-loading-title">
+        <div className="rmgLayouts__inner">
+          <header className="rmgLayouts__header">
+            <h2 className="rmgLayouts__title" id="rmg-loading-title">
+              Lazy Load
+            </h2>
+          </header>
           <div className="space-y-4 mt-4">
             <p className="leading-relaxed max-w-3xl">
-              The shared <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">lazyLoad</code> API stays intentionally small: enable it, keep the built-in spinner, or replace that spinner with your own React node or resolver based on{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">{`{ kind, isClone }`}</code>.
+              The shared <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad</code> API stays intentionally small: enable it, keep the built-in spinner, or replace that spinner with your own React node or resolver based on{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">{`{ kind, isClone }`}</code>.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
               That same shape is used by Slider, Grid, Masonry, and Video. Fullscreen splits the configuration into{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">lazyLoad.images</code> and{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">lazyLoad.videos</code> so you can tune each media type independently.
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad.images</code> and{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad.videos</code> so you can tune image and video behavior independently.
             </p>
 
             <p className="leading-relaxed max-w-3xl">
-              Entries does not expose a top-level lazy media prop because entry rows already have viewport/decode gating. If you want per-media lazy behavior inside an entry, apply{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-sm">lazyLoad</code> to the embedded Grid, Masonry, Slider, or Video components you render inside that entry.
+              Fullscreen lazy loading runs in two stages. Base viewport visibility preloads the matching fullscreen media early, while fullscreen index changes decide which canonical slide is allowed to mount or apply its source. Images keep decoded media warm after first reveal; videos can be prewarmed from their poster/source and then force-mounted so navigation lands on prepared media instead of a blank fullscreen slide.
+            </p>
+
+            <p className="leading-relaxed max-w-3xl">
+              Entries does not expose a top-level lazy-load prop because entry rows already have viewport/decode gating. If you want per-item lazy behavior inside an entry, apply{" "}
+              <code className="rounded bg-[rgba(var(--rmg-logo-cyan-rgb),0.6)] px-1 py-0.5 text-sm">lazyLoad</code> to the embedded Grid, Masonry, Slider, or Video components you render inside that entry.
             </p>
 
             <PageCodeBlock code={`<Slider lazyLoad={{ enabled: true, spinner: true }} />
@@ -921,6 +999,6 @@ useFullscreenController({
           </div>
         </div>
       </section>
-    </>
+    </main>
   );
 }

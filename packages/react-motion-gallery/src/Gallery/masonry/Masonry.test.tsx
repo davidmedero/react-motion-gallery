@@ -1,7 +1,12 @@
-import * as React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+// @vitest-environment jsdom
 
+import * as React from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { renderToStaticMarkup } from "react-dom/server";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+import { Masonry as RootMasonry } from "../../index";
+import MasonrySubpath from "../../masonry";
 import {
   buildMasonryColumnLayout,
   MasonryCore,
@@ -12,8 +17,177 @@ import {
   resolveActiveMasonryPredictionVariant,
 } from "./prediction";
 import Masonry from "./index";
+import styles from "./Masonry.module.css";
 
-describe("Masonry runtime item wrapper props", () => {
+type ResizeObserverEntryLike = {
+  target: Element;
+  contentRect: DOMRect;
+};
+
+let resizeObservers: MockResizeObserver[] = [];
+let getBoundingClientRectSpy: ReturnType<typeof vi.spyOn> | undefined;
+let allowMasonryMeasurement = true;
+
+class MockResizeObserver {
+  callback: (entries: ResizeObserverEntryLike[], observer: MockResizeObserver) => void;
+  targets = new Set<Element>();
+
+  constructor(
+    callback: (entries: ResizeObserverEntryLike[], observer: MockResizeObserver) => void
+  ) {
+    this.callback = callback;
+    resizeObservers.push(this);
+  }
+
+  observe(target: Element) {
+    this.targets.add(target);
+  }
+
+  unobserve(target: Element) {
+    this.targets.delete(target);
+  }
+
+  disconnect() {
+    this.targets.clear();
+  }
+}
+
+class MockIntersectionObserver {
+  callback: IntersectionObserverCallback;
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+  }
+
+  observe(target: Element) {
+    this.callback(
+      [
+        {
+          target,
+          isIntersecting: true,
+          intersectionRatio: 1,
+        } as IntersectionObserverEntry,
+      ],
+      this as unknown as IntersectionObserver
+    );
+  }
+
+  unobserve() {}
+
+  disconnect() {}
+
+  takeRecords() {
+    return [];
+  }
+}
+
+function makeRect(args: {
+  width?: number;
+  height?: number;
+  left?: number;
+  top?: number;
+} = {}): DOMRect {
+  const left = args.left ?? 0;
+  const top = args.top ?? 0;
+  const width = args.width ?? 0;
+  const height = args.height ?? 0;
+
+  return {
+    x: left,
+    y: top,
+    left,
+    top,
+    right: left + width,
+    bottom: top + height,
+    width,
+    height,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
+function masonryRectForElement(el: Element): DOMRect {
+  if (el instanceof HTMLElement && el.hasAttribute("data-rmg-idx")) {
+    const index = Number(el.getAttribute("data-rmg-idx") ?? 0);
+    return makeRect({
+      width: 240,
+      height: allowMasonryMeasurement ? 100 + index * 40 : Number.NaN,
+    });
+  }
+
+  return makeRect({ width: 720, height: 480 });
+}
+
+function triggerResizeObservers() {
+  for (const observer of resizeObservers) {
+    if (observer.targets.size === 0) continue;
+
+    observer.callback(
+      Array.from(observer.targets).map((target) => ({
+        target,
+        contentRect: masonryRectForElement(target),
+      })),
+      observer
+    );
+  }
+}
+
+async function settleMasonryMeasurements(cycles = 2) {
+  for (let i = 0; i < cycles; i++) {
+    await React.act(async () => {
+      triggerResizeObservers();
+      await Promise.resolve();
+    });
+  }
+}
+
+function findMasonryContentShell(container: HTMLElement): HTMLElement {
+  const shell = container.querySelector('[data-rmg-masonry-content-ready]');
+  if (!(shell instanceof HTMLElement)) {
+    throw new Error("Unable to find masonry content shell");
+  }
+  return shell;
+}
+
+async function renderIntoRoot(root: Root, node: React.ReactNode) {
+  await React.act(async () => {
+    root.render(node);
+    await Promise.resolve();
+  });
+}
+
+beforeEach(() => {
+  resizeObservers = [];
+  allowMasonryMeasurement = true;
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  vi.stubGlobal("ResizeObserver", MockResizeObserver);
+  vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+  getBoundingClientRectSpy = vi
+    .spyOn(Element.prototype, "getBoundingClientRect")
+    .mockImplementation(function getBoundingClientRectMock(this: Element) {
+      return masonryRectForElement(this);
+    });
+
+  Object.defineProperty(window, "innerWidth", {
+    value: 1024,
+    configurable: true,
+  });
+  Object.defineProperty(window, "innerHeight", {
+    value: 768,
+    configurable: true,
+  });
+});
+
+afterEach(() => {
+  getBoundingClientRectSpy?.mockRestore();
+  vi.unstubAllGlobals();
+  resizeObservers = [];
+});
+
+function FancyCard(props: { label: string }) {
+  return <article>{props.label}</article>;
+}
+
+describe("Masonry spans and positioned runtime", () => {
   test("distributes equal-height balanced items across columns instead of collapsing into the first lane", () => {
     expect(
       buildMasonryColumnLayout({
@@ -21,20 +195,41 @@ describe("Masonry runtime item wrapper props", () => {
         columnCount: 3,
         placement: "balanced",
         heights: [0, 0, 0, 0, 0, 0],
-        estimatedItemHeight: 0,
         gapPx: 12,
       })
     ).toEqual([0, 1, 2, 0, 1, 2]);
   });
 
-  test("uses the shared viewport width snapshot for responsive SSR column markup", () => {
+  test("exposes Masonry.Item from the root entry and the masonry subpath", () => {
+    const markup = renderToStaticMarkup(
+      <Masonry columns={3} gap={12}>
+        <Masonry.Item span={2} className="feature-shell" style={{ padding: "8px" }}>
+          <article className="card-shell">alpha</article>
+        </Masonry.Item>
+        <Masonry.Item span="full">
+          <FancyCard label="beta" />
+        </Masonry.Item>
+      </Masonry>
+    );
+
+    expect(Masonry.Item).toBeDefined();
+    expect(RootMasonry.Item).toBe(Masonry.Item);
+    expect(MasonrySubpath.Item).toBe(Masonry.Item);
+    expect(markup).toContain("feature-shell");
+    expect(markup).toContain("card-shell");
+    expect(markup).toContain("padding:8px");
+    expect(markup).toContain("--rmg-cols:3");
+    expect(markup).toContain('data-rmg-idx="1"');
+    expect(markup).toContain(">beta<");
+  });
+
+  test("uses the shared viewport width snapshot for responsive SSR positioned markup", () => {
     const markup = renderToStaticMarkup(
       React.createElement(
         Masonry,
         {
           columns: { 0: 1, 720: 2, 1140: 3 },
           gap: 12,
-          loading: { enabled: false },
         },
         React.createElement("div", null, "alpha"),
         React.createElement("div", null, "beta"),
@@ -42,8 +237,9 @@ describe("Masonry runtime item wrapper props", () => {
       )
     );
 
-    expect(markup.match(/style="flex:1;min-width:0;display:flex;flex-direction:column"/g))
-      .toHaveLength(2);
+    expect(markup).toContain("--rmg-cols:2");
+    expect(markup).toContain("--rmg-gap:12px");
+    expect(markup.match(/data-rmg-idx=/g) ?? []).toHaveLength(6);
   });
 
   test("resolves responsive masonry markup from an explicit viewport snapshot", () => {
@@ -56,9 +252,10 @@ describe("Masonry runtime item wrapper props", () => {
       })
     );
 
-    expect(markup).toContain("column-gap:18px");
-    expect(markup.match(/style="flex:1;min-width:0;display:flex;flex-direction:column"/g))
-      .toHaveLength(3);
+    expect(markup).toContain("--rmg-cols:3");
+    expect(markup).toContain("--rmg-gap:18px");
+    expect(markup).toContain('style="position:relative;width:100%;height:0px;--rmg-cols:3;--rmg-gap:18px"');
+    expect(markup.match(/data-rmg-idx=/g) ?? []).toHaveLength(3);
   });
 
   test("applies itemWrapClassName and itemWrapStyle to the masonry item wrapper", () => {
@@ -68,7 +265,6 @@ describe("Masonry runtime item wrapper props", () => {
         {
           columns: 1,
           gap: 12,
-          loading: { enabled: false },
           classNames: {
             item: "legacy-shell",
           },
@@ -87,31 +283,174 @@ describe("Masonry runtime item wrapper props", () => {
     expect(markup).toContain(">alpha<");
   });
 
-  test("renders SSR fallback inline styles that keep content above the skeleton while preserving the hidden-content fallback", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(
-        Masonry,
-        {
-          columns: 1,
-          gap: 12,
-          loading: {
-            enabled: true,
-            timing: {
-              exitMs: 360,
-            },
-          },
-        },
-        "alpha"
-      )
-    );
+  test("keeps live masonry content visible while the first measurement pass completes", async () => {
+    allowMasonryMeasurement = false;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
 
-    expect(markup).toContain('style="opacity:1;pointer-events:none;transition:opacity 360ms ease"');
-    expect(markup).toContain(
-      'style="position:absolute;inset:0;min-width:0;z-index:2;pointer-events:none;height:0"'
-    );
-    expect(markup).toContain('style="opacity:0;pointer-events:none;transition:opacity 360ms ease"');
-    expect(markup).toContain('aria-hidden="true"');
-    expect(markup).toContain(">alpha<");
+    try {
+      await renderIntoRoot(
+        root,
+        <Masonry columns={2} gap={12}>
+          <article>alpha</article>
+          <article>beta</article>
+        </Masonry>
+      );
+
+      const initialShell = findMasonryContentShell(container);
+      expect(initialShell.getAttribute("data-rmg-masonry-content-ready")).toBe("false");
+      expect(initialShell.style.opacity).toBe("");
+      expect(initialShell.getAttribute("aria-hidden")).toBeNull();
+      expect(container.querySelector(`.${styles.introActive}`)).not.toBeNull();
+
+      allowMasonryMeasurement = true;
+      await settleMasonryMeasurements();
+
+      const measuredShell = findMasonryContentShell(container);
+      expect(measuredShell.getAttribute("data-rmg-masonry-content-ready")).toBe("true");
+      expect(measuredShell.style.opacity).toBe("");
+      expect(measuredShell.style.pointerEvents).toBe("");
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    }
+  });
+
+  test("does not restore predicted seed heights after item measurement", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      await renderIntoRoot(
+        root,
+        <MasonryCore
+          items={[
+            <article key="alpha">alpha</article>,
+            <article key="beta">beta</article>,
+            <article key="gamma">gamma</article>,
+          ]}
+          masonryColumns={2}
+          masonryGap={12}
+          masonryInitialHeights={[540, 736, 620]}
+          responsiveViewportWidth={1024}
+        />
+      );
+
+      const third = container.querySelector('[data-rmg-idx="2"]') as HTMLElement | null;
+      expect(third).toBeInstanceOf(HTMLElement);
+      expect(third?.style.top).toBe("112px");
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    }
+  });
+
+  test("updates unmeasured horizontal-order positions when the skeleton seed is corrected", async () => {
+    allowMasonryMeasurement = false;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const items = Array.from({ length: 6 }, (_, index) => (
+      <article key={index}>item {index + 1}</article>
+    ));
+    const spans = [2, 1, 1, 2, 1, 1];
+
+    try {
+      await renderIntoRoot(
+        root,
+        <MasonryCore
+          items={items}
+          masonryColumns={4}
+          masonryGap={18}
+          masonryPlacement="horizontalOrder"
+          masonrySpans={spans}
+          masonryInitialHeights={[100, 100, 100, 100, 100, 100]}
+          responsiveViewportWidth={1600}
+          measurementKey="same-layout"
+        />
+      );
+
+      const fifth = container.querySelector('[data-rmg-idx="4"]') as HTMLElement | null;
+      expect(fifth).toBeInstanceOf(HTMLElement);
+      expect(fifth?.style.top).toBe("118px");
+
+      await renderIntoRoot(
+        root,
+        <MasonryCore
+          items={items}
+          masonryColumns={4}
+          masonryGap={18}
+          masonryPlacement="horizontalOrder"
+          masonrySpans={spans}
+          masonryInitialHeights={[100, 150, 160, 100, 100, 100]}
+          responsiveViewportWidth={1600}
+          measurementKey="same-layout"
+        />
+      );
+
+      expect(fifth?.style.top).toBe("168px");
+    } finally {
+      allowMasonryMeasurement = true;
+      await React.act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    }
+  });
+
+  test("keeps live masonry visible while responsive placement inputs remeasure", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      await renderIntoRoot(
+        root,
+        <Masonry columns={2} gap={12}>
+          <Masonry.Item span={1}>
+            <article>alpha</article>
+          </Masonry.Item>
+          <Masonry.Item span={1}>
+            <article>beta</article>
+          </Masonry.Item>
+        </Masonry>
+      );
+      await settleMasonryMeasurements();
+      expect(findMasonryContentShell(container).style.opacity).toBe("");
+
+      allowMasonryMeasurement = false;
+      await renderIntoRoot(
+        root,
+        <Masonry columns={3} gap={18} placement="horizontalOrder">
+          <Masonry.Item span={{ 0: "full", 900: 2 }}>
+            <article>alpha</article>
+          </Masonry.Item>
+          <Masonry.Item span={1}>
+            <article>beta</article>
+          </Masonry.Item>
+        </Masonry>
+      );
+
+      expect(findMasonryContentShell(container).style.opacity).toBe("");
+      const masonryRoot = container.querySelector("[data-rmg-idx='0']")?.parentElement;
+      expect(masonryRoot).toBeInstanceOf(HTMLElement);
+      expect((masonryRoot as HTMLElement).style.height).not.toBe("0px");
+
+      allowMasonryMeasurement = true;
+      await settleMasonryMeasurements();
+      expect(findMasonryContentShell(container).style.opacity).toBe("");
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    }
   });
 
   test("initializes unmeasured masonry heights from shared skeleton prediction seeds", () => {
@@ -121,7 +460,6 @@ describe("Masonry runtime item wrapper props", () => {
         previousHeights: [],
         measuredIndices: new Set(),
         initialHeights: [320, 280, 400],
-        estimatedItemHeight: 340,
       })
     ).toEqual([320, 280, 400]);
   });
@@ -133,21 +471,19 @@ describe("Masonry runtime item wrapper props", () => {
         previousHeights: [320, 280, 400],
         measuredIndices: new Set([1]),
         initialHeights: [300, 260, 420],
-        estimatedItemHeight: 340,
       })
     ).toEqual([300, 280, 420]);
   });
 
-  test("falls back to estimatedItemHeight only when prediction is unavailable", () => {
+  test("uses zero-height seeds when prediction is unavailable", () => {
     expect(
       seedUnmeasuredMasonryHeights({
         itemCount: 3,
         previousHeights: [],
         measuredIndices: new Set(),
         initialHeights: [undefined, 250],
-        estimatedItemHeight: 340,
       })
-    ).toEqual([340, 250, 340]);
+    ).toEqual([0, 250, 0]);
   });
 
   test("matches live balanced initial packing to the shared skeleton prediction at the SSR viewport width", () => {
@@ -178,7 +514,7 @@ describe("Masonry runtime item wrapper props", () => {
               },
               {
                 kind: "text",
-                fontSize: 18,
+                barHeight: 18,
                 lineHeight: 1.35,
                 lines: 2,
                 style: {
@@ -206,7 +542,7 @@ describe("Masonry runtime item wrapper props", () => {
                   },
                   {
                     kind: "text",
-                    fontSize: 18,
+                    barHeight: 18,
                     lineHeight: 1.35,
                     lines: 2,
                     style: {
@@ -234,7 +570,7 @@ describe("Masonry runtime item wrapper props", () => {
                   },
                   {
                     kind: "text",
-                    fontSize: 18,
+                    barHeight: 18,
                     lineHeight: 1.35,
                     lines: 2,
                     style: {
@@ -255,7 +591,6 @@ describe("Masonry runtime item wrapper props", () => {
       previousHeights: [],
       measuredIndices: new Set(),
       initialHeights: active?.items.map((item) => item.height),
-      estimatedItemHeight: 340,
     });
 
     expect(active?.state.key).toBe("c2_g12");
@@ -265,7 +600,6 @@ describe("Masonry runtime item wrapper props", () => {
         columnCount: active?.state.columns ?? 0,
         placement: "balanced",
         heights: seededHeights,
-        estimatedItemHeight: 340,
         gapPx: active?.state.gapPx ?? 0,
       })
     ).toEqual(active?.items.map((item) => item.columnIndex));

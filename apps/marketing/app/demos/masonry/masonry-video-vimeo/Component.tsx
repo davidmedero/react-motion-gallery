@@ -7,48 +7,228 @@ import {
   Video,
   type MediaItem,
   toMediaItems,
+  useMasonryReady,
   useFullscreenController,
 } from "../../../../../../packages/react-motion-gallery/src";
+import { MasonrySkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import type {
+  MasonrySkeletonSpec,
+  SkeletonNode,
+} from "../../../../../../packages/react-motion-gallery/src/skeleton-masonry";
 import styles from "./masonry-video-vimeo-demo.module.css";
+import { masonryVideoHtml5SkeletonText } from "../masonry-video-html5/masonry-video-html5.skeleton-text.generated";
 
-const ITEMS = [
+type SkeletonTextIds = {
+  title: string;
+  body: string;
+};
+
+type GeneratedSkeletonTextState = {
+  lines: number | Record<number, number>;
+  barWidth?: string | string[] | Record<number, string | string[]>;
+  lastBarWidth?: string | Record<number, string>;
+  barHeight?: number | Record<number, number>;
+  lineHeight?: number | Record<number, number>;
+  responsiveBy?: "viewport" | "container";
+};
+
+type GeneratedSkeletonTextEntry = {
+  title: GeneratedSkeletonTextState;
+  body: GeneratedSkeletonTextState;
+};
+
+type MasonryVideoItem = {
+  kind: "video";
+  src: string;
+  poster: string;
+  title: string;
+  body: string;
+  ratio: string;
+  span: number | Record<string, number>;
+};
+
+const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://vimeo.com/145140004",
     poster: "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
-    title: "Atlas Walkthrough",
-    body: "Vimeo embeds can live in tall pins instead of a repeated gallery row.",
-    ratio: "4 / 5",
+    title: "Lorem ipsum dolor sit amet",
+    body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    ratio: "16 / 10",
+    span: { 0: 1, 1280: 2 },
   },
   {
     kind: "video" as const,
     src: "https://vimeo.com/113314928",
     poster: "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
-    title: "Signal Grade",
-    body: "A slightly taller tile keeps the stack visually staggered.",
-    ratio: "3 / 4",
+    title: "Ut enim ad minim veniam",
+    body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    ratio: "21 / 10",
+    span: { 0: 1, 1280: 2 },
   },
   {
     kind: "video" as const,
     src: "https://vimeo.com/172833424",
     poster: "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
-    title: "Night Transit",
-    body: "A square-ish frame keeps the wall from looking like a set of identical cards.",
-    ratio: "1 / 1",
+    title: "Duis aute irure dolor",
+    body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+    ratio: "16 / 10",
+    span: { 0: 1, 1280: 2 },
   },
   {
     kind: "video" as const,
     src: "https://vimeo.com/130632032",
     poster: "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
-    title: "Quiet Surface",
-    body: "Fullscreen continues to use a local Vimeo source builder.",
-    ratio: "5 / 4",
+    title: "Excepteur sint occaecat",
+    body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+    ratio: "16 / 10",
+    span: { 0: 1, 1280: 2 },
+  },
+  {
+    kind: "video" as const,
+    src: "https://vimeo.com/29216771",
+    poster: "https://i.vimeocdn.com/video/195526505-0b6e473889f312924ae8715001157ffd464349eb7d4cef78136668cae68a0ce8-d_640?region=us",
+    title: "Sed ut perspiciatis unde",
+    body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
+    ratio: "16 / 10",
+    span: { 0: 1, 1280: 2 },
+  },
+  {
+    kind: "video" as const,
+    src: "https://vimeo.com/127223734",
+    poster: "https://i.vimeocdn.com/video/517933160-cfa1bfb51adafa1ea32b3e1c67b79abcfdfd848f35fff141b41c24860fd1e22c-d_640?region=us",
+    title: "Nemo enim ipsam voluptatem",
+    body: "Quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores.",
+    ratio: "21 / 10",
+    span: { 0: 1, 1280: 2 },
   },
 ];
 
-const VIMEO_SKELETON = {
-  heightsPx: [360, 404, 320, 388],
+const VIDEO_CARD_METRICS = {
+  cardGapPx: 14,
+  cardPadding: "12px 12px 14px",
+  cardRadiusPx: 22,
+  frameRadiusPx: 18,
+  metaGapPx: 6,
+  title: {
+    barHeight: 16.64,
+    lineHeight: 1.2,
+  },
+  body: {
+    barHeight: 14.72,
+    lineHeight: 1.6,
+  },
+} as const;
+
+const MASONRY_VIDEO_TEXT_IDS: SkeletonTextIds[] = [
+  {
+    title: "masonryVideoHtml5Item01Title",
+    body: "masonryVideoHtml5Item01Body",
+  },
+  {
+    title: "masonryVideoHtml5Item02Title",
+    body: "masonryVideoHtml5Item02Body",
+  },
+  {
+    title: "masonryVideoHtml5Item03Title",
+    body: "masonryVideoHtml5Item03Body",
+  },
+  {
+    title: "masonryVideoHtml5Item04Title",
+    body: "masonryVideoHtml5Item04Body",
+  },
+  {
+    title: "masonryVideoHtml5Item05Title",
+    body: "masonryVideoHtml5Item05Body",
+  },
+  {
+    title: "masonryVideoHtml5Item06Title",
+    body: "masonryVideoHtml5Item06Body",
+  },
+];
+
+const MASONRY_VIDEO_SKELETON_TEXT: GeneratedSkeletonTextEntry[] =
+  MASONRY_VIDEO_TEXT_IDS.map((textIds) => ({
+    title: masonryVideoHtml5SkeletonText[textIds.title]!,
+    body: masonryVideoHtml5SkeletonText[textIds.body]!,
+  }));
+
+function createVideoSkeletonItem(args: {
+  item: MasonryVideoItem;
+  skeletonText: GeneratedSkeletonTextEntry;
+}): SkeletonNode {
+  return {
+    kind: "col",
+    style: {
+      gap: VIDEO_CARD_METRICS.cardGapPx,
+    },
+    children: [
+      {
+        kind: "rect",
+        style: {
+          width: "100%",
+          aspectRatio: args.item.ratio,
+          borderRadius: VIDEO_CARD_METRICS.frameRadiusPx,
+        },
+      },
+      {
+        kind: "col",
+        style: {
+          gap: VIDEO_CARD_METRICS.metaGapPx,
+        },
+        children: [
+          {
+            kind: "text",
+            barHeight: VIDEO_CARD_METRICS.title.barHeight,
+            lineHeight: VIDEO_CARD_METRICS.title.lineHeight,
+            ...args.skeletonText.title,
+            style: {
+              width: "100%",
+            },
+          },
+          {
+            kind: "text",
+            barHeight: VIDEO_CARD_METRICS.body.barHeight,
+            lineHeight: VIDEO_CARD_METRICS.body.lineHeight,
+            ...args.skeletonText.body,
+            style: {
+              width: "100%",
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+const VIMEO_SKELETON: MasonrySkeletonSpec = {
   radius: 18,
+  layout: {
+    kind: "masonry",
+    itemWrapStyle: {
+      padding: VIDEO_CARD_METRICS.cardPadding,
+      borderRadius: VIDEO_CARD_METRICS.cardRadiusPx,
+      border: "1px solid rgba(15, 23, 42, 0.08)",
+      backgroundColor: "rgba(255, 255, 255, 0.96)",
+      boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+    },
+    item: createVideoSkeletonItem({
+      item: ITEMS[0]!,
+      skeletonText: MASONRY_VIDEO_SKELETON_TEXT[0]!,
+    }),
+    slots: ITEMS.map((item, index) => ({
+      span: item.span,
+      item: createVideoSkeletonItem({
+        item,
+        skeletonText:
+          MASONRY_VIDEO_SKELETON_TEXT[index] ??
+          MASONRY_VIDEO_SKELETON_TEXT[0]!,
+      }),
+    })),
+  },
 };
 
 function buildMasonryVimeoSource(src: string, poster?: string) {
@@ -85,12 +265,20 @@ function MasonryVimeoCard(props: {
   title: string;
   body: string;
   ratio: string;
+  skeletonTextIds: SkeletonTextIds;
 }) {
-  const { src, poster, title, body, ratio } = props;
+  const { src, poster, title, body, ratio, skeletonTextIds } = props;
 
   return (
     <article className={styles.masonryVimeoCard}>
       <div className={styles.masonryVimeoFrame} style={{ aspectRatio: ratio }}>
+        <img
+          src="/open-fullscreen.png"
+          alt="Open fullscreen"
+          width="24"
+          height="24"
+          className={styles.open_fullscreen_icon}
+        />
         <Video
           src={src}
           poster={poster}
@@ -102,8 +290,18 @@ function MasonryVimeoCard(props: {
         />
       </div>
       <div className={styles.masonryVimeoMeta}>
-        <strong className={styles.masonryVimeoTitle}>{title}</strong>
-        <p className={styles.masonryVimeoBody}>{body}</p>
+        <strong
+          className={styles.masonryVimeoTitle}
+          data-skeleton-text-id={skeletonTextIds.title}
+        >
+          {title}
+        </strong>
+        <p
+          className={styles.masonryVimeoBody}
+          data-skeleton-text-id={skeletonTextIds.body}
+        >
+          {body}
+        </p>
       </div>
     </article>
   );
@@ -111,6 +309,7 @@ function MasonryVimeoCard(props: {
 
 function MasonryVimeoFullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
       video: {
@@ -126,28 +325,43 @@ function MasonryVimeoFullscreenAddon() {
 export function MasonryVideoVimeoDemo() {
   const media = toMediaItems(ITEMS);
 
+  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
+
   return (
     <GalleryCore layout="masonry" fullscreenItems={media}>
-      <Masonry
-        columns={{ 0: 1, 900: 2, 1260: 3 }}
-        gap={{ 0: 12, 1260: 18 }}
-        estimatedItemHeight={340}
-        loading={{
-          enabled: true,
-          skeleton: VIMEO_SKELETON,
+      <MasonrySkeleton
+        layout={VIMEO_SKELETON}
+        ready={masonryReady}
+        timing={{ exitMs: 2000 }}
+        masonry={{
+          count: ITEMS.length,
+          columns: { 0: 1, 820: 2, 1280: 4 },
+          gap: { 0: 14, 820: 18, 1280: 20 },
+          placement: "balanced",
         }}
       >
-        {ITEMS.map((item) => (
-          <MasonryVimeoCard
-            key={item.src}
-            src={item.src}
-            poster={item.poster}
-            title={item.title}
-            body={item.body}
-            ratio={item.ratio}
-          />
-        ))}
-      </Masonry>
+        <Masonry
+          ref={masonryRef}
+          columns={{ 0: 1, 820: 2, 1280: 4 }}
+          gap={{ 0: 14, 820: 18, 1280: 20 }}
+          placement="balanced"
+        >
+          {ITEMS.map((item, index) => (
+          <Masonry.Item key={item.src} span={item.span}>
+            <MasonryVimeoCard
+              src={item.src}
+              poster={item.poster}
+              title={item.title}
+              body={item.body}
+              ratio={item.ratio}
+              skeletonTextIds={
+                MASONRY_VIDEO_TEXT_IDS[index] ?? MASONRY_VIDEO_TEXT_IDS[0]!
+              }
+            />
+          </Masonry.Item>
+          ))}
+        </Masonry>
+      </MasonrySkeleton>
       <MasonryVimeoFullscreenAddon />
     </GalleryCore>
   );

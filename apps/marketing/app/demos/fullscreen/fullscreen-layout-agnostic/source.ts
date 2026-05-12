@@ -1,4 +1,5 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
 import * as React from "react";
 import {
@@ -7,7 +8,10 @@ import {
   toMediaItems,
   useFullscreenController,
   useGalleryCore,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
 import styles from "./fullscreen-layout-agnostic-demo.module.css";
 
 type ScenarioKind = "article" | "figure" | "posterVideo" | "videoCard";
@@ -31,14 +35,14 @@ const POSTER_VIDEO: VideoAsset = {
   src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4",
   poster:
     "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
-  alt: "Forest canopies moving in the wind",
+  alt: "Sed ut perspiciatis unde",
 };
 
 const INLINE_VIDEO: VideoAsset = {
   src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4",
   poster:
     "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
-  alt: "Ocean water moving across a rocky shoreline",
+  alt: "Nemo enim ipsam voluptatem",
 };
 
 const INLINE_VIDEO_OPTIONS = {
@@ -49,31 +53,31 @@ const INLINE_VIDEO_OPTIONS = {
 const SCENARIOS: Scenario[] = [
   {
     kind: "article",
-    eyebrow: "Article Root",
-    title: "Editorial card opens from the outer article",
-    body: "The whole article is the trigger, but the fullscreen intro still scales from the image.",
-    previewSrc: "https://picsum.photos/id/1025/1200/900",
+    eyebrow: "Lorem",
+    title: "Lorem ipsum dolor sit amet",
+    body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    previewSrc: "https://picsum.photos/id/938/1200/900",
   },
   {
     kind: "figure",
-    eyebrow: "Figure + CTA",
-    title: "Image-level triggers can open fullscreen directly",
-    body: "The caption CTA still works, but the media now carries its own fullscreen trigger so the launch point stays obvious.",
-    previewSrc: "https://picsum.photos/id/1035/1200/900",
+    eyebrow: "Ipsum",
+    title: "Ut enim ad minim veniam",
+    body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    previewSrc: "https://picsum.photos/id/944/1200/900",
   },
   {
     kind: "posterVideo",
-    eyebrow: "Poster Surface",
-    title: "A poster card can open a fullscreen Plyr video",
-    body: "This tile stays a static image with a CSS play affordance, while fullscreen swaps to the live player.",
+    eyebrow: "Dolor",
+    title: "Duis aute irure dolor",
+    body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
     previewSrc: POSTER_VIDEO.poster,
     video: POSTER_VIDEO,
   },
   {
     kind: "videoCard",
-    eyebrow: "Video Component",
-    title: "The base card can render our Video component inline",
-    body: "The surface uses the real player in-place and a separate trigger can lift the same source into fullscreen.",
+    eyebrow: "Amet",
+    title: "Excepteur sint occaecat",
+    body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     previewSrc: INLINE_VIDEO.poster,
     video: INLINE_VIDEO,
   },
@@ -81,12 +85,12 @@ const SCENARIOS: Scenario[] = [
 
 const FULLSCREEN_MEDIA = toMediaItems([
   {
-    src: "https://picsum.photos/id/1025/2400/1800",
-    alt: "Editorial image of a dog looking over the water",
+    src: "https://picsum.photos/id/938/2400/1800",
+    alt: "Lorem ipsum dolor sit amet",
   },
   {
-    src: "https://picsum.photos/id/1035/2400/1800",
-    alt: "Landscape image with mountains and sky",
+    src: "https://picsum.photos/id/944/2400/1800",
+    alt: "Ut enim ad minim veniam",
   },
   POSTER_VIDEO,
   INLINE_VIDEO,
@@ -98,6 +102,7 @@ type FullscreenTargetEvent =
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -168,9 +173,8 @@ function ScenarioTile(props: {
           <span className={styles.playButton} aria-hidden="true">
             <span className={styles.playGlyph} />
           </span>
-          <span className={styles.videoBadge}>Fullscreen Plyr</span>
         </span>
-        <span className={styles.surfaceCopy}>
+        <span className={styles.copy}>
           <span className={styles.eyebrow}>{scenario.eyebrow}</span>
           <strong className={styles.title}>{scenario.title}</strong>
           <span className={styles.body}>{scenario.body}</span>
@@ -196,9 +200,14 @@ function ScenarioTile(props: {
           />
         </div>
         <div className={styles.surfaceCopy}>
-          <span className={styles.eyebrow}>{scenario.eyebrow}</span>
-          <strong className={styles.title}>{scenario.title}</strong>
-          <p className={styles.body}>{scenario.body}</p>
+          <div className={styles.copyContainer}>
+            <span className={styles.eyebrow}>{scenario.eyebrow}</span>
+            <strong className={styles.title}>{scenario.title}</strong>
+            <p className={styles.body}>{scenario.body}</p>
+          </div>
+          <button type="button" className={styles.inlineAction} onClick={open}>
+            Open fullscreen
+          </button>
         </div>
       </section>
     );
@@ -208,16 +217,14 @@ function ScenarioTile(props: {
     return (
       <figure className={styles.figureTile}>
         <div className={styles.mediaFrame}>
-          <img src={scenario.previewSrc} alt={scenario.title} className={styles.media} />
-          <MediaFullscreenTrigger
-            label={\`Open \${scenario.title} in fullscreen\`}
-            onClick={open}
-          />
+          <img src={scenario.previewSrc} alt={scenario.title} className={styles.media} onClick={open} />
         </div>
         <figcaption className={styles.surfaceCopy}>
-          <span className={styles.eyebrow}>{scenario.eyebrow}</span>
-          <strong className={styles.title}>{scenario.title}</strong>
-          <span className={styles.body}>{scenario.body}</span>
+          <div className={styles.copyContainer}>
+            <span className={styles.eyebrow}>{scenario.eyebrow}</span>
+            <strong className={styles.title}>{scenario.title}</strong>
+            <span className={styles.body}>{scenario.body}</span>
+          </div>
           <button type="button" className={styles.inlineAction} onClick={open}>
             Open fullscreen
           </button>
@@ -235,8 +242,10 @@ function ScenarioTile(props: {
       tabIndex={0}
       aria-label={\`Open \${scenario.title} in fullscreen\`}
     >
-      <img src={scenario.previewSrc} alt={scenario.title} className={styles.media} />
-      <div className={styles.surfaceCopy}>
+      <div className={styles.mediaWrapper}>
+        <img src={scenario.previewSrc} alt={scenario.title} className={styles.media} />
+      </div>
+      <div className={styles.copy}>
         <span className={styles.eyebrow}>{scenario.eyebrow}</span>
         <strong className={styles.title}>{scenario.title}</strong>
         <p className={styles.body}>{scenario.body}</p>
@@ -248,16 +257,6 @@ function ScenarioTile(props: {
 export function FullscreenLayoutAgnosticDemo() {
   return (
     <div className={styles.shell}>
-      <div className={styles.intro}>
-        <span className={styles.kicker}>No Layout Prop</span>
-        <h2 className={styles.heading}>GalleryCore can now drive fullscreen around arbitrary HTML.</h2>
-        <p className={styles.lede}>
-          Every tile below opens via <code>openFullscreenAt</code>. The wrapper elements and media
-          types differ on purpose, but the launch and close paths still stay anchored to the
-          matching surface.
-        </p>
-      </div>
-
       <GalleryCore fullscreenItems={FULLSCREEN_MEDIA}>
         <div className={styles.grid}>
           {SCENARIOS.map((scenario, index) => (
@@ -268,4 +267,5 @@ export function FullscreenLayoutAgnosticDemo() {
       </GalleryCore>
     </div>
   );
-}`;
+}
+`;

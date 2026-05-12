@@ -61,15 +61,21 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  opacity: 1;
+  opacity: var(--rmg-loading-opacity, 1);
+  --rmg-slider-skel-wrap-shadow-opacity: 1;
   pointer-events: none;
   transition: opacity var(--rmg-loading-fade-duration, 600ms) ease;
   will-change: opacity;
   overflow: hidden;
 }
 
+.loadingLayerCompare {
+  z-index: 3;
+}
+
 .loadingLayerExit {
-  opacity: 0;
+  --rmg-loading-opacity: 0;
+  --rmg-slider-skel-wrap-shadow-opacity: 0;
 }
 
 .fadeInStart {
@@ -264,6 +270,13 @@
   min-height: 0;
 }
 
+.sliderSkeletonOverlays {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
 .sliderSkeletonRow {
   display: flex;
   width: 100%;
@@ -295,10 +308,33 @@
 }
 
 .sliderSkeletonItem {
+  position: relative;
   flex: 1 1 0;
   height: 100%;
   min-width: 0;
   display: flex;
+  box-sizing: border-box;
+}
+
+.sliderSkeletonItem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rmg-slider-skel-wrap-shadow-radius, var(--rmg-skel-radius, 12px));
+  box-shadow: var(--rmg-slider-skel-wrap-shadow, none);
+  opacity: var(--rmg-slider-skel-wrap-shadow-opacity, 1);
+  transition: opacity calc(var(--rmg-loading-fade-duration, 600ms) * 0.45) ease-out;
+  pointer-events: none;
+}
+
+.sliderSkeletonItemInner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   box-sizing: border-box;
 }
 

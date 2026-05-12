@@ -6,81 +6,158 @@ import {
   Grid,
   Video,
   toMediaItems,
+  useGridReady,
   useFullscreenController,
 } from "../../../../../../packages/react-motion-gallery/src";
-import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/Gallery/grid/GridSkeleton";
+import { GridSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
 import styles from "./grid-video-html5-demo.module.css";
+import { gridVideoHtml5SkeletonText } from "./grid-video-html5.skeleton-text.generated";
+
+type SkeletonTextIds = {
+  title: string;
+  body: string;
+};
+
+type GeneratedSkeletonTextState = {
+  lines: number | Record<number, number>;
+  barWidth?: string | string[] | Record<number, string | string[]>;
+  lastBarWidth?: string | Record<number, string>;
+};
+
+type GeneratedSkeletonTextEntry = {
+  title: GeneratedSkeletonTextState;
+  body: GeneratedSkeletonTextState;
+};
 
 const ITEMS = [
   {
     src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4",
     poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
-    title: "Forest Run",
-    body: "Native MP4 playback inside a responsive grid card.",
+    title: "Lorem ipsum dolor sit amet",
+    body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4",
     poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
-    title: "Tide Study",
-    body: "Poster-first loading keeps the layout calm before playback.",
+    title: "Ut enim ad minim veniam",
+    body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   },
   {
     src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4",
     poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
-    title: "Studio Glass",
-    body: "Grid items can mix rich media with supporting editorial copy.",
+    title: "Duis aute irure dolor",
+    body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
   },
   {
     src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps.mp4",
     poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
-    title: "Desert Road",
-    body: "Fullscreen still hooks up through GalleryCore when the card opens.",
+    title: "Excepteur sint occaecat",
+    body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   },
 ];
+
+const GRID_VIDEO_HTML5_TEXT_IDS: SkeletonTextIds[] = [
+  {
+    title: "gridVideoHtml5Item01Title",
+    body: "gridVideoHtml5Item01Body",
+  },
+  {
+    title: "gridVideoHtml5Item02Title",
+    body: "gridVideoHtml5Item02Body",
+  },
+  {
+    title: "gridVideoHtml5Item03Title",
+    body: "gridVideoHtml5Item03Body",
+  },
+  {
+    title: "gridVideoHtml5Item04Title",
+    body: "gridVideoHtml5Item04Body",
+  },
+];
+
+const GRID_VIDEO_HTML5_SKELETON_TEXT: GeneratedSkeletonTextEntry[] =
+  GRID_VIDEO_HTML5_TEXT_IDS.map((textIds) => ({
+    title: gridVideoHtml5SkeletonText[textIds.title]!,
+    body: gridVideoHtml5SkeletonText[textIds.body]!,
+  }));
+
+function createHtml5VideoSkeletonItem(index: number) {
+  const skeletonText =
+    GRID_VIDEO_HTML5_SKELETON_TEXT[index] ??
+    GRID_VIDEO_HTML5_SKELETON_TEXT[0]!;
+
+  return {
+    kind: "col" as const,
+    style: {
+      gap: 14,
+    },
+    children: [
+      {
+        kind: "rect" as const,
+        style: {
+          width: "100%",
+          aspectRatio: "16 / 9",
+          borderRadius: 12,
+        },
+      },
+      {
+        kind: "col" as const,
+        style: {
+          gap: 6,
+        },
+        children: [
+          {
+            kind: "text" as const,
+            barHeight: 18,
+            lineHeight: 1.2,
+            style: {
+              width: "100%",
+            },
+            ...skeletonText.title,
+          },
+          {
+            kind: "text" as const,
+            barHeight: 14,
+            lineHeight: 1.5,
+            style: {
+              width: "100%",
+            },
+            ...skeletonText.body,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+const HTML5_VIDEO_SKELETON_SLOTS = ITEMS.map((_, index) => ({
+  item: createHtml5VideoSkeletonItem(index),
+}));
 
 const HTML5_VIDEO_SKELETON: GridSkeletonSpec = {
   radius: 12,
   layout: {
     kind: "grid",
-    item: {
-      kind: "col",
-      style: {
-        gap: 12,
-      },
-      children: [
-        {
-          kind: "rect",
-          style: {
-            width: "100%",
-            aspectRatio: "16 / 9",
-            borderRadius: 12,
-          },
-        },
-        {
-          kind: "text",
-          fontSize: 18,
-          lineHeight: 1.2,
-          style: {
-            width: "70%",
-          },
-        },
-        {
-          kind: "text",
-          fontSize: 14,
-          lineHeight: 1.5,
-          lines: 2,
-          lineWidth: "56%",
-          style: {
-            width: "100%",
-          },
-        },
-      ],
+    itemWrapStyle: {
+      padding: 16,
+      borderRadius: 12,
+      border: "1px solid rgba(11, 18, 32, 0.12)",
+      backgroundColor: "rgba(255, 255, 255, 0.82)",
+      boxShadow: "0 3px 6px rgba(15, 23, 42, 0.08)",
+      height: "100%"
     },
+    item: createHtml5VideoSkeletonItem(0),
+    slots: HTML5_VIDEO_SKELETON_SLOTS,
   },
 };
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -97,34 +174,59 @@ export function GridVideoHtml5Demo() {
       poster: item.poster,
     }))
   );
+  const { ref: gridRef, ready: gridReady } = useGridReady();
 
   return (
     <GalleryCore layout="grid" fullscreenItems={media}>
-      <Grid
-        columns={{ 0: 1, 900: 2 }}
-        gap={{ 0: 12, 900: 18 }}
-        fullscreenTrigger="item"
-        loading={{
-          enabled: true,
-          skeleton: HTML5_VIDEO_SKELETON,
+      <GridSkeleton
+        layout={HTML5_VIDEO_SKELETON}
+        ready={gridReady}
+        grid={{
+          count: ITEMS.length,
+          columns: { 0: 1, 900: 2 },
+          gap: { 0: 12, 900: 18 },
         }}
       >
-        {ITEMS.map((item) => (
-          <article key={item.src} className={styles.videoSlide}>
-            <div className={styles.videoFrame}>
-              <Video
-                src={item.src}
-                poster={item.poster}
-                alt={item.title}
-              />
-            </div>
-            <div className={styles.videoMeta}>
-              <strong className={styles.videoMetaTitle}>{item.title}</strong>
-              <p className={styles.videoMetaBody}>{item.body}</p>
-            </div>
-          </article>
-        ))}
-      </Grid>
+        <Grid
+          ref={gridRef}
+          columns={{ 0: 1, 900: 2 }}
+          gap={{ 0: 12, 900: 18 }}
+          fullscreenTrigger="item"
+        >
+          {ITEMS.map((item, index) => {
+            const textIds = GRID_VIDEO_HTML5_TEXT_IDS[index]!;
+
+            return (
+              <article key={item.src} className={styles.videoSlide}>
+                <div className={styles.videoFrame}>
+                  <img
+                    src="/open-fullscreen.png"
+                    alt="Open fullscreen"
+                    width="24"
+                    height="24"
+                    className={styles.open_fullscreen_icon}
+                  />
+                  <Video src={item.src} poster={item.poster} alt={item.title} />
+                </div>
+                <div className={styles.videoMeta}>
+                  <strong
+                    className={styles.videoMetaTitle}
+                    data-skeleton-text-id={textIds.title}
+                  >
+                    {item.title}
+                  </strong>
+                  <p
+                    className={styles.videoMetaBody}
+                    data-skeleton-text-id={textIds.body}
+                  >
+                    {item.body}
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+        </Grid>
+      </GridSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );

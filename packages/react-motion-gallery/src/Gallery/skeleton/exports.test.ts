@@ -1,0 +1,37 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, test } from "vitest";
+
+import * as skeletonBaseEntry from "../../skeleton-base";
+import * as skeletonGridEntry from "../../skeleton-grid";
+import * as skeletonMasonryEntry from "../../skeleton-masonry";
+import * as skeletonSliderEntry from "../../skeleton-slider";
+
+const packageJson = JSON.parse(
+  readFileSync(new URL("../../../package.json", import.meta.url), "utf8")
+) as { exports: Record<string, unknown> };
+
+describe("skeleton public entries", () => {
+  test("exports the standalone base skeleton subpath", () => {
+    expect(packageJson.exports["./skeleton/base"]).toBeDefined();
+    expect(skeletonBaseEntry.Skeleton).toBeTypeOf("function");
+    expect(skeletonBaseEntry.default).toBe(skeletonBaseEntry.Skeleton);
+  });
+
+  test("exports gallery-specific skeleton subpaths", () => {
+    expect(packageJson.exports["./skeleton/slider"]).toBeDefined();
+    expect(packageJson.exports["./skeleton/grid"]).toBeDefined();
+    expect(packageJson.exports["./skeleton/masonry"]).toBeDefined();
+
+    expect(skeletonSliderEntry.SliderSkeleton).toBeTypeOf("function");
+    expect(skeletonSliderEntry.Skeleton).toBe(skeletonSliderEntry.SliderSkeleton);
+    expect(skeletonSliderEntry.default).toBe(skeletonSliderEntry.SliderSkeleton);
+
+    expect(skeletonGridEntry.GridSkeleton).toBeTypeOf("function");
+    expect(skeletonGridEntry.Skeleton).toBe(skeletonGridEntry.GridSkeleton);
+    expect(skeletonGridEntry.default).toBe(skeletonGridEntry.GridSkeleton);
+
+    expect(skeletonMasonryEntry.MasonrySkeleton).toBeTypeOf("function");
+    expect(skeletonMasonryEntry.Skeleton).toBe(skeletonMasonryEntry.MasonrySkeleton);
+    expect(skeletonMasonryEntry.default).toBe(skeletonMasonryEntry.MasonrySkeleton);
+  });
+});

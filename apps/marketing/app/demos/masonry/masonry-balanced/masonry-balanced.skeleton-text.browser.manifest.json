@@ -1,0 +1,90 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=masonry-balanced&skeletonMeasure=content",
+  "outputFile": "./masonry-balanced.skeleton-text.generated.ts",
+  "moduleExportName": "masonryBalancedSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1340,
+  "viewportHeight": 1800,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "readyExpression": "(() => { const body = document.querySelector(\"[data-skeleton-text-id='masonryBalancedItem01Body']\"); const item = body?.closest(\"[data-rmg-idx]\"); const root = item?.parentElement; const columns = Number(getComputedStyle(root).getPropertyValue(\"--rmg-cols\")); const expected = window.innerWidth >= 1140 ? 3 : window.innerWidth >= 720 ? 2 : 1; return columns === expected; })()",
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "masonryBalancedItem01Badge",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem01Badge']"
+    },
+    {
+      "exportName": "masonryBalancedItem01Title",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem01Title']"
+    },
+    {
+      "exportName": "masonryBalancedItem01Body",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem01Body']"
+    },
+    {
+      "exportName": "masonryBalancedItem02Badge",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem02Badge']"
+    },
+    {
+      "exportName": "masonryBalancedItem02Title",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem02Title']"
+    },
+    {
+      "exportName": "masonryBalancedItem02Body",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem02Body']"
+    },
+    {
+      "exportName": "masonryBalancedItem03Badge",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem03Badge']"
+    },
+    {
+      "exportName": "masonryBalancedItem03Title",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem03Title']"
+    },
+    {
+      "exportName": "masonryBalancedItem03Body",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem03Body']"
+    },
+    {
+      "exportName": "masonryBalancedItem04Badge",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem04Badge']"
+    },
+    {
+      "exportName": "masonryBalancedItem04Title",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem04Title']"
+    },
+    {
+      "exportName": "masonryBalancedItem04Body",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem04Body']"
+    },
+    {
+      "exportName": "masonryBalancedItem05Badge",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem05Badge']"
+    },
+    {
+      "exportName": "masonryBalancedItem05Title",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem05Title']"
+    },
+    {
+      "exportName": "masonryBalancedItem05Body",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem05Body']"
+    },
+    {
+      "exportName": "masonryBalancedItem06Badge",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem06Badge']"
+    },
+    {
+      "exportName": "masonryBalancedItem06Title",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem06Title']"
+    },
+    {
+      "exportName": "masonryBalancedItem06Body",
+      "selector": "[data-skeleton-text-id='masonryBalancedItem06Body']"
+    }
+  ]
+}

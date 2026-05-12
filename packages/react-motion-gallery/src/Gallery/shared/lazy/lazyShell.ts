@@ -1,4 +1,9 @@
-import { waitForImageDecode, isTrackableImage, nextFrame } from "./imageLifecycle";
+import {
+  waitForImageDecode,
+  isTrackableImage,
+  nextFrame,
+  findPrimaryTrackableImage,
+} from "./imageLifecycle";
 
 export const RMG_BLANK =
   "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
@@ -6,6 +11,7 @@ export const LAZY_ATTR = "data-rmg-lazy-src";
 export const LAZY_HOST_ATTR = "data-rmg-lazyload";
 export const LAZY_LOADING_ATTR = "data-rmg-lazyloading";
 export const LAZY_LOADED_ATTR = "data-rmg-lazyloaded";
+export const LAZY_NESTED_IMAGE_ATTR = "data-rmg-lazy-nested-image";
 export const SPINNER_HIDE_TIMER_ATTR = "data-rmg-spinner-hide-timer";
 export const LAZY_SPINNER_FADE_MS = 180;
 
@@ -72,8 +78,18 @@ function getLazyTargets(hostEl: HTMLElement) {
 function ensureLazyTargetHidden(target: HTMLElement) {
   if (target instanceof HTMLImageElement) {
     if (!target.getAttribute("src")) target.src = RMG_BLANK;
-    if (!target.style.opacity) target.style.opacity = "0";
+    target.style.opacity = "0";
     if (!target.style.transition) target.style.transition = "opacity 280ms ease";
+    return;
+  }
+
+  if (target.hasAttribute(LAZY_NESTED_IMAGE_ATTR)) {
+    const img = findPrimaryTrackableImage(target);
+    if (img) {
+      if (!img.getAttribute("src")) img.src = RMG_BLANK;
+      img.style.opacity = "0";
+      if (!img.style.transition) img.style.transition = "opacity 280ms ease";
+    }
     return;
   }
 
@@ -95,7 +111,7 @@ export function markLazyImageShell(hostEl: HTMLElement) {
     img.setAttribute(LAZY_ATTR, src);
     img.setAttribute("src", RMG_BLANK);
 
-    if (!img.style.opacity) img.style.opacity = "0";
+    img.style.opacity = "0";
     if (!img.style.transition) img.style.transition = "opacity 280ms ease";
   });
 
@@ -112,6 +128,13 @@ export function restoreLazyImageShell(hostEl: HTMLElement) {
       target.src = src;
       target.style.opacity = "1";
       target.style.transition = target.style.transition || "opacity 280ms ease";
+    } else if (target.hasAttribute(LAZY_NESTED_IMAGE_ATTR)) {
+      const img = findPrimaryTrackableImage(target);
+      if (img) {
+        img.src = src;
+        img.style.opacity = "1";
+        img.style.transition = img.style.transition || "opacity 280ms ease";
+      }
     } else {
       (target.style as CSSStyleDeclaration & { backgroundImage: string }).backgroundImage =
         `url("${src}")`;
@@ -119,6 +142,7 @@ export function restoreLazyImageShell(hostEl: HTMLElement) {
     }
 
     target.removeAttribute(LAZY_ATTR);
+    target.removeAttribute(LAZY_NESTED_IMAGE_ATTR);
   }
 
   hostEl.removeAttribute(LAZY_HOST_ATTR);
@@ -146,6 +170,13 @@ export function hydrateLazyImageShell(
       target.src = src;
       target.style.opacity = "1";
       target.style.transition = target.style.transition || "opacity 280ms ease";
+    } else if (target.hasAttribute(LAZY_NESTED_IMAGE_ATTR)) {
+      const img = findPrimaryTrackableImage(target);
+      if (img) {
+        img.src = src;
+        img.style.opacity = "1";
+        img.style.transition = img.style.transition || "opacity 280ms ease";
+      }
     } else {
       (target.style as CSSStyleDeclaration & { backgroundImage: string }).backgroundImage =
         `url("${src}")`;
@@ -153,6 +184,7 @@ export function hydrateLazyImageShell(
     }
 
     target.removeAttribute(LAZY_ATTR);
+    target.removeAttribute(LAZY_NESTED_IMAGE_ATTR);
   }
 
   hostEl.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
@@ -189,6 +221,14 @@ export async function revealLazyImageShell(
       target.style.transition = target.style.transition || "opacity 280ms ease";
       target.src = src;
       decodePromises.push(waitForImageDecode(target));
+    } else if (target.hasAttribute(LAZY_NESTED_IMAGE_ATTR)) {
+      const img = findPrimaryTrackableImage(target);
+      if (img) {
+        img.style.opacity = "0";
+        img.style.transition = img.style.transition || "opacity 280ms ease";
+        img.src = src;
+        decodePromises.push(waitForImageDecode(img));
+      }
     } else {
       (target.style as CSSStyleDeclaration & { backgroundImage: string }).backgroundImage =
         `url("${src}")`;
@@ -215,7 +255,14 @@ export async function revealLazyImageShell(
         if (!src) continue;
 
         target.removeAttribute(LAZY_ATTR);
-        target.style.opacity = "1";
+        target.removeAttribute(LAZY_NESTED_IMAGE_ATTR);
+        if (target instanceof HTMLImageElement) {
+          target.style.opacity = "1";
+        } else {
+          const img = findPrimaryTrackableImage(target);
+          if (img) img.style.opacity = "1";
+          else target.style.opacity = "1";
+        }
       }
 
       hostEl.setAttribute(LAZY_LOADED_ATTR, "true");

@@ -1,0 +1,393 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=skeleton-responsive-text&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1340,
+    "viewportHeight": 1800,
+    "viewportWorkers": 8,
+    "settleMs": 120,
+    "stableGeometryFrames": 4,
+    "readyExpression": "(() => Boolean(document.querySelector(\"[data-skeleton-text-id='responsiveTextItem03Body']\")))()",
+    "lineMeasurementMethod": "domRange",
+    "includeTextMetrics": true,
+    "breakpointStrategy": "lineChanges",
+    "barWidthUnit": "px"
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "responsiveTextHeaderTitle",
+      "lines": {
+        "0": 2,
+        "274.562": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 244,
+          "toViewport": 274,
+          "fromWidthPx": 244,
+          "toWidthPx": 274,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 274.562,
+          "toViewport": 620,
+          "fromWidthPx": 274.5625,
+          "toWidthPx": 620,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "218px",
+          "52px"
+        ],
+        "274.562": "274px"
+      },
+      "barHeight": 22,
+      "lineHeight": 1.18
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextHeaderMeta",
+      "lines": {
+        "0": 2,
+        "274": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 244,
+          "toViewport": 273.625,
+          "fromWidthPx": 244,
+          "toWidthPx": 273.625,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 274,
+          "toViewport": 520,
+          "fromWidthPx": 274,
+          "toWidthPx": 520,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "216px",
+          "55px"
+        ],
+        "274": "274px"
+      },
+      "barHeight": 13,
+      "lineHeight": 1.35
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextItem01Label",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 52.156,
+          "toViewport": 52.156,
+          "fromWidthPx": 52.15625,
+          "toWidthPx": 52.15625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "34px",
+      "barHeight": 11,
+      "lineHeight": 1
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextItem01Title",
+      "lines": {
+        "0": 2,
+        "241": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 206,
+          "toViewport": 240,
+          "fromWidthPx": 206,
+          "toWidthPx": 240,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 241,
+          "toViewport": 577.781,
+          "fromWidthPx": 241,
+          "toWidthPx": 577.78125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "191px",
+          "45px"
+        ],
+        "241": "240px"
+      },
+      "barHeight": 18,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextItem01Body",
+      "lines": {
+        "0": 3,
+        "319.328": 2
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 206,
+          "toViewport": 319,
+          "fromWidthPx": 206,
+          "toWidthPx": 319,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 319.328,
+          "toViewport": 577.781,
+          "fromWidthPx": 319.328125,
+          "toWidthPx": 577.78125,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "198px",
+          "203px",
+          "189px"
+        ],
+        "319.328": [
+          "275px",
+          "319px"
+        ]
+      },
+      "barHeight": 13,
+      "lineHeight": 1.62
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextItem02Label",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 51.656,
+          "toViewport": 51.656,
+          "fromWidthPx": 51.65625,
+          "toWidthPx": 51.65625,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "34px",
+      "barHeight": 11,
+      "lineHeight": 1
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextItem02Title",
+      "lines": {
+        "0": 2,
+        "304.5": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 206,
+          "toViewport": 304,
+          "fromWidthPx": 206,
+          "toWidthPx": 304,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 304.5,
+          "toViewport": 457.781,
+          "fromWidthPx": 304.5,
+          "toWidthPx": 457.78125,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "142px",
+          "158px"
+        ],
+        "304.5": "304px"
+      },
+      "barHeight": 18,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextItem02Body",
+      "lines": {
+        "0": 4,
+        "321": 2,
+        "224.968": 3
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 206,
+          "toViewport": 224.765,
+          "fromWidthPx": 206,
+          "toWidthPx": 224.765625,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 224.968,
+          "toViewport": 320.5,
+          "fromWidthPx": 224.96875,
+          "toWidthPx": 320.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 321,
+          "toViewport": 457.781,
+          "fromWidthPx": 321,
+          "toWidthPx": 457.78125,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "191px",
+          "179px",
+          "165px",
+          "67px"
+        ],
+        "321": [
+          "321px",
+          "288px"
+        ],
+        "224.968": [
+          "191px",
+          "225px",
+          "190px"
+        ]
+      },
+      "barHeight": 13,
+      "lineHeight": 1.62
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextItem03Label",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 47.296,
+          "toViewport": 47.296,
+          "fromWidthPx": 47.296875,
+          "toWidthPx": 47.296875,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "29px",
+      "barHeight": 11,
+      "lineHeight": 1
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextItem03Title",
+      "lines": {
+        "0": 2,
+        "305": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 182,
+          "toViewport": 304,
+          "fromWidthPx": 182,
+          "toWidthPx": 304,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 305,
+          "toViewport": 813,
+          "fromWidthPx": 305,
+          "toWidthPx": 813,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "129px",
+          "172px"
+        ],
+        "305": "304px"
+      },
+      "barHeight": 18,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "responsiveTextItem03Body",
+      "lines": {
+        "0": 4,
+        "229": 3,
+        "308": 2,
+        "603": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 182,
+          "toViewport": 228.921,
+          "fromWidthPx": 182,
+          "toWidthPx": 228.921875,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 229,
+          "toViewport": 307,
+          "fromWidthPx": 229,
+          "toWidthPx": 307,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 308,
+          "toViewport": 602.187,
+          "fromWidthPx": 308,
+          "toWidthPx": 602.1875,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 603,
+          "toViewport": 813,
+          "fromWidthPx": 603,
+          "toWidthPx": 813,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "142px",
+          "163px",
+          "162px",
+          "126px"
+        ],
+        "229": [
+          "142px",
+          "226px",
+          "229px"
+        ],
+        "308": [
+          "308px",
+          "292px"
+        ],
+        "603": "603px"
+      },
+      "barHeight": 13,
+      "lineHeight": 1.62
+    }
+  ]
+}

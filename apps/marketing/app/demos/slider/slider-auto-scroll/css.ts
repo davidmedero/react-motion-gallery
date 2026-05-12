@@ -5,4 +5,16 @@ export const css = String.raw`.slide {
   aspect-ratio: 4 / 5;
   object-fit: cover;
   border-radius: 12px;
+}
+
+@media(max-width: 767px) {
+  .slider_viewport {
+    padding-bottom: 22px;
+  }
+}
+
+@media(min-width: 768px) {
+  .slider_viewport {
+    padding-bottom: 26px;
+  }
 }`;

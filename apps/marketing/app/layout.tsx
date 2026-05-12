@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     template: "%s | React Motion Gallery",
   },
   description:
-    "React image/video slider gallery with zoom, pan, and pinch for modern apps.",
+    "Composable React media gallery primitives for sliders, grids, masonry, fullscreen, video, zoom/pan, and stable skeleton loading.",
   openGraph: {
     type: "website",
     siteName: "React Motion Gallery",

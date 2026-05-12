@@ -4,9 +4,20 @@ import * as React from 'react';
 import type { BreakpointMap, ResponsiveNumber } from '../shared/responsive';
 import { LazyItemHost } from '../shared/lazy/LazyItemHost';
 import { useViewportWidth } from '../shared/hooks/useViewportWidth';
-import { parseNumberLike, resolveNumberFromResponsive } from '../shared/responsive';
-import type { MasonryLazyLoadOptions } from './types';
-import { buildMasonryColumnLayout } from './prediction';
+import {
+  BREAKPOINT_MAP,
+  parseNumberLike,
+  resolveNumberFromResponsive,
+} from '../shared/responsive';
+import {
+  buildMasonryColumnLayout,
+  buildMasonryColumnWidthCssExpr,
+  buildMasonryItemLeftCssExpr,
+  buildMasonryItemWidthCssExpr,
+  buildMasonryPositionedLayout,
+} from './prediction';
+import { resolveMasonrySpanAtWidth } from './item';
+import type { MasonryLazyLoadOptions, ResponsiveMasonrySpan } from './types';
 
 export type MasonryClassNames = {
   root?: string;
@@ -14,14 +25,14 @@ export type MasonryClassNames = {
   item?: string;
 };
 
-export type MasonryPlacement = 'balanced' | 'roundRobin';
+export type MasonryPlacement = 'balanced' | 'roundRobin' | 'horizontalOrder';
 
 export type MasonryProps = {
   items: React.ReactNode[];
+  masonrySpans?: ReadonlyArray<ResponsiveMasonrySpan | undefined>;
   masonryColumns?: ResponsiveNumber;
   masonryGap?: ResponsiveNumber;
   masonryPlacement?: MasonryPlacement;
-  masonryEstimatedItemHeight?: number;
   masonryInitialHeights?: ReadonlyArray<number | undefined>;
   masonryClassNames?: MasonryClassNames;
   masonryStyle?: React.CSSProperties;
@@ -31,7 +42,10 @@ export type MasonryProps = {
   masonryLazyLoad?: MasonryLazyLoadOptions;
   responsiveViewportWidth?: number;
   onVisibleIndex?: (index: number) => void;
+  onLayoutMeasured?: (measured: boolean) => void;
+  measurementKey?: string;
   revealedIndicesRef?: React.RefObject<Set<number>>;
+  masonryLayoutSeedScopeId?: string;
 };
 
 export { buildMasonryColumnLayout } from './prediction';
@@ -40,15 +54,19 @@ export function resolveMasonrySeedHeight(args: {
   index: number;
   previousHeight?: number;
   initialHeights?: ReadonlyArray<number | undefined>;
-  estimatedItemHeight: number;
+  preferPreviousHeight?: boolean;
 }) {
+  if (
+    args.preferPreviousHeight &&
+    Number.isFinite(args.previousHeight) &&
+    Number(args.previousHeight) >= 0
+  ) {
+    return Number(args.previousHeight);
+  }
+
   const predicted = args.initialHeights?.[args.index];
   if (Number.isFinite(predicted) && Number(predicted) > 0) {
     return Number(predicted);
-  }
-
-  if (Number.isFinite(args.estimatedItemHeight) && args.estimatedItemHeight > 0) {
-    return args.estimatedItemHeight;
   }
 
   return args.previousHeight ?? 0;
@@ -59,7 +77,7 @@ export function seedUnmeasuredMasonryHeights(args: {
   previousHeights: number[];
   measuredIndices: Set<number>;
   initialHeights?: ReadonlyArray<number | undefined>;
-  estimatedItemHeight: number;
+  preferPreviousHeights?: boolean;
 }) {
   const next = args.previousHeights.slice(0, args.itemCount);
   let changed = next.length !== args.previousHeights.length;
@@ -73,7 +91,7 @@ export function seedUnmeasuredMasonryHeights(args: {
       index,
       previousHeight: next[index],
       initialHeights: args.initialHeights,
-      estimatedItemHeight: args.estimatedItemHeight,
+      preferPreviousHeight: args.preferPreviousHeights,
     });
 
     if (next[index] !== seededHeight) {
@@ -87,10 +105,10 @@ export function seedUnmeasuredMasonryHeights(args: {
 
 export const MasonryCore: React.FC<MasonryProps> = ({
   items,
+  masonrySpans,
   masonryColumns,
   masonryGap,
   masonryPlacement = 'balanced',
-  masonryEstimatedItemHeight = 0,
   masonryInitialHeights,
   masonryClassNames,
   masonryStyle,
@@ -100,13 +118,24 @@ export const MasonryCore: React.FC<MasonryProps> = ({
   masonryLazyLoad,
   responsiveViewportWidth,
   onVisibleIndex,
+  onLayoutMeasured,
+  measurementKey,
   revealedIndicesRef,
+  masonryLayoutSeedScopeId,
 }) => {
   const DEFAULT_MASONRY_COLUMNS = 4;
   const DEFAULT_MASONRY_GAP_PX = 8;
   const liveViewportWidth = useViewportWidth();
   const viewportWidth = responsiveViewportWidth ?? liveViewportWidth;
   const measuredIndicesRef = React.useRef<Set<number>>(new Set());
+  const didRunSeedResetRef = React.useRef(false);
+  const previousSeedResetKeyRef = React.useRef<string | undefined>(
+    measurementKey
+  );
+  const effectiveBreakpoints = React.useMemo(
+    () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
+    [breakpoints]
+  );
 
   const [heights, setHeights] = React.useState<number[]>(
     () =>
@@ -115,120 +144,196 @@ export const MasonryCore: React.FC<MasonryProps> = ({
         previousHeights: [],
         measuredIndices: new Set(),
         initialHeights: masonryInitialHeights,
-        estimatedItemHeight: masonryEstimatedItemHeight,
       })
   );
+  const heightsRef = React.useRef(heights);
 
-  React.useEffect(() => {
-    for (const index of Array.from(measuredIndicesRef.current)) {
-      if (index >= items.length) {
-        measuredIndicesRef.current.delete(index);
-      }
+  React.useLayoutEffect(() => {
+    heightsRef.current = heights;
+  }, [heights]);
+
+  React.useLayoutEffect(() => {
+    const previousHeights = heightsRef.current;
+    const previousSeedResetKey = previousSeedResetKeyRef.current;
+    const seedResetKeyChanged = previousSeedResetKey !== measurementKey;
+    previousSeedResetKeyRef.current = measurementKey;
+    const hasPreservedHeights =
+      items.length > 0 &&
+      previousHeights.length >= items.length &&
+      previousHeights
+        .slice(0, items.length)
+        .every((height) => Number.isFinite(height) && height >= 0);
+
+    if (!didRunSeedResetRef.current) {
+      didRunSeedResetRef.current = true;
+      onLayoutMeasured?.(items.length === 0);
+      return;
     }
 
-    setHeights((prev) =>
-      seedUnmeasuredMasonryHeights({
+    if (seedResetKeyChanged) {
+      measuredIndicesRef.current.clear();
+    }
+
+    onLayoutMeasured?.(items.length === 0 || hasPreservedHeights);
+
+    setHeights(() => {
+      const next = seedUnmeasuredMasonryHeights({
         itemCount: items.length,
-        previousHeights: prev,
+        previousHeights,
         measuredIndices: measuredIndicesRef.current,
         initialHeights: masonryInitialHeights,
-        estimatedItemHeight: masonryEstimatedItemHeight,
-      })
-    );
-  }, [items.length, masonryEstimatedItemHeight, masonryInitialHeights]);
+        preferPreviousHeights: seedResetKeyChanged && hasPreservedHeights,
+      });
+      heightsRef.current = next;
+      return next;
+    });
+  }, [items.length, masonryInitialHeights, measurementKey, onLayoutMeasured]);
 
   const columnCount = React.useMemo(() => {
     const raw = resolveNumberFromResponsive(
       masonryColumns,
       DEFAULT_MASONRY_COLUMNS,
       viewportWidth,
-      breakpoints
+      effectiveBreakpoints
     );
     return Math.max(1, raw | 0);
-  }, [masonryColumns, viewportWidth, breakpoints]);
+  }, [masonryColumns, viewportWidth, effectiveBreakpoints]);
 
   const gapPx = React.useMemo(() => {
     const raw = resolveNumberFromResponsive(
       masonryGap,
       DEFAULT_MASONRY_GAP_PX,
       viewportWidth,
-      breakpoints
+      effectiveBreakpoints
     );
     return Math.max(0, parseNumberLike(raw as any, DEFAULT_MASONRY_GAP_PX));
-  }, [masonryGap, viewportWidth, breakpoints]);
+  }, [masonryGap, viewportWidth, effectiveBreakpoints]);
 
-  const colIndex = React.useMemo(
+  const resolvedSpans = React.useMemo(
     () =>
-      buildMasonryColumnLayout({
-        itemCount: items.length,
-        columnCount,
-        placement: masonryPlacement,
-        heights,
-        estimatedItemHeight: masonryEstimatedItemHeight,
-        gapPx,
-      }),
-    [
-      items.length,
-      heights,
-      columnCount,
-      masonryPlacement,
-      gapPx,
-      masonryEstimatedItemHeight,
-    ]
+      items.map((_, index) =>
+        resolveMasonrySpanAtWidth({
+          span: masonrySpans?.[index],
+          columnCount,
+          width: viewportWidth,
+          breakpointMap: effectiveBreakpoints,
+        })
+      ),
+    [items, masonrySpans, columnCount, viewportWidth, effectiveBreakpoints]
   );
 
-  const handleHeight = React.useCallback((index: number, height: number) => {
-    if (!Number.isFinite(height)) return;
-    if (height > 0) {
-      measuredIndicesRef.current.add(index);
+  const columnWidthCssExpr = React.useMemo(
+    () => buildMasonryColumnWidthCssExpr({ containerWidthCss: '100%' }),
+    []
+  );
+
+  const positionedLayout = React.useMemo(() => {
+    const layout = buildMasonryPositionedLayout({
+      itemCount: items.length,
+      columnCount,
+      placement: masonryPlacement,
+      heights,
+      gapPx,
+      spans: resolvedSpans,
+    });
+
+    return {
+      height: layout.height,
+      items: layout.items.map((item) => ({
+        ...item,
+        leftCssExpr: buildMasonryItemLeftCssExpr({
+          columnStart: item.columnStart,
+          columnWidthCssExpr,
+        }),
+        widthCssExpr: buildMasonryItemWidthCssExpr({
+          span: item.span,
+          columnWidthCssExpr,
+        }),
+      })),
+    };
+  }, [
+    items.length,
+    columnCount,
+    masonryPlacement,
+    heights,
+    gapPx,
+    resolvedSpans,
+    columnWidthCssExpr,
+  ]);
+
+  const notifyLayoutMeasured = React.useCallback(() => {
+    if (!onLayoutMeasured) return;
+    if (items.length === 0) {
+      onLayoutMeasured(true);
+      return;
     }
 
-    setHeights((prev) => {
-      const old = prev[index];
-      if (old === height) return prev;
-      const next = prev.slice();
-      next[index] = height;
-      return next;
-    });
-  }, []);
+    for (let index = 0; index < items.length; index++) {
+      if (!measuredIndicesRef.current.has(index)) {
+        onLayoutMeasured(false);
+        return;
+      }
+    }
 
-  const columnsChildren: React.ReactNode[][] = React.useMemo(() => {
-    const cols: React.ReactNode[][] = Array.from({ length: columnCount }, () => []);
+    onLayoutMeasured(true);
+  }, [items.length, onLayoutMeasured]);
 
-    items.forEach((child, index) => {
-      let c = colIndex[index];
-
-      if (c == null || c < 0 || c >= columnCount) {
-        c = masonryPlacement === 'roundRobin' ? index % columnCount : 0;
+  const handleHeight = React.useCallback(
+    (index: number, height: number) => {
+      if (!Number.isFinite(height)) return;
+      if (height >= 0) {
+        measuredIndicesRef.current.add(index);
       }
 
-      cols[c].push(
+      notifyLayoutMeasured();
+
+      setHeights((prev) => {
+        const old = prev[index];
+        if (old === height) return prev;
+        const next = prev.slice();
+        next[index] = height;
+        heightsRef.current = next;
+        return next;
+      });
+    },
+    [notifyLayoutMeasured]
+  );
+
+  React.useLayoutEffect(() => {
+    notifyLayoutMeasured();
+  }, [heights, notifyLayoutMeasured]);
+
+  const positionedChildren = React.useMemo(() => {
+    return items.map((child, index) => {
+      const position = positionedLayout.items[index];
+      if (!position) return null;
+
+      return (
         <MasonryItem
           key={index}
           index={index}
           onHeight={handleHeight}
           className={masonryClassNames?.item}
-          gapPx={gapPx}
           lazyLoad={masonryLazyLoad}
           onVisibleIndex={onVisibleIndex}
           revealedIndicesRef={revealedIndicesRef}
+          measurementKey={measurementKey}
+          top={position.top}
+          left={position.leftCssExpr}
+          width={position.widthCssExpr}
         >
           {child}
         </MasonryItem>
       );
     });
-
-    return cols;
   }, [
     items,
-    colIndex,
-    columnCount,
-    masonryPlacement,
+    positionedLayout.items,
     handleHeight,
-    gapPx,
     masonryLazyLoad,
     masonryClassNames?.item,
     onVisibleIndex,
+    measurementKey,
     revealedIndicesRef,
   ]);
 
@@ -236,29 +341,17 @@ export const MasonryCore: React.FC<MasonryProps> = ({
     <RootComponent
       ref={masonryRootRef as any}
       className={masonryClassNames?.root}
+      data-rmg-masonry-layout-seed={masonryLayoutSeedScopeId}
       style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        columnGap: gapPx,
-        rowGap: 0,
+        position: 'relative',
         width: '100%',
+        height: `${positionedLayout.height}px`,
+        ['--rmg-cols' as any]: columnCount,
+        ['--rmg-gap' as any]: `${gapPx}px`,
         ...(masonryStyle || {}),
       }}
     >
-      {columnsChildren.map((colChildren, i) => (
-        <div
-          key={i}
-          className={masonryClassNames?.column}
-          style={{
-            flex: 1,
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {colChildren}
-        </div>
-      ))}
+      {positionedChildren}
     </RootComponent>
   );
 };
@@ -267,10 +360,13 @@ type MasonryItemProps = {
   index: number;
   onHeight: (index: number, height: number) => void;
   className?: string;
-  gapPx: number;
+  top: number;
+  left: string;
+  width: string;
   lazyLoad?: MasonryLazyLoadOptions;
   onVisibleIndex?: (index: number) => void;
   revealedIndicesRef?: React.RefObject<Set<number>>;
+  measurementKey?: string;
   children: React.ReactNode;
 };
 
@@ -278,10 +374,13 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
   index,
   onHeight,
   className,
-  gapPx,
+  top,
+  left,
+  width,
   lazyLoad,
   onVisibleIndex,
   revealedIndicesRef,
+  measurementKey,
   children,
 }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
@@ -304,7 +403,7 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
     }
 
     return;
-  }, [index, onHeight]);
+  }, [index, onHeight, measurementKey]);
 
   return (
     <LazyItemHost
@@ -316,7 +415,10 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
       className={className}
       data-rmg-idx={index}
       style={{
-        marginBottom: gapPx,
+        position: 'absolute',
+        top: `${top}px`,
+        left,
+        width,
         ['--rmg-intro-index' as any]: index,
       }}
     >

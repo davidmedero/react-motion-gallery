@@ -7,41 +7,88 @@ import {
   Video,
   type MediaItem,
   toMediaItems,
+  useGridReady,
   useFullscreenController,
 } from "../../../../../../packages/react-motion-gallery/src";
-import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/Gallery/grid/GridSkeleton";
+import { GridSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import type { GridSkeletonSpec } from "../../../../../../packages/react-motion-gallery/src/skeleton-grid";
 import styles from "./grid-video-youtube-demo.module.css";
+import { gridVideoYoutubeSkeletonText } from "./grid-video-youtube.skeleton-text.generated";
+
+type SkeletonTextIds = {
+  title: string;
+  body: string;
+};
+
+type GeneratedSkeletonTextState = {
+  lines: number | Record<number, number>;
+  barWidth?: string | string[] | Record<number, string | string[]>;
+  lastBarWidth?: string | Record<number, string>;
+};
+
+type GeneratedSkeletonTextEntry = {
+  title: GeneratedSkeletonTextState;
+  body: GeneratedSkeletonTextState;
+};
 
 const ITEMS = [
   {
     kind: "video" as const,
     src: "zT5RMvM0gaI",
     poster: "https://i.ytimg.com/vi/zT5RMvM0gaI/hqdefault.jpg",
-    title: "Pattern Study",
-    body: "YouTube embeds can sit in the same grid system as image cards.",
+    title: "Lorem ipsum dolor sit amet",
+    body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     kind: "video" as const,
     src: "c2h1T06-3vQ",
     poster: "https://i.ytimg.com/vi/c2h1T06-3vQ/hqdefault.jpg",
-    title: "Street Layers",
-    body: "Provider-specific Plyr sources stay explicit and reusable.",
+    title: "Ut enim ad minim veniam",
+    body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   },
   {
     kind: "video" as const,
     src: "mTM7F-5999Q",
     poster: "https://i.ytimg.com/vi/mTM7F-5999Q/hqdefault.jpg",
-    title: "River Light",
-    body: "Fullscreen uses the same source builder for a seamless handoff.",
+    title: "Duis aute irure dolor",
+    body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
   },
   {
     kind: "video" as const,
     src: "cJLL_gNpBb8",
     poster: "https://i.ytimg.com/vi/cJLL_gNpBb8/hqdefault.jpg",
-    title: "Cloud Motion",
-    body: "Responsive columns keep embedded video walls easy to scan.",
+    title: "Excepteur sint occaecat",
+    body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   },
 ];
+
+const GRID_VIDEO_YOUTUBE_TEXT_IDS: SkeletonTextIds[] = [
+  {
+    title: "gridVideoYoutubeItem01Title",
+    body: "gridVideoYoutubeItem01Body",
+  },
+  {
+    title: "gridVideoYoutubeItem02Title",
+    body: "gridVideoYoutubeItem02Body",
+  },
+  {
+    title: "gridVideoYoutubeItem03Title",
+    body: "gridVideoYoutubeItem03Body",
+  },
+  {
+    title: "gridVideoYoutubeItem04Title",
+    body: "gridVideoYoutubeItem04Body",
+  },
+];
+
+const GRID_VIDEO_YOUTUBE_SKELETON_TEXT: GeneratedSkeletonTextEntry[] =
+  GRID_VIDEO_YOUTUBE_TEXT_IDS.map((textIds) => ({
+    title: gridVideoYoutubeSkeletonText[textIds.title]!,
+    body: gridVideoYoutubeSkeletonText[textIds.body]!,
+  }));
 
 function buildYoutubeSource(src: string, poster?: string) {
   return {
@@ -67,49 +114,79 @@ function buildYoutubeFullscreenSource(item: MediaItem) {
   return buildYoutubeSource(item.src, item.poster);
 }
 
+function createYoutubeVideoSkeletonItem(index: number) {
+  const skeletonText =
+    GRID_VIDEO_YOUTUBE_SKELETON_TEXT[index] ??
+    GRID_VIDEO_YOUTUBE_SKELETON_TEXT[0]!;
+
+  return {
+    kind: "col" as const,
+    style: {
+      gap: 14,
+    },
+    children: [
+      {
+        kind: "rect" as const,
+        style: {
+          width: "100%",
+          aspectRatio: "16 / 9",
+          borderRadius: 12,
+        },
+      },
+      {
+        kind: "col" as const,
+        style: {
+          gap: 6,
+        },
+        children: [
+          {
+            kind: "text" as const,
+            barHeight: 18,
+            lineHeight: 1.63,
+            style: {
+              width: "100%",
+            },
+            ...skeletonText.title,
+          },
+          {
+            kind: "text" as const,
+            barHeight: 15,
+            lineHeight: 1.65,
+            style: {
+              width: "100%",
+            },
+            ...skeletonText.body,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+const YOUTUBE_VIDEO_SKELETON_SLOTS = ITEMS.map((_, index) => ({
+  item: createYoutubeVideoSkeletonItem(index),
+}));
+
 const YOUTUBE_VIDEO_SKELETON: GridSkeletonSpec = {
   radius: 12,
   layout: {
     kind: "grid",
-    item: {
-      kind: "col",
-      style: {
-        gap: 12,
-      },
-      children: [
-        {
-          kind: "rect",
-          style: {
-            width: "100%",
-            aspectRatio: "16 / 9",
-            borderRadius: 12,
-          },
-        },
-        {
-          kind: "text",
-          fontSize: 18,
-          lineHeight: 1.2,
-          style: {
-            width: "68%",
-          },
-        },
-        {
-          kind: "text",
-          fontSize: 14,
-          lineHeight: 1.5,
-          lines: 2,
-          lineWidth: "54%",
-          style: {
-            width: "100%",
-          },
-        },
-      ],
+    itemWrapStyle: {
+      padding: 16,
+      borderRadius: 12,
+      border: "1px solid rgba(11, 18, 32, 0.12)",
+      backgroundColor: "rgba(255, 255, 255, 0.82)",
+      boxShadow: "0 3px 6px rgba(15, 23, 42, 0.08)",
+      height: "100%"
     },
+    item: createYoutubeVideoSkeletonItem(0),
+    slots: YOUTUBE_VIDEO_SKELETON_SLOTS,
   },
 };
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
       video: {
@@ -124,36 +201,65 @@ function FullscreenAddon() {
 
 export function GridVideoYoutubeDemo() {
   const media = toMediaItems(ITEMS);
+  const { ref: gridRef, ready: gridReady } = useGridReady();
 
   return (
     <GalleryCore layout="grid" fullscreenItems={media}>
-      <Grid
-        columns={{ 0: 1, 900: 2 }}
-        gap={{ 0: 12, 900: 18 }}
-        fullscreenTrigger="item"
-        loading={{
-          enabled: true,
-          skeleton: YOUTUBE_VIDEO_SKELETON,
+      <GridSkeleton
+        layout={YOUTUBE_VIDEO_SKELETON}
+        ready={gridReady}
+        grid={{
+          count: ITEMS.length,
+          columns: { 0: 1, 900: 2 },
+          gap: { 0: 12, 900: 18 },
         }}
       >
-        {ITEMS.map((item) => (
-          <article key={item.src} className={styles.videoSlide}>
-            <div className={styles.videoFrame}>
-              <Video
-                src={item.src}
-                poster={item.poster}
-                source={buildYoutubeSource(item.src, item.poster)}
-                options={YOUTUBE_OPTIONS}
-                alt={item.title}
-              />
-            </div>
-            <div className={styles.videoMeta}>
-              <strong className={styles.videoMetaTitle}>{item.title}</strong>
-              <p className={styles.videoMetaBody}>{item.body}</p>
-            </div>
-          </article>
-        ))}
-      </Grid>
+        <Grid
+          ref={gridRef}
+          columns={{ 0: 1, 900: 2 }}
+          gap={{ 0: 12, 900: 18 }}
+          fullscreenTrigger="item"
+        >
+          {ITEMS.map((item, index) => {
+            const textIds = GRID_VIDEO_YOUTUBE_TEXT_IDS[index]!;
+
+            return (
+              <article key={item.src} className={styles.videoSlide}>
+                <div className={styles.videoFrame}>
+                  <img
+                    src="/open-fullscreen.png"
+                    alt="Open fullscreen"
+                    width="24"
+                    height="24"
+                    className={styles.open_fullscreen_icon}
+                  />
+                  <Video
+                    src={item.src}
+                    poster={item.poster}
+                    source={buildYoutubeSource(item.src, item.poster)}
+                    options={YOUTUBE_OPTIONS}
+                    alt={item.title}
+                  />
+                </div>
+                <div className={styles.videoMeta}>
+                  <strong
+                    className={styles.videoMetaTitle}
+                    data-skeleton-text-id={textIds.title}
+                  >
+                    {item.title}
+                  </strong>
+                  <p
+                    className={styles.videoMetaBody}
+                    data-skeleton-text-id={textIds.body}
+                  >
+                    {item.body}
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+        </Grid>
+      </GridSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );

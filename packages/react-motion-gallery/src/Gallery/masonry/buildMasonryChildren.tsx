@@ -2,10 +2,13 @@ import * as React from "react";
 import { RmgSlideProvider } from "../shared/slideContext";
 import type { RmgSlideStoreBag } from "../shared/slideStoreBag";
 import type { FullscreenTrigger } from "./types";
+import type { MasonryCell } from "./item";
+import type { ResponsiveMasonrySpan } from "./types";
 
-export type MasonryCell = {
+export type BuiltMasonryChild = {
   id: string;
   node: React.ReactNode;
+  span?: ResponsiveMasonrySpan;
 };
 
 export type BuildMasonryChildrenOpts = {
@@ -33,7 +36,7 @@ function findImgFromClickTarget(target: EventTarget | null): HTMLImageElement | 
   return isImgEl(el) ? el : null;
 }
 
-export function buildMasonryChildren(opts: BuildMasonryChildrenOpts) {
+export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMasonryChild[] {
   const {
     cells,
     fsEnabled,
@@ -59,12 +62,14 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts) {
       itemBaseStyleClass,
       itemClassName || "",
       itemWrapClassName || "",
+      cell.layoutMeta?.className || "",
     ]
       .filter(Boolean)
       .join(" ");
 
     const itemStyle: React.CSSProperties & Record<string, any> = {
       ...(itemWrapStyle || {}),
+      ...(cell.layoutMeta?.style || {}),
       ...introStyle,
     };
     const scopedOriginal = (
@@ -94,22 +99,25 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts) {
       openFullscreenAt(index, e.currentTarget);
     };
 
-    return (
-      <div
-        key={cell.id}
-        data-rmg-idx={index}
-        className={className}
-        style={itemStyle}
-        onClick={onClick}
-        onKeyDown={onKeyDown}
-        ref={(node) => {
-          registerExpandableImage(index, node);
-        }}
-        role={fsEnabled && fullscreenTrigger === "item" ? "button" : undefined}
-        tabIndex={fsEnabled && fullscreenTrigger === "item" ? 0 : undefined}
-      >
-        {scopedOriginal}
-      </div>
-    );
+    return {
+      id: cell.id,
+      span: cell.layoutMeta?.span,
+      node: (
+        <div
+          data-rmg-idx={index}
+          className={className}
+          style={itemStyle}
+          onClick={onClick}
+          onKeyDown={onKeyDown}
+          ref={(node) => {
+            registerExpandableImage(index, node);
+          }}
+          role={fsEnabled && fullscreenTrigger === "item" ? "button" : undefined}
+          tabIndex={fsEnabled && fullscreenTrigger === "item" ? 0 : undefined}
+        >
+          {scopedOriginal}
+        </div>
+      ),
+    };
   });
 }

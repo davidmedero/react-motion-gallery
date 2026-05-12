@@ -1,0 +1,76 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=slider-cards&skeletonMeasure=content",
+  "outputFile": "./slider-cards.skeleton-text.generated.ts",
+  "moduleExportName": "sliderCardsSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1600,
+  "viewportHeight": 1600,
+  "settleMs": 120,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "slider": {
+    "itemSelector": "[data-skeleton-item-id]",
+    "canonicalItemIdAttribute": "data-skeleton-item-id",
+    "cloneAttribute": "data-rmg-clone",
+    "cloneValue": "true",
+    "roles": [
+      {
+        "role": "title",
+        "selector": "[data-skeleton-role='title']",
+        "barHeight": 13,
+        "lineHeight": 1.6
+      },
+      {
+        "role": "price",
+        "selector": "[data-skeleton-role='price']",
+        "barHeight": 13,
+        "lineHeight": 1.4,
+        "style": {
+          "marginTop": "3px"
+        }
+      }
+    ],
+    "trackedItems": [
+      {
+        "itemId": "cardOne",
+        "roles": [
+          {
+            "role": "title",
+            "exportName": "cardOneTitle"
+          },
+          {
+            "role": "price",
+            "exportName": "cardOnePrice"
+          }
+        ]
+      },
+      {
+        "itemId": "cardTwo",
+        "roles": [
+          {
+            "role": "title",
+            "exportName": "cardTwoTitle"
+          },
+          {
+            "role": "price",
+            "exportName": "cardTwoPrice"
+          }
+        ]
+      },
+      {
+        "itemId": "cardThree",
+        "roles": [
+          {
+            "role": "title",
+            "exportName": "cardThreeTitle"
+          },
+          {
+            "role": "price",
+            "exportName": "cardThreePrice"
+          }
+        ]
+      }
+    ],
+    "rowHeightCompensationExportName": "sliderCardsRowHeightCompensation"
+  }
+}

@@ -1,0 +1,722 @@
+{
+  "manifest": {
+    "url": "http://127.0.0.1:3000/demos?demo=masonry-round-robin&skeletonMeasure=content",
+    "viewportMin": 320,
+    "viewportMax": 1340,
+    "viewportHeight": 1800,
+    "viewportWorkers": 8,
+    "settleMs": 120,
+    "stableGeometryFrames": 4,
+    "readyExpression": "(() => { const body = document.querySelector(\"[data-skeleton-text-id='masonryRoundRobinItem01Body']\"); const item = body?.closest(\"[data-rmg-idx]\"); const root = item?.parentElement; const columns = Number(getComputedStyle(root).getPropertyValue(\"--rmg-cols\")); const expected = window.innerWidth >= 1140 ? 3 : window.innerWidth >= 720 ? 2 : 1; return columns === expected; })()",
+    "lineMeasurementMethod": "domRange",
+    "includeTextMetrics": true,
+    "breakpointStrategy": "lineChanges",
+    "barWidthUnit": "px"
+  },
+  "results": [
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem01Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 610.25,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "46px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem01Title",
+      "lines": {
+        "0": 2,
+        "215.812": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 215.328,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 215.328125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 215.812,
+          "toViewport": 610.25,
+          "fromWidthPx": 215.8125,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "172px",
+          "40px"
+        ],
+        "215.812": "215px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem01Body",
+      "lines": {
+        "0": 5,
+        "354": 2,
+        "187.484": 4,
+        "224.921": 3
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 187,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 187,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 187.484,
+          "toViewport": 224.656,
+          "fromWidthPx": 187.484375,
+          "toWidthPx": 224.65625,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 224.921,
+          "toViewport": 353,
+          "fromWidthPx": 224.921875,
+          "toWidthPx": 353,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 354,
+          "toViewport": 610.25,
+          "fromWidthPx": 354,
+          "toWidthPx": 610.25,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "160px",
+          "140px",
+          "139px",
+          "161px",
+          "46px"
+        ],
+        "354": [
+          "304px",
+          "354px"
+        ],
+        "187.484": [
+          "160px",
+          "140px",
+          "187px",
+          "163px"
+        ],
+        "224.921": [
+          "219px",
+          "225px",
+          "210px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem02Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 610.25,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "43px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem02Title",
+      "lines": {
+        "0": 2,
+        "199.484": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 199,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 199,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 199.484,
+          "toViewport": 610.25,
+          "fromWidthPx": 199.484375,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "137px",
+          "58px"
+        ],
+        "199.484": "199px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem02Body",
+      "lines": {
+        "0": 5,
+        "288": 2,
+        "172.609": 4,
+        "200.453": 3,
+        "575.687": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 172.125,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 172.125,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 172.609,
+          "toViewport": 199.968,
+          "fromWidthPx": 172.609375,
+          "toWidthPx": 199.96875,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 200.453,
+          "toViewport": 287.531,
+          "fromWidthPx": 200.453125,
+          "toWidthPx": 287.53125,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 288,
+          "toViewport": 574.75,
+          "fromWidthPx": 288,
+          "toWidthPx": 574.75,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 575.687,
+          "toViewport": 610.25,
+          "fromWidthPx": 575.6875,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "89px",
+          "139px",
+          "162px",
+          "91px",
+          "77px"
+        ],
+        "288": [
+          "283px",
+          "288px"
+        ],
+        "172.609": [
+          "89px",
+          "139px",
+          "162px",
+          "172px"
+        ],
+        "200.453": [
+          "174px",
+          "200px",
+          "193px"
+        ],
+        "575.687": "575px"
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem03Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 610.25,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "46px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem03Title",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 610.25,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "161px",
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem03Body",
+      "lines": {
+        "0": 4,
+        "196.609": 3,
+        "265.734": 2,
+        "522.906": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 196.125,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 196.125,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 196.609,
+          "toViewport": 265.656,
+          "fromWidthPx": 196.609375,
+          "toWidthPx": 265.65625,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 265.734,
+          "toViewport": 521.937,
+          "fromWidthPx": 265.734375,
+          "toWidthPx": 521.9375,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 522.906,
+          "toViewport": 610.25,
+          "fromWidthPx": 522.90625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "128px",
+          "134px",
+          "154px",
+          "94px"
+        ],
+        "196.609": [
+          "196px",
+          "180px",
+          "138px"
+        ],
+        "265.734": [
+          "266px",
+          "253px"
+        ],
+        "522.906": "523px"
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem04Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 610.25,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "39px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem04Title",
+      "lines": {
+        "0": 2,
+        "192.281": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 191.812,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 191.8125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 192.281,
+          "toViewport": 610.25,
+          "fromWidthPx": 192.28125,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "115px",
+          "74px"
+        ],
+        "192.281": "192px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem04Body",
+      "lines": {
+        "0": 4,
+        "295": 2,
+        "198.046": 3,
+        "581.468": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 197.562,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 197.5625,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 198.046,
+          "toViewport": 294.734,
+          "fromWidthPx": 198.046875,
+          "toWidthPx": 294.734375,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 295,
+          "toViewport": 580.5,
+          "fromWidthPx": 295,
+          "toWidthPx": 580.5,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 581.468,
+          "toViewport": 610.25,
+          "fromWidthPx": 581.46875,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "164px",
+          "161px",
+          "157px",
+          "86px"
+        ],
+        "295": [
+          "282px",
+          "295px"
+        ],
+        "198.046": [
+          "198px",
+          "193px",
+          "182px"
+        ],
+        "581.468": "581px"
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem05Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 610.25,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "29px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem05Title",
+      "lines": {
+        "0": 2,
+        "192.765": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 192.281,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 192.28125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 192.765,
+          "toViewport": 610.25,
+          "fromWidthPx": 192.765625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "148px",
+          "40px"
+        ],
+        "192.765": "192px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem05Body",
+      "lines": {
+        "0": 5,
+        "348": 2,
+        "174.046": 4,
+        "255.328": 3
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 173.562,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 173.5625,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 174.046,
+          "toViewport": 255.171,
+          "fromWidthPx": 174.046875,
+          "toWidthPx": 255.171875,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 255.328,
+          "toViewport": 347.5,
+          "fromWidthPx": 255.328125,
+          "toWidthPx": 347.5,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 348,
+          "toViewport": 610.25,
+          "fromWidthPx": 348,
+          "toWidthPx": 610.25,
+          "lineCount": 2
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "153px",
+          "98px",
+          "89px",
+          "164px",
+          "135px"
+        ],
+        "348": [
+          "348px",
+          "303px"
+        ],
+        "174.046": [
+          "174px",
+          "170px",
+          "164px",
+          "135px"
+        ],
+        "255.328": [
+          "255px",
+          "176px",
+          "216px"
+        ]
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem06Badge",
+      "lines": 1,
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 610.25,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": "51px",
+      "barHeight": 11.84,
+      "lineHeight": 1.4
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem06Title",
+      "lines": {
+        "0": 2,
+        "236.453": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 236.328,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 236.328125,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 236.453,
+          "toViewport": 610.25,
+          "fromWidthPx": 236.453125,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "142px",
+          "90px"
+        ],
+        "236.453": "236px"
+      },
+      "barHeight": 16.32,
+      "lineHeight": 1.2
+    },
+    {
+      "kind": "text",
+      "exportName": "masonryRoundRobinItem06Body",
+      "lines": {
+        "0": 5,
+        "193.734": 4,
+        "203.328": 3,
+        "302.406": 2,
+        "583.375": 1
+      },
+      "responsiveBy": "container",
+      "segments": [
+        {
+          "fromViewport": 171.64,
+          "toViewport": 193.25,
+          "fromWidthPx": 171.640625,
+          "toWidthPx": 193.25,
+          "lineCount": 5
+        },
+        {
+          "fromViewport": 193.734,
+          "toViewport": 202.843,
+          "fromWidthPx": 193.734375,
+          "toWidthPx": 202.84375,
+          "lineCount": 4
+        },
+        {
+          "fromViewport": 203.328,
+          "toViewport": 302,
+          "fromWidthPx": 203.328125,
+          "toWidthPx": 302,
+          "lineCount": 3
+        },
+        {
+          "fromViewport": 302.406,
+          "toViewport": 582.406,
+          "fromWidthPx": 302.40625,
+          "toWidthPx": 582.40625,
+          "lineCount": 2
+        },
+        {
+          "fromViewport": 583.375,
+          "toViewport": 610.25,
+          "fromWidthPx": 583.375,
+          "toWidthPx": 610.25,
+          "lineCount": 1
+        }
+      ],
+      "barWidth": {
+        "0": [
+          "115px",
+          "158px",
+          "95px",
+          "143px",
+          "56px"
+        ],
+        "193.734": [
+          "115px",
+          "193px",
+          "160px",
+          "103px"
+        ],
+        "203.328": [
+          "195px",
+          "177px",
+          "203px"
+        ],
+        "302.406": [
+          "277px",
+          "302px"
+        ],
+        "583.375": "583px"
+      },
+      "barHeight": 14.72,
+      "lineHeight": 1.55
+    }
+  ]
+}

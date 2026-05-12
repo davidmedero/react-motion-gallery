@@ -1,13 +1,22 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   Video,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-video-html5-loop-demo.module.css";
 
 export function SliderVideoHtml5LoopDemo() {
@@ -55,6 +64,7 @@ export function SliderVideoHtml5LoopDemo() {
           width="24"
           height="24"
           className={styles.open_fullscreen_icon}
+          data-rmg-fullscreen-trigger
         />
         <Video
           src={src}
@@ -69,6 +79,7 @@ export function SliderVideoHtml5LoopDemo() {
   function FullscreenAddon() {
 
     const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
       fullscreen: {
         enabled: true,
       },
@@ -79,39 +90,20 @@ export function SliderVideoHtml5LoopDemo() {
 
   const MEDIA = toMediaItems(URLS);
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={MEDIA}>
-      <Slider
-        scroll={{
-          loop: true
-        }}
-        align="center"
-        controls={{
-          dots: {
-            root: {
-              style: {
-                bottom: "0px"
-              }
-            }
-          }
-        }}
-        elements={{
-          viewport: {
-            style: {
-              paddingBottom: "52px"
-            }
-          }
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: 2,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 3,
               mode: "peek",
               layout: {
                 kind: "slider",
                 direction: "row",
                 style: {
                   gap: 20,
+                  justify: "center",
                 },
                 item: {
                   kind: "rect",
@@ -124,20 +116,81 @@ export function SliderVideoHtml5LoopDemo() {
                 },
                 children: [
                   {
-                    kind: "rect",
+                    kind: "col",
                     style: {
-                      width: 162,
-                      height: 32,
-                      borderRadius: 999,
-                      alignSelf: "center",
-                      marginTop: "20px",
+                      0: {
+                        width: "100%",
+                        padding: "14px 0 0",
+                      },
+                      768: {
+                        width: "100%",
+                        padding: "20px 0 0",
+                      },
                     },
+                    children: [
+                      {
+                        kind: "sliderDots",
+                        count: MEDIA.length,
+                        style: {
+                          width: "max-content",
+                          padding: "4px 8px",
+                          borderRadius: 9999,
+                          backgroundColor: "rgba(0, 0, 0, 0.5)",
+                          alignSelf: "center",
+                        },
+                        dotStyle: {
+                          width: 14,
+                          height: 14,
+                          margin: 5,
+                          borderRadius: 999,
+                        },
+                        activeStyle: {
+                          backgroundColor: "rgb(80, 163, 255)",
+                        },
+                        inactiveStyle: {
+                          backgroundColor: "lightgray",
+                        },
+                        shimmer: {
+                          enabled: false,
+                        },
+                      },
+                    ],
                   },
                 ],
               },
-            }
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        scroll={{
+          loop: true
+        }}
+        align="center"
+
+        elements={{
+          viewport: {
+            className: styles.slider_viewport
           }
         }}
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows({
+            arrow: {
+              style: {
+                top: "43%"
+              }
+            }
+          }),
+          sliderDots({
+            root: {
+              style: {
+                bottom: "0px"
+              }
+            }
+          }),
+        ]}
       >
         {MEDIA.map((m, i) => {
           return (
@@ -148,9 +201,12 @@ export function SliderVideoHtml5LoopDemo() {
               i={i}
             />
           );
-        })}
+  
+            })}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

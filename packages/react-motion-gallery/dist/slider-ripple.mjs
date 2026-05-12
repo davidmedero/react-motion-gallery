@@ -1,0 +1,1 @@
+import {a}from'./chunk-WGVWASZM.mjs';function r(p={}){return a("ripple",{options:p})}export{r as sliderRipple};

@@ -14,17 +14,173 @@ import { fileURLToPath } from "node:url";
 
 const README_START = "<!-- bundle-size:start -->";
 const README_END = "<!-- bundle-size:end -->";
-const REPORTED_EXPORTS = [
-  "Entries",
-  "FullscreenThumbnailSlider",
-  "GalleryCore",
-  "Grid",
-  "Masonry",
-  "Slider",
-  "ThumbnailSlider",
-  "useFullscreenController",
-  "Video",
-  "ZoomPanImage",
+const REPORTED_SURFACES = [
+  { label: "Entries", exportName: "Entries", entry: "dist/entries.mjs" },
+  {
+    label: "FullscreenThumbnailSlider",
+    exportName: "FullscreenThumbnailSlider",
+    entry: "dist/fullscreenThumbnails.mjs",
+  },
+  { label: "GalleryCore", exportName: "GalleryCore", entry: "dist/core.mjs" },
+  { label: "Grid", exportName: "Grid", entry: "dist/grid.mjs" },
+  {
+    label: "grid/ready",
+    exportName: "useGridReady",
+    entry: "dist/grid-ready.mjs",
+  },
+  { label: "Masonry", exportName: "Masonry", entry: "dist/masonry.mjs" },
+  {
+    label: "masonry/ready",
+    exportName: "useMasonryReady",
+    entry: "dist/masonry-ready.mjs",
+  },
+  {
+    label: "Skeleton base",
+    exportName: "Skeleton",
+    entry: "dist/skeleton-base.mjs",
+  },
+  {
+    label: "skeleton/slider",
+    exportName: "SliderSkeleton",
+    entry: "dist/skeleton-slider.mjs",
+  },
+  {
+    label: "skeleton/grid",
+    exportName: "GridSkeleton",
+    entry: "dist/skeleton-grid.mjs",
+  },
+  {
+    label: "skeleton/masonry",
+    exportName: "MasonrySkeleton",
+    entry: "dist/skeleton-masonry.mjs",
+  },
+  {
+    label: "Slider core",
+    exportName: "Slider",
+    entry: "dist/slider.mjs",
+  },
+  {
+    label: "slider/ready",
+    exportName: "useSliderReady",
+    entry: "dist/slider-ready.mjs",
+  },
+  {
+    label: "slider/arrows",
+    exportName: "sliderArrows",
+    entry: "dist/slider-arrows.mjs",
+  },
+  {
+    label: "slider/dots",
+    exportName: "sliderDots",
+    entry: "dist/slider-dots.mjs",
+  },
+  {
+    label: "slider/progress",
+    exportName: "sliderProgress",
+    entry: "dist/slider-progress.mjs",
+  },
+  {
+    label: "slider/scrollbar",
+    exportName: "sliderScrollbar",
+    entry: "dist/slider-scrollbar.mjs",
+  },
+  {
+    label: "slider/auto-height",
+    exportName: "sliderAutoHeight",
+    entry: "dist/slider-auto-height.mjs",
+  },
+  {
+    label: "slider/lazy-load",
+    exportName: "sliderLazyLoad",
+    entry: "dist/slider-lazy-load.mjs",
+  },
+  {
+    label: "slider/parallax",
+    exportName: "sliderParallax",
+    entry: "dist/slider-parallax.mjs",
+  },
+  {
+    label: "slider/scale",
+    exportName: "sliderScale",
+    entry: "dist/slider-scale.mjs",
+  },
+  {
+    label: "slider/fade",
+    exportName: "sliderFade",
+    entry: "dist/slider-fade.mjs",
+  },
+  {
+    label: "slider/crossfade",
+    exportName: "sliderCrossfade",
+    entry: "dist/slider-crossfade.mjs",
+  },
+  {
+    label: "slider/fullscreen",
+    exportName: "sliderFullscreen",
+    entry: "dist/slider-fullscreen.mjs",
+  },
+  {
+    label: "ThumbnailSlider",
+    exportName: "ThumbnailSlider",
+    entry: "dist/thumbnails.mjs",
+  },
+  {
+    label: "useFullscreenController",
+    exportName: "useFullscreenController",
+    entry: "dist/fullscreen.mjs",
+  },
+  {
+    label: "fullscreen/slider",
+    exportName: "fullscreenSlider",
+    entry: "dist/fullscreen-slider.mjs",
+  },
+  {
+    label: "fullscreen/controls",
+    exportName: "fullscreenControls",
+    entry: "dist/fullscreen-controls.mjs",
+  },
+  {
+    label: "fullscreen/captions",
+    exportName: "fullscreenCaptions",
+    entry: "dist/fullscreen-captions.mjs",
+  },
+  {
+    label: "fullscreen/zoom-pan",
+    exportName: "fullscreenZoomPan",
+    entry: "dist/fullscreen-zoom-pan.mjs",
+  },
+  {
+    label: "fullscreen/video",
+    exportName: "fullscreenVideo",
+    entry: "dist/fullscreen-video.mjs",
+  },
+  {
+    label: "fullscreen/lazy-load",
+    exportName: "fullscreenLazyLoad",
+    entry: "dist/fullscreen-lazy-load.mjs",
+  },
+  {
+    label: "fullscreen/crossfade",
+    exportName: "fullscreenCrossfade",
+    entry: "dist/fullscreen-crossfade.mjs",
+  },
+  {
+    label: "fullscreen/thumbnails",
+    exportName: "fullscreenThumbnails",
+    entry: "dist/fullscreen-thumbnails.mjs",
+  },
+  { label: "Video", exportName: "Video", entry: "dist/video.mjs" },
+  { label: "ZoomPanImage", exportName: "ZoomPanImage", entry: "dist/zoomPan.mjs" },
+  {
+    label: "media / toMediaItems",
+    exportName: "toMediaItems",
+    entry: "dist/media.mjs",
+  },
+  {
+    label: "responsive / BREAKPOINT_MAP",
+    exportName: "BREAKPOINT_MAP",
+    entry: "dist/responsive.mjs",
+  },
 ];
 const EXTERNALS = [
   "react",
@@ -51,43 +207,53 @@ function parseArgs(argv) {
   };
 }
 
-function selectReportedExports(availableExports, sourcePath) {
-  const available = new Set(availableExports);
-  const missing = REPORTED_EXPORTS.filter((exportName) => !available.has(exportName));
+function selectReportedSurfaces(metafile, sourcePath) {
+  const missing = REPORTED_SURFACES.filter((surface) => {
+    if (surface.source) return false;
+    const output = metafile.outputs[surface.entry];
+    return !output || !new Set(output.exports).has(surface.exportName);
+  });
 
   if (missing.length > 0) {
     throw new Error(
-      `Missing expected root exports in ${sourcePath}: ${missing.join(", ")}`
+      `Missing expected exports in ${sourcePath}: ${missing
+        .map((surface) => `${surface.entry}:${surface.exportName}`)
+        .join(", ")}`
     );
   }
 
-  return REPORTED_EXPORTS;
+  return REPORTED_SURFACES;
 }
 
 function gzipSize(contents) {
   return gzipSync(contents, { level: 9, mtime: 0 }).length;
 }
 
-async function measureExportSizes(packageRoot, exportNames) {
-  const distIndexPath = join(packageRoot, "dist", "index.mjs");
+async function measureExportSizes(packageRoot, surfaces) {
   const tempRoot = mkdtempSync(join(tmpdir(), "rmg-export-size-"));
+  const abs = (relativePath) => JSON.stringify(join(packageRoot, relativePath));
 
   try {
     const rows = [];
 
-    for (const exportName of exportNames) {
-      const entryPath = join(tempRoot, `${exportName}.mjs`);
+    for (const surface of surfaces) {
+      const sourcePath = surface.entry ? join(packageRoot, surface.entry) : "";
+      const fileName = surface.label.replace(/[^\w.-]+/g, "_");
+      const entryPath = join(tempRoot, `${fileName}.mjs`);
       writeFileSync(
         entryPath,
-        `export { ${exportName} as default } from ${JSON.stringify(distIndexPath)};\n`
+        surface.source
+          ? surface.source({ abs })
+          : `export { ${surface.exportName} as default } from ${JSON.stringify(sourcePath)};\n`
       );
 
       const result = await build({
         entryPoints: [entryPath],
         bundle: true,
         write: false,
-        outfile: join(tempRoot, `${exportName}.bundle.mjs`),
+        outdir: join(tempRoot, "out"),
         format: "esm",
+        splitting: true,
         platform: "browser",
         target: "esnext",
         minify: true,
@@ -95,17 +261,33 @@ async function measureExportSizes(packageRoot, exportNames) {
         legalComments: "none",
         logLevel: "silent",
         external: EXTERNALS,
+        metafile: true,
       });
 
-      const bundle = result.outputFiles[0]?.contents;
-      if (!bundle) {
-        throw new Error(`No output file generated for export "${exportName}"`);
-      }
+      const outputByBasename = new Map(
+        result.outputFiles.map((file) => [file.path.split("/").pop(), file.contents])
+      );
+      const outputs = result.metafile.outputs;
+      const entryOutput = Object.entries(outputs).find(([, output]) => output.entryPoint);
+      if (!entryOutput) throw new Error(`No entry output generated for "${surface.label}"`);
 
-      const jsGzipBytes = gzipSize(bundle);
+      const initialOutputKeys = collectInitialOutputKeys(outputs, entryOutput[0]);
+      const allOutputKeys = new Set(Object.keys(outputs));
+      const asyncOutputKeys = new Set(
+        [...allOutputKeys].filter((key) => !initialOutputKeys.has(key))
+      );
+      const gzipOutputKeys = (keys) =>
+        [...keys].reduce((total, key) => {
+          const contents = outputByBasename.get(key.split("/").pop());
+          return contents ? total + gzipSize(contents) : total;
+        }, 0);
+
+      const initialJsGzipBytes = gzipOutputKeys(initialOutputKeys);
+      const asyncJsGzipBytes = gzipOutputKeys(asyncOutputKeys);
+      const jsGzipBytes = initialJsGzipBytes + asyncJsGzipBytes;
 
       rows.push({
-        export: exportName,
+        export: surface.label,
         jsGzipBytes,
         jsGzip: formatSize(jsGzipBytes),
       });
@@ -117,8 +299,25 @@ async function measureExportSizes(packageRoot, exportNames) {
   }
 }
 
+function collectInitialOutputKeys(outputs, entryKey) {
+  const seen = new Set();
+
+  const visit = (key) => {
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+
+    for (const outputImport of outputs[key]?.imports ?? []) {
+      if (outputImport.external || outputImport.kind === "dynamic-import") continue;
+      visit(outputImport.path);
+    }
+  };
+
+  visit(entryKey);
+  return seen;
+}
+
 function renderMarkdownTable(rows) {
-  const lines = ["| Export | JS gzip |", "| --- | --- |"];
+  const lines = ["| Surface | JS gzip |", "| --- | --- |"];
 
   for (const row of rows) {
     lines.push(`| \`${row.export}\` | ${row.jsGzip} |`);
@@ -150,24 +349,16 @@ async function main() {
 
   const metafilePath = join(packageRoot, "dist", "metafile-esm.json");
   const metafile = loadJson(metafilePath);
-  const rootOutput = metafile.outputs["dist/index.mjs"];
 
-  if (!rootOutput) {
-    throw new Error(
-      `Missing dist/index.mjs in ${metafilePath}. Run \`npm run build\` in packages/react-motion-gallery first.`
-    );
-  }
-
-  const exportNames = selectReportedExports(rootOutput.exports, metafilePath);
-  const rows = await measureExportSizes(packageRoot, exportNames);
+  const surfaces = selectReportedSurfaces(metafile, metafilePath);
+  const rows = await measureExportSizes(packageRoot, surfaces);
   const table = renderMarkdownTable(rows);
 
   if (args.writeReadme) {
     writeReadme(packageRoot, table);
-    return;
+  } else {
+    process.stdout.write(`${table}\n`);
   }
-
-  process.stdout.write(`${table}\n`);
 }
 
 main().catch((error) => {

@@ -1,15 +1,23 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { BREAKPOINT_MAP } from "../shared/responsive";
 import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
-import { GridSkeletonCard } from "./GridSkeleton";
+import { GridSkeletonCard } from "../skeleton/GridSkeleton";
 
 const CUSTOM_BREAKPOINTS = {
   ...BREAKPOINT_MAP,
   tablet: 840,
 };
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+beforeEach(() => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
 
 describe("GridSkeleton text nodes", () => {
   test("renders wrapped text as multiple line bars with a shortened last line", () => {
@@ -21,7 +29,7 @@ describe("GridSkeleton text nodes", () => {
             kind: "grid",
             item: {
               kind: "text",
-              fontSize: 16,
+              barHeight: 16,
               lineHeight: 1.5,
               lines: 2,
               style: {
@@ -34,7 +42,7 @@ describe("GridSkeleton text nodes", () => {
     );
 
     expect(markup).toContain('data-rmg-skel-text="true"');
-    expect(markup.match(/data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(2);
+    expect(markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(2);
     expect(markup.match(/width:68%/g) ?? []).toHaveLength(1);
   });
 
@@ -47,7 +55,7 @@ describe("GridSkeleton text nodes", () => {
             kind: "grid",
             item: {
               kind: "text",
-              fontSize: 14,
+              barHeight: 14,
               lineHeight: 1.5,
               style: {
                 width: "50%",
@@ -70,14 +78,14 @@ describe("GridSkeleton text nodes", () => {
             kind: "grid",
             item: {
               kind: "text",
-              fontSize: 16,
+              barHeight: 16,
               lineHeight: 1.5,
               lines: {
                 0: 3,
                 767: 2,
                 1200: 1,
               },
-              lineWidth: "56%",
+              lastBarWidth: "56%",
               style: {
                 width: "88%",
               },
@@ -89,9 +97,14 @@ describe("GridSkeleton text nodes", () => {
 
     expect(markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(3);
     expect(markup).toContain("@media (min-width:767px)");
-    expect(markup).toContain("nth-child(n+3){display:none;}");
+    expect(markup).toContain(
+      'data-rmg-skel-text-line="true"]{display:none !important;height:16px !important;}'
+    );
+    expect(markup).toContain(
+      "nth-child(-n+2){display:block !important;width:100% !important;max-width:100% !important;}"
+    );
     expect(markup).toContain("@media (min-width:1200px)");
-    expect(markup).toContain("nth-child(1){width:56%;}");
+    expect(markup).toContain("nth-child(1){max-width:56% !important;}");
   });
 
   test("keeps itemWrapStyle behavior unchanged for grid skeleton items", () => {
@@ -108,7 +121,7 @@ describe("GridSkeleton text nodes", () => {
             },
             item: {
               kind: "text",
-              fontSize: 14,
+              barHeight: 14,
               lineHeight: 1.5,
               style: {
                 width: "70%",
@@ -121,7 +134,7 @@ describe("GridSkeleton text nodes", () => {
 
     expect(markup).toContain("padding:12px");
     expect(markup).toContain("border-radius:18px");
-    expect(markup).toContain("box-shadow:0 8px 24px");
+    expect(markup).toContain("--rmg-grid-skel-wrap-shadow:0 8px 24px rgba(15, 23, 42, 0.08)");
     expect(markup).toContain('data-rmg-skel-text="true"');
   });
 
@@ -134,7 +147,7 @@ describe("GridSkeleton text nodes", () => {
             kind: "grid",
             item: {
               kind: "text",
-              fontSize: 14,
+              barHeight: 14,
               lineHeight: 1.5,
               style: {
                 width: "70%",
@@ -157,7 +170,7 @@ describe("GridSkeleton text nodes", () => {
                     },
                     {
                       kind: "text",
-                      fontSize: 16,
+                      barHeight: 16,
                       lineHeight: 1.4,
                       lines: 2,
                       style: {
@@ -191,7 +204,7 @@ describe("GridSkeleton text nodes", () => {
             },
             item: {
               kind: "text",
-              fontSize: 14,
+              barHeight: 14,
               lineHeight: 1.5,
               style: {
                 width: "70%",
@@ -224,7 +237,7 @@ describe("GridSkeleton text nodes", () => {
             kind: "grid",
             item: {
               kind: "text",
-              fontSize: 14,
+              barHeight: 14,
               lineHeight: 1.5,
               style: {
                 width: "70%",
@@ -235,13 +248,13 @@ describe("GridSkeleton text nodes", () => {
               {
                 item: {
                   kind: "text",
-                  fontSize: 16,
+                  barHeight: 16,
                   lineHeight: 1.5,
                   lines: {
                     0: 3,
                     900: 1,
                   },
-                  lineWidth: "56%",
+                  lastBarWidth: "56%",
                   style: {
                     width: "88%",
                   },
@@ -254,8 +267,13 @@ describe("GridSkeleton text nodes", () => {
     );
 
     expect(markup).toContain("@media (min-width:900px)");
-    expect(markup).toContain("nth-child(n+2){display:none;}");
-    expect(markup).toContain("nth-child(1){width:56%;}");
+    expect(markup).toContain(
+      'data-rmg-skel-text-line="true"]{display:none !important;height:16px !important;}'
+    );
+    expect(markup).toContain(
+      "nth-child(-n+1){display:block !important;width:100% !important;max-width:100% !important;}"
+    );
+    expect(markup).toContain("nth-child(1){max-width:56% !important;}");
   });
 
   test("emits responsive CSS for shape, text style, and media tile styles with custom aliases", () => {
@@ -287,7 +305,7 @@ describe("GridSkeleton text nodes", () => {
                 },
                 {
                   kind: "text",
-                  fontSize: 16,
+                  barHeight: 16,
                   lineHeight: 1.5,
                   lines: 2,
                   style: {
@@ -366,7 +384,7 @@ describe("GridSkeleton text nodes", () => {
                 },
                 {
                   kind: "text",
-                  fontSize: 14,
+                  barHeight: 14,
                   lineHeight: 1.5,
                   lines: 2,
                   shimmer: {
@@ -388,5 +406,89 @@ describe("GridSkeleton text nodes", () => {
     expect(markup).toContain("--rmg-skel-card-shimmer-enabled:0");
     expect(markup).not.toContain("--rmg-skel-shimmer-duration:777ms");
     expect(markup).not.toContain("--rmg-skel-shimmer-opacity:0.23");
+  });
+
+  test("owns responsive grid track and span CSS inside the grid skeleton renderer", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(GridSkeletonCard, {
+        count: 2,
+        columns: {
+          0: 1,
+          840: 2,
+        },
+        gap: {
+          0: 8,
+          840: 18,
+        },
+        items: [
+          {
+            id: "lead",
+            span: {
+              0: "full",
+              840: 2,
+            },
+          },
+          {
+            id: "secondary",
+          },
+        ],
+        allowItemSpans: true,
+        spec: {
+          layout: {
+            kind: "grid",
+            item: {
+              kind: "rect",
+              style: {
+                width: "100%",
+                height: 120,
+              },
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain('data-rmg-grid-skel-scope="');
+    expect(markup).toContain("grid-template-columns:repeat(2, minmax(0, 1fr));");
+    expect(markup).toContain("--rmg-grid-gap:18px;");
+    expect(markup).toContain('[data-rmg-grid-item-key="lead"]{grid-column:span 2 / span 2;}');
+  });
+
+  test("uses skeleton slot spans when explicit grid items are not provided", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(GridSkeletonCard, {
+        count: 2,
+        columns: 12,
+        allowItemSpans: true,
+        spec: {
+          layout: {
+            kind: "grid",
+            item: {
+              kind: "rect",
+              style: {
+                width: "100%",
+                height: 120,
+              },
+            },
+            slots: [
+              {
+                span: {
+                  0: "full",
+                  840: 6,
+                },
+              },
+              {
+                span: 6,
+              },
+            ],
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain('data-rmg-grid-item-key="slot-0"');
+    expect(markup).toContain("grid-column:1 / -1");
+    expect(markup).toContain('[data-rmg-grid-item-key="slot-0"]{grid-column:span 6 / span 6;}');
+    expect(markup).toContain("grid-column:span 6 / span 6");
   });
 });

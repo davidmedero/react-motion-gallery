@@ -1,30 +1,39 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderFade } from "../../../../../../packages/react-motion-gallery/src/slider-fade";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-fade-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/1079/1600/900",
-  "https://picsum.photos/id/1080/1600/900",
-  "https://picsum.photos/id/1081/1600/900",
-  "https://picsum.photos/id/1082/1600/900",
-  "https://picsum.photos/id/1083/1600/900",
-  "https://picsum.photos/id/1084/1600/900",
+  "https://picsum.photos/id/317/1600/900",
+  "https://picsum.photos/id/320/1600/900",
+  "https://picsum.photos/id/322/1600/900",
+  "https://picsum.photos/id/323/1600/900",
+  "https://picsum.photos/id/324/1600/900",
+  "https://picsum.photos/id/327/1600/900",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/1079/2400/1350",
-  "https://picsum.photos/id/1080/2400/1350",
-  "https://picsum.photos/id/1081/2400/1350",
-  "https://picsum.photos/id/1082/2400/1350",
-  "https://picsum.photos/id/1083/2400/1350",
-  "https://picsum.photos/id/1084/2400/1350",
+  "https://picsum.photos/id/317/2400/1350",
+  "https://picsum.photos/id/320/2400/1350",
+  "https://picsum.photos/id/322/2400/1350",
+  "https://picsum.photos/id/323/2400/1350",
+  "https://picsum.photos/id/324/2400/1350",
+  "https://picsum.photos/id/327/2400/1350",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
@@ -39,6 +48,7 @@ function Slide({ src, i }: { src: string; i: number }) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -51,22 +61,13 @@ export function SliderFadeDemo() {
   const media = toMediaItems(URLS);
   const fullscreenMedia = toMediaItems(FS_URLS);
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
-        scroll={{
-          loop: true,
-        }}
-        align="center"
-        effects={{
-          fade: {
-            enabled: true,
-          },
-        }}
-        transitions={{
-          loading: {
-            skeletonCount: 3,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 3,
               mode: "peek",
               style: {
                 overflow: "hidden",
@@ -88,9 +89,25 @@ export function SliderFadeDemo() {
                   },
                 },
               },
-            },
-          },
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        scroll={{
+          loop: true,
         }}
+        align="center"
+
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderDots(),
+          sliderFade({
+            enabled: true,
+          }),
+        ]}
       >
         {media.map((item, i) => (
           <Slide
@@ -98,9 +115,12 @@ export function SliderFadeDemo() {
             src={item.kind === "image" ? item.src : ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

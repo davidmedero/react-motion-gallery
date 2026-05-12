@@ -1,0 +1,1 @@
+function l(i,r={}){return {__rmgSliderPlugin:true,kind:i,...r}}export{l as a};

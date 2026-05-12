@@ -1,44 +1,54 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   Video,
+  type MediaItem,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import { sliderScrollbar } from "../../../../../../packages/react-motion-gallery/src/slider-scrollbar";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-video-vimeo-loop-demo.module.css";
 
 export function SliderVideoVimeoLoopDemo() {
 const URLS = [
   {
-    kind: "video",
+    kind: "video" as const,
     src: "https://vimeo.com/145140004",
     poster: "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "https://vimeo.com/113314928",
     poster: "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "https://vimeo.com/172833424",
     poster: "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "https://vimeo.com/130632032",
     poster: "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "https://vimeo.com/29216771",
     poster: "https://i.vimeocdn.com/video/195526505-0b6e473889f312924ae8715001157ffd464349eb7d4cef78136668cae68a0ce8-d_640?region=us",
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "https://vimeo.com/127223734",
     poster: "https://i.vimeocdn.com/video/517933160-cfa1bfb51adafa1ea32b3e1c67b79abcfdfd848f35fff141b41c24860fd1e22c-d_640?region=us",
   },
@@ -46,9 +56,9 @@ const URLS = [
 
 function buildVimeoSource(src: string, poster?: string) {
   return {
-    type: "video",
+    type: "video" as const,
     poster,
-    sources: [{ src, provider: "vimeo" }],
+    sources: [{ src, provider: "vimeo" as const }],
   };
 }
 
@@ -65,7 +75,11 @@ const VIMEO_OPTIONS = {
   },
 };
 
-function buildVimeoFullscreenSource(item) {
+function buildVimeoFullscreenSource(item: MediaItem) {
+  if (item.kind !== "video") {
+    return buildVimeoSource("");
+  }
+
   return buildVimeoSource(item.src, item.poster);
 }
 
@@ -86,6 +100,7 @@ function Slide({
         width="24"
         height="24"
         className={styles.open_fullscreen_icon}
+        data-rmg-fullscreen-trigger
       />
       <Video
         src={src}
@@ -102,6 +117,7 @@ function Slide({
 function FullscreenAddon() {
 
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
       video: {
@@ -116,37 +132,13 @@ function FullscreenAddon() {
 
 const MEDIA = toMediaItems(URLS);
 
-return (
+const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
+  return (
   <GalleryCore layout="slider" fullscreenItems={MEDIA}>
-    <Slider
-      scroll={{
-        loop: true
-      }}
-      align="center"
-      controls={{
-        dots: {
-          enabled: false,
-        },
-        scrollbar: {
-          enabled: true,
-          root: {
-            style: {
-              bottom: "0px"
-            }
-          }
-        },
-      }}
-      elements={{
-        viewport: {
-          style: {
-            paddingBottom: "52px"
-          }
-        }
-      }}
-      transitions={{
-        loading: {
-          skeletonCount: 3,
-          skeleton: {
+    <SliderSkeleton
+        layout={{
+              visibleCount: 3,
             mode: "peek",
             layout: {
               kind: "slider",
@@ -155,6 +147,7 @@ return (
                 gap: 20,
                 justify: "center"
               },
+              itemStretch: false,
               item: {
                 kind: "rect",
                 style: {
@@ -164,23 +157,102 @@ return (
                   borderRadius: 12,
                 },
               },
-              children: [
+              rowHeightCompensation: {
+                0: 46,
+                768: 52,
+              },
+              overlays: [
                 {
-                  kind: "rect",
+                  kind: "stack",
                   style: {
-                    width: 162,
-                    height: 32,
-                    borderRadius: 999,
-                    alignSelf: "center",
-                    marginTop: "20px",
+                    position: "absolute",
+                    left: "50%",
+                    bottom: 0,
+                    transform: "translateX(-50%)",
+                    width: "min(60%, 28rem)",
+                    height: 16,
+                    zIndex: 3,
                   },
+                  children: [
+                    {
+                      kind: "row",
+                      style: {
+                        position: "absolute",
+                        left: 0,
+                        top: 5,
+                        width: "100%",
+                        height: 6,
+                        borderRadius: 999,
+                        backgroundColor: "rgba(15, 23, 42, 0.16)",
+                      },
+                      children: [],
+                    },
+                    {
+                      kind: "row",
+                      style: {
+                        position: "absolute",
+                        left: 0,
+                        top: 5,
+                        width: 0,
+                        height: 6,
+                        borderRadius: 999,
+                        backgroundColor: "rgba(80, 163, 255, 0.28)",
+                      },
+                      children: [],
+                    },
+                    {
+                      kind: "row",
+                      style: {
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        width: 16,
+                        height: 16,
+                        borderRadius: 999,
+                        backgroundColor: "rgb(80, 163, 255)",
+                        boxShadow: "0 4px 14px rgba(80, 163, 255, 0.28)",
+                      },
+                      children: [],
+                    },
+                  ],
                 },
               ],
-            }
-          }
+            },
+          }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+      scroll={{
+        loop: true
+      }}
+      align="center"
+
+      elements={{
+        viewport: {
+          className: styles.slider_viewport
         }
       }}
-    >
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows({
+            arrow: {
+              style: {
+                top: "43%"
+              }
+            }
+          }),
+          sliderScrollbar({
+          enabled: true,
+          root: {
+            style: {
+              bottom: "0px"
+            }
+          }
+        }),
+        ]}
+      >
       {MEDIA.map((m, i) => {
         return (
           <Slide
@@ -189,10 +261,13 @@ return (
             poster={m.kind === "video" ? m.poster : ""}
             i={i}
           />
-        );
+        )
+      ;
       })}
     </Slider>
+      </SliderSkeleton>
     <FullscreenAddon />
   </GalleryCore>
 );
-}`;
+}
+`;

@@ -1,24 +1,18 @@
-export const css = String.raw`/* app/globals.css or Demo.module.css */
-
-.masonryBalancedCard {
+export const css = String.raw`.masonryBalancedCard {
   display: grid;
   gap: 12px;
   padding: 10px 10px 14px;
   border-radius: 22px;
-  background-color: #fff;
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
 }
 
 .masonryBalancedMedia {
+  position: relative;
   width: 100%;
   overflow: hidden;
   border-radius: 16px;
   background: #e7edf3;
-}
-
-.masonryBalancedMedia > * {
-  width: 100%;
-  height: 100%;
 }
 
 .masonryBalancedImage {
@@ -28,7 +22,41 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
   object-fit: cover;
 }
 
+.masonryBalancedIndex {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline-start: 10px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(11, 18, 32, 0.78);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.masonryBalancedMedia > .open_fullscreen_icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+  cursor: pointer;
+}
+
 .masonryBalancedVideo {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
 }
@@ -62,20 +90,34 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
 
 .masonryBalancedBadge {
   color: rgba(21, 94, 117, 0.78);
-  font-size: 0.74rem;
+  font-size: 11.84px;
+  line-height: 1.4;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .masonryBalancedTitle {
-  font-size: 1.02rem;
-  letter-spacing: -0.02em;
+  font-size: 16.32px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .masonryBalancedBody {
   margin: 0;
   color: rgba(11, 18, 32, 0.72);
-  font-size: 0.92rem;
+  font-size: 14.72px;
   line-height: 1.55;
-}`;
+}
+
+.masonryRoot {
+  margin-bottom: -12px;
+}
+
+@media(min-width: 1140px) {
+  .masonryRoot {
+    margin-bottom: -18px;
+  }
+}
+`;

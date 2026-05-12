@@ -19,6 +19,7 @@ export type ZoomToArgs = {
 };
 
 type PovLike = { measure(n: number): number };
+type BoundsForCurrentOptions = { ignoreReserved?: boolean };
 
 export type ZoomCtx = {
   fs: {
@@ -54,7 +55,8 @@ export type ZoomCtx = {
     baseW: number,
     baseH: number,
     containerW: number,
-    containerH: number
+    containerH: number,
+    options?: BoundsForCurrentOptions
   ) => { x: any; y: any; povX: PovLike; povY: PovLike };
   renderPan: (x: number, y: number) => void;
   animRef: RefLike<{ start(): void; stop(): void; resetBlend(): void } | null>;
@@ -148,9 +150,15 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
 
   const s0 = ctx.scaleRef.current || 1;
   const s1 = clampNum(destZoomLevel, 1, ctx.fs.zoom.maxZoomLevel);
-  if (s1 === s0) return;
 
   const ZOOM_EPS = 1.01;
+  if (s1 === s0) {
+    const panX = ctx.offX.current?.get() ?? domTx;
+    const panY = ctx.offY.current?.get() ?? domTy;
+    const alreadyCentered = Math.abs(panX) < 0.5 && Math.abs(panY) < 0.5;
+    if (s1 > ZOOM_EPS || alreadyCentered) return;
+  }
+
   const wasZoomed = s0 > ZOOM_EPS;
   const willBeZoomed = s1 > ZOOM_EPS;
 
@@ -180,7 +188,8 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
     baseW,
     baseH,
     containerW,
-    containerH
+    containerH,
+    { ignoreReserved: true }
   );
   tx1 = limX.constrain(tx1);
   ty1 = limY.constrain(ty1);
@@ -189,6 +198,40 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
   ctx.setScale(s1);
   ctx.previousZoom.current.x = cx;
   ctx.previousZoom.current.y = cy;
+
+  if (!willBeZoomed) {
+    tx1 = limX.constrain(0);
+    ty1 = limY.constrain(0);
+
+    ctx.boundsX.current = ctx.ScrollBounds(
+      limX,
+      ctx.offX.current!,
+      ctx.tgtX.current!,
+      ctx.bodyX.current!,
+      povX,
+      ctx.fs.zoom.panDuration
+    );
+    ctx.boundsY.current = ctx.ScrollBounds(
+      limY,
+      ctx.offY.current!,
+      ctx.tgtY.current!,
+      ctx.bodyY.current!,
+      povY,
+      ctx.fs.zoom.panDuration
+    );
+
+    ctx.tgtX.current!.set(tx1);
+    ctx.tgtY.current!.set(ty1);
+    ctx.bodyX.current?.resetVelocity?.();
+    ctx.bodyX.current?.useBaseDuration?.();
+    ctx.bodyX.current?.useBaseFriction?.();
+    ctx.bodyY.current?.resetVelocity?.();
+    ctx.bodyY.current?.useBaseDuration?.();
+    ctx.bodyY.current?.useBaseFriction?.();
+    ctx.animRef.current?.resetBlend();
+    ctx.animRef.current?.start();
+    return;
+  }
 
   ctx.tgtX.current!.set(tx1);
   ctx.locX.current!.set(tx1);

@@ -1,0 +1,36 @@
+.gridSkeletonOverlay {
+  position: relative;
+  width: 100%;
+}
+
+.gridSkeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--rmg-grid-min, 160px), 1fr)
+  );
+  gap: var(--rmg-grid-gap, 8px);
+}
+
+.gridSkeletonItem {
+  position: relative;
+  width: 100%;
+}
+
+.gridSkeletonItem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rmg-grid-skel-wrap-shadow-radius, var(--rmg-skel-radius, 12px));
+  box-shadow: var(--rmg-grid-skel-wrap-shadow, none);
+  opacity: var(--rmg-grid-skel-wrap-shadow-opacity, 1);
+  transition: opacity calc(var(--rmg-loading-fade-duration, 600ms) * 0.45) ease-out;
+  pointer-events: none;
+}
+
+.gridSkeletonItemInner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+}

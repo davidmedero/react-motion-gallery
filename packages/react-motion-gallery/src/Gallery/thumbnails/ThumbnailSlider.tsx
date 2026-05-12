@@ -38,6 +38,8 @@ import { Translate } from '../shared/motion/translate'
 import { useWheelLock } from '../shared/hooks/useWheelLock'
 import { useInViewOnce } from '../shared/hooks/useInViewOnce'
 import { buildStableScopeId } from '../shared/stableScope'
+import { waitForImageDecode } from '../shared/lazy/imageLifecycle'
+import { computeSliderChildrenKey } from '../slider/childrenSignature';
 import {
   roundSliderLayoutMetric,
   resolveSliderContentSpan,
@@ -51,6 +53,23 @@ function DragTracker(axis: AxisType, ownerWindow: WindowType) {
     ownerWindow,
     axis,
   })
+}
+
+function waitForVideoReady(video: HTMLVideoElement): Promise<void> {
+  if (video.readyState >= 2 || video.error) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const done = () => {
+      video.removeEventListener("loadeddata", done);
+      video.removeEventListener("error", done);
+      resolve();
+    };
+
+    video.addEventListener("loadeddata", done);
+    video.addEventListener("error", done);
+  });
 }
 
 type Page = {
@@ -217,6 +236,7 @@ export default function ThumbnailSlider({
   const downTargetRef = useRef<EventTarget | null>(null)
   const [inView, setInView] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [mediaReady, setMediaReady] = useState(false);
   const readyRafRef = useRef<number | null>(null);
   const readyPaintedRef = useRef(false);
   const contentSizeRef = useRef(0)
@@ -322,6 +342,7 @@ export default function ThumbnailSlider({
     }
 
     setIsReady(false)
+    setMediaReady(false)
     readyPaintedRef.current = false
 
     setBuildKey((k) => k + 1)
@@ -707,32 +728,63 @@ export default function ThumbnailSlider({
   }, [clonedChildren, gap, wrap, loop, AX, sign, position]);
 
   const contentSig = useMemo(() => {
-    return rawKids
-      .map((el, i) => {
-        const k = el.key != null ? String(el.key) : `idx:${i}`;
-        const t =
-          typeof el.type === 'string'
-            ? el.type
-            : (el.type as any)?.displayName || (el.type as any)?.name || 'component';
-        return `${t}:${k}`;
-      })
-      .join('|');
-  }, [rawKids]);
+    return computeSliderChildrenKey(children);
+  }, [children]);
+
+  const mediaSig = useMemo(
+    () => `${contentSig}|build=${buildKey}|wrap=${wrap ? 1 : 0}|clones=${clonedChildren.length}`,
+    [buildKey, clonedChildren.length, contentSig, wrap]
+  );
 
   const lastContentSigRef = useRef<string>('');
 
   useEffect(() => {
-    if (lastContentSigRef.current === contentSig) return;
-    lastContentSigRef.current = contentSig;
+    if (lastContentSigRef.current === mediaSig) return;
+    lastContentSigRef.current = mediaSig;
 
     readyPaintedRef.current = false;
     setIsReady(false);
+    setMediaReady(false);
 
     if (readyRafRef.current != null) {
       cancelAnimationFrame(readyRafRef.current);
       readyRafRef.current = null;
     }
-  }, [contentSig]);
+  }, [mediaSig]);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    let canceled = false;
+    const mediaNodes = Array.from(track.querySelectorAll("img,video")) as Array<
+      HTMLImageElement | HTMLVideoElement
+    >;
+
+    if (mediaNodes.length === 0) {
+      setMediaReady(true);
+      return () => {
+        canceled = true;
+      };
+    }
+
+    void Promise.all(
+      mediaNodes.map((node) => {
+        if (node instanceof HTMLImageElement) {
+          return waitForImageDecode(node);
+        }
+
+        return waitForVideoReady(node);
+      })
+    ).then(() => {
+      if (canceled) return;
+      setMediaReady(true);
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [mediaSig]);
 
   useEffect(() => {
     if (readyRafRef.current != null) {
@@ -748,6 +800,7 @@ export default function ThumbnailSlider({
       !!track &&
       isMeasured &&
       layoutReady &&
+      mediaReady &&
       sliderWidth.current > 0 &&
       slidesRef.current.length > 0 &&
       !!(thumbSize || thumbLong);
@@ -779,6 +832,7 @@ export default function ThumbnailSlider({
     count,
     contentLength,
     containerLength,
+    mediaReady,
     thumbLong,
     thumbSize,
     position,
@@ -1757,16 +1811,14 @@ export default function ThumbnailSlider({
         
         const isOutOfBounds = boundsRef.current?.passed()
 
-        let adjustedBoostedForce = boostedForce
-        if (isOutOfBounds) {
-          adjustedBoostedForce *= 0.6 // tune: 0.4 to 0.8
-        }
-
-        const force = allowedForce(adjustedBoostedForce)
+        const force = allowedForce(boostedForce)
 
         const baseFriction = sliderFriction
         const forceFactor = factorAbs(boostedForce, force)
         let speed = selectDuration
+        if (isOutOfBounds) {
+          speed = selectDuration + 5
+        }
         const friction = baseFriction + forceFactor / 50
 
         body.useDuration(speed).useFriction(friction)

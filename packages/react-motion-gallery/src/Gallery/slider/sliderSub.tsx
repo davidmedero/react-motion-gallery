@@ -20,15 +20,25 @@ type BasePointerDownListener = () => void;
 
 export type SliderIndexChannel = ReturnType<typeof createSliderIndexChannel>;
 
+export function isValidSliderInitialIndex(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+export function normalizeSliderInitialIndex(value: unknown): number {
+  if (!isValidSliderInitialIndex(value)) return 0;
+  return Math.max(0, Math.trunc(value));
+}
+
 export function createSliderIndexChannel(
   initialIndex = 0,
   initialMode: IndexMode = "animated"
 ) {
-  let index = initialIndex;
+  const normalizedInitialIndex = normalizeSliderInitialIndex(initialIndex);
+  let index = normalizedInitialIndex;
   let mode: IndexMode = initialMode;
   let lastEvent: IndexEvent = {
     type: "set",
-    index: initialIndex,
+    index: normalizedInitialIndex,
     mode: initialMode,
   };
 

@@ -1,6 +1,4 @@
-export const css = String.raw`/* app/globals.css or Demo.module.css */
-
-.gridCard {
+export const css = String.raw`.gridCard {
   display: grid;
   gap: 12px;
 }
@@ -22,18 +20,17 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
   color: rgba(21, 94, 117, 0.78);
   font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .gridTitle {
   font-size: 1.05rem;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .gridBody {
   margin: 0;
   color: rgba(11, 18, 32, 0.72);
   font-size: 0.92rem;
-  line-height: 1.55;
+  line-height: 1.5;
 }`;

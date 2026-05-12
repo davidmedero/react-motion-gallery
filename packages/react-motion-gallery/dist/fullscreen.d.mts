@@ -1,21 +1,31 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { F as FullscreenOptions, g as FullscreenClose, h as FullscreenArrows, i as FullscreenCounter, d as ResponsiveLength, e as ResponsiveCaptionPlacement, j as FsCaptionRenderArgs, k as FSImageRender, l as FullscreenVideoOptions, m as FullscreenLazyLoadOptions, f as FullscreenOpenRequest } from './responsive-D_xhZmVI.mjs';
-export { a as FsCaptionPlacement, b as FsIntroRequest, G as GalleryApi, I as IndexMode } from './responsive-D_xhZmVI.mjs';
+import { d as FullscreenOptions, e as FullscreenPlugin, w as FullscreenClose, x as FullscreenArrows, y as FullscreenCounter, l as ResponsiveLength, R as ResponsiveCaptionPlacement, z as FsCaptionRenderArgs, A as FSImageRender, h as FullscreenVideoOptions, c as FullscreenLazyLoadOptions } from './responsive-Ch5b4LC-.mjs';
+export { j as FsCaptionPlacement, k as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenControlsOptions, b as FullscreenCrossfadeOptions, f as FullscreenPluginKind, g as FullscreenSliderOptions, i as FullscreenZoomPanOptions } from './responsive-Ch5b4LC-.mjs';
 import React__default from 'react';
-import { M as MediaItem } from './plyrTypes-Cq4C3ul5.mjs';
-import { a as FullscreenThumbnailBridge } from './types-ROPjU8Nl.mjs';
-import './types-Dhh8xfHo.mjs';
+import { MediaItem } from './media.mjs';
+import { d as CrossFadeWheel, H as FullscreenOpenRequest } from './types-CfvTYIyd.mjs';
+export { G as GalleryApi, a as GalleryCoreApi, I as IndexMode } from './types-CfvTYIyd.mjs';
+import { a as FullscreenThumbnailBridge } from './types-B7AiQJkM.mjs';
+import { R as ResponsiveNumber } from './responsiveNumber-CouEMJ9O.mjs';
+import './types-DP7ogmr4.mjs';
+import './force-C5m1QpdF.mjs';
+import './transitions-DU3ftmIq.mjs';
+import './plyrTypes-DhzgHNfX.mjs';
 import 'plyr';
-import './types-CHUayqcj.mjs';
-import './controls-SpWg1Kgt.mjs';
+import './types-Dhh8xfHo.mjs';
+import './text-BBcRGVzn.mjs';
+import 'plyr-react';
+import 'react-dom/client';
 
 type FullscreenOpenMethod = "fade" | "scale";
 type UseFullscreenArgs = {
     fullscreen?: FullscreenOptions;
+    plugins?: FullscreenPlugin[];
 };
 declare function useFullscreenController(args: UseFullscreenArgs): {
     fs: {
         slider: {
+            gap: ResponsiveNumber;
             duration: number;
             friction: number;
             direction: "ltr" | "rtl";
@@ -27,14 +37,17 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
             panFriction: number;
         };
         effects: {
+            crossfade: {
+                controls: boolean;
+                drag: boolean;
+                wheel?: CrossFadeWheel;
+                durationMs: number;
+                easing: string;
+            };
             introDuration: number;
             introEasing: string;
             introFade: boolean;
             introStickyNavSelector?: string;
-            controlsFade: boolean;
-            dragFade: boolean;
-            slideFadeDuration: number;
-            slideFadeEasing: string;
             thumbnailsFadeDuration?: number;
             thumbnailsFadeEasing?: string;
         };
@@ -53,6 +66,8 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
             render?: (args: FsCaptionRenderArgs) => React__default.ReactNode;
             layout?: "overlay" | "slide";
             overlayCrossfadeTarget: "content" | "overlay";
+            overlayCrossfadeDurationMs: number;
+            overlayCrossfadeEasing: string;
             zoomFade: boolean;
             zoomFadeDurationMs: number;
             zoomFadeEasing: string;
@@ -105,59 +120,4 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
     closingModal: boolean;
 };
 
-declare const DEFAULT_FULLSCREEN: {
-    readonly enabled: false;
-    readonly controls: {
-        readonly close: {
-            readonly enabled: true;
-            readonly style: {};
-            readonly className: "";
-            readonly render: undefined;
-        };
-        readonly arrows: {
-            readonly enabled: true;
-            readonly arrow: {};
-            readonly prev: {};
-            readonly next: {};
-            readonly render: undefined;
-            readonly renderPrev: undefined;
-            readonly renderNext: undefined;
-        };
-        readonly counter: {
-            readonly enabled: true;
-            readonly style: {};
-            readonly className: "";
-            readonly render: undefined;
-        };
-    };
-    readonly effects: {
-        readonly introDuration: 300;
-        readonly introEasing: "cubic-bezier(.4,0,.22,1)";
-        readonly introFade: false;
-        readonly controlsFade: false;
-        readonly dragFade: false;
-        readonly slideFadeDuration: 120;
-        readonly slideFadeEasing: "cubic-bezier(.4,0,.22,1)";
-    };
-    readonly slider: {
-        readonly duration: 25;
-        readonly friction: 0.68;
-        readonly direction: "ltr";
-    };
-    readonly zoom: {
-        readonly clickZoomLevel: number;
-        readonly maxZoomLevel: number;
-        readonly panDuration: number;
-        readonly panFriction: number;
-    };
-    readonly caption: {
-        readonly overlayCrossfadeTarget: "content";
-        readonly zoomFade: true;
-        readonly zoomFadeDurationMs: 300;
-        readonly zoomFadeEasing: "cubic-bezier(.4,0,.22,1)";
-        readonly zoomInTransform: "";
-        readonly zoomOutTransform: "";
-    };
-};
-
-export { DEFAULT_FULLSCREEN, FullscreenOptions, useFullscreenController };
+export { FullscreenLazyLoadOptions, FullscreenOptions, FullscreenPlugin, FullscreenVideoOptions, useFullscreenController };

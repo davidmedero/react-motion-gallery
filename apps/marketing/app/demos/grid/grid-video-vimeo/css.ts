@@ -14,6 +14,7 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
 }
 
 .videoFrame {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
@@ -21,9 +22,22 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
   background: #0f172a;
 }
 
-.videoFrame > * {
+.videoFrame > :not(.open_fullscreen_icon) {
   width: 100%;
   height: 100%;
+}
+
+.videoFrame > .open_fullscreen_icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+  cursor: pointer;
 }
 
 .videoFrame :global(.plyr),
@@ -49,4 +63,5 @@ export const css = String.raw`/* app/globals.css or Demo.module.css */
   margin: 0;
   color: rgba(11, 18, 32, 0.72);
   line-height: 1.6;
-}`;
+}
+`;

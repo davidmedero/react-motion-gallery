@@ -6,7 +6,7 @@
 .entrySkeletonWrap {
   position: relative;
   display: block;
-  opacity: 1;
+  opacity: var(--rmg-entry-skeleton-opacity, 1);
   transition: opacity 220ms ease;
   transition-delay: 0ms;
   pointer-events: none;
@@ -14,6 +14,25 @@
   height: var(--rmg-entry-min-height, 260px);
   border-radius: 12px;
   background-color: var(--rmg-entry-skeleton-bg, transparent);
+}
+
+.entrySkeletonWrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rmg-entry-skel-wrap-shadow-radius, 12px);
+  box-shadow: var(--rmg-entry-skel-wrap-shadow, none);
+  pointer-events: none;
+}
+
+.entrySkeletonBody {
+  position: relative;
+  z-index: 1;
+  display: block;
+  min-height: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: inherit;
   overflow: hidden;
 }
 
@@ -33,7 +52,7 @@
   height: 100%;
 }
 
-.entryRow[data-rmg-entry-ready="1"] .entrySkeletonWrap {
+.entryRow[data-rmg-entry-ready="1"]:not([data-rmg-entry-compare="1"]) .entrySkeletonWrap {
   opacity: 0;
   transition-delay: var(--rmg-entry-intro-delay, 0ms);
 }
@@ -42,6 +61,20 @@
   opacity: 1;
   pointer-events: auto;
   transition-delay: var(--rmg-entry-intro-delay, 0ms);
+}
+
+.entryRow[data-rmg-entry-compare="1"] .entrySkeletonWrap {
+  z-index: 2;
+}
+
+.entrySkeletonWrap[data-rmg-entry-shimmer="off"] {
+  --rmg-skel-shimmer-enabled: 0;
+  --rmg-skel-card-shimmer-enabled: 0;
+}
+
+.entrySkeletonWrap[data-rmg-entry-shimmer="off"] .entrySkelTile::after {
+  opacity: 0;
+  animation: none;
 }
 
 .entryList {
@@ -133,6 +166,10 @@
 @media (prefers-reduced-motion: reduce) {
   .entrySkelTile::after {
     animation: none;
+  }
+
+  .entrySkeletonWrap {
+    transition: none;
   }
 }
 

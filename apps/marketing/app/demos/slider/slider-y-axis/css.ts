@@ -1,7 +1,7 @@
 export const css = String.raw`.demoCanvasSliderYAxis {
-  height: min(560px, calc(100dvh - 345px));
+  height: min(520px, calc(100dvh - 345px));
   min-height: 320px;
-  container-type: size;
+  overflow: hidden;
 }
 
 .slide {

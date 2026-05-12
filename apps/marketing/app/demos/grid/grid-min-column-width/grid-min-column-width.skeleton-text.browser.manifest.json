@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=grid-min-column-width&skeletonMeasure=content",
+  "outputFile": "./grid-min-column-width.skeleton-text.generated.ts",
+  "moduleExportName": "gridMinColumnWidthSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1400,
+  "viewportHeight": 1800,
+  "viewportWorkers": 16,
+  "settleMs": 120,
+  "lineMeasurementMethod": "domRange",
+  "breakpointStrategy": "lineOrBarChanges",
+  "barWidthUnit": "px",
+  "responsiveBy": "container",
+  "targets": [
+    {
+      "exportName": "gridMinColumnWidthItem01Badge",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem01Badge']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem01Title",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem01Title']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem01Body",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem01Body']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem02Badge",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem02Badge']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem02Title",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem02Title']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem02Body",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem02Body']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem03Badge",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem03Badge']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem03Title",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem03Title']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem03Body",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem03Body']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem04Badge",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem04Badge']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem04Title",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem04Title']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem04Body",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem04Body']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem05Badge",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem05Badge']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem05Title",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem05Title']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem05Body",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem05Body']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem06Badge",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem06Badge']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem06Title",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem06Title']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem06Body",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem06Body']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem07Badge",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem07Badge']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem07Title",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem07Title']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem07Body",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem07Body']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem08Badge",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem08Badge']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem08Title",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem08Title']"
+    },
+    {
+      "exportName": "gridMinColumnWidthItem08Body",
+      "selector": "[data-skeleton-text-id='gridMinColumnWidthItem08Body']"
+    }
+  ]
+}

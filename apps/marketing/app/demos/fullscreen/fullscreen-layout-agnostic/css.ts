@@ -1,46 +1,11 @@
 export const css = String.raw`.shell {
   display: grid;
-  gap: 24px;
-}
-
-.intro {
-  display: grid;
-  gap: 10px;
-}
-
-.kicker {
-  color: rgba(12, 74, 110, 0.78);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.heading {
-  margin: 0;
-  max-width: 18ch;
-  color: #0f172a;
-  font-size: clamp(1.85rem, 3vw, 2.8rem);
-  line-height: 0.95;
-  letter-spacing: -0.05em;
-}
-
-.lede {
-  margin: 0;
-  max-width: 64ch;
-  color: rgba(15, 23, 42, 0.74);
-  line-height: 1.7;
-}
-
-.lede code {
-  color: #0f172a;
-  font-weight: 700;
 }
 
 .grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .articleTile,
@@ -60,12 +25,14 @@ export const css = String.raw`.shell {
 .articleTile,
 .posterVideoTile {
   display: grid;
-  gap: 0;
-  padding: 0;
+  gap: 14px;
+  padding: 14px;
   text-align: left;
 }
 
 .articleTile {
+  display: flex;
+  flex-direction: column;
   cursor: pointer;
 }
 
@@ -83,19 +50,26 @@ export const css = String.raw`.shell {
 }
 
 .mediaFrame {
+  display: flex;
   position: relative;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 16px;
   isolation: isolate;
   background: #dbeafe;
+}
+
+.mediaWrapper {
+  display: flex;
+  position: relative;
+  aspect-ratio: 16 / 10;
 }
 
 .media {
   width: 100%;
   display: block;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
-  border-radius: 18px;
+  border-radius: 16px;
   background: #dbeafe;
 }
 
@@ -133,10 +107,24 @@ export const css = String.raw`.shell {
   object-fit: cover;
 }
 
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
 .surfaceCopy {
-  display: grid;
-  gap: 8px;
-  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.copyContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .eyebrow {
@@ -251,10 +239,6 @@ export const css = String.raw`.shell {
 }
 
 @media (max-width: 640px) {
-  .heading {
-    max-width: none;
-  }
-
   .inlineAction {
     width: 100%;
   }
@@ -263,4 +247,11 @@ export const css = String.raw`.shell {
     width: 64px;
     height: 64px;
   }
-}`;
+}
+
+@media (min-width: 860px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+`;

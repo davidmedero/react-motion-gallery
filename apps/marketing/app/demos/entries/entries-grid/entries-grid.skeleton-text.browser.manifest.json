@@ -1,0 +1,68 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=entries-grid&skeletonMeasure=content",
+  "outputFile": "./entries-grid.skeleton-text.generated.ts",
+  "moduleExportName": "entriesGridSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1090,
+  "viewportHeight": 5000,
+  "viewportWorkers": 8,
+  "settleMs": 120,
+  "stableGeometryFrames": 4,
+  "lineMeasurementMethod": "domRange",
+  "includeTextMetrics": true,
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "entries": {
+    "expectedEntryCount": 3
+  },
+  "targets": [
+    {
+      "exportName": "entriesGridEntry01Section",
+      "selector": "[data-skeleton-text-id='entriesGridEntry01Section']"
+    },
+    {
+      "exportName": "entriesGridEntry01Title",
+      "selector": "[data-skeleton-text-id='entriesGridEntry01Title']"
+    },
+    {
+      "exportName": "entriesGridEntry01Count",
+      "selector": "[data-skeleton-text-id='entriesGridEntry01Count']"
+    },
+    {
+      "exportName": "entriesGridEntry01Body",
+      "selector": "[data-skeleton-text-id='entriesGridEntry01Body']"
+    },
+    {
+      "exportName": "entriesGridEntry02Section",
+      "selector": "[data-skeleton-text-id='entriesGridEntry02Section']"
+    },
+    {
+      "exportName": "entriesGridEntry02Title",
+      "selector": "[data-skeleton-text-id='entriesGridEntry02Title']"
+    },
+    {
+      "exportName": "entriesGridEntry02Count",
+      "selector": "[data-skeleton-text-id='entriesGridEntry02Count']"
+    },
+    {
+      "exportName": "entriesGridEntry02Body",
+      "selector": "[data-skeleton-text-id='entriesGridEntry02Body']"
+    },
+    {
+      "exportName": "entriesGridEntry03Section",
+      "selector": "[data-skeleton-text-id='entriesGridEntry03Section']"
+    },
+    {
+      "exportName": "entriesGridEntry03Title",
+      "selector": "[data-skeleton-text-id='entriesGridEntry03Title']"
+    },
+    {
+      "exportName": "entriesGridEntry03Count",
+      "selector": "[data-skeleton-text-id='entriesGridEntry03Count']"
+    },
+    {
+      "exportName": "entriesGridEntry03Body",
+      "selector": "[data-skeleton-text-id='entriesGridEntry03Body']"
+    }
+  ]
+}

@@ -1,30 +1,38 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderDots } from "../../../../../../packages/react-motion-gallery/src/slider-dots";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-center-align-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/107/1600/900",
-  "https://picsum.photos/id/1008/1600/900",
-  "https://picsum.photos/id/1009/1600/900",
-  "https://picsum.photos/id/1010/1600/900",
-  "https://picsum.photos/id/1011/1600/900",
-  "https://picsum.photos/id/1012/1600/900",
+  "https://picsum.photos/id/124/1600/900",
+  "https://picsum.photos/id/127/1600/900",
+  "https://picsum.photos/id/128/1600/900",
+  "https://picsum.photos/id/132/1600/900",
+  "https://picsum.photos/id/136/1600/900",
+  "https://picsum.photos/id/141/1600/900",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/107/2400/1350",
-  "https://picsum.photos/id/1008/2400/1350",
-  "https://picsum.photos/id/1009/2400/1350",
-  "https://picsum.photos/id/1010/2400/1350",
-  "https://picsum.photos/id/1011/2400/1350",
-  "https://picsum.photos/id/1012/2400/1350",
+  "https://picsum.photos/id/124/2400/1350",
+  "https://picsum.photos/id/127/2400/1350",
+  "https://picsum.photos/id/128/2400/1350",
+  "https://picsum.photos/id/132/2400/1350",
+  "https://picsum.photos/id/136/2400/1350",
+  "https://picsum.photos/id/141/2400/1350",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
@@ -40,6 +48,7 @@ function Slide({ src, i }: { src: string; i: number }) {
 function FullscreenAddon() {
 
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
     },
@@ -52,14 +61,13 @@ export function SliderCenterAlignDemo() {
   const media = toMediaItems(URLS);
   const fullscreenMedia = toMediaItems(FS_URLS);
 
+  const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
-      <Slider
-        align="center"
-        transitions={{
-          loading: {
-            skeletonCount: 3,
-            skeleton: {
+      <SliderSkeleton
+        layout={{
+              visibleCount: 3,
               mode: "peek",
               centering: "first",
               style: {
@@ -85,9 +93,18 @@ export function SliderCenterAlignDemo() {
                   aspectRatio: "16 / 9",
                 },
               },
-            },
-          },
-        }}
+            }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+        align="center"
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows(),
+          sliderDots(),
+        ]}
       >
         {media.map((item, i) => (
           <Slide
@@ -95,9 +112,12 @@ export function SliderCenterAlignDemo() {
             src={item.kind === "image" ? item.src : ""}
             i={i}
           />
-        ))}
+  
+            ))}
       </Slider>
+      </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

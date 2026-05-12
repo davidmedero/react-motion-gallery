@@ -188,6 +188,7 @@ function showSpinner(
 ) {
   if (!spinnerEl) return;
   clearTimer(hideTimerRef);
+  spinnerEl.style.setProperty('animation-play-state', 'running', 'important');
   spinnerEl.style.setProperty('opacity', '1', 'important');
   spinnerEl.style.setProperty('visibility', 'visible', 'important');
   spinnerEl.style.setProperty('pointer-events', 'none', 'important');
@@ -204,6 +205,7 @@ function hideSpinner(
   }
 
   clearTimer(hideTimerRef);
+  spinnerEl.style.setProperty('animation-play-state', 'paused', 'important');
   spinnerEl.style.setProperty('opacity', '0', 'important');
   spinnerEl.style.setProperty('pointer-events', 'none', 'important');
 
@@ -231,6 +233,24 @@ function pauseApi(api: APITypes | null) {
     const media: HTMLMediaElement | undefined = plyr?.media;
     media?.pause?.();
   } catch {}
+}
+
+function isApiMediaReady(api: APITypes | null) {
+  const plyr = (api as any)?.plyr ?? api;
+  if (!plyr) return false;
+
+  try {
+    const media: HTMLMediaElement | undefined = plyr?.media;
+    if (!media) return false;
+
+    const readyState = Number(media.readyState ?? 0);
+    const videoWidth = Number((media as any).videoWidth ?? 0);
+    const videoHeight = Number((media as any).videoHeight ?? 0);
+
+    return readyState >= 1 || (videoWidth > 0 && videoHeight > 0);
+  } catch {
+    return false;
+  }
 }
 
 function resolveSpinnerNode(
@@ -282,6 +302,7 @@ export function Video(props: VideoProps) {
   const core = useOptionalGalleryCore();
   const isFullscreenOpen = core?.isFullscreenOpen ?? false;
   const isFullscreenOpenRef = core?.isFullscreenOpenRef ?? null;
+  const shouldSuspendBasePlayer = !isClone && isFullscreenOpen;
 
   const baseIdxRef = React.useRef<number | null>(null);
   const notifySeenRef = React.useRef(false);
@@ -419,6 +440,23 @@ export function Video(props: VideoProps) {
 
     return explicitPoster ?? sourcePoster;
   }, [props.poster, source]);
+  const subscribeVideoSnapshot = React.useCallback(
+    (listener: () => void) => {
+      if (isClone || !videoSnapshotStore) return () => {};
+      return videoSnapshotStore.subscribe(index, listener);
+    },
+    [index, isClone, videoSnapshotStore]
+  );
+  const getVideoSnapshot = React.useCallback(() => {
+    if (isClone || !videoSnapshotStore) return null;
+    return videoSnapshotStore.getSnapshot(index);
+  }, [index, isClone, videoSnapshotStore]);
+  const getServerVideoSnapshot = React.useCallback(() => null, []);
+  const videoSnapshot = React.useSyncExternalStore(
+    subscribeVideoSnapshot,
+    getVideoSnapshot,
+    getServerVideoSnapshot
+  );
   const shouldUsePosterShield = React.useMemo(() => {
     if (!posterSrc) return false;
     return provider === 'youtube' || provider === 'vimeo';
@@ -443,6 +481,13 @@ export function Video(props: VideoProps) {
   const [posterShieldVisible, setPosterShieldVisible] = React.useState(shouldUsePosterShield);
   const posterHideTimeoutRef = React.useRef<number | null>(null);
   const spinnerHideTimeoutRef = React.useRef<number | null>(null);
+
+  const resolveReady = React.useCallback((api: APITypes | null = apiRef.current) => {
+    if (readyRef.current) return true;
+    if (!isApiMediaReady(api)) return false;
+    readyRef.current = true;
+    return true;
+  }, []);
 
   const syncRuntimeRegistration = React.useCallback(
     (api: APITypes | null) => {
@@ -506,19 +551,21 @@ export function Video(props: VideoProps) {
 
   const syncSpinner = React.useCallback(
     (wantVisible: boolean, onHidden?: () => void) => {
+      const nextVisible = wantVisible && !shouldSuspendBasePlayer;
+
       if (!shouldRenderSpinner) {
-        if (!wantVisible) onHidden?.();
+        if (!nextVisible) onHidden?.();
         return;
       }
       const el = getSpinnerEl();
       if (!el) {
-        if (!wantVisible) onHidden?.();
+        if (!nextVisible) onHidden?.();
         return;
       }
-      if (wantVisible) showSpinner(el, spinnerHideTimeoutRef);
+      if (nextVisible) showSpinner(el, spinnerHideTimeoutRef);
       else hideSpinner(el, spinnerHideTimeoutRef, onHidden);
     },
-    [getSpinnerEl, shouldRenderSpinner]
+    [getSpinnerEl, shouldRenderSpinner, shouldSuspendBasePlayer]
   );
 
   const pauseForFullscreenOpen = React.useCallback(
@@ -600,6 +647,25 @@ export function Video(props: VideoProps) {
     pauseForFullscreenOpen();
   }, [isFullscreenOpen, pauseForFullscreenOpen]);
 
+  React.useEffect(() => {
+    if (!shouldSuspendBasePlayer) return;
+
+    pauseApi(apiRef.current);
+    setPlayerVisible(playerWrapRef.current, false);
+    syncSpinner(false);
+  }, [shouldSuspendBasePlayer, syncSpinner]);
+
+  React.useEffect(() => {
+    if (isClone || shouldSuspendBasePlayer || !everMounted) return;
+
+    requestAnimationFrame(() => {
+      const ready = resolveReady();
+      setPlayerVisible(playerWrapRef.current, ready);
+      syncSpinner(!ready);
+      if (ready) tryAutoplay();
+    });
+  }, [everMounted, isClone, resolveReady, shouldSuspendBasePlayer, syncSpinner, tryAutoplay]);
+
   const readyCleanupRef = React.useRef<(() => void) | null>(null);
   const guardedPlyrRef = React.useRef<any>(null);
 
@@ -628,8 +694,9 @@ export function Video(props: VideoProps) {
       pauseForFullscreenOpen(apiOrNull);
 
       requestAnimationFrame(() => {
-        setPlayerVisible(playerWrapRef.current, readyRef.current);
-        syncSpinner(!readyRef.current);
+        const ready = resolveReady(apiOrNull);
+        setPlayerVisible(playerWrapRef.current, ready);
+        syncSpinner(!ready);
       });
 
       if (!api) {
@@ -696,6 +763,7 @@ export function Video(props: VideoProps) {
       props.onApi,
       pauseForFullscreenOpen,
       registerApiByIndex,
+      resolveReady,
       syncRuntimeRegistration,
       syncSpinner,
       posterSrc,
@@ -724,7 +792,11 @@ export function Video(props: VideoProps) {
       setPlayerVisible(playerWrapRef.current, false);
       syncSpinner(true);
     });
-  }, [props.src, syncSpinner]);
+    // This is a media-source reset. Do not depend on syncSpinner; it changes when
+    // fullscreen opens/closes and would incorrectly put a ready player back into
+    // its loading state after closing fullscreen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.src]);
 
   React.useEffect(() => {
     if (isClone) return;
@@ -779,9 +851,10 @@ export function Video(props: VideoProps) {
           }
 
           requestAnimationFrame(() => {
-            setPlayerVisible(playerWrapRef.current, readyRef.current);
+            const ready = resolveReady();
+            setPlayerVisible(playerWrapRef.current, ready);
             syncSpinner(false);
-            if (readyRef.current) tryAutoplay();
+            if (ready) tryAutoplay();
           });
           return;
         }
@@ -797,9 +870,10 @@ export function Video(props: VideoProps) {
         }
 
         requestAnimationFrame(() => {
-          setPlayerVisible(playerWrapRef.current, readyRef.current);
-          syncSpinner(!readyRef.current);
-          if (readyRef.current) tryAutoplay();
+          const ready = resolveReady();
+          setPlayerVisible(playerWrapRef.current, ready);
+          syncSpinner(!ready);
+          if (ready) tryAutoplay();
         });
       },
       {
@@ -811,7 +885,7 @@ export function Video(props: VideoProps) {
 
     io.observe(el);
     return () => io.disconnect();
-  }, [gateRef, viewportRootRef, revealed, isClone, syncSpinner, lazyEnabled, core, tryAutoplay]);
+  }, [gateRef, viewportRootRef, revealed, isClone, resolveReady, syncSpinner, lazyEnabled, core, tryAutoplay]);
 
   React.useEffect(() => {
     if (isClone) return;
@@ -860,6 +934,10 @@ export function Video(props: VideoProps) {
     )
   ) : null;
 
+  const suspendedFrameSrc = videoSnapshot?.frameSrc ?? posterSrc ?? null;
+  const shouldRenderSuspendedFrame = shouldSuspendBasePlayer;
+  const shouldMountPlayer = revealed && everMounted;
+
   React.useLayoutEffect(() => {
     const el = gateRef.current as HTMLElement | null;
     if (!el) return;
@@ -905,6 +983,41 @@ export function Video(props: VideoProps) {
     >
       {spinnerEl}
 
+      {shouldRenderSuspendedFrame ? (
+        <div
+          data-rmg-video-suspended="true"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 2,
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+            pointerEvents: 'none',
+            background: '#000',
+          }}
+        >
+          {suspendedFrameSrc ? (
+            <img
+              src={suspendedFrameSrc}
+              alt=""
+              draggable={false}
+              decoding="async"
+              style={{
+                display: 'block',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                userSelect: 'none',
+                pointerEvents: 'none',
+              }}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
       {shouldUsePosterShield ? (
         <div
           aria-hidden="true"
@@ -948,14 +1061,16 @@ export function Video(props: VideoProps) {
           zIndex: 1,
           width: '100%',
           height: '100%',
-          pointerEvents: 'auto',
           opacity: 0,
           transition: `opacity ${PLAYER_FADE_MS}ms ease`,
           willChange: 'opacity',
           background: 'transparent',
+          display: shouldSuspendBasePlayer ? 'none' : undefined,
+          visibility: shouldSuspendBasePlayer ? 'hidden' : undefined,
+          pointerEvents: shouldSuspendBasePlayer ? 'none' : 'auto',
         }}
       >
-        {revealed && everMounted ? (
+        {shouldMountPlayer ? (
           <Plyr ref={handlePlyrRef as any} source={source} options={options} />
         ) : null}
       </div>

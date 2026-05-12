@@ -7,6 +7,10 @@ export function buildScopedSkeletonCountCss(args: {
   breakpointMap: BreakpointMap;
   maxSlots: number;
   visibleSlotsForCount?: (count: number, maxSlots: number) => number[];
+  slotOrderForCount?: (
+    count: number,
+    maxSlots: number
+  ) => Array<{ slot: number; order: number }>;
 }): { cssText: string; ssrBaseCount: number } {
   const {
     scopeId,
@@ -15,6 +19,7 @@ export function buildScopedSkeletonCountCss(args: {
     breakpointMap,
     maxSlots,
     visibleSlotsForCount,
+    slotOrderForCount,
   } = args;
 
   const rules = normalizeResponsiveToMinWidthRules(responsiveCount, fallbackCount, breakpointMap);
@@ -48,11 +53,24 @@ export function buildScopedSkeletonCountCss(args: {
   };
 
   const showResolvedSlots = (count: number) => {
-    const slots = resolveVisibleSlots(count);
+    const orderedSlots = slotOrderForCount?.(normalizeCount(count), maxSlots);
+    const slots = orderedSlots?.length
+      ? orderedSlots
+          .map(({ slot }) => Math.floor(slot))
+          .filter((slot) => Number.isFinite(slot) && slot >= 1 && slot <= maxSlots)
+      : resolveVisibleSlots(count);
     if (!slots.length) return "";
 
-    return slots
-      .map((slot) => `${rootSel} [data-rmg-skel-slot="${slot}"]{ display:block; }`)
+    const orderBySlot = new Map(
+      (orderedSlots ?? []).map(({ slot, order }) => [Math.floor(slot), order])
+    );
+
+    return Array.from(new Set(slots))
+      .map((slot) => {
+        const order = orderBySlot.get(slot);
+        const orderDecl = Number.isFinite(order) ? ` order:${order};` : "";
+        return `${rootSel} [data-rmg-skel-slot="${slot}"]{ display:block;${orderDecl} }`;
+      })
       .join("\n");
   };
 

@@ -78,7 +78,17 @@ Upon termination, you must cease all use and distribution of the Software and de
 
 ---
 
-## 7. Contact
+## 7. Third-Party Notices
+
+The Software may include portions of third-party open-source software that are subject to their own license notices.
+
+React Motion Gallery's slider engine includes portions of code derived from Embla Carousel, which is MIT licensed. The preserved Embla Carousel notice is available in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+
+Nothing in this License alters the rights granted by third-party licenses for their respective portions.
+
+---
+
+## 8. Contact
 
 For commercial licensing, enterprise plans, or other inquiries, contact:
 
@@ -87,7 +97,7 @@ For commercial licensing, enterprise plans, or other inquiries, contact:
 
 ---
 
-## 8. Summary (Non-Legal)
+## 9. Summary (Non-Legal)
 
 - ✅ Free for personal and non-commercial use  
 - 💼 Paid license required for commercial or revenue-generating use  

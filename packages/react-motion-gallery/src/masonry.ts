@@ -1,4 +1,12 @@
 export { default, default as Masonry } from "./Gallery/masonry";
-export { DEFAULT_MASONRY } from "./Gallery/masonry/defaults";
+export { useMasonryReady } from "./masonry-ready";
 
-export type { MasonryOptions, MasonryLazyLoadOptions } from "./Gallery/masonry/types";
+export type {
+  MasonryHandle,
+  MasonryItemProps,
+  MasonryLazyLoadOptions,
+  MasonryOptions,
+  MasonrySpan,
+  ResponsiveMasonrySpan,
+} from "./Gallery/masonry/types";
+export type { MasonryReadyController } from "./masonry-ready";

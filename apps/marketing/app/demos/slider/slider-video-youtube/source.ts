@@ -1,44 +1,54 @@
-export const source = String.raw`"use client";
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+'use client';
 
-import "react-motion-gallery/styles.css";
 import {
   GalleryCore,
   Slider,
+  useSliderReady,
   Video,
+  type MediaItem,
   toMediaItems,
   useFullscreenController,
-} from "react-motion-gallery";
+} from "../../../../../../packages/react-motion-gallery/src";
+import { SliderSkeleton } from "../../../../../../packages/react-motion-gallery/src/skeleton-slider";
+import { fullscreenSlider } from "../../../../../../packages/react-motion-gallery/src/fullscreen-slider";
+import { fullscreenZoomPan } from "../../../../../../packages/react-motion-gallery/src/fullscreen-zoom-pan";
+import { fullscreenVideo } from "../../../../../../packages/react-motion-gallery/src/fullscreen-video";
+import { sliderScrollbar } from "../../../../../../packages/react-motion-gallery/src/slider-scrollbar";
+import { sliderArrows } from "../../../../../../packages/react-motion-gallery/src/slider-arrows";
+import { sliderFullscreen } from "../../../../../../packages/react-motion-gallery/src/slider-fullscreen";
+import { sliderRipple } from "../../../../../../packages/react-motion-gallery/src/slider-ripple";
 import styles from "./slider-video-youtube-demo.module.css";
 
 export function SliderVideoYoutubeDemo() {
 const URLS = [
   {
-    kind: "video",
+    kind: "video" as const,
     src: "zT5RMvM0gaI",
     poster: "https://i.ytimg.com/vi/zT5RMvM0gaI/hqdefault.jpg"
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "c2h1T06-3vQ",
     poster: "https://i.ytimg.com/vi/c2h1T06-3vQ/hqdefault.jpg"
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "mTM7F-5999Q",
     poster: "https://i.ytimg.com/vi/mTM7F-5999Q/hqdefault.jpg"
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "cJLL_gNpBb8",
     poster: "https://i.ytimg.com/vi/cJLL_gNpBb8/hqdefault.jpg"
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "IxF55qB4CuQ",
     poster: "https://i.ytimg.com/vi/IxF55qB4CuQ/hqdefault.jpg"
   },
   {
-    kind: "video",
+    kind: "video" as const,
     src: "IGOaJnvQdng",
     poster: "https://i.ytimg.com/vi/IGOaJnvQdng/hqdefault.jpg"
   },
@@ -46,9 +56,9 @@ const URLS = [
 
 function buildYoutubeSource(src: string, poster?: string) {
   return {
-    type: "video",
+    type: "video" as const,
     poster,
-    sources: [{ src, provider: "youtube" }],
+    sources: [{ src, provider: "youtube" as const }],
   };
 }
 
@@ -60,7 +70,11 @@ const YOUTUBE_OPTIONS = {
   },
 };
 
-function buildYoutubeFullscreenSource(item) {
+function buildYoutubeFullscreenSource(item: MediaItem) {
+  if (item.kind !== "video") {
+    return buildYoutubeSource("");
+  }
+
   return buildYoutubeSource(item.src, item.poster);
 }
 
@@ -81,6 +95,7 @@ function Slide({
         width="24"
         height="24"
         className={styles.open_fullscreen_icon}
+        data-rmg-fullscreen-trigger
       />
       <Video
         src={src}
@@ -97,6 +112,7 @@ function Slide({
 function FullscreenAddon() {
 
   const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
       video: {
@@ -111,33 +127,13 @@ function FullscreenAddon() {
 
 const MEDIA = toMediaItems(URLS);
 
-return (
+const { ref: sliderRef, ready: sliderReady } = useSliderReady();
+
+  return (
   <GalleryCore layout="slider" fullscreenItems={MEDIA}>
-    <Slider
-      controls={{
-        dots: {
-          enabled: false,
-        },
-        scrollbar: {
-          enabled: true,
-          root: {
-            style: {
-              bottom: "0px"
-            }
-          }
-        },
-      }}
-      elements={{
-        viewport: {
-          style: {
-            paddingBottom: "52px"
-          }
-        }
-      }}
-      transitions={{
-        loading: {
-          skeletonCount: 2,
-          skeleton: {
+    <SliderSkeleton
+        layout={{
+              visibleCount: 2,
             mode: "peek",
             layout: {
               kind: "slider",
@@ -145,6 +141,7 @@ return (
               style: {
                 gap: 20,
               },
+              itemStretch: false,
               item: {
                 kind: "rect",
                 style: {
@@ -154,23 +151,98 @@ return (
                   borderRadius: 12,
                 },
               },
-              children: [
+              rowHeightCompensation: {
+                0: 46,
+                768: 52,
+              },
+              overlays: [
                 {
-                  kind: "rect",
+                  kind: "stack",
                   style: {
-                    width: 162,
-                    height: 32,
-                    borderRadius: 999,
-                    alignSelf: "center",
-                    marginTop: "20px",
+                    position: "absolute",
+                    left: "50%",
+                    bottom: 0,
+                    transform: "translateX(-50%)",
+                    width: "min(60%, 28rem)",
+                    height: 16,
+                    zIndex: 3,
                   },
+                  children: [
+                    {
+                      kind: "row",
+                      style: {
+                        position: "absolute",
+                        left: 0,
+                        top: 5,
+                        width: "100%",
+                        height: 6,
+                        borderRadius: 999,
+                        backgroundColor: "rgba(15, 23, 42, 0.16)",
+                      },
+                      children: [],
+                    },
+                    {
+                      kind: "row",
+                      style: {
+                        position: "absolute",
+                        left: 0,
+                        top: 5,
+                        width: 0,
+                        height: 6,
+                        borderRadius: 999,
+                        backgroundColor: "rgba(80, 163, 255, 0.28)",
+                      },
+                      children: [],
+                    },
+                    {
+                      kind: "row",
+                      style: {
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        width: 16,
+                        height: 16,
+                        borderRadius: 999,
+                        backgroundColor: "rgb(80, 163, 255)",
+                        boxShadow: "0 4px 14px rgba(80, 163, 255, 0.28)",
+                      },
+                      children: [],
+                    },
+                  ],
                 },
               ],
-            }
-          }
+            },
+          }}
+        ready={sliderReady}
+      >
+      <Slider
+        ref={sliderRef}
+
+      elements={{
+        viewport: {
+          className: styles.slider_viewport
         }
       }}
-    >
+        plugins={[
+          sliderFullscreen(),
+          sliderRipple(),
+          sliderArrows({
+          arrow: {
+            style: {
+              top: "43%"
+            }
+          }
+        }),
+          sliderScrollbar({
+          enabled: true,
+          root: {
+            style: {
+              bottom: "0px"
+            }
+          }
+        }),
+        ]}
+      >
       {MEDIA.map((m, i) => {
         return (
           <Slide
@@ -179,10 +251,13 @@ return (
             poster={m.kind === "video" ? m.poster : ""}
             i={i}
           />
-        );
+        )
+      ;
       })}
     </Slider>
+      </SliderSkeleton>
     <FullscreenAddon />
   </GalleryCore>
 );
-}`;
+}
+`;

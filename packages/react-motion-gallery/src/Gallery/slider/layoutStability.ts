@@ -4,6 +4,31 @@ export function roundSliderLayoutMetric(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+export function resolveSliderMeasuredSize(args: {
+  rectSize: number;
+  scale?: number;
+  offsetSize: number;
+  marginExtentSize?: number;
+}): number {
+  const { rectSize, scale, offsetSize, marginExtentSize } = args;
+
+  const normalizedRect =
+    Number.isFinite(rectSize) && rectSize > 0
+      ? Number.isFinite(scale) && (scale ?? 0) > 0
+        ? rectSize / (scale as number)
+        : rectSize
+      : 0;
+
+  const intrinsicSize = Math.max(
+    Number.isFinite(offsetSize) && offsetSize > 0 ? offsetSize : 0,
+    Number.isFinite(marginExtentSize) && (marginExtentSize ?? 0) > 0
+      ? (marginExtentSize as number)
+      : 0
+  );
+
+  return Math.max(normalizedRect, intrinsicSize);
+}
+
 export function fitsWithinSliderViewport(occupied: number, viewport: number): boolean {
   return occupied <= viewport + SLIDER_LAYOUT_EPSILON;
 }

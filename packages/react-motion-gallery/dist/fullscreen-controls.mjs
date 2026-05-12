@@ -1,0 +1,1 @@
+import {a}from'./chunk-V7DPXRZF.mjs';function r(o){return a("controls",{options:o?{controls:o}:void 0})}export{r as fullscreenControls};

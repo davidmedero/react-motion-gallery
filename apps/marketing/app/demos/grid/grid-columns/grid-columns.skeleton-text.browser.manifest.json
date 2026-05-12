@@ -1,0 +1,79 @@
+{
+  "url": "http://127.0.0.1:3000/demos?demo=grid-columns&skeletonMeasure=content",
+  "outputFile": "./grid-columns.skeleton-text.generated.ts",
+  "moduleExportName": "gridColumnsSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1600,
+  "viewportHeight": 1800,
+  "viewportWorkers": 16,
+  "settleMs": 120,
+  "lineMeasurementMethod": "domRange",
+  "breakpointStrategy": "lineChanges",
+  "barWidthUnit": "px",
+  "targets": [
+    {
+      "exportName": "leadSpanTitle",
+      "selector": "[data-skeleton-text-id='leadSpanTitle']"
+    },
+    {
+      "exportName": "leadSpanBody",
+      "selector": "[data-skeleton-text-id='leadSpanBody']"
+    },
+    {
+      "exportName": "wideTileTitle",
+      "selector": "[data-skeleton-text-id='wideTileTitle']"
+    },
+    {
+      "exportName": "wideTileBody",
+      "selector": "[data-skeleton-text-id='wideTileBody']"
+    },
+    {
+      "exportName": "tightTileTitle",
+      "selector": "[data-skeleton-text-id='tightTileTitle']"
+    },
+    {
+      "exportName": "tightTileBody",
+      "selector": "[data-skeleton-text-id='tightTileBody']"
+    },
+    {
+      "exportName": "portraitOneTitle",
+      "selector": "[data-skeleton-text-id='portraitOneTitle']"
+    },
+    {
+      "exportName": "portraitOneBody",
+      "selector": "[data-skeleton-text-id='portraitOneBody']"
+    },
+    {
+      "exportName": "portraitTwoTitle",
+      "selector": "[data-skeleton-text-id='portraitTwoTitle']"
+    },
+    {
+      "exportName": "portraitTwoBody",
+      "selector": "[data-skeleton-text-id='portraitTwoBody']"
+    },
+    {
+      "exportName": "portraitThreeTitle",
+      "selector": "[data-skeleton-text-id='portraitThreeTitle']"
+    },
+    {
+      "exportName": "portraitThreeBody",
+      "selector": "[data-skeleton-text-id='portraitThreeBody']"
+    },
+    {
+      "exportName": "narrowPortraitTitle",
+      "selector": "[data-skeleton-text-id='narrowPortraitTitle']"
+    },
+    {
+      "exportName": "narrowPortraitBody",
+      "selector": "[data-skeleton-text-id='narrowPortraitBody']"
+    },
+    {
+      "exportName": "closingPanoramaTitle",
+      "selector": "[data-skeleton-text-id='closingPanoramaTitle']"
+    },
+    {
+      "exportName": "closingPanoramaBody",
+      "selector": "[data-skeleton-text-id='closingPanoramaBody']"
+    }
+  ]
+}
