@@ -29,16 +29,16 @@ type Scenario = {
 };
 
 const POSTER_VIDEO: VideoAsset = {
-  src: "https://www.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
+  src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
   poster:
-    "https://www.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
   alt: "Sed ut perspiciatis unde",
 };
 
 const INLINE_VIDEO: VideoAsset = {
-  src: "https://www.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+  src: "https://cdn.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
   poster:
-    "https://www.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
   alt: "Nemo enim ipsam voluptatem",
 };
 

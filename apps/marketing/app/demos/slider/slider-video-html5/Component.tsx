@@ -20,28 +20,28 @@ import styles from "./slider-video-html5-demo.module.css";
 export function SliderVideoHtml5Demo() {
   const URLS = [
     {
-      src: "https://www.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
-      poster: "https://www.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg"
+      src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
+      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg"
     },
     {
-      src: "https://www.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-      poster: "https://www.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg"
+      src: "https://cdn.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg"
     },
     {
-      src: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
-      poster: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg"
+      src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
+      poster: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg"
     },
     {
-      src: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
-      poster: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg"
+      src: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
+      poster: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg"
     },
     {
-      src: "https://www.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps.mp4",
-      poster: "https://www.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps-0.jpg"
+      src: "https://cdn.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps.mp4",
+      poster: "https://cdn.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps-0.jpg"
     },
     {
-      src: "https://www.react-motion-gallery.com/slider-html/9694226-hd_1920_1080_25fps.mp4",
-      poster: "https://www.react-motion-gallery.com/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg"
+      src: "https://cdn.react-motion-gallery.com/slider-html/9694226-hd_1920_1080_25fps.mp4",
+      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg"
     },
   ];
 

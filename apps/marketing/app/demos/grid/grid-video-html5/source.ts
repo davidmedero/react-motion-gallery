@@ -33,26 +33,26 @@ type GeneratedSkeletonTextEntry = {
 
 const ITEMS = [
   {
-    src: "https://www.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://www.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
+    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
     title: "Lorem ipsum dolor sit amet",
     body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
-    src: "https://www.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-    poster: "https://www.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    src: "https://cdn.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   },
   {
-    src: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
-    poster: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
+    src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
+    poster: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
     title: "Duis aute irure dolor",
     body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
   },
   {
-    src: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
-    poster: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
+    src: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
+    poster: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
     title: "Excepteur sint occaecat",
     body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   },

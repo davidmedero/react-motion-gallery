@@ -1783,7 +1783,7 @@ function DemosPageContent(props: {
                 <span className={styles.sidebarKicker}>Browse</span>
                 <strong className={styles.sidebarTitle}>{DEMOS.length} demos</strong>
                 <p className={styles.sidebarCopy}>
-                  All demos come with pre-made code blocks so you can get started instantly
+                  Resize or refresh the page while viewing a demo to see layouts reflow and skeletons fade out.
                 </p>
               </div>
 

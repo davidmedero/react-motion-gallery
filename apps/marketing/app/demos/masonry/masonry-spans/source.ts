@@ -87,8 +87,8 @@ const ITEMS: DemoItem[] = [
   {
     displayIndex: 2,
     kind: "video",
-    src: "https://www.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://www.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
+    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
     label: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -118,8 +118,8 @@ const ITEMS: DemoItem[] = [
   {
     displayIndex: 5,
     kind: "video",
-    src: "https://www.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-    poster: "https://www.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    src: "https://cdn.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
     label: "Elit",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",

@@ -38,8 +38,8 @@ const ITEMS = [
   {
     displayIndex: 2,
     kind: "video" as const,
-    src: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
-    poster: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
+    src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
+    poster: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
     label: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -68,8 +68,8 @@ const ITEMS = [
   {
     displayIndex: 5,
     kind: "video" as const,
-    src: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
-    poster: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
+    src: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
+    poster: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
     label: "Elit",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",

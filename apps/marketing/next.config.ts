@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'www.react-motion-gallery.com',
+        hostname: 'cdn.react-motion-gallery.com',
         pathname: '/**'
       },
     ],
