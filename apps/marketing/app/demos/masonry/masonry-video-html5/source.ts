@@ -69,7 +69,7 @@ const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
+    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg",
     title: "Duis aute irure dolor",
     body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
     ratio: "16 / 10",
@@ -78,7 +78,7 @@ const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
+    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg",
     title: "Excepteur sint occaecat",
     body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     ratio: "16 / 10",
@@ -87,7 +87,7 @@ const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://cdn.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps-0.jpg",
+    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/9150545-hd_1920_1080_24fps-0.jpg",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
     ratio: "16 / 10",

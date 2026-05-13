@@ -159,12 +159,12 @@ const VIDEO_MEDIA = {
   forest: {
     src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
     poster:
-      "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
+      "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg",
   },
   night: {
     src: "https://cdn.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps.mp4",
     poster:
-      "https://cdn.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps-0.jpg",
+      "https://cdn.react-motion-gallery.com/slider-html-loop/9150545-hd_1920_1080_24fps-0.jpg",
   },
 };
 

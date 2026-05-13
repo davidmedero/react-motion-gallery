@@ -29,15 +29,15 @@ export function SliderVideoHtml5LoopDemo() {
     },
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
-      poster: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg"
+      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg"
     },
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
-      poster: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg"
+      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg"
     },
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps.mp4",
-      poster: "https://cdn.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps-0.jpg"
+      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/9150545-hd_1920_1080_24fps-0.jpg"
     },
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/9694226-hd_1920_1080_25fps.mp4",
