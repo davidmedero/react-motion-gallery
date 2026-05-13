@@ -22,7 +22,7 @@ export function Nav() {
         {/* Left: Logo */}
         <Link href="/" className="min-w-0 max-w-150 shrink">
           <Image
-            src="https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/nav/rmg-logo-v6.png"
+            src="https://www.react-motion-gallery.com/nav/rmg-logo-v6.png"
             alt="React Motion Gallery"
             width={640}
             height={28}

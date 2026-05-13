@@ -43,16 +43,16 @@ type ArticleCard = {
 
 const VIDEO_ASSETS = [
   {
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
   },
   {
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
   },
   {
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
   },
 ] as const;
 

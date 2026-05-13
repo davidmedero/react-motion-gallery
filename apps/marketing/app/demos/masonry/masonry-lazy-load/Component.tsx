@@ -310,7 +310,7 @@ export function MasonryLazyLoadDemo() {
       <MasonrySkeleton
         layout={LAZY_SKELETON}
         ready={masonryReady}
-        timing={{ exitMs: 2000 }}
+        timing={{ exitMs: 1200 }}
         masonry={{
           count: ITEMS.length,
           columns: { 0: 1, 720: 2, 1140: 3 },

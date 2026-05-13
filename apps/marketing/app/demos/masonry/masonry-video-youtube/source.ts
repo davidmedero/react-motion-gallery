@@ -324,7 +324,7 @@ export function MasonryVideoYoutubeDemo() {
       <MasonrySkeleton
         layout={YOUTUBE_SKELETON}
         ready={masonryReady}
-        timing={{ exitMs: 2000 }}
+        timing={{ exitMs: 1200 }}
         masonry={{
           count: ITEMS.length,
           columns: { 0: 1, 820: 2, 1280: 4 },

@@ -50,8 +50,8 @@ type MasonryVideoItem = {
 const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
     title: "Lorem ipsum dolor sit amet",
     body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     ratio: "16 / 10",
@@ -59,8 +59,8 @@ const ITEMS: MasonryVideoItem[] = [
   },
   {
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     ratio: "21 / 10",
@@ -68,8 +68,8 @@ const ITEMS: MasonryVideoItem[] = [
   },
   {
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
     title: "Duis aute irure dolor",
     body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
     ratio: "16 / 10",
@@ -77,8 +77,8 @@ const ITEMS: MasonryVideoItem[] = [
   },
   {
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
     title: "Excepteur sint occaecat",
     body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     ratio: "16 / 10",
@@ -86,8 +86,8 @@ const ITEMS: MasonryVideoItem[] = [
   },
   {
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9150545-hd_1920_1080_24fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps-0.jpg",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
     ratio: "16 / 10",
@@ -95,8 +95,8 @@ const ITEMS: MasonryVideoItem[] = [
   },
   {
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/9694226-hd_1920_1080_25fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/9694226-hd_1920_1080_25fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg",
     title: "Nemo enim ipsam voluptatem",
     body: "Quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores.",
     ratio: "21 / 10",
@@ -314,7 +314,7 @@ export function MasonryVideoHtml5Demo() {
       <MasonrySkeleton
         layout={HTML5_SKELETON}
         ready={masonryReady}
-        timing={{ exitMs: 2000 }}
+        timing={{ exitMs: 1200 }}
         masonry={{
           count: ITEMS.length,
           columns: { 0: 1, 820: 2, 1280: 4 },

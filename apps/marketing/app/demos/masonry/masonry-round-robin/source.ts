@@ -38,8 +38,8 @@ const ITEMS = [
   {
     displayIndex: 2,
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps-0.jpg",
     label: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -68,8 +68,8 @@ const ITEMS = [
   {
     displayIndex: 5,
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps-0.jpg",
     label: "Elit",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",
@@ -356,7 +356,7 @@ export function MasonryRoundRobinDemo() {
       <MasonrySkeleton
         layout={ROUND_ROBIN_SKELETON}
         ready={masonryReady}
-        timing={{ exitMs: 2000 }}
+        timing={{ exitMs: 1200 }}
         masonry={{
           count: ITEMS.length,
           columns: { 0: 1, 720: 2, 1140: 3 },

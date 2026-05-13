@@ -59,8 +59,8 @@ const ITEMS = [
   {
     displayIndex: 2,
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
     label: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -89,8 +89,8 @@ const ITEMS = [
   {
     displayIndex: 5,
     kind: "video" as const,
-    src: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-    poster: "https://pub-139e4c18b4ce45638dd0349fdde9389c.r2.dev/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    src: "https://www.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
+    poster: "https://www.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
     label: "Elit",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",
@@ -385,16 +385,12 @@ export function MasonryBalancedDemo() {
       <MasonrySkeleton
         layout={BALANCED_SKELETON}
         ready={masonryReady}
-        timing={{ exitMs: 2000 }}
+        timing={{ exitMs: 1200 }}
         masonry={{
           count: ITEMS.length,
           columns: { 0: 1, 720: 2, 1140: 3 },
           gap: { 0: 12, 1140: 18 },
         }}
-        // force={{
-        //   enabled: true,
-        //   showContent: true
-        // }}
       >
         <Masonry
           ref={masonryRef}
