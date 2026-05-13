@@ -169,6 +169,179 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/video` | `Video` and optional Plyr-backed video types |
 | `react-motion-gallery/zoomPan` | `ZoomPanImage` and zoom/pan types |
 
+## MCP server
+
+This repository includes `react-motion-gallery-mcp`, a local Model Context Protocol server for AI-assisted gallery design and integration. It runs over stdio and gives MCP-capable clients a structured way to inspect React Motion Gallery patterns, generate starter components, audit installs, and scaffold skeleton text measurement manifests.
+
+From a local checkout, build the server first:
+
+```bash
+npm install
+npm run build --workspace packages/react-motion-gallery-mcp
+```
+
+Then add it to your MCP client config. Replace the path with the absolute path to your checkout:
+
+```json
+{
+  "mcpServers": {
+    "react-motion-gallery": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/react-motion-gallery/packages/react-motion-gallery-mcp/dist/server.js"
+      ]
+    }
+  }
+}
+```
+
+Once connected, start with workflow classification. The MCP server treats requests as **layout intent plus loading fidelity**, so agents can avoid unnecessary skeleton work when the user only asked for a layout.
+
+```json
+{
+  "goal": "Build a pricing card grid with simple skeleton loading",
+  "hasExistingLayout": false,
+  "layoutHint": "grid",
+  "framework": "next"
+}
+```
+
+The classifier returns one of these modes:
+
+```text
+User goal: "Build a responsive gallery slider."
+Workflow: layoutOnly
+Use: recommend_pattern -> get_demo -> generate_gallery_component
+Skip: skeleton tools
+```
+
+```text
+User goal: "Build a product grid with image placeholders while loading."
+Workflow: layoutWithNonTextSkeleton
+Use: Skeleton rect/media nodes or gallery skeleton wrappers
+Skip: browser text measurement
+```
+
+```text
+User goal: "Build a card layout with simple text skeleton lines."
+Workflow: layoutWithHandAuthoredTextSkeleton
+Use: text skeleton nodes with hand-authored lines/barWidth values
+Skip: generated sidecar
+```
+
+```text
+User goal: "Build a masonry layout where skeleton text matches real responsive copy."
+Workflow: layoutWithBrowserMeasuredTextSkeleton
+Use: stable selectors -> scaffold_skeleton_text -> generate:skeleton-text-module --analysis-output -> import sidecar
+```
+
+When a connected agent needs context, it should read `rmg://context/agent-brief`, then use targeted resources such as `rmg://guides/layout-selection`, `rmg://guides/loading-fidelity`, `rmg://guides/browser-measured-skeletons`, `rmg://docs`, `rmg://catalog/demos`, and `rmg://examples/{demoId}`.
+
+Read a specific example:
+
+```text
+rmg://examples/slider-video-html5
+```
+
+Call `recommend_pattern` with your UI goal to choose the right layout, imports, demos, and gotchas.
+
+```json
+{
+  "goal": "Responsive masonry gallery with lazy-loaded images and fullscreen preview",
+  "layout": "masonry",
+  "features": ["lazy-load", "fullscreen"],
+  "mediaKinds": ["image"],
+  "framework": "next"
+}
+```
+
+Call `classify_gallery_workflow` when the user goal is ambiguous about loading fidelity.
+
+```json
+{
+  "goal": "Add a skeleton that matches the real responsive card copy",
+  "hasExistingLayout": true,
+  "layoutHint": "custom",
+  "framework": "next"
+}
+```
+
+Call `search_demos` to find matching examples by category, tags, component, media kind, or query.
+
+```json
+{
+  "category": "slider",
+  "mediaKind": "video",
+  "query": "html5",
+  "limit": 3
+}
+```
+
+Call `get_demo` to retrieve consumer-ready TSX/CSS for a specific demo.
+
+```json
+{
+  "demoId": "slider-video-html5",
+  "includeExtraFiles": true
+}
+```
+
+Call `audit_project` with a `projectRoot` to check installs, stylesheet imports, optional video peers, and common Next.js client-component issues.
+
+```json
+{
+  "projectRoot": "/absolute/path/to/your-app"
+}
+```
+
+Call `generate_gallery_component` to turn a selected demo into renamed TSX/CSS output for your app.
+
+```json
+{
+  "demoId": "masonry-balanced",
+  "componentName": "ProjectGallery",
+  "cssModuleName": "ProjectGallery.module.css"
+}
+```
+
+Call `write_gallery_files` after reviewing generated output. Pass `apply: true` only when you want the server to write files under `projectRoot`.
+
+```json
+{
+  "projectRoot": "/absolute/path/to/your-app",
+  "demoId": "masonry-balanced",
+  "componentName": "ProjectGallery",
+  "componentPath": "src/components/ProjectGallery.tsx",
+  "cssPath": "src/components/ProjectGallery.module.css",
+  "apply": true
+}
+```
+
+Call `scaffold_skeleton_text` to create a browser-measurement manifest for the skeleton text workflow.
+
+```json
+{
+  "projectRoot": "/absolute/path/to/app",
+  "manifestPath": "src/components/pricing.skeleton-text.browser.manifest.json",
+  "url": "http://127.0.0.1:3000/pricing?skeletonMeasure=content",
+  "outputFile": "src/components/pricing.skeleton-text.generated.ts",
+  "moduleExportName": "pricingSkeletonText",
+  "barWidthUnit": "px",
+  "includeTextMetrics": true,
+  "targets": [
+    {
+      "exportName": "pricingCardTitle",
+      "selector": "[data-skeleton-text-id='pricingCardTitle']"
+    }
+  ],
+  "apply": true
+}
+```
+
+Use flat `targets` for ordinary DOM text in any layout: sliders, grids, masonry cards, entries, thumbnails, flex layouts, app shells, pricing cards, and custom UI. Add the optional `slider`, `masonry`, or `entries` manifest blocks only when those specialized layouts need canonical item measurement, geometry readiness, or row readiness.
+
+The file-writing tools default to dry runs unless `apply: true` is passed, and they refuse to write outside the provided `projectRoot`.
+
 ## Acknowledgements
 
 React Motion Gallery's slider engine includes portions of code derived from [Embla Carousel](https://github.com/davidjerleke/embla-carousel), which is MIT licensed. Those portions have been substantially adapted for React Motion Gallery's React architecture, public API, transition system, fullscreen integration, loading layers, and media workflows.
@@ -1551,9 +1724,9 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `controls.counter.render` | `({ index, count }) => ReactNode` | `—` | Custom counter renderer. |
 | `caption.className` | `string` | `—` | Caption root class. |
 | `caption.style` | `React.CSSProperties` | `—` | Caption root style. |
-| `caption.placement` | `"top" \| "right" \| "bottom" \| "left"` | `—` | Preferred caption placement. |
-| `caption.width` | `number` | `—` | Caption area width. |
-| `caption.height` | `number` | `—` | Caption area height. |
+| `caption.placement` | `FsCaptionPlacement \| FsCaptionPlacement[] \| Record<string, FsCaptionPlacement>` | `—` | Preferred caption placement. Responsive maps use the `GalleryCore.breakpoints` keys such as `xs`, `md`, and `lg`. |
+| `caption.width` | `number \| string \| Record<string, number \| string>` | `—` | Caption area width. Strings can use `px` or `%`; percentages are viewport-relative in fullscreen. Responsive maps use breakpoint keys. |
+| `caption.height` | `number \| string \| Record<string, number \| string>` | `—` | Caption area height. Strings can use `px` or `%`; percentages are viewport-relative in fullscreen. Responsive maps use breakpoint keys. |
 | `caption.breakpoint` | `number` | `—` | Viewport cutoff for switching placement logic. |
 | `caption.render` | `({ item, index, isZoomed }) => ReactNode` | `—` | Custom caption renderer. |
 | `caption.layout` | `"overlay" \| "slide"` | `—` | Chooses whether the caption overlays the media or lives in the slide layout. |
@@ -1596,6 +1769,79 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `lazyLoad.videos.spinnerStyle` | `React.CSSProperties` | `—` | Spinner style for video slides. |
 
 Fullscreen `effects.crossfade.wheel` uses the same `true`, `false`, or object form as slider wheel crossfade. Its `durationMs` default follows fullscreen `effects.crossfade.durationMs`, which defaults to `120`.
+
+### Responsive fullscreen captions
+
+Use `fullscreenCaptions()` with `fullscreenSlider()` when fullscreen slides need captions. Caption placement and size accept responsive values. This example places captions on the right at desktop widths, reserves 50% of the fullscreen viewport for the caption area, and moves captions to the bottom on mobile:
+
+```typescript
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { fullscreenCaptions } from "react-motion-gallery/fullscreen/captions";
+
+const slides = [
+  {
+    title: "Lorem ipsum dolor sit amet",
+    description: "Consectetur adipiscing elit, sed do eiusmod tempor.",
+  },
+];
+
+function FullscreenAddon() {
+  const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenCaptions()],
+    fullscreen: {
+      enabled: true,
+      caption: {
+        layout: "overlay",
+        placement: {
+          xs: "bottom",
+          lg: "right",
+        },
+        width: {
+          lg: "50%",
+        },
+        style: {
+          padding: 0,
+        },
+        render: ({ index }) => {
+          const slide = slides[index];
+          if (!slide) return null;
+
+          return (
+            <div className="fullscreenCaption">
+              <p>{slide.title}</p>
+              <p>{slide.description}</p>
+            </div>
+          );
+        },
+      },
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+```
+
+For overlay captions, style the rendered caption content to fill the reserved caption surface when needed:
+
+```css
+.fullscreenCaption {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(18px, 3vw, 34px);
+}
+
+@media (max-width: 1199px) {
+  .fullscreenCaption {
+    justify-content: flex-end;
+    padding-bottom: 30px;
+  }
+}
+```
 
 ### Fullscreen callback and helper types
 

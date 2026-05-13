@@ -1,5 +1,6 @@
 import { componentCatalog, getDemoCatalog, serializeDemoMetadata } from "./catalog.js";
 import type { DemoCategoryId, DemoMetadata } from "./types.js";
+import { classifyGalleryWorkflow } from "./workflow.js";
 
 export type RecommendPatternArgs = {
   goal: string;
@@ -7,6 +8,7 @@ export type RecommendPatternArgs = {
   features?: string[];
   mediaKinds?: Array<"image" | "video" | "node">;
   framework?: "next" | "vite" | "react" | "unknown";
+  hasExistingLayout?: boolean;
   limit?: number;
 };
 
@@ -29,9 +31,16 @@ export function recommendPattern(args: RecommendPatternArgs) {
   const demos = scoreDemos(searchText, requestedFeatures, args.layout).slice(0, args.limit ?? 5);
   const install = buildInstallAdvice(searchText, args.mediaKinds ?? []);
   const gotchas = buildGotchas(searchText, args.framework);
+  const workflow = classifyGalleryWorkflow({
+    goal,
+    hasExistingLayout: args.hasExistingLayout,
+    layoutHint: args.layout,
+    framework: args.framework,
+  });
 
   return {
     goal,
+    workflow,
     recommendedComponents: components.map(({ component, score }) => ({
       ...component,
       score,
@@ -43,6 +52,8 @@ export function recommendPattern(args: RecommendPatternArgs) {
     install,
     gotchas,
     nextSteps: [
+      `Workflow mode: ${workflow.mode}.`,
+      ...workflow.nextSteps,
       "Call get_demo with the best demoId to inspect production-ready TSX and CSS.",
       "Call generate_gallery_component to rename the example for your app.",
       "Call write_gallery_files with apply: true only after reviewing the generated files.",

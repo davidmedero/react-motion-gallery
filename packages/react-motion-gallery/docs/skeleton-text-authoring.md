@@ -1,8 +1,37 @@
 # Skeleton Text Authoring
 
-Skeleton text authoring is now browser-only.
+Skeleton text authoring is browser-manifest driven when you need measured text fidelity. It is optional: many layouts can use no skeleton, non-text skeleton shapes, or hand-authored text skeleton values.
 
-The supported workflow measures real DOM text in a live page with headless Chrome, then emits `lines`, `barWidth`, `lastBarWidth`, and optionally `barHeight`/`lineHeight` values that match the existing skeleton authoring shapes.
+The supported browser workflow measures real DOM text in a live page with headless Chrome, then emits `lines`, `barWidth`, `lastBarWidth`, and optionally `barHeight`/`lineHeight` values that match the existing skeleton authoring shapes. It applies to any rendered DOM text: sliders, grids, masonry, entries, thumbnails, flex layouts, app shells, cards, and custom UI.
+
+## Loading fidelity modes
+
+```text
+User goal: "Build a responsive gallery slider."
+Workflow: layoutOnly
+Use: recommend_pattern -> get_demo -> generate_gallery_component
+Skip: skeleton tools
+```
+
+```text
+User goal: "Build a product grid with image placeholders while loading."
+Workflow: layoutWithNonTextSkeleton
+Use: Skeleton rect/media nodes or gallery skeleton wrappers
+Skip: browser text measurement
+```
+
+```text
+User goal: "Build a card layout with simple text skeleton lines."
+Workflow: layoutWithHandAuthoredTextSkeleton
+Use: text skeleton nodes with hand-authored lines/barWidth values
+Skip: generated sidecar
+```
+
+```text
+User goal: "Build a masonry layout where skeleton text matches real responsive copy."
+Workflow: layoutWithBrowserMeasuredTextSkeleton
+Use: stable selectors -> scaffold_skeleton_text -> generate:skeleton-text-module --analysis-output -> import sidecar
+```
 
 ## Runtime scope
 
@@ -12,7 +41,7 @@ This tooling lives under `src/dev/skeleton-text/` and is meant for development-t
 - It is not intended for production client execution.
 - It optimizes for accuracy and deterministic regeneration over speed.
 
-## Supported Workflow
+## Supported browser workflow
 
 The browser analyzer:
 
@@ -26,6 +55,8 @@ The browser analyzer:
 ## Browser manifest
 
 Both supported scripts consume a browser manifest.
+
+Use flat `targets` for ordinary DOM text in any layout:
 
 ```json
 {
@@ -42,7 +73,6 @@ Both supported scripts consume a browser manifest.
   "includeTextMetrics": true,
   "breakpointStrategy": "lineChanges",
   "barWidthUnit": "px",
-  "responsiveBy": "viewport",
   "targets": [
     {
       "exportName": "leadTrackTitle",
@@ -51,6 +81,31 @@ Both supported scripts consume a browser manifest.
     {
       "exportName": "leadTrackBody",
       "selector": "[data-skeleton-text-id='leadTrackBody']",
+      "widthMode": "both"
+    }
+  ]
+}
+```
+
+For app shells, flex layouts, thumbnails, pricing cards, and other custom UI, keep the same flat target shape. The analyzer only needs a live URL and stable selectors on the real rendered text:
+
+```json
+{
+  "url": "http://127.0.0.1:3000/pricing?skeletonMeasure=content",
+  "outputFile": "./pricing.skeleton-text.generated.ts",
+  "moduleExportName": "pricingSkeletonText",
+  "viewportMin": 320,
+  "viewportMax": 1600,
+  "barWidthUnit": "px",
+  "includeTextMetrics": true,
+  "targets": [
+    {
+      "exportName": "pricingCardTitle",
+      "selector": "[data-skeleton-text-id='pricingCardTitle']"
+    },
+    {
+      "exportName": "pricingCardBody",
+      "selector": "[data-skeleton-text-id='pricingCardBody']",
       "widthMode": "both"
     }
   ]
@@ -143,6 +198,12 @@ sampling line boxes:
   - `columns` maps viewport breakpoints to expected `--rmg-cols` values
   - this mode does not replace `targets`; it only waits for masonry item
     rects, root height, columns, and gap to stabilize before target sampling
+- `entries`: entries-specific readiness metadata
+  - `entrySelector` selects each mounted entry row; it defaults to `[data-rmg-entry-owner]`
+  - `rootSelector` directly selects the entries root when available
+  - `anchorSelector` can be used when you only have a stable selector inside an entry row
+  - `expectedEntryCount` waits for a known number of rows
+  - `mountedAttribute`, `mountedValue`, `readyAttribute`, and `readyValue` can override the default entries readiness contract
 - `breakpointStrategy`
   - `"lineChanges"` keeps exact values only where line count changes
   - `"lineOrBarChanges"` also keeps bar-width-only transitions
@@ -150,9 +211,8 @@ sampling line boxes:
   - `"percent"` emits percentage caps
   - `"px"` emits pixel caps for `width: 100%; max-width: ...`
 - `responsiveBy`
-  - `"viewport"` emits regular viewport media-query breakpoints
-  - `"container"` emits container-width breakpoints and generated entries include `responsiveBy: "container"` so skeleton text renders with CSS container queries
-  - use `"container"` for text inside responsive grids where wrapping follows the actual card/text box width more closely than the global viewport
+  - omit this field for the default manifest shape
+  - set `"container"` only when you intentionally want generated entries marked with `responsiveBy: "container"` for CSS container-query skeleton text
 - `viewportWorkers`
   - optional number of parallel browser workers to split the viewport range across
   - defaults to `1` for a deterministic serial scan

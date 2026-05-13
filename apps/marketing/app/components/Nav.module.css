@@ -1,0 +1,197 @@
+.desktopNav {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 8px 8px 0 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--rmg-logo-cyan-rgb), 0.1) 0%,
+      rgba(var(--rmg-logo-magenta-rgb), 0.045) 58%,
+      rgba(255, 255, 255, 0.94) 100%
+    ),
+    #fff;
+}
+
+.navLink,
+.githubLink {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-radius: 6px;
+  color: rgba(var(--rmg-logo-shadow-rgb), 0.78);
+  text-decoration: none;
+  outline: none;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 220ms cubic-bezier(.22,.61,.36,1);
+}
+
+.navLink {
+  --nav-tone: var(--rmg-logo-cyan);
+  --nav-tone-rgb: var(--rmg-logo-cyan-rgb);
+  gap: 8px;
+  padding: 0 13px 0 11px;
+  font-size: 0.88rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.navLink[data-tone='docs'] {
+  --nav-tone: var(--rmg-logo-blue);
+  --nav-tone-rgb: var(--rmg-logo-blue-rgb);
+}
+
+.navLink[data-tone='demos'] {
+  --nav-tone: var(--rmg-logo-lavender);
+  --nav-tone-rgb: var(--rmg-logo-lavender-rgb);
+}
+
+.navLink[data-tone='account'] {
+  --nav-tone: var(--rmg-logo-magenta);
+  --nav-tone-rgb: var(--rmg-logo-magenta-rgb);
+}
+
+.navLink::before,
+.githubLink::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      120deg,
+      rgba(var(--rmg-logo-cyan-rgb), 0.16),
+      rgba(var(--rmg-logo-magenta-rgb), 0.1)
+    );
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 6px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--nav-tone);
+  opacity: 0;
+  transform: scaleX(0.42);
+  transform-origin: center;
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(.22,.61,.36,1);
+}
+
+.navGlyph {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(var(--rmg-logo-cyan-rgb), 0.42);
+  box-shadow: 0 0 0 3px rgba(var(--rmg-logo-cyan-rgb), 0.08);
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 220ms cubic-bezier(.22,.61,.36,1);
+}
+
+.linkText {
+  position: relative;
+  z-index: 1;
+}
+
+.githubLink {
+  width: 38px;
+  flex: 0 0 38px;
+}
+
+.navLink:hover,
+.navLink:focus-visible,
+.navLink[data-current='true'],
+.githubLink:hover,
+.githubLink:focus-visible {
+  color: rgb(var(--rmg-logo-shadow-rgb));
+  transform: translateY(-1px);
+}
+
+.navLink:hover::before,
+.navLink:focus-visible::before,
+.navLink[data-current='true']::before,
+.githubLink:hover::before,
+.githubLink:focus-visible::before {
+  opacity: 1;
+}
+
+.navLink:hover::after,
+.navLink:focus-visible::after,
+.navLink[data-current='true']::after {
+  opacity: 0.84;
+  transform: scaleX(1);
+}
+
+.navLink:hover .navGlyph,
+.navLink:focus-visible .navGlyph,
+.navLink[data-current='true'] .navGlyph {
+  background: var(--nav-tone);
+  box-shadow:
+    0 0 0 3px rgba(var(--nav-tone-rgb), 0.13),
+    0 0 16px rgba(var(--nav-tone-rgb), 0.26);
+  transform: scale(1.08);
+}
+
+.navLink:focus-visible,
+.githubLink:focus-visible {
+  outline: 2px solid rgba(var(--rmg-logo-cyan-rgb), 0.34);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .desktopNav {
+    display: flex;
+  }
+}
+
+@media (max-width: 960px) {
+  .desktopNav {
+    gap: 2px;
+    padding: 4px;
+  }
+
+  .navLink {
+    gap: 6px;
+    padding-inline: 9px;
+  }
+
+  .githubLink {
+    width: 36px;
+    flex-basis: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navLink,
+  .navLink::before,
+  .navLink::after,
+  .navGlyph,
+  .githubLink,
+  .githubLink::before {
+    transition: none !important;
+  }
+
+  .navLink:hover,
+  .navLink:focus-visible,
+  .navLink[data-current='true'],
+  .githubLink:hover,
+  .githubLink:focus-visible {
+    transform: none;
+  }
+}

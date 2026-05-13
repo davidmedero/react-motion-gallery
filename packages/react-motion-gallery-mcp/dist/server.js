@@ -56,12 +56,13 @@ var componentCatalog = [
     importPath: "react-motion-gallery/grid",
     exports: ["Grid"],
     categoryIds: ["grid"],
-    description: "Responsive media grid with spans, template columns, lazy loading, skeletons, and fullscreen item handoffs.",
+    description: "Responsive media grid with spans, template columns, skeletons, and fullscreen item handoffs.",
     whenToUse: [
       "Use for predictable editorial or product grids.",
-      "Use templateColumns when track proportions matter more than a plain column count."
+      "Use templateColumns when track proportions matter more than a plain column count.",
+      "Add gridLazyLoad from react-motion-gallery/grid/lazy-load only when the route needs lazy media."
     ],
-    relatedTags: ["grid", "span", "template-columns", "responsive"]
+    relatedTags: ["grid", "span", "template-columns", "responsive", "plugins"]
   },
   {
     id: "masonry",
@@ -72,9 +73,10 @@ var componentCatalog = [
     description: "Server-predicted masonry layout that keeps placement stable through hydration, then refines from live measurements.",
     whenToUse: [
       "Use for mixed aspect ratios or cards with uneven text/media heights.",
-      "Choose placement mode based on whether balance, round-robin order, or horizontal visual order matters most."
+      "Choose placement mode based on whether balance, round-robin order, or horizontal visual order matters most.",
+      "Add masonryLazyLoad from react-motion-gallery/masonry/lazy-load only when the route needs lazy media."
     ],
-    relatedTags: ["masonry", "balanced", "round-robin", "horizontal-order", "span"]
+    relatedTags: ["masonry", "balanced", "round-robin", "horizontal-order", "span", "plugins"]
   },
   {
     id: "entries",
@@ -220,8 +222,8 @@ var componentCatalog = [
 ];
 var categoryDescriptions = {
   slider: "Motion-first slider demos covering loop, axis, granular plugins, effects, thumbnails, video, API mutation, and Skeleton-owned loading.",
-  grid: "Responsive grid demos for spans, template tracks, min column width, lazy loading, video, fullscreen, and skeletons.",
-  masonry: "Masonry demos for balanced, round-robin, horizontal order, spans, video, fullscreen, and stable skeleton loading.",
+  grid: "Responsive grid demos for spans, template tracks, min column width, lazy-load plugins, video, fullscreen, and skeletons.",
+  masonry: "Masonry demos for balanced, round-robin, horizontal order, spans, lazy-load plugins, video, fullscreen, and stable skeleton loading.",
   entries: "Structured entry demos that combine copy, metadata, media, and slider/grid/masonry renderers.",
   "zoom-pan": "Standalone and embedded zoom/pan image demos for cropped inspection surfaces.",
   fullscreen: "Fullscreen controller demos for custom triggers, captions, overlays, thumbnails, effects, and lazy media.",
@@ -358,12 +360,190 @@ function jsonContent(value) {
   return textContent(JSON.stringify(value, null, 2));
 }
 
-// src/generate.ts
-import path4 from "path";
-
-// src/snippets.ts
+// src/docs.ts
 import fs2 from "fs";
 import path3 from "path";
+var packageDocs = [
+  {
+    id: "readme",
+    title: "React Motion Gallery README",
+    uri: "rmg://docs/readme",
+    path: repoPath("packages", "react-motion-gallery", "README.md"),
+    whenToRead: "Use for package overview, entry points, API reference, and MCP setup examples."
+  },
+  {
+    id: "skeleton-text-authoring",
+    title: "Skeleton Text Authoring",
+    uri: "rmg://docs/skeleton-text-authoring",
+    path: repoPath("packages", "react-motion-gallery", "docs", "skeleton-text-authoring.md"),
+    whenToRead: "Use for the browser-based measured skeleton text manifest and generator workflow."
+  },
+  {
+    id: "skeleton-text-codex-prompt",
+    title: "Skeleton Text AI Agent Prompt",
+    uri: "rmg://docs/skeleton-text-codex-prompt",
+    path: repoPath("packages", "react-motion-gallery", "docs", "skeleton-text-codex-prompt.md"),
+    whenToRead: "Use when instructing an AI agent to add or update measured skeleton text."
+  },
+  {
+    id: "license",
+    title: "License",
+    uri: "rmg://docs/license",
+    path: repoPath("packages", "react-motion-gallery", "LICENSE.md"),
+    whenToRead: "Use for package license terms."
+  },
+  {
+    id: "third-party-notices",
+    title: "Third Party Notices",
+    uri: "rmg://docs/third-party-notices",
+    path: repoPath("packages", "react-motion-gallery", "THIRD_PARTY_NOTICES.md"),
+    whenToRead: "Use for bundled third-party license notices."
+  }
+];
+function listPackageDocs() {
+  return packageDocs.map((doc) => ({
+    id: doc.id,
+    title: doc.title,
+    uri: doc.uri,
+    path: toPosixPath(path3.relative(repoPath(), doc.path)),
+    whenToRead: doc.whenToRead
+  }));
+}
+function listPackageDocResources() {
+  return packageDocs.map((doc) => ({
+    uri: doc.uri,
+    name: doc.title,
+    mimeType: "text/markdown",
+    description: doc.whenToRead
+  }));
+}
+function readPackageDoc(docId) {
+  const doc = packageDocs.find((candidate) => candidate.id === docId);
+  if (!doc) {
+    throw new Error(`Unknown React Motion Gallery doc: ${docId}`);
+  }
+  return fs2.readFileSync(doc.path, "utf8");
+}
+function agentBriefGuide() {
+  return [
+    "# React Motion Gallery MCP Agent Brief",
+    "",
+    "Start by classifying the user's request as layout intent plus loading fidelity.",
+    "",
+    "1. Call `classify_gallery_workflow` with the user's goal.",
+    "2. Read the recommended guide resources returned by the classifier.",
+    "3. Use `recommend_pattern`, `search_demos`, and `get_demo` to choose examples.",
+    "4. Only use `scaffold_skeleton_text` when the workflow calls for browser-measured skeleton text.",
+    "5. For file writing, keep dry-run output until generated files have been reviewed; pass `apply: true` only when writing is intended.",
+    "",
+    "Browser-measured skeleton text applies to any real rendered DOM text: sliders, grids, masonry, entries, thumbnails, flex layouts, app shells, cards, and custom UI. Use flat `targets` by default. Add specialized `slider`, `masonry`, or `entries` manifest metadata only when those layout modes need readiness or compensation behavior."
+  ].join("\n");
+}
+function layoutSelectionGuide() {
+  return [
+    "# React Motion Gallery Layout Selection",
+    "",
+    "- Use `Slider` for one active position, carousel navigation, grouped cells, loop, wheel, thumbnails, and slide plugins.",
+    "- Use `Grid` for predictable responsive tracks, product/editorial grids, spans, and template columns.",
+    "- Use `Masonry` for uneven cards or mixed aspect ratios where balanced or source-order placement matters.",
+    "- Use `Entries` when the content model is rows of text, metadata, and coordinated media.",
+    "- Use `ThumbnailSlider` or `FullscreenThumbnailSlider` when navigation should be visual.",
+    "- Use `GalleryCore` and `useFullscreenController` when media should expand into fullscreen.",
+    "- Use `ZoomPanImage` for inspectable cropped images without a fullscreen overlay.",
+    "- Use standalone `Skeleton` for app shells, flex layouts, custom cards, and non-gallery loading UI.",
+    "",
+    "For custom layouts, keep the real markup ergonomic first, then choose skeleton fidelity separately. Skeleton text measurement does not require a gallery primitive; it only needs stable selectors on rendered DOM text and a live page URL."
+  ].join("\n");
+}
+function loadingFidelityGuide() {
+  return [
+    "# React Motion Gallery Loading Fidelity",
+    "",
+    "Think of each request as layout intent plus loading fidelity.",
+    "",
+    "```text",
+    'User goal: "Build a responsive gallery slider."',
+    "Workflow: layoutOnly",
+    "Use: recommend_pattern -> get_demo -> generate_gallery_component",
+    "Skip: skeleton tools",
+    "```",
+    "",
+    "```text",
+    'User goal: "Build a product grid with image placeholders while loading."',
+    "Workflow: layoutWithNonTextSkeleton",
+    "Use: Skeleton rect/media nodes or gallery skeleton wrappers",
+    "Skip: browser text measurement",
+    "```",
+    "",
+    "```text",
+    'User goal: "Build a card layout with simple text skeleton lines."',
+    "Workflow: layoutWithHandAuthoredTextSkeleton",
+    "Use: text skeleton nodes with hand-authored lines/barWidth values",
+    "Skip: generated sidecar",
+    "```",
+    "",
+    "```text",
+    'User goal: "Build a masonry layout where skeleton text matches real responsive copy."',
+    "Workflow: layoutWithBrowserMeasuredTextSkeleton",
+    "Use: stable selectors -> scaffold_skeleton_text -> generate:skeleton-text-module --analysis-output -> import sidecar",
+    "```",
+    "",
+    "If the user has an existing layout and asks to add or improve skeletons, classify it as `skeletonRetrofit` and preserve existing rendering behavior while choosing the smallest skeleton layer that meets the requested fidelity."
+  ].join("\n");
+}
+function browserMeasuredSkeletonGuide() {
+  return [
+    "# Browser-Measured Skeleton Text",
+    "",
+    "Use browser-measured skeleton text only when the user wants skeleton text to match real rendered content across responsive widths. This is optional; simple skeletons can be hand-authored.",
+    "",
+    "The workflow applies to any rendered DOM text: slider cards, grids, masonry cards, entries rows, thumbnails, app shells, flex layouts, pricing cards, and custom UI.",
+    "",
+    "Default workflow:",
+    "",
+    "1. Add stable selectors to the real rendered text, such as `data-skeleton-text-id`.",
+    "2. Create or update a browser manifest with flat `targets`.",
+    "3. Run `npm run --silent generate:skeleton-text-module -- --input ./path/to/manifest.json --analysis-output ./path/to/measurements.json`.",
+    "4. Import the generated sidecar exports into the component.",
+    "5. Wire generated values into skeleton `text` nodes.",
+    "",
+    "Manifest modes:",
+    "",
+    "- Use flat `targets` for ordinary DOM text in any layout.",
+    "- Add `slider` mode for equal-height card sliders that need canonical item measurement and row-height compensation.",
+    "- Add `masonry` readiness metadata when text is inside positioned masonry items and geometry needs to settle before sampling.",
+    "- Add `entries` readiness metadata when measuring `Entries` rows that expose mount/ready attributes.",
+    "- Use `readyExpression`, `settleMs`, and `stableGeometryFrames` for custom client-measured layouts.",
+    "",
+    "Example flat-target manifest call:",
+    "",
+    "```json",
+    "{",
+    '  "projectRoot": "/absolute/path/to/app",',
+    '  "manifestPath": "src/components/pricing.skeleton-text.browser.manifest.json",',
+    '  "url": "http://127.0.0.1:3000/pricing?skeletonMeasure=content",',
+    '  "outputFile": "src/components/pricing.skeleton-text.generated.ts",',
+    '  "moduleExportName": "pricingSkeletonText",',
+    '  "barWidthUnit": "px",',
+    '  "includeTextMetrics": true,',
+    '  "targets": [',
+    "    {",
+    '      "exportName": "pricingCardTitle",',
+    `      "selector": "[data-skeleton-text-id='pricingCardTitle']"`,
+    "    }",
+    "  ],",
+    '  "apply": true',
+    "}",
+    "```"
+  ].join("\n");
+}
+
+// src/generate.ts
+import path5 from "path";
+
+// src/snippets.ts
+import fs3 from "fs";
+import path4 from "path";
 var localPackageImportPattern = /from\s+["'][^"']*packages\/react-motion-gallery\/src["']/g;
 var localPackageSubpathImportPattern = /from\s+["'][^"']*packages\/react-motion-gallery\/src\/([^"']+)["']/g;
 var internalTypeImportReplacements = [
@@ -469,7 +649,6 @@ function publicPathForLocalSourceEntry(entry) {
   if (entry === "skeleton-slider") return "react-motion-gallery/skeleton/slider";
   if (entry === "skeleton-grid") return "react-motion-gallery/skeleton/grid";
   if (entry === "skeleton-masonry") return "react-motion-gallery/skeleton/masonry";
-  if (entry === "skeleton") return "react-motion-gallery/skeleton";
   if (entry === "fullscreenThumbnails") return "react-motion-gallery/fullscreenThumbnails";
   if (entry === "zoomPan") return "react-motion-gallery/zoomPan";
   if (entry.startsWith("slider-")) {
@@ -555,10 +734,10 @@ function renderGroupedImports(grouped, typeOnly) {
   }).join("\n");
 }
 function readRawStringExport(filePath, exportName) {
-  if (!fs2.existsSync(filePath)) {
+  if (!fs3.existsSync(filePath)) {
     throw new Error(`Missing demo ${exportName} file: ${filePath}`);
   }
-  const file = fs2.readFileSync(filePath, "utf8");
+  const file = fs3.readFileSync(filePath, "utf8");
   const marker = `export const ${exportName} = String.raw\``;
   const start = file.indexOf(marker);
   if (start === -1) {
@@ -576,14 +755,14 @@ function discoverExtraFiles(demo, tsx) {
   const files = [];
   for (const match of tsx.matchAll(/from\s+["']\.\/([^"']+\.skeleton-text\.generated)["']/g)) {
     const filename = `${match[1]}.ts`;
-    const absolutePath = path3.join(demo.demoPath, filename);
-    if (!fs2.existsSync(absolutePath)) {
+    const absolutePath = path4.join(demo.demoPath, filename);
+    if (!fs3.existsSync(absolutePath)) {
       continue;
     }
     files.push({
       path: filename,
       filename,
-      code: fs2.readFileSync(absolutePath, "utf8").trimEnd(),
+      code: fs3.readFileSync(absolutePath, "utf8").trimEnd(),
       language: "ts"
     });
   }
@@ -629,13 +808,13 @@ function inferExportedComponentName(tsx) {
   return tsx.match(/export function ([A-Za-z0-9_]+)/)?.[1] ?? "Gallery";
 }
 function cssModuleNameForComponent(componentPath) {
-  const basename = path4.basename(componentPath).replace(/\.(tsx|jsx|ts|js)$/i, "");
+  const basename = path5.basename(componentPath).replace(/\.(tsx|jsx|ts|js)$/i, "");
   return `${basename}.module.css`;
 }
 
 // src/project.ts
-import fs3 from "fs";
-import path5 from "path";
+import fs4 from "fs";
+import path6 from "path";
 var sourceExtensions = /* @__PURE__ */ new Set([".js", ".jsx", ".ts", ".tsx"]);
 var ignoredDirectories = /* @__PURE__ */ new Set([
   "node_modules",
@@ -646,30 +825,30 @@ var ignoredDirectories = /* @__PURE__ */ new Set([
   "coverage"
 ]);
 function resolveInsideRoot(projectRoot, targetPath) {
-  const root = path5.resolve(projectRoot);
-  const resolved = path5.resolve(root, targetPath);
-  const relative = path5.relative(root, resolved);
-  if (relative === "" || !relative.startsWith("..") && !path5.isAbsolute(relative)) {
+  const root = path6.resolve(projectRoot);
+  const resolved = path6.resolve(root, targetPath);
+  const relative = path6.relative(root, resolved);
+  if (relative === "" || !relative.startsWith("..") && !path6.isAbsolute(relative)) {
     return resolved;
   }
   throw new Error(`Refusing to write outside projectRoot: ${targetPath}`);
 }
 function detectProject(projectRoot) {
-  const root = path5.resolve(projectRoot);
-  const packageJsonPath = path5.join(root, "package.json");
+  const root = path6.resolve(projectRoot);
+  const packageJsonPath = path6.join(root, "package.json");
   const packageJson = readJsonObject(packageJsonPath);
   const dependencies = objectRecord(packageJson?.dependencies);
   const devDependencies = objectRecord(packageJson?.devDependencies);
   const allDeps = { ...dependencies, ...devDependencies };
   const files = listSourceFiles(root, 400);
   const hasRmgStylesImport = files.some(
-    (file) => fs3.readFileSync(file, "utf8").includes("react-motion-gallery/styles.css")
+    (file) => fs4.readFileSync(file, "utf8").includes("react-motion-gallery/styles.css")
   );
   const usesCssModules = files.some((file) => file.endsWith(".module.css"));
   return {
     root,
     kind: detectProjectKind(allDeps),
-    packageJsonPath: fs3.existsSync(packageJsonPath) ? packageJsonPath : null,
+    packageJsonPath: fs4.existsSync(packageJsonPath) ? packageJsonPath : null,
     dependencies,
     devDependencies,
     reactVersion: allDeps.react ?? null,
@@ -705,9 +884,9 @@ function auditProject(projectRoot) {
   }
   const files = listSourceFiles(project.root, 500);
   const rmgFiles = files.filter(
-    (file) => fs3.readFileSync(file, "utf8").includes("react-motion-gallery")
+    (file) => fs4.readFileSync(file, "utf8").includes("react-motion-gallery")
   );
-  const videoLikely = rmgFiles.some((file) => /Video|kind:\s*"video"|youtube|vimeo/i.test(fs3.readFileSync(file, "utf8")));
+  const videoLikely = rmgFiles.some((file) => /Video|kind:\s*"video"|youtube|vimeo/i.test(fs4.readFileSync(file, "utf8")));
   if (videoLikely && !project.hasVideoPeers) {
     findings.push({
       severity: "warning",
@@ -717,12 +896,12 @@ function auditProject(projectRoot) {
   }
   if (project.kind === "next") {
     for (const file of rmgFiles) {
-      const content = fs3.readFileSync(file, "utf8");
+      const content = fs4.readFileSync(file, "utf8");
       if (usesInteractiveGallery(content) && !hasUseClientDirective(content)) {
         findings.push({
           severity: "warning",
           code: "next-use-client",
-          file: path5.relative(project.root, file),
+          file: path6.relative(project.root, file),
           message: 'This Next.js file imports interactive gallery surfaces but does not start with "use client".'
         });
       }
@@ -742,7 +921,7 @@ function writeGalleryFiles(args) {
   const files = [
     {
       path: componentTarget,
-      relativePath: path5.relative(path5.resolve(args.projectRoot), componentTarget),
+      relativePath: path6.relative(path6.resolve(args.projectRoot), componentTarget),
       code: args.tsx
     }
   ];
@@ -750,25 +929,25 @@ function writeGalleryFiles(args) {
     const cssTarget = resolveInsideRoot(args.projectRoot, args.cssPath);
     files.push({
       path: cssTarget,
-      relativePath: path5.relative(path5.resolve(args.projectRoot), cssTarget),
+      relativePath: path6.relative(path6.resolve(args.projectRoot), cssTarget),
       code: args.css
     });
   }
   for (const extraFile of args.extraFiles ?? []) {
     const extraTarget = resolveInsideRoot(
       args.projectRoot,
-      path5.join(path5.dirname(args.componentPath), extraFile.path)
+      path6.join(path6.dirname(args.componentPath), extraFile.path)
     );
     files.push({
       path: extraTarget,
-      relativePath: path5.relative(path5.resolve(args.projectRoot), extraTarget),
+      relativePath: path6.relative(path6.resolve(args.projectRoot), extraTarget),
       code: extraFile.code
     });
   }
   if (args.apply) {
     for (const file of files) {
-      fs3.mkdirSync(path5.dirname(file.path), { recursive: true });
-      fs3.writeFileSync(file.path, `${file.code.trimEnd()}
+      fs4.mkdirSync(path6.dirname(file.path), { recursive: true });
+      fs4.writeFileSync(file.path, `${file.code.trimEnd()}
 `);
     }
   }
@@ -786,12 +965,12 @@ function listSourceFiles(root, maxFiles) {
   return files;
 }
 function walk(currentPath, files, maxFiles) {
-  if (files.length >= maxFiles || !fs3.existsSync(currentPath)) {
+  if (files.length >= maxFiles || !fs4.existsSync(currentPath)) {
     return;
   }
-  const stat = fs3.statSync(currentPath);
+  const stat = fs4.statSync(currentPath);
   if (stat.isFile()) {
-    if (sourceExtensions.has(path5.extname(currentPath)) || currentPath.endsWith(".module.css")) {
+    if (sourceExtensions.has(path6.extname(currentPath)) || currentPath.endsWith(".module.css")) {
       files.push(currentPath);
     }
     return;
@@ -799,23 +978,23 @@ function walk(currentPath, files, maxFiles) {
   if (!stat.isDirectory()) {
     return;
   }
-  const basename = path5.basename(currentPath);
+  const basename = path6.basename(currentPath);
   if (ignoredDirectories.has(basename)) {
     return;
   }
-  for (const child of fs3.readdirSync(currentPath)) {
-    walk(path5.join(currentPath, child), files, maxFiles);
+  for (const child of fs4.readdirSync(currentPath)) {
+    walk(path6.join(currentPath, child), files, maxFiles);
     if (files.length >= maxFiles) {
       return;
     }
   }
 }
 function readJsonObject(filePath) {
-  if (!fs3.existsSync(filePath)) {
+  if (!fs4.existsSync(filePath)) {
     return null;
   }
   try {
-    const parsed = JSON.parse(fs3.readFileSync(filePath, "utf8"));
+    const parsed = JSON.parse(fs4.readFileSync(filePath, "utf8"));
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
   } catch {
     return null;
@@ -845,6 +1024,166 @@ function usesInteractiveGallery(source) {
   );
 }
 
+// src/workflow.ts
+function classifyGalleryWorkflow(args) {
+  const goal = args.goal.trim();
+  const text = `${goal} ${args.layoutHint ?? ""}`.toLowerCase();
+  const mentionsLoading = hasAny(text, [
+    "skeleton",
+    "loading",
+    "placeholder",
+    "shimmer",
+    "fallback",
+    "pending"
+  ]);
+  const mentionsText = hasAny(text, [
+    "text",
+    "copy",
+    "title",
+    "body",
+    "caption",
+    "headline",
+    "description",
+    "label",
+    "metadata",
+    "content"
+  ]);
+  const mentionsMeasuredText = hasAny(text, [
+    "browser",
+    "measure",
+    "measured",
+    "analysis",
+    "sidecar",
+    "generated",
+    "match real",
+    "real content",
+    "responsive copy",
+    "exact",
+    "fidelity"
+  ]);
+  const mentionsHandAuthored = hasAny(text, [
+    "hand",
+    "manual",
+    "simple",
+    "rough",
+    "static",
+    "no browser",
+    "without browser",
+    "no analysis",
+    "without analysis"
+  ]);
+  const mentionsRetrofit = args.hasExistingLayout === true || hasAny(text, [
+    "existing",
+    "retrofit",
+    "add skeleton",
+    "improve skeleton",
+    "update skeleton"
+  ]);
+  let mode = "layoutOnly";
+  if (mentionsRetrofit && mentionsLoading) {
+    mode = "skeletonRetrofit";
+  } else if (mentionsLoading && mentionsText && mentionsMeasuredText) {
+    mode = "layoutWithBrowserMeasuredTextSkeleton";
+  } else if (mentionsLoading && mentionsText) {
+    mode = mentionsHandAuthored || !mentionsMeasuredText ? "layoutWithHandAuthoredTextSkeleton" : "layoutWithBrowserMeasuredTextSkeleton";
+  } else if (mentionsLoading) {
+    mode = "layoutWithNonTextSkeleton";
+  }
+  const recommendedResources = resourcesForMode(mode);
+  const recommendedTools = toolsForMode(mode);
+  const nextSteps = nextStepsForMode(mode);
+  const warnings = warningsForMode(mode, args.framework);
+  return {
+    goal,
+    mode,
+    layoutHint: args.layoutHint ?? "any",
+    recommendedResources,
+    recommendedTools,
+    nextSteps,
+    warnings
+  };
+}
+function resourcesForMode(mode) {
+  const base = [
+    "rmg://context/agent-brief",
+    "rmg://guides/layout-selection",
+    "rmg://catalog/demos"
+  ];
+  if (mode === "layoutOnly") return base;
+  if (mode === "layoutWithBrowserMeasuredTextSkeleton") {
+    return [
+      ...base,
+      "rmg://guides/loading-fidelity",
+      "rmg://guides/browser-measured-skeletons",
+      "rmg://docs/skeleton-text-authoring",
+      "rmg://docs/skeleton-text-codex-prompt"
+    ];
+  }
+  if (mode === "skeletonRetrofit") {
+    return [
+      ...base,
+      "rmg://guides/loading-fidelity",
+      "rmg://guides/browser-measured-skeletons",
+      "rmg://docs/skeleton-text-codex-prompt"
+    ];
+  }
+  return [...base, "rmg://guides/loading-fidelity"];
+}
+function toolsForMode(mode) {
+  const base = ["recommend_pattern", "search_demos", "get_demo", "generate_gallery_component"];
+  if (mode === "layoutWithBrowserMeasuredTextSkeleton" || mode === "skeletonRetrofit") {
+    return [...base, "scaffold_skeleton_text", "audit_project"];
+  }
+  return base;
+}
+function nextStepsForMode(mode) {
+  switch (mode) {
+    case "layoutOnly":
+      return [
+        "Choose the layout primitive and demo with recommend_pattern or search_demos.",
+        "Fetch the closest example with get_demo.",
+        "Generate or hand-author the component and CSS without skeleton tooling."
+      ];
+    case "layoutWithNonTextSkeleton":
+      return [
+        "Choose the layout primitive and loading surface.",
+        "Use rect, media, stack, row, or gallery-specific skeleton wrappers.",
+        "Skip browser text measurement and generated sidecars."
+      ];
+    case "layoutWithHandAuthoredTextSkeleton":
+      return [
+        "Choose the layout primitive and skeleton wrapper.",
+        "Hand-author text nodes with lines, barWidth, lastBarWidth, barHeight, and lineHeight.",
+        "Skip browser text measurement unless the user asks for matching responsive copy."
+      ];
+    case "layoutWithBrowserMeasuredTextSkeleton":
+      return [
+        "Add stable selectors to the real rendered text.",
+        "Use flat targets by default; add slider, masonry, or entries metadata only when that layout needs it.",
+        "Run generate:skeleton-text-module with --analysis-output, then import the generated sidecar values."
+      ];
+    case "skeletonRetrofit":
+      return [
+        "Inspect the existing layout and current loading behavior before changing code.",
+        "Choose non-text, hand-authored text, or browser-measured text fidelity based on the user goal.",
+        "Preserve existing layout behavior and add the smallest skeleton layer that satisfies the request."
+      ];
+  }
+}
+function warningsForMode(mode, framework) {
+  const warnings = [];
+  if (framework === "next") {
+    warnings.push('Interactive gallery components should live in a "use client" component.');
+  }
+  if (mode === "layoutWithBrowserMeasuredTextSkeleton" || mode === "skeletonRetrofit") {
+    warnings.push("Browser-measured text needs a live page URL and stable selectors before generation.");
+  }
+  return warnings;
+}
+function hasAny(value, needles) {
+  return needles.some((needle) => value.includes(needle));
+}
+
 // src/recommend.ts
 function recommendPattern(args) {
   const goal = args.goal.trim();
@@ -861,8 +1200,15 @@ function recommendPattern(args) {
   const demos = scoreDemos(searchText, requestedFeatures, args.layout).slice(0, args.limit ?? 5);
   const install = buildInstallAdvice(searchText, args.mediaKinds ?? []);
   const gotchas = buildGotchas(searchText, args.framework);
+  const workflow = classifyGalleryWorkflow({
+    goal,
+    hasExistingLayout: args.hasExistingLayout,
+    layoutHint: args.layout,
+    framework: args.framework
+  });
   return {
     goal,
+    workflow,
     recommendedComponents: components.map(({ component, score }) => ({
       ...component,
       score
@@ -874,6 +1220,8 @@ function recommendPattern(args) {
     install,
     gotchas,
     nextSteps: [
+      `Workflow mode: ${workflow.mode}.`,
+      ...workflow.nextSteps,
       "Call get_demo with the best demoId to inspect production-ready TSX and CSS.",
       "Call generate_gallery_component to rename the example for your app.",
       "Call write_gallery_files with apply: true only after reviewing the generated files."
@@ -996,51 +1344,84 @@ function tokens(value) {
 }
 
 // src/skeleton.ts
-import fs4 from "fs";
-import path6 from "path";
+import fs5 from "fs";
+import path7 from "path";
 function scaffoldSkeletonText(args) {
-  if (args.targets.length === 0) {
-    throw new Error("scaffold_skeleton_text requires at least one target.");
+  const hasTargets = (args.targets?.length ?? 0) > 0;
+  const hasSlider = args.slider != null;
+  if (!hasTargets && !hasSlider) {
+    throw new Error("scaffold_skeleton_text requires targets or a slider manifest block.");
   }
-  const manifest = {
+  const manifest = stripUndefined({
     url: args.url,
     outputFile: args.outputFile,
     moduleExportName: args.moduleExportName,
+    chromePath: args.chromePath,
     viewportMin: args.viewportMin ?? 320,
     viewportMax: args.viewportMax ?? 1600,
     viewportHeight: args.viewportHeight ?? 1800,
-    viewportWorkers: 1,
-    settleMs: 120,
-    stableGeometryFrames: 3,
-    lineWrapGuardPx: 0,
+    viewportWorkers: args.viewportWorkers ?? 1,
+    settleMs: args.settleMs ?? 120,
+    stableGeometryFrames: args.stableGeometryFrames ?? 3,
+    readyExpression: args.readyExpression,
+    lineWrapGuardPx: args.lineWrapGuardPx ?? 0,
+    lineMeasurementMethod: args.lineMeasurementMethod,
     includeTextMetrics: args.includeTextMetrics ?? true,
     breakpointStrategy: args.breakpointStrategy ?? "lineChanges",
     barWidthUnit: args.barWidthUnit ?? "px",
-    responsiveBy: args.responsiveBy ?? "viewport",
-    targets: args.targets.map((target) => ({
-      exportName: target.exportName,
-      selector: target.selector,
-      ...target.widthMode ? { widthMode: target.widthMode } : {},
-      ...target.barHeight ? { barHeight: target.barHeight } : {},
-      ...target.lineHeight ? { lineHeight: target.lineHeight } : {}
-    }))
-  };
+    ...args.responsiveBy === "container" ? { responsiveBy: "container" } : null,
+    ...hasTargets ? {
+      targets: args.targets.map(
+        (target) => stripUndefined({
+          exportName: target.exportName,
+          selector: target.selector,
+          widthMode: target.widthMode,
+          lineWrapGuardPx: target.lineWrapGuardPx
+        })
+      )
+    } : null,
+    ...args.slider ? { slider: stripUndefined(args.slider) } : null,
+    ...args.masonry ? { masonry: stripUndefined(args.masonry) } : null,
+    ...args.entries ? { entries: stripUndefined(args.entries) } : null
+  });
   const targetPath = resolveInsideRoot(args.projectRoot, args.manifestPath);
   const code = `${JSON.stringify(manifest, null, 2)}
 `;
+  const analysisOutputPath = analysisOutputFor(args.outputFile);
   if (args.apply) {
-    fs4.mkdirSync(path6.dirname(targetPath), { recursive: true });
-    fs4.writeFileSync(targetPath, code);
+    fs5.mkdirSync(path7.dirname(targetPath), { recursive: true });
+    fs5.writeFileSync(targetPath, code);
   }
   return {
     applied: Boolean(args.apply),
-    manifestPath: path6.relative(path6.resolve(args.projectRoot), targetPath),
+    manifestPath: path7.relative(path7.resolve(args.projectRoot), targetPath),
     manifest,
     commands: [
-      `npm run --silent generate:skeleton-text-module -- --input ${args.manifestPath}`,
-      `npm run --silent generate:skeleton-text-module -- --input ${args.manifestPath} --analysis-output ${args.outputFile.replace(/\.generated\.ts$/, ".measurements.json")}`
+      `npm run --silent generate:skeleton-text-module -- --input ${args.manifestPath} --analysis-output ${analysisOutputPath}`,
+      `npm run --silent generate:skeleton-text-module -- --input ${args.manifestPath} --analysis-output ${analysisOutputPath} --print-analysis`
     ]
   };
+}
+function stripUndefined(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => stripUndefined(entry));
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  const out = {};
+  for (const [key, entryValue] of Object.entries(value)) {
+    if (entryValue !== void 0) {
+      out[key] = stripUndefined(entryValue);
+    }
+  }
+  return out;
+}
+function analysisOutputFor(outputFile) {
+  if (outputFile.endsWith(".generated.ts")) {
+    return outputFile.replace(/\.generated\.ts$/, ".measurements.json");
+  }
+  return `${outputFile}.measurements.json`;
 }
 
 // src/mcp.ts
@@ -1054,6 +1435,62 @@ var categorySchema = z.enum([
   "skeleton"
 ]);
 var frameworkSchema = z.enum(["next", "vite", "react", "unknown"]);
+var layoutHintSchema = categorySchema.or(z.enum(["app-shell", "flex", "custom", "any"]));
+var widthModeSchema = z.enum(["barWidth", "lastBarWidth", "both"]);
+var responsiveMetricSchema = z.number().or(z.record(z.string(), z.number()));
+var skeletonTargetSchema = z.object({
+  exportName: z.string(),
+  selector: z.string(),
+  widthMode: widthModeSchema.optional(),
+  lineWrapGuardPx: z.number().min(0).optional()
+});
+var skeletonSliderSchema = z.object({
+  itemSelector: z.string(),
+  canonicalItemIdAttribute: z.string(),
+  cloneAttribute: z.string().optional(),
+  cloneValue: z.string().optional(),
+  roles: z.array(
+    z.object({
+      role: z.string(),
+      selector: z.string(),
+      barHeight: responsiveMetricSchema,
+      lineHeight: responsiveMetricSchema,
+      lineWrapGuardPx: z.number().min(0).optional(),
+      style: z.record(z.string(), z.unknown()).optional()
+    })
+  ),
+  trackedItems: z.array(
+    z.object({
+      itemId: z.string(),
+      roles: z.array(
+        z.object({
+          role: z.string(),
+          exportName: z.string(),
+          widthMode: widthModeSchema.optional()
+        })
+      )
+    })
+  ),
+  rowHeightCompensationExportName: z.string()
+});
+var skeletonMasonrySchema = z.object({
+  rootSelector: z.string().optional(),
+  anchorSelector: z.string().optional(),
+  itemSelector: z.string(),
+  expectedItemCount: z.number().int().min(1).optional(),
+  columns: z.record(z.string(), z.number()).optional()
+});
+var skeletonEntriesSchema = z.object({
+  rootSelector: z.string().optional(),
+  anchorSelector: z.string().optional(),
+  entrySelector: z.string().optional(),
+  expectedEntryCount: z.number().int().min(1).optional(),
+  mountedAttribute: z.string().optional(),
+  mountedValue: z.string().optional(),
+  readyAttribute: z.string().optional(),
+  readyValue: z.string().optional(),
+  timeoutMs: z.number().min(0).optional()
+});
 function createRmgMcpServer() {
   const server2 = new McpServer({
     name: "react-motion-gallery-mcp",
@@ -1065,6 +1502,15 @@ function createRmgMcpServer() {
   return server2;
 }
 function registerResources(server2) {
+  server2.resource("agent brief", "rmg://context/agent-brief", async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/markdown",
+        text: agentBriefGuide()
+      }
+    ]
+  }));
   server2.resource("component catalog", "rmg://catalog/components", async (uri) => ({
     contents: [
       {
@@ -1090,6 +1536,32 @@ function registerResources(server2) {
       }
     ]
   }));
+  server2.resource("docs index", "rmg://docs", async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "application/json",
+        text: JSON.stringify({ docs: listPackageDocs() }, null, 2)
+      }
+    ]
+  }));
+  server2.resource(
+    "package doc",
+    new ResourceTemplate("rmg://docs/{docId}", {
+      list: async () => ({
+        resources: listPackageDocResources()
+      })
+    }),
+    async (uri, variables) => ({
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "text/markdown",
+          text: readPackageDoc(String(variables.docId))
+        }
+      ]
+    })
+  );
   server2.resource("install guide", "rmg://docs/install", async (uri) => ({
     contents: [
       {
@@ -1125,19 +1597,52 @@ function registerResources(server2) {
         text: [
           "# Skeleton Text Authoring",
           "",
-          "React Motion Gallery includes development-time browser measurement for text skeletons.",
+          "React Motion Gallery includes development-time browser measurement for text skeletons in any rendered DOM layout: sliders, grids, masonry, entries, thumbnails, flex layouts, app shells, cards, and custom UI.",
+          "",
+          "Use flat `targets` for ordinary DOM text. Add `slider`, `masonry`, or `entries` manifest metadata only when those specialized layouts need readiness or compensation behavior.",
           "",
           "Use `scaffold_skeleton_text` to create a manifest, then run:",
           "",
           "```bash",
-          "npm run --silent generate:skeleton-text-module -- --input ./path/to/example.skeleton-text.browser.manifest.json",
+          "npm run --silent generate:skeleton-text-module -- --input ./path/to/example.skeleton-text.browser.manifest.json --analysis-output ./path/to/example.measurements.json",
           "```",
           "",
-          "The workflow opens a live page, measures real DOM text across viewports, and emits line counts, bar widths, and optional text metrics for stable skeleton layouts."
+          "The workflow opens a live page, measures real DOM text across viewports, and emits line counts, bar widths, optional text metrics, and optional responsive number exports such as slider row-height compensation."
         ].join("\n")
       }
     ]
   }));
+  server2.resource("layout selection guide", "rmg://guides/layout-selection", async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/markdown",
+        text: layoutSelectionGuide()
+      }
+    ]
+  }));
+  server2.resource("loading fidelity guide", "rmg://guides/loading-fidelity", async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/markdown",
+        text: loadingFidelityGuide()
+      }
+    ]
+  }));
+  server2.resource(
+    "browser measured skeleton guide",
+    "rmg://guides/browser-measured-skeletons",
+    async (uri) => ({
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "text/markdown",
+          text: browserMeasuredSkeletonGuide()
+        }
+      ]
+    })
+  );
   server2.resource(
     "demo example",
     new ResourceTemplate("rmg://examples/{demoId}", {
@@ -1202,9 +1707,21 @@ function registerTools(server2) {
       features: z.array(z.string()).optional(),
       mediaKinds: z.array(z.enum(["image", "video", "node"])).optional(),
       framework: frameworkSchema.optional(),
+      hasExistingLayout: z.boolean().optional(),
       limit: z.number().int().min(1).max(10).optional()
     },
     async (args) => jsonContent(recommendPattern(args))
+  );
+  server2.tool(
+    "classify_gallery_workflow",
+    "Classify a React Motion Gallery request by layout intent and loading fidelity.",
+    {
+      goal: z.string(),
+      hasExistingLayout: z.boolean().optional(),
+      layoutHint: layoutHintSchema.optional(),
+      framework: frameworkSchema.optional()
+    },
+    async (args) => jsonContent(classifyGalleryWorkflow(args))
   );
   server2.tool(
     "generate_gallery_component",
@@ -1276,28 +1793,102 @@ function registerTools(server2) {
       url: z.string(),
       outputFile: z.string(),
       moduleExportName: z.string(),
+      chromePath: z.string().optional(),
       viewportMin: z.number().int().min(1).optional(),
       viewportMax: z.number().int().min(1).optional(),
       viewportHeight: z.number().int().min(1).optional(),
+      viewportWorkers: z.number().int().min(1).optional(),
+      settleMs: z.number().min(0).optional(),
+      stableGeometryFrames: z.number().int().min(1).optional(),
+      readyExpression: z.string().optional(),
+      lineWrapGuardPx: z.number().min(0).optional(),
+      lineMeasurementMethod: z.literal("domRange").optional(),
       responsiveBy: z.enum(["viewport", "container"]).optional(),
       breakpointStrategy: z.enum(["lineChanges", "lineOrBarChanges"]).optional(),
       barWidthUnit: z.enum(["px", "percent"]).optional(),
       includeTextMetrics: z.boolean().optional(),
-      targets: z.array(
-        z.object({
-          exportName: z.string(),
-          selector: z.string(),
-          widthMode: z.enum(["barWidth", "lastBarWidth", "both"]).optional(),
-          barHeight: z.number().optional(),
-          lineHeight: z.number().optional()
-        })
-      ),
+      targets: z.array(skeletonTargetSchema).optional(),
+      slider: skeletonSliderSchema.optional(),
+      masonry: skeletonMasonrySchema.optional(),
+      entries: skeletonEntriesSchema.optional(),
       apply: z.boolean().optional()
     },
     async (args) => jsonContent(scaffoldSkeletonText(args))
   );
 }
 function registerPrompts(server2) {
+  server2.prompt(
+    "build_layout_only",
+    {
+      appContext: z.string(),
+      desiredExperience: z.string(),
+      framework: frameworkSchema.optional()
+    },
+    ({ appContext, desiredExperience, framework }) => promptResponse([
+      "Build a React Motion Gallery layout without skeleton loading.",
+      "",
+      `App context: ${appContext}`,
+      `Desired experience: ${desiredExperience}`,
+      `Framework: ${framework ?? "unknown"}`,
+      "",
+      "Classify this as layoutOnly. Choose the layout primitive, inspect relevant demos, import public package entry points, and do not add skeleton imports, manifests, or generated sidecars unless the user asks for loading UI."
+    ])
+  );
+  server2.prompt(
+    "build_layout_with_skeleton",
+    {
+      appContext: z.string(),
+      desiredExperience: z.string(),
+      skeletonFidelity: z.enum(["non-text", "hand-authored-text"]).optional(),
+      framework: frameworkSchema.optional()
+    },
+    ({ appContext, desiredExperience, skeletonFidelity, framework }) => promptResponse([
+      "Build a React Motion Gallery layout with skeleton loading.",
+      "",
+      `App context: ${appContext}`,
+      `Desired experience: ${desiredExperience}`,
+      `Skeleton fidelity: ${skeletonFidelity ?? "choose non-text unless text placeholders are requested"}`,
+      `Framework: ${framework ?? "unknown"}`,
+      "",
+      "Use Skeleton rect/media/stack/row nodes or gallery-specific skeleton wrappers. If text placeholders are requested but browser measurement is not, hand-author lines/barWidth/lastBarWidth values. Do not create browser manifests or generated sidecars for this workflow."
+    ])
+  );
+  server2.prompt(
+    "build_layout_with_measured_text_skeleton",
+    {
+      appContext: z.string(),
+      desiredExperience: z.string(),
+      livePageUrl: z.string(),
+      framework: frameworkSchema.optional()
+    },
+    ({ appContext, desiredExperience, livePageUrl, framework }) => promptResponse([
+      "Build a React Motion Gallery layout with browser-measured skeleton text.",
+      "",
+      `App context: ${appContext}`,
+      `Desired experience: ${desiredExperience}`,
+      `Live page URL: ${livePageUrl}`,
+      `Framework: ${framework ?? "unknown"}`,
+      "",
+      "Inspect real rendered text, add stable selectors, scaffold or update a browser manifest, run generate:skeleton-text-module with --analysis-output, import the generated sidecar values, and wire them into skeleton text nodes. Use flat targets by default; add slider, masonry, or entries manifest metadata only when that layout needs it."
+    ])
+  );
+  server2.prompt(
+    "retrofit_skeleton_loading",
+    {
+      currentCodeSummary: z.string(),
+      desiredLoadingExperience: z.string(),
+      framework: frameworkSchema.optional()
+    },
+    ({ currentCodeSummary, desiredLoadingExperience, framework }) => promptResponse([
+      "Retrofit skeleton loading into an existing React Motion Gallery or custom layout.",
+      "",
+      `Current code summary: ${currentCodeSummary}`,
+      `Desired loading experience: ${desiredLoadingExperience}`,
+      `Framework: ${framework ?? "unknown"}`,
+      "",
+      "Preserve existing layout behavior. Choose non-text, hand-authored text, or browser-measured text fidelity based on the request. If browser-measured text is needed, add selectors, create/update the manifest, run the generator with --analysis-output, and import the generated sidecar values."
+    ])
+  );
   server2.prompt(
     "design_gallery_integration",
     {
@@ -1352,6 +1943,19 @@ function registerPrompts(server2) {
       ]
     })
   );
+}
+function promptResponse(lines) {
+  return {
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: lines.join("\n")
+        }
+      }
+    ]
+  };
 }
 
 // src/server.ts

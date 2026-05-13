@@ -1,6 +1,7 @@
 'use client'
 
 import { CodeBlock } from "@/components/ui/code-block";
+import Link from "next/link";
 import type { JSX } from "react";
 import { FsDiagramWithCaptionRight, FsDiagramWithEntriesOverlayBottom, FsDiagramWithThumbs } from "./components/svgDiagrams";
 
@@ -19,6 +20,22 @@ export default function Home() {
           A composable and deeply customizable gallery system for React with stunning animations, layout primitives, SSR-stable skeletons and rich fullscreen API.
         </span>
       </p>
+      <section className="home-mcp-callout" aria-label="MCP server for AI agents">
+        <div className="home-mcp-callout__inner">
+          <div className="home-mcp-callout__copy">
+            <span className="home-mcp-callout__eyebrow">
+              <span className="home-mcp-callout__new">NEW</span>
+              MCP server for AI agents
+            </span>
+            <span className="home-mcp-callout__text">
+              Connect Codex, Claude, Cursor, or any MCP client to inspect docs, choose gallery patterns, scaffold components, and generate browser-measured skeleton text.
+            </span>
+          </div>
+          <Link className="home-mcp-callout__link" href="/docs#mcp-server">
+            Read the workflow
+          </Link>
+        </div>
+      </section>
       <section className="rmgLayouts" aria-labelledby="rmg-layouts-title">
         <div className="rmgLayouts__inner">
           <header className="rmgLayouts__header">
