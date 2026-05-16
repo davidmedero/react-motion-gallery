@@ -114,8 +114,8 @@ export type MasonryPredictionContainerCssRule = {
   items: Array<{
     index: number;
     topCssExpr?: string;
-    leftCssExpr: string;
-    widthCssExpr: string;
+    leftCssExpr?: string;
+    widthCssExpr?: string;
   }>;
 };
 
@@ -2407,106 +2407,147 @@ export function buildMasonrySkeletonPrediction(
       ...safariCssPositioned.cssVars,
     };
 
-    const buildContainerCssRulesForMode = (textMetricsMode: TextMetricsMode) =>
-      !hasTrustedContainerWidth && structuredLayout
-        ? collectMasonryVariantContainerRuleMinWidths({
-            state,
-            itemCount,
-            structuredLayout,
-            spans: args.spans,
-            breakpointMap: effectiveBreakpoints,
-          }).map((containerWidthPx) => {
-            const ruleColumnWidthPx = predictMasonryColumnWidthPx(
-              state,
-              containerWidthPx
-            );
-            const ruleItemData = Array.from({ length: itemCount }, (_, index) => {
-              const slot = resolveMasonrySlot(structuredLayout, index);
-              const span = resolveMasonrySpanForState({
-                span: slot?.span ?? args.spans?.[index],
-                columnCount: state.columns,
-                minWidth: state.minWidth,
-                breakpointMap: effectiveBreakpoints,
-              });
-              const itemWidthPx =
-                ruleColumnWidthPx * span + state.gapPx * Math.max(0, span - 1);
-              const itemWidthVarName = `--rmg-mskel-width-${index}`;
-              const itemWidthCssExpr = `var(${itemWidthVarName})`;
-              const height = predictMasonryItemHeight({
-                index,
-                slot,
-                state,
-                safeRatios,
-                safeHeights,
-                itemWidthPx,
-                breakpointMap: effectiveBreakpoints,
-                conservativeContainerText: false,
-                textMetricsMode,
-              });
-              const heightCssExpr = buildMasonryItemHeightCssExpr({
-                index,
-                slot,
-                state,
-                safeRatios,
-                safeHeights,
-                itemWidthCssExpr,
-                itemWidthPx,
-                breakpointMap: effectiveBreakpoints,
-                conservativeContainerText: false,
-                textMetricsMode,
-              });
+    const buildContainerCssRulesForMode = (textMetricsMode: TextMetricsMode) => {
+      if (hasTrustedContainerWidth || !structuredLayout) return undefined;
 
-              return {
-                slot,
-                span,
-                height,
-                heightCssExpr,
-              };
-            });
-            const rulePositioned = buildMasonryPositionedLayout({
-              itemCount,
+      const baseCssPositioned =
+        textMetricsMode === "safari" ? safariCssPositioned : cssPositioned;
+      const basePositioned =
+        textMetricsMode === "safari" ? safariPositioned : positioned;
+      const baseRootDecls: Record<string, string | number> = {
+        height: baseCssPositioned.shellHeightCssExpr,
+        ...baseCssPositioned.cssVars,
+      };
+
+      return collectMasonryVariantContainerRuleMinWidths({
+        state,
+        itemCount,
+        structuredLayout,
+        spans: args.spans,
+        breakpointMap: effectiveBreakpoints,
+      })
+        .map((containerWidthPx) => {
+          const ruleColumnWidthPx = predictMasonryColumnWidthPx(
+            state,
+            containerWidthPx
+          );
+          const ruleItemData = Array.from({ length: itemCount }, (_, index) => {
+            const slot = resolveMasonrySlot(structuredLayout, index);
+            const span = resolveMasonrySpanForState({
+              span: slot?.span ?? args.spans?.[index],
               columnCount: state.columns,
-              placement: effectivePlacement,
-              heights: ruleItemData.map((item) => item.height),
-              gapPx: state.gapPx,
-              spans: ruleItemData.map((item) => item.span),
+              minWidth: state.minWidth,
+              breakpointMap: effectiveBreakpoints,
             });
-            const ruleCssPositioned = buildMasonryCssPositionedLayout({
-              columnCount: state.columns,
-              gapPx: state.gapPx,
-              items: rulePositioned.items.map((positionedItem, index) => ({
-                index,
-                columnStart: positionedItem.columnStart,
-                span: positionedItem.span,
-                heightPx: positionedItem.height,
-                heightCssExpr:
-                  ruleItemData[index]?.heightCssExpr ?? cssPx(positionedItem.height),
-              })),
+            const itemWidthPx =
+              ruleColumnWidthPx * span + state.gapPx * Math.max(0, span - 1);
+            const itemWidthVarName = `--rmg-mskel-width-${index}`;
+            const itemWidthCssExpr = `var(${itemWidthVarName})`;
+            const height = predictMasonryItemHeight({
+              index,
+              slot,
+              state,
+              safeRatios,
+              safeHeights,
+              itemWidthPx,
+              breakpointMap: effectiveBreakpoints,
+              conservativeContainerText: false,
+              textMetricsMode,
+            });
+            const heightCssExpr = buildMasonryItemHeightCssExpr({
+              index,
+              slot,
+              state,
+              safeRatios,
+              safeHeights,
+              itemWidthCssExpr,
+              itemWidthPx,
+              breakpointMap: effectiveBreakpoints,
+              conservativeContainerText: false,
+              textMetricsMode,
             });
 
             return {
-              minWidth: containerWidthPx,
-              rootDecls: {
-                height: ruleCssPositioned.shellHeightCssExpr,
-                ...ruleCssPositioned.cssVars,
-              },
-              items: rulePositioned.items.map((positionedItem, index) => ({
-                index,
-                topCssExpr: ruleCssPositioned.itemTopCssExprs[index],
-                leftCssExpr: buildMasonryItemLeftCssExpr({
-                  columnStart: positionedItem.columnStart,
-                  columnWidthCssExpr,
-                  gapCssExpr,
-                }),
-                widthCssExpr: buildMasonryItemWidthCssExpr({
-                  span: positionedItem.span,
-                  columnWidthCssExpr,
-                  gapCssExpr,
-                }),
-              })),
+              slot,
+              span,
+              height,
+              heightCssExpr,
             };
-          })
-        : undefined;
+          });
+          const rulePositioned = buildMasonryPositionedLayout({
+            itemCount,
+            columnCount: state.columns,
+            placement: effectivePlacement,
+            heights: ruleItemData.map((item) => item.height),
+            gapPx: state.gapPx,
+            spans: ruleItemData.map((item) => item.span),
+          });
+          const ruleCssPositioned = buildMasonryCssPositionedLayout({
+            columnCount: state.columns,
+            gapPx: state.gapPx,
+            items: rulePositioned.items.map((positionedItem, index) => ({
+              index,
+              columnStart: positionedItem.columnStart,
+              span: positionedItem.span,
+              heightPx: positionedItem.height,
+              heightCssExpr:
+                ruleItemData[index]?.heightCssExpr ?? cssPx(positionedItem.height),
+            })),
+          });
+          const rootDecls: Record<string, string | number> = {
+            height: ruleCssPositioned.shellHeightCssExpr,
+            ...ruleCssPositioned.cssVars,
+          };
+          const changedRootDecls = Object.fromEntries(
+            Object.entries(rootDecls).filter(
+              ([name, value]) => baseRootDecls[name] !== value
+            )
+          ) as Record<string, string | number>;
+
+          return {
+            minWidth: containerWidthPx,
+            rootDecls: changedRootDecls,
+            items: rulePositioned.items.map((positionedItem, index) => {
+              const topCssExpr = ruleCssPositioned.itemTopCssExprs[index];
+              const baseTopCssExpr = baseCssPositioned.itemTopCssExprs[index];
+
+              return {
+                index,
+                ...(topCssExpr !== baseTopCssExpr ? { topCssExpr } : null),
+                ...(basePositioned.items[index]?.columnStart !==
+                  positionedItem.columnStart
+                  ? {
+                      leftCssExpr: buildMasonryItemLeftCssExpr({
+                        columnStart: positionedItem.columnStart,
+                        columnWidthCssExpr,
+                        gapCssExpr,
+                      }),
+                    }
+                  : null),
+                ...(basePositioned.items[index]?.span !== positionedItem.span
+                  ? {
+                      widthCssExpr: buildMasonryItemWidthCssExpr({
+                        span: positionedItem.span,
+                        columnWidthCssExpr,
+                        gapCssExpr,
+                      }),
+                    }
+                  : null),
+              };
+            }),
+          };
+        })
+        .filter(
+          (rule) =>
+            Object.keys(rule.rootDecls).length > 0 ||
+            rule.items.some(
+              (item) =>
+                item.topCssExpr != null ||
+                item.leftCssExpr != null ||
+                item.widthCssExpr != null
+            )
+        );
+    };
 
     const containerCssRules = buildContainerCssRulesForMode("default");
     const safariContainerCssRules = buildContainerCssRulesForMode("safari");
@@ -2664,25 +2705,35 @@ export function buildMasonryFirstPaintLayoutCss(args: {
     items: Array<{
       index: number;
       topCssExpr?: string;
-      leftCssExpr: string;
-      widthCssExpr: string;
+      leftCssExpr?: string;
+      widthCssExpr?: string;
     }>
   ) => {
     const rootCss =
-      `${scopeSelector}{` +
-      rootDecls.map(([name, value]) => importantDecl(name, value)).join("") +
-      `}`;
+      rootDecls.length > 0
+        ? `${scopeSelector}{` +
+          rootDecls.map(([name, value]) => importantDecl(name, value)).join("") +
+          `}`
+        : "";
     const itemCss = items
       .map((item) => {
         const itemSelector = `${scopeSelector}>[data-rmg-idx="${item.index}"]`;
+        const decls = [
+          item.topCssExpr != null
+            ? importantDecl("top", item.topCssExpr)
+            : null,
+          item.leftCssExpr != null
+            ? importantDecl("left", item.leftCssExpr)
+            : null,
+          item.widthCssExpr != null
+            ? importantDecl("width", item.widthCssExpr)
+            : null,
+        ].filter((decl): decl is string => !!decl);
+
+        if (!decls.length) return "";
+
         return (
-          `${itemSelector}{` +
-          [
-            importantDecl("top", item.topCssExpr ?? "0px"),
-            importantDecl("left", item.leftCssExpr),
-            importantDecl("width", item.widthCssExpr),
-          ].join("") +
-          `}`
+          `${itemSelector}{` + decls.join("") + `}`
         );
       })
       .join("");
@@ -2703,12 +2754,11 @@ export function buildMasonryFirstPaintLayoutCss(args: {
       }))
     );
     const containerCss = (variant.containerCssRules ?? [])
-      .map((rule) =>
-        `@container (min-width:${rule.minWidth}px){${buildRuleCss(
-          Object.entries(rule.rootDecls),
-          rule.items
-        )}}`
-      )
+      .map((rule) => {
+        const css = buildRuleCss(Object.entries(rule.rootDecls), rule.items);
+        return css ? `@container (min-width:${rule.minWidth}px){${css}}` : "";
+      })
+      .filter(Boolean)
       .join("");
     const safariCss = buildRuleCss(
       buildMasonrySeedRootDecls(variant, "safari"),
@@ -2720,12 +2770,11 @@ export function buildMasonryFirstPaintLayoutCss(args: {
       }))
     );
     const safariContainerCss = (variant.safariContainerCssRules ?? [])
-      .map((rule) =>
-        `@container (min-width:${rule.minWidth}px){${buildRuleCss(
-          Object.entries(rule.rootDecls),
-          rule.items
-        )}}`
-      )
+      .map((rule) => {
+        const css = buildRuleCss(Object.entries(rule.rootDecls), rule.items);
+        return css ? `@container (min-width:${rule.minWidth}px){${css}}` : "";
+      })
+      .filter(Boolean)
       .join("");
 
     return `${baseCss}${containerCss}@supports ${SAFARI_TEXT_SKELETON_SUPPORTS}{${safariCss}${safariContainerCss}}`;
