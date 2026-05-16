@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.36",
+  "version": "2.0.37",
   "description": "Composable React media gallery primitives for sliders, grids, masonry, fullscreen, video, zoom/pan, and stable skeleton loading",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "React Motion Gallery",

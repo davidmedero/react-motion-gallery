@@ -149,6 +149,38 @@ export type FullscreenLazyLoadOptions = {
   videos?: FullscreenLazyLoadConfig;
 };
 
+export type FullscreenCloseScrollTiming = "before-close" | "after-close";
+
+export type FullscreenMobileDetectionContext = {
+  viewportWidth: number;
+  viewportHeight: number;
+  visualViewportWidth: number;
+  visualViewportHeight: number;
+  coarsePointer: boolean;
+  hoverNone: boolean;
+  maxTouchPoints: number;
+  userAgent: string;
+};
+
+export type FullscreenCloseScrollContext = FullscreenMobileDetectionContext & {
+  index: number;
+  layout?: "slider" | "grid" | "masonry" | "entries" | null;
+  target: HTMLElement | null;
+  isMobile: boolean;
+};
+
+export type FullscreenCloseScrollEnabled =
+  | boolean
+  | "desktop-only"
+  | "mobile-only"
+  | ((context: FullscreenCloseScrollContext) => boolean);
+
+export type FullscreenCloseScrollOptions = {
+  enabled?: FullscreenCloseScrollEnabled;
+  timing?: FullscreenCloseScrollTiming;
+  mobileDetection?: (context: FullscreenMobileDetectionContext) => boolean;
+};
+
 export type FullscreenOptions = {
   enabled?: boolean;
   items?: MediaItem[] | string[];
@@ -160,6 +192,7 @@ export type FullscreenOptions = {
   zoom?: FullscreenZoomPanOptions;
   effects?: FullscreenEffectsOptions;
   lazyLoad?: FullscreenLazyLoadOptions;
+  closeScroll?: boolean | FullscreenCloseScrollOptions;
 };
 
 export type FullscreenPluginKind =

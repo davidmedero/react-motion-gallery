@@ -475,6 +475,29 @@ type FullscreenLazyLoadOptions = {
     images?: FullscreenLazyLoadConfig;
     videos?: FullscreenLazyLoadConfig;
 };
+type FullscreenCloseScrollTiming = "before-close" | "after-close";
+type FullscreenMobileDetectionContext = {
+    viewportWidth: number;
+    viewportHeight: number;
+    visualViewportWidth: number;
+    visualViewportHeight: number;
+    coarsePointer: boolean;
+    hoverNone: boolean;
+    maxTouchPoints: number;
+    userAgent: string;
+};
+type FullscreenCloseScrollContext = FullscreenMobileDetectionContext & {
+    index: number;
+    layout?: "slider" | "grid" | "masonry" | "entries" | null;
+    target: HTMLElement | null;
+    isMobile: boolean;
+};
+type FullscreenCloseScrollEnabled = boolean | "desktop-only" | "mobile-only" | ((context: FullscreenCloseScrollContext) => boolean);
+type FullscreenCloseScrollOptions = {
+    enabled?: FullscreenCloseScrollEnabled;
+    timing?: FullscreenCloseScrollTiming;
+    mobileDetection?: (context: FullscreenMobileDetectionContext) => boolean;
+};
 type FullscreenOptions = {
     enabled?: boolean;
     items?: MediaItem[] | string[];
@@ -486,6 +509,7 @@ type FullscreenOptions = {
     zoom?: FullscreenZoomPanOptions;
     effects?: FullscreenEffectsOptions;
     lazyLoad?: FullscreenLazyLoadOptions;
+    closeScroll?: boolean | FullscreenCloseScrollOptions;
 };
 type FullscreenPluginKind = "slider" | "controls" | "captions" | "zoom-pan" | "video" | "lazy-load" | "crossfade" | "thumbnails";
 type FullscreenPluginOptions = Partial<FullscreenOptions>;
@@ -527,4 +551,4 @@ type ResponsiveLength = ResponsiveLengthValue | Record<string, ResponsiveLengthV
 type ResponsivePosition = ThumbnailPosition | Array<ThumbnailPosition> | Record<string, ThumbnailPosition>;
 type ResponsiveCaptionPlacement = FsCaptionPlacement | Array<FsCaptionPlacement> | Record<string, FsCaptionPlacement>;
 
-export type { FSImageRender as A, ResponsivePosition as B, EntriesOptions as E, FullscreenCaptionOptions as F, IntroOptions as I, MediaEntryLink as M, PanAxisType as P, ResponsiveCaptionPlacement as R, SlideOwner as S, FullscreenControlsOptions as a, FullscreenCrossfadeOptions as b, FullscreenLazyLoadOptions as c, FullscreenOptions as d, FullscreenPlugin as e, FullscreenPluginKind as f, FullscreenSliderOptions as g, FullscreenVideoOptions as h, FullscreenZoomPanOptions as i, FsCaptionPlacement as j, FsIntroRequest as k, ResponsiveLength as l, ResponsiveLengthValue as m, EntryItem as n, EntryMediaRenderArgs as o, EntryOverlayRenderArgs as p, EntryOverlayStyle as q, EntryMediaLayout as r, EntryCardRenderArgs as s, EntrySkeletonResolverArgs as t, EntriesLoadingOptions as u, EntrySkeletonRenderArgs as v, FullscreenClose as w, FullscreenArrows as x, FullscreenCounter as y, FsCaptionRenderArgs as z };
+export type { EntrySkeletonRenderArgs as A, FullscreenClose as B, FullscreenArrows as C, FullscreenCounter as D, EntriesOptions as E, FullscreenCaptionOptions as F, FsCaptionRenderArgs as G, FSImageRender as H, IntroOptions as I, ResponsivePosition as J, MediaEntryLink as M, PanAxisType as P, ResponsiveCaptionPlacement as R, SlideOwner as S, FullscreenCloseScrollContext as a, FullscreenCloseScrollEnabled as b, FullscreenCloseScrollOptions as c, FullscreenCloseScrollTiming as d, FullscreenControlsOptions as e, FullscreenCrossfadeOptions as f, FullscreenLazyLoadOptions as g, FullscreenMobileDetectionContext as h, FullscreenOptions as i, FullscreenPlugin as j, FullscreenPluginKind as k, FullscreenSliderOptions as l, FullscreenVideoOptions as m, FullscreenZoomPanOptions as n, FsCaptionPlacement as o, FsIntroRequest as p, ResponsiveLength as q, ResponsiveLengthValue as r, EntryItem as s, EntryMediaRenderArgs as t, EntryOverlayRenderArgs as u, EntryOverlayStyle as v, EntryMediaLayout as w, EntryCardRenderArgs as x, EntrySkeletonResolverArgs as y, EntriesLoadingOptions as z };

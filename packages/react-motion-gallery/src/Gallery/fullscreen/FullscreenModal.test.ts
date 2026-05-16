@@ -6,8 +6,10 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vite
 
 import {
   FullscreenModal,
+  isLikelyFullscreenCloseScrollMobile,
   resolveCenteredScrollTop,
   resolveCloseShieldReleaseMs,
+  resolveFullscreenCloseScrollPolicy,
   shouldUseFadeClose,
 } from "./FullscreenModal";
 
@@ -119,6 +121,18 @@ describe("shouldUseFadeClose", () => {
     ).toBe(false);
   });
 
+  test("uses fade close when a transform target is unavailable", () => {
+    expect(
+      shouldUseFadeClose({
+        introFade: false,
+        isVideoSlide: false,
+        introMethod: "scale",
+        isLatchedIntroIndex: true,
+        hasTransformTarget: false,
+      })
+    ).toBe(true);
+  });
+
   test("uses fade close for introFade and video slides", () => {
     expect(
       shouldUseFadeClose({
@@ -194,8 +208,90 @@ describe("resolveCenteredScrollTop", () => {
   });
 });
 
+describe("fullscreen close scroll policy", () => {
+  const mobileContext = {
+    viewportWidth: 390,
+    viewportHeight: 700,
+    visualViewportWidth: 390,
+    visualViewportHeight: 700,
+    coarsePointer: true,
+    hoverNone: true,
+    maxTouchPoints: 5,
+    userAgent: "test",
+  };
+
+  test("detects phone-like mobile viewports without relying on user agent only", () => {
+    expect(isLikelyFullscreenCloseScrollMobile(mobileContext)).toBe(true);
+    expect(
+      isLikelyFullscreenCloseScrollMobile({
+        ...mobileContext,
+        viewportWidth: 844,
+        viewportHeight: 390,
+        visualViewportWidth: 844,
+        visualViewportHeight: 390,
+      })
+    ).toBe(true);
+    expect(
+      isLikelyFullscreenCloseScrollMobile({
+        ...mobileContext,
+        viewportWidth: 1280,
+        viewportHeight: 900,
+        visualViewportWidth: 1280,
+        visualViewportHeight: 900,
+      })
+    ).toBe(false);
+  });
+
+  test("defaults to disabled and supports desktop-only mobile gating", () => {
+    expect(
+      resolveFullscreenCloseScrollPolicy({
+        closeScroll: false,
+        index: 0,
+        layout: "grid",
+        target: null,
+        mobileContext,
+      }).enabled
+    ).toBe(false);
+
+    expect(
+      resolveFullscreenCloseScrollPolicy({
+        closeScroll: true,
+        index: 0,
+        layout: "grid",
+        target: null,
+        mobileContext,
+      })
+    ).toMatchObject({ enabled: true, timing: "before-close", isMobile: true });
+
+    expect(
+      resolveFullscreenCloseScrollPolicy({
+        closeScroll: { enabled: "desktop-only" },
+        index: 0,
+        layout: "grid",
+        target: null,
+        mobileContext,
+      }).enabled
+    ).toBe(false);
+  });
+
+  test("allows custom mobile detection to override the built-in heuristic", () => {
+    expect(
+      resolveFullscreenCloseScrollPolicy({
+        closeScroll: {
+          enabled: "desktop-only",
+          mobileDetection: () => false,
+        },
+        index: 0,
+        layout: "grid",
+        target: null,
+        mobileContext,
+      })
+    ).toMatchObject({ enabled: true, isMobile: false });
+  });
+});
+
 describe("fullscreen close sequencing", () => {
-  test("centers a grid thumb before starting the visible close animation", async () => {
+  function setupGridCloseScenario(closeScroll?: any) {
     vi.useFakeTimers();
 
     const events: string[] = [];
@@ -262,8 +358,8 @@ describe("fullscreen close sequencing", () => {
       this: HTMLElement
     ) {
       const testId = this.getAttribute("data-rmg-test");
-      if (testId === "dest-host") return rect(24, 900, 180, 200);
-      if (testId === "dest-img") return rect(24, 900, 180, 200);
+      if (testId === "dest-host") return rect(24, 900 - scrollY, 180, 200);
+      if (testId === "dest-img") return rect(24, 900 - scrollY, 180, 200);
       if (testId === "fs-img") return rect(40, 80, 300, 420);
       if (this.classList.contains("fs_modal")) return rect(0, 0, 390, 700);
       return rect(0, 0, 390, 700);
@@ -342,6 +438,7 @@ describe("fullscreen close sequencing", () => {
           requestFsCloseRef,
           cancelFsCloseRef,
           fs: {
+            closeScroll,
             controls: {
               close: {
                 render: () => React.createElement("span", null, "close"),
@@ -365,10 +462,44 @@ describe("fullscreen close sequencing", () => {
     ) as HTMLButtonElement | null;
     expect(closeButton).not.toBeNull();
 
+    return {
+      cancelFsCloseRef,
+      closeButton,
+      container,
+      events,
+      root,
+    };
+  }
+
+  async function clickClose(closeButton: HTMLButtonElement | null) {
     await React.act(async () => {
       closeButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       await Promise.resolve();
     });
+  }
+
+  test("does not page-scroll by default during grid close", async () => {
+    const { closeButton, container, events, root } = setupGridCloseScenario();
+
+    await clickClose(closeButton);
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(340);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true", "closing:false"]);
+
+    unmount(root, container);
+  });
+
+  test("centers a grid thumb before starting the visible close animation when enabled", async () => {
+    const { cancelFsCloseRef, closeButton, container, events, root } =
+      setupGridCloseScenario(true);
+
+    await clickClose(closeButton);
 
     expect(events).toEqual(["scrollTo"]);
     expect(cancelFsCloseRef.current).toEqual(expect.any(Function));
@@ -377,21 +508,6 @@ describe("fullscreen close sequencing", () => {
     expect(events).toEqual(["scrollTo"]);
 
     await flushAnimationFrame();
-    expect(events).toEqual(["scrollTo"]);
-
-    await flushAnimationFrame();
-    expect(events).toEqual(["scrollTo"]);
-
-    await React.act(async () => {
-      vi.advanceTimersByTime(299);
-      await Promise.resolve();
-    });
-    expect(events).toEqual(["scrollTo"]);
-
-    await React.act(async () => {
-      vi.advanceTimersByTime(1);
-      await Promise.resolve();
-    });
     expect(events).toEqual(["scrollTo"]);
 
     await flushAnimationFrame();
@@ -404,6 +520,30 @@ describe("fullscreen close sequencing", () => {
     });
 
     expect(events).toContain("closing:false");
+
+    unmount(root, container);
+  });
+
+  test("can defer grid page scroll until after close teardown", async () => {
+    const { closeButton, container, events, root } = setupGridCloseScenario({
+      enabled: true,
+      timing: "after-close",
+    });
+
+    await clickClose(closeButton);
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(340);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true", "closing:false"]);
+
+    await flushAnimationFrame();
+
+    expect(events).toEqual(["closing:true", "closing:false", "scrollTo"]);
 
     unmount(root, container);
   });

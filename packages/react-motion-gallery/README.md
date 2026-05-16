@@ -38,8 +38,8 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `slider/crossfade` | 2.8kB |
 | `slider/fullscreen` | 959.0B |
 | `ThumbnailSlider` | 18.9kB |
-| `useFullscreenController` | 4.9kB |
-| `fullscreen/slider` | 36.8kB |
+| `useFullscreenController` | 5.0kB |
+| `fullscreen/slider` | 37.5kB |
 | `fullscreen/controls` | 173.0B |
 | `fullscreen/captions` | 13.1kB |
 | `fullscreen/zoom-pan` | 9.9kB |

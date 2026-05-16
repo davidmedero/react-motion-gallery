@@ -139,6 +139,18 @@ function mergeFullscreenOptionLayer(
     };
   }
 
+  if (
+    base.closeScroll &&
+    layer.closeScroll &&
+    typeof base.closeScroll === "object" &&
+    typeof layer.closeScroll === "object"
+  ) {
+    merged.closeScroll = {
+      ...base.closeScroll,
+      ...layer.closeScroll,
+    };
+  }
+
   if (base.effects || layer.effects) {
     merged.effects = {
       ...(base.effects ?? {}),

@@ -70,9 +70,14 @@ export type { MasonryReadyController } from "./masonry-ready";
 export type { EntriesOptions, MediaEntryLink, SlideOwner } from "./Gallery/entries";
 export type {
   FullscreenCaptionOptions,
+  FullscreenCloseScrollContext,
+  FullscreenCloseScrollEnabled,
+  FullscreenCloseScrollOptions,
+  FullscreenCloseScrollTiming,
   FullscreenControlsOptions,
   FullscreenCrossfadeOptions,
   FullscreenLazyLoadOptions,
+  FullscreenMobileDetectionContext,
   FullscreenOptions,
   FullscreenPlugin,
   FullscreenPluginKind,

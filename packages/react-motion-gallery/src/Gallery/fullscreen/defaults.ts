@@ -6,6 +6,7 @@ const DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_EASING =
 
 export const DEFAULT_FULLSCREEN = {
   enabled: false,
+  closeScroll: false,
   controls: {
     close: {
       enabled: true,

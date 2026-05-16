@@ -4,7 +4,7 @@ import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
 import { MediaItem } from './media.mjs';
 import { a as GalleryCoreApi, m as SliderNodeInput, n as SliderRemoveTarget, j as SliderHandle, H as FullscreenOpenRequest } from './types-BiXSaEk7.mjs';
 export { G as GalleryApi, b as GalleryLayoutApi } from './types-BiXSaEk7.mjs';
-import { M as MediaEntryLink } from './responsive-CrESIWcm.mjs';
+import { M as MediaEntryLink } from './responsive-BnHorKhC.mjs';
 import './force-C5m1QpdF.mjs';
 import './types-DXFoG8LC.mjs';
 import './transitions-DU3ftmIq.mjs';

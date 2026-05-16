@@ -1,6 +1,6 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { d as FullscreenOptions, e as FullscreenPlugin, w as FullscreenClose, x as FullscreenArrows, y as FullscreenCounter, l as ResponsiveLength, R as ResponsiveCaptionPlacement, z as FsCaptionRenderArgs, A as FSImageRender, h as FullscreenVideoOptions, c as FullscreenLazyLoadOptions } from './responsive-CrESIWcm.mjs';
-export { j as FsCaptionPlacement, k as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenControlsOptions, b as FullscreenCrossfadeOptions, f as FullscreenPluginKind, g as FullscreenSliderOptions, i as FullscreenZoomPanOptions } from './responsive-CrESIWcm.mjs';
+import { i as FullscreenOptions, j as FullscreenPlugin, B as FullscreenClose, C as FullscreenArrows, D as FullscreenCounter, q as ResponsiveLength, R as ResponsiveCaptionPlacement, G as FsCaptionRenderArgs, H as FSImageRender, m as FullscreenVideoOptions, g as FullscreenLazyLoadOptions, c as FullscreenCloseScrollOptions } from './responsive-BnHorKhC.mjs';
+export { o as FsCaptionPlacement, p as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenCloseScrollContext, b as FullscreenCloseScrollEnabled, d as FullscreenCloseScrollTiming, e as FullscreenControlsOptions, f as FullscreenCrossfadeOptions, h as FullscreenMobileDetectionContext, k as FullscreenPluginKind, l as FullscreenSliderOptions, n as FullscreenZoomPanOptions } from './responsive-BnHorKhC.mjs';
 import React__default from 'react';
 import { MediaItem } from './media.mjs';
 import { g as SliderSkipSnaps, d as CrossFadeWheel, H as FullscreenOpenRequest } from './types-BiXSaEk7.mjs';
@@ -81,6 +81,7 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
         renderImage?: FSImageRender;
         video?: FullscreenVideoOptions;
         lazyLoad?: FullscreenLazyLoadOptions;
+        closeScroll: boolean | FullscreenCloseScrollOptions;
         thumbnails?: unknown;
     };
     fullscreenNode: react_jsx_runtime.JSX.Element | null;
@@ -122,4 +123,4 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
     closingModal: boolean;
 };
 
-export { FullscreenLazyLoadOptions, FullscreenOptions, FullscreenPlugin, FullscreenVideoOptions, useFullscreenController };
+export { FullscreenCloseScrollOptions, FullscreenLazyLoadOptions, FullscreenOptions, FullscreenPlugin, FullscreenVideoOptions, useFullscreenController };

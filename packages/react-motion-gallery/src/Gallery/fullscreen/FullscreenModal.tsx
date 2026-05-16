@@ -14,7 +14,12 @@ import { containTransformForRect, coverTransformForRect, objectFitContentRect } 
 import { MediaItem } from '../shared/types/media';
 import { FullscreenOpenMethod, IndexMode } from '../api/types';
 import { MediaEntryLink } from '../entries';
-import { FullscreenOptions } from './types';
+import {
+  FullscreenCloseScrollOptions,
+  FullscreenCloseScrollTiming,
+  FullscreenMobileDetectionContext,
+  FullscreenOptions,
+} from './types';
 import { DefaultCloseIcon } from './controls/DefaultCloseIcon';
 import { DefaultCounterText } from './controls/DefaultCounterText';
 import { scrollEntrySectionIntoView, waitForEntryOwnerReady, isEntryOwnerReady } from './entryOwnerReady';
@@ -84,7 +89,7 @@ type TrackStyleMutation = (
 type TrackMutedMutation = (el: HTMLMediaElement | null, value: boolean) => void
 
 const CLOSE_POINTER_GUARD_MS = 80;
-const POST_SCROLL_CLOSE_PAINT_DELAY_MS = 300;
+const CLOSE_SCROLL_MOBILE_MAX_VIEWPORT_WIDTH = 767;
 
 export function shouldUseFadeClose(args: {
   introFade?: boolean;
@@ -95,8 +100,113 @@ export function shouldUseFadeClose(args: {
 }) {
   if (args.introFade || args.isVideoSlide) return true;
   if (args.introMethod === 'fade' && args.isLatchedIntroIndex) return true;
+  if (args.hasTransformTarget === false) return true;
   if (args.hasTransformTarget) return false;
   return args.introMethod === 'fade';
+}
+
+export function isLikelyFullscreenCloseScrollMobile(
+  context: FullscreenMobileDetectionContext
+) {
+  const shortestSideCandidates = [
+    Math.min(context.visualViewportWidth, context.visualViewportHeight),
+    Math.min(context.viewportWidth, context.viewportHeight),
+  ].filter((value) => Number.isFinite(value) && value > 0);
+  const narrowViewport =
+    shortestSideCandidates.length > 0
+      ? Math.min(...shortestSideCandidates) <= CLOSE_SCROLL_MOBILE_MAX_VIEWPORT_WIDTH
+      : false;
+
+  return (
+    narrowViewport &&
+    context.hoverNone &&
+    (context.coarsePointer || context.maxTouchPoints > 0)
+  );
+}
+
+function safeMatchMedia(query: string) {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+
+  try {
+    return window.matchMedia(query).matches;
+  } catch {
+    return false;
+  }
+}
+
+function readCloseScrollMobileContext(): FullscreenMobileDetectionContext {
+  const win = typeof window !== "undefined" ? window : undefined;
+  const visualViewport = win?.visualViewport;
+  const doc = typeof document !== "undefined" ? document.documentElement : undefined;
+  const nav = typeof navigator !== "undefined" ? navigator : undefined;
+
+  return {
+    viewportWidth: win?.innerWidth || doc?.clientWidth || 0,
+    viewportHeight: win?.innerHeight || doc?.clientHeight || 0,
+    visualViewportWidth: visualViewport?.width ?? win?.innerWidth ?? doc?.clientWidth ?? 0,
+    visualViewportHeight: visualViewport?.height ?? win?.innerHeight ?? doc?.clientHeight ?? 0,
+    coarsePointer: safeMatchMedia("(pointer: coarse)"),
+    hoverNone: safeMatchMedia("(hover: none)"),
+    maxTouchPoints: nav?.maxTouchPoints ?? 0,
+    userAgent: nav?.userAgent ?? "",
+  };
+}
+
+type ResolvedCloseScrollPolicy = {
+  enabled: boolean;
+  timing: FullscreenCloseScrollTiming;
+  isMobile: boolean;
+};
+
+export function resolveFullscreenCloseScrollPolicy(args: {
+  closeScroll: FullscreenOptions["closeScroll"];
+  index: number;
+  layout?: "slider" | "grid" | "masonry" | "entries" | null;
+  target: HTMLElement | null;
+  mobileContext?: FullscreenMobileDetectionContext;
+}): ResolvedCloseScrollPolicy {
+  const raw = args.closeScroll;
+
+  if (raw == null || raw === false) {
+    return { enabled: false, timing: "before-close", isMobile: false };
+  }
+
+  const options: FullscreenCloseScrollOptions =
+    typeof raw === "object" ? raw : {};
+  const mobileContext = args.mobileContext ?? readCloseScrollMobileContext();
+  const isMobile =
+    typeof options.mobileDetection === "function"
+      ? !!options.mobileDetection(mobileContext)
+      : isLikelyFullscreenCloseScrollMobile(mobileContext);
+  const context = {
+    ...mobileContext,
+    index: args.index,
+    layout: args.layout,
+    target: args.target,
+    isMobile,
+  };
+
+  const enabledValue =
+    typeof raw === "object" ? options.enabled ?? true : raw;
+  let enabled: boolean;
+
+  if (typeof enabledValue === "function") {
+    enabled = !!enabledValue(context);
+  } else if (enabledValue === "desktop-only") {
+    enabled = !isMobile;
+  } else if (enabledValue === "mobile-only") {
+    enabled = isMobile;
+  } else {
+    enabled = !!enabledValue;
+  }
+
+  return {
+    enabled,
+    timing: options.timing === "after-close" ? "after-close" : "before-close",
+    isMobile,
+  };
 }
 
 export function resolveCloseShieldReleaseMs(durationMs: number) {
@@ -696,13 +806,6 @@ async function waitForWindowScrollSettle(targetTop: number): Promise<void> {
   await waitForAnimationFrames(1);
 }
 
-async function waitForPostScrollClosePaint(): Promise<void> {
-  await new Promise<void>((resolve) => {
-    window.setTimeout(resolve, POST_SCROLL_CLOSE_PAINT_DELAY_MS);
-  });
-  await waitForAnimationFrames(1);
-}
-
 async function scrollElementIntoCenterView(el: HTMLElement | null): Promise<boolean> {
   if (!el) return false;
 
@@ -952,6 +1055,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const trackedCloseKeysRef = React.useRef<WeakMap<object, Set<string>>>(new WeakMap());
   const closeInProgressRef = React.useRef(false);
   const closeAnimationStartedRef = React.useRef(false);
+  const postCloseScrollActionRef = React.useRef<null | (() => void | Promise<void>)>(null);
 
   const restoreTrackedCloseMutations = React.useCallback(() => {
     for (let i = trackedCloseMutationsRef.current.length - 1; i >= 0; i -= 1) {
@@ -1033,6 +1137,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       if (cancelFsCloseRef.current) cancelFsCloseRef.current = null;
       closeInProgressRef.current = false;
       closeAnimationStartedRef.current = false;
+      postCloseScrollActionRef.current = null;
       unmountShield();
     };
   }, [cancelFsCloseRef]);
@@ -1317,6 +1422,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     closeInProgressRef.current = true;
     closeAnimationStartedRef.current = false;
+    postCloseScrollActionRef.current = null;
 
     cancelFsCloseRef.current = () => {
       if (!closeInProgressRef.current) return;
@@ -1746,15 +1852,26 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       void slider.current.offsetWidth;
     }
 
-    const waitForEntriesOwnerReady = async () => {
+    const waitForEntriesOwnerReady = async (
+      options: { scrollPage?: boolean } = {}
+    ) => {
       if (layout !== "entries" || !entryMapRef?.current) return;
 
       const link = entryMapRef.current[canonicalIdx];
       if (!link) return;
 
       localSlideIdx = link.mediaIndex;
-      await scrollEntrySectionIntoView(link.entryIndex);
-      await waitForEntryOwnerReady(link.entryIndex);
+      const shouldScrollPage = options.scrollPage !== false;
+
+      if (shouldScrollPage) {
+        await scrollEntrySectionIntoView(link.entryIndex);
+      } else if (!isEntryOwnerReady(link.entryIndex)) {
+        syncFullscreenSourceFromIndex(canonicalIdx);
+        return;
+      }
+
+      const ready = await waitForEntryOwnerReady(link.entryIndex);
+      if (!ready) return;
 
       // waitForEntryOwnerReady resolves when React sets data-rmg-entry-ready="1", which is
       // when CSS transitions START — not when they finish. Directly force the skeleton and
@@ -1805,7 +1922,39 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     }
 
     if (!isGridish) {
-      await waitForEntriesOwnerReady();
+      let entryCloseScrollPolicy: ResolvedCloseScrollPolicy | null = null;
+      let entryCloseScrollTarget: HTMLElement | null = null;
+
+      if (layout === "entries" && entryMapRef?.current) {
+        const link = entryMapRef.current[canonicalIdx];
+        if (link) {
+          entryCloseScrollTarget = document.querySelector<HTMLElement>(
+            `[data-rmg-entry-owner="${link.entryIndex}"]`
+          );
+          entryCloseScrollPolicy = resolveFullscreenCloseScrollPolicy({
+            closeScroll: fs.closeScroll,
+            index: canonicalIdx,
+            layout,
+            target: entryCloseScrollTarget,
+          });
+
+          if (
+            entryCloseScrollPolicy.enabled &&
+            entryCloseScrollPolicy.timing === "after-close" &&
+            entryCloseScrollTarget
+          ) {
+            postCloseScrollActionRef.current = () =>
+              scrollElementIntoCenterView(entryCloseScrollTarget);
+          }
+        }
+      }
+
+      const shouldScrollEntryBeforeClose =
+        !entryCloseScrollPolicy ||
+        (entryCloseScrollPolicy.enabled &&
+          entryCloseScrollPolicy.timing === "before-close");
+
+      await waitForEntriesOwnerReady({ scrollPage: shouldScrollEntryBeforeClose });
 
       if (closeSpinnerEl) {
         closeSpinnerEl.style.setProperty('opacity', '0', 'important');
@@ -1828,12 +1977,35 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         resolveRegisteredCellHost(canonicalIdx) ??
         document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`) ??
         null;
-      const didScrollPage = await scrollElementIntoCenterView(el);
-      await waitForEntriesOwnerReady();
-      if (didScrollPage) {
-        await waitForPostScrollClosePaint();
+
+      const closeScrollPolicy = resolveFullscreenCloseScrollPolicy({
+        closeScroll: fs.closeScroll,
+        index: canonicalIdx,
+        layout,
+        target: el,
+      });
+      const shouldScrollBeforeClose =
+        closeScrollPolicy.enabled && closeScrollPolicy.timing === "before-close";
+      const shouldScrollAfterClose =
+        closeScrollPolicy.enabled && closeScrollPolicy.timing === "after-close";
+
+      if (shouldScrollAfterClose && el) {
+        postCloseScrollActionRef.current = () => scrollElementIntoCenterView(el);
       }
+
+      if (shouldScrollBeforeClose) {
+        await scrollElementIntoCenterView(el);
+      }
+
+      await waitForEntriesOwnerReady({ scrollPage: shouldScrollBeforeClose });
+
       gridishTransformDestImg = resolveGridishTransformDestImg(canonicalIdx);
+      if (
+        gridishTransformDestImg &&
+        !isElementOnScreen(gridishTransformDestImg, 0.05)
+      ) {
+        gridishTransformDestImg = null;
+      }
     }
 
     const url = originals[canonicalIdx];
@@ -1944,6 +2116,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   }, [requestFsCloseRef, proceedToClose]);
 
   function safeTeardown() {
+    const postCloseScrollAction = postCloseScrollActionRef.current;
+    postCloseScrollActionRef.current = null;
+
     if (cancelFsCloseRef.current) cancelFsCloseRef.current = null;
     closeInProgressRef.current = false;
     closeAnimationStartedRef.current = false;
@@ -1977,6 +2152,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     setShowFullscreenSlider(false)
     setClosingModal(false)
     setLatchedIntroMethod(null)
+
+    if (postCloseScrollAction && typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => {
+        void postCloseScrollAction();
+      });
+    }
   }
 
   const closeEnabled = fs?.controls?.close?.enabled !== false;
