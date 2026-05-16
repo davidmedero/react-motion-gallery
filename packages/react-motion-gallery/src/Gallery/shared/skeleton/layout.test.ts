@@ -2,11 +2,9 @@ import { describe, expect, test } from "vitest";
 
 import { BREAKPOINT_MAP } from "../responsive";
 import {
-  buildResponsiveBaseStyleCssRules,
   buildResponsiveContainerStyleCssRules,
   containerStylesPlain,
   collectResponsiveStyleBreakpoints,
-  nodeStyleVars,
   resolveInlineResponsiveContainerStyle,
   resolveResponsiveBaseStyleAtMinWidth,
   resolveResponsiveContainerStyleAtMinWidth,
@@ -191,43 +189,6 @@ describe("skeleton responsive style helpers", () => {
         raw: true,
       },
     ]);
-  });
-
-  test("serializes explicit skeleton node heights before width and paint styles", () => {
-    expect(
-      Object.keys(
-        nodeStyleVars(
-          {
-            width: 56,
-            minWidth: 24,
-            height: 40,
-            minHeight: 32,
-            maxHeight: 64,
-            borderRadius: 12,
-          },
-          undefined
-        )
-      ).slice(0, 6)
-    ).toEqual([
-      "height",
-      "minHeight",
-      "maxHeight",
-      "inlineSize",
-      "width",
-      "minInlineSize",
-    ]);
-
-    expect(
-      buildResponsiveBaseStyleCssRules({
-        style: {
-          0: {
-            width: 56,
-            height: 40,
-            borderRadius: 12,
-          },
-        },
-      })[0]?.css
-    ).toBe("__NODE_SEL__{height:40px;inline-size:56px;width:56px;--rmg-skel-radius:12px;}");
   });
 
   test("serializes typed flex container and item style props", () => {

@@ -507,12 +507,12 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                         data-rmg-mskel-index={item.index}
                         className={itemClassName}
                         style={{
-                          height: item.heightCssExpr,
                           ...(item.slot?.itemWrapStyle
                             ? applyBoxMargins(item.slot.itemWrapStyle)
                             : null),
                           ...(outerStyle ?? null),
                           width: "100%",
+                          height: item.heightCssExpr,
                           marginBottom,
                         }}
                       >
@@ -548,12 +548,12 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
           key={variant.state.key}
           data-rmg-mskel-variant={variant.state.key}
           style={{
+            position: "relative",
+            width: "100%",
             height:
               structuredLayout && !canUseNumericPositioning
                 ? (variant.shellHeightCssExpr ?? `${shellHeight}px`)
                 : `${shellHeight}px`,
-            position: "relative",
-            width: "100%",
             display: jsControlled
               ? variant.state.key === activeKey ? "block" : "none"
               : variant.state.key === prediction.states[0]?.key
@@ -574,11 +574,11 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                     .filter(Boolean)
                     .join(" ")}
                   style={{
-                    height: `${item.height}px`,
                     position: "absolute",
                     top: `${item.top}px`,
                     left: item.leftCssExpr,
                     width: item.widthCssExpr,
+                    height: `${item.height}px`,
                   }}
                 />
               );
@@ -594,10 +594,6 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                 data-rmg-mskel-index={item.index}
                 className={itemClassName}
                 style={{
-                  height:
-                    canUseNumericPositioning
-                      ? `${item.height}px`
-                      : item.heightCssExpr,
                   ...(item.slot?.itemWrapStyle ? applyBoxMargins(item.slot.itemWrapStyle) : null),
                   ...(outerStyle ?? null),
                   position: "absolute",
@@ -613,6 +609,10 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                     canUseNumericPositioning
                       ? `${item.widthPx}px`
                       : item.widthCssExpr,
+                  height:
+                    canUseNumericPositioning
+                      ? `${item.height}px`
+                      : item.heightCssExpr,
                   minWidth: 0,
                 }}
               >

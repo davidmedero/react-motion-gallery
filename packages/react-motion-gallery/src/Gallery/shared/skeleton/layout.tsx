@@ -396,22 +396,14 @@ export function nodeStyleVars(
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
 
-  const h = cssLen(base?.height);
-  const minH = cssLen(base?.minHeight);
-  const mh = cssLen(base?.maxHeight);
+  if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio as any;
+
   const w = cssLen(base?.width);
   const minW = cssLen(base?.minWidth);
   const mw = cssLen(base?.maxWidth);
-
-  if (h != null) {
-    s.height = h;
-  } else if (base?.aspectRatio != null) {
-    (s as any).height = "auto";
-  }
-  if (minH != null) s.minHeight = minH;
-  if (mh != null) s.maxHeight = mh;
-
-  if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio as any;
+  const h = cssLen(base?.height);
+  const minH = cssLen(base?.minHeight);
+  const mh = cssLen(base?.maxHeight);
 
   if (w != null) {
     (s as any).inlineSize = w;
@@ -428,9 +420,18 @@ export function nodeStyleVars(
     (s as any).maxWidth = mw;
   }
 
+  if (h != null) s.height = h;
+  if (minH != null) s.minHeight = minH;
+  if (mh != null) s.maxHeight = mh;
+
+  if (base?.aspectRatio != null && base?.height == null) {
+    (s as any).height = "auto";
+  }
+
   if (base?.aspectRatio != null && base?.width == null && base?.height == null) {
     (s as any).inlineSize = "100%";
     (s as any).width = "100%";
+    (s as any).height = "auto";
   }
 
   if (base?.backgroundColor) (s as any)["--rmg-skel-bg"] = base.backgroundColor;
@@ -465,25 +466,16 @@ function baseStyleToCssDecls(style: SkeletonBaseStyle | undefined): string {
   if (!style) return "";
 
   const decls: string[] = [];
+  const w = cssLen(style.width);
+  const minW = cssLen(style.minWidth);
+  const mw = cssLen(style.maxWidth);
   const h = cssLen(style.height);
   const minH = cssLen(style.minHeight);
   const mh = cssLen(style.maxHeight);
 
-  if (h != null) {
-    decls.push(`height:${h};`);
-  } else if (style.aspectRatio != null) {
-    decls.push("height:auto;");
-  }
-  if (minH != null) decls.push(`min-height:${minH};`);
-  if (mh != null) decls.push(`max-height:${mh};`);
-
   if (style.aspectRatio != null) {
     decls.push(`aspect-ratio:${String(style.aspectRatio)};`);
   }
-
-  const w = cssLen(style.width);
-  const minW = cssLen(style.minWidth);
-  const mw = cssLen(style.maxWidth);
 
   if (w != null) {
     decls.push(`inline-size:${w};`);
@@ -500,6 +492,14 @@ function baseStyleToCssDecls(style: SkeletonBaseStyle | undefined): string {
     decls.push(`max-width:${mw};`);
   }
 
+  if (h != null) decls.push(`height:${h};`);
+  if (minH != null) decls.push(`min-height:${minH};`);
+  if (mh != null) decls.push(`max-height:${mh};`);
+
+  if (style.aspectRatio != null && style.height == null) {
+    decls.push("height:auto;");
+  }
+
   if (
     style.aspectRatio != null &&
     style.width == null &&
@@ -507,6 +507,7 @@ function baseStyleToCssDecls(style: SkeletonBaseStyle | undefined): string {
   ) {
     decls.push("inline-size:100%;");
     decls.push("width:100%;");
+    decls.push("height:auto;");
   }
 
   if (style.backgroundColor) decls.push(`--rmg-skel-bg:${style.backgroundColor};`);
@@ -691,14 +692,6 @@ export function containerStylesPlain(
   const s: React.CSSProperties = {};
   if (!style) return s;
 
-  if (style.height != null) {
-    s.height = cssLen(style.height);
-  } else if (style.aspectRatio != null) {
-    s.height = "auto";
-  }
-  if (style.minHeight != null) s.minHeight = cssLen(style.minHeight);
-  if (style.maxHeight != null) s.maxHeight = cssLen(style.maxHeight);
-
   if (style.position != null) s.position = style.position;
   if (style.inset != null) (s as any).inset = cssLen(style.inset);
   if (style.insetBlock != null) (s as any).insetBlock = cssLen(style.insetBlock);
@@ -729,6 +722,10 @@ export function containerStylesPlain(
   if (style.width != null) s.width = cssLen(style.width);
   if (style.minWidth != null) s.minWidth = cssLen(style.minWidth);
   if (style.maxWidth != null) s.maxWidth = cssLen(style.maxWidth);
+  if (style.height != null) s.height = cssLen(style.height);
+  if (style.minHeight != null) s.minHeight = cssLen(style.minHeight);
+  if (style.maxHeight != null) s.maxHeight = cssLen(style.maxHeight);
+  if (style.aspectRatio != null && style.height == null) s.height = "auto";
   if (style.backgroundColor != null) s.backgroundColor = style.backgroundColor;
   if (style.borderRadius != null) s.borderRadius = cssLen(style.borderRadius);
   if (style.border != null) s.border = style.border;
@@ -812,14 +809,6 @@ export function sanitizeIdForAttr(id: string) {
 
 function containerStyleToCssDecls(style: SkeletonContainerStyle): string {
   const decls: string[] = [];
-  if (style.height != null) {
-    decls.push(`height:${cssLen(style.height)};`);
-  } else if (style.aspectRatio != null) {
-    decls.push("height:auto;");
-  }
-  if (style.minHeight != null) decls.push(`min-height:${cssLen(style.minHeight)};`);
-  if (style.maxHeight != null) decls.push(`max-height:${cssLen(style.maxHeight)};`);
-
   if (style.position != null) decls.push(`position:${style.position};`);
   if (style.inset != null) decls.push(`inset:${cssLen(style.inset)};`);
   if (style.insetBlock != null) decls.push(`inset-block:${cssLen(style.insetBlock)};`);
@@ -853,6 +842,10 @@ function containerStyleToCssDecls(style: SkeletonContainerStyle): string {
   if (style.width != null) decls.push(`width:${cssLen(style.width)};`);
   if (style.minWidth != null) decls.push(`min-width:${cssLen(style.minWidth)};`);
   if (style.maxWidth != null) decls.push(`max-width:${cssLen(style.maxWidth)};`);
+  if (style.height != null) decls.push(`height:${cssLen(style.height)};`);
+  if (style.minHeight != null) decls.push(`min-height:${cssLen(style.minHeight)};`);
+  if (style.maxHeight != null) decls.push(`max-height:${cssLen(style.maxHeight)};`);
+  if (style.aspectRatio != null && style.height == null) decls.push("height:auto;");
   if (style.backgroundColor != null) decls.push(`background-color:${style.backgroundColor};`);
   if (style.borderRadius != null) decls.push(`border-radius:${cssLen(style.borderRadius)};`);
   if (style.border != null) decls.push(`border:${style.border};`);

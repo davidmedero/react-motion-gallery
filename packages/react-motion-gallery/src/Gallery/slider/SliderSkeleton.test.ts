@@ -416,10 +416,10 @@ describe("SliderSkeleton wrapper borders", () => {
 
     const scopeSelector = `[data-rmg-slider-skel-scope="${scopeMatch![1]}"]`;
     expect(markup).toContain(
-      `${scopeSelector} [data-rmg-skel-node="${rectNodeId}"]{height:32px;inline-size:160px;width:160px;--rmg-skel-radius:999px;align-self:center;}`
+      `${scopeSelector} [data-rmg-skel-node="${rectNodeId}"]{inline-size:160px;width:160px;height:32px;--rmg-skel-radius:999px;align-self:center;}`
     );
     expect(markup).toContain(
-      `@media (min-width:768px){${scopeSelector} [data-rmg-skel-node="${rectNodeId}"]{height:32px;inline-size:111px;width:111px;--rmg-skel-radius:999px;align-self:center;}}`
+      `@media (min-width:768px){${scopeSelector} [data-rmg-skel-node="${rectNodeId}"]{inline-size:111px;width:111px;height:32px;--rmg-skel-radius:999px;align-self:center;}}`
     );
   });
 
@@ -860,7 +860,7 @@ describe("SliderSkeleton wrapper borders", () => {
     );
     expect(markup.match(/<div data-rmg-skel-media-tile="true"/g) ?? []).toHaveLength(2);
     expect(markup).toContain(
-      'data-rmg-skel-media-tile="true"]{height:56px;inline-size:56px;width:56px;--rmg-skel-radius:18px;}'
+      'data-rmg-skel-media-tile="true"]{inline-size:56px;width:56px;height:56px;--rmg-skel-radius:18px;}'
     );
   });
 

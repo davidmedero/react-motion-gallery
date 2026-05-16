@@ -206,7 +206,7 @@ describe("EntrySkeleton text nodes", () => {
     );
     expect(markup.match(/<div data-rmg-skel-media-tile="true"/g) ?? []).toHaveLength(2);
     expect(markup).toContain(
-      'data-rmg-skel-media-tile="true"]{height:56px;inline-size:56px;width:56px;--rmg-skel-radius:18px;}'
+      'data-rmg-skel-media-tile="true"]{inline-size:56px;width:56px;height:56px;--rmg-skel-radius:18px;}'
     );
   });
 

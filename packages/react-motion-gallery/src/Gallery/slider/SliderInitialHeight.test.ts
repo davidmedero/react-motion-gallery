@@ -3,10 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import { BREAKPOINT_MAP } from "../shared/responsive";
-import {
-  SliderSkeleton as Skeleton,
-  buildScopedInitialHeightCss,
-} from "../skeleton/slider";
+import { Skeleton, buildScopedInitialHeightCss } from "../skeleton";
 import type { SliderSkeletonSpec } from "./SliderSkeleton";
 import Slider from "./default";
 
@@ -346,14 +343,6 @@ describe("Slider initial height CSS", () => {
     expect(markup).toContain("--rmg-slider-initial-height:");
     expect(markup).toContain("--rmg-slider-row-height:");
     expect(markup).toContain("--rmg-slider-extras-height:");
-
-    const initialHeightIndex = markup.indexOf("--rmg-slider-initial-height:");
-    const countRuleIndex = markup.indexOf(
-      `[data-rmg-scope="${scopeId}"] [data-rmg-skel-slot]`
-    );
-    expect(initialHeightIndex).toBeGreaterThanOrEqual(0);
-    expect(countRuleIndex).toBeGreaterThanOrEqual(0);
-    expect(initialHeightIndex).toBeLessThan(countRuleIndex);
   });
 
   test("includes responsive text line breakpoints in scoped initial-height CSS", () => {
