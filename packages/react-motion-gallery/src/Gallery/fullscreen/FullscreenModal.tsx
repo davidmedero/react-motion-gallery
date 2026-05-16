@@ -2014,8 +2014,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         touchAction: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        contain: 'layout style size',
+        contain: 'layout style size paint',
         overflow: 'hidden',
+        transform: 'translate3d(0, 0, 0)',
+        willChange: 'opacity, transform',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
       }}
     >
       {closeEnabled && (

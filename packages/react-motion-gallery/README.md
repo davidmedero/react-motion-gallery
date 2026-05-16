@@ -39,7 +39,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `slider/fullscreen` | 959.0B |
 | `ThumbnailSlider` | 18.9kB |
 | `useFullscreenController` | 4.9kB |
-| `fullscreen/slider` | 36.7kB |
+| `fullscreen/slider` | 36.8kB |
 | `fullscreen/controls` | 173.0B |
 | `fullscreen/captions` | 13.1kB |
 | `fullscreen/zoom-pan` | 9.9kB |
