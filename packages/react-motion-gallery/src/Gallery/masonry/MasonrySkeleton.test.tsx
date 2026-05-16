@@ -335,10 +335,6 @@ describe("MasonrySkeleton layout and text nodes", () => {
       "@supports (font: -apple-system-body) and (-webkit-hyphens: none){[data-rmg-mskel-scope",
       firstSkeletonItemIndex
     );
-    const responsiveTextCssIndex = markup.indexOf(
-      "nth-child(-n+",
-      firstSkeletonItemIndex
-    );
     const shellReserveSafariIndex = markup.indexOf(
       "@supports (font: -apple-system-body) and (-webkit-hyphens: none){[data-rmg-masonry-skeleton-shell",
       firstSkeletonItemIndex
@@ -349,12 +345,8 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(firstVariantIndex).toBeGreaterThan(wrapperIndex);
     expect(firstSkeletonItemIndex).toBeGreaterThan(firstVariantIndex);
     expect(reserveStyleIndex).toBeLessThan(wrapperIndex);
-    expect(responsiveTextCssIndex).toBeGreaterThan(firstSkeletonItemIndex);
     expect(variantSafariIndex).toBeGreaterThan(firstSkeletonItemIndex);
     expect(shellReserveSafariIndex).toBeGreaterThan(firstSkeletonItemIndex);
-    expect(markup.slice(wrapperIndex, firstSkeletonItemIndex)).not.toContain(
-      "nth-child(-n+"
-    );
     expect(markup.slice(reserveStyleIndex, wrapperIndex)).not.toContain(
       "@supports (font: -apple-system-body)"
     );
@@ -589,17 +581,9 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).toContain(
       '--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (147.43200000000002px)) + (20)) !important;'
     );
-    const containerRuleStart = markup.indexOf("@container (min-width:856px)");
-    const nextContainerRuleStart = markup.indexOf(
-      "@container",
-      containerRuleStart + 1
+    expect(markup).toContain(
+      '> [data-rmg-mskel-index="4"]{top:calc((var(--rmg-mskel-height-1)) + (18px)) !important;'
     );
-    const containerRule = markup.slice(
-      containerRuleStart,
-      nextContainerRuleStart
-    );
-
-    expect(containerRule).not.toContain("data-rmg-mskel-index");
   });
 
   test("keeps SSR span scaffold top and shell-height formulas compact", () => {

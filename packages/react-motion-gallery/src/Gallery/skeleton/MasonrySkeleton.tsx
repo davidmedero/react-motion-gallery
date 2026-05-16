@@ -136,34 +136,23 @@ function buildVariantContainerCss(
     )}"]`;
 
     for (const rule of variant.containerCssRules ?? []) {
-      const rootDecls = Object.entries(rule.rootDecls);
       const rootCss =
-        rootDecls.length > 0
-          ? `${variantSel}{` +
-            rootDecls
-              .map(([name, value]) => importantDecl(name, value))
-              .join("") +
-            `}`
-          : "";
+        `${variantSel}{` +
+        Object.entries(rule.rootDecls)
+          .map(([name, value]) => importantDecl(name, value))
+          .join("") +
+        `}`;
       const itemCss = rule.items
         .map((item) => {
           const itemSel = `${variantSel} > [data-rmg-mskel-index="${item.index}"]`;
-          const decls = [
-            item.topCssExpr != null
-              ? importantDecl("top", item.topCssExpr)
-              : null,
-            item.leftCssExpr != null
-              ? importantDecl("left", item.leftCssExpr)
-              : null,
-            item.widthCssExpr != null
-              ? importantDecl("width", item.widthCssExpr)
-              : null,
-          ].filter((decl): decl is string => !!decl);
-
-          if (!decls.length) return "";
-
           return (
-            `${itemSel}{` + decls.join("") + `}`
+            `${itemSel}{` +
+            [
+              importantDecl("top", item.topCssExpr ?? "0px"),
+              importantDecl("left", item.leftCssExpr),
+              importantDecl("width", item.widthCssExpr),
+            ].join("") +
+            `}`
           );
         })
         .join("");
@@ -237,33 +226,23 @@ function buildVariantSafariCss(
           ([name]) => usesPositionedSkeleton || name !== "height"
         );
         const containerRootCss =
-          containerRootDecls.length > 0
-            ? `${variantSel}{` +
-              containerRootDecls
-                .map(([name, value]) => importantDecl(name, value))
-                .join("") +
-              `}`
-            : "";
+          `${variantSel}{` +
+          containerRootDecls
+            .map(([name, value]) => importantDecl(name, value))
+            .join("") +
+          `}`;
         const containerItemCss = usesPositionedSkeleton
           ? rule.items
               .map((item) => {
                 const itemSel = `${variantSel} [data-rmg-mskel-index="${item.index}"]`;
-                const decls = [
-                  item.topCssExpr != null
-                    ? importantDecl("top", item.topCssExpr)
-                    : null,
-                  item.leftCssExpr != null
-                    ? importantDecl("left", item.leftCssExpr)
-                    : null,
-                  item.widthCssExpr != null
-                    ? importantDecl("width", item.widthCssExpr)
-                    : null,
-                ].filter((decl): decl is string => !!decl);
-
-                if (!decls.length) return "";
-
                 return (
-                  `${itemSel}{` + decls.join("") + `}`
+                  `${itemSel}{` +
+                  [
+                    importantDecl("top", item.topCssExpr ?? "0px"),
+                    importantDecl("left", item.leftCssExpr),
+                    importantDecl("width", item.widthCssExpr),
+                  ].join("") +
+                  `}`
                 );
               })
               .join("")
@@ -683,13 +662,13 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
       }}
     >
       {visibilityCss ? <style dangerouslySetInnerHTML={{ __html: visibilityCss }} /> : null}
+      {prediction.responsiveCss ? (
+        <style dangerouslySetInnerHTML={{ __html: prediction.responsiveCss }} />
+      ) : null}
       {variantContainerCss ? (
         <style dangerouslySetInnerHTML={{ __html: variantContainerCss }} />
       ) : null}
       {variants}
-      {prediction.responsiveCss ? (
-        <style dangerouslySetInnerHTML={{ __html: prediction.responsiveCss }} />
-      ) : null}
       {variantSafariCss ? (
         <style dangerouslySetInnerHTML={{ __html: variantSafariCss }} />
       ) : null}
