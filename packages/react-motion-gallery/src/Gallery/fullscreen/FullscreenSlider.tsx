@@ -1750,15 +1750,19 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
         if (isZoomedRef.current || closingModal) return
 
+        const isMouseEvt = isMouseEvent(evt as any, window as any)
+        if (isMouseEvt && (evt as MouseEvent).button !== 0) return
+        if (isMouseEvt && (evt as MouseEvent).cancelable) {
+          (evt as MouseEvent).preventDefault()
+        }
+
         if (crossfadeBusyRef.current) {
           finishCrossfade(undefined, { sync: true });
         }
 
         sub.emitBasePointerDown?.();
         
-        const isMouseEvt = isMouseEvent(evt as any, window as any)
         isMouse = isMouseEvt
-        if (isMouseEvt && (evt as MouseEvent).button !== 0) return
 
         startGrabbing();
         lockWheelFor(WHEEL_LOCK_MS);
@@ -2076,8 +2080,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       dragStore
         .add(root, 'dragstart', (evt) => (evt as Event).preventDefault(), { passive: false })
+        .add(root, 'selectstart', (evt) => (evt as Event).preventDefault(), { passive: false })
         .add(root, 'touchstart', onDown as any)
-        .add(root, 'mousedown', onDown as any, { passive: true })
+        .add(root, 'mousedown', onDown as any, { passive: false })
         .add(root, 'touchcancel', () => {
           isTouchPinching.current = false
           wasPinch.current = false
@@ -2512,6 +2517,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             overflow: 'visible',
             cursor: 'grab',
             userSelect: 'none',
+            WebkitUserSelect: 'none',
             willChange: 'opacity, transform',
             backfaceVisibility: 'hidden',
             transition: shouldFadeIntro

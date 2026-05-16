@@ -55,8 +55,11 @@ export function createEntriesMasonryMedia(args: {
   const normalizedLoading = normalizeLoading(masonryLoading ?? masonryConfig.loading);
   const normalizedIntro = normalizeIntro(masonryIntro ?? masonryConfig.intro);
 
-  function EntriesMasonryMediaInner(props: { mediaNodes: React.ReactNode[] }) {
-    const { mediaNodes } = props;
+  function EntriesMasonryMediaInner(props: {
+    entryInView?: boolean;
+    mediaNodes: React.ReactNode[];
+  }) {
+    const { entryInView, mediaNodes } = props;
     const core = useOptionalGalleryCore();
     const breakpoints = core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP };
     const masonryReady = useMasonryReady();
@@ -114,6 +117,7 @@ export function createEntriesMasonryMedia(args: {
         masonry={masonryConfig}
         breakpoints={breakpoints}
         intro={normalizedIntro}
+        introReady={entryInView ?? true}
       />
     );
 
@@ -139,5 +143,7 @@ export function createEntriesMasonryMedia(args: {
     );
   }
 
-  return ({ mediaNodes }) => <EntriesMasonryMediaInner mediaNodes={mediaNodes} />;
+  return ({ entryInView, mediaNodes }) => (
+    <EntriesMasonryMediaInner entryInView={entryInView} mediaNodes={mediaNodes} />
+  );
 }

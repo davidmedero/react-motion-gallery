@@ -278,6 +278,81 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).toContain("min-height:calc(");
   });
 
+  test("streams paintable masonry skeleton DOM before Safari-only CSS", () => {
+    const markup = renderToStaticMarkup(
+      <MasonrySkeleton
+        layout={{
+          layout: {
+            kind: "masonry",
+            itemWrapStyle: { padding: 10 },
+            item: {
+              kind: "col",
+              style: { gap: 12 },
+              children: [
+                {
+                  kind: "rect",
+                  style: { width: "100%", aspectRatio: "5 / 4" },
+                },
+                {
+                  kind: "text",
+                  barHeight: 14.72,
+                  lineHeight: 1.55,
+                  lines: { 0: 5, 172.5: 4, 200.453: 3, 288: 2 },
+                  responsiveBy: "container",
+                },
+              ],
+            },
+            slots: [
+              { span: { 0: 1, 1140: 2 } },
+              {},
+              {},
+              { span: { 0: 1, 1140: 2 } },
+              {},
+              {},
+            ],
+          },
+        }}
+        ready={false}
+        masonry={{
+          count: 6,
+          columns: { 0: 1, 720: 2, 1140: 4 },
+          gap: { 0: 12, 1140: 18 },
+          placement: "horizontalOrder",
+        }}
+      >
+        <div data-live-masonry-placeholder="true" style={{ height: 0 }} />
+      </MasonrySkeleton>
+    );
+
+    const reserveStyleIndex = markup.indexOf("[data-rmg-masonry-skeleton-shell");
+    const wrapperIndex = markup.indexOf("data-rmg-skeleton-wrapper");
+    const firstVariantIndex = markup.indexOf("<div data-rmg-mskel-variant", wrapperIndex);
+    const firstSkeletonItemIndex = markup.indexOf(
+      "<div data-rmg-mskel-index",
+      firstVariantIndex
+    );
+    const variantSafariIndex = markup.indexOf(
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none){[data-rmg-mskel-scope",
+      firstSkeletonItemIndex
+    );
+    const shellReserveSafariIndex = markup.indexOf(
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none){[data-rmg-masonry-skeleton-shell",
+      firstSkeletonItemIndex
+    );
+
+    expect(reserveStyleIndex).toBeGreaterThanOrEqual(0);
+    expect(wrapperIndex).toBeGreaterThanOrEqual(0);
+    expect(firstVariantIndex).toBeGreaterThan(wrapperIndex);
+    expect(firstSkeletonItemIndex).toBeGreaterThan(firstVariantIndex);
+    expect(reserveStyleIndex).toBeLessThan(wrapperIndex);
+    expect(variantSafariIndex).toBeGreaterThan(firstSkeletonItemIndex);
+    expect(shellReserveSafariIndex).toBeGreaterThan(firstSkeletonItemIndex);
+    expect(markup.slice(reserveStyleIndex, wrapperIndex)).not.toContain(
+      "@supports (font: -apple-system-body)"
+    );
+    expect(firstSkeletonItemIndex - wrapperIndex).toBeLessThan(300_000);
+  });
+
   test("keeps single-span structured masonry skeletons in flow layout", () => {
     const markup = renderToStaticMarkup(
       React.createElement(MasonrySkeletonCard, {
@@ -349,8 +424,19 @@ describe("MasonrySkeleton layout and text nodes", () => {
     );
 
     expect(markup).toContain("display:flex");
+    expect(markup).toContain("--rmg-mskel-colw");
+    expect(markup).toContain("--rmg-mskel-height-0");
     expect(markup).not.toContain("height:max(");
     expect(markup).not.toContain("position:absolute;top:calc(");
+
+    const safariVariantCssIndex = markup.lastIndexOf(
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none){[data-rmg-mskel-scope"
+    );
+    const safariVariantCss =
+      safariVariantCssIndex >= 0 ? markup.slice(safariVariantCssIndex) : "";
+
+    expect(safariVariantCss).toContain("data-rmg-mskel-index");
+    expect(safariVariantCss).not.toContain("top:");
   });
 
   test("does not add a trailing bottom gap to flow-layout masonry columns", () => {

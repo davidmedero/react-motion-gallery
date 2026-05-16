@@ -39,6 +39,14 @@
   align-content: flex-start;
 }
 
+@supports (font: -apple-system-body) and (-webkit-hyphens: none) {
+  .skelText {
+    height: var(--rmg-skel-text-safari-height) !important;
+    padding-block: var(--rmg-skel-text-safari-padding-block) !important;
+    row-gap: var(--rmg-skel-text-safari-row-gap) !important;
+  }
+}
+
 .skelTextLine {
   min-width: 0;
   align-self: flex-start;

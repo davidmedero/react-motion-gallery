@@ -585,6 +585,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   }
 
   const fsZRef = React.useRef<number>(9999);
+  const fullscreenRootRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     if (showFullscreenModal) {
@@ -665,6 +666,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
         : undefined,
       closestSelector,
       baseZ: fsZRef.current,
+      fullscreenRootRef,
     });
 
     clearFsIntroReq();
@@ -1418,6 +1420,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           styles={styles}
           syncFullscreenSourceFromIndex={syncFullscreenSourceFromIndex}
           baseZ={fsZRef.current}
+          rootRef={fullscreenRootRef}
           introMethod={latchedIntroMethod}
           setLatchedIntroMethod={setLatchedIntroMethod}
           latchedIntroIndex={latchedIntroIndex}

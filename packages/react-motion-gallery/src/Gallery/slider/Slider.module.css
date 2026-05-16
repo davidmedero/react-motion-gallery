@@ -78,19 +78,22 @@
   --rmg-slider-skel-wrap-shadow-opacity: 0;
 }
 
+.fade_container {
+  transition:
+    opacity var(--rmg-intro-duration, 420ms)
+      var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
+}
+
 .fadeInStart {
   opacity: 0;
 }
 
 .fadeInActive {
   opacity: 1;
-  transition:
-    opacity var(--rmg-intro-duration, 420ms)
-      var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fadeInActive { transition: none; }
+  .fade_container { transition: none; }
   .loadingLayer { transition: none; }
 }
 

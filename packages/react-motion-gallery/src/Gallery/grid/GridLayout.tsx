@@ -47,6 +47,7 @@ export type GridLayoutProps = {
   onOpen: (index: number, originEl?: HTMLElement | null) => void;
   registerExpandableImage: (index: number, node: HTMLImageElement | HTMLVideoElement | null) => void;
   gridItemBaseClass?: string;
+  introReady?: boolean;
   renderMode?: 'wrap' | 'passthrough';
 };
 
@@ -289,6 +290,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     onOpen,
     registerExpandableImage,
     gridItemBaseClass = 'rmg__grid-item',
+    introReady = true,
     renderMode,
   },
   forwardedRef
@@ -331,7 +333,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   }, []);
 
   const contentReady = pluginBlocksMediaReady ? clientReady : mediaReady;
-  const introActive = contentReady && inView;
+  const introActive = contentReady && inView && introReady;
 
   const getItemNodes = React.useCallback(() => {
     const root = gridRootRef.current;
@@ -822,6 +824,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       intro.easing,
       introActive,
       contentReady,
+      introReady,
     ]
   );
 

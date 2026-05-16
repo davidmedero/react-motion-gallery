@@ -2,6 +2,8 @@ import { BREAKPOINT_MAP, type BreakpointMap } from "../responsive";
 
 export const TEXT_SKELETON_LAST_BAR_WIDTH = "68%";
 export const TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER = "__NODE_SEL__";
+export const SAFARI_TEXT_SKELETON_SUPPORTS =
+  "(font: -apple-system-body) and (-webkit-hyphens: none)";
 
 export type ResponsiveTextLineCount = number | Record<string, number>;
 export type ResponsiveTextBarHeight = number | Record<string, number>;
@@ -68,6 +70,33 @@ export function getTextSkeletonMetrics(args: {
     rowGap: leading,
     totalHeight: lineBoxHeight * lines,
   };
+}
+
+export function getSafariTextSkeletonMetricsFromMetrics(
+  metrics: TextSkeletonMetrics
+): TextSkeletonMetrics {
+  const lineBoxHeight = Math.max(
+    metrics.barHeight,
+    Math.floor(metrics.lineBoxHeight)
+  );
+  const leading = Math.max(lineBoxHeight - metrics.barHeight, 0);
+
+  return {
+    ...metrics,
+    lineBoxHeight,
+    leading,
+    paddingBlock: leading / 2,
+    rowGap: leading,
+    totalHeight: lineBoxHeight * metrics.lines,
+  };
+}
+
+export function getSafariTextSkeletonMetrics(args: {
+  barHeight: number;
+  lineHeight: number;
+  lines?: number;
+}): TextSkeletonMetrics {
+  return getSafariTextSkeletonMetricsFromMetrics(getTextSkeletonMetrics(args));
 }
 
 function isResponsiveTextRecord(
@@ -841,11 +870,14 @@ export function buildResponsiveTextCssRules(
       ? `${visibleLineSelector}{display:block !important;max-width:100% !important;}`
       : `${visibleLineSelector}{display:block !important;width:100% !important;max-width:100% !important;}`;
 
+    const safariMetrics = getSafariTextSkeletonMetricsFromMetrics(state.metrics);
+
     return {
       minWidth,
       query: renderState.responsiveBy,
       css: [
         `${selector}{height:${state.metrics.totalHeight}px !important;padding-block:${state.metrics.paddingBlock}px !important;row-gap:${state.metrics.rowGap}px !important;}`,
+        `@supports ${SAFARI_TEXT_SKELETON_SUPPORTS}{${selector}{height:${safariMetrics.totalHeight}px !important;padding-block:${safariMetrics.paddingBlock}px !important;row-gap:${safariMetrics.rowGap}px !important;}}`,
         `${lineSelector}{display:none !important;height:${state.metrics.barHeight}px !important;}`,
         visibleLineCss,
         ...(hiddenLineSelector

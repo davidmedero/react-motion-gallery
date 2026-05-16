@@ -24,8 +24,10 @@ import {
   resolveResponsiveContainerStyleAtMinWidth,
 } from "../shared/skeleton/layout";
 import {
+  SAFARI_TEXT_SKELETON_SUPPORTS,
   collectResponsiveTextBreakpoints,
   getResponsiveTextRenderState,
+  getSafariTextSkeletonMetricsFromMetrics,
   getTextSkeletonMetrics,
   resolveResponsiveTextBarHeight,
   resolveResponsiveTextLineHeight,
@@ -45,6 +47,7 @@ import type {
 import type { ResponsiveMasonrySpan } from "./types";
 
 type Rule = { minWidth: number; value: number };
+type TextMetricsMode = "default" | "safari";
 
 const DEFAULT_MASONRY_REFERENCE_WIDTH_PX = 240;
 const DEFAULT_MASONRY_SKELETON_RATIOS = [55, 90, 130, 75];
@@ -88,6 +91,10 @@ export type MasonryPredictionVariantItem = {
   widthCssExpr: string;
   slot: MasonryResolvedSkeletonSlot | null;
   heightCssExpr: string;
+  safariHeight: number;
+  safariTop: number;
+  safariTopCssExpr?: string;
+  safariHeightCssExpr: string;
 };
 
 export type MasonryPredictionVariant = {
@@ -95,6 +102,9 @@ export type MasonryPredictionVariant = {
   shellHeightCssExpr?: string;
   positionedCssVars?: Record<string, string>;
   containerCssRules?: MasonryPredictionContainerCssRule[];
+  safariShellHeightCssExpr?: string;
+  safariPositionedCssVars?: Record<string, string>;
+  safariContainerCssRules?: MasonryPredictionContainerCssRule[];
   items: MasonryPredictionVariantItem[];
 };
 
@@ -772,6 +782,7 @@ function resolveTextNodeMetricsAtMinWidth(args: {
   availableWidthPx?: number | null;
   breakpointMap: BreakpointMap;
   conservativeContainerText?: boolean;
+  textMetricsMode?: TextMetricsMode;
 }): {
   style: SkeletonBaseStyle | undefined;
   metrics: ReturnType<typeof getTextSkeletonMetrics>;
@@ -820,7 +831,10 @@ function resolveTextNodeMetricsAtMinWidth(args: {
 
     return {
       style,
-      metrics: maxState.metrics,
+      metrics:
+        args.textMetricsMode === "safari"
+          ? getSafariTextSkeletonMetricsFromMetrics(maxState.metrics)
+          : maxState.metrics,
     };
   }
 
@@ -837,18 +851,23 @@ function resolveTextNodeMetricsAtMinWidth(args: {
     args.breakpointMap
   );
 
+  const metrics = getTextSkeletonMetrics({
+    barHeight,
+    lineHeight: resolveResponsiveTextLineHeight(
+      args.node.lineHeight,
+      typeof args.node.lineHeight === "number" ? args.node.lineHeight : 1,
+      responsiveKey,
+      args.breakpointMap
+    ),
+    lines: lineCount,
+  });
+
   return {
     style,
-    metrics: getTextSkeletonMetrics({
-      barHeight,
-      lineHeight: resolveResponsiveTextLineHeight(
-        args.node.lineHeight,
-        typeof args.node.lineHeight === "number" ? args.node.lineHeight : 1,
-        responsiveKey,
-        args.breakpointMap
-      ),
-      lines: lineCount,
-    }),
+    metrics:
+      args.textMetricsMode === "safari"
+        ? getSafariTextSkeletonMetricsFromMetrics(metrics)
+        : metrics,
   };
 }
 
@@ -871,12 +890,14 @@ function estimateSkeletonNodeHeightPx(
     availableWidthPx?: number | null;
     breakpointMap?: BreakpointMap;
     conservativeContainerText?: boolean;
+    textMetricsMode?: TextMetricsMode;
   }
 ): number | null {
   const responsiveMinWidth = args?.responsiveMinWidth ?? 0;
   const availableWidthPx = args?.availableWidthPx ?? null;
   const breakpointMap = args?.breakpointMap ?? BREAKPOINT_MAP;
   const conservativeContainerText = args?.conservativeContainerText === true;
+  const textMetricsMode = args?.textMetricsMode ?? "default";
 
   if (node.kind === "rect" || node.kind === "square" || node.kind === "circle") {
     const style = resolveResponsiveBaseStyleAtMinWidth(
@@ -916,6 +937,7 @@ function estimateSkeletonNodeHeightPx(
       availableWidthPx,
       breakpointMap,
       conservativeContainerText,
+      textMetricsMode,
     });
 
     return metrics.totalHeight + boxMarginsBlockPx(style, availableWidthPx ?? undefined);
@@ -948,6 +970,7 @@ function estimateSkeletonNodeHeightPx(
       availableWidthPx: tileWidthPx,
       breakpointMap,
       conservativeContainerText,
+      textMetricsMode,
     });
     if (tileHeight == null) return paddingPx || null;
 
@@ -974,6 +997,7 @@ function estimateSkeletonNodeHeightPx(
           availableWidthPx: contentWidthPx,
           breakpointMap,
           conservativeContainerText,
+          textMetricsMode,
         })
       )
       .filter((value): value is number => value != null);
@@ -1002,6 +1026,7 @@ function estimateSkeletonNodeHeightCssExpr(
     availableWidthPx?: number | null;
     breakpointMap?: BreakpointMap;
     conservativeContainerText?: boolean;
+    textMetricsMode?: TextMetricsMode;
   }
 ): string | null {
   const responsiveMinWidth = args?.responsiveMinWidth ?? 0;
@@ -1009,6 +1034,7 @@ function estimateSkeletonNodeHeightCssExpr(
   const availableWidthPx = args?.availableWidthPx ?? null;
   const breakpointMap = args?.breakpointMap ?? BREAKPOINT_MAP;
   const conservativeContainerText = args?.conservativeContainerText === true;
+  const textMetricsMode = args?.textMetricsMode ?? "default";
 
   if (node.kind === "rect" || node.kind === "square" || node.kind === "circle") {
     const style = resolveResponsiveBaseStyleAtMinWidth(
@@ -1054,6 +1080,7 @@ function estimateSkeletonNodeHeightCssExpr(
       availableWidthPx,
       breakpointMap,
       conservativeContainerText,
+      textMetricsMode,
     });
 
     return cssAdd([
@@ -1099,6 +1126,7 @@ function estimateSkeletonNodeHeightCssExpr(
       availableWidthPx: tileWidthPx,
       breakpointMap,
       conservativeContainerText,
+      textMetricsMode,
     });
 
     if (tileHeightExpr == null) return paddingExpr || null;
@@ -1133,6 +1161,7 @@ function estimateSkeletonNodeHeightCssExpr(
           availableWidthPx: contentWidthPx,
           breakpointMap,
           conservativeContainerText,
+          textMetricsMode,
         })
       )
       .filter((value): value is string => !!value);
@@ -1795,6 +1824,7 @@ function buildMasonryItemHeightCssExpr(args: {
   itemWidthPx: number;
   breakpointMap: BreakpointMap;
   conservativeContainerText?: boolean;
+  textMetricsMode?: TextMetricsMode;
 }): string {
   const {
     index,
@@ -1806,6 +1836,7 @@ function buildMasonryItemHeightCssExpr(args: {
     itemWidthPx,
     breakpointMap,
     conservativeContainerText,
+    textMetricsMode = "default",
   } = args;
 
   if (slot) {
@@ -1826,6 +1857,7 @@ function buildMasonryItemHeightCssExpr(args: {
       availableWidthPx: contentWidthPx,
       breakpointMap,
       conservativeContainerText,
+      textMetricsMode,
     });
 
     if (fullExpr) {
@@ -1874,6 +1906,7 @@ function predictMasonryItemHeight(args: {
   itemWidthPx: number;
   breakpointMap: BreakpointMap;
   conservativeContainerText?: boolean;
+  textMetricsMode?: TextMetricsMode;
 }): number {
   const {
     index,
@@ -1884,6 +1917,7 @@ function predictMasonryItemHeight(args: {
     itemWidthPx,
     breakpointMap,
     conservativeContainerText,
+    textMetricsMode = "default",
   } = args;
 
   if (slot) {
@@ -1895,6 +1929,7 @@ function predictMasonryItemHeight(args: {
       availableWidthPx: contentWidthPx,
       breakpointMap,
       conservativeContainerText,
+      textMetricsMode,
     });
 
     if (fullPx != null) {
@@ -2258,57 +2293,66 @@ export function buildMasonrySkeletonPrediction(
       containerWidthPxByStateKey?.get(state.key)
     );
 
-    const itemData = Array.from({ length: itemCount }, (_, index) => {
-      const slot = structuredLayout ? resolveMasonrySlot(structuredLayout, index) : null;
-      const span = resolveMasonrySpanForState({
-        span: slot?.span ?? args.spans?.[index],
-        columnCount: state.columns,
-        minWidth: state.minWidth,
-        breakpointMap: effectiveBreakpoints,
-      });
-      const itemWidthPx = columnWidthPx * span + state.gapPx * Math.max(0, span - 1);
-      const itemWidthVarName = `--rmg-mskel-width-${index}`;
-      const itemWidthCssValue = buildMasonryItemWidthCssExpr({
-        span,
-        columnWidthCssExpr,
-        gapCssExpr,
-      });
-      const itemWidthCssExpr = `var(${itemWidthVarName})`;
+    const buildItemData = (textMetricsMode: TextMetricsMode) =>
+      Array.from({ length: itemCount }, (_, index) => {
+        const slot = structuredLayout
+          ? resolveMasonrySlot(structuredLayout, index)
+          : null;
+        const span = resolveMasonrySpanForState({
+          span: slot?.span ?? args.spans?.[index],
+          columnCount: state.columns,
+          minWidth: state.minWidth,
+          breakpointMap: effectiveBreakpoints,
+        });
+        const itemWidthPx =
+          columnWidthPx * span + state.gapPx * Math.max(0, span - 1);
+        const itemWidthVarName = `--rmg-mskel-width-${index}`;
+        const itemWidthCssValue = buildMasonryItemWidthCssExpr({
+          span,
+          columnWidthCssExpr,
+          gapCssExpr,
+        });
+        const itemWidthCssExpr = `var(${itemWidthVarName})`;
 
-      const height = predictMasonryItemHeight({
-        index,
-        slot,
-        state,
-        safeRatios,
-        safeHeights,
-        itemWidthPx,
-        breakpointMap: effectiveBreakpoints,
-        conservativeContainerText,
+        const height = predictMasonryItemHeight({
+          index,
+          slot,
+          state,
+          safeRatios,
+          safeHeights,
+          itemWidthPx,
+          breakpointMap: effectiveBreakpoints,
+          conservativeContainerText,
+          textMetricsMode,
+        });
+
+        const heightCssExpr = buildMasonryItemHeightCssExpr({
+          index,
+          slot,
+          state,
+          safeRatios,
+          safeHeights,
+          itemWidthCssExpr,
+          itemWidthPx,
+          breakpointMap: effectiveBreakpoints,
+          conservativeContainerText,
+          textMetricsMode,
+        });
+
+        return {
+          slot,
+          span,
+          height,
+          heightCssExpr,
+          itemWidthPx,
+          itemWidthVarName,
+          itemWidthCssValue,
+          itemWidthCssExpr,
+        };
       });
 
-      const heightCssExpr = buildMasonryItemHeightCssExpr({
-        index,
-        slot,
-        state,
-        safeRatios,
-        safeHeights,
-        itemWidthCssExpr,
-        itemWidthPx,
-        breakpointMap: effectiveBreakpoints,
-        conservativeContainerText,
-      });
-
-      return {
-        slot,
-        span,
-        height,
-        heightCssExpr,
-        itemWidthPx,
-        itemWidthVarName,
-        itemWidthCssValue,
-        itemWidthCssExpr,
-      };
-    });
+    const itemData = buildItemData("default");
+    const safariItemData = buildItemData("safari");
 
     const positioned = buildMasonryPositionedLayout({
       itemCount,
@@ -2329,6 +2373,26 @@ export function buildMasonrySkeletonPrediction(
         heightCssExpr: itemData[index]?.heightCssExpr ?? cssPx(positionedItem.height),
       })),
     });
+    const safariPositioned = buildMasonryPositionedLayout({
+      itemCount,
+      columnCount: state.columns,
+      placement: effectivePlacement,
+      heights: safariItemData.map((item) => item.height),
+      gapPx: state.gapPx,
+      spans: safariItemData.map((item) => item.span),
+    });
+    const safariCssPositioned = buildMasonryCssPositionedLayout({
+      columnCount: state.columns,
+      gapPx: state.gapPx,
+      items: safariPositioned.items.map((positionedItem, index) => ({
+        index,
+        columnStart: positionedItem.columnStart,
+        span: positionedItem.span,
+        heightPx: positionedItem.height,
+        heightCssExpr:
+          safariItemData[index]?.heightCssExpr ?? cssPx(positionedItem.height),
+      })),
+    });
     const positionedCssVars: Record<string, string> = {
       [columnWidthCssVarName]: columnWidthCssValue,
     };
@@ -2338,8 +2402,12 @@ export function buildMasonrySkeletonPrediction(
     }
 
     Object.assign(positionedCssVars, cssPositioned.cssVars);
+    const safariPositionedCssVars: Record<string, string> = {
+      ...positionedCssVars,
+      ...safariCssPositioned.cssVars,
+    };
 
-    const containerCssRules =
+    const buildContainerCssRulesForMode = (textMetricsMode: TextMetricsMode) =>
       !hasTrustedContainerWidth && structuredLayout
         ? collectMasonryVariantContainerRuleMinWidths({
             state,
@@ -2373,6 +2441,7 @@ export function buildMasonrySkeletonPrediction(
                 itemWidthPx,
                 breakpointMap: effectiveBreakpoints,
                 conservativeContainerText: false,
+                textMetricsMode,
               });
               const heightCssExpr = buildMasonryItemHeightCssExpr({
                 index,
@@ -2384,6 +2453,7 @@ export function buildMasonrySkeletonPrediction(
                 itemWidthPx,
                 breakpointMap: effectiveBreakpoints,
                 conservativeContainerText: false,
+                textMetricsMode,
               });
 
               return {
@@ -2438,11 +2508,17 @@ export function buildMasonrySkeletonPrediction(
           })
         : undefined;
 
+    const containerCssRules = buildContainerCssRulesForMode("default");
+    const safariContainerCssRules = buildContainerCssRulesForMode("safari");
+
     return {
       state,
       shellHeightCssExpr: cssPositioned.shellHeightCssExpr,
       positionedCssVars,
       containerCssRules,
+      safariShellHeightCssExpr: safariCssPositioned.shellHeightCssExpr,
+      safariPositionedCssVars,
+      safariContainerCssRules,
       items: itemData.map((item, index) => {
         const positionedItem = positioned.items[index] ?? {
           index,
@@ -2450,6 +2526,13 @@ export function buildMasonrySkeletonPrediction(
           columnStart: 0,
           top: 0,
           height: item.height,
+        };
+        const safariPositionedItem = safariPositioned.items[index] ?? {
+          index,
+          span: item.span,
+          columnStart: positionedItem.columnStart,
+          top: positionedItem.top,
+          height: safariItemData[index]?.height ?? item.height,
         };
 
         return {
@@ -2472,6 +2555,13 @@ export function buildMasonrySkeletonPrediction(
           slot: item.slot,
           heightCssExpr:
             cssPositioned.itemHeightCssExprs[index] ?? item.heightCssExpr,
+          safariHeight: safariItemData[index]?.height ?? item.height,
+          safariTop: safariPositionedItem.top,
+          safariTopCssExpr: safariCssPositioned.itemTopCssExprs[index],
+          safariHeightCssExpr:
+            safariCssPositioned.itemHeightCssExprs[index] ??
+            safariItemData[index]?.heightCssExpr ??
+            item.heightCssExpr,
         };
       }),
     };
@@ -2525,17 +2615,28 @@ function importantDecl(name: string, value: string | number) {
   return `${name}:${value} !important;`;
 }
 
-function buildMasonrySeedRootDecls(variant: MasonryPredictionVariant) {
+function buildMasonrySeedRootDecls(
+  variant: MasonryPredictionVariant,
+  textMetricsMode: TextMetricsMode = "default"
+) {
+  const shellHeightCssExpr =
+    textMetricsMode === "safari"
+      ? variant.safariShellHeightCssExpr ?? variant.shellHeightCssExpr
+      : variant.shellHeightCssExpr;
+  const positionedCssVars =
+    textMetricsMode === "safari"
+      ? variant.safariPositionedCssVars ?? variant.positionedCssVars
+      : variant.positionedCssVars;
   const rootDecls = [
     [
       "height",
-      variant.shellHeightCssExpr ?? `${predictMasonryShellHeight(variant)}px`,
+      shellHeightCssExpr ?? `${predictMasonryShellHeight(variant)}px`,
     ],
     ["--rmg-cols", variant.state.columns],
     ["--rmg-gap", `${variant.state.gapPx}px`],
   ] as Array<[string, string | number]>;
 
-  for (const [name, value] of Object.entries(variant.positionedCssVars ?? {})) {
+  for (const [name, value] of Object.entries(positionedCssVars ?? {})) {
     rootDecls.push([name, value]);
   }
 
@@ -2609,8 +2710,25 @@ export function buildMasonryFirstPaintLayoutCss(args: {
         )}}`
       )
       .join("");
+    const safariCss = buildRuleCss(
+      buildMasonrySeedRootDecls(variant, "safari"),
+      variant.items.map((item) => ({
+        index: item.index,
+        topCssExpr: item.safariTopCssExpr ?? item.topCssExpr ?? `${item.safariTop}px`,
+        leftCssExpr: item.leftCssExpr,
+        widthCssExpr: item.widthCssExpr,
+      }))
+    );
+    const safariContainerCss = (variant.safariContainerCssRules ?? [])
+      .map((rule) =>
+        `@container (min-width:${rule.minWidth}px){${buildRuleCss(
+          Object.entries(rule.rootDecls),
+          rule.items
+        )}}`
+      )
+      .join("");
 
-    return `${baseCss}${containerCss}`;
+    return `${baseCss}${containerCss}@supports ${SAFARI_TEXT_SKELETON_SUPPORTS}{${safariCss}${safariContainerCss}}`;
   };
 
   return args.prediction.variants
@@ -2648,6 +2766,43 @@ export function buildMasonryShellReserveCss(args: {
       .join("");
 
     return `${baseCss}${containerCss}`;
+  };
+
+  return args.prediction.variants
+    .map((variant) => {
+      const css = buildVariantCss(variant);
+      if (variant.state.minWidth <= 0) return css;
+      return `@media (min-width:${variant.state.minWidth}px){${css}}`;
+    })
+    .join("\n");
+}
+
+export function buildMasonryShellReserveSafariCss(args: {
+  scopeId: string;
+  prediction: MasonrySkeletonPrediction;
+}) {
+  if (!args.scopeId || !args.prediction.variants.length) return "";
+
+  const scopeSelector = `[data-rmg-masonry-skeleton-shell="${escapeAttrValue(args.scopeId)}"]`;
+
+  const buildRuleCss = (rootDecls: Array<[string, string | number]>) =>
+    `${scopeSelector}{` +
+    toShellReserveDecls(rootDecls)
+      .map(([name, value]) => importantDecl(name, value))
+      .join("") +
+    `}`;
+
+  const buildVariantCss = (variant: MasonryPredictionVariant) => {
+    const safariCss = buildRuleCss(buildMasonrySeedRootDecls(variant, "safari"));
+    const safariContainerCss = (variant.safariContainerCssRules ?? [])
+      .map((rule) =>
+        `@container (min-width:${rule.minWidth}px){${buildRuleCss(
+          Object.entries(rule.rootDecls)
+        )}}`
+      )
+      .join("");
+
+    return `@supports ${SAFARI_TEXT_SKELETON_SUPPORTS}{${safariCss}${safariContainerCss}}`;
   };
 
   return args.prediction.variants

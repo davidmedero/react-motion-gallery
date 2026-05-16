@@ -85,6 +85,42 @@ function getEntryKey(entry: any, entryIndex: number) {
   return String((entry as any).key ?? (entry as any).id ?? entryIndex);
 }
 
+function splitEntryKeySignature(signature: string) {
+  return signature ? signature.split("\u0000") : [];
+}
+
+function pruneEntryKeySet(prev: Set<string>, keySignature: string) {
+  if (prev.size === 0) return prev;
+
+  const currentKeys = new Set(splitEntryKeySignature(keySignature));
+  let changed = false;
+  const next = new Set<string>();
+
+  prev.forEach((entryKey) => {
+    if (currentKeys.has(entryKey)) {
+      next.add(entryKey);
+    } else {
+      changed = true;
+    }
+  });
+
+  return changed ? next : prev;
+}
+
+function addEntryKeysToSet(prev: Set<string>, entryKeys: string[]) {
+  let changed = false;
+  const next = new Set(prev);
+
+  entryKeys.forEach((entryKey) => {
+    if (!next.has(entryKey)) {
+      next.add(entryKey);
+      changed = true;
+    }
+  });
+
+  return changed ? next : prev;
+}
+
 export function EntryList({
   enabled,
   entries,
@@ -156,27 +192,12 @@ export function EntryList({
   const entryKeySignature = entryKeys.join("\u0000");
   const [shimmerDisabledEntryKeys, setShimmerDisabledEntryKeys] =
     React.useState<Set<string>>(() => new Set());
+  const [animatedReadyEntryKeys, setAnimatedReadyEntryKeys] =
+    React.useState<Set<string>>(() => new Set());
 
   React.useEffect(() => {
-    setShimmerDisabledEntryKeys((prev) => {
-      if (prev.size === 0) return prev;
-
-      const currentKeys = new Set(
-        entryKeySignature ? entryKeySignature.split("\u0000") : []
-      );
-      let changed = false;
-      const next = new Set<string>();
-
-      prev.forEach((entryKey) => {
-        if (currentKeys.has(entryKey)) {
-          next.add(entryKey);
-        } else {
-          changed = true;
-        }
-      });
-
-      return changed ? next : prev;
-    });
+    setShimmerDisabledEntryKeys((prev) => pruneEntryKeySet(prev, entryKeySignature));
+    setAnimatedReadyEntryKeys((prev) => pruneEntryKeySet(prev, entryKeySignature));
   }, [entryKeySignature]);
 
   const revealOrderRef = React.useRef<number>(0);
@@ -200,6 +221,10 @@ export function EntryList({
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const loadingActive = enabled && loadingEnabled;
+  const shouldStageEntryReveal =
+    loadingActive &&
+    !prefersReducedMotion &&
+    (introN.durationMs > 0 || introN.staggerMs > 0);
 
   const { nearView, everInView, setEntryRef } = useEntryInView(len, {
     root: null,
@@ -254,7 +279,13 @@ export function EntryList({
           contentReady: mountedContentReady,
           defaultReveal,
         });
+        const entryKey = entryKeys[entryIndex] ?? getEntryKey(entry, entryIndex);
         const reveal = entryLoadingVisualState.revealContent;
+        const entryReady =
+          reveal &&
+          (!shouldStageEntryReveal ||
+            entryLoadingVisualState.compareMode ||
+            animatedReadyEntryKeys.has(entryKey));
 
         if (entryLoadingVisualState.compareMode) {
           anyCompareMode = true;
@@ -264,9 +295,8 @@ export function EntryList({
           anyReveal = true;
         }
 
-        const entryKey = entryKeys[entryIndex] ?? getEntryKey(entry, entryIndex);
         const shimmerDisabled =
-          reveal &&
+          entryReady &&
           !entryLoadingVisualState.compareMode &&
           shimmerDisabledEntryKeys.has(entryKey);
 
@@ -370,7 +400,7 @@ export function EntryList({
 
           const mediaContainer = renderMediaContainer({
             entryIndex,
-            entryInView: hasEver,
+            entryInView: entryReady,
             mediaNodes,
             entrySliderRefs,
           });
@@ -404,7 +434,7 @@ export function EntryList({
           <div
             key={entryKey}
             ref={setEntryRef(entryIndex)}
-            data-rmg-entry-ready={reveal ? "1" : "0"}
+            data-rmg-entry-ready={entryReady ? "1" : "0"}
             data-rmg-entry-compare={entryLoadingVisualState.compareMode ? "1" : "0"}
             data-rmg-entry-mounted={shouldMountContent ? "1" : "0"}
             className={[styles.entryRow, entries.entryRow?.className].filter(Boolean).join(" ")}
@@ -430,7 +460,7 @@ export function EntryList({
                   if (
                     event.currentTarget !== event.target ||
                     event.propertyName !== "opacity" ||
-                    !reveal ||
+                    !entryReady ||
                     entryLoadingVisualState.compareMode
                   ) {
                     return;
@@ -456,28 +486,54 @@ export function EntryList({
     currentlyRevealableEntryKeys.join("\u0000");
 
   React.useEffect(() => {
-    setShimmerDisabledEntryKeys((prev) => {
-      if (prev.size === 0) return prev;
-
-      const currentKeys = new Set(
-        currentlyRevealableEntryKeySignature
-          ? currentlyRevealableEntryKeySignature.split("\u0000")
-          : []
-      );
-      let changed = false;
-      const next = new Set<string>();
-
-      prev.forEach((entryKey) => {
-        if (currentKeys.has(entryKey)) {
-          next.add(entryKey);
-        } else {
-          changed = true;
-        }
-      });
-
-      return changed ? next : prev;
-    });
+    setShimmerDisabledEntryKeys((prev) =>
+      pruneEntryKeySet(prev, currentlyRevealableEntryKeySignature)
+    );
+    setAnimatedReadyEntryKeys((prev) =>
+      pruneEntryKeySet(prev, currentlyRevealableEntryKeySignature)
+    );
   }, [currentlyRevealableEntryKeySignature]);
+
+  React.useEffect(() => {
+    if (!currentlyRevealableEntryKeySignature) return;
+
+    const entryKeysToMark = splitEntryKeySignature(currentlyRevealableEntryKeySignature);
+    let cancelled = false;
+
+    const markEntriesReady = () => {
+      if (cancelled) return;
+
+      setAnimatedReadyEntryKeys((prev) => addEntryKeysToSet(prev, entryKeysToMark));
+    };
+
+    if (!shouldStageEntryReveal) {
+      markEntriesReady();
+      return;
+    }
+
+    if (
+      typeof window === "undefined" ||
+      typeof window.requestAnimationFrame !== "function"
+    ) {
+      markEntriesReady();
+      return;
+    }
+
+    let firstFrame = 0;
+    let secondFrame = 0;
+
+    // Safari can coalesce content mount and reveal into one paint; stage readiness
+    // so the hidden entry state is observable before the opacity transition starts.
+    firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(markEntriesReady);
+    });
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, [currentlyRevealableEntryKeySignature, shouldStageEntryReveal]);
 
   const showGlobalLoading =
     loadingActive &&

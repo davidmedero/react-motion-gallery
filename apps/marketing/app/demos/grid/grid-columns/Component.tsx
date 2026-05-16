@@ -314,6 +314,10 @@ export function GridColumnsDemo() {
           gap: GRID_GAP,
           allowItemSpans: true,
         }}
+        // force={{
+        //   enabled: true,
+        //   showContent: true
+        // }}
       >
         <Grid
           ref={gridRef}

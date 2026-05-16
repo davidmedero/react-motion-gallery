@@ -27,6 +27,17 @@
   pointer-events: none !important;
 }
 
+:global([data-rmg-fs-root="true"]),
+:global([data-rmg-fs-root="true"] *) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+:global([data-rmg-fs-root="true"] img) {
+  -webkit-user-drag: none;
+}
+
 .duplicateImg {
   position: fixed;
   display: none;

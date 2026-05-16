@@ -6,6 +6,7 @@ import {
   TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER,
   buildResponsiveTextCssRules,
   getResponsiveTextRenderState,
+  getSafariTextSkeletonMetricsFromMetrics,
   type ResponsiveTextBarHeight,
   type ResponsiveTextBarWidth,
   type ResponsiveTextLineHeight,
@@ -1183,6 +1184,9 @@ function TextNode({
   const nodeId = (node as any).__rmgNodeId as string | undefined;
   const usesContainerQueries =
     renderState.responsiveBy === "container" && renderState.usesResponsiveBarCss;
+  const safariMetrics = getSafariTextSkeletonMetricsFromMetrics(
+    renderState.baseState.metrics
+  );
   const wrapperStyle = textWrapperStyleVars(
     usesContainerQueries ? undefined : inlineStyle,
     renderState.baseState.metrics.totalHeight
@@ -1206,6 +1210,11 @@ function TextNode({
         ...(usesContainerQueries ? null : marginStyle),
         paddingBlock: `${renderState.baseState.metrics.paddingBlock}px`,
         rowGap: `${renderState.baseState.metrics.rowGap}px`,
+        ["--rmg-skel-text-safari-height" as any]:
+          `${safariMetrics.totalHeight}px`,
+        ["--rmg-skel-text-safari-padding-block" as any]:
+          `${safariMetrics.paddingBlock}px`,
+        ["--rmg-skel-text-safari-row-gap" as any]: `${safariMetrics.rowGap}px`,
       }}
     >
       {Array.from({ length: renderState.maxLines }).map((_, index) => (

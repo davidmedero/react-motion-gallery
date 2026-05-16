@@ -40,6 +40,7 @@ export type MasonryLayoutProps = {
   masonry: MasonryOptions;
   breakpoints?: BreakpointMap;
   intro: IntroOptions;
+  introReady?: boolean;
 };
 
 function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
@@ -73,6 +74,7 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
       masonry,
       breakpoints,
       intro,
+      introReady = true,
     },
     forwardedRef
   ) {
@@ -230,7 +232,7 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
       }
     }, [items.length, measurementKey]);
 
-    const introActive = clientReady;
+    const introActive = clientReady && introReady;
     const masonryRootClassName = [
       styles.masonryRoot,
       styles.introContainer,

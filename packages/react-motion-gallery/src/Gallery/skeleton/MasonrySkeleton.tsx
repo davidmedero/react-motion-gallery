@@ -25,6 +25,7 @@ import {
   shimmerStyleVars,
   wrapStyleVars,
 } from "../shared/skeleton/layout";
+import { SAFARI_TEXT_SKELETON_SUPPORTS } from "../shared/skeleton/text";
 import { buildStableScopeId } from "../shared/stableScope";
 import type { MasonryClassNames } from "../masonry/Masonry";
 import {
@@ -161,6 +162,102 @@ function buildVariantContainerCss(
   }
 
   return lines.join("\n");
+}
+
+function buildVariantSafariCss(
+  scopeId: string,
+  variants: ReturnType<typeof buildMasonrySkeletonPrediction>["variants"]
+) {
+  const scopeSel = `[data-rmg-mskel-scope="${escapeAttrValue(scopeId)}"]`;
+  const lines: string[] = [];
+
+  for (const variant of variants) {
+    const usesPositionedSkeleton = variant.items.some((item) => item.span > 1);
+    const variantSel = `${scopeSel} [data-rmg-mskel-variant="${escapeAttrValue(
+      variant.state.key
+    )}"]`;
+    const fallbackShellHeight = variant.items.length
+      ? Math.max(
+          0,
+          ...variant.items.map((item) => item.safariTop + item.safariHeight)
+        )
+      : 0;
+    const rootDecls = [
+      [
+        "height",
+        variant.safariShellHeightCssExpr ??
+          variant.shellHeightCssExpr ??
+          `${fallbackShellHeight}px`,
+      ],
+      ["--rmg-cols", variant.state.columns],
+      ["--rmg-gap", `${variant.state.gapPx}px`],
+      ...Object.entries(variant.safariPositionedCssVars ?? {}),
+    ] as Array<[string, string | number]>;
+    const effectiveRootDecls = usesPositionedSkeleton
+      ? rootDecls
+      : rootDecls.filter(([name]) => name !== "height");
+    const rootCss =
+      `${variantSel}{` +
+      effectiveRootDecls
+        .map(([name, value]) => importantDecl(name, value))
+        .join("") +
+      `}`;
+    const itemCss = variant.items
+      .map((item) => {
+        const itemSel = `${variantSel} [data-rmg-mskel-index="${item.index}"]`;
+        const decls = usesPositionedSkeleton
+          ? [
+              importantDecl("height", item.safariHeightCssExpr),
+              importantDecl(
+                "top",
+                item.safariTopCssExpr ?? `${item.safariTop}px`
+              ),
+            ]
+          : [importantDecl("height", item.safariHeightCssExpr)];
+
+        return (
+          `${itemSel}{` + decls.join("") + `}`
+        );
+      })
+      .join("");
+    const containerCss = (variant.safariContainerCssRules ?? [])
+      .map((rule) => {
+        const containerRootDecls = Object.entries(rule.rootDecls).filter(
+          ([name]) => usesPositionedSkeleton || name !== "height"
+        );
+        const containerRootCss =
+          `${variantSel}{` +
+          containerRootDecls
+            .map(([name, value]) => importantDecl(name, value))
+            .join("") +
+          `}`;
+        const containerItemCss = usesPositionedSkeleton
+          ? rule.items
+              .map((item) => {
+                const itemSel = `${variantSel} [data-rmg-mskel-index="${item.index}"]`;
+                return (
+                  `${itemSel}{` +
+                  [
+                    importantDecl("top", item.topCssExpr ?? "0px"),
+                    importantDecl("left", item.leftCssExpr),
+                    importantDecl("width", item.widthCssExpr),
+                  ].join("") +
+                  `}`
+                );
+              })
+              .join("")
+          : "";
+
+        return `@container (min-width:${rule.minWidth}px){${containerRootCss}${containerItemCss}}`;
+      })
+      .join("");
+
+    lines.push(`${rootCss}${itemCss}${containerCss}`);
+  }
+
+  return lines.length
+    ? `@supports ${SAFARI_TEXT_SKELETON_SUPPORTS}{${lines.join("")}}`
+    : "";
 }
 
 function splitMasonryItemWrapStyles(itemWrapStyle: MasonrySkeletonWrapStyle | undefined): {
@@ -305,6 +402,10 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
     () => buildVariantContainerCss(scopeId, prediction.variants),
     [scopeId, prediction.variants]
   );
+  const variantSafariCss = React.useMemo(
+    () => buildVariantSafariCss(scopeId, prediction.variants),
+    [scopeId, prediction.variants]
+  );
 
   const structuredLayout = prediction.structuredLayout;
   const rootClassName = classNames?.root ?? styles.masonrySkeletonRoot;
@@ -346,6 +447,9 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
             data-rmg-mskel-variant={variant.state.key}
             style={{
               width: "100%",
+              ["--rmg-cols" as any]: variant.state.columns,
+              ["--rmg-gap" as any]: `${variant.state.gapPx}px`,
+              ...(variant.positionedCssVars ?? {}),
               display: jsControlled
                 ? variant.state.key === activeKey ? "block" : "none"
                 : variant.state.key === prediction.states[0]?.key
@@ -565,6 +669,9 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
         <style dangerouslySetInnerHTML={{ __html: variantContainerCss }} />
       ) : null}
       {variants}
+      {variantSafariCss ? (
+        <style dangerouslySetInnerHTML={{ __html: variantSafariCss }} />
+      ) : null}
     </div>
   );
 }

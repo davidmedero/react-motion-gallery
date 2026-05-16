@@ -95,6 +95,7 @@ function BaseSlide(props: {
     transform: "translate(0, 0) scale(1)",
     cursor: interactive ? (isZoomed ? "grab" : "zoom-in") : "default",
     userSelect: "none",
+    WebkitUserSelect: "none",
   };
 
   const mediaNode =
@@ -106,6 +107,8 @@ function BaseSlide(props: {
           height: "100%",
           position: "relative",
           pointerEvents: interactive ? "auto" : "none",
+          userSelect: "none",
+          WebkitUserSelect: "none",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -203,6 +206,8 @@ function BaseSlide(props: {
         height: "100%",
         margin: "auto",
         touchAction: interactive ? "none" : "manipulation",
+        userSelect: "none",
+        WebkitUserSelect: "none",
         pointerEvents: interactive ? "auto" : "none",
       }}
       className={styles.imgMargin}
@@ -228,6 +233,8 @@ function BaseSlide(props: {
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
+          userSelect: "none",
+          WebkitUserSelect: "none",
           pointerEvents: interactive ? "auto" : "none",
         }}
       >

@@ -54,8 +54,12 @@ export function createEntriesGridMedia(args: {
   const normalizedLoading = normalizeLoading(gridLoading ?? gridObject?.loading);
   const normalizedIntro = normalizeIntro(gridIntro ?? gridObject?.intro);
 
-  function EntriesGridMediaInner(props: { entryIndex: number; mediaNodes: React.ReactNode[] }) {
-    const { entryIndex, mediaNodes } = props;
+  function EntriesGridMediaInner(props: {
+    entryIndex: number;
+    entryInView?: boolean;
+    mediaNodes: React.ReactNode[];
+  }) {
+    const { entryIndex, entryInView, mediaNodes } = props;
 
     if (!Array.isArray(mediaNodes) || mediaNodes.length === 0) return null;
 
@@ -86,6 +90,7 @@ export function createEntriesGridMedia(args: {
         enableFullscreen={false}
         onOpen={() => {}}
         registerExpandableImage={() => {}}
+        introReady={entryInView ?? true}
       />
     );
 
@@ -111,7 +116,11 @@ export function createEntriesGridMedia(args: {
     );
   }
 
-  return ({ entryIndex, mediaNodes }) => (
-    <EntriesGridMediaInner entryIndex={entryIndex} mediaNodes={mediaNodes} />
+  return ({ entryIndex, entryInView, mediaNodes }) => (
+    <EntriesGridMediaInner
+      entryIndex={entryIndex}
+      entryInView={entryInView}
+      mediaNodes={mediaNodes}
+    />
   );
 }

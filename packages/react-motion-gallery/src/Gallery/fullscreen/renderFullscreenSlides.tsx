@@ -733,6 +733,19 @@ function FsImageContent(props: {
 
     showSpinner(false);
 
+    if (isOpeningTarget) {
+      img.style.removeProperty("transition");
+      img.style.opacity = "1";
+      img.style.willChange = "";
+
+      if (!didRevealRef.current) {
+        didRevealRef.current = true;
+        fsDecodedImagesRef.current.add(key);
+      }
+
+      return;
+    }
+
     img.style.opacity = "0";
     img.style.transition = "none";
     img.style.willChange = "opacity";
@@ -762,7 +775,7 @@ function FsImageContent(props: {
       liveImg.addEventListener("transitionend", clear);
       window.setTimeout(() => clear(), 360);
     });
-  }, [fsDecodedImagesRef, key, showSpinner]);
+  }, [fsDecodedImagesRef, isOpeningTarget, key, showSpinner]);
 
   React.useLayoutEffect(() => {
     const img = imgRef.current;
@@ -1626,6 +1639,7 @@ function FsSlide(props: {
     transform: "translate(0, 0) scale(1)",
     cursor: interactive ? (isZoomed ? "grab" : "zoom-in") : "default",
     userSelect: "none",
+    WebkitUserSelect: "none",
   };
   const captionInteractive = interactive && (captionZoomMotion?.interactive ?? true);
   const captionContentStyle = captionZoomMotion?.contentStyle;
@@ -1731,6 +1745,8 @@ function FsSlide(props: {
         height: "100%",
         margin: "auto",
         touchAction: interactive ? "none" : "manipulation",
+        userSelect: "none",
+        WebkitUserSelect: "none",
         pointerEvents: interactive ? "auto" : "none",
       }}
       className={styles.imgMargin}
@@ -1743,6 +1759,8 @@ function FsSlide(props: {
           display: "flex",
           flexDirection: isHorizontal ? "row" : "column",
           justifyContent: "center",
+          userSelect: "none",
+          WebkitUserSelect: "none",
         }}
       >
         {captionNode && captionFirst && captionLayout !== "overlay" && (
@@ -1758,6 +1776,8 @@ function FsSlide(props: {
               alignSelf: "stretch",
               textAlign: "left",
               pointerEvents: captionInteractive ? "auto" : "none",
+              userSelect: "none",
+              WebkitUserSelect: "none",
               padding: "0.75rem 1rem",
               color: "#fff",
               fontSize: "0.875rem",
@@ -1803,6 +1823,8 @@ function FsSlide(props: {
             justifyContent: "center",
             position: "relative",
             pointerEvents: interactive ? "auto" : "none",
+            userSelect: "none",
+            WebkitUserSelect: "none",
           }}
         >
           {isNode ? (
@@ -1816,6 +1838,8 @@ function FsSlide(props: {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                userSelect: "none",
+                WebkitUserSelect: "none",
               }}
             >
               {(item as any).node}
@@ -1894,6 +1918,8 @@ function FsSlide(props: {
               alignSelf: "stretch",
               textAlign: "left",
               pointerEvents: captionInteractive ? "auto" : "none",
+              userSelect: "none",
+              WebkitUserSelect: "none",
               padding: "0.75rem 1rem",
               color: "#fff",
               fontSize: "0.875rem",

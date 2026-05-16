@@ -8,9 +8,10 @@ const outputFile = path.join(distDir, "styles.css");
 
 const styleEntryFiles = [
   "index.css",
-  // The root entry does not reference GridSkeleton, but public demos and
-  // copy-paste examples can import it from react-motion-gallery/skeleton/grid.
+  // The root entry does not reference the split skeleton entries, but public
+  // demos and copy-paste examples can import them from react-motion-gallery/skeleton/*.
   "skeleton-grid.css",
+  "skeleton-masonry.css",
 ];
 
 const missingFiles = styleEntryFiles.filter(

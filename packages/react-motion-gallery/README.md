@@ -6,12 +6,12 @@ The package stays close to React composition. `Slider`, `Grid`, and `Masonry` re
 
 ## Runtime Gzip Sizes
 
-This table reports local gzip measurements for selected runtime surfaces. Type-only imports are erased and add no JS; the responsive row measures `BREAKPOINT_MAP`, and feature subpath rows measure only that feature entry point. The script rebundles one export at a time from its published ESM entry point, excludes peer and runtime externals, and gzips the resulting JS bundle. If a surface creates async chunks, the row reports initial plus async JS. Run `npm run build && npm run size:readme` in `packages/react-motion-gallery` to refresh it.
+This table reports local gzip measurements for selected runtime surfaces. Type-only imports are erased and add no JS; feature subpath rows measure only that feature entry point. The script rebundles one export at a time from its published ESM entry point, excludes peer and runtime externals, and gzips the resulting JS bundle. Run `npm run build && npm run size:readme` in `packages/react-motion-gallery` to refresh it.
 
 <!-- bundle-size:start -->
 | Surface | JS gzip |
 | --- | --- |
-| `Entries` | 13.1kB |
+| `Entries` | 13.4kB |
 | `FullscreenThumbnailSlider` | 20.3kB |
 | `GalleryCore` | 2.6kB |
 | `Grid` | 6.3kB |
@@ -20,14 +20,14 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `Masonry` | 6.5kB |
 | `masonry/ready` | 323.0B |
 | `masonry/lazy-load` | 3.3kB |
-| `Skeleton base` | 8.1kB |
-| `skeleton/slider` | 16.9kB |
-| `skeleton/grid` | 10.4kB |
-| `skeleton/masonry` | 17.8kB |
+| `Skeleton base` | 8.3kB |
+| `skeleton/slider` | 17.0kB |
+| `skeleton/grid` | 10.6kB |
+| `skeleton/masonry` | 18.7kB |
 | `Slider core` | 18.7kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
-| `slider/dots` | 932.0B |
+| `slider/dots` | 933.0B |
 | `slider/progress` | 892.0B |
 | `slider/scrollbar` | 1.2kB |
 | `slider/auto-height` | 1.3kB |
@@ -39,12 +39,12 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `slider/fullscreen` | 959.0B |
 | `ThumbnailSlider` | 18.9kB |
 | `useFullscreenController` | 4.9kB |
-| `fullscreen/slider` | 35.8kB |
+| `fullscreen/slider` | 36.7kB |
 | `fullscreen/controls` | 173.0B |
 | `fullscreen/captions` | 13.1kB |
 | `fullscreen/zoom-pan` | 9.9kB |
-| `fullscreen/video` | 16.3kB |
-| `fullscreen/lazy-load` | 13.1kB |
+| `fullscreen/video` | 16.4kB |
+| `fullscreen/lazy-load` | 13.2kB |
 | `fullscreen/crossfade` | 181.0B |
 | `fullscreen/thumbnails` | 160.0B |
 | `Video` | 12.7kB |
@@ -53,7 +53,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `responsive / BREAKPOINT_MAP` | 85.0B |
 <!-- bundle-size:end -->
 
-## Overview
+## Installation
 
 Install the package, then add the optional video peers only if you use `Video`.
 
@@ -67,6 +67,8 @@ Import the stylesheet. The package uses CSS Modules internally, but consumers on
 ```typescript
 import "react-motion-gallery/styles.css";
 ```
+
+## Overview
 
 Mental model:
 

@@ -37,13 +37,25 @@ vi.mock("../hooks/usePrefersReducedMotion", () => ({
 
 beforeAll(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) =>
+    window.setTimeout(() => callback(performance.now()), 0)
+  );
+  vi.stubGlobal("cancelAnimationFrame", (handle: number) =>
+    window.clearTimeout(handle)
+  );
 });
 
 function readCss(relativePath: string) {
   return readFileSync(new URL(relativePath, import.meta.url), "utf8");
 }
 
-function entryListElement(force?: any) {
+function entryListElement(
+  force?: any,
+  renderMediaContainer: (args: {
+    entryInView?: boolean;
+    mediaNodes: React.ReactNode[];
+  }) => React.ReactNode = ({ mediaNodes }) => React.createElement("div", null, mediaNodes)
+) {
   return React.createElement(EntryList, {
     enabled: true,
     entries: {
@@ -72,9 +84,18 @@ function entryListElement(force?: any) {
         src: media.src,
         alt: media.alt ?? "",
       }),
-    renderMediaContainer: ({ mediaNodes }: { mediaNodes: React.ReactNode[] }) =>
-      React.createElement("div", null, mediaNodes),
+    renderMediaContainer,
     breakpoints: {},
+  });
+}
+
+async function flushEntryRevealFrames() {
+  await React.act(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      });
+    });
   });
 }
 
@@ -169,6 +190,16 @@ describe("loading layer stacking", () => {
     expect(thumbnailCss).toMatch(/\.thumbLoadingLayer\s*\{[^}]*z-index:\s*1;/s);
     expect(skeletonCss).toMatch(/\.loadingLayerCompare\s*\{[^}]*z-index:\s*3;/s);
     expect(thumbnailCss).toMatch(/\.thumbLoadingLayerCompare\s*\{[^}]*z-index:\s*3;/s);
+  });
+
+  test("keeps intro opacity transitions on the pre-active state for Safari", () => {
+    const gridCss = readCss("../../grid/Grid.module.css");
+    const masonryCss = readCss("../../masonry/Masonry.module.css");
+    const sliderCss = readCss("../../slider/Slider.module.css");
+
+    expect(gridCss).toMatch(/\.introContainer\s*\{[^}]*opacity:\s*0;[^}]*transition:/s);
+    expect(masonryCss).toMatch(/\.introContainer\s*\{[^}]*opacity:\s*0;[^}]*transition:/s);
+    expect(sliderCss).toMatch(/\.fade_container\s*\{[^}]*transition:/s);
   });
 
   test("uses slider-style shimmer vars for built-in thumbnail placeholders", () => {
@@ -291,6 +322,19 @@ describe("loading layer stacking", () => {
 
       const skeleton = host.querySelector("[data-rmg-entry-skeleton]");
       expect(skeleton?.getAttribute("data-rmg-entry-shimmer")).toBeNull();
+      expect(
+        host
+          .querySelector("[data-rmg-entry-owner='0']")
+          ?.getAttribute("data-rmg-entry-ready")
+      ).toBe("0");
+
+      await flushEntryRevealFrames();
+
+      expect(
+        host
+          .querySelector("[data-rmg-entry-owner='0']")
+          ?.getAttribute("data-rmg-entry-ready")
+      ).toBe("1");
 
       await React.act(async () => {
         dispatchOpacityTransitionEnd(skeleton!);
@@ -301,6 +345,60 @@ describe("loading layer stacking", () => {
           .querySelector("[data-rmg-entry-skeleton]")
           ?.getAttribute("data-rmg-entry-shimmer")
       ).toBe("off");
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      host.remove();
+    }
+  });
+
+  test("stages entry readiness before starting nested media intro", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    const mediaIntroStates: Array<boolean | undefined> = [];
+
+    try {
+      await React.act(async () => {
+        root.render(
+          entryListElement(undefined, ({ entryInView, mediaNodes }) => {
+            mediaIntroStates.push(entryInView);
+
+            return React.createElement(
+              "div",
+              { "data-entry-media-in-view": entryInView ? "1" : "0" },
+              mediaNodes
+            );
+          })
+        );
+      });
+
+      expect(
+        host
+          .querySelector("[data-rmg-entry-owner='0']")
+          ?.getAttribute("data-rmg-entry-ready")
+      ).toBe("0");
+      expect(
+        host
+          .querySelector("[data-entry-media-in-view]")
+          ?.getAttribute("data-entry-media-in-view")
+      ).toBe("0");
+
+      await flushEntryRevealFrames();
+
+      expect(
+        host
+          .querySelector("[data-rmg-entry-owner='0']")
+          ?.getAttribute("data-rmg-entry-ready")
+      ).toBe("1");
+      expect(
+        host
+          .querySelector("[data-entry-media-in-view]")
+          ?.getAttribute("data-entry-media-in-view")
+      ).toBe("1");
+      expect(mediaIntroStates).toContain(false);
+      expect(mediaIntroStates[mediaIntroStates.length - 1]).toBe(true);
     } finally {
       await React.act(async () => {
         root.unmount();

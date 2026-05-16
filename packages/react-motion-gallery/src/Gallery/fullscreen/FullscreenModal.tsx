@@ -60,6 +60,7 @@ interface FullscreenModalProps {
   styles: Record<string, string>;
   syncFullscreenSourceFromIndex: (nextIndex: number) => void;
   baseZ?: number;
+  rootRef?: React.RefObject<HTMLDivElement | null>;
   introMethod?: "fade" | "scale" | null;
   setLatchedIntroMethod: React.Dispatch<React.SetStateAction<FullscreenOpenMethod | null>>;
   latchedIntroIndex: number;
@@ -161,6 +162,27 @@ function isCellVisible(
   const fully = r.left >= c.left && r.right <= c.right && r.top >= c.top && r.bottom <= c.bottom
   const intersects = r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom
   return allowPartial ? intersects : fully
+}
+
+function waitForAnimationFrames(count: number): Promise<void> {
+  const remaining = Math.max(1, Math.round(count));
+
+  return new Promise((resolve) => {
+    const tick = (framesLeft: number) => {
+      if (framesLeft <= 0) {
+        resolve();
+        return;
+      }
+
+      requestAnimationFrame(() => tick(framesLeft - 1));
+    };
+
+    tick(remaining);
+  });
+}
+
+function waitForBaseSliderVisualUpdate() {
+  return waitForAnimationFrames(4);
 }
 
 type ObjectFitMode = "contain" | "cover";
@@ -427,13 +449,13 @@ function insetForRect(r: DOMRect): string {
   return `inset(${px(top)} ${px(right)} ${px(bottom)} ${px(left)})`
 }
 
-function findThumbInfoEnsuringVisible(
+async function findThumbInfoEnsuringVisible(
   wrapIndex: number,
   sliderRef: RefObject<HTMLDivElement | null>,
   slidesRef: RefObject<{ cells: { element: HTMLElement; index: number }[]; target: number }[]>,
   centerSlider: (() => void) | undefined,
   setSliderIndex: (i: number, mode: IndexMode) => void
-): ThumbInfo | null {
+): Promise<ThumbInfo | null> {
   const slider = sliderRef.current
   if (!slider || !slidesRef.current?.length) return null
 
@@ -454,7 +476,7 @@ function findThumbInfoEnsuringVisible(
     )
 
     if (moved) {
-      void slider.offsetWidth
+      await waitForBaseSliderVisualUpdate()
       targetCell = findRenderedCellForIndex(slider, viewport, wrapIndex) ?? targetCell
     }
   }
@@ -590,29 +612,121 @@ function isElementOnScreen(el: HTMLElement, visibleThreshold = 0.4): boolean {
   return visibleHeight >= rect.height * visibleThreshold
 }
 
+export function resolveCenteredScrollTop(args: {
+  rectTop: number;
+  rectHeight: number;
+  scrollY: number;
+  viewportHeight: number;
+  viewportOffsetTop?: number;
+  maxScrollY?: number;
+}): number {
+  const rectTop = Number.isFinite(args.rectTop) ? args.rectTop : 0;
+  const rectHeight = Number.isFinite(args.rectHeight) ? Math.max(0, args.rectHeight) : 0;
+  const scrollY = Number.isFinite(args.scrollY) ? args.scrollY : 0;
+  const viewportHeight =
+    Number.isFinite(args.viewportHeight) && args.viewportHeight > 0
+      ? args.viewportHeight
+      : rectHeight;
+  const viewportOffsetTop =
+    Number.isFinite(args.viewportOffsetTop) ? Math.max(0, args.viewportOffsetTop ?? 0) : 0;
+  const maxScrollY =
+    Number.isFinite(args.maxScrollY) && args.maxScrollY != null
+      ? Math.max(0, args.maxScrollY)
+      : Number.POSITIVE_INFINITY;
+
+  const centeredTop =
+    scrollY + rectTop - viewportOffsetTop - (viewportHeight - rectHeight) / 2;
+
+  return Math.min(Math.max(0, centeredTop), maxScrollY);
+}
+
+function readWindowScrollY() {
+  return window.scrollY || document.documentElement.scrollTop || 0;
+}
+
+function readMaxWindowScrollY() {
+  const scrollingEl = document.scrollingElement ?? document.documentElement;
+  const layoutViewportHeight =
+    window.innerHeight || document.documentElement.clientHeight || 0;
+  const bodyScrollHeight = document.body?.scrollHeight ?? 0;
+  const scrollHeight = Math.max(scrollingEl.scrollHeight, bodyScrollHeight);
+
+  return Math.max(0, scrollHeight - layoutViewportHeight);
+}
+
+function forceInstantWindowScrollTo(top: number) {
+  const root = document.documentElement;
+  const body = document.body;
+  const prevRootScrollBehavior = root.style.scrollBehavior;
+  const prevBodyScrollBehavior = body?.style.scrollBehavior ?? "";
+
+  root.style.scrollBehavior = "auto";
+  if (body) body.style.scrollBehavior = "auto";
+
+  try {
+    window.scrollTo(window.scrollX || 0, top);
+  } finally {
+    root.style.scrollBehavior = prevRootScrollBehavior;
+    if (body) body.style.scrollBehavior = prevBodyScrollBehavior;
+  }
+}
+
+async function waitForWindowScrollSettle(targetTop: number): Promise<void> {
+  let previousY = readWindowScrollY();
+  let stableFrames = 0;
+
+  for (let i = 0; i < 8; i += 1) {
+    await waitForAnimationFrames(1);
+
+    const currentY = readWindowScrollY();
+    const nearTarget = Math.abs(currentY - targetTop) <= 1;
+    const barelyMoved = Math.abs(currentY - previousY) <= 0.5;
+
+    if (nearTarget || barelyMoved) {
+      stableFrames += 1;
+      if (stableFrames >= 2) break;
+    } else {
+      stableFrames = 0;
+    }
+
+    previousY = currentY;
+  }
+
+  await waitForAnimationFrames(1);
+}
+
 async function scrollElementIntoCenterView(el: HTMLElement | null): Promise<void> {
   if (!el) return;
 
   // if (isElementOnScreen(el, 1)) return;
 
   const rect = el.getBoundingClientRect();
-  const scrollY =
-    window.scrollY ||
-    document.documentElement.scrollTop ||
-    0;
-
+  const scrollY = readWindowScrollY();
+  const visualViewport = window.visualViewport;
   const viewportHeight =
+    visualViewport?.height ||
     window.innerHeight ||
     document.documentElement.clientHeight ||
     rect.height;
+  const viewportOffsetTop = visualViewport?.offsetTop ?? 0;
+  const maxScrollY = readMaxWindowScrollY();
 
-  const targetTop =
-    rect.top + scrollY - (viewportHeight - rect.height) / 2;
-
-  window.scrollTo({
-    top: targetTop,
-    behavior: 'instant',
+  const targetTop = resolveCenteredScrollTop({
+    rectTop: rect.top,
+    rectHeight: rect.height,
+    scrollY,
+    viewportHeight,
+    viewportOffsetTop,
+    maxScrollY,
   });
+
+  if (Math.abs(targetTop - scrollY) > 1) {
+    forceInstantWindowScrollTo(targetTop);
+    await waitForWindowScrollSettle(targetTop);
+    return;
+  }
+
+  await waitForAnimationFrames(1);
 }
 
 type VideoProxyCloseArgs = {
@@ -794,6 +908,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   styles,
   syncFullscreenSourceFromIndex,
   baseZ,
+  rootRef,
   introMethod,
   setLatchedIntroMethod,
   latchedIntroIndex
@@ -807,6 +922,16 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const pointerDownY = React.useRef<number>(0)
 
   const computedBaseZ = baseZ ?? 9999;
+
+  const setModalRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      modalRef.current = node;
+      if (rootRef) {
+        (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }
+    },
+    [rootRef]
+  );
 
   const shieldRef = React.useRef<HTMLDivElement | null>(null);
   const trackedCloseMutationsRef = React.useRef<
@@ -1285,17 +1410,26 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       return { host: null, image: null };
     };
 
-    const resolveGridishTransformDestImg = (index: number) => {
+    const resolveExpandableSlotAtIndex = (index: number) => {
       const slot: any = (expandableImageRefs.current as any)?.[index] ?? null;
       const slotCurrent: any =
         slot && typeof slot === "object" && "current" in slot ? slot.current : slot;
-      const slotInfo = resolveExpandableSlot(slotCurrent);
+      return resolveExpandableSlot(slotCurrent);
+    };
+
+    const resolveRegisteredCellHost = (index: number) =>
+      cells.current?.find((cell) => cell.index === index)?.element ?? null;
+
+    const resolveGridishTransformDestImg = (index: number) => {
+      const slotInfo = resolveExpandableSlotAtIndex(index);
       const layoutlessTarget = resolveLayoutlessTarget(index);
 
       let destImg: HTMLImageElement | null = slotInfo.image ?? layoutlessTarget.image;
 
       if (!destImg) {
-        const host = document.querySelector<HTMLElement>(`[data-rmg-idx="${index}"]`);
+        const host =
+          resolveRegisteredCellHost(index) ??
+          document.querySelector<HTMLElement>(`[data-rmg-idx="${index}"]`);
         destImg = (host?.querySelector("img") as HTMLImageElement | null) ?? null;
       }
 
@@ -1648,14 +1782,13 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       }
     } else {
       const layoutlessTarget = resolveLayoutlessTarget(canonicalIdx);
-      const slotInfo = resolveExpandableSlot(
-        (expandableImageRefs.current as any)?.[canonicalIdx] ?? null
-      );
+      const slotInfo = resolveExpandableSlotAtIndex(canonicalIdx);
       const el =
         layoutlessTarget.host ??
         layoutlessTarget.media ??
-        document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`) ??
         slotInfo.host ??
+        resolveRegisteredCellHost(canonicalIdx) ??
+        document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`) ??
         null;
       await scrollElementIntoCenterView(el);
       await waitForEntriesOwnerReady();
@@ -1694,22 +1827,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         return;
       }
 
-      const viewport = getViewportEl(slider.current);
-      if (!viewport) {
-        safeTeardown();
-        return;
-      }
-
-      const targetCellEl = findRenderedCellForIndex(slider.current, viewport, localSlideIdx);
-      if (!targetCellEl) {
-        safeTeardown();
-        return;
-      }
-
-      const shouldMove = !isCellVisible(targetCellEl, viewport, true);
-
       const measureAndAnimate = async () => {
-        const thumbInfo = findThumbInfoEnsuringVisible(
+        const thumbInfo = await findThumbInfoEnsuringVisible(
           localSlideIdx,
           slider,
           slides,
@@ -1739,24 +1858,18 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         });
       };
 
-      if (shouldMove) {
-        if (!moveBaseSliderToSlide(
-          localSlideIdx,
-          slides,
-          centerSlider,
-          setSliderIndex
-        )) {
-          safeTeardown();
-          return;
-        }
-
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => { void measureAndAnimate(); });
-        });
-      } else {
-        await measureAndAnimate();
+      if (!moveBaseSliderToSlide(
+        localSlideIdx,
+        slides,
+        centerSlider,
+        setSliderIndex
+      )) {
+        safeTeardown();
+        return;
       }
 
+      await waitForBaseSliderVisualUpdate();
+      await measureAndAnimate();
       return;
     }
 
@@ -1852,7 +1965,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
   return (
     <div
-      ref={modalRef}
+      ref={setModalRef}
       data-rmg-fs-root="true"
       onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
         pointerDownX.current = e.clientX
@@ -1871,6 +1984,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         ['--rmg-fs-z' as any]: computedBaseZ,
         display: 'block',
         touchAction: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
         contain: 'layout style size',
         overflow: 'hidden',
       }}
