@@ -681,7 +681,7 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
           overflow: "hidden",
           minWidth: 0,
           minHeight: 0,
-          touchAction: disabled ? "auto" : "none",
+          touchAction: disabled ? "auto" : isZoomed ? "none" : "pan-y",
           ...style,
         }}
       >

@@ -941,6 +941,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     >
   >([]);
   const trackedCloseKeysRef = React.useRef<WeakMap<object, Set<string>>>(new WeakMap());
+  const closeInProgressRef = React.useRef(false);
+  const closeAnimationStartedRef = React.useRef(false);
 
   const restoreTrackedCloseMutations = React.useCallback(() => {
     for (let i = trackedCloseMutationsRef.current.length - 1; i >= 0; i -= 1) {
@@ -1020,6 +1022,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   useEffect(() => {
     return () => {
       if (cancelFsCloseRef.current) cancelFsCloseRef.current = null;
+      closeInProgressRef.current = false;
+      closeAnimationStartedRef.current = false;
       unmountShield();
     };
   }, [cancelFsCloseRef]);
@@ -1299,7 +1303,35 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     return (m as any).kind === 'video' || /\.(mp4|webm|ogg)$/i.test((m as any).src || '');
   }
 
+  function startClosePrep() {
+    if (closeInProgressRef.current) return false;
+
+    closeInProgressRef.current = true;
+    closeAnimationStartedRef.current = false;
+
+    cancelFsCloseRef.current = () => {
+      if (!closeInProgressRef.current) return;
+      safeTeardown();
+    };
+
+    mountShield();
+    setModalClosingHitTestState(true);
+    isAnimating.current = false;
+    isClick.current = false;
+    cells.current = [];
+
+    return true;
+  }
+
+  function startCloseAnimation() {
+    if (closeAnimationStartedRef.current) return false;
+    closeAnimationStartedRef.current = true;
+    setClosingModal(true);
+    return true;
+  }
+
   function fadeCloseAndTeardown() {
+    startCloseAnimation();
     fadeChrome()
 
     fadeOverlay()
@@ -1359,13 +1391,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
   async function proceedToClose() {
     if (!open) return;
-
-    mountShield();
-    setModalClosingHitTestState(true);
-    isAnimating.current = false;
-    isClick.current = false;
-    cells.current = [];
-    setClosingModal(true);
+    if (!startClosePrep()) return;
 
     const originals = wrappedItems.slice(1, -1);
     if (!originals.length) {
@@ -1507,6 +1533,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         destImg: args.destImg,
       });
 
+      startCloseAnimation();
+      fadeChrome();
+      fadeOverlay();
       fadeNonActiveSlides(fsSlider, nodeIdx, targetImg, args.isVideoSlide);
 
       let captionClone: HTMLElement | null = cloneFsCaptionForNode(fsSlider, nodeIdx);
@@ -1818,9 +1847,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       return;
     }
 
-    fadeChrome();
-    fadeOverlay();
-
     if (!isGridish) {
       if (!slider.current || !slides.current?.length) {
         safeTeardown();
@@ -1907,6 +1933,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
   function safeTeardown() {
     if (cancelFsCloseRef.current) cancelFsCloseRef.current = null;
+    closeInProgressRef.current = false;
+    closeAnimationStartedRef.current = false;
     unmountShield();
     setModalClosingHitTestState(false);
 

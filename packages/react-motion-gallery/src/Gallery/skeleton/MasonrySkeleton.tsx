@@ -129,7 +129,7 @@ function buildVariantContainerCss(
   const lines: string[] = [];
 
   for (const variant of variants) {
-    if (!variant.items.some((item) => item.span > 1)) continue;
+    const usesPositionedSkeleton = variant.items.some((item) => item.span > 1);
 
     const variantSel = `${scopeSel} [data-rmg-mskel-variant="${escapeAttrValue(
       variant.state.key
@@ -142,22 +142,26 @@ function buildVariantContainerCss(
           .map(([name, value]) => importantDecl(name, value))
           .join("") +
         `}`;
-      const itemCss = rule.items
-        .map((item) => {
-          const itemSel = `${variantSel} > [data-rmg-mskel-index="${item.index}"]`;
-          return (
-            `${itemSel}{` +
-            [
-              importantDecl("top", item.topCssExpr ?? "0px"),
-              importantDecl("left", item.leftCssExpr),
-              importantDecl("width", item.widthCssExpr),
-            ].join("") +
-            `}`
-          );
-        })
-        .join("");
+      const itemCss = usesPositionedSkeleton
+        ? rule.items
+            .map((item) => {
+              const itemSel = `${variantSel} > [data-rmg-mskel-index="${item.index}"]`;
+              return (
+                `${itemSel}{` +
+                [
+                  importantDecl("top", item.topCssExpr ?? "0px"),
+                  importantDecl("left", item.leftCssExpr),
+                  importantDecl("width", item.widthCssExpr),
+                ].join("") +
+                `}`
+              );
+            })
+            .join("")
+        : "";
 
-      lines.push(`@container (min-width:${rule.minWidth}px){${rootCss}${itemCss}}`);
+      lines.push(
+        `@container (min-width:${rule.minWidth}px){${rootCss}${itemCss}}`
+      );
     }
   }
 

@@ -222,6 +222,31 @@ describe("ZoomPanImage", () => {
     await view.cleanup();
   });
 
+  test("allows vertical touch page panning until the image is zoomed", async () => {
+    const view = await setup(<ZoomPanImage src="/alpha.jpg" alt="Alpha" />);
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    expect(root.style.touchAction).toBe("pan-y");
+
+    await React.act(async () => {
+      root.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 200,
+          clientY: 150,
+        })
+      );
+    });
+
+    expect(parseScale(img.style.transform)).toBeGreaterThan(1);
+    expect(root.style.touchAction).toBe("none");
+
+    await view.cleanup();
+  });
+
   test("click zooms in and a zoomed pointer click resets to scale 1", async () => {
     const view = await setup(<ZoomPanImage src="/alpha.jpg" alt="Alpha" />);
     const root = view.getRoot();

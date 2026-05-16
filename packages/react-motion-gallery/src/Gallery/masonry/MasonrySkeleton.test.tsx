@@ -1055,6 +1055,57 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).toContain('data-rmg-mskel-variant="c4_g8"');
   });
 
+  test("emits container height corrections for non-spanning round-robin skeletons", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 3,
+        columns: { 0: 1, 720: 2, 1140: 3 },
+        gap: { 0: 12, 1140: 18 },
+        placement: "roundRobin",
+        spec: {
+          layout: {
+            kind: "masonry",
+            itemWrapStyle: {
+              padding: "10px 10px 14px",
+              borderRadius: 22,
+              backgroundColor: "rgba(255, 255, 255, 0.96)",
+              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+            },
+            item: {
+              kind: "col",
+              style: { gap: 12 },
+              children: [
+                {
+                  kind: "rect",
+                  style: {
+                    width: "100%",
+                    aspectRatio: "4 / 5",
+                    borderRadius: 16,
+                  },
+                },
+                {
+                  kind: "text",
+                  responsiveBy: "container",
+                  barHeight: 14,
+                  lineHeight: 1.5,
+                  lines: { 0: 5, 240: 2 },
+                  style: { width: "100%" },
+                },
+              ],
+            },
+          },
+        },
+      })
+    );
+
+    const firstVariantIndex = markup.indexOf("<div data-rmg-mskel-variant");
+    const cssBeforeVariants = markup.slice(0, firstVariantIndex);
+
+    expect(cssBeforeVariants).toContain("@container");
+    expect(cssBeforeVariants).toContain("--rmg-mskel-height-0");
+    expect(cssBeforeVariants).not.toContain("data-rmg-mskel-index");
+  });
+
   test("keeps span-positioned masonry scaffold CSS linear with custom properties", () => {
     const markup = renderToStaticMarkup(
       React.createElement(MasonrySkeletonCard, {
