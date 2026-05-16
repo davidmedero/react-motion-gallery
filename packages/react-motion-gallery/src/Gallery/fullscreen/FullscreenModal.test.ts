@@ -380,6 +380,21 @@ describe("fullscreen close sequencing", () => {
     expect(events).toEqual(["scrollTo"]);
 
     await flushAnimationFrame();
+    expect(events).toEqual(["scrollTo"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(49);
+      await Promise.resolve();
+    });
+    expect(events).toEqual(["scrollTo"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(1);
+      await Promise.resolve();
+    });
+    expect(events).toEqual(["scrollTo"]);
+
+    await flushAnimationFrame();
     expect(events.slice(0, 2)).toEqual(["scrollTo", "closing:true"]);
 
     await flushAnimationFrame();

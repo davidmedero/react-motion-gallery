@@ -84,6 +84,7 @@ type TrackStyleMutation = (
 type TrackMutedMutation = (el: HTMLMediaElement | null, value: boolean) => void
 
 const CLOSE_POINTER_GUARD_MS = 80;
+const POST_SCROLL_CLOSE_PAINT_DELAY_MS = 50;
 
 export function shouldUseFadeClose(args: {
   introFade?: boolean;
@@ -695,8 +696,15 @@ async function waitForWindowScrollSettle(targetTop: number): Promise<void> {
   await waitForAnimationFrames(1);
 }
 
-async function scrollElementIntoCenterView(el: HTMLElement | null): Promise<void> {
-  if (!el) return;
+async function waitForPostScrollClosePaint(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    window.setTimeout(resolve, POST_SCROLL_CLOSE_PAINT_DELAY_MS);
+  });
+  await waitForAnimationFrames(1);
+}
+
+async function scrollElementIntoCenterView(el: HTMLElement | null): Promise<boolean> {
+  if (!el) return false;
 
   // if (isElementOnScreen(el, 1)) return;
 
@@ -723,10 +731,11 @@ async function scrollElementIntoCenterView(el: HTMLElement | null): Promise<void
   if (Math.abs(targetTop - scrollY) > 1) {
     forceInstantWindowScrollTo(targetTop);
     await waitForWindowScrollSettle(targetTop);
-    return;
+    return true;
   }
 
   await waitForAnimationFrames(1);
+  return false;
 }
 
 type VideoProxyCloseArgs = {
@@ -1586,7 +1595,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       const overflowRects = findOverflowClipAncestorRectsFromEl(args.destImg ?? null, 2);
       const parentOverflowRect = overflowRects[0] ?? null;
       const grandparentOverflowRect = overflowRects[1] ?? null;
-      const closeMediaZ = Math.max(0, computedBaseZ - 1);
+      const closeMediaZ = computedBaseZ + 1;
 
       const vw = document.documentElement.clientWidth;
       const vh = window.innerHeight;
@@ -1819,8 +1828,11 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         resolveRegisteredCellHost(canonicalIdx) ??
         document.querySelector<HTMLElement>(`[data-rmg-idx="${canonicalIdx}"]`) ??
         null;
-      await scrollElementIntoCenterView(el);
+      const didScrollPage = await scrollElementIntoCenterView(el);
       await waitForEntriesOwnerReady();
+      if (didScrollPage) {
+        await waitForPostScrollClosePaint();
+      }
       gridishTransformDestImg = resolveGridishTransformDestImg(canonicalIdx);
     }
 
@@ -2014,12 +2026,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         touchAction: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        contain: 'layout style size paint',
+        contain: 'layout style size',
         overflow: 'hidden',
-        transform: 'translate3d(0, 0, 0)',
-        willChange: 'opacity, transform',
-        backfaceVisibility: 'hidden',
-        WebkitBackfaceVisibility: 'hidden',
       }}
     >
       {closeEnabled && (
