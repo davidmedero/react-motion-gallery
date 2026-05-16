@@ -697,10 +697,10 @@ export function SliderSkeleton({
   }, [sliderRestoreHandleRef, sliderRestoreRuntime]);
 
   const rootStyle: React.CSSProperties = {
+    minHeight: "var(--rmg-slider-initial-height, var(--rmg-slider-height, 320px))",
     position: "relative",
     width: "100%",
     minWidth: 0,
-    minHeight: "var(--rmg-slider-initial-height, var(--rmg-slider-height, 320px))",
     overflow: "hidden",
     ...style,
     ...(backgroundColor
@@ -726,9 +726,9 @@ export function SliderSkeleton({
           <style
             dangerouslySetInnerHTML={{
               __html: [
-                sliderCountCss.cssText,
                 sliderInitialHeightCss,
                 sliderRestoreHeightCss,
+                sliderCountCss.cssText,
               ]
                 .filter(Boolean)
                 .join("\n"),

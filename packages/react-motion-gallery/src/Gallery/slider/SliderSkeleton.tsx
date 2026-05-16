@@ -259,12 +259,19 @@ function nodeStyleVars(
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
 
-  if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio as any;
-
-  const w = cssLen(base?.width);
-  const mw = cssLen(base?.maxWidth);
   const h = cssLen(base?.height);
   const mh = cssLen(base?.maxHeight);
+  const w = cssLen(base?.width);
+  const mw = cssLen(base?.maxWidth);
+
+  if (h != null) {
+    s.height = h;
+  } else if (base?.aspectRatio != null) {
+    (s as any).height = "auto";
+  }
+  if (mh != null) s.maxHeight = mh;
+
+  if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio as any;
 
   if (w != null) {
     (s as any).inlineSize = w;
@@ -275,17 +282,9 @@ function nodeStyleVars(
     (s as any).maxWidth = mw;
   }
 
-  if (h != null) s.height = h;
-  if (mh != null) s.maxHeight = mh;
-
-  if (base?.aspectRatio != null && base?.height == null) {
-    (s as any).height = "auto";
-  }
-
   if (base?.aspectRatio != null && base?.width == null && base?.height == null) {
     (s as any).inlineSize = "100%";
     (s as any).width = "100%";
-    (s as any).height = "auto";
   }
 
   if (base?.backgroundColor) (s as any)["--rmg-skel-bg"] = base.backgroundColor;
@@ -393,6 +392,10 @@ function containerStylesPlain(style?: SkeletonContainerStyle): React.CSSProperti
   const s: React.CSSProperties = {};
   if (!style) return s;
 
+  if (style.height != null) s.height = cssLen(style.height);
+  if (style.minHeight != null) s.minHeight = cssLen(style.minHeight);
+  if (style.maxHeight != null) s.maxHeight = cssLen(style.maxHeight);
+
   if (style.position != null) s.position = style.position;
   if (style.inset != null) (s as any).inset = cssLen(style.inset);
   if (style.insetBlock != null) (s as any).insetBlock = cssLen(style.insetBlock);
@@ -410,9 +413,6 @@ function containerStylesPlain(style?: SkeletonContainerStyle): React.CSSProperti
 
   if (style.width != null) s.width = cssLen(style.width);
   if (style.maxWidth != null) s.maxWidth = cssLen(style.maxWidth);
-  if (style.height != null) s.height = cssLen(style.height);
-  if (style.minHeight != null) s.minHeight = cssLen(style.minHeight);
-  if (style.maxHeight != null) s.maxHeight = cssLen(style.maxHeight);
   if (style.backgroundColor != null) s.backgroundColor = style.backgroundColor;
   if (style.borderRadius != null) s.borderRadius = cssLen(style.borderRadius);
   if (style.border != null) s.border = style.border;
