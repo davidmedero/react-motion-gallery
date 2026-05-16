@@ -383,7 +383,7 @@ describe("fullscreen close sequencing", () => {
     expect(events).toEqual(["scrollTo"]);
 
     await React.act(async () => {
-      vi.advanceTimersByTime(49);
+      vi.advanceTimersByTime(299);
       await Promise.resolve();
     });
     expect(events).toEqual(["scrollTo"]);

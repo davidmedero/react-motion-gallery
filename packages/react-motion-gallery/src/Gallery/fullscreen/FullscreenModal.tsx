@@ -84,7 +84,7 @@ type TrackStyleMutation = (
 type TrackMutedMutation = (el: HTMLMediaElement | null, value: boolean) => void
 
 const CLOSE_POINTER_GUARD_MS = 80;
-const POST_SCROLL_CLOSE_PAINT_DELAY_MS = 50;
+const POST_SCROLL_CLOSE_PAINT_DELAY_MS = 300;
 
 export function shouldUseFadeClose(args: {
   introFade?: boolean;
