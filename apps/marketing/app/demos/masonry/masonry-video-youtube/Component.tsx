@@ -17,6 +17,7 @@ import type {
 } from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-video-youtube-demo.module.css";
 import { masonryVideoHtml5SkeletonText } from "../masonry-video-html5/masonry-video-html5.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   title: string;
@@ -322,6 +323,7 @@ export function MasonryVideoYoutubeDemo() {
   return (
     <GalleryCore layout="masonry" fullscreenItems={media}>
       <MasonrySkeleton
+        cache={demoSkeletonCache("masonry-video-youtube")}
         layout={YOUTUBE_SKELETON}
         ready={masonryReady}
         timing={{ exitMs: 1200 }}

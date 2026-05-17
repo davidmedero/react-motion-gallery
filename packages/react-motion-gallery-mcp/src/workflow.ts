@@ -111,6 +111,7 @@ function resourcesForMode(mode: GalleryWorkflowMode) {
       ...base,
       "rmg://guides/loading-fidelity",
       "rmg://guides/browser-measured-skeletons",
+      "rmg://guides/skeleton-cache",
       "rmg://docs/skeleton-text-authoring",
       "rmg://docs/skeleton-text-codex-prompt",
     ];
@@ -120,11 +121,12 @@ function resourcesForMode(mode: GalleryWorkflowMode) {
       ...base,
       "rmg://guides/loading-fidelity",
       "rmg://guides/browser-measured-skeletons",
+      "rmg://guides/skeleton-cache",
       "rmg://docs/skeleton-text-codex-prompt",
     ];
   }
 
-  return [...base, "rmg://guides/loading-fidelity"];
+  return [...base, "rmg://guides/loading-fidelity", "rmg://guides/skeleton-cache"];
 }
 
 function toolsForMode(mode: GalleryWorkflowMode) {
@@ -160,12 +162,14 @@ function nextStepsForMode(mode: GalleryWorkflowMode) {
         "Add stable selectors to the real rendered text.",
         "Use flat targets by default; add slider, masonry, or entries metadata only when that layout needs it.",
         "Run generate:skeleton-text-module with --analysis-output, then import the generated sidecar values.",
+        "For SSR reload performance, wire the skeleton cookie snapshot cache with a stable cache key and route key.",
       ];
     case "skeletonRetrofit":
       return [
         "Inspect the existing layout and current loading behavior before changing code.",
         "Choose non-text, hand-authored text, or browser-measured text fidelity based on the user goal.",
         "Preserve existing layout behavior and add the smallest skeleton layer that satisfies the request.",
+        "If the skeleton has responsive text or expensive geometry CSS, add the cookie snapshot cache instead of client-only storage.",
       ];
   }
 }

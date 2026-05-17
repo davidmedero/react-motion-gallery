@@ -1,4 +1,4 @@
-export const source = String.raw`'use client';
+export const source = `'use client';
 
 import * as React from "react";
 import { GalleryCore, useGalleryCore } from "react-motion-gallery/core";
@@ -98,5 +98,4 @@ export function FullscreenLazyLoadDemo() {
       <FullscreenLazyLoadAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

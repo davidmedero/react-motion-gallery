@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -17,6 +17,7 @@ import type {
 } from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-lazy-load-demo.module.css";
 import { masonryLazyLoadSkeletonText } from "./masonry-lazy-load.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -308,6 +309,7 @@ export function MasonryLazyLoadDemo() {
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <MasonrySkeleton
+        cache={demoSkeletonCache("masonry-lazy-load")}
         layout={LAZY_SKELETON}
         ready={masonryReady}
         timing={{ exitMs: 1200 }}

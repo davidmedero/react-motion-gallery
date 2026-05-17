@@ -73,6 +73,31 @@ describe("skeleton cache cookies", () => {
     expect(serialized).not.toContain("shellHeightPx");
   });
 
+  test("round-trips every skeleton cache kind through compact serialization", () => {
+    for (const kind of ["skeleton", "slider", "grid", "masonry", "entries"] as const) {
+      const snapshot: SkeletonCacheSnapshot = {
+        ...baseSnapshot,
+        kind,
+        masonry: kind === "masonry" ? baseSnapshot.masonry : undefined,
+      };
+      const parsed = parseSkeletonCacheCookie(
+        encodeURIComponent(serializeSkeletonCacheSnapshot(snapshot)),
+        {
+          key: snapshot.key,
+          scopeId: snapshot.scopeId,
+          kind,
+          routeKey: snapshot.routeKey,
+          ttlMs: 5000,
+          now: 1200,
+          textIds: ["title", "body"],
+        }
+      );
+
+      expect(parsed?.kind).toBe(kind);
+      expect(parsed?.text.body.lines).toBe(2);
+    }
+  });
+
   test("rejects expired and mismatched snapshots", () => {
     expect(
       validateSkeletonCacheSnapshot(baseSnapshot, {

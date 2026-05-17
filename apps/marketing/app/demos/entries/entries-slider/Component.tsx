@@ -15,6 +15,7 @@ import {
 } from "react-motion-gallery/entries";
 import styles from "./entries-slider-demo.module.css";
 import { entriesSliderSkeletonText } from "./entries-slider.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoEntry = {
   id: string;
@@ -453,6 +454,7 @@ export function EntriesSliderDemo() {
             overlay: renderEntryOverlay,
           },
           loading: {
+            cache: demoSkeletonCache("entries-slider"),
             // force: {
             //   showContent: true,
             //   skeletonOpacity: 0.5,

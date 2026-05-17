@@ -6,6 +6,7 @@ import { P as PlyrSourceBuilder, a as PlyrOptionsBuilder } from './plyrTypes-Dhz
 import { a as ZoomPanOptions } from './types-Dhh8xfHo.mjs';
 import { L as LoadingForceOptions } from './force-C5m1QpdF.mjs';
 import { R as ResponsiveTextBarHeight, a as ResponsiveTextBarWidth, b as ResponsiveTextLineHeight, c as ResponsiveTextLineCount, d as ResponsiveTextLastBarWidth, T as TextSkeletonResponsiveBy } from './text-BBcRGVzn.mjs';
+import { SkeletonCacheOptions } from './skeleton-cache.mjs';
 import { APITypes } from 'plyr-react';
 import { c as FullscreenThumbnailSlotLayout } from './types-DNd5jSkS.mjs';
 import { Root } from 'react-dom/client';
@@ -71,6 +72,7 @@ type SkeletonNode = {
     };
 } | {
     kind: "text";
+    textId?: string;
     barHeight: ResponsiveTextBarHeight;
     barWidth?: ResponsiveTextBarWidth;
     lineHeight: ResponsiveTextLineHeight;
@@ -152,6 +154,7 @@ type EntriesLoadingOptions = {
     waitForDecode?: boolean;
     decodeTimeoutMs?: number;
     skeletonWrap?: ElementStyle;
+    cache?: SkeletonCacheOptions;
 };
 type IntroOptions = {
     renderIntro?: (args: {

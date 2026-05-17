@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const masonryRoundRobinItem01Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem01Badge",
   "lines": 1,
   "barWidth": "46px",
   "barHeight": 11.84,
@@ -30,6 +32,7 @@ export const masonryRoundRobinItem01Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem01Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem01Title",
   "lines": {
     "0": 2,
     "215.812": 1
@@ -47,6 +50,7 @@ export const masonryRoundRobinItem01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem01Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem01Body",
   "lines": {
     "0": 5,
     "354": 2,
@@ -83,6 +87,7 @@ export const masonryRoundRobinItem01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem02Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem02Badge",
   "lines": 1,
   "barWidth": "43px",
   "barHeight": 11.84,
@@ -91,6 +96,7 @@ export const masonryRoundRobinItem02Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem02Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem02Title",
   "lines": {
     "0": 2,
     "199.484": 1
@@ -108,6 +114,7 @@ export const masonryRoundRobinItem02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem02Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem02Body",
   "lines": {
     "0": 5,
     "288": 2,
@@ -146,6 +153,7 @@ export const masonryRoundRobinItem02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem03Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem03Badge",
   "lines": 1,
   "barWidth": "46px",
   "barHeight": 11.84,
@@ -154,6 +162,7 @@ export const masonryRoundRobinItem03Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem03Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem03Title",
   "lines": 1,
   "barWidth": "161px",
   "barHeight": 16.32,
@@ -162,6 +171,7 @@ export const masonryRoundRobinItem03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem03Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem03Body",
   "lines": {
     "0": 4,
     "196.609": 3,
@@ -192,6 +202,7 @@ export const masonryRoundRobinItem03Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem04Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem04Badge",
   "lines": 1,
   "barWidth": "39px",
   "barHeight": 11.84,
@@ -200,6 +211,7 @@ export const masonryRoundRobinItem04Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem04Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem04Title",
   "lines": {
     "0": 2,
     "192.281": 1
@@ -217,6 +229,7 @@ export const masonryRoundRobinItem04Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem04Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem04Body",
   "lines": {
     "0": 4,
     "295": 2,
@@ -247,6 +260,7 @@ export const masonryRoundRobinItem04Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem05Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem05Badge",
   "lines": 1,
   "barWidth": "29px",
   "barHeight": 11.84,
@@ -255,6 +269,7 @@ export const masonryRoundRobinItem05Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem05Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem05Title",
   "lines": {
     "0": 2,
     "192.765": 1
@@ -272,6 +287,7 @@ export const masonryRoundRobinItem05Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem05Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem05Body",
   "lines": {
     "0": 5,
     "348": 2,
@@ -308,6 +324,7 @@ export const masonryRoundRobinItem05Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem06Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem06Badge",
   "lines": 1,
   "barWidth": "51px",
   "barHeight": 11.84,
@@ -316,6 +333,7 @@ export const masonryRoundRobinItem06Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem06Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem06Title",
   "lines": {
     "0": 2,
     "236.453": 1
@@ -333,6 +351,7 @@ export const masonryRoundRobinItem06Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryRoundRobinItem06Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryRoundRobinItem06Body",
   "lines": {
     "0": 5,
     "193.734": 4,

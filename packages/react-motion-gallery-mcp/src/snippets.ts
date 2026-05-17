@@ -257,10 +257,14 @@ function readRawStringExport(filePath: string, exportName: "source" | "css") {
   }
 
   const file = fs.readFileSync(filePath, "utf8");
-  const marker = `export const ${exportName} = String.raw\``;
-  const start = file.indexOf(marker);
+  const rawMarker = `export const ${exportName} = String.raw\``;
+  const templateMarker = `export const ${exportName} = \``;
+  const rawStart = file.indexOf(rawMarker);
+  const templateStart = rawStart === -1 ? file.indexOf(templateMarker) : -1;
+  const marker = rawStart !== -1 ? rawMarker : templateMarker;
+  const start = rawStart !== -1 ? rawStart : templateStart;
   if (start === -1) {
-    throw new Error(`Could not find String.raw export "${exportName}" in ${filePath}`);
+    throw new Error(`Could not find template export "${exportName}" in ${filePath}`);
   }
 
   const bodyStart = start + marker.length;
@@ -270,7 +274,7 @@ function readRawStringExport(filePath: string, exportName: "source" | "css") {
     }
   }
 
-  throw new Error(`Unterminated String.raw export "${exportName}" in ${filePath}`);
+  throw new Error(`Unterminated template export "${exportName}" in ${filePath}`);
 }
 
 function discoverExtraFiles(demo: DemoMetadata, tsx: string): GeneratedExtraFile[] {

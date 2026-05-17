@@ -9,6 +9,7 @@ type GeneratedSkeletonTextBarWidth =
 type GeneratedSkeletonTextLastBarWidth = string | Record<number, string>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -18,6 +19,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const leadSpanTitle: GeneratedSkeletonTextEntry = {
+  "textId": "leadSpanTitle",
   "lines": {
     "0": 2,
     "326": 1
@@ -32,6 +34,7 @@ export const leadSpanTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const leadSpanBody: GeneratedSkeletonTextEntry = {
+  "textId": "leadSpanBody",
   "lines": {
     "0": 4,
     "340": 3,
@@ -59,11 +62,13 @@ export const leadSpanBody: GeneratedSkeletonTextEntry = {
 };
 
 export const wideTileTitle: GeneratedSkeletonTextEntry = {
+  "textId": "wideTileTitle",
   "lines": 1,
   "barWidth": "199px"
 };
 
 export const wideTileBody: GeneratedSkeletonTextEntry = {
+  "textId": "wideTileBody",
   "lines": {
     "0": 3,
     "405": 2,
@@ -100,11 +105,13 @@ export const wideTileBody: GeneratedSkeletonTextEntry = {
 };
 
 export const tightTileTitle: GeneratedSkeletonTextEntry = {
+  "textId": "tightTileTitle",
   "lines": 1,
   "barWidth": "161px"
 };
 
 export const tightTileBody: GeneratedSkeletonTextEntry = {
+  "textId": "tightTileBody",
   "lines": {
     "0": 3,
     "382": 2,
@@ -148,6 +155,7 @@ export const tightTileBody: GeneratedSkeletonTextEntry = {
 };
 
 export const portraitOneTitle: GeneratedSkeletonTextEntry = {
+  "textId": "portraitOneTitle",
   "lines": {
     "0": 1,
     "768": 2,
@@ -164,6 +172,7 @@ export const portraitOneTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const portraitOneBody: GeneratedSkeletonTextEntry = {
+  "textId": "portraitOneBody",
   "lines": {
     "0": 3,
     "412": 2,
@@ -225,6 +234,7 @@ export const portraitOneBody: GeneratedSkeletonTextEntry = {
 };
 
 export const portraitTwoTitle: GeneratedSkeletonTextEntry = {
+  "textId": "portraitTwoTitle",
   "lines": {
     "0": 1,
     "768": 2,
@@ -241,6 +251,7 @@ export const portraitTwoTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const portraitTwoBody: GeneratedSkeletonTextEntry = {
+  "textId": "portraitTwoBody",
   "lines": {
     "0": 4,
     "371": 3,
@@ -320,6 +331,7 @@ export const portraitTwoBody: GeneratedSkeletonTextEntry = {
 };
 
 export const portraitThreeTitle: GeneratedSkeletonTextEntry = {
+  "textId": "portraitThreeTitle",
   "lines": {
     "0": 2,
     "347": 1,
@@ -348,6 +360,7 @@ export const portraitThreeTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const portraitThreeBody: GeneratedSkeletonTextEntry = {
+  "textId": "portraitThreeBody",
   "lines": {
     "0": 3,
     "419": 2,
@@ -404,6 +417,7 @@ export const portraitThreeBody: GeneratedSkeletonTextEntry = {
 };
 
 export const narrowPortraitTitle: GeneratedSkeletonTextEntry = {
+  "textId": "narrowPortraitTitle",
   "lines": {
     "0": 2,
     "375": 1,
@@ -430,6 +444,7 @@ export const narrowPortraitTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const narrowPortraitBody: GeneratedSkeletonTextEntry = {
+  "textId": "narrowPortraitBody",
   "lines": {
     "0": 3,
     "462": 2,
@@ -495,6 +510,7 @@ export const narrowPortraitBody: GeneratedSkeletonTextEntry = {
 };
 
 export const closingPanoramaTitle: GeneratedSkeletonTextEntry = {
+  "textId": "closingPanoramaTitle",
   "lines": {
     "0": 2,
     "353": 1,
@@ -516,6 +532,7 @@ export const closingPanoramaTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const closingPanoramaBody: GeneratedSkeletonTextEntry = {
+  "textId": "closingPanoramaBody",
   "lines": {
     "0": 4,
     "326": 3,

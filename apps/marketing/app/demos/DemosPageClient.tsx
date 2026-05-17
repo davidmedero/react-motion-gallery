@@ -139,6 +139,7 @@ import { MasonryHorizontalOrderDemo } from "./masonry/masonry-horizontal-order/C
 import { source as masonryHorizontalOrderSource } from "./masonry/masonry-horizontal-order/source";
 import { css as masonryHorizontalOrderCss } from "./masonry/masonry-horizontal-order/css";
 import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
+import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";
 import { MasonryRoundRobinDemo } from "./masonry/masonry-round-robin/Component";
 import { source as masonryRoundRobinSource } from "./masonry/masonry-round-robin/source";
 import { css as masonryRoundRobinCss } from "./masonry/masonry-round-robin/css";
@@ -215,9 +216,7 @@ import { ZoomPanMasonryDemo } from "./zoom-pan/masonry/Component";
 import { source as zoomPanMasonrySource } from "./zoom-pan/masonry/source";
 import { css as zoomPanMasonryCss } from "./zoom-pan/masonry/css";
 
-type DemoRuntimeProps = {
-  horizontalOrderSkeletonCacheSnapshot?: SkeletonCacheSnapshot | null;
-};
+type DemoRuntimeProps = Record<string, never>;
 
 type DemoComponent = (props: DemoRuntimeProps) => ReactElement | null;
 type DemoCategoryId =
@@ -367,14 +366,12 @@ const SelectedDemoPane = memo(function SelectedDemoPane(props: {
   selectedDemo: DemoDefinition;
   selectedDemoCanvasClassName: string;
   selectedDemoSource: string;
-  horizontalOrderSkeletonCacheSnapshot?: SkeletonCacheSnapshot | null;
 }): JSX.Element {
   const {
     selectedCategoryLabel,
     selectedDemo,
     selectedDemoCanvasClassName,
     selectedDemoSource,
-    horizontalOrderSkeletonCacheSnapshot,
   } = props;
   const [displayedTab, setDisplayedTab] = useState<DemoCanvasTab>("preview");
   const SelectedDemoComponent = selectedDemo.Component;
@@ -427,13 +424,7 @@ const SelectedDemoPane = memo(function SelectedDemoPane(props: {
             <div
               className={`${cx(styles.demoCanvas, selectedDemoCanvasClassName)} shadow-sm`}
             >
-              <SelectedDemoComponent
-                horizontalOrderSkeletonCacheSnapshot={
-                  selectedDemo.id === "masonry-horizontal-order"
-                    ? horizontalOrderSkeletonCacheSnapshot
-                    : null
-                }
-              />
+              <SelectedDemoComponent />
             </div>
           ) : (
             <DemoCodeBlock
@@ -1619,12 +1610,10 @@ const DEFAULT_DEMO_ID = DEMOS[0]?.id ?? "";
 function DemosPageContent(props: {
   searchParamsString: string;
   onSearchParamsStringChange?: (nextSearchParamsString: string) => void;
-  horizontalOrderSkeletonCacheSnapshot?: SkeletonCacheSnapshot | null;
 }) {
   const {
     searchParamsString,
     onSearchParamsStringChange,
-    horizontalOrderSkeletonCacheSnapshot,
   } = props;
   const router = useRouter();
   const pathname = usePathname();
@@ -1816,7 +1805,6 @@ function DemosPageContent(props: {
               selectedDemo={selectedDemo}
               selectedDemoCanvasClassName={selectedDemoCanvasClassName}
               selectedDemoSource={selectedDemoSource}
-              horizontalOrderSkeletonCacheSnapshot={horizontalOrderSkeletonCacheSnapshot}
             />
           </main>
         </div>
@@ -1827,9 +1815,9 @@ function DemosPageContent(props: {
 
 export default function DemosPageClient(props: {
   initialSearchParamsString: string;
-  horizontalOrderSkeletonCacheSnapshot?: SkeletonCacheSnapshot | null;
+  skeletonCacheSnapshots?: Record<string, SkeletonCacheSnapshot | null | undefined>;
 }) {
-  const { initialSearchParamsString, horizontalOrderSkeletonCacheSnapshot } = props;
+  const { initialSearchParamsString, skeletonCacheSnapshots } = props;
   const [searchParamsString, setSearchParamsString] = useState(
     initialSearchParamsString
   );
@@ -1851,10 +1839,11 @@ export default function DemosPageClient(props: {
   }, []);
 
   return (
-    <DemosPageContent
-      searchParamsString={searchParamsString}
-      onSearchParamsStringChange={setSearchParamsString}
-      horizontalOrderSkeletonCacheSnapshot={horizontalOrderSkeletonCacheSnapshot}
-    />
+    <SkeletonCacheProvider snapshots={skeletonCacheSnapshots}>
+      <DemosPageContent
+        searchParamsString={searchParamsString}
+        onSearchParamsStringChange={setSearchParamsString}
+      />
+    </SkeletonCacheProvider>
   );
 }

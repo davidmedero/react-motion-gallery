@@ -13,6 +13,7 @@ import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenCaptions } from "react-motion-gallery/fullscreen/captions";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import styles from "./fullscreen-caption-thumbnails-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const SLIDES = [
   {
@@ -162,6 +163,7 @@ export function FullscreenCaptionThumbnailsDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("fullscreen-caption-thumbnails")}
         layout={{
               visibleCount: 2,
               mode: "peek",

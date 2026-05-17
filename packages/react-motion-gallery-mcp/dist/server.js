@@ -435,8 +435,11 @@ function agentBriefGuide() {
     "3. Use `recommend_pattern`, `search_demos`, and `get_demo` to choose examples.",
     "4. Only use `scaffold_skeleton_text` when the workflow calls for browser-measured skeleton text.",
     "5. For file writing, keep dry-run output until generated files have been reviewed; pass `apply: true` only when writing is intended.",
+    "6. For production skeletons with responsive or browser-measured text, read `rmg://guides/skeleton-cache` and consider the cookie snapshot cache so SSR can reuse active text/geometry values on reload.",
     "",
-    "Browser-measured skeleton text applies to any real rendered DOM text: sliders, grids, masonry, entries, thumbnails, flex layouts, app shells, cards, and custom UI. Use flat `targets` by default. Add specialized `slider`, `masonry`, or `entries` manifest metadata only when those layout modes need readiness or compensation behavior."
+    "Browser-measured skeleton text applies to any real rendered DOM text: sliders, grids, masonry, entries, thumbnails, flex layouts, app shells, cards, and custom UI. Use flat `targets` by default. Add specialized `slider`, `masonry`, or `entries` manifest metadata only when those layout modes need readiness or compensation behavior.",
+    "",
+    "The skeleton cookie snapshot cache is opt-in. Use `cache={{ key, routeKey }}` on `Skeleton`, `SliderSkeleton`, `GridSkeleton`, or `MasonrySkeleton`, and use `entries.loading.cache` for `Entries`. In SSR apps, parse cookies with `react-motion-gallery/skeleton/cache` on the server, then pass snapshots through `SkeletonCacheProvider` from `react-motion-gallery/skeleton/cache/provider`."
   ].join("\n");
 }
 function layoutSelectionGuide() {
@@ -535,6 +538,66 @@ function browserMeasuredSkeletonGuide() {
     '  "apply": true',
     "}",
     "```"
+  ].join("\n");
+}
+function skeletonCacheGuide() {
+  return [
+    "# Skeleton Cookie Snapshot Cache",
+    "",
+    "Use the skeleton cookie snapshot cache when a production skeleton has expensive responsive text or geometry CSS and the user cares about reload/back-forward first paint. First visits keep the normal responsive skeleton CSS. After hydration and debounced resizes, the client writes compact geometry/text measurements into a cookie. Later SSR can read that cookie and render the active snapshot instead of the full responsive text CSS table.",
+    "",
+    "Why cookies instead of sessionStorage:",
+    "",
+    "- SSR cannot read `sessionStorage`; it is only available after client JavaScript starts.",
+    "- Cookies are available to the server request, so SSR can reserve active skeleton geometry before hydration.",
+    "- The payload stores geometry only: version, key, scope id, route key, timestamp, active width bucket, viewport/layout width, text line counts and per-line widths, and masonry active variant/item heights when present.",
+    "- It never stores real text content, media URLs, app CSS, or full skeleton CSS.",
+    "",
+    "API surface:",
+    "",
+    "- Import server-safe helpers from `react-motion-gallery/skeleton/cache`.",
+    "- Import the client provider from `react-motion-gallery/skeleton/cache/provider`.",
+    "- Pass `cache={{ key, routeKey, ttlMs?, debounceMs?, cookie? }}` to `Skeleton`, `SliderSkeleton`, `GridSkeleton`, and `MasonrySkeleton`.",
+    "- For `Entries`, pass `entries.loading.cache`.",
+    "- Generated skeleton text sidecars emit `textId`; for hand-authored skeleton text, add `textId` to the skeleton `text` node and add matching `data-skeleton-text-id` to the real DOM text.",
+    "",
+    "Next.js pattern:",
+    "",
+    "```tsx",
+    'import { cookies } from "next/headers";',
+    'import { parseSkeletonCacheCookie, type SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";',
+    "",
+    "function readSkeletonCacheSnapshots(cookieStore: Awaited<ReturnType<typeof cookies>>) {",
+    "  const snapshots: Record<string, SkeletonCacheSnapshot> = {};",
+    "  for (const cookie of cookieStore.getAll()) {",
+    '    if (!cookie.name.startsWith("rmg_skel_cache_")) continue;',
+    "    const snapshot = parseSkeletonCacheCookie(cookie.value);",
+    "    if (snapshot) snapshots[snapshot.key] = snapshot;",
+    "  }",
+    "  return snapshots;",
+    "}",
+    "```",
+    "",
+    "```tsx",
+    '"use client";',
+    'import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";',
+    "",
+    "<SkeletonCacheProvider snapshots={skeletonCacheSnapshots}>",
+    "  <MasonrySkeleton",
+    '    cache={{ key: "portfolio-masonry", routeKey: "/gallery" }}',
+    "    layout={portfolioSkeleton}",
+    "    ready={ready}",
+    "  >",
+    "    {content}",
+    "  </MasonrySkeleton>",
+    "</SkeletonCacheProvider>",
+    "```",
+    "",
+    "Validation and fallback:",
+    "",
+    "- Default TTL is 10 minutes; default resize debounce is 250ms.",
+    "- Route, scope, text-id, kind, width bucket, item-count, and variant mismatches fall back silently to the responsive path.",
+    "- Do not use the cache as a persistence layer for user content; it is strictly first-paint geometry."
   ].join("\n");
 }
 
@@ -738,10 +801,14 @@ function readRawStringExport(filePath, exportName) {
     throw new Error(`Missing demo ${exportName} file: ${filePath}`);
   }
   const file = fs3.readFileSync(filePath, "utf8");
-  const marker = `export const ${exportName} = String.raw\``;
-  const start = file.indexOf(marker);
+  const rawMarker = `export const ${exportName} = String.raw\``;
+  const templateMarker = `export const ${exportName} = \``;
+  const rawStart = file.indexOf(rawMarker);
+  const templateStart = rawStart === -1 ? file.indexOf(templateMarker) : -1;
+  const marker = rawStart !== -1 ? rawMarker : templateMarker;
+  const start = rawStart !== -1 ? rawStart : templateStart;
   if (start === -1) {
-    throw new Error(`Could not find String.raw export "${exportName}" in ${filePath}`);
+    throw new Error(`Could not find template export "${exportName}" in ${filePath}`);
   }
   const bodyStart = start + marker.length;
   for (let index = bodyStart; index < file.length; index += 1) {
@@ -749,7 +816,7 @@ function readRawStringExport(filePath, exportName) {
       return file.slice(bodyStart, index);
     }
   }
-  throw new Error(`Unterminated String.raw export "${exportName}" in ${filePath}`);
+  throw new Error(`Unterminated template export "${exportName}" in ${filePath}`);
 }
 function discoverExtraFiles(demo, tsx) {
   const files = [];
@@ -1115,6 +1182,7 @@ function resourcesForMode(mode) {
       ...base,
       "rmg://guides/loading-fidelity",
       "rmg://guides/browser-measured-skeletons",
+      "rmg://guides/skeleton-cache",
       "rmg://docs/skeleton-text-authoring",
       "rmg://docs/skeleton-text-codex-prompt"
     ];
@@ -1124,10 +1192,11 @@ function resourcesForMode(mode) {
       ...base,
       "rmg://guides/loading-fidelity",
       "rmg://guides/browser-measured-skeletons",
+      "rmg://guides/skeleton-cache",
       "rmg://docs/skeleton-text-codex-prompt"
     ];
   }
-  return [...base, "rmg://guides/loading-fidelity"];
+  return [...base, "rmg://guides/loading-fidelity", "rmg://guides/skeleton-cache"];
 }
 function toolsForMode(mode) {
   const base = ["recommend_pattern", "search_demos", "get_demo", "generate_gallery_component"];
@@ -1160,13 +1229,15 @@ function nextStepsForMode(mode) {
       return [
         "Add stable selectors to the real rendered text.",
         "Use flat targets by default; add slider, masonry, or entries metadata only when that layout needs it.",
-        "Run generate:skeleton-text-module with --analysis-output, then import the generated sidecar values."
+        "Run generate:skeleton-text-module with --analysis-output, then import the generated sidecar values.",
+        "For SSR reload performance, wire the skeleton cookie snapshot cache with a stable cache key and route key."
       ];
     case "skeletonRetrofit":
       return [
         "Inspect the existing layout and current loading behavior before changing code.",
         "Choose non-text, hand-authored text, or browser-measured text fidelity based on the user goal.",
-        "Preserve existing layout behavior and add the smallest skeleton layer that satisfies the request."
+        "Preserve existing layout behavior and add the smallest skeleton layer that satisfies the request.",
+        "If the skeleton has responsive text or expensive geometry CSS, add the cookie snapshot cache instead of client-only storage."
       ];
   }
 }
@@ -1643,6 +1714,15 @@ function registerResources(server2) {
       ]
     })
   );
+  server2.resource("skeleton cache guide", "rmg://guides/skeleton-cache", async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/markdown",
+        text: skeletonCacheGuide()
+      }
+    ]
+  }));
   server2.resource(
     "demo example",
     new ResourceTemplate("rmg://examples/{demoId}", {

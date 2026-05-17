@@ -779,6 +779,58 @@ describe("SliderSkeleton wrapper borders", () => {
     expect(markup).toContain("nth-child(1){max-width:56% !important;}");
   });
 
+  test("applies cached text snapshots without responsive text CSS", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(SliderSkeletonCard, {
+        count: 1,
+        maxSlots: 1,
+        spec: {
+          layout: {
+            kind: "slider",
+            direction: "row",
+            item: {
+              kind: "text",
+              textId: "body",
+              barHeight: 16,
+              lineHeight: 1.5,
+              lines: {
+                0: 4,
+                900: 1,
+              },
+              style: {
+                width: "88%",
+              },
+            },
+          },
+        },
+        cacheSnapshot: {
+          version: 1,
+          key: "slider-demo",
+          scopeId: "scope-a",
+          kind: "slider",
+          createdAt: 1000,
+          widthBucketMin: 900,
+          viewportWidth: 1200,
+          text: {
+            body: {
+              lines: 2,
+              lineWidthsPx: [121, 88],
+              barHeight: 12,
+              lineHeight: 1.4,
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup.match(/data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(2);
+    expect(markup).toContain('data-rmg-skel-text-id="body"');
+    expect(markup).toContain("height:12px");
+    expect(markup).toContain("width:121px");
+    expect(markup).toContain("width:88px");
+    expect(markup).not.toContain("@media (min-width:900px)");
+  });
+
   test("emits responsive CSS for shape, text style, and media tile styles with custom aliases", () => {
     const markup = renderToStaticMarkup(
       React.createElement(SliderSkeletonCard, {

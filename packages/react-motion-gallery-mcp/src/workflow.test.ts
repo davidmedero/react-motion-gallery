@@ -40,6 +40,7 @@ describe("workflow classification", () => {
 
     expect(result.mode).toBe("layoutWithBrowserMeasuredTextSkeleton");
     expect(result.recommendedResources).toContain("rmg://guides/browser-measured-skeletons");
+    expect(result.recommendedResources).toContain("rmg://guides/skeleton-cache");
     expect(result.recommendedTools).toContain("scaffold_skeleton_text");
   });
 
@@ -50,5 +51,6 @@ describe("workflow classification", () => {
     });
 
     expect(result.mode).toBe("skeletonRetrofit");
+    expect(result.recommendedResources).toContain("rmg://guides/skeleton-cache");
   });
 });

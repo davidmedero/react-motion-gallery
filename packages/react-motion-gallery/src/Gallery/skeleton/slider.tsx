@@ -28,15 +28,18 @@ import {
 } from "../slider/SliderRestore";
 import {
   SliderSkeletonCard,
+  applySliderSkeletonTextSnapshot,
   buildCenterFirstSpacerWidthFromSkeletonSpecCssExpr,
   buildExtrasHeightFromSkeletonSpecCssExpr,
   buildInitialHeightFromSkeletonSpecCssExpr,
   buildRowHeightFromSkeletonSpecCssExpr,
+  collectSliderSkeletonTextIds,
   collectResponsiveSliderBaseStyleBreakpoints,
   collectResponsiveSliderCompensationBreakpoints,
   collectResponsiveSliderContainerBreakpoints,
   collectResponsiveSliderTextLineBreakpoints,
   type SkeletonLength as SliderSkeletonLength,
+  type SliderSkeletonNode,
   type SliderSkeletonSliderNode,
   type SliderSkeletonSpec,
 } from "../slider/SliderSkeleton";
@@ -46,6 +49,13 @@ import {
   type SkeletonForceOptions,
   type SkeletonTimingOptions,
 } from "./base";
+import type { SkeletonCacheOptions } from "./cache";
+import { validateSkeletonCacheSnapshot } from "./cache";
+import {
+  resolveSkeletonCacheOptions,
+  useSkeletonCacheContext,
+} from "./cache-context";
+import { useSkeletonCacheWriter } from "./cache-writer";
 
 export type SkeletonSliderLayout = SliderSkeletonSliderNode & {
   mode?: SliderSkeletonSpec["mode"];
@@ -93,6 +103,7 @@ export type SliderSkeletonProps = {
   force?: SkeletonForceOptions;
   timing?: SkeletonTimingOptions;
   restore?: SkeletonSliderRestoreOptions;
+  cache?: SkeletonCacheOptions;
 };
 
 function isSliderLayoutSpec(
@@ -353,6 +364,7 @@ export function SliderSkeleton({
   force,
   timing,
   restore,
+  cache,
 }: SliderSkeletonProps) {
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
@@ -383,9 +395,47 @@ export function SliderSkeleton({
     }
     return null;
   }, [layout]);
-  const sliderLayout = sliderSpec?.layout?.kind === "slider"
-    ? (sliderSpec.layout as SliderSkeletonSliderNode)
+  const cacheContext = useSkeletonCacheContext();
+  const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
+  const textIds = React.useMemo(
+    () => Array.from(collectSliderSkeletonTextIds(sliderSpec?.layout)),
+    [sliderSpec]
+  );
+  const validCacheSnapshot = validateSkeletonCacheSnapshot(
+    effectiveCache?.snapshot,
+    {
+      key: effectiveCache?.key,
+      scopeId,
+      kind: "slider",
+      routeKey: effectiveCache?.routeKey,
+      ttlMs: effectiveCache?.ttlMs,
+      textIds,
+    }
+  );
+  const effectiveSliderSpec = React.useMemo(() => {
+    if (!validCacheSnapshot?.text || !sliderSpec?.layout) return sliderSpec;
+    return {
+      ...sliderSpec,
+      layout: applySliderSkeletonTextSnapshot(
+        sliderSpec.layout,
+        validCacheSnapshot.text,
+        effectiveBreakpoints
+      ) as SliderSkeletonNode,
+    } as SliderSkeletonSpec;
+  }, [effectiveBreakpoints, sliderSpec, validCacheSnapshot]);
+  const sliderLayout = effectiveSliderSpec?.layout?.kind === "slider"
+    ? (effectiveSliderSpec.layout as SliderSkeletonSliderNode)
     : null;
+  const skeletonRootRef = React.useRef<HTMLDivElement | null>(null);
+  const shellRef = React.useRef<HTMLDivElement | null>(null);
+  useSkeletonCacheWriter({
+    cache: effectiveCache,
+    kind: "slider",
+    scopeId,
+    textIds,
+    skeletonRootRef,
+    shellRef,
+  });
   const sliderRestore = restore?.kind === "slider" ? restore : null;
   const sliderRestoreHandleRef = sliderRestore?.slider?.handleRef ?? null;
   const sliderRestoreGateKey =
@@ -422,8 +472,8 @@ export function SliderSkeleton({
         : 1;
   const sliderCenterFirst =
     !!sliderLayout &&
-    sliderSpec?.centering === "first" &&
-    (sliderSpec.mode ?? "fit") === "peek";
+    effectiveSliderSpec?.centering === "first" &&
+    (effectiveSliderSpec?.mode ?? "fit") === "peek";
   const sliderCenterFirstSpacer =
     sliderCenterFirst &&
     maxResolvedSkeletonCount(
@@ -523,10 +573,10 @@ export function SliderSkeleton({
     sliderVisibleCount,
   ]);
   const sliderInitialHeightCss = React.useMemo(() => {
-    if (!sliderLayout || !sliderSpec) return "";
+    if (!sliderLayout || !effectiveSliderSpec) return "";
     return buildScopedInitialHeightCss({
       scopeId,
-      skeletonSpec: sliderSpec,
+      skeletonSpec: effectiveSliderSpec,
       responsiveCount: sliderVisibleCount,
       fallbackCount: sliderCountCss.ssrBaseCount,
       breakpointMap: effectiveBreakpoints,
@@ -538,7 +588,7 @@ export function SliderSkeleton({
     sliderCenterFirstSpacer,
     sliderCountCss.ssrBaseCount,
     sliderLayout,
-    sliderSpec,
+    effectiveSliderSpec,
     sliderVisibleCount,
   ]);
   const sliderRestoreScript = React.useMemo(() => {
@@ -712,9 +762,10 @@ export function SliderSkeleton({
     ...(disableShimmer ? null : (shimmerStyleVars(shimmer) as React.CSSProperties)),
   };
   const sliderSkeletonNode =
-    sliderLayout && sliderSpec ? (
+    sliderLayout && effectiveSliderSpec ? (
       <div
         data-rmg-skeleton-scope={scopeId}
+        ref={skeletonRootRef}
         className={className}
         style={rootStyle}
         aria-hidden={ariaLabel ? undefined : true}
@@ -739,11 +790,12 @@ export function SliderSkeleton({
           count={sliderCountCss.ssrBaseCount}
           maxSlots={sliderMaxSlots}
           activeDotIndex={sliderRestoreIndex ?? undefined}
-          spec={sliderSpec}
+          spec={effectiveSliderSpec}
           breakpoints={effectiveBreakpoints}
           centerFirst={sliderCenterFirst}
           hasLeadingSpacer={sliderCenterFirstSpacer}
           responsiveCssScopeSelector={`[data-rmg-scope="${scopeId}"]`}
+          cacheSnapshot={validCacheSnapshot}
         />
         {sliderRestoreScript ? (
           <script dangerouslySetInnerHTML={{ __html: sliderRestoreScript }} />
@@ -794,6 +846,7 @@ export function SliderSkeleton({
         shellDataAttributes={{
           "data-rmg-scope-shell": "true",
         }}
+        shellRef={shellRef}
       >
         {children}
       </SkeletonFrame>

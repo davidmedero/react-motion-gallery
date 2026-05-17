@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -15,6 +15,7 @@ import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-auto-scroll-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const SLIDES = [
   {
@@ -81,6 +82,7 @@ export function SliderAutoScrollDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={FULLSCREEN_MEDIA}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-auto-scroll")}
         layout={{
               visibleCount: 3,
               mode: "peek",
@@ -177,5 +179,4 @@ export function SliderAutoScrollDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

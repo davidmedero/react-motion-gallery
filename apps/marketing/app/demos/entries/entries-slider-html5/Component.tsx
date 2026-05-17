@@ -18,6 +18,7 @@ import {
 } from "react-motion-gallery/entries";
 import styles from "./entries-slider-html5-demo.module.css";
 import { entriesSliderHtml5SkeletonText } from "./entries-slider-html5.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoMedia = {
   description: string;
@@ -524,6 +525,7 @@ export function EntriesSliderHtml5Demo() {
               }
             : undefined,
           loading: {
+            cache: demoSkeletonCache("entries-slider-html5"),
             // force: {
             //   showContent: true
             // },

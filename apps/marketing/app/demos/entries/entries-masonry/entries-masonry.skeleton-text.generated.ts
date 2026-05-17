@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const entriesMasonryEntry01Section: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry01Section",
   "lines": 1,
   "barWidth": "47px",
   "barHeight": 11.52,
@@ -29,6 +31,7 @@ export const entriesMasonryEntry01Section: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry01Title: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry01Title",
   "lines": {
     "0": 2,
     "392": 1
@@ -45,6 +48,7 @@ export const entriesMasonryEntry01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry01Count: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry01Count",
   "lines": 1,
   "barWidth": "53px",
   "barHeight": 12.48,
@@ -52,6 +56,7 @@ export const entriesMasonryEntry01Count: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry01Body: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry01Body",
   "lines": {
     "0": 4,
     "347": 3,
@@ -81,6 +86,7 @@ export const entriesMasonryEntry01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry02Section: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry02Section",
   "lines": 1,
   "barWidth": "44px",
   "barHeight": 11.52,
@@ -88,6 +94,7 @@ export const entriesMasonryEntry02Section: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry02Title: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry02Title",
   "lines": {
     "0": 2,
     "377": 1
@@ -104,6 +111,7 @@ export const entriesMasonryEntry02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry02Count: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry02Count",
   "lines": 1,
   "barWidth": "53px",
   "barHeight": 12.48,
@@ -111,6 +119,7 @@ export const entriesMasonryEntry02Count: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry02Body: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry02Body",
   "lines": {
     "0": 4,
     "321": 3,
@@ -147,6 +156,7 @@ export const entriesMasonryEntry02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry03Section: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry03Section",
   "lines": 1,
   "barWidth": "47px",
   "barHeight": 11.52,
@@ -154,6 +164,7 @@ export const entriesMasonryEntry03Section: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry03Title: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry03Title",
   "lines": {
     "0": 2,
     "338": 1
@@ -170,6 +181,7 @@ export const entriesMasonryEntry03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry03Count: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry03Count",
   "lines": 1,
   "barWidth": "53px",
   "barHeight": 12.48,
@@ -177,6 +189,7 @@ export const entriesMasonryEntry03Count: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesMasonryEntry03Body: GeneratedSkeletonTextEntry = {
+  "textId": "entriesMasonryEntry03Body",
   "lines": {
     "0": 3,
     "389": 2,

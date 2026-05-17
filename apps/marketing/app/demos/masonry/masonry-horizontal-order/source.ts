@@ -1,6 +1,7 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
+import { useMemo } from "react";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Masonry, type ResponsiveMasonrySpan } from "react-motion-gallery/masonry";
@@ -15,7 +16,6 @@ import type {
   MasonrySkeletonSpec,
   SkeletonNode,
 } from "react-motion-gallery/skeleton/masonry";
-import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
 import styles from "./masonry-horizontal-order-demo.module.css";
 import { masonryHorizontalOrderSkeletonText } from "./masonry-horizontal-order.skeleton-text.generated";
 import {
@@ -240,33 +240,33 @@ function createHorizontalOrderSkeletonItem(args: {
   };
 }
 
-const HORIZONTAL_ORDER_SKELETON_SLOTS = ITEMS.map((item, index) => ({
-  span: item.span,
-  item: createHorizontalOrderSkeletonItem({
-    mediaRatio: item.ratio,
-    skeletonText:
-      MASONRY_HORIZONTAL_ORDER_SKELETON_TEXT[index] ??
-      MASONRY_HORIZONTAL_ORDER_SKELETON_TEXT[0]!,
-  }),
-}));
-
-const HORIZONTAL_ORDER_SKELETON: MasonrySkeletonSpec = {
-  radius: 18,
-  layout: {
-    kind: "masonry",
-    itemWrapStyle: {
-      padding: "10px 10px 14px",
-      borderRadius: 22,
-      backgroundColor: "rgba(255, 255, 255, 0.96)",
-      boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+function createHorizontalOrderSkeleton(): MasonrySkeletonSpec {
+  return {
+    radius: 18,
+    layout: {
+      kind: "masonry",
+      itemWrapStyle: {
+        padding: "10px 10px 14px",
+        borderRadius: 22,
+        backgroundColor: "rgba(255, 255, 255, 0.96)",
+        boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+      },
+      item: createHorizontalOrderSkeletonItem({
+        mediaRatio: ITEMS[0]!.ratio,
+        skeletonText: MASONRY_HORIZONTAL_ORDER_SKELETON_TEXT[0]!,
+      }),
+      slots: ITEMS.map((item, index) => ({
+        span: item.span,
+        item: createHorizontalOrderSkeletonItem({
+          mediaRatio: item.ratio,
+          skeletonText:
+            MASONRY_HORIZONTAL_ORDER_SKELETON_TEXT[index] ??
+            MASONRY_HORIZONTAL_ORDER_SKELETON_TEXT[0]!,
+        }),
+      })),
     },
-    item: createHorizontalOrderSkeletonItem({
-      mediaRatio: ITEMS[0]!.ratio,
-      skeletonText: MASONRY_HORIZONTAL_ORDER_SKELETON_TEXT[0]!,
-    }),
-    slots: HORIZONTAL_ORDER_SKELETON_SLOTS,
-  },
-};
+  };
+}
 
 const HORIZONTAL_ORDER_VIDEO_OPTIONS = {
   autoplay: true,
@@ -369,9 +369,12 @@ function MasonryHorizontalOrderFullscreenAddon() {
   return <>{fullscreenNode}</>;
 }
 
-export function MasonryHorizontalOrderDemo(props: {
-  horizontalOrderSkeletonCacheSnapshot?: SkeletonCacheSnapshot | null;
-}) {
+export function MasonryHorizontalOrderDemo() {
+  const horizontalOrderSkeleton = useMemo(
+    () => createHorizontalOrderSkeleton(),
+    []
+  );
+
   const fullscreenMedia = toMediaItems(
     ITEMS.map((item) =>
       item.kind === "image"
@@ -389,13 +392,12 @@ export function MasonryHorizontalOrderDemo(props: {
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <MasonrySkeleton
-        layout={HORIZONTAL_ORDER_SKELETON}
+        layout={horizontalOrderSkeleton}
         ready={masonryReady}
         timing={{ exitMs: 1200 }}
         cache={{
           key: MASONRY_HORIZONTAL_ORDER_SKELETON_CACHE_KEY,
           routeKey: MASONRY_HORIZONTAL_ORDER_SKELETON_ROUTE_KEY,
-          snapshot: props.horizontalOrderSkeletonCacheSnapshot,
         }}
         masonry={{
           count: ITEMS.length,

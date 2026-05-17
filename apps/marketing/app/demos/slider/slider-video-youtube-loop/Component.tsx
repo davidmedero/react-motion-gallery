@@ -16,6 +16,7 @@ import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-video-youtube-loop-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 export function SliderVideoYoutubeLoopDemo() {
 const URLS = [
@@ -129,6 +130,7 @@ const { ref: sliderRef, ready: sliderReady } = useSliderReady();
   return (
   <GalleryCore layout="slider" fullscreenItems={MEDIA}>
     <SliderSkeleton
+      cache={demoSkeletonCache("slider-video-youtube-loop")}
         layout={{
               visibleCount: 3,
             mode: "peek",

@@ -14,6 +14,7 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-cells-per-slide-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const URLS = [
   "https://picsum.photos/id/174/1200/1200",
@@ -82,6 +83,7 @@ export function SliderCellsPerSlideDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-cells-per-slide")}
         layout={{
               visibleCount: CELLS_PER_SLIDE,
               mode: "fit",

@@ -11,7 +11,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 <!-- bundle-size:start -->
 | Surface | JS gzip |
 | --- | --- |
-| `Entries` | 13.4kB |
+| `Entries` | 15.7kB |
 | `FullscreenThumbnailSlider` | 20.3kB |
 | `GalleryCore` | 2.6kB |
 | `Grid` | 6.3kB |
@@ -20,10 +20,10 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `Masonry` | 6.5kB |
 | `masonry/ready` | 323.0B |
 | `masonry/lazy-load` | 3.3kB |
-| `Skeleton base` | 10.6kB |
-| `skeleton/slider` | 17.0kB |
-| `skeleton/grid` | 10.6kB |
-| `skeleton/masonry` | 21.8kB |
+| `Skeleton base` | 10.7kB |
+| `skeleton/slider` | 19.3kB |
+| `skeleton/grid` | 13.0kB |
+| `skeleton/masonry` | 21.9kB |
 | `Slider core` | 18.7kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
@@ -157,6 +157,8 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/skeleton/slider` | `SliderSkeleton` and slider skeleton authoring types |
 | `react-motion-gallery/skeleton/grid` | `GridSkeleton` and grid skeleton authoring types |
 | `react-motion-gallery/skeleton/masonry` | `MasonrySkeleton` and masonry skeleton authoring types |
+| `react-motion-gallery/skeleton/cache` | Server-safe skeleton cookie cache helpers and types |
+| `react-motion-gallery/skeleton/cache/provider` | Client `SkeletonCacheProvider` for SSR snapshots |
 | `react-motion-gallery/fullscreen` | `useFullscreenController` and fullscreen types |
 | `react-motion-gallery/fullscreen/slider` | `fullscreenSlider` |
 | `react-motion-gallery/fullscreen/controls` | `fullscreenControls` |
@@ -443,6 +445,7 @@ export function LoadingShell({ ready, children }: { ready: boolean; children: Re
 | `timing.minVisibleMs` | `number` | `220` | Minimum time the skeleton stays visible before exit can begin. |
 | `shellClassName` / `shellStyle` | `string` / `CSSProperties` | `—` | Wrapper-layer class and style for content+skeleton mode. |
 | `contentClassName` / `contentStyle` | `string` / `CSSProperties` | `—` | Content-layer class and style for wrapper mode. |
+| `cache` | `SkeletonCacheOptions` | `—` | Opts into the cookie snapshot cache. Available on standalone `Skeleton`, `SliderSkeleton`, `GridSkeleton`, `MasonrySkeleton`, and `Entries.loading.cache`. |
 
 The wrapper timing model matches the gallery loading layers: content begins fading in as soon as the skeleton exit starts; it does not wait for the skeleton to unmount.
 
@@ -459,6 +462,158 @@ npm run --silent generate:skeleton-text-module -- \
 ```
 
 Use `responsiveBy: "container"` when text wrapping follows the card or cell width more closely than the viewport. For equal-height card sliders, the browser analyzer can also measure all canonical slider items and emit `rowHeightCompensation` so unseen cards cannot surprise the skeleton row height. See [`docs/skeleton-text-authoring.md`](./docs/skeleton-text-authoring.md) for manifest fields, command options, and the Codex-friendly workflow.
+
+### Skeleton cookie snapshot cache
+
+The skeleton cookie snapshot cache is an opt-in SSR acceleration path for skeletons with expensive responsive text or layout geometry. The first visit uses the normal responsive skeleton CSS. After hydration, and again after debounced resizes, the client measures the active rendered content/skeleton geometry and writes a compact cookie. On a later server render, a valid cookie lets the skeleton render only the active snapshot values instead of the full responsive text CSS table.
+
+This exists because very accurate skeletons can require a lot of responsive text CSS, especially when text wrapping affects masonry packing or card heights. Client-only storage such as `sessionStorage` cannot help SSR because the server cannot read it and the browser only gets it after the document starts executing. A cookie is available during SSR, so the server can reserve the correct first-paint geometry before hydration.
+
+What the cache stores:
+
+- cache version, cache key, scope id, route key, timestamp, viewport width, and active width bucket
+- measured skeleton text records keyed by `textId`: line count, per-line widths, and optional bar metrics
+- masonry-only active geometry: variant key, shell height, and item heights
+- no text strings, no media URLs, and no full CSS text
+
+Benefits:
+
+- first visit remains unchanged and uses the full responsive skeleton behavior
+- later reloads can parse much less skeleton CSS for the active breakpoint
+- text-heavy masonry, grid, slider, entries, and standalone skeletons can keep layout stability while reducing first-paint CSS work
+- stale, expired, route-mismatched, scope-mismatched, or malformed cookies silently fall back to the normal responsive path
+
+Defaults: `ttlMs` is `10 * 60 * 1000`, `debounceMs` is `250`, cookie `path` is `/`, and `sameSite` is `lax`. Use a stable `key` per skeleton surface and a stable `routeKey` when a skeleton only applies to one route.
+
+For skeleton text to be measurable, the skeleton `text` node needs a `textId`, and the matching real content text needs `data-skeleton-text-id`. Browser-generated skeleton text modules include `textId` automatically, so existing spreads such as `...skeletonText.body` are cache-ready.
+
+```typescript
+const cardBodySkeleton = {
+  kind: "text",
+  textId: "cardBody",
+  barHeight: 14,
+  lineHeight: 1.45,
+  lines: { 0: 4, 900: 3, 1200: 2 },
+} as const;
+
+function CardBody({ children }: { children: React.ReactNode }) {
+  return <p data-skeleton-text-id="cardBody">{children}</p>;
+}
+```
+
+In SSR frameworks, read cache cookies on the server with the server-safe helper entry, then pass valid snapshots into a client provider. This example parses all React Motion Gallery skeleton cache cookies for the route.
+
+```tsx
+// app/gallery/page.tsx
+import { cookies } from "next/headers";
+import {
+  parseSkeletonCacheCookie,
+  type SkeletonCacheSnapshot,
+} from "react-motion-gallery/skeleton/cache";
+import { GalleryPageClient } from "./GalleryPageClient";
+
+function readSkeletonCacheSnapshots(
+  cookieStore: Awaited<ReturnType<typeof cookies>>
+) {
+  const snapshots: Record<string, SkeletonCacheSnapshot> = {};
+
+  for (const cookie of cookieStore.getAll()) {
+    if (!cookie.name.startsWith("rmg_skel_cache_")) continue;
+
+    const snapshot = parseSkeletonCacheCookie(cookie.value);
+    if (snapshot) snapshots[snapshot.key] = snapshot;
+  }
+
+  return snapshots;
+}
+
+export default async function GalleryPage() {
+  const snapshotMap = readSkeletonCacheSnapshots(await cookies());
+
+  return <GalleryPageClient skeletonCacheSnapshots={snapshotMap} />;
+}
+```
+
+Wrap the client tree in `SkeletonCacheProvider`, then opt individual skeletons in with `cache={{ key, routeKey }}`. Per-skeleton `cache.snapshot` takes precedence over provider snapshots when you need to pass one directly.
+
+```tsx
+// app/gallery/GalleryPageClient.tsx
+"use client";
+
+import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
+import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";
+import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";
+import { Masonry } from "react-motion-gallery/masonry";
+import { useMasonryReady } from "react-motion-gallery/masonry/ready";
+
+export function GalleryPageClient({
+  skeletonCacheSnapshots,
+}: {
+  skeletonCacheSnapshots: Record<string, SkeletonCacheSnapshot | null | undefined>;
+}) {
+  const { ref, ready } = useMasonryReady();
+
+  return (
+    <SkeletonCacheProvider snapshots={skeletonCacheSnapshots}>
+      <MasonrySkeleton
+        cache={{
+          key: "portfolio-masonry",
+          routeKey: "/gallery",
+        }}
+        layout={portfolioSkeleton}
+        ready={ready}
+        masonry={{
+          count: items.length,
+          columns: { 0: 1, 720: 2, 1140: 4 },
+          gap: { 0: 12, 1140: 18 },
+        }}
+      >
+        <Masonry ref={ref} columns={{ 0: 1, 720: 2, 1140: 4 }}>
+          {items.map((item) => (
+            <Masonry.Item key={item.id}>{/* real card */}</Masonry.Item>
+          ))}
+        </Masonry>
+      </MasonrySkeleton>
+    </SkeletonCacheProvider>
+  );
+}
+```
+
+Use the same `cache` object on `SliderSkeleton`, `GridSkeleton`, and standalone `Skeleton`. For `Entries`, put it under `entries.loading.cache`.
+
+```tsx
+<Entries
+  entries={{
+    items,
+    mediaLayout: "grid",
+    loading: {
+      cache: {
+        key: "editorial-entries",
+        routeKey: "/stories",
+      },
+      skeleton: entrySkeleton,
+    },
+  }}
+/>
+```
+
+Cookie options can be tuned per skeleton:
+
+```tsx
+<GridSkeleton
+  cache={{
+    key: "product-grid",
+    routeKey: "/products",
+    ttlMs: 5 * 60 * 1000,
+    debounceMs: 150,
+    cookie: {
+      path: "/",
+      sameSite: "lax",
+    },
+  }}
+  layout={productGridSkeleton}
+/>
+```
 
 ## Slider
 
@@ -1378,6 +1533,7 @@ Fullscreen close has a matching entry-aware path. If the user closes fullscreen 
 | `loading.enabled` | `boolean` | `—` | Enables entry loading and decode gating. |
 | `loading.force` | `boolean \| { enabled?: boolean; showContent?: boolean; skeletonOpacity?: number }` | `—` | Forces entry skeletons to remain visible. Set `showContent: true` to preview mounted, ready entry content under the skeleton, and tune the loading overlay with `skeletonOpacity`. |
 | `loading.skeleton` | `EntrySkeletonSpec \| ((args) => EntrySkeletonSpec \| null \| undefined)` | `—` | Built-in skeleton spec or resolver. |
+| `loading.cache` | `SkeletonCacheOptions` | `—` | Opts entry skeleton text into the cookie snapshot cache. |
 | `loading.minHeight` | `number \| string` | `"260px"` | Minimum reserved height while loading. |
 | `loading.nearMargin` | `string` | `"700px 0px"` | Preload margin used before entries enter view. |
 | `loading.viewMargin` | `string` | `"0px 0px"` | Margin used for the actual in-view gate. |

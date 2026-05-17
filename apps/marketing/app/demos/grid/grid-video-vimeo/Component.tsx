@@ -14,6 +14,7 @@ import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
 import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-video-vimeo-demo.module.css";
 import { gridVideoVimeoSkeletonText } from "./grid-video-vimeo.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   title: string;
@@ -207,6 +208,7 @@ export function GridVideoVimeoDemo() {
   return (
     <GalleryCore layout="grid" fullscreenItems={media}>
       <GridSkeleton
+        cache={demoSkeletonCache("grid-video-vimeo")}
         layout={VIMEO_VIDEO_SKELETON}
         ready={gridReady}
         grid={{

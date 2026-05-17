@@ -15,6 +15,7 @@ import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-crossfade-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const URLS = [
   "https://picsum.photos/id/337/1600/900",
@@ -64,6 +65,7 @@ export function SliderCrossfadeDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-crossfade")}
         layout={{
               visibleCount: 3,
               mode: "peek",

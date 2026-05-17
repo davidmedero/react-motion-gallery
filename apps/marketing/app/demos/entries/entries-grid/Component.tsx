@@ -15,6 +15,7 @@ import {
 } from "react-motion-gallery/entries";
 import styles from "./entries-grid-demo.module.css";
 import { entriesGridSkeletonText } from "./entries-grid.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoEntry = {
   id: string;
@@ -445,6 +446,7 @@ export function EntriesGridDemo() {
               overlay: renderEntryOverlay,
             },
             loading: {
+              cache: demoSkeletonCache("entries-grid"),
               // force: {
               //   showContent: true,
               //   skeletonOpacity: 0.5,

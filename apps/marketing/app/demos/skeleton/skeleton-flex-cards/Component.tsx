@@ -7,6 +7,7 @@ import {
   type SkeletonNode,
 } from "react-motion-gallery/skeleton/base";
 import styles from "./skeleton-flex-cards-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type ProductCardItem = {
   accent: string;
@@ -285,6 +286,7 @@ export function SkeletonFlexCardsDemo() {
   return (
     <div className={styles.shell}>
       <Skeleton
+        cache={demoSkeletonCache("skeleton-flex-cards")}
         layout={FLEX_CARDS_LAYOUT}
         ready={allImagesSettled}
         shellClassName={styles.stage}

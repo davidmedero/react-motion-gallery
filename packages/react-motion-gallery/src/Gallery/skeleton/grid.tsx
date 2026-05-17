@@ -8,6 +8,7 @@ import {
   type ResponsiveNumber,
 } from "../shared/responsive";
 import {
+  collectSkeletonTextIds,
   cssLen,
   shimmerStyleVars,
   type SkeletonLength,
@@ -27,6 +28,13 @@ import {
   type SkeletonForceOptions,
   type SkeletonTimingOptions,
 } from "./base";
+import type { SkeletonCacheOptions } from "./cache";
+import { validateSkeletonCacheSnapshot } from "./cache";
+import {
+  resolveSkeletonCacheOptions,
+  useSkeletonCacheContext,
+} from "./cache-context";
+import { useSkeletonCacheWriter } from "./cache-writer";
 
 export type SkeletonGridOptions = {
   count?: number;
@@ -76,6 +84,7 @@ export type GridSkeletonProps = {
   force?: SkeletonForceOptions;
   timing?: SkeletonTimingOptions;
   grid?: SkeletonGridOptions;
+  cache?: SkeletonCacheOptions;
 };
 
 function isGridLayoutSpec(
@@ -145,6 +154,7 @@ export function GridSkeleton({
   force,
   timing,
   grid,
+  cache,
 }: GridSkeletonProps) {
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
@@ -177,6 +187,36 @@ export function GridSkeleton({
     }
     return null;
   }, [layout]);
+  const cacheContext = useSkeletonCacheContext();
+  const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
+  const textIds = React.useMemo(
+    () =>
+      gridSpec?.layout
+        ? Array.from(collectSkeletonTextIds(gridSpec.layout, "grid"))
+        : [],
+    [gridSpec]
+  );
+  const validCacheSnapshot = validateSkeletonCacheSnapshot(
+    effectiveCache?.snapshot,
+    {
+      key: effectiveCache?.key,
+      scopeId,
+      kind: "grid",
+      routeKey: effectiveCache?.routeKey,
+      ttlMs: effectiveCache?.ttlMs,
+      textIds,
+    }
+  );
+  const skeletonRootRef = React.useRef<HTMLDivElement | null>(null);
+  const shellRef = React.useRef<HTMLDivElement | null>(null);
+  useSkeletonCacheWriter({
+    cache: effectiveCache,
+    kind: "grid",
+    scopeId,
+    textIds,
+    skeletonRootRef,
+    shellRef,
+  });
   const gridLayout = gridSpec?.layout?.kind === "grid"
     ? (gridSpec.layout as GridSkeletonLayoutNode)
     : null;
@@ -213,6 +253,7 @@ export function GridSkeleton({
     gridSpec && gridRenderOptions ? (
       <div
         data-rmg-skeleton-scope={scopeId}
+        ref={skeletonRootRef}
         className={className}
         style={rootStyle}
         aria-hidden={ariaLabel ? undefined : true}
@@ -224,6 +265,7 @@ export function GridSkeleton({
           {...gridRenderOptions}
           spec={gridSpec}
           breakpoints={effectiveBreakpoints}
+          cacheSnapshot={validCacheSnapshot}
         />
       </div>
     ) : null;
@@ -242,6 +284,7 @@ export function GridSkeleton({
       contentClassName={contentClassName}
       contentStyle={contentStyle}
       contentOwnsWrapperLayout={children !== undefined}
+      shellRef={shellRef}
     >
       {children}
     </SkeletonFrame>

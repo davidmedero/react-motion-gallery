@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import type { CSSProperties } from "react";
@@ -41,6 +41,7 @@ import {
   autoHeightTwoKicker,
   autoHeightTwoTitle,
 } from "./slider-auto-height.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const AUTO_HEIGHT_VIEWPORT_BOTTOM_PADDING = 58;
 const AUTO_HEIGHT_MOBILE_VIEWPORT_BOTTOM_PADDING_EXTRA = 4;
@@ -413,6 +414,7 @@ export function SliderAutoHeightDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-auto-height")}
         layout={AUTO_HEIGHT_SKELETON}
         ready={sliderReady}
         enabled={!showMeasuredContent}
@@ -463,5 +465,4 @@ export function SliderAutoHeightDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

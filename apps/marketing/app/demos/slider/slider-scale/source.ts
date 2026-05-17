@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -15,6 +15,7 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-scale-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const SLIDES = [
   {
@@ -73,6 +74,7 @@ export function SliderScaleDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-scale")}
         layout={{
               visibleCount: 3,
               mode: "peek",
@@ -136,5 +138,4 @@ export function SliderScaleDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

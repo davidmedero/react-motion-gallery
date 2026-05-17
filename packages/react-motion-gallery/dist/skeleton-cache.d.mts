@@ -3,7 +3,7 @@ import * as React from 'react';
 declare const SKELETON_CACHE_VERSION = 1;
 declare const DEFAULT_SKELETON_CACHE_TTL_MS: number;
 declare const DEFAULT_SKELETON_CACHE_DEBOUNCE_MS = 250;
-type SkeletonCacheKind = "skeleton" | "masonry";
+type SkeletonCacheKind = "skeleton" | "slider" | "grid" | "masonry" | "entries";
 type SkeletonCacheTextRecord = {
     lines: number;
     barWidths?: string[];

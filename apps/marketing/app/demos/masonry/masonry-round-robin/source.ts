@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -17,6 +17,7 @@ import type {
 } from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-round-robin-demo.module.css";
 import { masonryRoundRobinSkeletonText } from "./masonry-round-robin.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const CARD_MEDIA_RATIOS = {
   small: "5 / 4",
@@ -354,6 +355,7 @@ export function MasonryRoundRobinDemo() {
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <MasonrySkeleton
+        cache={demoSkeletonCache("masonry-round-robin")}
         layout={ROUND_ROBIN_SKELETON}
         ready={masonryReady}
         timing={{ exitMs: 1200 }}

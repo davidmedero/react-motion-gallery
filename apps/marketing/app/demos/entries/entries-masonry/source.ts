@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -15,6 +15,7 @@ import {
 } from "react-motion-gallery/entries";
 import styles from "./entries-masonry-demo.module.css";
 import { entriesMasonrySkeletonText } from "./entries-masonry.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoEntry = {
   id: string;
@@ -62,7 +63,7 @@ function addPxToBarWidth(
   amount: number
 ): GeneratedSkeletonTextState["barWidth"] {
   if (typeof value === "string") {
-    const match = value.match(/^(-?\d+(?:\.\d+)?)px$/);
+    const match = value.match(/^(-?\\d+(?:\\.\\d+)?)px$/);
     return match ? \`\${Number(match[1]) + amount}px\` : value;
   }
 
@@ -518,6 +519,7 @@ export function EntriesMasonryDemo() {
               overlay: renderEntryOverlay,
             },
             loading: {
+              cache: demoSkeletonCache("entries-masonry"),
               // force: {
               //   showContent: true,
               //   skeletonOpacity: 0.5,
@@ -545,5 +547,4 @@ export function EntriesMasonryDemo() {
       </GalleryCore>
     </div>
   );
-}
-`;
+}`;

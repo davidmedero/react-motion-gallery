@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const masonrySpansItem01Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem01Badge",
   "lines": 1,
   "barWidth": "46px",
   "barHeight": 11.84,
@@ -29,6 +31,7 @@ export const masonrySpansItem01Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem01Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem01Title",
   "lines": 1,
   "barWidth": "215px",
   "barHeight": 16.32,
@@ -36,6 +39,7 @@ export const masonrySpansItem01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem01Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem01Body",
   "lines": {
     "0": 4,
     "329": 3,
@@ -70,6 +74,7 @@ export const masonrySpansItem01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem02Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem02Badge",
   "lines": 1,
   "barWidth": "43px",
   "barHeight": 11.84,
@@ -77,6 +82,7 @@ export const masonrySpansItem02Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem02Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem02Title",
   "lines": {
     "0": 1,
     "768": 2,
@@ -100,6 +106,7 @@ export const masonrySpansItem02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem02Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem02Body",
   "lines": {
     "0": 3,
     "392": 2,
@@ -168,6 +175,7 @@ export const masonrySpansItem02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem03Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem03Badge",
   "lines": 1,
   "barWidth": "46px",
   "barHeight": 11.84,
@@ -175,6 +183,7 @@ export const masonrySpansItem03Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem03Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem03Title",
   "lines": {
     "0": 1,
     "1160": 2,
@@ -193,6 +202,7 @@ export const masonrySpansItem03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem03Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem03Body",
   "lines": {
     "0": 3,
     "370": 2,
@@ -251,6 +261,7 @@ export const masonrySpansItem03Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem04Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem04Badge",
   "lines": 1,
   "barWidth": "39px",
   "barHeight": 11.84,
@@ -258,6 +269,7 @@ export const masonrySpansItem04Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem04Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem04Title",
   "lines": {
     "0": 1,
     "768": 2,
@@ -276,6 +288,7 @@ export const masonrySpansItem04Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem04Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem04Body",
   "lines": {
     "0": 3,
     "399": 2,
@@ -321,6 +334,7 @@ export const masonrySpansItem04Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem05Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem05Badge",
   "lines": 1,
   "barWidth": "29px",
   "barHeight": 11.84,
@@ -328,6 +342,7 @@ export const masonrySpansItem05Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem05Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem05Title",
   "lines": 1,
   "barWidth": "192px",
   "barHeight": 16.32,
@@ -335,6 +350,7 @@ export const masonrySpansItem05Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem05Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem05Body",
   "lines": {
     "0": 4,
     "360": 3,
@@ -376,6 +392,7 @@ export const masonrySpansItem05Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem06Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem06Badge",
   "lines": 1,
   "barWidth": "51px",
   "barHeight": 11.84,
@@ -383,6 +400,7 @@ export const masonrySpansItem06Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem06Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem06Title",
   "lines": {
     "0": 2,
     "341": 1,
@@ -411,6 +429,7 @@ export const masonrySpansItem06Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem06Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem06Body",
   "lines": {
     "0": 3,
     "407": 2,
@@ -479,6 +498,7 @@ export const masonrySpansItem06Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem07Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem07Badge",
   "lines": 1,
   "barWidth": "45px",
   "barHeight": 11.84,
@@ -486,6 +506,7 @@ export const masonrySpansItem07Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem07Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem07Title",
   "lines": {
     "0": 1,
     "768": 2,
@@ -509,6 +530,7 @@ export const masonrySpansItem07Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem07Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem07Body",
   "lines": {
     "0": 3,
     "449": 2,
@@ -578,6 +600,7 @@ export const masonrySpansItem07Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem08Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem08Badge",
   "lines": 1,
   "barWidth": "56px",
   "barHeight": 11.84,
@@ -585,6 +608,7 @@ export const masonrySpansItem08Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem08Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem08Title",
   "lines": {
     "0": 2,
     "347": 1,
@@ -608,6 +632,7 @@ export const masonrySpansItem08Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonrySpansItem08Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonrySpansItem08Body",
   "lines": {
     "0": 3,
     "420": 2,

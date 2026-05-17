@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -14,6 +14,7 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-y-axis-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const URLS = [
   "https://picsum.photos/id/162/1600/900",
@@ -63,6 +64,7 @@ function SliderYAxisGallery() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-y-axis")}
         layout={{
               visibleCount: 3,
               mode: "peek",
@@ -129,5 +131,4 @@ export function SliderYAxisDemo() {
       <SliderYAxisGallery />
     </div>
   );
-}
-`;
+}`;

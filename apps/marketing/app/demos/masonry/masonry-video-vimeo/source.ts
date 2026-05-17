@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -17,6 +17,7 @@ import type {
 } from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-video-vimeo-demo.module.css";
 import { masonryVideoHtml5SkeletonText } from "../masonry-video-html5/masonry-video-html5.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   title: string;
@@ -327,6 +328,7 @@ export function MasonryVideoVimeoDemo() {
   return (
     <GalleryCore layout="masonry" fullscreenItems={media}>
       <MasonrySkeleton
+        cache={demoSkeletonCache("masonry-video-vimeo")}
         layout={VIMEO_SKELETON}
         ready={masonryReady}
         timing={{ exitMs: 1200 }}

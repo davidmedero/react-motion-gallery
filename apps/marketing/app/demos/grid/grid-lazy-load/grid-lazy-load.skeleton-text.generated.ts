@@ -8,6 +8,7 @@ type GeneratedSkeletonTextBarWidth =
   | Record<number, string | string[]>;
 type GeneratedSkeletonTextLastBarWidth = string | Record<number, string>;
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -16,11 +17,13 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const gridLazyLoadItem01Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem01Badge",
   "lines": 1,
   "barWidth": "46px"
 };
 
 export const gridLazyLoadItem01Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem01Title",
   "lines": {
     "0": 1,
     "528": 2,
@@ -65,6 +68,7 @@ export const gridLazyLoadItem01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem01Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem01Body",
   "lines": {
     "0": 3,
     "430": 2,
@@ -147,16 +151,19 @@ export const gridLazyLoadItem01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem02Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem02Badge",
   "lines": 1,
   "barWidth": "43px"
 };
 
 export const gridLazyLoadItem02Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem02Title",
   "lines": 1,
   "barWidth": "205px"
 };
 
 export const gridLazyLoadItem02Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem02Body",
   "lines": {
     "0": 3,
     "364": 2,
@@ -225,16 +232,19 @@ export const gridLazyLoadItem02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem03Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem03Badge",
   "lines": 1,
   "barWidth": "46px"
 };
 
 export const gridLazyLoadItem03Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem03Title",
   "lines": 1,
   "barWidth": "166px"
 };
 
 export const gridLazyLoadItem03Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem03Body",
   "lines": {
     "0": 3,
     "342": 2,
@@ -303,16 +313,19 @@ export const gridLazyLoadItem03Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem04Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem04Badge",
   "lines": 1,
   "barWidth": "39px"
 };
 
 export const gridLazyLoadItem04Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem04Title",
   "lines": 1,
   "barWidth": "198px"
 };
 
 export const gridLazyLoadItem04Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem04Body",
   "lines": {
     "0": 3,
     "371": 2,
@@ -381,16 +394,19 @@ export const gridLazyLoadItem04Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem05Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem05Badge",
   "lines": 1,
   "barWidth": "29px"
 };
 
 export const gridLazyLoadItem05Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem05Title",
   "lines": 1,
   "barWidth": "198px"
 };
 
 export const gridLazyLoadItem05Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem05Body",
   "lines": {
     "0": 4,
     "332": 3,
@@ -474,11 +490,13 @@ export const gridLazyLoadItem05Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem06Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem06Badge",
   "lines": 1,
   "barWidth": "51px"
 };
 
 export const gridLazyLoadItem06Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem06Title",
   "lines": {
     "0": 1,
     "528": 2,
@@ -521,6 +539,7 @@ export const gridLazyLoadItem06Title: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem06Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem06Body",
   "lines": {
     "0": 3,
     "379": 2,
@@ -578,16 +597,19 @@ export const gridLazyLoadItem06Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem07Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem07Badge",
   "lines": 1,
   "barWidth": "45px"
 };
 
 export const gridLazyLoadItem07Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem07Title",
   "lines": 1,
   "barWidth": "217px"
 };
 
 export const gridLazyLoadItem07Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem07Body",
   "lines": {
     "0": 3,
     "421": 2,
@@ -623,11 +645,13 @@ export const gridLazyLoadItem07Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem08Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem08Badge",
   "lines": 1,
   "barWidth": "56px"
 };
 
 export const gridLazyLoadItem08Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem08Title",
   "lines": {
     "0": 2,
     "326": 1,
@@ -675,6 +699,7 @@ export const gridLazyLoadItem08Title: GeneratedSkeletonTextEntry = {
 };
 
 export const gridLazyLoadItem08Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridLazyLoadItem08Body",
   "lines": {
     "0": 3,
     "392": 2,

@@ -14,6 +14,7 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-variable-widths-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const SLIDES = [
   {
@@ -100,6 +101,7 @@ export function SliderVariableWidthsDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-variable-widths")}
         layout={{
               visibleCount: 4,
               mode: "peek",

@@ -1,4 +1,4 @@
-export const source = String.raw`'use client';
+export const source = `'use client';
 
 import * as React from "react";
 import { ZoomPanImage } from "react-motion-gallery/zoomPan";
@@ -7,6 +7,7 @@ import {
   type SkeletonNode,
 } from "react-motion-gallery/skeleton/base";
 import styles from "./standalone-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const ZOOM_PAN_SKELETON: SkeletonNode = {
   kind: "rect",
@@ -36,6 +37,7 @@ export function ZoomPanStandaloneDemo() {
   return (
     <div className={styles.shell}>
       <Skeleton
+        cache={demoSkeletonCache("zoom-pan-standalone")}
         layout={ZOOM_PAN_SKELETON}
         ready={imageReady}
         shellClassName={styles.frame}
@@ -62,5 +64,4 @@ export function ZoomPanStandaloneDemo() {
       </Skeleton>
     </div>
   );
-}
-`;
+}`;

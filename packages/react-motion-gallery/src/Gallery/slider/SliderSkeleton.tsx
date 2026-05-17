@@ -34,6 +34,10 @@ import {
   shimmerStyleVars,
 } from "../shared/skeleton/layout";
 import { buildStableScopeId } from "../shared/stableScope";
+import type {
+  SkeletonCacheSnapshot,
+  SkeletonCacheTextRecord,
+} from "../skeleton/cache";
 
 export type SkeletonLength = number | string;
 
@@ -176,6 +180,7 @@ export type SkeletonNode =
     }
   | { 
       kind: "text";
+      textId?: string;
       barHeight: ResponsiveTextBarHeight;
       barWidth?: ResponsiveTextBarWidth;
       lineHeight: ResponsiveTextLineHeight;
@@ -207,6 +212,7 @@ export type SliderSkeletonCardProps = {
   centerFirst?: boolean;
   hasLeadingSpacer?: boolean;
   responsiveCssScopeSelector?: string;
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
 };
 
 function cssLen(v: SkeletonLength | undefined): string | undefined {
@@ -628,6 +634,124 @@ function buildResponsiveCssText(
   return lines.join("\n");
 }
 
+function toSnapshotBarWidths(record: SkeletonCacheTextRecord) {
+  if (record.barWidths?.length) return record.barWidths;
+  if (record.lineWidthsPx?.length) {
+    return record.lineWidthsPx.map((width) => `${Math.max(0, width)}px`);
+  }
+  return undefined;
+}
+
+function normalizeSnapshotLines(value: number) {
+  return Math.max(1, Math.min(64, Math.trunc(value)));
+}
+
+export function applySliderSkeletonTextSnapshot(
+  node: SliderSkeletonNode,
+  snapshot: Record<string, SkeletonCacheTextRecord> | undefined,
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+): SliderSkeletonNode {
+  if (!snapshot) return node;
+
+  if (node.kind === "text") {
+    const record = node.textId ? snapshot[node.textId] : undefined;
+    if (!record) return node;
+
+    const lines = normalizeSnapshotLines(record.lines);
+    const barWidth = toSnapshotBarWidths(record);
+    const barHeight =
+      typeof record.barHeight === "number" && Number.isFinite(record.barHeight)
+        ? record.barHeight
+        : typeof node.barHeight === "number"
+        ? node.barHeight
+        : resolveResponsiveTextBarHeight(node.barHeight, 0, 0, breakpointMap);
+    const lineHeight =
+      typeof record.lineHeight === "number" && Number.isFinite(record.lineHeight)
+        ? record.lineHeight
+        : typeof node.lineHeight === "number"
+        ? node.lineHeight
+        : resolveResponsiveTextLineHeight(node.lineHeight, 1, 0, breakpointMap);
+
+    return {
+      ...node,
+      barHeight,
+      lineHeight,
+      lines,
+      ...(barWidth?.length ? { barWidth } : null),
+      lastBarWidth: barWidth?.[Math.min(lines, barWidth.length) - 1] ?? node.lastBarWidth,
+    };
+  }
+
+  if (node.kind === "media" || node.kind === "sliderDots") return node;
+
+  if (node.kind === "slider") {
+    return {
+      ...node,
+      item: applySliderSkeletonTextSnapshot(
+        node.item,
+        snapshot,
+        breakpointMap
+      ) as SkeletonNode,
+      children: node.children?.map((child) =>
+        applySliderSkeletonTextSnapshot(child, snapshot, breakpointMap) as SkeletonNode
+      ),
+      overlays: node.overlays?.map((child) =>
+        applySliderSkeletonTextSnapshot(child, snapshot, breakpointMap) as SkeletonNode
+      ),
+      slots: node.slots?.map((slot) => ({
+        ...slot,
+        item: slot.item
+          ? (applySliderSkeletonTextSnapshot(
+              slot.item,
+              snapshot,
+              breakpointMap
+            ) as SkeletonNode)
+          : slot.item,
+      })),
+    };
+  }
+
+  if (node.kind === "stack" || node.kind === "row" || node.kind === "col") {
+    return {
+      ...node,
+      children: node.children.map((child: SkeletonNode) =>
+        applySliderSkeletonTextSnapshot(child, snapshot, breakpointMap) as SkeletonNode
+      ),
+    };
+  }
+
+  return node;
+}
+
+export function collectSliderSkeletonTextIds(
+  node: SliderSkeletonNode | undefined,
+  out: Set<string> = new Set()
+) {
+  if (!node) return out;
+
+  if (node.kind === "text") {
+    if (node.textId) out.add(node.textId);
+    return out;
+  }
+
+  if (node.kind === "media" || node.kind === "sliderDots") return out;
+
+  if (node.kind === "slider") {
+    collectSliderSkeletonTextIds(node.item, out);
+    node.children?.forEach((child) => collectSliderSkeletonTextIds(child, out));
+    node.overlays?.forEach((child) => collectSliderSkeletonTextIds(child, out));
+    node.slots?.forEach((slot) => collectSliderSkeletonTextIds(slot.item, out));
+    return out;
+  }
+
+  if (node.kind === "stack" || node.kind === "row" || node.kind === "col") {
+    node.children.forEach((child: SkeletonNode) =>
+      collectSliderSkeletonTextIds(child, out)
+    );
+  }
+  return out;
+}
+
 function ShapeNode(
   props: Extract<SkeletonNode, { kind: "rect" | "square" | "circle" }> & {
     breakpointMap: BreakpointMap;
@@ -714,6 +838,7 @@ function TextNode({
     <div
       data-rmg-skel-node={nodeId}
       data-rmg-skel-text="true"
+      data-rmg-skel-text-id={node.textId}
       className={styles.sliderSkeletonText}
       style={{
         ...wrapperStyle,
@@ -1893,6 +2018,7 @@ export function SliderSkeletonCard({
   centerFirst = false,
   hasLeadingSpacer = false,
   responsiveCssScopeSelector,
+  cacheSnapshot,
 }: SliderSkeletonCardProps) {
   const s = spec ?? defaultSliderSpec();
   const effectiveBreakpoints = React.useMemo(
@@ -1900,7 +2026,16 @@ export function SliderSkeletonCard({
     [breakpoints]
   );
 
-  const layoutIn: SliderSkeletonNode = s.layout ?? (defaultSliderSpec().layout as SliderSkeletonNode);
+  const layoutIn: SliderSkeletonNode = React.useMemo(() => {
+    const source = s.layout ?? (defaultSliderSpec().layout as SliderSkeletonNode);
+    return cacheSnapshot?.text
+      ? applySliderSkeletonTextSnapshot(
+          source,
+          cacheSnapshot.text,
+          effectiveBreakpoints
+        )
+      : source;
+  }, [cacheSnapshot, effectiveBreakpoints, s.layout]);
   const internalScopeId = React.useMemo(
     () =>
       buildStableScopeId("ssk_", {

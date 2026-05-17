@@ -16,6 +16,7 @@ import {
   listPackageDocs,
   loadingFidelityGuide,
   readPackageDoc,
+  skeletonCacheGuide,
 } from "./docs.js";
 import { cssModuleNameForComponent, generateGalleryComponent } from "./generate.js";
 import { auditProject, writeGalleryFiles } from "./project.js";
@@ -257,6 +258,16 @@ function registerResources(server: McpServer) {
       ],
     })
   );
+
+  server.resource("skeleton cache guide", "rmg://guides/skeleton-cache", async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/markdown",
+        text: skeletonCacheGuide(),
+      },
+    ],
+  }));
 
   server.resource(
     "demo example",

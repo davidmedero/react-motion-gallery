@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const entriesGridEntry01Section: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry01Section",
   "lines": 1,
   "barWidth": "47px",
   "barHeight": 11.52,
@@ -29,6 +31,7 @@ export const entriesGridEntry01Section: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry01Title: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry01Title",
   "lines": {
     "0": 2,
     "323": 1
@@ -45,6 +48,7 @@ export const entriesGridEntry01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry01Count: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry01Count",
   "lines": 1,
   "barWidth": "53px",
   "barHeight": 12.48,
@@ -52,6 +56,7 @@ export const entriesGridEntry01Count: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry01Body: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry01Body",
   "lines": {
     "0": 4,
     "347": 3,
@@ -81,6 +86,7 @@ export const entriesGridEntry01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry02Section: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry02Section",
   "lines": 1,
   "barWidth": "44px",
   "barHeight": 11.52,
@@ -88,6 +94,7 @@ export const entriesGridEntry02Section: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry02Title: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry02Title",
   "lines": 1,
   "barWidth": "193px",
   "barHeight": 17.28,
@@ -95,6 +102,7 @@ export const entriesGridEntry02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry02Count: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry02Count",
   "lines": 1,
   "barWidth": "52px",
   "barHeight": 12.48,
@@ -102,6 +110,7 @@ export const entriesGridEntry02Count: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry02Body: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry02Body",
   "lines": {
     "0": 4,
     "321": 3,
@@ -138,6 +147,7 @@ export const entriesGridEntry02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry03Section: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry03Section",
   "lines": 1,
   "barWidth": "47px",
   "barHeight": 11.52,
@@ -145,6 +155,7 @@ export const entriesGridEntry03Section: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry03Title: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry03Title",
   "lines": 1,
   "barWidth": "154px",
   "barHeight": 17.28,
@@ -152,6 +163,7 @@ export const entriesGridEntry03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry03Count: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry03Count",
   "lines": 1,
   "barWidth": "53px",
   "barHeight": 12.48,
@@ -159,6 +171,7 @@ export const entriesGridEntry03Count: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesGridEntry03Body: GeneratedSkeletonTextEntry = {
+  "textId": "entriesGridEntry03Body",
   "lines": {
     "0": 3,
     "389": 2,

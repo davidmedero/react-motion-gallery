@@ -9,6 +9,7 @@ type GeneratedSkeletonTextBarWidth =
 type GeneratedSkeletonTextLastBarWidth = string | Record<number, string>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -18,6 +19,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const leadTrackTitle: GeneratedSkeletonTextEntry = {
+  "textId": "leadTrackTitle",
   "lines": {
     "0": 2,
     "326": 1
@@ -32,6 +34,7 @@ export const leadTrackTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const leadTrackBody: GeneratedSkeletonTextEntry = {
+  "textId": "leadTrackBody",
   "lines": {
     "0": 4,
     "340": 3,
@@ -64,6 +67,7 @@ export const leadTrackBody: GeneratedSkeletonTextEntry = {
 };
 
 export const narrowRailTitle: GeneratedSkeletonTextEntry = {
+  "textId": "narrowRailTitle",
   "lines": {
     "0": 1,
     "820": 2,
@@ -87,6 +91,7 @@ export const narrowRailTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const narrowRailBody: GeneratedSkeletonTextEntry = {
+  "textId": "narrowRailBody",
   "lines": {
     "0": 3,
     "405": 2,
@@ -151,6 +156,7 @@ export const narrowRailBody: GeneratedSkeletonTextEntry = {
 };
 
 export const edgeSlotTitle: GeneratedSkeletonTextEntry = {
+  "textId": "edgeSlotTitle",
   "lines": {
     "0": 1,
     "1200": 2
@@ -165,6 +171,7 @@ export const edgeSlotTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const edgeSlotBody: GeneratedSkeletonTextEntry = {
+  "textId": "edgeSlotBody",
   "lines": {
     "0": 3,
     "382": 2,
@@ -215,11 +222,13 @@ export const edgeSlotBody: GeneratedSkeletonTextEntry = {
 };
 
 export const bridgeSpanTitle: GeneratedSkeletonTextEntry = {
+  "textId": "bridgeSpanTitle",
   "lines": 1,
   "barWidth": "192px"
 };
 
 export const bridgeSpanBody: GeneratedSkeletonTextEntry = {
+  "textId": "bridgeSpanBody",
   "lines": {
     "0": 3,
     "412": 2,
@@ -252,6 +261,7 @@ export const bridgeSpanBody: GeneratedSkeletonTextEntry = {
 };
 
 export const counterweightTitle: GeneratedSkeletonTextEntry = {
+  "textId": "counterweightTitle",
   "lines": {
     "0": 1,
     "820": 2,
@@ -275,6 +285,7 @@ export const counterweightTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const counterweightBody: GeneratedSkeletonTextEntry = {
+  "textId": "counterweightBody",
   "lines": {
     "0": 4,
     "371": 3,
@@ -342,6 +353,7 @@ export const counterweightBody: GeneratedSkeletonTextEntry = {
 };
 
 export const finalRailTitle: GeneratedSkeletonTextEntry = {
+  "textId": "finalRailTitle",
   "lines": {
     "0": 2,
     "347": 1,
@@ -368,6 +380,7 @@ export const finalRailTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const finalRailBody: GeneratedSkeletonTextEntry = {
+  "textId": "finalRailBody",
   "lines": {
     "0": 3,
     "419": 2,

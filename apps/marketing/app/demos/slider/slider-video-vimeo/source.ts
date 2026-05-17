@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -16,6 +16,7 @@ import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-video-vimeo-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 export function SliderVideoVimeoDemo() {
 const URLS = [
@@ -134,6 +135,7 @@ const { ref: sliderRef, ready: sliderReady } = useSliderReady();
   return (
   <GalleryCore layout="slider" fullscreenItems={MEDIA}>
     <SliderSkeleton
+      cache={demoSkeletonCache("slider-video-vimeo")}
         layout={{
               visibleCount: 2,
             mode: "peek",
@@ -261,5 +263,4 @@ const { ref: sliderRef, ready: sliderReady } = useSliderReady();
     <FullscreenAddon />
   </GalleryCore>
 );
-}
-`;
+}`;

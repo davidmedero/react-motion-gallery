@@ -12,6 +12,8 @@ import {
   TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER,
   buildResponsiveTextCssRules,
   getResponsiveTextRenderState,
+  resolveResponsiveTextBarHeight,
+  resolveResponsiveTextLineHeight,
   type ResponsiveTextBarHeight,
   type ResponsiveTextBarWidth,
   type ResponsiveTextLineHeight,
@@ -21,6 +23,10 @@ import {
 } from "../../shared/skeleton/text";
 import { shimmerStyleVars } from "../../shared/skeleton/layout";
 import { buildStableScopeId } from "../../shared/stableScope";
+import type {
+  SkeletonCacheSnapshot,
+  SkeletonCacheTextRecord,
+} from "../../skeleton/cache";
 
 export type SkeletonLength = number | string;
 
@@ -96,6 +102,7 @@ export type SkeletonNode =
     }
   | {
       kind: "text";
+      textId?: string;
       barHeight: ResponsiveTextBarHeight;
       barWidth?: ResponsiveTextBarWidth;
       lineHeight: ResponsiveTextLineHeight;
@@ -122,6 +129,7 @@ export type EntrySkeletonCardProps = {
   spec?: EntrySkeletonSpec;
   className?: string;
   breakpoints?: BreakpointMap;
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
 };
 
 function defaultSpec(): EntrySkeletonSpec {
@@ -351,6 +359,90 @@ function buildResponsiveCssText(
   return lines.join("\n");
 }
 
+function toSnapshotBarWidths(record: SkeletonCacheTextRecord) {
+  if (record.barWidths?.length) return record.barWidths;
+  if (record.lineWidthsPx?.length) {
+    return record.lineWidthsPx.map((width) => `${Math.max(0, width)}px`);
+  }
+  return undefined;
+}
+
+function normalizeSnapshotLines(value: number) {
+  return Math.max(1, Math.min(64, Math.trunc(value)));
+}
+
+export function applyEntrySkeletonTextSnapshot(
+  node: SkeletonNode,
+  snapshot: Record<string, SkeletonCacheTextRecord> | undefined,
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+): SkeletonNode {
+  if (!snapshot) return node;
+
+  if (node.kind === "text") {
+    const record = node.textId ? snapshot[node.textId] : undefined;
+    if (!record) return node;
+
+    const lines = normalizeSnapshotLines(record.lines);
+    const barWidth = toSnapshotBarWidths(record);
+    const barHeight =
+      typeof record.barHeight === "number" && Number.isFinite(record.barHeight)
+        ? record.barHeight
+        : typeof node.barHeight === "number"
+        ? node.barHeight
+        : resolveResponsiveTextBarHeight(node.barHeight, 0, 0, breakpointMap);
+    const lineHeight =
+      typeof record.lineHeight === "number" && Number.isFinite(record.lineHeight)
+        ? record.lineHeight
+        : typeof node.lineHeight === "number"
+        ? node.lineHeight
+        : resolveResponsiveTextLineHeight(node.lineHeight, 1, 0, breakpointMap);
+
+    return {
+      ...node,
+      barHeight,
+      lineHeight,
+      lines,
+      ...(barWidth?.length ? { barWidth } : null),
+      lastBarWidth: barWidth?.[Math.min(lines, barWidth.length) - 1] ?? node.lastBarWidth,
+      responsiveBy: undefined,
+    };
+  }
+
+  if (node.kind === "media") return node;
+
+  if (node.kind === "stack" || node.kind === "row" || node.kind === "col") {
+    return {
+      ...node,
+      children: node.children.map((child: SkeletonNode) =>
+        applyEntrySkeletonTextSnapshot(child, snapshot, breakpointMap)
+      ),
+    };
+  }
+
+  return node;
+}
+
+export function collectEntrySkeletonTextIds(
+  node: SkeletonNode | undefined,
+  out: Set<string> = new Set()
+) {
+  if (!node) return out;
+
+  if (node.kind === "text") {
+    if (node.textId) out.add(node.textId);
+    return out;
+  }
+
+  if (node.kind === "media") return out;
+
+  if (node.kind === "stack" || node.kind === "row" || node.kind === "col") {
+    node.children.forEach((child: SkeletonNode) =>
+      collectEntrySkeletonTextIds(child, out)
+    );
+  }
+  return out;
+}
+
 function ShapeNode(
   props: Extract<SkeletonNode, { kind: "rect" | "square" | "circle" }> & {
     breakpointMap: BreakpointMap;
@@ -434,6 +526,7 @@ function TextNode({
     <div
       data-rmg-skel-node={nodeId}
       data-rmg-skel-text="true"
+      data-rmg-skel-text-id={node.textId}
       className={styles.entrySkelText}
       style={{
         ...wrapperStyle,
@@ -581,6 +674,7 @@ export function EntrySkeletonCard({
   spec,
   className,
   breakpoints,
+  cacheSnapshot,
 }: EntrySkeletonCardProps) {
   const s = spec ?? defaultSpec();
   const effectiveBreakpoints = React.useMemo(
@@ -617,7 +711,16 @@ export function EntrySkeletonCard({
     ],
   }), []);
 
-  const layoutIn = s.layout ?? defaultLayout;
+  const layoutIn = React.useMemo(() => {
+    const source = s.layout ?? defaultLayout;
+    return cacheSnapshot?.text
+      ? applyEntrySkeletonTextSnapshot(
+          source,
+          cacheSnapshot.text,
+          effectiveBreakpoints
+        )
+      : source;
+  }, [cacheSnapshot, defaultLayout, effectiveBreakpoints, s.layout]);
   const scopeId = React.useMemo(
     () =>
       buildStableScopeId("skel_", {

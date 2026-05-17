@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const forceOverlayHeaderTitle: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlayHeaderTitle",
   "lines": 1,
   "barWidth": "181px",
   "barHeight": 20,
@@ -30,6 +32,7 @@ export const forceOverlayHeaderTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlayHeaderMeta: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlayHeaderMeta",
   "lines": {
     "0": 2,
     "253": 1
@@ -47,6 +50,7 @@ export const forceOverlayHeaderMeta: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlaySummary01Label: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlaySummary01Label",
   "lines": 1,
   "barWidth": "37px",
   "barHeight": 12,
@@ -55,6 +59,7 @@ export const forceOverlaySummary01Label: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlaySummary01Value: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlaySummary01Value",
   "lines": 1,
   "barWidth": "46px",
   "barHeight": 34,
@@ -63,6 +68,7 @@ export const forceOverlaySummary01Value: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlaySummary02Label: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlaySummary02Label",
   "lines": 1,
   "barWidth": "37px",
   "barHeight": 12,
@@ -71,6 +77,7 @@ export const forceOverlaySummary02Label: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlaySummary02Value: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlaySummary02Value",
   "lines": 1,
   "barWidth": "44px",
   "barHeight": 34,
@@ -79,6 +86,7 @@ export const forceOverlaySummary02Value: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlaySummary03Label: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlaySummary03Label",
   "lines": 1,
   "barWidth": "32px",
   "barHeight": 12,
@@ -87,6 +95,7 @@ export const forceOverlaySummary03Label: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlaySummary03Value: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlaySummary03Value",
   "lines": 1,
   "barWidth": "38px",
   "barHeight": 34,
@@ -95,6 +104,7 @@ export const forceOverlaySummary03Value: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlayTimeline01Title: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlayTimeline01Title",
   "lines": {
     "0": 2,
     "255": 1
@@ -112,6 +122,7 @@ export const forceOverlayTimeline01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlayTimeline01Detail: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlayTimeline01Detail",
   "lines": {
     "0": 6,
     "155": 5,
@@ -159,6 +170,7 @@ export const forceOverlayTimeline01Detail: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlayTimeline02Title: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlayTimeline02Title",
   "lines": {
     "0": 2,
     "244": 1
@@ -176,6 +188,7 @@ export const forceOverlayTimeline02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlayTimeline02Detail: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlayTimeline02Detail",
   "lines": {
     "0": 6,
     "142": 5,
@@ -223,6 +236,7 @@ export const forceOverlayTimeline02Detail: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlayTimeline03Title: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlayTimeline03Title",
   "lines": {
     "0": 2,
     "263": 1
@@ -240,6 +254,7 @@ export const forceOverlayTimeline03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const forceOverlayTimeline03Detail: GeneratedSkeletonTextEntry = {
+  "textId": "forceOverlayTimeline03Detail",
   "lines": {
     "0": 5,
     "162": 4,

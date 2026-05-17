@@ -16,7 +16,6 @@ import type {
   MasonrySkeletonSpec,
   SkeletonNode,
 } from "react-motion-gallery/skeleton/masonry";
-import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
 import styles from "./masonry-horizontal-order-demo.module.css";
 import { masonryHorizontalOrderSkeletonText } from "./masonry-horizontal-order.skeleton-text.generated";
 import {
@@ -370,9 +369,7 @@ function MasonryHorizontalOrderFullscreenAddon() {
   return <>{fullscreenNode}</>;
 }
 
-export function MasonryHorizontalOrderDemo(props: {
-  horizontalOrderSkeletonCacheSnapshot?: SkeletonCacheSnapshot | null;
-}) {
+export function MasonryHorizontalOrderDemo() {
   const horizontalOrderSkeleton = useMemo(
     () => createHorizontalOrderSkeleton(),
     []
@@ -401,7 +398,6 @@ export function MasonryHorizontalOrderDemo(props: {
         cache={{
           key: MASONRY_HORIZONTAL_ORDER_SKELETON_CACHE_KEY,
           routeKey: MASONRY_HORIZONTAL_ORDER_SKELETON_ROUTE_KEY,
-          snapshot: props.horizontalOrderSkeletonCacheSnapshot,
         }}
         masonry={{
           count: ITEMS.length,

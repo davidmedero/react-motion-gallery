@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -16,6 +16,7 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import styles from "./fullscreen-fade-effects-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const CROSSFADE_DURATION_MS = 560;
 const CROSSFADE_EASING = "cubic-bezier(.22,1,.36,1)";
@@ -121,6 +122,7 @@ export function FullscreenFadeEffectsDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("fullscreen-fade-effects")}
         layout={{
               visibleCount: 3,
               mode: "peek",
@@ -178,5 +180,4 @@ export function FullscreenFadeEffectsDemo() {
       <FullscreenFadeEffectsAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

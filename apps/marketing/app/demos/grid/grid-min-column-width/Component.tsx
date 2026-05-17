@@ -12,6 +12,7 @@ import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-min-column-width-demo.module.css";
 import { gridMinColumnWidthSkeletonText } from "./grid-min-column-width.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -251,6 +252,7 @@ export function GridMinColumnWidthDemo() {
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
       <GridSkeleton
+        cache={demoSkeletonCache("grid-min-column-width")}
         layout={CARD_SKELETON}
         ready={gridReady}
         timing={{ exitMs: 1600 }}

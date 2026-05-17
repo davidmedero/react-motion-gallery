@@ -9,6 +9,7 @@ import {
 import styles from "./GridSkeleton.module.css";
 import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
 import {
+  applySkeletonTextSnapshot,
   type SkeletonBaseStyle,
   type SkeletonBaseStyleResponsive,
   type SkeletonContainerStyle,
@@ -38,6 +39,7 @@ import {
   resolveInlineGridItemSpanStyle,
 } from "../grid/item";
 import type { ResponsiveGridSpan, ResponsiveGridTemplate } from "../grid/types";
+import type { SkeletonCacheSnapshot } from "./cache";
 
 export type {
   SkeletonBaseStyle,
@@ -83,6 +85,7 @@ export type GridSkeletonCardProps = {
   }>;
   allowItemSpans?: boolean;
   disableShimmer?: boolean;
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
 };
 
 function isResponsiveMap(
@@ -354,6 +357,7 @@ export function GridSkeletonCard({
   items,
   allowItemSpans,
   disableShimmer,
+  cacheSnapshot,
 }: GridSkeletonCardProps) {
   const s = spec ?? defaultGridSpec();
   const effectiveBreakpoints = React.useMemo(
@@ -361,8 +365,17 @@ export function GridSkeletonCard({
     [breakpoints]
   );
 
-  const layoutSource: GridSkeletonNode =
-    s.layout ?? (defaultGridSpec().layout as GridSkeletonNode);
+  const layoutSource: GridSkeletonNode = React.useMemo(() => {
+    const source = s.layout ?? (defaultGridSpec().layout as GridSkeletonNode);
+    return cacheSnapshot?.text
+      ? (applySkeletonTextSnapshot(
+          source,
+          cacheSnapshot.text,
+          "grid",
+          effectiveBreakpoints
+        ) as GridSkeletonNode)
+      : source;
+  }, [cacheSnapshot, effectiveBreakpoints, s.layout]);
   const scopeId = React.useMemo(() => {
     return buildStableScopeId("gskel_", {
       count,

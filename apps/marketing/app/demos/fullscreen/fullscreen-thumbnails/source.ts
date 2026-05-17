@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import {
@@ -15,6 +15,7 @@ import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import styles from "./fullscreen-thumbnails-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const SLIDES = [
   {
@@ -179,6 +180,7 @@ export function FullscreenThumbnailsDemo() {
 
         <div className={styles.sliderColumn}>
           <SliderSkeleton
+            cache={demoSkeletonCache("fullscreen-thumbnails")}
         layout={{
               visibleCount: 2,
                   mode: "peek",
@@ -225,5 +227,4 @@ export function FullscreenThumbnailsDemo() {
       <FullscreenThumbnailsAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

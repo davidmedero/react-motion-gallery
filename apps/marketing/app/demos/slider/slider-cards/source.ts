@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import {
@@ -26,6 +26,7 @@ import {
   cardTwoTitle,
   sliderCardsRowHeightCompensation,
 } from "./slider-cards.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const PRODUCTS = [
   {
@@ -342,6 +343,7 @@ export function SliderCardsDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-cards")}
         layout={SLIDER_CARDS_SKELETON}
         ready={sliderReady}
       >
@@ -397,5 +399,4 @@ export function SliderCardsDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

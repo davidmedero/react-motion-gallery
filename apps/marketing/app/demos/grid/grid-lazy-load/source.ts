@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useSearchParams } from "next/navigation";
@@ -15,6 +15,7 @@ import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
 import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-lazy-load-demo.module.css";
 import { gridLazyLoadSkeletonText } from "./grid-lazy-load.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -260,6 +261,7 @@ export function GridLazyLoadDemo() {
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
       <GridSkeleton
+        cache={demoSkeletonCache("grid-lazy-load")}
         layout={CARD_SKELETON}
         ready={gridReady}
         enabled={!showMeasuredContent}
@@ -298,5 +300,4 @@ export function GridLazyLoadDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

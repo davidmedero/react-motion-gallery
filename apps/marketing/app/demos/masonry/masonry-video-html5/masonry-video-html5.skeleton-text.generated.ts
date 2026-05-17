@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const masonryVideoHtml5Item01Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item01Title",
   "lines": {
     "0": 1,
     "820": 2,
@@ -40,6 +42,7 @@ export const masonryVideoHtml5Item01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item01Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item01Body",
   "lines": {
     "0": 4,
     "327": 3,
@@ -85,6 +88,7 @@ export const masonryVideoHtml5Item01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item02Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item02Title",
   "lines": {
     "0": 1,
     "820": 2,
@@ -103,6 +107,7 @@ export const masonryVideoHtml5Item02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item02Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item02Body",
   "lines": {
     "0": 3,
     "390": 2,
@@ -148,6 +153,7 @@ export const masonryVideoHtml5Item02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item03Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item03Title",
   "lines": 1,
   "barWidth": "157px",
   "barHeight": 16.64,
@@ -155,6 +161,7 @@ export const masonryVideoHtml5Item03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item03Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item03Body",
   "lines": {
     "0": 3,
     "368": 2,
@@ -200,6 +207,7 @@ export const masonryVideoHtml5Item03Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item04Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item04Title",
   "lines": 1,
   "barWidth": "189px",
   "barHeight": 16.64,
@@ -207,6 +215,7 @@ export const masonryVideoHtml5Item04Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item04Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item04Body",
   "lines": {
     "0": 3,
     "397": 2,
@@ -252,6 +261,7 @@ export const masonryVideoHtml5Item04Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item05Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item05Title",
   "lines": 1,
   "barWidth": "188px",
   "barHeight": 16.64,
@@ -259,6 +269,7 @@ export const masonryVideoHtml5Item05Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item05Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item05Body",
   "lines": {
     "0": 3,
     "363": 2,
@@ -297,6 +308,7 @@ export const masonryVideoHtml5Item05Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item06Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item06Title",
   "lines": {
     "0": 2,
     "335": 1,
@@ -320,6 +332,7 @@ export const masonryVideoHtml5Item06Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryVideoHtml5Item06Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryVideoHtml5Item06Body",
   "lines": {
     "0": 3,
     "409": 2,

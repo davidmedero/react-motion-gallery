@@ -10,6 +10,7 @@ import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-interactive-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const INITIAL_IMAGE_IDS = [478, 479, 480, 481, 482, 483];
 
@@ -265,6 +266,7 @@ function InteractiveSliderCanvas() {
   return (
     <div className={styles.shell}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-interactive")}
         layout={{
               visibleCount: { xs: 1, md: 2 },
               mode: "fit",

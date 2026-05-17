@@ -17,6 +17,7 @@ import type {
 } from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-spans-demo.module.css";
 import { masonrySpansSkeletonText } from "./masonry-spans.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -415,6 +416,7 @@ export function MasonrySpansDemo() {
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <MasonrySkeleton
+        cache={demoSkeletonCache("masonry-spans")}
         layout={SPANS_SKELETON}
         ready={masonryReady}
         timing={{ exitMs: 1200 }}

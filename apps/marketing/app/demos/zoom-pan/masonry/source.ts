@@ -1,4 +1,4 @@
-export const source = String.raw`'use client';
+export const source = `'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { Masonry } from "react-motion-gallery/masonry";
@@ -7,6 +7,7 @@ import { ZoomPanImage } from "react-motion-gallery/zoomPan";
 import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";
 import type { MasonrySkeletonSpec } from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const IMAGES = [
   {
@@ -71,6 +72,7 @@ export function ZoomPanMasonryDemo() {
   return (
     <GalleryCore layout="masonry">
       <MasonrySkeleton
+        cache={demoSkeletonCache("zoom-pan-masonry")}
         layout={ZOOM_PAN_MASONRY_SKELETON}
         ready={masonryReady}
         masonry={{

@@ -29,6 +29,7 @@ import {
   wideTileBody,
   wideTileTitle,
 } from "./grid-columns.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoItem = {
   imageSrc: string;
@@ -305,6 +306,7 @@ export function GridColumnsDemo() {
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
       <GridSkeleton
+        cache={demoSkeletonCache("grid-columns")}
         layout={GRID_SPANS_SKELETON}
         ready={gridReady}
         timing={{ exitMs: 1000 }}

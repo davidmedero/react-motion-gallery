@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useSearchParams } from "next/navigation";
@@ -29,6 +29,7 @@ import {
   narrowRailBody,
   narrowRailTitle,
 } from "./grid-template-columns.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoItem = {
   imageSrc: string;
@@ -283,6 +284,7 @@ export function GridTemplateColumnsDemo() {
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
       <GridSkeleton
+        cache={demoSkeletonCache("grid-template-columns")}
         layout={GRID_TEMPLATE_COLUMNS_SKELETON}
         ready={gridReady}
         timing={{ exitMs: 1200 }}
@@ -309,5 +311,4 @@ export function GridTemplateColumnsDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

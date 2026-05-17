@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const entriesSliderEntry01Section: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry01Section",
   "lines": 1,
   "barWidth": "46px",
   "barHeight": 11.52,
@@ -29,6 +31,7 @@ export const entriesSliderEntry01Section: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry01Title: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry01Title",
   "lines": 1,
   "barWidth": "208px",
   "barHeight": 17.28,
@@ -36,6 +39,7 @@ export const entriesSliderEntry01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry01Count: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry01Count",
   "lines": 1,
   "barWidth": "61px",
   "barHeight": 12.48,
@@ -43,6 +47,7 @@ export const entriesSliderEntry01Count: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry01Body: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry01Body",
   "lines": {
     "0": 4,
     "347": 3,
@@ -72,6 +77,7 @@ export const entriesSliderEntry01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry02Section: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry02Section",
   "lines": 1,
   "barWidth": "43px",
   "barHeight": 11.52,
@@ -79,6 +85,7 @@ export const entriesSliderEntry02Section: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry02Title: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry02Title",
   "lines": 1,
   "barWidth": "193px",
   "barHeight": 17.28,
@@ -86,6 +93,7 @@ export const entriesSliderEntry02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry02Count: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry02Count",
   "lines": 1,
   "barWidth": "61px",
   "barHeight": 12.48,
@@ -93,6 +101,7 @@ export const entriesSliderEntry02Count: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry02Body: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry02Body",
   "lines": {
     "0": 4,
     "321": 3,
@@ -129,6 +138,7 @@ export const entriesSliderEntry02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry03Section: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry03Section",
   "lines": 1,
   "barWidth": "45px",
   "barHeight": 11.52,
@@ -136,6 +146,7 @@ export const entriesSliderEntry03Section: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry03Title: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry03Title",
   "lines": 1,
   "barWidth": "154px",
   "barHeight": 17.28,
@@ -143,6 +154,7 @@ export const entriesSliderEntry03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry03Count: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry03Count",
   "lines": 1,
   "barWidth": "62px",
   "barHeight": 12.48,
@@ -150,6 +162,7 @@ export const entriesSliderEntry03Count: GeneratedSkeletonTextEntry = {
 };
 
 export const entriesSliderEntry03Body: GeneratedSkeletonTextEntry = {
+  "textId": "entriesSliderEntry03Body",
   "lines": {
     "0": 3,
     "389": 2,

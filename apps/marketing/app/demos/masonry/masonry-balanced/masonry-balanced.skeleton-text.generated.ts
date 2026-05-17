@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const masonryBalancedItem01Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem01Badge",
   "lines": 1,
   "barWidth": "45px",
   "barHeight": 11.84,
@@ -29,6 +31,7 @@ export const masonryBalancedItem01Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem01Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem01Title",
   "lines": {
     "0": 4,
     "321": 1,
@@ -54,6 +57,7 @@ export const masonryBalancedItem01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem01Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem01Body",
   "lines": {
     "0": 10,
     "321": 4,
@@ -157,6 +161,7 @@ export const masonryBalancedItem01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem02Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem02Badge",
   "lines": 1,
   "barWidth": "42px",
   "barHeight": 11.84,
@@ -164,6 +169,7 @@ export const masonryBalancedItem02Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem02Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem02Title",
   "lines": {
     "0": 3,
     "321": 1,
@@ -188,6 +194,7 @@ export const masonryBalancedItem02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem02Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem02Body",
   "lines": {
     "0": 9,
     "321": 3,
@@ -284,6 +291,7 @@ export const masonryBalancedItem02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem03Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem03Badge",
   "lines": 1,
   "barWidth": "45px",
   "barHeight": 11.84,
@@ -291,6 +299,7 @@ export const masonryBalancedItem03Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem03Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem03Title",
   "lines": {
     "0": 2,
     "321": 1
@@ -307,6 +316,7 @@ export const masonryBalancedItem03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem03Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem03Body",
   "lines": {
     "0": 7,
     "321": 3,
@@ -391,6 +401,7 @@ export const masonryBalancedItem03Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem04Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem04Badge",
   "lines": 1,
   "barWidth": "38px",
   "barHeight": 11.84,
@@ -398,6 +409,7 @@ export const masonryBalancedItem04Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem04Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem04Title",
   "lines": {
     "0": 3,
     "321": 1,
@@ -422,6 +434,7 @@ export const masonryBalancedItem04Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem04Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem04Body",
   "lines": {
     "0": 10,
     "321": 3,
@@ -511,6 +524,7 @@ export const masonryBalancedItem04Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem05Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem05Badge",
   "lines": 1,
   "barWidth": "28px",
   "barHeight": 11.84,
@@ -518,6 +532,7 @@ export const masonryBalancedItem05Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem05Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem05Title",
   "lines": {
     "0": 3,
     "321": 1,
@@ -542,6 +557,7 @@ export const masonryBalancedItem05Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem05Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem05Body",
   "lines": {
     "0": 9,
     "321": 4,
@@ -649,6 +665,7 @@ export const masonryBalancedItem05Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem06Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem06Badge",
   "lines": 1,
   "barWidth": "50px",
   "barHeight": 11.84,
@@ -656,6 +673,7 @@ export const masonryBalancedItem06Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem06Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem06Title",
   "lines": {
     "0": 3,
     "321": 2,
@@ -699,6 +717,7 @@ export const masonryBalancedItem06Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryBalancedItem06Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryBalancedItem06Body",
   "lines": {
     "0": 7,
     "321": 3,

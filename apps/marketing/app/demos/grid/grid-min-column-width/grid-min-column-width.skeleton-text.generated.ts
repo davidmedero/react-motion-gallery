@@ -9,6 +9,7 @@ type GeneratedSkeletonTextBarWidth =
 type GeneratedSkeletonTextLastBarWidth = string | Record<number, string>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -18,12 +19,14 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const gridMinColumnWidthItem01Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem01Badge",
   "lines": 1,
   "barWidth": "41px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem01Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem01Title",
   "lines": {
     "0": 2,
     "221.734": 1
@@ -39,6 +42,7 @@ export const gridMinColumnWidthItem01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem01Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem01Body",
   "lines": {
     "0": 4,
     "225": 3,
@@ -104,18 +108,21 @@ export const gridMinColumnWidthItem01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem02Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem02Badge",
   "lines": 1,
   "barWidth": "38px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem02Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem02Title",
   "lines": 1,
   "barWidth": "205px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem02Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem02Body",
   "lines": {
     "0": 3,
     "288": 2,
@@ -184,18 +191,21 @@ export const gridMinColumnWidthItem02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem03Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem03Badge",
   "lines": 1,
   "barWidth": "41px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem03Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem03Title",
   "lines": 1,
   "barWidth": "166px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem03Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem03Body",
   "lines": {
     "0": 3,
     "224": 3,
@@ -247,18 +257,21 @@ export const gridMinColumnWidthItem03Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem04Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem04Badge",
   "lines": 1,
   "barWidth": "35px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem04Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem04Title",
   "lines": 1,
   "barWidth": "198px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem04Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem04Body",
   "lines": {
     "0": 3,
     "295": 2,
@@ -311,18 +324,21 @@ export const gridMinColumnWidthItem04Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem05Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem05Badge",
   "lines": 1,
   "barWidth": "25px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem05Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem05Title",
   "lines": 1,
   "barWidth": "198px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem05Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem05Body",
   "lines": {
     "0": 4,
     "348": 2,
@@ -379,12 +395,14 @@ export const gridMinColumnWidthItem05Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem06Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem06Badge",
   "lines": 1,
   "barWidth": "46px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem06Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem06Title",
   "lines": {
     "0": 2,
     "243.328": 1
@@ -400,6 +418,7 @@ export const gridMinColumnWidthItem06Title: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem06Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem06Body",
   "lines": {
     "0": 3,
     "268": 3,
@@ -458,18 +477,21 @@ export const gridMinColumnWidthItem06Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem07Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem07Badge",
   "lines": 1,
   "barWidth": "40px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem07Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem07Title",
   "lines": 1,
   "barWidth": "217px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem07Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem07Body",
   "lines": {
     "0": 3,
     "345": 2,
@@ -528,12 +550,14 @@ export const gridMinColumnWidthItem07Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem08Badge: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem08Badge",
   "lines": 1,
   "barWidth": "50px",
   "responsiveBy": "container"
 };
 
 export const gridMinColumnWidthItem08Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem08Title",
   "lines": {
     "0": 2,
     "249.328": 1
@@ -549,6 +573,7 @@ export const gridMinColumnWidthItem08Title: GeneratedSkeletonTextEntry = {
 };
 
 export const gridMinColumnWidthItem08Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridMinColumnWidthItem08Body",
   "lines": {
     "0": 3,
     "316": 2,

@@ -17,6 +17,7 @@ import type {
 } from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-balanced-demo.module.css";
 import { masonryBalancedSkeletonText } from "./masonry-balanced.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -383,6 +384,7 @@ export function MasonryBalancedDemo() {
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <MasonrySkeleton
+        cache={demoSkeletonCache("masonry-balanced")}
         layout={BALANCED_SKELETON}
         ready={masonryReady}
         timing={{ exitMs: 1200 }}

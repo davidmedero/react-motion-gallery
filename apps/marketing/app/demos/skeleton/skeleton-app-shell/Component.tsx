@@ -6,6 +6,7 @@ import {
   type SkeletonNode,
 } from "react-motion-gallery/skeleton/base";
 import styles from "./skeleton-app-shell-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type NavItem = {
   color?: string;
@@ -391,6 +392,7 @@ export function SkeletonAppShellDemo() {
   return (
     <div className={styles.shell}>
       <Skeleton
+        cache={demoSkeletonCache("skeleton-app-shell")}
         layout={APP_SHELL_LAYOUT}
         ready={dashboardReady}
         shellClassName={styles.stage}

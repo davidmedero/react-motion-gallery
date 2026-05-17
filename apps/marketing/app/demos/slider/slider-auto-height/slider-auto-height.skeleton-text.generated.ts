@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const autoHeightOneKicker: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightOneKicker",
   "lines": 1,
   "barWidth": "85px",
   "barHeight": 12.16,
@@ -29,6 +31,7 @@ export const autoHeightOneKicker: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightOneTitle: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightOneTitle",
   "lines": {
     "0": 2,
     "330": 1,
@@ -51,6 +54,7 @@ export const autoHeightOneTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightOneCopy: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightOneCopy",
   "lines": {
     "0": 5,
     "323": 4,
@@ -110,6 +114,7 @@ export const autoHeightOneCopy: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightOneFooter: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightOneFooter",
   "lines": 1,
   "barWidth": "81px",
   "barHeight": 12.8,
@@ -117,6 +122,7 @@ export const autoHeightOneFooter: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightTwoKicker: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightTwoKicker",
   "lines": 1,
   "barWidth": "65px",
   "barHeight": 12.16,
@@ -124,6 +130,7 @@ export const autoHeightTwoKicker: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightTwoTitle: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightTwoTitle",
   "lines": {
     "0": 2,
     "415": 1,
@@ -155,6 +162,7 @@ export const autoHeightTwoTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightTwoCopy: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightTwoCopy",
   "lines": {
     "0": 6,
     "323": 5,
@@ -224,6 +232,7 @@ export const autoHeightTwoCopy: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightTwoFooter: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightTwoFooter",
   "lines": 1,
   "barWidth": "52px",
   "barHeight": 12.8,
@@ -231,6 +240,7 @@ export const autoHeightTwoFooter: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightThreeKicker: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightThreeKicker",
   "lines": 1,
   "barWidth": "65px",
   "barHeight": 12.16,
@@ -238,6 +248,7 @@ export const autoHeightThreeKicker: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightThreeTitle: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightThreeTitle",
   "lines": {
     "0": 2,
     "417": 1,
@@ -269,6 +280,7 @@ export const autoHeightThreeTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightThreeCopy: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightThreeCopy",
   "lines": {
     "0": 4,
     "356": 3,
@@ -306,6 +318,7 @@ export const autoHeightThreeCopy: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightThreeFooter: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightThreeFooter",
   "lines": 1,
   "barWidth": "56px",
   "barHeight": 12.8,
@@ -313,6 +326,7 @@ export const autoHeightThreeFooter: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightFourKicker: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightFourKicker",
   "lines": 1,
   "barWidth": "57px",
   "barHeight": 12.16,
@@ -320,6 +334,7 @@ export const autoHeightFourKicker: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightFourTitle: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightFourTitle",
   "lines": {
     "0": 2,
     "387": 1,
@@ -342,6 +357,7 @@ export const autoHeightFourTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightFourCopy: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightFourCopy",
   "lines": {
     "0": 7,
     "323": 6,
@@ -419,6 +435,7 @@ export const autoHeightFourCopy: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightFourFooter: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightFourFooter",
   "lines": 1,
   "barWidth": "54px",
   "barHeight": 12.8,
@@ -426,6 +443,7 @@ export const autoHeightFourFooter: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightFiveKicker: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightFiveKicker",
   "lines": 1,
   "barWidth": "49px",
   "barHeight": 12.16,
@@ -433,6 +451,7 @@ export const autoHeightFiveKicker: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightFiveTitle: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightFiveTitle",
   "lines": {
     "0": 2,
     "329": 1,
@@ -455,6 +474,7 @@ export const autoHeightFiveTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightFiveCopy: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightFiveCopy",
   "lines": {
     "0": 3,
     "323": 2,
@@ -493,6 +513,7 @@ export const autoHeightFiveCopy: GeneratedSkeletonTextEntry = {
 };
 
 export const autoHeightFiveFooter: GeneratedSkeletonTextEntry = {
+  "textId": "autoHeightFiveFooter",
   "lines": 1,
   "barWidth": "43px",
   "barHeight": 12.8,

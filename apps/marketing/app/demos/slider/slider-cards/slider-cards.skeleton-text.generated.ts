@@ -8,6 +8,7 @@ type GeneratedSkeletonTextBarWidth =
   | Record<number, string | string[]>;
 type GeneratedSkeletonTextLastBarWidth = string | Record<number, string>;
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -16,6 +17,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const cardOneTitle: GeneratedSkeletonTextEntry = {
+  "textId": "cardOneTitle",
   "lines": {
     "0": 3,
     "324": 2,
@@ -56,11 +58,13 @@ export const cardOneTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const cardOnePrice: GeneratedSkeletonTextEntry = {
+  "textId": "cardOnePrice",
   "lines": 1,
   "barWidth": "35px"
 };
 
 export const cardTwoTitle: GeneratedSkeletonTextEntry = {
+  "textId": "cardTwoTitle",
   "lines": {
     "0": 2,
     "461": 1,
@@ -104,11 +108,13 @@ export const cardTwoTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const cardTwoPrice: GeneratedSkeletonTextEntry = {
+  "textId": "cardTwoPrice",
   "lines": 1,
   "barWidth": "28px"
 };
 
 export const cardThreeTitle: GeneratedSkeletonTextEntry = {
+  "textId": "cardThreeTitle",
   "lines": {
     "0": 3,
     "324": 2,
@@ -149,6 +155,7 @@ export const cardThreeTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const cardThreePrice: GeneratedSkeletonTextEntry = {
+  "textId": "cardThreePrice",
   "lines": 1,
   "barWidth": "27px"
 };

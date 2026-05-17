@@ -6,6 +6,7 @@ import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { ZoomPanImage } from "react-motion-gallery/zoomPan";
 import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
 import styles from "./slider-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const IMAGES = [
   {
@@ -32,6 +33,7 @@ export function ZoomPanSliderDemo() {
   return (
     <GalleryCore layout="slider">
       <SliderSkeleton
+        cache={demoSkeletonCache("zoom-pan-slider")}
         layout={{
               visibleCount: 2,
               mode: "peek",

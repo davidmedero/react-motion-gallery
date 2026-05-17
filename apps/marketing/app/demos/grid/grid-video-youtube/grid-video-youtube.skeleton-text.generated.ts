@@ -8,6 +8,7 @@ type GeneratedSkeletonTextBarWidth =
   | Record<number, string | string[]>;
 type GeneratedSkeletonTextLastBarWidth = string | Record<number, string>;
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -16,6 +17,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const gridVideoYoutubeItem01Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoYoutubeItem01Title",
   "lines": {
     "0": 2,
     "333": 1
@@ -30,6 +32,7 @@ export const gridVideoYoutubeItem01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const gridVideoYoutubeItem01Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoYoutubeItem01Body",
   "lines": {
     "0": 4,
     "355": 3,
@@ -84,11 +87,13 @@ export const gridVideoYoutubeItem01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridVideoYoutubeItem02Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoYoutubeItem02Title",
   "lines": 1,
   "barWidth": "206px"
 };
 
 export const gridVideoYoutubeItem02Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoYoutubeItem02Body",
   "lines": {
     "0": 4,
     "328": 3,
@@ -132,11 +137,13 @@ export const gridVideoYoutubeItem02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridVideoYoutubeItem03Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoYoutubeItem03Title",
   "lines": 1,
   "barWidth": "165px"
 };
 
 export const gridVideoYoutubeItem03Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoYoutubeItem03Body",
   "lines": {
     "0": 4,
     "324": 3,
@@ -180,11 +187,13 @@ export const gridVideoYoutubeItem03Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridVideoYoutubeItem04Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoYoutubeItem04Title",
   "lines": 1,
   "barWidth": "199px"
 };
 
 export const gridVideoYoutubeItem04Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoYoutubeItem04Body",
   "lines": {
     "0": 4,
     "326": 3,

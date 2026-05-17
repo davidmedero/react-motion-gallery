@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const responsiveTextHeaderTitle: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextHeaderTitle",
   "lines": {
     "0": 2,
     "274.562": 1
@@ -39,6 +41,7 @@ export const responsiveTextHeaderTitle: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextHeaderMeta: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextHeaderMeta",
   "lines": {
     "0": 2,
     "274": 1
@@ -56,6 +59,7 @@ export const responsiveTextHeaderMeta: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextItem01Label: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextItem01Label",
   "lines": 1,
   "barWidth": "34px",
   "barHeight": 11,
@@ -64,6 +68,7 @@ export const responsiveTextItem01Label: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextItem01Title: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextItem01Title",
   "lines": {
     "0": 2,
     "241": 1
@@ -81,6 +86,7 @@ export const responsiveTextItem01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextItem01Body: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextItem01Body",
   "lines": {
     "0": 3,
     "319.328": 2
@@ -102,6 +108,7 @@ export const responsiveTextItem01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextItem02Label: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextItem02Label",
   "lines": 1,
   "barWidth": "34px",
   "barHeight": 11,
@@ -110,6 +117,7 @@ export const responsiveTextItem02Label: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextItem02Title: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextItem02Title",
   "lines": {
     "0": 2,
     "304.5": 1
@@ -127,6 +135,7 @@ export const responsiveTextItem02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextItem02Body: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextItem02Body",
   "lines": {
     "0": 4,
     "321": 2,
@@ -155,6 +164,7 @@ export const responsiveTextItem02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextItem03Label: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextItem03Label",
   "lines": 1,
   "barWidth": "29px",
   "barHeight": 11,
@@ -163,6 +173,7 @@ export const responsiveTextItem03Label: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextItem03Title: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextItem03Title",
   "lines": {
     "0": 2,
     "305": 1
@@ -180,6 +191,7 @@ export const responsiveTextItem03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const responsiveTextItem03Body: GeneratedSkeletonTextEntry = {
+  "textId": "responsiveTextItem03Body",
   "lines": {
     "0": 4,
     "229": 3,

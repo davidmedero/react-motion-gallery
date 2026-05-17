@@ -15,6 +15,7 @@ import {
 } from "react-motion-gallery/entries";
 import styles from "./entries-masonry-demo.module.css";
 import { entriesMasonrySkeletonText } from "./entries-masonry.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoEntry = {
   id: string;
@@ -518,6 +519,7 @@ export function EntriesMasonryDemo() {
               overlay: renderEntryOverlay,
             },
             loading: {
+              cache: demoSkeletonCache("entries-masonry"),
               // force: {
               //   showContent: true,
               //   skeletonOpacity: 0.5,

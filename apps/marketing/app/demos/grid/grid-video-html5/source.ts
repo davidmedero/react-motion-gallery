@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -14,6 +14,7 @@ import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
 import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-video-html5-demo.module.css";
 import { gridVideoHtml5SkeletonText } from "./grid-video-html5.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   title: string;
@@ -177,6 +178,7 @@ export function GridVideoHtml5Demo() {
   return (
     <GalleryCore layout="grid" fullscreenItems={media}>
       <GridSkeleton
+        cache={demoSkeletonCache("grid-video-html5")}
         layout={HTML5_VIDEO_SKELETON}
         ready={gridReady}
         grid={{
@@ -228,5 +230,4 @@ export function GridVideoHtml5Demo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

@@ -8,6 +8,7 @@ type GeneratedSkeletonTextBarWidth =
   | Record<number, string | string[]>;
 type GeneratedSkeletonTextLastBarWidth = string | Record<number, string>;
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -16,6 +17,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const gridVideoVimeoItem01Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoVimeoItem01Title",
   "lines": {
     "0": 2,
     "333": 1
@@ -30,6 +32,7 @@ export const gridVideoVimeoItem01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const gridVideoVimeoItem01Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoVimeoItem01Body",
   "lines": {
     "0": 4,
     "355": 3,
@@ -84,11 +87,13 @@ export const gridVideoVimeoItem01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridVideoVimeoItem02Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoVimeoItem02Title",
   "lines": 1,
   "barWidth": "206px"
 };
 
 export const gridVideoVimeoItem02Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoVimeoItem02Body",
   "lines": {
     "0": 4,
     "328": 3,
@@ -132,11 +137,13 @@ export const gridVideoVimeoItem02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridVideoVimeoItem03Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoVimeoItem03Title",
   "lines": 1,
   "barWidth": "165px"
 };
 
 export const gridVideoVimeoItem03Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoVimeoItem03Body",
   "lines": {
     "0": 4,
     "324": 3,
@@ -180,11 +187,13 @@ export const gridVideoVimeoItem03Body: GeneratedSkeletonTextEntry = {
 };
 
 export const gridVideoVimeoItem04Title: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoVimeoItem04Title",
   "lines": 1,
   "barWidth": "199px"
 };
 
 export const gridVideoVimeoItem04Body: GeneratedSkeletonTextEntry = {
+  "textId": "gridVideoVimeoItem04Body",
   "lines": {
     "0": 4,
     "326": 3,

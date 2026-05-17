@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -16,6 +16,7 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-video-html5-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 export function SliderVideoHtml5Demo() {
   const URLS = [
@@ -96,6 +97,7 @@ export function SliderVideoHtml5Demo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={MEDIA}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-video-html5")}
         layout={{
               visibleCount: 2,
               mode: "peek",
@@ -204,5 +206,4 @@ export function SliderVideoHtml5Demo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

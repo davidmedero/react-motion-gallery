@@ -5,7 +5,11 @@ import type { BreakpointMap } from "../../shared/responsive";
 import { useEntryInView } from "../hooks/useEntryInView";
 import { useEntryDecodeReady } from "../hooks/useEntryDecodeReady";
 import { usePrefersReducedMotion } from "../../shared/hooks/usePrefersReducedMotion";
-import { EntrySkeletonCard, EntrySkeletonSpec } from "./EntrySkeleton";
+import {
+  EntrySkeletonCard,
+  EntrySkeletonSpec,
+  collectEntrySkeletonTextIds,
+} from "./EntrySkeleton";
 import { useNormalizedEntriesIntro, useNormalizedEntriesLoading } from "../normalize";
 import { MediaItem } from "../../shared/types/media";
 import { SliderHandle } from "../../slider/types";
@@ -14,6 +18,14 @@ import {
   resolveLoadingForceOptions,
   type LoadingForceOptions,
 } from "../../shared/loading/force";
+import { validateSkeletonCacheSnapshot } from "../../skeleton/cache";
+import type { SkeletonCacheOptions } from "../../skeleton/cache";
+import {
+  resolveSkeletonCacheOptions,
+  useSkeletonCacheContext,
+} from "../../skeleton/cache-context";
+import { useSkeletonCacheWriter } from "../../skeleton/cache-writer";
+import { buildStableScopeId } from "../../shared/stableScope";
 
 const SKELETON_EXIT_MS = 220;
 const INTRO_OVERLAP_MS = 220;
@@ -214,11 +226,61 @@ export function EntryList({
     | {
         enabled?: boolean;
         force?: LoadingForceOptions;
+        cache?: SkeletonCacheOptions;
       }
     | undefined;
   const loadingEnabled = loadingOpts?.enabled ?? true;
   const loadingForce = resolveLoadingForceOptions(loadingOpts?.force);
   const prefersReducedMotion = usePrefersReducedMotion();
+  const cacheContext = useSkeletonCacheContext();
+  const effectiveCache = resolveSkeletonCacheOptions(
+    loadingOpts?.cache,
+    cacheContext
+  );
+  const entrySkeletonSpecs = React.useMemo(
+    () => items.map((entry, entryIndex) => resolveEntrySkeletonSpec(entry, entryIndex)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, entries.loading?.skeleton]
+  );
+  const textIds = React.useMemo(
+    () =>
+      Array.from(
+        entrySkeletonSpecs.reduce((out, spec) => {
+          collectEntrySkeletonTextIds(spec.layout, out);
+          return out;
+        }, new Set<string>())
+      ),
+    [entrySkeletonSpecs]
+  );
+  const scopeId = React.useMemo(
+    () =>
+      buildStableScopeId("esk_", {
+        breakpoints,
+        entryKeySignature,
+        skeletons: entrySkeletonSpecs,
+      }),
+    [breakpoints, entryKeySignature, entrySkeletonSpecs]
+  );
+  const validCacheSnapshot = validateSkeletonCacheSnapshot(
+    effectiveCache?.snapshot,
+    {
+      key: effectiveCache?.key,
+      scopeId,
+      kind: "entries",
+      routeKey: effectiveCache?.routeKey,
+      ttlMs: effectiveCache?.ttlMs,
+      textIds,
+    }
+  );
+  const listRef = React.useRef<HTMLDivElement | null>(null);
+  useSkeletonCacheWriter({
+    cache: effectiveCache,
+    kind: "entries",
+    scopeId,
+    textIds,
+    skeletonRootRef: listRef,
+    shellRef: listRef,
+  });
 
   const loadingActive = enabled && loadingEnabled;
   const shouldStageEntryReveal =
@@ -419,7 +481,9 @@ export function EntryList({
             ? (entries.render as any).skeleton({ entry, entryIndex })
             : null;
 
-        const spec = resolveEntrySkeletonSpec(entry, entryIndex);
+        const spec =
+          entrySkeletonSpecs[entryIndex] ??
+          resolveEntrySkeletonSpec(entry, entryIndex);
         const skelWrap = loadingN.skeletonWrap;
         const skeletonWrapStyle = splitEntrySkeletonWrapStyle(skelWrap?.style);
 
@@ -471,7 +535,11 @@ export function EntryList({
               >
                 <div className={styles.entrySkeletonBody}>
                   {skeletonOverride ?? (
-                    <EntrySkeletonCard spec={spec} breakpoints={breakpoints} />
+                    <EntrySkeletonCard
+                      spec={spec}
+                      breakpoints={breakpoints}
+                      cacheSnapshot={validCacheSnapshot}
+                    />
                   )}
                 </div>
               </div>
@@ -559,7 +627,11 @@ export function EntryList({
     };
   }, [anyReveal, introUnlockDelayMs, loadingActive, prefersReducedMotion, showGlobalLoading]);
 
-  const containerProps: React.HTMLAttributes<HTMLDivElement> = {
+  const containerProps: React.HTMLAttributes<HTMLDivElement> &
+    React.RefAttributes<HTMLDivElement> &
+    Record<`data-${string}`, string | undefined> = {
+    ref: listRef,
+    "data-rmg-entry-skeleton-cache-scope": scopeId,
     className: [styles.entryList, entries.entryList?.className].filter(Boolean).join(" "),
     style: {
       ["--rmg-entry-intro-stagger" as any]: `${introN.staggerMs}ms`,

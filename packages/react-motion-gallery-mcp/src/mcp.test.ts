@@ -38,6 +38,7 @@ describe("mcp server", () => {
           "rmg://guides/layout-selection",
           "rmg://guides/loading-fidelity",
           "rmg://guides/browser-measured-skeletons",
+          "rmg://guides/skeleton-cache",
         ])
       );
 
@@ -79,6 +80,12 @@ describe("mcp server", () => {
         uri: "rmg://docs/skeleton-text-codex-prompt",
       });
       expect(skeletonDoc.contents[0]?.text).toContain("Workflow Decision Prompt");
+
+      const cacheGuide = await client.readResource({
+        uri: "rmg://guides/skeleton-cache",
+      });
+      expect(cacheGuide.contents[0]?.text).toContain("Skeleton Cookie Snapshot Cache");
+      expect(cacheGuide.contents[0]?.text).toContain("SkeletonCacheProvider");
     } finally {
       await client.close();
       await server.close();

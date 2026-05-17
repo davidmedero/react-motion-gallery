@@ -11,6 +11,7 @@ type GeneratedSkeletonTextBarHeight = number | Record<number, number>;
 type GeneratedSkeletonTextLineHeight = number | Record<number, number>;
 type GeneratedSkeletonTextResponsiveBy = "viewport" | "container";
 type GeneratedSkeletonTextEntry = {
+  textId?: string;
   lines: GeneratedSkeletonTextLines;
   barWidth?: GeneratedSkeletonTextBarWidth;
   lastBarWidth?: GeneratedSkeletonTextLastBarWidth;
@@ -22,6 +23,7 @@ type GeneratedSkeletonResponsiveNumber = number | Record<number, number>;
 type GeneratedSkeletonTextModule = Record<string, GeneratedSkeletonTextEntry>;
 
 export const masonryLazyItem01Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem01Badge",
   "lines": 1,
   "barWidth": "45px",
   "barHeight": 11.84,
@@ -29,6 +31,7 @@ export const masonryLazyItem01Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem01Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem01Title",
   "lines": {
     "0": 1,
     "768": 2,
@@ -47,6 +50,7 @@ export const masonryLazyItem01Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem01Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem01Body",
   "lines": {
     "0": 4,
     "331": 3,
@@ -114,6 +118,7 @@ export const masonryLazyItem01Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem02Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem02Badge",
   "lines": 1,
   "barWidth": "42px",
   "barHeight": 11.84,
@@ -121,6 +126,7 @@ export const masonryLazyItem02Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem02Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem02Title",
   "lines": {
     "0": 1,
     "768": 2,
@@ -139,6 +145,7 @@ export const masonryLazyItem02Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem02Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem02Body",
   "lines": {
     "0": 3,
     "394": 2,
@@ -204,6 +211,7 @@ export const masonryLazyItem02Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem03Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem03Badge",
   "lines": 1,
   "barWidth": "45px",
   "barHeight": 11.84,
@@ -211,6 +219,7 @@ export const masonryLazyItem03Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem03Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem03Title",
   "lines": 1,
   "barWidth": "154px",
   "barHeight": 16.32,
@@ -218,6 +227,7 @@ export const masonryLazyItem03Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem03Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem03Body",
   "lines": {
     "0": 3,
     "372": 2,
@@ -274,6 +284,7 @@ export const masonryLazyItem03Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem04Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem04Badge",
   "lines": 1,
   "barWidth": "38px",
   "barHeight": 11.84,
@@ -281,6 +292,7 @@ export const masonryLazyItem04Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem04Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem04Title",
   "lines": {
     "0": 1,
     "768": 2,
@@ -299,6 +311,7 @@ export const masonryLazyItem04Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem04Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem04Body",
   "lines": {
     "0": 3,
     "401": 2,
@@ -356,6 +369,7 @@ export const masonryLazyItem04Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem05Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem05Badge",
   "lines": 1,
   "barWidth": "28px",
   "barHeight": 11.84,
@@ -363,6 +377,7 @@ export const masonryLazyItem05Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem05Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem05Title",
   "lines": {
     "0": 1,
     "768": 2,
@@ -381,6 +396,7 @@ export const masonryLazyItem05Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem05Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem05Body",
   "lines": {
     "0": 4,
     "362": 3,
@@ -453,6 +469,7 @@ export const masonryLazyItem05Body: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem06Badge: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem06Badge",
   "lines": 1,
   "barWidth": "50px",
   "barHeight": 11.84,
@@ -460,6 +477,7 @@ export const masonryLazyItem06Badge: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem06Title: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem06Title",
   "lines": {
     "0": 2,
     "335": 1,
@@ -490,6 +508,7 @@ export const masonryLazyItem06Title: GeneratedSkeletonTextEntry = {
 };
 
 export const masonryLazyItem06Body: GeneratedSkeletonTextEntry = {
+  "textId": "masonryLazyItem06Body",
   "lines": {
     "0": 3,
     "409": 2,

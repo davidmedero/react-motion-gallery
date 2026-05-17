@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -29,6 +29,7 @@ import {
   wideTileBody,
   wideTileTitle,
 } from "./grid-columns.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoItem = {
   imageSrc: string;
@@ -305,6 +306,7 @@ export function GridColumnsDemo() {
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
       <GridSkeleton
+        cache={demoSkeletonCache("grid-columns")}
         layout={GRID_SPANS_SKELETON}
         ready={gridReady}
         timing={{ exitMs: 1000 }}
@@ -314,6 +316,10 @@ export function GridColumnsDemo() {
           gap: GRID_GAP,
           allowItemSpans: true,
         }}
+        // force={{
+        //   enabled: true,
+        //   showContent: true
+        // }}
       >
         <Grid
           ref={gridRef}
@@ -331,5 +337,4 @@ export function GridColumnsDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

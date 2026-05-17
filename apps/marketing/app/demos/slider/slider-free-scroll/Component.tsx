@@ -14,6 +14,7 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-free-scroll-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const URLS = [
   "https://picsum.photos/id/83/1200/1200",
@@ -76,6 +77,7 @@ export function SliderFreeScrollDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-free-scroll")}
         layout={{
               visibleCount: 4,
               mode: "peek",

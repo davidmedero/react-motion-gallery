@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import * as React from "react";
@@ -264,5 +264,4 @@ export function FullscreenLayoutAgnosticDemo() {
       </GalleryCore>
     </div>
   );
-}
-`;
+}`;

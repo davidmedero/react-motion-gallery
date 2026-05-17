@@ -14,6 +14,7 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-right-to-left-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const URLS = [
   "https://picsum.photos/id/33/1600/900",
@@ -64,6 +65,7 @@ export function SliderRightToLeftDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("slider-right-to-left")}
         layout={{
               visibleCount: 2,
               mode: "peek",

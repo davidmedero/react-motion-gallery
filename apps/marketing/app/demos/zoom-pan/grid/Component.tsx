@@ -7,6 +7,7 @@ import { ZoomPanImage } from "react-motion-gallery/zoomPan";
 import { GridSkeleton } from "react-motion-gallery/skeleton/grid";
 import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const IMAGES = [
   {
@@ -60,6 +61,7 @@ export function ZoomPanGridDemo() {
   return (
     <GalleryCore layout="grid">
       <GridSkeleton
+        cache={demoSkeletonCache("zoom-pan-grid")}
         layout={ZOOM_PAN_GRID_SKELETON}
         ready={gridReady}
         grid={{

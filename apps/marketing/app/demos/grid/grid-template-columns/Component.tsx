@@ -29,6 +29,7 @@ import {
   narrowRailBody,
   narrowRailTitle,
 } from "./grid-template-columns.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoItem = {
   imageSrc: string;
@@ -283,6 +284,7 @@ export function GridTemplateColumnsDemo() {
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
       <GridSkeleton
+        cache={demoSkeletonCache("grid-template-columns")}
         layout={GRID_TEMPLATE_COLUMNS_SKELETON}
         ready={gridReady}
         timing={{ exitMs: 1200 }}

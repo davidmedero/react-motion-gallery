@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useSearchParams } from "next/navigation";
@@ -18,6 +18,7 @@ import {
 } from "react-motion-gallery/entries";
 import styles from "./entries-slider-html5-demo.module.css";
 import { entriesSliderHtml5SkeletonText } from "./entries-slider-html5.skeleton-text.generated";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoMedia = {
   description: string;
@@ -78,7 +79,7 @@ function addPxToBarWidth(
   amount: number
 ): GeneratedSkeletonTextState["barWidth"] {
   if (typeof value === "string") {
-    const match = value.match(/^(-?\d+(?:\.\d+)?)px$/);
+    const match = value.match(/^(-?\\d+(?:\\.\\d+)?)px$/);
     return match ? \`\${Number(match[1]) + amount}px\` : value;
   }
 
@@ -524,6 +525,7 @@ export function EntriesSliderHtml5Demo() {
               }
             : undefined,
           loading: {
+            cache: demoSkeletonCache("entries-slider-html5"),
             // force: {
             //   showContent: true
             // },
@@ -550,5 +552,4 @@ export function EntriesSliderHtml5Demo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

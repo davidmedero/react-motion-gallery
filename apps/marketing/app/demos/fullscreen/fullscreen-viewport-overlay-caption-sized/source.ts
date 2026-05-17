@@ -1,4 +1,4 @@
-export const source = String.raw`/* eslint-disable @next/next/no-img-element */
+export const source = `/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { GalleryCore } from "react-motion-gallery/core";
@@ -12,6 +12,7 @@ import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenCaptions } from "react-motion-gallery/fullscreen/captions";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import styles from "./fullscreen-viewport-overlay-caption-sized-demo.module.css";
+import { demoSkeletonCache } from "../../skeleton-cache";
 
 const SLIDES = [
   {
@@ -111,6 +112,7 @@ export function FullscreenViewportOverlayCaptionSizedDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
+        cache={demoSkeletonCache("fullscreen-viewport-overlay-caption-sized")}
         layout={{
               visibleCount: 2,
               mode: "peek",
@@ -153,5 +155,4 @@ export function FullscreenViewportOverlayCaptionSizedDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}
-`;
+}`;

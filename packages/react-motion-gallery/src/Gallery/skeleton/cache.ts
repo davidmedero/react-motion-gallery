@@ -4,7 +4,12 @@ export const SKELETON_CACHE_VERSION = 1;
 export const DEFAULT_SKELETON_CACHE_TTL_MS = 10 * 60 * 1000;
 export const DEFAULT_SKELETON_CACHE_DEBOUNCE_MS = 250;
 
-export type SkeletonCacheKind = "skeleton" | "masonry";
+export type SkeletonCacheKind =
+  | "skeleton"
+  | "slider"
+  | "grid"
+  | "masonry"
+  | "entries";
 
 export type SkeletonCacheTextRecord = {
   lines: number;
@@ -314,8 +319,14 @@ function normalizeSnapshot(value: unknown): SkeletonCacheSnapshot | null {
   const kind =
     rawKind === "s" || rawKind === "skeleton"
       ? "skeleton"
+      : rawKind === "l" || rawKind === "slider"
+      ? "slider"
+      : rawKind === "g" || rawKind === "grid"
+      ? "grid"
       : rawKind === "m" || rawKind === "masonry"
       ? "masonry"
+      : rawKind === "e" || rawKind === "entries"
+      ? "entries"
       : null;
   const createdAt = normalizeFiniteNumber(value.createdAt ?? value.t, {
     min: 1,
@@ -398,7 +409,16 @@ export function serializeSkeletonCacheSnapshot(
     v: SKELETON_CACHE_VERSION,
     k: snapshot.key,
     s: snapshot.scopeId,
-    d: snapshot.kind === "masonry" ? "m" : "s",
+    d:
+      snapshot.kind === "masonry"
+        ? "m"
+        : snapshot.kind === "slider"
+        ? "l"
+        : snapshot.kind === "grid"
+        ? "g"
+        : snapshot.kind === "entries"
+        ? "e"
+        : "s",
     ...(snapshot.routeKey ? { r: snapshot.routeKey } : null),
     t: snapshot.createdAt,
     b: snapshot.widthBucketMin,

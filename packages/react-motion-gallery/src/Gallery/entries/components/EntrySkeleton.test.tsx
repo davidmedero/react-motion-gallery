@@ -98,6 +98,57 @@ describe("EntrySkeleton text nodes", () => {
     expect(markup).toContain("nth-child(1){max-width:56% !important;}");
   });
 
+  test("applies cached text snapshots without responsive text CSS", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(EntrySkeletonCard, {
+        spec: {
+          layout: {
+            kind: "stack",
+            children: [
+              {
+                kind: "text",
+                textId: "body",
+                barHeight: 16,
+                lineHeight: 1.5,
+                lines: {
+                  0: 4,
+                  900: 1,
+                },
+                style: {
+                  width: "88%",
+                },
+              },
+            ],
+          },
+        },
+        cacheSnapshot: {
+          version: 1,
+          key: "entries-demo",
+          scopeId: "scope-a",
+          kind: "entries",
+          createdAt: 1000,
+          widthBucketMin: 900,
+          viewportWidth: 1200,
+          text: {
+            body: {
+              lines: 2,
+              lineWidthsPx: [121, 88],
+              barHeight: 12,
+              lineHeight: 1.4,
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup.match(/data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(2);
+    expect(markup).toContain('data-rmg-skel-text-id="body"');
+    expect(markup).toContain("height:12px");
+    expect(markup).toContain("width:121px");
+    expect(markup).toContain("width:88px");
+    expect(markup).not.toContain("@media (min-width:900px)");
+  });
+
   test("renders container-query text CSS when responsiveBy is container", () => {
     const markup = renderToStaticMarkup(
       React.createElement(EntrySkeletonCard, {
