@@ -52,17 +52,17 @@ const SHOWCASE_DEMOS = [
     tags: ["parallax", "loop", "fullscreen", "zoom"],
     Component: SliderParallaxDemo,
   },
-  {
-    id: "masonry-spans",
-    label: "Masonry",
-    eyebrow: "Layout depth",
-    title: "Mixed media without awkward gaps",
-    description:
-      "Responsive spans, measured skeleton text, image/video cards, and balanced placement for editorial galleries.",
-    href: "/demos?demo=masonry-spans",
-    tags: ["spans", "video", "skeleton", "balanced"],
-    Component: MasonrySpansDemo,
-  },
+  // {
+  //   id: "masonry-spans",
+  //   label: "Masonry",
+  //   eyebrow: "Layout depth",
+  //   title: "Mixed media without awkward gaps",
+  //   description:
+  //     "Responsive spans, measured skeleton text, image/video cards, and balanced placement for editorial galleries.",
+  //   href: "/demos?demo=masonry-spans",
+  //   tags: ["spans", "video", "skeleton", "balanced"],
+  //   Component: MasonrySpansDemo,
+  // },
   {
     id: "fullscreen-caption-thumbnails",
     label: "Fullscreen",
@@ -74,17 +74,17 @@ const SHOWCASE_DEMOS = [
     tags: ["captions", "thumbnails", "overlay", "sync"],
     Component: FullscreenCaptionThumbnailsDemo,
   },
-  // {
-  //   id: "skeleton-flex-cards",
-  //   label: "Skeletons",
-  //   eyebrow: "Loading fidelity",
-  //   title: "Loading states shaped like the final UI",
-  //   description:
-  //     "Standalone skeleton primitives protect card rhythm while images decode and the final layout becomes ready.",
-  //   href: "/demos?demo=skeleton-flex-cards",
-  //   tags: ["standalone", "responsive", "text", "decode"],
-  //   Component: SkeletonFlexCardsDemo,
-  // },
+  {
+    id: "skeleton-flex-cards",
+    label: "Skeletons",
+    eyebrow: "Loading fidelity",
+    title: "Loading states shaped like the final UI",
+    description:
+      "Standalone skeleton primitives protect card rhythm while images decode and the final layout becomes ready.",
+    href: "/demos?demo=skeleton-flex-cards",
+    tags: ["standalone", "responsive", "text", "decode"],
+    Component: SkeletonFlexCardsDemo,
+  },
   {
     id: "zoom-pan-grid",
     label: "Zoom/Pan",
