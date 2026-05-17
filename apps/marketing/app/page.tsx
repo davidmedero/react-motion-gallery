@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { HomeShowcase } from "./HomeShowcase";
+import { readSkeletonCacheSnapshots } from "./skeleton-cache-server";
 
-export default function Home() {
+export default async function Home() {
+  const skeletonCacheSnapshots = await readSkeletonCacheSnapshots();
+
   return (
     <main className="rmgHome">
       <p className="home-intro">
@@ -38,7 +41,7 @@ export default function Home() {
           </Link>
         </div>
       </section>
-      <HomeShowcase />
+      <HomeShowcase skeletonCacheSnapshots={skeletonCacheSnapshots} />
     </main>
   );
 }

@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { type ComponentType } from "react";
+import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
+import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";
 import { FullscreenCaptionThumbnailsDemo } from "./demos/fullscreen/fullscreen-caption-thumbnails/Component";
 import { MasonrySpansDemo } from "./demos/masonry/masonry-spans/Component";
+import { demoSkeletonCache } from "./demos/skeleton-cache";
 import { SkeletonFlexCardsDemo } from "./demos/skeleton/skeleton-flex-cards/Component";
 import { SliderParallaxDemo } from "./demos/slider/slider-parallax/Component";
 import { ZoomPanGridDemo } from "./demos/zoom-pan/grid/Component";
@@ -40,6 +43,18 @@ type SurfaceLink = {
   tone: "cyan" | "blue" | "green" | "gold" | "magenta" | "lavender";
 };
 
+type HomeShowcaseProps = {
+  skeletonCacheSnapshots?: Record<string, SkeletonCacheSnapshot | null | undefined>;
+};
+
+const HOME_MASONRY_SPANS_CACHE = demoSkeletonCache("home-masonry-spans", {
+  routeKey: "/",
+});
+
+function HomeMasonrySpansDemo() {
+  return <MasonrySpansDemo cache={HOME_MASONRY_SPANS_CACHE} />;
+}
+
 const SHOWCASE_DEMOS = [
   {
     id: "slider-parallax",
@@ -52,17 +67,17 @@ const SHOWCASE_DEMOS = [
     tags: ["parallax", "loop", "fullscreen", "zoom"],
     Component: SliderParallaxDemo,
   },
-  // {
-  //   id: "masonry-spans",
-  //   label: "Masonry",
-  //   eyebrow: "Layout depth",
-  //   title: "Mixed media without awkward gaps",
-  //   description:
-  //     "Responsive spans, measured skeleton text, image/video cards, and balanced placement for editorial galleries.",
-  //   href: "/demos?demo=masonry-spans",
-  //   tags: ["spans", "video", "skeleton", "balanced"],
-  //   Component: MasonrySpansDemo,
-  // },
+  {
+    id: "masonry-spans",
+    label: "Masonry",
+    eyebrow: "Layout depth",
+    title: "Mixed media without awkward gaps",
+    description:
+      "Responsive spans, measured skeleton text, image/video cards, and balanced placement for editorial galleries.",
+    href: "/demos?demo=masonry-spans",
+    tags: ["spans", "video", "skeleton", "balanced"],
+    Component: HomeMasonrySpansDemo,
+  },
   {
     id: "fullscreen-caption-thumbnails",
     label: "Fullscreen",
@@ -180,9 +195,10 @@ const PRODUCTION_POINTS = [
   },
 ];
 
-export function HomeShowcase() {
+export function HomeShowcase(props: HomeShowcaseProps = {}) {
   return (
-    <div className="homeShowcase">
+    <SkeletonCacheProvider snapshots={props.skeletonCacheSnapshots}>
+      <div className="homeShowcase">
       <section className="homeShowcase__section" aria-labelledby="home-showcase-title">
         <div className="homeShowcase__sectionHeader">
           <span className="homeShowcase__eyebrow">Featured Patterns</span>
@@ -296,6 +312,7 @@ export function HomeShowcase() {
           ))}
         </ul>
       </section>
-    </div>
+      </div>
+    </SkeletonCacheProvider>
   );
 }
