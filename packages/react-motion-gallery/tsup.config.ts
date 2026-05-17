@@ -31,6 +31,8 @@ export default defineConfig({
     "src/masonry-lazy-load.ts",
     "src/entries.ts",
     "src/skeleton-base.ts",
+    "src/skeleton-cache.ts",
+    "src/skeleton-cache-provider.ts",
     "src/skeleton-slider.ts",
     "src/skeleton-grid.ts",
     "src/skeleton-masonry.ts",

@@ -97,6 +97,7 @@ export type BrowserPretextLineSample = {
 type BrowserAnalysisTarget = {
   exportName: string;
   selector: string;
+  textId?: string;
   lineWrapGuardPx?: number;
   widthMode?: WidthMode;
 };
@@ -192,6 +193,7 @@ export type BrowserSkeletonTextManifest = {
 export type BrowserTextMeasurement = {
   kind: "text";
   exportName: string;
+  textId?: string;
   value: {
     lines: number | Record<number, number>;
     barWidth?: string | string[] | Record<number, string | string[]>;
@@ -412,9 +414,18 @@ function parseBrowserAnalysisTarget(
     );
   }
 
+  const selector = request.selector.trim();
+  const textIdMatch = selector.match(
+    /\[data-skeleton-text-id=(?:"([^"]+)"|'([^']+)')\]/
+  );
+
   return {
     exportName: request.exportName,
-    selector: request.selector,
+    selector,
+    textId:
+      typeof request.textId === "string" && request.textId.trim()
+        ? request.textId.trim()
+        : textIdMatch?.[1] ?? textIdMatch?.[2],
     lineWrapGuardPx:
       typeof request.lineWrapGuardPx === "number" &&
       Number.isFinite(request.lineWrapGuardPx)
@@ -1348,6 +1359,7 @@ export function toBrowserBarWidthValue(args: {
 
 export function buildBrowserResponsiveResult(args: {
   exportName: string;
+  textId?: string;
   widthMode?: WidthMode;
   breakpointStrategy?: BrowserBreakpointStrategy;
   includeTextMetrics?: boolean;
@@ -1518,6 +1530,7 @@ export function buildBrowserResponsiveResult(args: {
   return {
     kind: "text",
     exportName: args.exportName,
+    ...(args.textId ? { textId: args.textId } : null),
     value,
   };
 }
@@ -2029,6 +2042,7 @@ function createMeasurementExpression(
 
       return {
         exportName: target.exportName,
+        textId: target.textId,
         containerWidthPx,
         lineWidthsPx,
         lineCount: Math.max(1, lineWidthsPx.length),
@@ -2242,6 +2256,7 @@ function createPretextComparisonExpression(args: {
 
       return {
         exportName: target.exportName,
+        textId: target.textId,
         viewportMetrics,
         containerWidthPx: measured.containerWidthPx,
         targetRect: {
@@ -4320,6 +4335,7 @@ export async function measureBrowserSkeletonTextManifest(
   const results: BrowserSkeletonTextMeasurement[] = textTargetConfigs.map((targetConfig) =>
     buildBrowserResponsiveResult({
       exportName: targetConfig.exportName,
+      textId: targetConfig.textId,
       widthMode: targetConfig.widthMode,
       breakpointStrategy: manifest.breakpointStrategy,
       includeTextMetrics: manifest.includeTextMetrics === true,

@@ -16,6 +16,7 @@ export type {
 } from "./Gallery/skeleton/masonry";
 
 export type {
+  SkeletonCacheOptions,
   SkeletonForceOptions,
   SkeletonTimingOptions,
 } from "./Gallery/skeleton/base";

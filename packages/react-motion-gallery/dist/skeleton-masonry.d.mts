@@ -1,12 +1,13 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { R as ResponsiveNumber, B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
-import { a as SkeletonLength, b as SkeletonShimmer } from './layout-DoYnPD0I.mjs';
-export { S as SkeletonNode } from './layout-DoYnPD0I.mjs';
+import { a as SkeletonLength, b as SkeletonShimmer } from './layout-BOy4geKv.mjs';
+export { S as SkeletonNode } from './layout-BOy4geKv.mjs';
 import { R as ResponsiveMasonrySpan } from './types-Br27DWP7.mjs';
-import { M as MasonrySkeletonLayoutNode, a as MasonryPlacement, b as MasonrySkeletonSpec } from './MasonrySkeleton-D8aZRUiv.mjs';
-export { c as MasonrySkeletonNode, d as MasonrySkeletonSlot } from './MasonrySkeleton-D8aZRUiv.mjs';
+import { M as MasonrySkeletonLayoutNode, a as MasonryPlacement, b as MasonrySkeletonSpec } from './MasonrySkeleton-Cs0x-4yL.mjs';
+export { c as MasonrySkeletonNode, d as MasonrySkeletonSlot } from './MasonrySkeleton-Cs0x-4yL.mjs';
 import { SkeletonForceOptions, SkeletonTimingOptions } from './skeleton-base.mjs';
+import { SkeletonCacheOptions } from './skeleton-cache.mjs';
 import './text-BBcRGVzn.mjs';
 import './force-C5m1QpdF.mjs';
 import './transitions-DU3ftmIq.mjs';
@@ -56,7 +57,8 @@ type MasonrySkeletonProps = {
     force?: SkeletonForceOptions;
     timing?: SkeletonTimingOptions;
     masonry?: SkeletonMasonryOptions;
+    cache?: SkeletonCacheOptions;
 };
-declare function MasonrySkeleton({ layout, children, breakpoints, className, style, shellClassName, shellStyle, contentClassName, contentStyle, backgroundColor, radius, shimmer, disableShimmer, ariaLabel, ready, enabled, force, timing, masonry, }: MasonrySkeletonProps): react_jsx_runtime.JSX.Element | null;
+declare function MasonrySkeleton({ layout, children, breakpoints, className, style, shellClassName, shellStyle, contentClassName, contentStyle, backgroundColor, radius, shimmer, disableShimmer, ariaLabel, ready, enabled, force, timing, masonry, cache, }: MasonrySkeletonProps): react_jsx_runtime.JSX.Element | null;
 
-export { MasonryPlacement, MasonrySkeleton, type MasonrySkeletonProps, MasonrySkeletonSpec, MasonrySkeleton as Skeleton, SkeletonForceOptions, type SkeletonMasonryLayout, type SkeletonMasonryOptions, SkeletonTimingOptions, MasonrySkeleton as default };
+export { MasonryPlacement, MasonrySkeleton, type MasonrySkeletonProps, MasonrySkeletonSpec, MasonrySkeleton as Skeleton, SkeletonCacheOptions, SkeletonForceOptions, type SkeletonMasonryLayout, type SkeletonMasonryOptions, SkeletonTimingOptions, MasonrySkeleton as default };

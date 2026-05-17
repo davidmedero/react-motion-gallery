@@ -882,6 +882,113 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).toContain("height:72px");
   });
 
+  test("renders compact active masonry snapshot markup when cache is valid", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 1,
+        columns: { 0: 1, 900: 2 },
+        gap: 8,
+        viewportWidth: 920,
+        layoutWidthPx: 600,
+        cacheSnapshot: {
+          version: 1,
+          key: "demo",
+          scopeId: "scope",
+          kind: "masonry",
+          createdAt: Date.now(),
+          widthBucketMin: 900,
+          viewportWidth: 920,
+          layoutWidthPx: 600,
+          masonry: {
+            variantKey: "c2_g8",
+            shellHeightPx: 123,
+            itemHeightsPx: [123],
+          },
+          text: {
+            body: {
+              lines: 1,
+              barWidths: ["240px"],
+              barHeight: 14,
+              lineHeight: 1.5,
+            },
+          },
+        },
+        spec: {
+          layout: {
+            kind: "masonry",
+            item: {
+              kind: "text",
+              textId: "body",
+              barHeight: 14,
+              lineHeight: 1.5,
+              lines: { 0: 4, 240: 1 },
+              responsiveBy: "container",
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup.match(/data-rmg-mskel-variant=/g) ?? []).toHaveLength(1);
+    expect(markup).toContain('data-rmg-mskel-variant="c2_g8"');
+    expect(markup).toContain("height:123px");
+    expect(markup).not.toContain("nth-child");
+    expect(markup).not.toContain("@media (min-width:900px)");
+    expect(markup).not.toContain("@container");
+  });
+
+  test("falls back to responsive output when a masonry snapshot scope mismatches", () => {
+    const markup = renderToStaticMarkup(
+      <MasonrySkeleton
+        layout={{
+          layout: {
+            kind: "masonry",
+            item: {
+              kind: "text",
+              textId: "body",
+              barHeight: 14,
+              lineHeight: 1.5,
+              lines: { 0: 4, 240: 1 },
+              responsiveBy: "container",
+            },
+          },
+        }}
+        cache={{
+          key: "demo",
+          routeKey: "/demo",
+          snapshot: {
+            version: 1,
+            key: "demo",
+            scopeId: "wrong",
+            kind: "masonry",
+            routeKey: "/demo",
+            createdAt: Date.now(),
+            widthBucketMin: 0,
+            viewportWidth: 920,
+            masonry: {
+              variantKey: "c1_g8",
+              itemHeightsPx: [20],
+            },
+            text: {
+              body: {
+                lines: 1,
+                barWidths: ["240px"],
+              },
+            },
+          },
+        }}
+        masonry={{
+          count: 1,
+          columns: { 0: 1, 900: 2 },
+          gap: 8,
+        }}
+      />
+    );
+
+    expect(markup).toContain("nth-child");
+    expect(markup).toContain("@container");
+  });
+
   test("keeps multi-line masonry text when only lastBarWidth is responsive", () => {
     const markup = renderToStaticMarkup(
       React.createElement(MasonrySkeletonCard, {

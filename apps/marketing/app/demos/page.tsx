@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import {
+  getSkeletonCacheCookieName,
+  parseSkeletonCacheCookie,
+} from "react-motion-gallery/skeleton/cache";
 import DemosPageClient from "./DemosPageClient";
+import {
+  MASONRY_HORIZONTAL_ORDER_SKELETON_CACHE_KEY,
+  MASONRY_HORIZONTAL_ORDER_SKELETON_ROUTE_KEY,
+} from "./masonry/masonry-horizontal-order/cache";
 
 export const metadata: Metadata = {
   title: "Demos",
@@ -34,7 +43,23 @@ function toSearchParamsString(
 
 export default async function DemosPage({ searchParams }: DemosPageProps) {
   const resolvedSearchParams = await searchParams;
+  const cookieStore = await cookies();
   const initialSearchParamsString = toSearchParamsString(resolvedSearchParams);
+  const horizontalOrderSkeletonCacheSnapshot = parseSkeletonCacheCookie(
+    cookieStore.get(
+      getSkeletonCacheCookieName(MASONRY_HORIZONTAL_ORDER_SKELETON_CACHE_KEY)
+    )?.value,
+    {
+      key: MASONRY_HORIZONTAL_ORDER_SKELETON_CACHE_KEY,
+      kind: "masonry",
+      routeKey: MASONRY_HORIZONTAL_ORDER_SKELETON_ROUTE_KEY,
+    }
+  );
 
-  return <DemosPageClient initialSearchParamsString={initialSearchParamsString} />;
+  return (
+    <DemosPageClient
+      initialSearchParamsString={initialSearchParamsString}
+      horizontalOrderSkeletonCacheSnapshot={horizontalOrderSkeletonCacheSnapshot}
+    />
+  );
 }

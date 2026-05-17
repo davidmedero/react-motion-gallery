@@ -1,0 +1,1 @@
+export{a as SkeletonCacheProvider}from'./chunk-AU4O4KU4.mjs';

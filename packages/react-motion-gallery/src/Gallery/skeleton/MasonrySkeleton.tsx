@@ -9,6 +9,7 @@ import type {
 } from "../shared/responsive";
 import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
 import {
+  applySkeletonTextSnapshot,
   type SkeletonBaseStyle,
   type SkeletonBaseStyleResponsive,
   type SkeletonContainerStyle,
@@ -33,6 +34,7 @@ import {
   resolveActiveFlexStateKey,
 } from "../masonry/prediction";
 import type { ResponsiveMasonrySpan } from "../masonry/types";
+import type { SkeletonCacheSnapshot } from "./cache";
 
 export type {
   SkeletonBaseStyle,
@@ -86,6 +88,7 @@ export type MasonrySkeletonCardProps = {
   viewportWidth?: number;
   layoutWidthPx?: number;
   disableShimmer?: boolean;
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
 };
 
 function buildFlexVariantVisibilityCss(
@@ -306,6 +309,7 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
     viewportWidth,
     layoutWidthPx,
     disableShimmer,
+    cacheSnapshot,
   } = props;
   const initialLayoutWidthPxRef = React.useRef<number | undefined>(layoutWidthPx);
   const frozenLayoutWidthPx =
@@ -359,8 +363,23 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
   };
 
   const prediction = React.useMemo(
-    () =>
-      buildMasonrySkeletonPrediction({
+    () => {
+      const cachedSpec =
+        cacheSnapshot?.text && spec
+          ? {
+              ...spec,
+              layout: spec.layout
+                ? applySkeletonTextSnapshot(
+                    spec.layout,
+                    cacheSnapshot.text,
+                    "masonry",
+                    effectiveBreakpoints
+                  )
+                : spec.layout,
+            }
+          : spec;
+
+      return buildMasonrySkeletonPrediction({
         count,
         columns,
         gap,
@@ -369,18 +388,21 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
         heightsPx: props.heightsPx,
         spans: props.spans,
         placement,
-        spec,
+        spec: cachedSpec,
         scopeId,
         viewportWidth,
         layoutWidthPx: frozenLayoutWidthPx,
-      }),
+      });
+    },
     [
+      cacheSnapshot,
       count,
       columns,
       gap,
       effectiveBreakpoints,
       ratios,
       props.heightsPx,
+      props.spans,
       placement,
       spec,
       scopeId,
@@ -390,25 +412,39 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
   );
 
   const jsControlled = viewportWidth !== undefined;
-  const activeKey = jsControlled
+  const cacheVariant = cacheSnapshot?.masonry?.variantKey
+    ? prediction.variants.find(
+        (variant) =>
+          variant.state.key === cacheSnapshot.masonry?.variantKey &&
+          variant.state.minWidth === cacheSnapshot.widthBucketMin
+      ) ?? null
+    : null;
+  const cacheControlled = !!cacheVariant;
+  const activeKey = cacheControlled
+    ? cacheVariant.state.key
+    : jsControlled
     ? resolveActiveFlexStateKey(prediction.states, viewportWidth)
     : null;
 
   const visibilityCss = React.useMemo(
     () =>
-      jsControlled
+      cacheControlled || jsControlled
         ? null
         : buildFlexVariantVisibilityCss(scopeId, prediction.states),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [jsControlled, scopeId, prediction.variants]
+    [cacheControlled, jsControlled, scopeId, prediction.variants]
   );
   const variantContainerCss = React.useMemo(
-    () => buildVariantContainerCss(scopeId, prediction.variants),
-    [scopeId, prediction.variants]
+    () =>
+      cacheControlled
+        ? ""
+        : buildVariantContainerCss(scopeId, prediction.variants),
+    [cacheControlled, scopeId, prediction.variants]
   );
   const variantSafariCss = React.useMemo(
-    () => buildVariantSafariCss(scopeId, prediction.variants),
-    [scopeId, prediction.variants]
+    () =>
+      cacheControlled ? "" : buildVariantSafariCss(scopeId, prediction.variants),
+    [cacheControlled, scopeId, prediction.variants]
   );
 
   const structuredLayout = prediction.structuredLayout;
@@ -427,13 +463,25 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
 
   const variants = React.useMemo(() => {
     const cardShimmerClass = disableShimmer ? null : sharedSkeletonStyles.skelCardShimmer;
+    const variantsToRender = cacheVariant ? [cacheVariant] : prediction.variants;
 
-    return prediction.variants.map((variant) => {
+    return variantsToRender.map((variant) => {
       const usesPositionedSkeleton = variant.items.some((item) => item.span > 1);
       const shellHeight = Math.max(
         0,
         ...variant.items.map((item) => item.top + item.height)
       );
+      const cachedShellHeight = cacheVariant
+        ? cacheSnapshot?.masonry?.shellHeightPx
+        : undefined;
+      const itemHeight = (index: number, fallback: number) => {
+        const height = cacheVariant
+          ? cacheSnapshot?.masonry?.itemHeightsPx?.[index]
+          : undefined;
+        return typeof height === "number" && Number.isFinite(height) && height >= 0
+          ? height
+          : fallback;
+      };
 
       if (!usesPositionedSkeleton) {
         const cols: Array<typeof variant.items> = Array.from(
@@ -454,7 +502,7 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
               ["--rmg-cols" as any]: variant.state.columns,
               ["--rmg-gap" as any]: `${variant.state.gapPx}px`,
               ...(variant.positionedCssVars ?? {}),
-              display: jsControlled
+              display: cacheControlled || jsControlled
                 ? variant.state.key === activeKey ? "block" : "none"
                 : variant.state.key === prediction.states[0]?.key
                   ? "block"
@@ -495,7 +543,7 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                             .filter(Boolean)
                             .join(" ")}
                           style={{
-                            height: `${item.height}px`,
+                            height: `${itemHeight(item.index, item.height)}px`,
                             marginBottom,
                           }}
                         />
@@ -516,7 +564,9 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                             : null),
                           ...(outerStyle ?? null),
                           width: "100%",
-                          height: item.heightCssExpr,
+                          height: cacheVariant
+                            ? `${itemHeight(item.index, item.height)}px`
+                            : item.heightCssExpr,
                           marginBottom,
                         }}
                       >
@@ -555,10 +605,12 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
             position: "relative",
             width: "100%",
             height:
-              structuredLayout && !canUseNumericPositioning
+              cachedShellHeight != null
+                ? `${cachedShellHeight}px`
+                : structuredLayout && !canUseNumericPositioning
                 ? (variant.shellHeightCssExpr ?? `${shellHeight}px`)
                 : `${shellHeight}px`,
-            display: jsControlled
+            display: cacheControlled || jsControlled
               ? variant.state.key === activeKey ? "block" : "none"
               : variant.state.key === prediction.states[0]?.key
                 ? "block"
@@ -582,7 +634,7 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                     top: `${item.top}px`,
                     left: item.leftCssExpr,
                     width: item.widthCssExpr,
-                    height: `${item.height}px`,
+                    height: `${itemHeight(item.index, item.height)}px`,
                   }}
                 />
               );
@@ -614,7 +666,9 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                       ? `${item.widthPx}px`
                       : item.widthCssExpr,
                   height:
-                    canUseNumericPositioning
+                    cacheVariant
+                      ? `${itemHeight(item.index, item.height)}px`
+                      : canUseNumericPositioning
                       ? `${item.height}px`
                       : item.heightCssExpr,
                   minWidth: 0,
@@ -651,6 +705,8 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
     canUseNumericPositioning,
     activeKey,
     disableShimmer,
+    cacheSnapshot,
+    cacheVariant,
   ]);
 
   return (

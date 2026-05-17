@@ -15,8 +15,13 @@ import type {
   MasonrySkeletonSpec,
   SkeletonNode,
 } from "react-motion-gallery/skeleton/masonry";
+import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
 import styles from "./masonry-horizontal-order-demo.module.css";
 import { masonryHorizontalOrderSkeletonText } from "./masonry-horizontal-order.skeleton-text.generated";
+import {
+  MASONRY_HORIZONTAL_ORDER_SKELETON_CACHE_KEY,
+  MASONRY_HORIZONTAL_ORDER_SKELETON_ROUTE_KEY,
+} from "./cache";
 
 const CARD_MEDIA_RATIOS = {
   shallow: "16 / 10",
@@ -113,6 +118,7 @@ type SkeletonTextIds = {
 };
 
 type GeneratedSkeletonTextState = {
+  textId?: string;
   lines: number | Record<number, number>;
   barWidth?: string | string[] | Record<number, string | string[]>;
   lastBarWidth?: string | Record<number, string>;
@@ -162,9 +168,18 @@ const MASONRY_HORIZONTAL_ORDER_TEXT_IDS: SkeletonTextIds[] = [
 
 const MASONRY_HORIZONTAL_ORDER_SKELETON_TEXT: GeneratedSkeletonTextEntry[] =
   MASONRY_HORIZONTAL_ORDER_TEXT_IDS.map((textIds) => ({
-    badge: masonryHorizontalOrderSkeletonText[textIds.badge]!,
-    title: masonryHorizontalOrderSkeletonText[textIds.title]!,
-    body: masonryHorizontalOrderSkeletonText[textIds.body]!,
+    badge: {
+      ...masonryHorizontalOrderSkeletonText[textIds.badge]!,
+      textId: textIds.badge,
+    },
+    title: {
+      ...masonryHorizontalOrderSkeletonText[textIds.title]!,
+      textId: textIds.title,
+    },
+    body: {
+      ...masonryHorizontalOrderSkeletonText[textIds.body]!,
+      textId: textIds.body,
+    },
   }));
 
 function createHorizontalOrderSkeletonItem(args: {
@@ -354,7 +369,9 @@ function MasonryHorizontalOrderFullscreenAddon() {
   return <>{fullscreenNode}</>;
 }
 
-export function MasonryHorizontalOrderDemo() {
+export function MasonryHorizontalOrderDemo(props: {
+  horizontalOrderSkeletonCacheSnapshot?: SkeletonCacheSnapshot | null;
+}) {
   const fullscreenMedia = toMediaItems(
     ITEMS.map((item) =>
       item.kind === "image"
@@ -375,6 +392,11 @@ export function MasonryHorizontalOrderDemo() {
         layout={HORIZONTAL_ORDER_SKELETON}
         ready={masonryReady}
         timing={{ exitMs: 1200 }}
+        cache={{
+          key: MASONRY_HORIZONTAL_ORDER_SKELETON_CACHE_KEY,
+          routeKey: MASONRY_HORIZONTAL_ORDER_SKELETON_ROUTE_KEY,
+          snapshot: props.horizontalOrderSkeletonCacheSnapshot,
+        }}
         masonry={{
           count: ITEMS.length,
           columns: { 0: 1, 720: 2, 1140: 4 },

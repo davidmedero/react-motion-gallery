@@ -2,12 +2,13 @@ import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { R as ResponsiveNumber, B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
 import { j as SliderHandle } from './types-BiXSaEk7.mjs';
-import { a as SkeletonLength$1, b as SkeletonShimmer$1 } from './layout-DoYnPD0I.mjs';
+import { a as SkeletonLength$1, b as SkeletonShimmer$1 } from './layout-BOy4geKv.mjs';
 import { R as ResponsiveTextBarHeight, a as ResponsiveTextBarWidth, b as ResponsiveTextLineHeight, c as ResponsiveTextLineCount, d as ResponsiveTextLastBarWidth } from './text-BBcRGVzn.mjs';
 import { SkeletonForceOptions, SkeletonTimingOptions } from './skeleton-base.mjs';
 import './force-C5m1QpdF.mjs';
 import './media.mjs';
 import './transitions-DU3ftmIq.mjs';
+import './skeleton-cache.mjs';
 
 type SkeletonLength = number | string;
 type SkeletonShimmer = {

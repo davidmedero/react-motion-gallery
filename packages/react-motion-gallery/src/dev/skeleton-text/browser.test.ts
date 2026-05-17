@@ -184,6 +184,7 @@ describe("browser skeleton text helpers", () => {
   test("keys generated text states by measured container width", () => {
     const result = buildBrowserResponsiveResult({
       exportName: "cardTitle",
+      textId: "card-title",
       samples: [
         {
           viewportWidth: 1067,
@@ -203,6 +204,7 @@ describe("browser skeleton text helpers", () => {
     });
 
     expect(result.value.responsiveBy).toBe("container");
+    expect(result.textId).toBe("card-title");
     expect(result.value.lines).toEqual({
       0: 2,
       221.656: 1,

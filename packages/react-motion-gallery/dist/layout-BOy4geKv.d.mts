@@ -98,6 +98,7 @@ type SkeletonContainerStyle = {
 type SkeletonContainerStyleResponsive = SkeletonContainerStyle | Record<string, SkeletonContainerStyle>;
 type SkeletonTextNode = {
     kind: "text";
+    textId?: string;
     barHeight: ResponsiveTextBarHeight;
     barWidth?: ResponsiveTextBarWidth;
     lineHeight: ResponsiveTextLineHeight;

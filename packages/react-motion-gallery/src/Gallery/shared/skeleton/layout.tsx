@@ -13,6 +13,8 @@ import {
   type ResponsiveTextLineCount,
   type ResponsiveTextLastBarWidth,
   type TextSkeletonResponsiveBy,
+  resolveResponsiveTextBarHeight,
+  resolveResponsiveTextLineHeight,
 } from "./text";
 
 export type SkeletonLength = number | string;
@@ -123,6 +125,7 @@ export type SkeletonContainerStyleResponsive =
 
 type SkeletonTextNode = {
   kind: "text";
+  textId?: string;
   barHeight: ResponsiveTextBarHeight;
   barWidth?: ResponsiveTextBarWidth;
   lineHeight: ResponsiveTextLineHeight;
@@ -176,6 +179,16 @@ export type SkeletonResponsiveCssEntry = {
   nodeId: string;
   rules: ResponsiveCssRule[];
 };
+
+export type SkeletonTextSnapshotRecord = {
+  lines: number;
+  barWidths?: string[];
+  lineWidthsPx?: number[];
+  barHeight?: number;
+  lineHeight?: number;
+};
+
+export type SkeletonTextSnapshotMap = Record<string, SkeletonTextSnapshotRecord>;
 
 type ResponsiveStyleValue<T extends object> = T | Record<string, T>;
 
@@ -928,6 +941,161 @@ export function buildResponsiveTextStyleCssRules(args: {
   return out;
 }
 
+function toSnapshotBarWidths(record: SkeletonTextSnapshotRecord) {
+  if (record.barWidths?.length) return record.barWidths;
+  if (record.lineWidthsPx?.length) {
+    return record.lineWidthsPx.map((width) => `${Math.max(0, width)}px`);
+  }
+  return undefined;
+}
+
+function normalizeSnapshotLines(value: number) {
+  return Math.max(1, Math.min(64, Math.trunc(value)));
+}
+
+function applyTextSnapshotToNode(
+  node: Extract<SkeletonNode, { kind: "text" }>,
+  snapshot: SkeletonTextSnapshotMap | undefined,
+  breakpointMap: BreakpointMap
+): Extract<SkeletonNode, { kind: "text" }> {
+  const textId = node.textId;
+  const record = textId ? snapshot?.[textId] : undefined;
+  if (!record) return node;
+
+  const lines = normalizeSnapshotLines(record.lines);
+  const barWidth = toSnapshotBarWidths(record);
+  const barHeight =
+    typeof record.barHeight === "number" && Number.isFinite(record.barHeight)
+      ? record.barHeight
+      : typeof node.barHeight === "number"
+      ? node.barHeight
+      : resolveResponsiveTextBarHeight(
+          node.barHeight,
+          0,
+          0,
+          breakpointMap
+        );
+  const lineHeight =
+    typeof record.lineHeight === "number" && Number.isFinite(record.lineHeight)
+      ? record.lineHeight
+      : typeof node.lineHeight === "number"
+      ? node.lineHeight
+      : resolveResponsiveTextLineHeight(
+          node.lineHeight,
+          1,
+          0,
+          breakpointMap
+        );
+
+  return {
+    ...node,
+    barHeight,
+    lineHeight,
+    lines,
+    ...(barWidth?.length ? { barWidth } : null),
+    lastBarWidth: barWidth?.[Math.min(lines, barWidth.length) - 1] ?? node.lastBarWidth,
+    responsiveBy: undefined,
+  };
+}
+
+export function applySkeletonTextSnapshot<TKind extends string>(
+  node: SkeletonLayoutRoot<TKind> | SkeletonNode,
+  snapshot: SkeletonTextSnapshotMap | undefined,
+  rootKind: TKind,
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+): SkeletonLayoutRoot<TKind> | SkeletonNode {
+  if (!snapshot) return node;
+
+  if ((node as any).kind === rootKind) {
+    const rootNode = node as SkeletonLayoutRoot<TKind>;
+    const slots = Array.isArray((rootNode as any).slots)
+      ? (rootNode as any).slots.map((slot: any) => ({
+          ...slot,
+          item: slot?.item
+            ? (applySkeletonTextSnapshot(
+                slot.item,
+                snapshot,
+                rootKind,
+                breakpointMap
+              ) as SkeletonNode)
+            : slot?.item,
+        }))
+      : undefined;
+
+    return {
+      ...(rootNode as any),
+      item: applySkeletonTextSnapshot(
+        rootNode.item,
+        snapshot,
+        rootKind,
+        breakpointMap
+      ) as SkeletonNode,
+      ...(slots ? { slots } : null),
+    };
+  }
+
+  const skeletonNode = node as SkeletonNode;
+
+  if (skeletonNode.kind === "text") {
+    return applyTextSnapshotToNode(skeletonNode, snapshot, breakpointMap);
+  }
+
+  if (skeletonNode.kind === "media") {
+    return skeletonNode;
+  }
+
+  if (
+    skeletonNode.kind === "stack" ||
+    skeletonNode.kind === "row" ||
+    skeletonNode.kind === "col"
+  ) {
+    return {
+      ...(skeletonNode as any),
+      children: skeletonNode.children.map((child: SkeletonNode) =>
+        applySkeletonTextSnapshot(child, snapshot, rootKind, breakpointMap)
+      ) as SkeletonNode[],
+    };
+  }
+
+  return skeletonNode;
+}
+
+export function collectSkeletonTextIds<TKind extends string>(
+  node: SkeletonLayoutRoot<TKind> | SkeletonNode | undefined,
+  rootKind: TKind,
+  out: Set<string> = new Set()
+) {
+  if (!node) return out;
+
+  if ((node as any).kind === rootKind) {
+    const rootNode = node as SkeletonLayoutRoot<TKind>;
+    collectSkeletonTextIds(rootNode.item, rootKind, out);
+    for (const slot of ((rootNode as any).slots ?? []) as Array<{ item?: SkeletonNode }>) {
+      collectSkeletonTextIds(slot.item, rootKind, out);
+    }
+    return out;
+  }
+
+  const skeletonNode = node as SkeletonNode;
+
+  if (skeletonNode.kind === "text") {
+    if (skeletonNode.textId) out.add(skeletonNode.textId);
+    return out;
+  }
+
+  if (
+    skeletonNode.kind === "stack" ||
+    skeletonNode.kind === "row" ||
+    skeletonNode.kind === "col"
+  ) {
+    for (const child of skeletonNode.children) {
+      collectSkeletonTextIds(child, rootKind, out);
+    }
+  }
+
+  return out;
+}
+
 export function collectResponsiveCss<TKind extends string>(
   node: SkeletonLayoutRoot<TKind> | SkeletonNode,
   allocId: () => string,
@@ -1204,6 +1372,7 @@ function TextNode({
     <div
       data-rmg-skel-node={nodeId}
       data-rmg-skel-text="true"
+      data-rmg-skel-text-id={node.textId}
       className={styles.skelText}
       style={{
         ...wrapperStyle,

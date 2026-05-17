@@ -2,12 +2,18 @@ import { describe, expect, test } from "vitest";
 
 import { BREAKPOINT_MAP } from "../responsive";
 import {
+  applySkeletonTextSnapshot,
+  buildResponsiveCssText,
   buildResponsiveContainerStyleCssRules,
   containerStylesPlain,
+  collectResponsiveCss,
   collectResponsiveStyleBreakpoints,
+  collectSkeletonTextIds,
   resolveInlineResponsiveContainerStyle,
   resolveResponsiveBaseStyleAtMinWidth,
   resolveResponsiveContainerStyleAtMinWidth,
+  type SkeletonNode,
+  type SkeletonResponsiveCssEntry,
 } from "./layout";
 
 describe("skeleton responsive style helpers", () => {
@@ -188,6 +194,58 @@ describe("skeleton responsive style helpers", () => {
         css: "__NODE_SEL__{padding:20px 0 0;width:100%;}",
         raw: true,
       },
+    ]);
+  });
+
+  test("applies text snapshots as fixed line widths without responsive text CSS", () => {
+    const layout: SkeletonNode = {
+      kind: "text",
+      textId: "body",
+      barHeight: 14,
+      lineHeight: 1.5,
+      lines: {
+        0: 4,
+        420: 2,
+      },
+      barWidth: {
+        0: ["120px", "80px", "60px", "40px"],
+        420: ["320px", "90px"],
+      },
+      responsiveBy: "container",
+    };
+    const prepared = applySkeletonTextSnapshot(
+      layout,
+      {
+        body: {
+          lines: 2,
+          barWidths: ["300px", "120px"],
+          barHeight: 14,
+          lineHeight: 1.5,
+        },
+      },
+      "__standalone__"
+    ) as SkeletonNode;
+    const collected: SkeletonResponsiveCssEntry[] = [];
+
+    collectResponsiveCss(
+      prepared,
+      () => "n1",
+      collected,
+      "__standalone__"
+    );
+
+    expect(Array.from(collectSkeletonTextIds(layout, "__standalone__"))).toEqual([
+      "body",
+    ]);
+    expect(buildResponsiveCssText({
+      scopeAttr: "data-rmg-skeleton-scope",
+      scopeId: "scope",
+      rules: collected,
+    })).not.toContain("nth-child");
+    expect((prepared as Extract<SkeletonNode, { kind: "text" }>).lines).toBe(2);
+    expect((prepared as Extract<SkeletonNode, { kind: "text" }>).barWidth).toEqual([
+      "300px",
+      "120px",
     ]);
   });
 

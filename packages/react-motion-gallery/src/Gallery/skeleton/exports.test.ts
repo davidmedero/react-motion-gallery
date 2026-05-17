@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 
 import * as skeletonBaseEntry from "../../skeleton-base";
+import * as skeletonCacheEntry from "../../skeleton-cache";
+import * as skeletonCacheProviderEntry from "../../skeleton-cache-provider";
 import * as skeletonGridEntry from "../../skeleton-grid";
 import * as skeletonMasonryEntry from "../../skeleton-masonry";
 import * as skeletonSliderEntry from "../../skeleton-slider";
@@ -13,8 +15,13 @@ const packageJson = JSON.parse(
 describe("skeleton public entries", () => {
   test("exports the standalone base skeleton subpath", () => {
     expect(packageJson.exports["./skeleton/base"]).toBeDefined();
+    expect(packageJson.exports["./skeleton/cache"]).toBeDefined();
+    expect(packageJson.exports["./skeleton/cache/provider"]).toBeDefined();
     expect(skeletonBaseEntry.Skeleton).toBeTypeOf("function");
     expect(skeletonBaseEntry.default).toBe(skeletonBaseEntry.Skeleton);
+    expect(skeletonCacheEntry.getSkeletonCacheCookieName).toBeTypeOf("function");
+    expect("SkeletonCacheProvider" in skeletonCacheEntry).toBe(false);
+    expect(skeletonCacheProviderEntry.SkeletonCacheProvider).toBeTypeOf("function");
   });
 
   test("exports gallery-specific skeleton subpaths", () => {

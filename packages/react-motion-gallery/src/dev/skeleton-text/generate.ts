@@ -5,6 +5,7 @@ import { SkeletonTextAnalyzerError } from "./types";
 export type SkeletonTextGeneratedEntry = {
   exportName: string;
   value: {
+    textId?: string;
     lines: number | Record<number, number>;
     barWidth?: string | string[] | Record<number, string | string[]>;
     lastBarWidth?: string | Record<number, string>;
@@ -74,6 +75,9 @@ export function buildGeneratedModuleFromBrowserMeasurements(args: {
             {
               exportName: measurement.exportName,
               value: {
+                ...(measurement.textId != null
+                  ? { textId: measurement.textId }
+                  : null),
                 lines: measurement.value.lines,
                 ...(measurement.value.barWidth != null
                   ? { barWidth: measurement.value.barWidth }
@@ -125,6 +129,7 @@ export function renderSkeletonTextGeneratedModule(
     "type GeneratedSkeletonTextLineHeight = number | Record<number, number>;",
     'type GeneratedSkeletonTextResponsiveBy = "container";',
     "type GeneratedSkeletonTextEntry = {",
+    "  textId?: string;",
     "  lines: GeneratedSkeletonTextLines;",
     "  barWidth?: GeneratedSkeletonTextBarWidth;",
     "  lastBarWidth?: GeneratedSkeletonTextLastBarWidth;",

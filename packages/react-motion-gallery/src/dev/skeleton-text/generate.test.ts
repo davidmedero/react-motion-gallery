@@ -15,6 +15,7 @@ describe("browser skeleton text module generation", () => {
         {
           kind: "text",
           exportName: "leadTitle",
+          textId: "lead-title",
           value: {
             lines: 1,
             barWidth: "284px",
@@ -44,6 +45,7 @@ describe("browser skeleton text module generation", () => {
     expect(rendered).toContain(
       "export const leadTitle: GeneratedSkeletonTextEntry = {"
     );
+    expect(rendered).toContain("\"textId\": \"lead-title\"");
     expect(rendered).toContain(
       "export const sliderCardsRowHeightCompensation: GeneratedSkeletonResponsiveNumber = {"
     );

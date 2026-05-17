@@ -18,8 +18,10 @@ import { resolveLoadingTiming } from "../shared/loading/timing";
 import type { LoadingTimingOptions } from "../shared/types/transitions";
 import { buildStableScopeId } from "../shared/stableScope";
 import {
+  applySkeletonTextSnapshot,
   SkeletonLayoutNode,
   buildResponsiveCssText,
+  collectSkeletonTextIds,
   collectResponsiveCss,
   cssLen,
   shimmerStyleVars,
@@ -29,6 +31,13 @@ import {
   type SkeletonShimmer,
 } from "../shared/skeleton/layout";
 import styles from "./Skeleton.module.css";
+import type { SkeletonCacheOptions } from "./cache";
+import {
+  resolveSkeletonCacheOptions,
+  useSkeletonCacheContext,
+} from "./cache-context";
+import { validateSkeletonCacheSnapshot } from "./cache";
+import { useSkeletonCacheWriter } from "./cache-writer";
 
 export type SkeletonForceOptions = LoadingForceOptions;
 export type SkeletonTimingOptions = LoadingTimingOptions;
@@ -49,6 +58,7 @@ export type SkeletonFrameProps = {
   loadingLayerFirst?: boolean;
   contentWrapper?: (children: React.ReactNode) => React.ReactNode;
   shellDataAttributes?: Record<string, string | boolean | undefined>;
+  shellRef?: React.Ref<HTMLDivElement>;
 };
 
 export type SkeletonProps = {
@@ -70,6 +80,7 @@ export type SkeletonProps = {
   enabled?: boolean;
   force?: SkeletonForceOptions;
   timing?: SkeletonTimingOptions;
+  cache?: SkeletonCacheOptions;
 };
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -92,6 +103,7 @@ export function SkeletonFrame({
   loadingLayerFirst,
   contentWrapper,
   shellDataAttributes,
+  shellRef,
 }: SkeletonFrameProps) {
   const wrapperMode = children !== undefined;
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -166,6 +178,7 @@ export function SkeletonFrame({
 
   return (
     <div
+      ref={shellRef}
       className={cx(styles.shell, shellClassName)}
       style={{
         ...(shouldShowLoadingLayer ? loadingShellStyle : null),
@@ -221,6 +234,7 @@ export function Skeleton({
   enabled,
   force,
   timing,
+  cache,
 }: SkeletonProps) {
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
@@ -245,12 +259,47 @@ export function Skeleton({
       disableShimmer,
     ]
   );
+  const cacheContext = useSkeletonCacheContext();
+  const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
+  const textIds = React.useMemo(
+    () => Array.from(collectSkeletonTextIds(layout, "__standalone__")),
+    [layout]
+  );
+  const validSnapshot = validateSkeletonCacheSnapshot(
+    effectiveCache?.snapshot,
+    {
+      key: effectiveCache?.key,
+      scopeId,
+      kind: "skeleton",
+      routeKey: effectiveCache?.routeKey,
+      ttlMs: effectiveCache?.ttlMs,
+      textIds,
+    }
+  );
+  const skeletonRootRef = React.useRef<HTMLDivElement | null>(null);
+  const shellRef = React.useRef<HTMLDivElement | null>(null);
+  useSkeletonCacheWriter({
+    cache: effectiveCache,
+    kind: "skeleton",
+    scopeId,
+    textIds,
+    skeletonRootRef,
+    shellRef,
+  });
   const { layout: preparedLayout, responsiveCss } = React.useMemo(() => {
     let n = 0;
     const allocId = () => `n${++n}`;
     const collected: SkeletonResponsiveCssEntry[] = [];
+    const cachedLayout = validSnapshot
+      ? (applySkeletonTextSnapshot(
+          layout,
+          validSnapshot.text,
+          "__standalone__",
+          effectiveBreakpoints
+        ) as SkeletonNode)
+      : layout;
     const withIds = collectResponsiveCss(
-      layout,
+      cachedLayout,
       allocId,
       collected,
       "__standalone__",
@@ -265,7 +314,7 @@ export function Skeleton({
         rules: collected,
       }),
     };
-  }, [layout, scopeId, effectiveBreakpoints]);
+  }, [layout, scopeId, effectiveBreakpoints, validSnapshot]);
   const rootStyle: React.CSSProperties = {
     ...style,
     ...(backgroundColor
@@ -279,6 +328,7 @@ export function Skeleton({
   const skeletonNode = (
     <div
       data-rmg-skeleton-scope={scopeId}
+      ref={skeletonRootRef}
       className={className}
       style={rootStyle}
       aria-hidden={ariaLabel ? undefined : true}
@@ -306,6 +356,7 @@ export function Skeleton({
       shellStyle={shellStyle}
       contentClassName={contentClassName}
       contentStyle={contentStyle}
+      shellRef={shellRef}
     >
       {children}
     </SkeletonFrame>
@@ -313,6 +364,10 @@ export function Skeleton({
 }
 
 export default Skeleton;
+
+export type {
+  SkeletonCacheOptions,
+} from "./cache";
 
 export type {
   ResponsiveTextBarHeight,
