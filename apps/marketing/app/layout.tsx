@@ -73,7 +73,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   icons: {
-    icon: "https://firebasestorage.googleapis.com/v0/b/reac-motion-gallery-blog.firebasestorage.app/o/rmg-logo-square.png?alt=media&token=f25eda1d-e5ec-493c-9f47-6d44cda55462",
+    icon: "https://cdn.react-motion-gallery.com/nav/color-corrected-rmg-tab-icon.png",
   },
 };
 
@@ -88,6 +88,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://use.typekit.net" />
+        <link rel="preconnect" href="https://p.typekit.net" />
+        <link rel="stylesheet" href="https://use.typekit.net/awj1fnk.css" />
+      </head>
       <body
         className={`${fontBody.variable} ${tasaOrbiter.variable} ${fontMono.variable}`}
       >

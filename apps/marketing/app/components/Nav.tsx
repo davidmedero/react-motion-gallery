@@ -29,13 +29,25 @@ export function Nav() {
     <header className="rmg-intro-sticky-nav sticky top-0 z-50 w-full bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 [@media(min-width:501px)]:px-6 gap-24 [@media(max-width:500px)]:gap-3">
         {/* Left: Logo */}
-        <Link href="/" className="min-w-0 max-w-150 shrink">
+        <Link
+          href="/"
+          className="flex min-w-0 max-w-150 shrink items-center gap-2.5"
+        >
+          <Image
+            src="https://cdn.react-motion-gallery.com/nav/color-corrected-rmg-icon.png"
+            alt=""
+            width={180}
+            height={180}
+            className="size-12 shrink-0 object-contain"
+            priority
+            aria-hidden
+          />
           <Image
             src="https://cdn.react-motion-gallery.com/nav/rmg-logo-v6.png"
             alt="React Motion Gallery"
             width={640}
             height={28}
-            className="w-full max-w-full aspect-640/28"
+            className="min-w-0 flex-1 aspect-640/28 object-contain"
             priority
           />
         </Link>

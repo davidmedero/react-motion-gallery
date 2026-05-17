@@ -12,16 +12,7 @@ import { SliderParallaxDemo } from "./demos/slider/slider-parallax/Component";
 import { ZoomPanGridDemo } from "./demos/zoom-pan/grid/Component";
 import {
   ArrowUpRight,
-  Columns3,
-  Film,
-  Grid3X3,
-  Images,
-  Maximize2,
   PanelsTopLeft,
-  Rows3,
-  ScanSearch,
-  Sparkles,
-  type LucideIcon,
 } from "lucide-react";
 
 type ShowcaseDemo = {
@@ -33,14 +24,6 @@ type ShowcaseDemo = {
   href: string;
   tags: string[];
   Component: ComponentType;
-};
-
-type SurfaceLink = {
-  title: string;
-  description: string;
-  href: string;
-  Icon: LucideIcon;
-  tone: "cyan" | "blue" | "green" | "gold" | "magenta" | "lavender";
 };
 
 type HomeShowcaseProps = {
@@ -95,7 +78,7 @@ const SHOWCASE_DEMOS = [
     eyebrow: "Loading fidelity",
     title: "Loading states shaped like the final UI",
     description:
-      "Standalone skeleton primitives protect card rhythm while images decode and the final layout becomes ready.",
+      "Standalone skeleton primitives protect card rhythm, with cookie cache optimizing skeleton rendering and CSS parsing while images decode.",
     href: "/demos?demo=skeleton-flex-cards",
     tags: ["standalone", "responsive", "text", "decode"],
     Component: SkeletonFlexCardsDemo,
@@ -112,65 +95,6 @@ const SHOWCASE_DEMOS = [
     Component: ZoomPanGridDemo,
   },
 ] satisfies ShowcaseDemo[];
-
-const SURFACE_LINKS = [
-  {
-    title: "Slider",
-    description: "Drag, wheel, grouping, effects, autoplay, thumbnails, and fullscreen handoffs.",
-    href: "/demos?demo=slider-cards",
-    Icon: Images,
-    tone: "cyan",
-  },
-  {
-    title: "Grid",
-    description: "Auto-fill columns, explicit tracks, responsive spans, lazy media, and fullscreen triggers.",
-    href: "/demos?demo=grid-columns",
-    Icon: Grid3X3,
-    tone: "green",
-  },
-  {
-    title: "Masonry",
-    description: "Balanced, round-robin, and horizontal-order placement for uneven card systems.",
-    href: "/demos?demo=masonry-spans",
-    Icon: Columns3,
-    tone: "magenta",
-  },
-  {
-    title: "Entries",
-    description: "Record-driven rows with embedded slider, grid, or masonry media blocks.",
-    href: "/demos?demo=entries-masonry",
-    Icon: Rows3,
-    tone: "blue",
-  },
-  {
-    title: "Fullscreen",
-    description: "Layout-agnostic fullscreen, overlays, captions, thumbnails, lazy loading, and close sync.",
-    href: "/demos?demo=fullscreen-caption-thumbnails",
-    Icon: Maximize2,
-    tone: "lavender",
-  },
-  {
-    title: "Video",
-    description: "Optional Plyr-backed HTML5, YouTube, and Vimeo media inside gallery layouts.",
-    href: "/demos?demo=slider-video-html5",
-    Icon: Film,
-    tone: "gold",
-  },
-  {
-    title: "Skeletons",
-    description: "Composable loading shells, measured text, force overlays, and layout-aware placeholders.",
-    href: "/demos?demo=skeleton-flex-cards",
-    Icon: Sparkles,
-    tone: "cyan",
-  },
-  {
-    title: "Zoom/Pan",
-    description: "Standalone or embedded image inspection with click zoom, wheel, touch, and pan.",
-    href: "/demos?demo=zoom-pan-grid",
-    Icon: ScanSearch,
-    tone: "green",
-  },
-] satisfies SurfaceLink[];
 
 const PRODUCTION_POINTS = [
   {
@@ -243,51 +167,6 @@ export function HomeShowcase(props: HomeShowcaseProps = {}) {
                   <DemoComponent />
                 </div>
               </article>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="homeShowcase__section" aria-labelledby="home-surfaces-title">
-        <div className="homeShowcase__splitHeader">
-          <div>
-            <span className="homeShowcase__eyebrow">Explore by Surface</span>
-            <h2 className="homeShowcase__title" id="home-surfaces-title">
-              Pick the gallery shape you need next.
-            </h2>
-          </div>
-          <Link className="homeShowcase__allLink" href="/demos">
-            Browse all demos
-            <ArrowUpRight size={17} strokeWidth={2.2} aria-hidden />
-          </Link>
-        </div>
-
-        <div className="homeSurfaceGrid" role="list">
-          {SURFACE_LINKS.map((item) => {
-            const Icon = item.Icon;
-
-            return (
-              <Link
-                className="homeSurfaceCard"
-                data-tone={item.tone}
-                href={item.href}
-                key={item.title}
-                role="listitem"
-              >
-                <span className="homeSurfaceCard__icon" aria-hidden>
-                  <Icon size={21} strokeWidth={2.1} />
-                </span>
-                <span className="homeSurfaceCard__content">
-                  <strong>{item.title}</strong>
-                  <span>{item.description}</span>
-                </span>
-                <ArrowUpRight
-                  className="homeSurfaceCard__arrow"
-                  size={17}
-                  strokeWidth={2.2}
-                  aria-hidden
-                />
-              </Link>
             );
           })}
         </div>
