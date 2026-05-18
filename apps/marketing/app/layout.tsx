@@ -6,6 +6,7 @@ import "simplebar-react/dist/simplebar.min.css";
 import "react-motion-gallery/styles.css";
 import "plyr-react/plyr.css";
 import { Nav } from "./components/Nav";
+import { RouteProgress } from "./components/RouteProgress";
 
 /* -----------------------------------------------------
    Fonts
@@ -95,8 +96,10 @@ export default function RootLayout({
       <body
         className={`${fontBody.variable} ${tasaOrbiter.variable} ${fontMono.variable}`}
       >
-        <Nav />
-        {children}
+        <RouteProgress>
+          <Nav />
+          {children}
+        </RouteProgress>
       </body>
     </html>
   );

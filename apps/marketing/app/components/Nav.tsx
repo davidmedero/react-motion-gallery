@@ -12,7 +12,7 @@ type MenuItem =
   | { type: 'scroll'; targetId: string; label: string }
 
 const mobileItems: MenuItem[] = [
-  { type: 'link', href: '/pricing', label: 'Pricing' },
+  { type: 'link', href: '/license', label: 'License' },
   { type: 'link', href: '/docs', label: 'Docs' },
   { type: 'link', href: '/demos', label: 'Demos' },
   { type: 'link', href: '/account', label: 'Account' }

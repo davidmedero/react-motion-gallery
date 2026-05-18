@@ -368,7 +368,7 @@ function AccountStatusPanel(props: {
       ) : (
         <div className={styles.emptyState}>
           <strong>No active license</strong>
-          <p>View pricing to start a subscription or buy lifetime access.</p>
+          <p>View license options to start a subscription or buy lifetime access.</p>
         </div>
       )}
 
@@ -457,8 +457,8 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                 </form>
               </>
             ) : (
-              <Link className={styles.ghostButton} href="/pricing">
-                View pricing
+              <Link className={styles.ghostButton} href="/license">
+                View license options
                 <ArrowRight aria-hidden="true" />
               </Link>
             )}

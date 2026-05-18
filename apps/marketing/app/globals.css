@@ -93,6 +93,23 @@ code, pre, kbd, samp {
   pointer-events: none;
 }
 
+.bprogress .bar {
+  background: var(--rmg-logo-gradient-loop) !important;
+  background-repeat: repeat-x !important;
+  background-size: var(--rmg-logo-gradient-loop-distance) 100% !important;
+  background-position: 0 50% !important;
+}
+
+.bprogress .peg {
+  box-shadow:
+    0 0 12px rgba(var(--rmg-logo-cyan-rgb), 0.58),
+    0 0 14px rgba(var(--rmg-logo-pink-rgb), 0.48) !important;
+}
+
+.bprogress .spinner {
+  display: none !important;
+}
+
 :root {
   --sh-class: #2d5e9d;
   --sh-identifier: #354150;

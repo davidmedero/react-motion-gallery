@@ -6,13 +6,13 @@ import {
   billingPlans,
 } from "@/lib/billing/plans";
 import { checkoutAction } from "@/app/account/actions";
-import styles from "./pricing.module.css";
+import styles from "./license.module.css";
 
 export const metadata: Metadata = {
-  title: "Pricing",
+  title: "License",
   description:
-    "Commercial license pricing for React Motion Gallery, including single-project and unlimited commercial plans.",
-  alternates: { canonical: "/pricing" },
+    "Commercial license options for React Motion Gallery, including single-project and unlimited commercial plans.",
+  alternates: { canonical: "/license" },
 };
 
 function priceToNumber(price: string): number {
@@ -54,14 +54,14 @@ function cadenceLabel(cadence: BillingCadence): string {
   return "one-time";
 }
 
-export default function PricingPage() {
+export default function LicensePage() {
   return (
     <main className={styles.pricingPage}>
       <div className={styles.shell}>
-        <section className={styles.hero} aria-labelledby="pricing-title">
+        <section className={styles.hero} aria-labelledby="license-title">
           <div className={styles.heroCopy}>
-            <p className={styles.kicker}>Pricing</p>
-            <h1 id="pricing-title">Commercial licenses</h1>
+            <p className={styles.kicker}>License</p>
+            <h1 id="license-title">Commercial licenses</h1>
           </div>
         </section>
 
@@ -86,7 +86,7 @@ export default function PricingPage() {
 
               <p className={styles.planDescription}>{plan.description}</p>
 
-              <ul className={styles.billingList} aria-label={`${plan.name} pricing`}>
+              <ul className={styles.billingList} aria-label={`${plan.name} license options`}>
                 {plan.billing.map((option) => {
                   const annualSavings = getAnnualSavings(plan.billing, option);
 

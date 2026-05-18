@@ -2,7 +2,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from '@bprogress/next/app'
+import { usePathname } from 'next/navigation'
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './MobileMenu.module.css'
