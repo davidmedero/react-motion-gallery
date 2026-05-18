@@ -6,7 +6,6 @@ import "simplebar-react/dist/simplebar.min.css";
 import "react-motion-gallery/styles.css";
 import "plyr-react/plyr.css";
 import { Nav } from "./components/Nav";
-import { SafariReloadScrollRestorationGuard } from "./components/SafariReloadScrollRestorationGuard";
 
 /* -----------------------------------------------------
    Fonts
@@ -96,7 +95,6 @@ export default function RootLayout({
       <body
         className={`${fontBody.variable} ${tasaOrbiter.variable} ${fontMono.variable}`}
       >
-        <SafariReloadScrollRestorationGuard />
         <Nav />
         {children}
       </body>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SafariReloadScrollRestorationGuard } from "../components/SafariReloadScrollRestorationGuard";
 import { readSkeletonCacheSnapshots } from "../skeleton-cache-server";
 import DemosPageClient from "./DemosPageClient";
 
@@ -39,9 +40,12 @@ export default async function DemosPage({ searchParams }: DemosPageProps) {
   const skeletonCacheSnapshots = await readSkeletonCacheSnapshots();
 
   return (
-    <DemosPageClient
-      initialSearchParamsString={initialSearchParamsString}
-      skeletonCacheSnapshots={skeletonCacheSnapshots}
-    />
+    <>
+      <SafariReloadScrollRestorationGuard />
+      <DemosPageClient
+        initialSearchParamsString={initialSearchParamsString}
+        skeletonCacheSnapshots={skeletonCacheSnapshots}
+      />
+    </>
   );
 }
