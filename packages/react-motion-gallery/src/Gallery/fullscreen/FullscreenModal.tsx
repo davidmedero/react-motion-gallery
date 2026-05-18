@@ -17,6 +17,7 @@ import { MediaEntryLink } from '../entries';
 import {
   FullscreenCloseScrollOptions,
   FullscreenCloseScrollTiming,
+  FullscreenIntroPathTiming,
   FullscreenMobileDetectionContext,
   FullscreenOptions,
 } from './types';
@@ -24,6 +25,10 @@ import { DefaultCloseIcon } from './controls/DefaultCloseIcon';
 import { DefaultCounterText } from './controls/DefaultCounterText';
 import { scrollEntrySectionIntoView, waitForEntryOwnerReady, isEntryOwnerReady } from './entryOwnerReady';
 import { getPrimaryImgEl } from '../zoomPan/core/dom';
+import {
+  resolveFullscreenIntroDurationMs,
+  resolveFullscreenIntroEasing,
+} from './introTiming';
 
 interface FullscreenModalProps {
   fsSub: FullscreenSliderSub
@@ -57,8 +62,8 @@ interface FullscreenModalProps {
   entryMapRef?: RefObject<MediaEntryLink[] | null>;
   entryMediaLayout?: string;
   introFade?: boolean;
-  introDuration?: number;
-  introEasing?: string;
+  introDuration?: FullscreenIntroPathTiming<number>;
+  introEasing?: FullscreenIntroPathTiming<string>;
   requestFsCloseRef: React.RefObject<null | (() => void)>;
   cancelFsCloseRef: React.RefObject<null | (() => void)>;
   fs: FullscreenOptions;
@@ -1012,8 +1017,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   entryMapRef,
   entryMediaLayout,
   introFade,
-  introDuration = 300,
-  introEasing = 'cubic-bezier(.4,0,.22,1)',
+  introDuration,
+  introEasing,
   requestFsCloseRef,
   cancelFsCloseRef,
   fs,
@@ -1026,8 +1031,19 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   latchedIntroIndex
 }) => {
 
-  const DURATION_MS = introDuration
-  const EASING = introEasing
+  const TRANSFORM_DURATION_MS = resolveFullscreenIntroDurationMs(
+    introDuration,
+    'transform'
+  );
+  const TRANSFORM_EASING = resolveFullscreenIntroEasing(
+    introEasing,
+    'transform'
+  );
+  const FADE_DURATION_MS = resolveFullscreenIntroDurationMs(
+    introDuration,
+    'fade'
+  );
+  const FADE_EASING = resolveFullscreenIntroEasing(introEasing, 'fade');
 
   const modalRef = React.useRef<HTMLDivElement | null>(null);
   const pointerDownX = React.useRef<number>(0)
@@ -1354,11 +1370,18 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     });
   }
 
-  function fadeNonActiveSlides(fsSlider: HTMLElement, nodeIdx: number, targetImg: HTMLImageElement | null, isVideoSlide: boolean) {
+  function fadeNonActiveSlides(
+    fsSlider: HTMLElement,
+    nodeIdx: number,
+    targetImg: HTMLImageElement | null,
+    isVideoSlide: boolean,
+    durationMs: number,
+    easing: string
+  ) {
     if (isVideoSlide) {
       fsSlider.querySelectorAll<HTMLElement>('[data-index]').forEach(el => {
         if (el.dataset.index === String(nodeIdx)) return;
-        trackStyleMutation(el, 'transition', 'opacity 0.3s cubic-bezier(.4,0,.22,1)');
+        trackStyleMutation(el, 'transition', `opacity ${durationMs}ms ${easing}`);
         trackStyleMutation(el, 'opacity', '0');
       });
       return;
@@ -1366,12 +1389,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     fsSlider.querySelectorAll<HTMLElement>('[data-rmg-fs-slide="true"]').forEach(slide => {
       if (targetImg && slide.contains(targetImg)) return;
-      trackStyleMutation(slide, 'transition', 'opacity 0.3s cubic-bezier(.4,0,.22,1)');
+      trackStyleMutation(slide, 'transition', `opacity ${durationMs}ms ${easing}`);
       trackStyleMutation(slide, 'opacity', '0');
     });
   }
 
-  function fadeOverlay() {
+  function fadeOverlay(durationMs: number, easing: string) {
     const ov = overlayDivRef.current;
     if (!ov) return;
     const computedOpacity = Number.parseFloat(getComputedStyle(ov).opacity);
@@ -1380,7 +1403,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     ov.style.transition = 'none';
     ov.style.opacity = String(startOpacity);
     void ov.offsetWidth;
-    ov.style.transition = `opacity ${DURATION_MS}ms ${EASING}`;
+    ov.style.transition = `opacity ${durationMs}ms ${easing}`;
 
     requestAnimationFrame(() => {
       ov.style.opacity = '0';
@@ -1391,7 +1414,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   function fadeElementOpacityTo(
     el: HTMLElement | null,
     targetOpacity: number,
-    opts: { pointerEvents?: string } = {}
+    opts: { durationMs: number; easing: string; pointerEvents?: string }
   ) {
     if (!el) return;
 
@@ -1401,7 +1424,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     el.style.transition = 'none';
     el.style.opacity = String(startOpacity);
     void el.offsetWidth;
-    el.style.transition = `opacity ${DURATION_MS}ms ${EASING}`;
+    el.style.transition = `opacity ${opts.durationMs}ms ${opts.easing}`;
     el.style.willChange = 'opacity';
 
     requestAnimationFrame(() => {
@@ -1449,7 +1472,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     startCloseAnimation();
     fadeChrome()
 
-    fadeOverlay()
+    fadeOverlay(FADE_DURATION_MS, FADE_EASING)
 
     const modal = modalRef.current;
     let finished = false;
@@ -1485,23 +1508,30 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     const fsSlider = withinFs<HTMLElement>('.fullscreen_slider');
     if (fsSlider) {
-      fadeElementOpacityTo(fsSlider, 0);
+      fadeElementOpacityTo(fsSlider, 0, {
+        durationMs: FADE_DURATION_MS,
+        easing: FADE_EASING,
+      });
     }
 
     if (modal) {
       modal.addEventListener('transitionend', onTransitionEnd as any, { once: true });
-      fadeElementOpacityTo(modal, 0, { pointerEvents: 'none' });
+      fadeElementOpacityTo(modal, 0, {
+        durationMs: FADE_DURATION_MS,
+        easing: FADE_EASING,
+        pointerEvents: 'none',
+      });
     }
 
     // Only swallow immediate post-close input; the fading modal is pointer-events:none.
     // Full cleanup still runs via transitionend/fallback.
     releaseShieldTimer = window.setTimeout(() => {
       unmountShield();
-    }, resolveCloseShieldReleaseMs(DURATION_MS));
+    }, resolveCloseShieldReleaseMs(FADE_DURATION_MS));
 
     fallbackTimer = window.setTimeout(() => {
       finish();
-    }, DURATION_MS + 40);
+    }, FADE_DURATION_MS + 40);
   }
 
   async function proceedToClose() {
@@ -1650,12 +1680,19 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
       startCloseAnimation();
       fadeChrome();
-      fadeOverlay();
-      fadeNonActiveSlides(fsSlider, nodeIdx, targetImg, args.isVideoSlide);
+      fadeOverlay(TRANSFORM_DURATION_MS, TRANSFORM_EASING);
+      fadeNonActiveSlides(
+        fsSlider,
+        nodeIdx,
+        targetImg,
+        args.isVideoSlide,
+        TRANSFORM_DURATION_MS,
+        TRANSFORM_EASING
+      );
 
       let captionClone: HTMLElement | null = cloneFsCaptionForNode(fsSlider, nodeIdx);
       if (captionClone) {
-        captionClone.style.transition = `opacity ${DURATION_MS}ms ${EASING}`;
+        captionClone.style.transition = `opacity ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
         void captionClone.offsetWidth;
         captionClone.style.opacity = "0";
       }
@@ -1672,8 +1709,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           trackStyleMutation,
           trackMutedMutation,
           safeTeardown,
-          DURATION_MS,
-          EASING,
+          DURATION_MS: TRANSFORM_DURATION_MS,
+          EASING: TRANSFORM_EASING,
         });
         return;
       }
@@ -1776,14 +1813,14 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       void parentClipper?.offsetWidth;
       void grandparentClipper?.offsetWidth;
 
-      imageClipper.style.transition = `clip-path ${DURATION_MS}ms ${EASING}`;
+      imageClipper.style.transition = `clip-path ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
       if (parentClipper) {
-        parentClipper.style.transition = `clip-path ${DURATION_MS}ms ${EASING}`;
+        parentClipper.style.transition = `clip-path ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
       }
       if (grandparentClipper) {
-        grandparentClipper.style.transition = `clip-path ${DURATION_MS}ms ${EASING}`;
+        grandparentClipper.style.transition = `clip-path ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
       }
-      movingEl.style.transition = `transform ${DURATION_MS}ms ${EASING}`;
+      movingEl.style.transition = `transform ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
 
       requestAnimationFrame(() => {
         imageClipper.style.clipPath = insetForViewportRect(endClipRect, vw, vh);
@@ -1831,7 +1868,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       };
 
       movingEl.addEventListener('transitionend', onEnd as any, { once: true });
-      window.setTimeout(() => finish(), DURATION_MS + 80);
+      window.setTimeout(() => finish(), TRANSFORM_DURATION_MS + 80);
     };
 
     let canonicalIdx = normalizedFsIndex;

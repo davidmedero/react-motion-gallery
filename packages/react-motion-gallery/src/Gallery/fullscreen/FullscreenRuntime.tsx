@@ -14,6 +14,7 @@ import {
   FsCaptionPlacement,
   FsIntroRequest,
   FullscreenOptions,
+  FullscreenIntroPathTiming,
   FullscreenPlugin,
   FullscreenRuntimeFeatures,
 } from './types';
@@ -77,8 +78,8 @@ export type FullscreenRuntimeProps = {
   entryMapRef: React.RefObject<MediaEntryLink[] | null>;
   entryMediaLayout: any;
   introFade: boolean;
-  introDuration: number;
-  introEasing: any;
+  introDuration?: FullscreenIntroPathTiming<number>;
+  introEasing?: FullscreenIntroPathTiming<string>;
   fullscreenSliderApi: React.RefObject<FullscreenSliderHandle | null>;
   slideIndex: number;
   isZoomClick: React.RefObject<boolean>;

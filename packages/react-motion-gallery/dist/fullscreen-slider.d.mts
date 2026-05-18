@@ -1,4 +1,4 @@
-import { l as FullscreenSliderOptions, j as FullscreenPlugin } from './responsive-Cwty6be5.mjs';
+import { n as FullscreenSliderOptions, l as FullscreenPlugin } from './responsive-MOdk42GH.mjs';
 import './types-DXFoG8LC.mjs';
 import 'react';
 import './responsiveNumber-CouEMJ9O.mjs';

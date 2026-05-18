@@ -1,4 +1,4 @@
-import { m as FullscreenVideoOptions, j as FullscreenPlugin } from './responsive-Cwty6be5.mjs';
+import { o as FullscreenVideoOptions, l as FullscreenPlugin } from './responsive-MOdk42GH.mjs';
 import './types-DXFoG8LC.mjs';
 import 'react';
 import './responsiveNumber-CouEMJ9O.mjs';

@@ -39,7 +39,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `slider/fullscreen` | 959.0B |
 | `ThumbnailSlider` | 18.9kB |
 | `useFullscreenController` | 5.0kB |
-| `fullscreen/slider` | 37.5kB |
+| `fullscreen/slider` | 37.7kB |
 | `fullscreen/controls` | 173.0B |
 | `fullscreen/captions` | 13.1kB |
 | `fullscreen/zoom-pan` | 9.9kB |
@@ -1904,8 +1904,8 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `zoom.maxZoomLevel` | `number` | `3` | Maximum allowed zoom level. |
 | `zoom.panDuration` | `number` | `43` | Pan settling duration. |
 | `zoom.panFriction` | `number` | `0.68` | Pan friction. |
-| `effects.introDuration` | `number` | `300` | Open animation duration. |
-| `effects.introEasing` | `string` | `"cubic-bezier(.4,0,.22,1)"` | Open animation easing. |
+| `effects.introDuration` | `number \| { transform?: number; fade?: number }` | `{ transform: 300, fade: 500 }` | Open and close intro timing. A scalar applies to both paths. Use `transform` for scale/FLIP handoffs and `fade` for opacity-only paths. |
+| `effects.introEasing` | `string \| { transform?: string; fade?: string }` | `"cubic-bezier(.4,0,.22,1)"` | Open and close intro easing. A scalar applies to both paths. Object keys mirror `introDuration`. |
 | `effects.introFade` | `boolean` | `false` | Forces fade intro behavior. |
 | `effects.crossfade.controls` | `boolean` | `false` | Uses crossfade transitions for fullscreen arrow navigation and animated slide requests. Also enables wheel crossfade unless `effects.crossfade.wheel` is provided. |
 | `effects.crossfade.drag` | `boolean` | `false` | Scrubs adjacent fullscreen slides with crossfade during drag instead of moving the track. |
@@ -1927,6 +1927,20 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `lazyLoad.videos.spinnerStyle` | `React.CSSProperties` | `—` | Spinner style for video slides. |
 
 Fullscreen `effects.crossfade.wheel` uses the same `true`, `false`, or object form as slider wheel crossfade. Its `durationMs` default follows fullscreen `effects.crossfade.durationMs`, which defaults to `120`.
+
+Use path-specific intro timing when the scale handoff should feel slower or faster than the opacity fallback:
+
+```tsx
+useFullscreenController({
+  plugins: [fullscreenSlider()],
+  fullscreen: {
+    enabled: true,
+    effects: {
+      introDuration: { transform: 500, fade: 300 },
+    },
+  },
+});
+```
 
 ### Responsive fullscreen captions
 

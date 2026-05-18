@@ -294,8 +294,8 @@ type FullscreenRuntimeProps = {
     entryMapRef: React$1.RefObject<MediaEntryLink[] | null>;
     entryMediaLayout: any;
     introFade: boolean;
-    introDuration: number;
-    introEasing: any;
+    introDuration?: FullscreenIntroPathTiming<number>;
+    introEasing?: FullscreenIntroPathTiming<string>;
     fullscreenSliderApi: React$1.RefObject<FullscreenSliderHandle | null>;
     slideIndex: number;
     isZoomClick: React$1.RefObject<boolean>;
@@ -440,9 +440,13 @@ type FullscreenCaptionOptions = {
     zoomOutTransform?: string;
 };
 type FullscreenCrossfadeOptions = CrossFade;
+type FullscreenIntroPathTiming<T> = T | {
+    transform?: T;
+    fade?: T;
+};
 type FullscreenEffectsOptions = {
-    introDuration?: number;
-    introEasing?: string;
+    introDuration?: FullscreenIntroPathTiming<number>;
+    introEasing?: FullscreenIntroPathTiming<string>;
     introFade?: boolean;
     introStickyNavSelector?: string;
     crossfade?: FullscreenCrossfadeOptions;
@@ -554,4 +558,4 @@ type ResponsiveLength = ResponsiveLengthValue | Record<string, ResponsiveLengthV
 type ResponsivePosition = ThumbnailPosition | Array<ThumbnailPosition> | Record<string, ThumbnailPosition>;
 type ResponsiveCaptionPlacement = FsCaptionPlacement | Array<FsCaptionPlacement> | Record<string, FsCaptionPlacement>;
 
-export type { EntrySkeletonRenderArgs as A, FullscreenClose as B, FullscreenArrows as C, FullscreenCounter as D, EntriesOptions as E, FullscreenCaptionOptions as F, FsCaptionRenderArgs as G, FSImageRender as H, IntroOptions as I, ResponsivePosition as J, MediaEntryLink as M, PanAxisType as P, ResponsiveCaptionPlacement as R, SlideOwner as S, FullscreenCloseScrollContext as a, FullscreenCloseScrollEnabled as b, FullscreenCloseScrollOptions as c, FullscreenCloseScrollTiming as d, FullscreenControlsOptions as e, FullscreenCrossfadeOptions as f, FullscreenLazyLoadOptions as g, FullscreenMobileDetectionContext as h, FullscreenOptions as i, FullscreenPlugin as j, FullscreenPluginKind as k, FullscreenSliderOptions as l, FullscreenVideoOptions as m, FullscreenZoomPanOptions as n, FsCaptionPlacement as o, FsIntroRequest as p, ResponsiveLength as q, ResponsiveLengthValue as r, EntryItem as s, EntryMediaRenderArgs as t, EntryOverlayRenderArgs as u, EntryOverlayStyle as v, EntryMediaLayout as w, EntryCardRenderArgs as x, EntrySkeletonResolverArgs as y, EntriesLoadingOptions as z };
+export type { EntrySkeletonResolverArgs as A, EntriesLoadingOptions as B, EntrySkeletonRenderArgs as C, FullscreenClose as D, EntriesOptions as E, FullscreenCaptionOptions as F, FullscreenArrows as G, FullscreenCounter as H, IntroOptions as I, FsCaptionRenderArgs as J, FSImageRender as K, ResponsivePosition as L, MediaEntryLink as M, PanAxisType as P, ResponsiveCaptionPlacement as R, SlideOwner as S, FullscreenCloseScrollContext as a, FullscreenCloseScrollEnabled as b, FullscreenCloseScrollOptions as c, FullscreenCloseScrollTiming as d, FullscreenControlsOptions as e, FullscreenCrossfadeOptions as f, FullscreenEffectsOptions as g, FullscreenIntroPathTiming as h, FullscreenLazyLoadOptions as i, FullscreenMobileDetectionContext as j, FullscreenOptions as k, FullscreenPlugin as l, FullscreenPluginKind as m, FullscreenSliderOptions as n, FullscreenVideoOptions as o, FullscreenZoomPanOptions as p, FsCaptionPlacement as q, FsIntroRequest as r, ResponsiveLength as s, ResponsiveLengthValue as t, EntryItem as u, EntryMediaRenderArgs as v, EntryOverlayRenderArgs as w, EntryOverlayStyle as x, EntryMediaLayout as y, EntryCardRenderArgs as z };

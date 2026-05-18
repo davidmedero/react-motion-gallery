@@ -293,6 +293,9 @@ function FullscreenAddon() {
     plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
+      effects: {
+        introDuration: { fade: 500 },
+      },
     },
   });
 

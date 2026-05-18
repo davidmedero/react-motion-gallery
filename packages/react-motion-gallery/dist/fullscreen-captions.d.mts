@@ -1,4 +1,4 @@
-import { F as FullscreenCaptionOptions, j as FullscreenPlugin } from './responsive-Cwty6be5.mjs';
+import { F as FullscreenCaptionOptions, l as FullscreenPlugin } from './responsive-MOdk42GH.mjs';
 import './types-DXFoG8LC.mjs';
 import 'react';
 import './responsiveNumber-CouEMJ9O.mjs';

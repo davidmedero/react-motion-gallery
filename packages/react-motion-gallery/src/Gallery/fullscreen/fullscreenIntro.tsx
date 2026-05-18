@@ -24,6 +24,10 @@ import {
   ResponsiveLength,
 } from "../shared/responsive";
 import { readViewportWidth } from "../shared/hooks/useViewportWidth";
+import {
+  resolveFullscreenIntroDurationMs,
+  resolveFullscreenIntroEasing,
+} from "./introTiming";
 
 type RefEl<T extends HTMLElement> = React.RefObject<T | null>;
 type ObjectFitMode = "contain" | "cover";
@@ -1261,8 +1265,22 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
   const INTRO_DUP_Z = computedBaseZ - 1;
   const fullscreenRoot = fullscreenRootRef?.current ?? null;
 
-  const DURATION_MS = fs.effects?.introDuration ?? 300;
-  const EASING = fs.effects?.introEasing ?? "cubic-bezier(.4,0,.22,1)";
+  const transformDurationMs = resolveFullscreenIntroDurationMs(
+    fs.effects?.introDuration,
+    "transform"
+  );
+  const transformEasing = resolveFullscreenIntroEasing(
+    fs.effects?.introEasing,
+    "transform"
+  );
+  const fadeDurationMs = resolveFullscreenIntroDurationMs(
+    fs.effects?.introDuration,
+    "fade"
+  );
+  const fadeEasing = resolveFullscreenIntroEasing(
+    fs.effects?.introEasing,
+    "fade"
+  );
 
   addShield?.(400);
 
@@ -1294,7 +1312,13 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     isVideoSlide,
   });
 
-  const overlay = createOverlay(styles, overlayDivRef, DURATION_MS, EASING);
+  const willRunScaleIntro = introMethod === "scale" && !!originalImage;
+  const overlay = createOverlay(
+    styles,
+    overlayDivRef,
+    willRunScaleIntro ? transformDurationMs : fadeDurationMs,
+    willRunScaleIntro ? transformEasing : fadeEasing
+  );
 
   const {
     rect: contentRect,
@@ -1328,8 +1352,8 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
       overlayCaptionRootRef,
       setShowFullscreenSlider,
       setFsFadeOpening,
-      durationMs: DURATION_MS,
-      easing: EASING,
+      durationMs: fadeDurationMs,
+      easing: fadeEasing,
     });
     return;
   }
@@ -1343,8 +1367,8 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
       overlayCaptionRootRef,
       setShowFullscreenSlider,
       setFsFadeOpening,
-      durationMs: DURATION_MS,
-      easing: EASING,
+      durationMs: fadeDurationMs,
+      easing: fadeEasing,
     });
     return;
   }
@@ -1360,8 +1384,8 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     vw,
     vh,
     introZ: INTRO_DUP_Z,
-    durationMs: DURATION_MS,
-    easing: EASING,
+    durationMs: transformDurationMs,
+    easing: transformEasing,
     duplicateImgRef,
     overlayCaptionRef,
     overlayCaptionRootRef,

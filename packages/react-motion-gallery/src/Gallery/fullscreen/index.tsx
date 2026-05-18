@@ -33,6 +33,7 @@ import { useOptionalGalleryCore } from "../core";
 import { resolveFullscreenControllerOpenMethod } from "./openMethod";
 import { BREAKPOINT_MAP, BreakpointMap, resolveCaptionPlacementFromResponsive, ResponsiveCaptionPlacement } from "../shared/responsive";
 import { resolveFullscreenSliderGap } from "./transforms";
+import { mergeFullscreenIntroPathTiming } from "./introTiming";
 type FullscreenOpenMethod = "fade" | "scale";
 
 type PendingFullscreenReopen = {
@@ -155,6 +156,14 @@ function mergeFullscreenOptionLayer(
     merged.effects = {
       ...(base.effects ?? {}),
       ...(layer.effects ?? {}),
+      introDuration: mergeFullscreenIntroPathTiming(
+        base.effects?.introDuration,
+        layer.effects?.introDuration
+      ),
+      introEasing: mergeFullscreenIntroPathTiming(
+        base.effects?.introEasing,
+        layer.effects?.introEasing
+      ),
       crossfade:
         base.effects?.crossfade || layer.effects?.crossfade
           ? { ...(base.effects?.crossfade ?? {}), ...(layer.effects?.crossfade ?? {}) }

@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   resolveFullscreenReleaseSnapForce,
+  resolveFullscreenIntroOpacityTransition,
   shouldSuppressFullscreenLoopForScroll,
   shouldStartFullscreenCrossfade,
   shouldUseFullscreenZoomedSourceSnapshot,
@@ -168,6 +169,28 @@ describe("fullscreen slide crossfade trigger rules", () => {
         toIndex: 2,
       })
     ).toBe(false);
+  });
+});
+
+describe("fullscreen slider intro opacity timing", () => {
+  test("uses the fade path for opacity intro transitions", () => {
+    expect(
+      resolveFullscreenIntroOpacityTransition({
+        shouldFadeIntro: true,
+        introDuration: { transform: 500, fade: 180 },
+        introEasing: { transform: "ease-out", fade: "linear" },
+      })
+    ).toBe("opacity 180ms linear");
+  });
+
+  test("keeps scalar intro timing as both transform and fade shorthand", () => {
+    expect(
+      resolveFullscreenIntroOpacityTransition({
+        shouldFadeIntro: true,
+        introDuration: 460,
+        introEasing: "ease-in-out",
+      })
+    ).toBe("opacity 460ms ease-in-out");
   });
 });
 

@@ -40,11 +40,15 @@ import {
   shouldCompleteCrossfadeDrag,
 } from '../shared/crossfade'
 import { DefaultChevronIcon } from './controls/DefaultChevronIcon'
-import { FullscreenOptions } from './types'
+import type { FullscreenIntroPathTiming, FullscreenOptions } from './types'
 import { getFsMediaContainer, getPrimaryImgEl } from '../zoomPan/core/dom'
 import { normalizeFullscreenSliderGap } from './transforms'
 import { resolveSliderReleaseSnapForce } from '../slider/snapRelease'
 import type { SliderSkipSnaps } from '../slider/types'
+import {
+  resolveFullscreenIntroDurationMs,
+  resolveFullscreenIntroEasing,
+} from './introTiming'
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
 function DragTracker(axis: AxisLike, ownerWindow: WindowType) {
@@ -156,6 +160,22 @@ export function resolveFullscreenReleaseSnapForce(args: {
   return resolveSliderReleaseSnapForce(args)
 }
 
+export function resolveFullscreenIntroOpacityTransition(args: {
+  shouldFadeIntro: boolean;
+  introDuration?: FullscreenIntroPathTiming<number>;
+  introEasing?: FullscreenIntroPathTiming<string>;
+}) {
+  if (!args.shouldFadeIntro) return undefined;
+
+  const durationMs = resolveFullscreenIntroDurationMs(
+    args.introDuration,
+    "fade"
+  );
+  const easing = resolveFullscreenIntroEasing(args.introEasing, "fade");
+
+  return `opacity ${durationMs}ms ${easing}`;
+}
+
 interface FullscreenSliderProps {
   sub: FullscreenSliderSub
   children: ReactNode
@@ -201,8 +221,8 @@ interface FullscreenSliderProps {
   slideFadeEasing?: string;
   normalizedItems: MediaItem[];
   crossfadeSlides?: ReactNode[];
-  introDuration?: number;
-  introEasing?: string;
+  introDuration?: FullscreenIntroPathTiming<number>;
+  introEasing?: FullscreenIntroPathTiming<string>;
   resetAllZoomDom: () => void;
   requestFsCloseRef: React.RefObject<null | (() => void)>;
   introMethod?: "fade" | "scale" | null;
@@ -253,8 +273,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       slideFadeEasing = 'cubic-bezier(.4,0,.22,1)',
       normalizedItems,
       crossfadeSlides,
-      introDuration = 300,
-      introEasing = 'cubic-bezier(.4,0,.22,1)',
+      introDuration,
+      introEasing,
       resetAllZoomDom,
       requestFsCloseRef,
       introMethod,
@@ -2340,6 +2360,11 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       isVideoItem(normalizedItems?.[openingIndex]);
 
     const shouldFadeIntro = introMethod === "fade" || introFade || isVideoSlide;
+    const introOpacityTransition = resolveFullscreenIntroOpacityTransition({
+      shouldFadeIntro,
+      introDuration,
+      introEasing,
+    });
     const crossfadeSourceNode =
       crossfadeState != null
         ? crossfadeSlides?.[crossfadeState.fromIndex] ?? null
@@ -2520,9 +2545,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             WebkitUserSelect: 'none',
             willChange: 'opacity, transform',
             backfaceVisibility: 'hidden',
-            transition: shouldFadeIntro
-              ? `opacity ${introDuration}ms ${introEasing}`
-              : undefined,
+            transition: introOpacityTransition,
             opacity: showFullscreenSlider
               ? shouldFadeIntro
                 ? (fadeOpening ? 0 : 1)

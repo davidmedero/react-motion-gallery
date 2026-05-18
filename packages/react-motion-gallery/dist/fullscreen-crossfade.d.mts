@@ -1,4 +1,4 @@
-import { f as FullscreenCrossfadeOptions, j as FullscreenPlugin } from './responsive-Cwty6be5.mjs';
+import { f as FullscreenCrossfadeOptions, l as FullscreenPlugin } from './responsive-MOdk42GH.mjs';
 import './types-DXFoG8LC.mjs';
 import 'react';
 import './responsiveNumber-CouEMJ9O.mjs';

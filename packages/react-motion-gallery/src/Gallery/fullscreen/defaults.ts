@@ -1,4 +1,9 @@
 import { DEFAULT_ZOOM_PAN } from "../zoomPan/defaults";
+import {
+  DEFAULT_FULLSCREEN_INTRO_FADE_DURATION_MS,
+  DEFAULT_FULLSCREEN_INTRO_TRANSFORM_DURATION_MS,
+  DEFAULT_FULLSCREEN_INTRO_EASING,
+} from "./introTiming";
 
 const DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_DURATION_MS = 300;
 const DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_EASING =
@@ -31,8 +36,11 @@ export const DEFAULT_FULLSCREEN = {
     }
   },
   effects: {
-    introDuration: 300,
-    introEasing: "cubic-bezier(.4,0,.22,1)",
+    introDuration: {
+      transform: DEFAULT_FULLSCREEN_INTRO_TRANSFORM_DURATION_MS,
+      fade: DEFAULT_FULLSCREEN_INTRO_FADE_DURATION_MS,
+    },
+    introEasing: DEFAULT_FULLSCREEN_INTRO_EASING,
     introFade: false,
     crossfade: {
       controls: false,

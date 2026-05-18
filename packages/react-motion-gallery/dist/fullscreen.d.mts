@@ -1,6 +1,6 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { i as FullscreenOptions, j as FullscreenPlugin, B as FullscreenClose, C as FullscreenArrows, D as FullscreenCounter, q as ResponsiveLength, R as ResponsiveCaptionPlacement, G as FsCaptionRenderArgs, H as FSImageRender, m as FullscreenVideoOptions, g as FullscreenLazyLoadOptions, c as FullscreenCloseScrollOptions } from './responsive-Cwty6be5.mjs';
-export { o as FsCaptionPlacement, p as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenCloseScrollContext, b as FullscreenCloseScrollEnabled, d as FullscreenCloseScrollTiming, e as FullscreenControlsOptions, f as FullscreenCrossfadeOptions, h as FullscreenMobileDetectionContext, k as FullscreenPluginKind, l as FullscreenSliderOptions, n as FullscreenZoomPanOptions } from './responsive-Cwty6be5.mjs';
+import { k as FullscreenOptions, l as FullscreenPlugin, h as FullscreenIntroPathTiming, D as FullscreenClose, G as FullscreenArrows, H as FullscreenCounter, s as ResponsiveLength, R as ResponsiveCaptionPlacement, J as FsCaptionRenderArgs, K as FSImageRender, o as FullscreenVideoOptions, i as FullscreenLazyLoadOptions, c as FullscreenCloseScrollOptions } from './responsive-MOdk42GH.mjs';
+export { q as FsCaptionPlacement, r as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenCloseScrollContext, b as FullscreenCloseScrollEnabled, d as FullscreenCloseScrollTiming, e as FullscreenControlsOptions, f as FullscreenCrossfadeOptions, g as FullscreenEffectsOptions, j as FullscreenMobileDetectionContext, m as FullscreenPluginKind, n as FullscreenSliderOptions, p as FullscreenZoomPanOptions } from './responsive-MOdk42GH.mjs';
 import React__default from 'react';
 import { MediaItem } from './media.mjs';
 import { g as SliderSkipSnaps, d as CrossFadeWheel, H as FullscreenOpenRequest } from './types-BiXSaEk7.mjs';
@@ -47,8 +47,11 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
                 durationMs: number;
                 easing: string;
             };
-            introDuration: number;
-            introEasing: string;
+            introDuration: FullscreenIntroPathTiming<number> | {
+                readonly transform: 300;
+                readonly fade: 500;
+            };
+            introEasing: FullscreenIntroPathTiming<string>;
             introFade: boolean;
             introStickyNavSelector?: string;
             thumbnailsFadeDuration?: number;
@@ -124,4 +127,4 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
     closingModal: boolean;
 };
 
-export { FullscreenCloseScrollOptions, FullscreenLazyLoadOptions, FullscreenOptions, FullscreenPlugin, FullscreenVideoOptions, useFullscreenController };
+export { FullscreenCloseScrollOptions, FullscreenIntroPathTiming, FullscreenLazyLoadOptions, FullscreenOptions, FullscreenPlugin, FullscreenVideoOptions, useFullscreenController };

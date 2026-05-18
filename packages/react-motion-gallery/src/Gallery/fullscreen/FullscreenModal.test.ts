@@ -291,7 +291,11 @@ describe("fullscreen close scroll policy", () => {
 });
 
 describe("fullscreen close sequencing", () => {
-  function setupGridCloseScenario(closeScroll?: any) {
+  function setupGridCloseScenario(
+    closeScroll?: any,
+    introDuration?: any,
+    introEasing: any = "linear"
+  ) {
     vi.useFakeTimers();
 
     const events: string[] = [];
@@ -433,8 +437,8 @@ describe("fullscreen close sequencing", () => {
             media: destHost,
           }),
           introFade: false,
-          introDuration: 300,
-          introEasing: "linear",
+          introDuration,
+          introEasing,
           requestFsCloseRef,
           cancelFsCloseRef,
           fs: {
@@ -486,7 +490,34 @@ describe("fullscreen close sequencing", () => {
     expect(events).toEqual(["closing:true"]);
 
     await React.act(async () => {
-      vi.advanceTimersByTime(340);
+      vi.advanceTimersByTime(540);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true", "closing:false"]);
+
+    unmount(root, container);
+  });
+
+  test("uses fade timing for the invisible-thumb close fallback", async () => {
+    const { closeButton, container, events, root } = setupGridCloseScenario(
+      undefined,
+      { transform: 500, fade: 180 }
+    );
+
+    await clickClose(closeButton);
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(219);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(1);
       await Promise.resolve();
     });
 
@@ -524,6 +555,39 @@ describe("fullscreen close sequencing", () => {
     unmount(root, container);
   });
 
+  test("uses transform timing for the visible close-to-thumb path", async () => {
+    const { closeButton, container, events, root } = setupGridCloseScenario(
+      true,
+      { transform: 500, fade: 180 }
+    );
+
+    await clickClose(closeButton);
+
+    expect(events).toEqual(["scrollTo"]);
+
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+
+    expect(events.slice(0, 2)).toEqual(["scrollTo", "closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(579);
+      await Promise.resolve();
+    });
+
+    expect(events).not.toContain("closing:false");
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(1);
+      await Promise.resolve();
+    });
+
+    expect(events).toContain("closing:false");
+
+    unmount(root, container);
+  });
+
   test("can defer grid page scroll until after close teardown", async () => {
     const { closeButton, container, events, root } = setupGridCloseScenario({
       enabled: true,
@@ -535,7 +599,7 @@ describe("fullscreen close sequencing", () => {
     expect(events).toEqual(["closing:true"]);
 
     await React.act(async () => {
-      vi.advanceTimersByTime(340);
+      vi.advanceTimersByTime(540);
       await Promise.resolve();
     });
 

@@ -103,9 +103,16 @@ export type FullscreenCaptionOptions = {
 
 export type FullscreenCrossfadeOptions = CrossFade;
 
+export type FullscreenIntroPathTiming<T> =
+  | T
+  | {
+      transform?: T;
+      fade?: T;
+    };
+
 export type FullscreenEffectsOptions = {
-  introDuration?: number;
-  introEasing?: string;
+  introDuration?: FullscreenIntroPathTiming<number>;
+  introEasing?: FullscreenIntroPathTiming<string>;
   introFade?: boolean;
   introStickyNavSelector?: string;
   crossfade?: FullscreenCrossfadeOptions;

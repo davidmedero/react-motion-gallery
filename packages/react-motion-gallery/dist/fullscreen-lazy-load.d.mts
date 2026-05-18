@@ -1,4 +1,4 @@
-import { g as FullscreenLazyLoadOptions, j as FullscreenPlugin } from './responsive-Cwty6be5.mjs';
+import { i as FullscreenLazyLoadOptions, l as FullscreenPlugin } from './responsive-MOdk42GH.mjs';
 import './types-DXFoG8LC.mjs';
 import 'react';
 import './responsiveNumber-CouEMJ9O.mjs';
