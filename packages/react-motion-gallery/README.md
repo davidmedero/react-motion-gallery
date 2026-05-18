@@ -1860,6 +1860,10 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `enabled` | `boolean` | `false` | Master switch for fullscreen UI. |
 | `items` | `MediaItem[] \| string[]` | `—` | Declared in the type, but current fullscreen media resolution comes from `GalleryCore.fullscreenItems`. |
 | `renderImage` | `({ item, index, isZoomed, className, baseStyle }) => ReactNode` | `—` | Custom fullscreen image renderer. Must render a real descendant `<img>`. With `lazyLoad.images.enabled`, the renderer is mounted only when the slide is allowed and the runtime watches that descendant image for load/decode readiness. |
+| `closeScroll` | `boolean \| FullscreenCloseScrollOptions` | `false` | Scrolls the matching base item into the center of the viewport when fullscreen closes. `true` enables the default before-close scroll; object form defaults `enabled` to `true`. |
+| `closeScroll.enabled` | `boolean \| "desktop-only" \| "mobile-only" \| ((context) => boolean)` | `true` in object form | Enables close-scroll conditionally. Function form receives the current fullscreen index, layout, target element, viewport and pointer details, and the resolved `isMobile` flag. |
+| `closeScroll.timing` | `"before-close" \| "after-close"` | `"before-close"` | Chooses whether to scroll before the close animation starts or after the modal has closed. |
+| `closeScroll.mobileDetection` | `(context: FullscreenMobileDetectionContext) => boolean` | built-in heuristic | Overrides mobile detection used by `"desktop-only"`, `"mobile-only"`, and the resolver context. The built-in heuristic treats narrow touch/no-hover viewports as mobile. |
 | `video.source` | `(item: MediaItem, index: number) => Plyr.SourceInfo` | `—` | Builds fullscreen Plyr sources for video items. |
 | `video.options` | `Plyr.Options \| ((item: MediaItem, index: number) => Plyr.Options)` | `—` | Builds fullscreen Plyr options. |
 | `video.playOnOpen` | `boolean` | `false` | Attempts to play the fullscreen Plyr video when fullscreen opens directly onto a video slide. Browser autoplay rules still apply. |
@@ -1925,6 +1929,8 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `lazyLoad.videos.spinner` | `boolean \| ReactNode \| ((args) => ReactNode)` | `—` | Spinner override for fullscreen videos. |
 | `lazyLoad.videos.spinnerClassName` | `string` | `—` | Spinner class for video slides. |
 | `lazyLoad.videos.spinnerStyle` | `React.CSSProperties` | `—` | Spinner style for video slides. |
+
+Use `fullscreen.closeScroll` when the base gallery item might be offscreen by the time the user closes fullscreen. This keeps the close animation anchored to the matching item instead of landing on a hidden or distant origin.
 
 Fullscreen `effects.crossfade.wheel` uses the same `true`, `false`, or object form as slider wheel crossfade. Its `durationMs` default follows fullscreen `effects.crossfade.durationMs`, which defaults to `120`.
 
