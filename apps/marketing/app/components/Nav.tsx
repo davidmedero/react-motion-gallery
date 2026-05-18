@@ -34,7 +34,7 @@ export function Nav() {
           className="flex min-w-0 max-w-150 shrink items-center gap-2.5"
         >
           <Image
-            src="https://cdn.react-motion-gallery.com/nav/color-corrected-rmg-icon.png"
+            src="https://cdn.react-motion-gallery.com/nav/rmg-icon-v2.png"
             alt=""
             width={180}
             height={180}

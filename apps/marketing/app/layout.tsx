@@ -73,7 +73,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   icons: {
-    icon: "https://cdn.react-motion-gallery.com/nav/color-corrected-rmg-tab-icon.png",
+    icon: "https://cdn.react-motion-gallery.com/nav/rmg-tab-icon.png",
   },
 };
 
