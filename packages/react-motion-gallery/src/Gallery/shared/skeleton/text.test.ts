@@ -4,6 +4,8 @@ import {
   buildResponsiveTextCssRules,
   collectResponsiveTextBreakpoints,
   getResponsiveTextRenderState,
+  getSafariTextSkeletonMetrics,
+  getTextSkeletonMetrics,
 } from "./text";
 
 describe("skeleton text layout helpers", () => {
@@ -112,6 +114,32 @@ describe("skeleton text layout helpers", () => {
     expect(cssRules[1]?.css).toContain("height:48px !important;");
     expect(cssRules[1]?.css).toContain("padding-block:4px !important;");
     expect(cssRules[1]?.css).toContain("row-gap:8px !important;");
+  });
+
+  test("quantizes fractional line boxes to browser text layout units", () => {
+    const metrics = getTextSkeletonMetrics({
+      barHeight: 13,
+      lineHeight: 1.62,
+      lines: 2,
+    });
+
+    expect(metrics.lineBoxHeight).toBe(21.046875);
+    expect(metrics.totalHeight).toBe(42.09375);
+    expect(metrics.paddingBlock).toBe(4.0234375);
+    expect(metrics.rowGap).toBe(8.046875);
+  });
+
+  test("floors Safari line boxes to match WebKit text block layout", () => {
+    const metrics = getSafariTextSkeletonMetrics({
+      barHeight: 18,
+      lineHeight: 1.2,
+      lines: 2,
+    });
+
+    expect(metrics.lineBoxHeight).toBe(21);
+    expect(metrics.totalHeight).toBe(42);
+    expect(metrics.paddingBlock).toBe(1.5);
+    expect(metrics.rowGap).toBe(3);
   });
 
   test("applies scalar barWidth to every visible line", () => {

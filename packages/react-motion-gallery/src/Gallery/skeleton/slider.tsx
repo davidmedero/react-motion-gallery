@@ -17,6 +17,7 @@ import {
   type SkeletonLength,
   type SkeletonShimmer,
 } from "../shared/skeleton/layout";
+import { SAFARI_TEXT_SKELETON_SUPPORTS } from "../shared/skeleton/text";
 import { buildStableScopeId } from "../shared/stableScope";
 import {
   DEFAULT_SLIDER_RESTORE_TTL_MS,
@@ -280,25 +281,32 @@ export function buildScopedInitialHeightCss(args: {
     return Math.max(1, resolved | 0);
   };
 
-  const mkRule = (count: number, minWidth: number) => {
+  const mkRule = (
+    count: number,
+    minWidth: number,
+    textMetricsMode: "default" | "safari" = "default"
+  ) => {
     const totalExpr = buildInitialHeightFromSkeletonSpecCssExpr(
       layout,
       count,
       mode,
       minWidth,
-      args.breakpointMap
+      args.breakpointMap,
+      textMetricsMode
     );
     const rowExpr = buildRowHeightFromSkeletonSpecCssExpr(
       layout,
       count,
       mode,
       minWidth,
-      args.breakpointMap
+      args.breakpointMap,
+      textMetricsMode
     );
     const extrasExpr = buildExtrasHeightFromSkeletonSpecCssExpr(
       layout,
       minWidth,
-      args.breakpointMap
+      args.breakpointMap,
+      textMetricsMode
     );
     const spacerExpr = args.centerFirstSpacer
       ? buildCenterFirstSpacerWidthFromSkeletonSpecCssExpr(
@@ -336,9 +344,15 @@ export function buildScopedInitialHeightCss(args: {
 
   return allBreakpoints
     .map((minWidth) => {
-      const rule = mkRule(resolveCountAtMinWidth(minWidth), minWidth);
+      const count = resolveCountAtMinWidth(minWidth);
+      const rule = mkRule(count, minWidth);
       if (!rule) return "";
-      return minWidth <= 0 ? rule : `@media (min-width:${minWidth}px){${rule}}`;
+      const safariRule = mkRule(count, minWidth, "safari");
+      const css =
+        safariRule && safariRule !== rule
+          ? `${rule}@supports ${SAFARI_TEXT_SKELETON_SUPPORTS}{${safariRule}}`
+          : rule;
+      return minWidth <= 0 ? css : `@media (min-width:${minWidth}px){${css}}`;
     })
     .filter(Boolean)
     .join("\n");
@@ -428,14 +442,6 @@ export function SliderSkeleton({
     : null;
   const skeletonRootRef = React.useRef<HTMLDivElement | null>(null);
   const shellRef = React.useRef<HTMLDivElement | null>(null);
-  useSkeletonCacheWriter({
-    cache: effectiveCache,
-    kind: "slider",
-    scopeId,
-    textIds,
-    skeletonRootRef,
-    shellRef,
-  });
   const sliderRestore = restore?.kind === "slider" ? restore : null;
   const sliderRestoreHandleRef = sliderRestore?.slider?.handleRef ?? null;
   const sliderRestoreGateKey =
@@ -458,6 +464,14 @@ export function SliderSkeleton({
   const [sliderRestoreHeightPx, setSliderRestoreHeightPx] = React.useState<number | null>(null);
   const contentReady =
     ready === true && (!shouldGateSliderRestore || sliderRestoreSettled);
+  useSkeletonCacheWriter({
+    cache: effectiveCache,
+    kind: "slider",
+    scopeId,
+    textIds: contentReady ? textIds : [],
+    skeletonRootRef,
+    shellRef,
+  });
   const hasSliderLayout = !!sliderLayout;
   const sliderVisibleCount =
     sliderRestore?.visibleCount ??
@@ -786,6 +800,9 @@ export function SliderSkeleton({
             }}
           />
         ) : null}
+        {sliderRestoreScript ? (
+          <script dangerouslySetInnerHTML={{ __html: sliderRestoreScript }} />
+        ) : null}
         <SliderSkeletonCard
           count={sliderCountCss.ssrBaseCount}
           maxSlots={sliderMaxSlots}
@@ -797,18 +814,19 @@ export function SliderSkeleton({
           responsiveCssScopeSelector={`[data-rmg-scope="${scopeId}"]`}
           cacheSnapshot={validCacheSnapshot}
         />
-        {sliderRestoreScript ? (
-          <script dangerouslySetInnerHTML={{ __html: sliderRestoreScript }} />
-        ) : null}
       </div>
     ) : null;
   const sliderScopeStyle: React.CSSProperties = {
     containerType: "inline-size",
     width: "100%",
   };
+  const sliderLoadingHeight =
+    "var(--rmg-slider-initial-height, var(--rmg-slider-height, 320px))";
   const loadingShellStyle = sliderLayout
     ? ({
-        minHeight: "var(--rmg-slider-initial-height, var(--rmg-slider-height, 320px))",
+        height: sliderLoadingHeight,
+        minHeight: sliderLoadingHeight,
+        overflow: "hidden",
       } satisfies React.CSSProperties)
     : null;
 

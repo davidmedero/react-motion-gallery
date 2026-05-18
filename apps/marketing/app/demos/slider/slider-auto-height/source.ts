@@ -47,11 +47,9 @@ const AUTO_HEIGHT_VIEWPORT_BOTTOM_PADDING = 58;
 const AUTO_HEIGHT_MOBILE_VIEWPORT_BOTTOM_PADDING_EXTRA = 4;
 const AUTO_HEIGHT_DESKTOP_MIN_WIDTH = 641;
 const AUTO_HEIGHT_MOBILE_MEDIA_OFFSET = 28;
-const AUTO_HEIGHT_FOOTER_VERTICAL_PADDING = 7;
 const AUTO_HEIGHT_FOOTER_HORIZONTAL_PADDING = 10;
-const AUTO_HEIGHT_FOOTER_LINE_HEIGHT = 16;
-const AUTO_HEIGHT_FOOTER_PILL_HEIGHT =
-  AUTO_HEIGHT_FOOTER_LINE_HEIGHT + AUTO_HEIGHT_FOOTER_VERTICAL_PADDING * 2;
+const AUTO_HEIGHT_FOOTER_PILL_HEIGHT_VAR =
+  "var(--rmg-auto-height-footer-pill-height, 30px)";
 
 const SLIDES = [
   {
@@ -270,7 +268,7 @@ function createAutoHeightSkeletonItem(index: number): SkeletonNode {
             style: {
               width: getFooterPillWidth(skeletonText.footer.barWidth),
               maxWidth: "100%",
-              height: AUTO_HEIGHT_FOOTER_PILL_HEIGHT,
+              height: AUTO_HEIGHT_FOOTER_PILL_HEIGHT_VAR,
               borderRadius: 999,
               backgroundColor: "rgba(226, 232, 240, 0.72)",
             },
@@ -414,8 +412,9 @@ export function SliderAutoHeightDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
-        cache={demoSkeletonCache("slider-auto-height")}
+        // cache={demoSkeletonCache("slider-auto-height")}
         layout={AUTO_HEIGHT_SKELETON}
+        shellClassName={styles.skeletonShell}
         ready={sliderReady}
         enabled={!showMeasuredContent}
         force={{

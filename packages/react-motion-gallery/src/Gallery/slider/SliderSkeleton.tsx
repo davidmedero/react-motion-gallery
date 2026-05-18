@@ -11,8 +11,9 @@ import {
   TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER,
   buildResponsiveTextCssRules,
   collectResponsiveTextBreakpoints,
-  getTextSkeletonMetrics,
   getResponsiveTextRenderState,
+  getSafariTextSkeletonMetricsFromMetrics,
+  getTextSkeletonMetrics,
   resolveResponsiveTextBarHeight,
   resolveResponsiveTextLineHeight,
   resolveResponsiveTextLineCount,
@@ -202,6 +203,8 @@ export type SliderSkeletonSpec = {
   shimmer?: SkeletonShimmer;
 };
 
+type SliderTextMetricsMode = "default" | "safari";
+
 export type SliderSkeletonCardProps = {
   count: number;
   maxSlots: number;
@@ -310,7 +313,9 @@ function textWrapperStyleVars(
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
   if (height != null) {
-    s.height = `${height}px`;
+    const resolvedHeight = `${height}px`;
+    s.height = resolvedHeight;
+    s.maxHeight = resolvedHeight;
   }
 
   const w = cssLen(base?.width);
@@ -659,18 +664,36 @@ export function applySliderSkeletonTextSnapshot(
 
     const lines = normalizeSnapshotLines(record.lines);
     const barWidth = toSnapshotBarWidths(record);
+    const snapshotMinWidth =
+      typeof record.containerWidthPx === "number" &&
+      Number.isFinite(record.containerWidthPx)
+        ? record.containerWidthPx
+        : 0;
     const barHeight =
       typeof record.barHeight === "number" && Number.isFinite(record.barHeight)
         ? record.barHeight
         : typeof node.barHeight === "number"
         ? node.barHeight
-        : resolveResponsiveTextBarHeight(node.barHeight, 0, 0, breakpointMap);
+        : resolveResponsiveTextBarHeight(
+            node.barHeight,
+            0,
+            snapshotMinWidth,
+            breakpointMap
+          );
     const lineHeight =
-      typeof record.lineHeight === "number" && Number.isFinite(record.lineHeight)
-        ? record.lineHeight
-        : typeof node.lineHeight === "number"
+      typeof node.lineHeight === "number"
         ? node.lineHeight
-        : resolveResponsiveTextLineHeight(node.lineHeight, 1, 0, breakpointMap);
+        : node.lineHeight != null
+        ? resolveResponsiveTextLineHeight(
+            node.lineHeight,
+            1,
+            snapshotMinWidth,
+            breakpointMap
+          )
+        : typeof record.lineHeight === "number" &&
+          Number.isFinite(record.lineHeight)
+        ? record.lineHeight
+        : 1;
 
     return {
       ...node,
@@ -826,6 +849,9 @@ function TextNode({
     inlineStyle,
     usesResponsiveTextLayoutCss ? undefined : renderState.metrics.totalHeight
   );
+  const safariMetrics = getSafariTextSkeletonMetricsFromMetrics(
+    renderState.metrics
+  );
 
   const lineStyle: SkeletonBaseStyle = {
     height: renderState.metrics.barHeight,
@@ -849,6 +875,11 @@ function TextNode({
               paddingBlock: `${renderState.metrics.paddingBlock}px`,
               rowGap: `${renderState.metrics.rowGap}px`,
             }),
+        ["--rmg-skel-text-safari-height" as any]:
+          `${safariMetrics.totalHeight}px`,
+        ["--rmg-skel-text-safari-padding-block" as any]:
+          `${safariMetrics.paddingBlock}px`,
+        ["--rmg-skel-text-safari-row-gap" as any]: `${safariMetrics.rowGap}px`,
       }}
     >
       {Array.from({ length: renderState.maxLines }).map((_, index) => (
@@ -1377,7 +1408,8 @@ function sliderRowHeightExpr(
   visibleCount: number,
   mode: "fit" | "peek",
   responsiveMinWidth = 0,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
+  textMetricsMode: SliderTextMetricsMode = "default"
 ): string | null {
   const stylePlain = resolveContainerStyleAtMinWidth(
     slider.style,
@@ -1418,7 +1450,8 @@ function sliderRowHeightExpr(
       item,
       itemContentWExpr,
       responsiveMinWidth,
-      breakpointMap
+      breakpointMap,
+      textMetricsMode
     );
     const borderY = wrapBorderBlockExpr(itemWrapStyle);
     const marginsY = marginsTBExpr(itemWrapStyle);
@@ -1469,11 +1502,18 @@ function sliderRowHeightExpr(
 function sliderChildrenHeightExpr(
   slider: SliderSkeletonSliderNode,
   responsiveMinWidth = 0,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
+  textMetricsMode: SliderTextMetricsMode = "default"
 ): string | null {
   return sumExpr(
     (slider.children ?? []).map((child) =>
-      nodeHeightExpr(child, "100cqw", responsiveMinWidth, breakpointMap)
+      nodeHeightExpr(
+        child,
+        "100cqw",
+        responsiveMinWidth,
+        breakpointMap,
+        textMetricsMode
+      )
     )
   );
 }
@@ -1482,7 +1522,8 @@ function nodeHeightExpr(
   node: SkeletonNode,
   tileWidthExpr: string,
   responsiveMinWidth = 0,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
+  textMetricsMode: SliderTextMetricsMode = "default"
 ): string | null {
   if (node.kind === "rect" || node.kind === "square" || node.kind === "circle") {
     const style = resolveResponsiveBaseStyleAtMinWidth(
@@ -1531,7 +1572,8 @@ function nodeHeightExpr(
       tile,
       contentWidthExpr,
       responsiveMinWidth,
-      breakpointMap
+      breakpointMap,
+      textMetricsMode
     );
     if (!tileH) return null;
 
@@ -1584,7 +1626,13 @@ function nodeHeightExpr(
     const contentWidthExpr = containerContentWidthExpr(tileWidthExpr, plain);
 
     const childHeights = node.children.map((c) =>
-      nodeHeightExpr(c, contentWidthExpr, responsiveMinWidth, breakpointMap)
+      nodeHeightExpr(
+        c,
+        contentWidthExpr,
+        responsiveMinWidth,
+        breakpointMap,
+        textMetricsMode
+      )
     );
 
     if (dir === "row") {
@@ -1626,7 +1674,11 @@ function nodeHeightExpr(
         breakpointMap
       ),
     });
-    return sumExpr([`${metrics.totalHeight}px`, marginsTBExpr(style)]);
+    const effectiveMetrics =
+      textMetricsMode === "safari"
+        ? getSafariTextSkeletonMetricsFromMetrics(metrics)
+        : metrics;
+    return sumExpr([`${effectiveMetrics.totalHeight}px`, marginsTBExpr(style)]);
   }
 
   return null;
@@ -1637,7 +1689,8 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
   visibleCount: number,
   mode: "fit" | "peek",
   responsiveMinWidth = 0,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
+  textMetricsMode: SliderTextMetricsMode = "default"
 ): string | null {
   const slider = (layout as any).kind === "slider"
     ? (layout as SliderSkeletonSliderNode)
@@ -1648,7 +1701,8 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
       layout as SkeletonNode,
       "100cqw",
       responsiveMinWidth,
-      breakpointMap
+      breakpointMap,
+      textMetricsMode
     );
   }
 
@@ -1657,12 +1711,14 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
     visibleCount,
     mode,
     responsiveMinWidth,
-    breakpointMap
+    breakpointMap,
+    textMetricsMode
   );
   const childrenH = sliderChildrenHeightExpr(
     slider,
     responsiveMinWidth,
-    breakpointMap
+    breakpointMap,
+    textMetricsMode
   );
 
   return sumExpr([rowH, childrenH]);
@@ -1671,7 +1727,8 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
 export function buildExtrasHeightFromSkeletonSpecCssExpr(
   layout: SliderSkeletonNode,
   responsiveMinWidth = 0,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
+  textMetricsMode: SliderTextMetricsMode = "default"
 ): string | null {
   const slider = (layout as any).kind === "slider"
     ? (layout as SliderSkeletonSliderNode)
@@ -1679,7 +1736,12 @@ export function buildExtrasHeightFromSkeletonSpecCssExpr(
 
   if (!slider) return null;
 
-  return sliderChildrenHeightExpr(slider, responsiveMinWidth, breakpointMap);
+  return sliderChildrenHeightExpr(
+    slider,
+    responsiveMinWidth,
+    breakpointMap,
+    textMetricsMode
+  );
 }
 
 export function buildCenterFirstSpacerWidthFromSkeletonSpecCssExpr(
@@ -1724,7 +1786,8 @@ export function buildRowHeightFromSkeletonSpecCssExpr(
   visibleCount: number,
   mode: "fit" | "peek",
   responsiveMinWidth = 0,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
+  textMetricsMode: SliderTextMetricsMode = "default"
 ): string | null {
   const slider = (layout as any).kind === "slider"
     ? (layout as SliderSkeletonSliderNode)
@@ -1735,7 +1798,8 @@ export function buildRowHeightFromSkeletonSpecCssExpr(
       layout as SkeletonNode,
       "100cqw",
       responsiveMinWidth,
-      breakpointMap
+      breakpointMap,
+      textMetricsMode
     );
   }
 
@@ -1744,7 +1808,8 @@ export function buildRowHeightFromSkeletonSpecCssExpr(
     visibleCount,
     mode,
     responsiveMinWidth,
-    breakpointMap
+    breakpointMap,
+    textMetricsMode
   );
 }
 

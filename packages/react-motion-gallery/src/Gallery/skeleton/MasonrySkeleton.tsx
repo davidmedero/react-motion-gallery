@@ -222,9 +222,7 @@ function buildVariantSafariCss(
             ]
           : [importantDecl("height", item.safariHeightCssExpr)];
 
-        return (
-          `${itemSel}{` + decls.join("") + `}`
-        );
+        return `${itemSel}{` + decls.join("") + `}`;
       })
       .join("");
     const containerCss = (variant.safariContainerCssRules ?? [])
@@ -442,11 +440,13 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
     [cacheControlled, scopeId, prediction.variants]
   );
   const variantSafariCss = React.useMemo(
-    () =>
-      cacheControlled ? "" : buildVariantSafariCss(scopeId, prediction.variants),
-    [cacheControlled, scopeId, prediction.variants]
+    () => {
+      const variantsForCss =
+        cacheControlled && cacheVariant ? [cacheVariant] : prediction.variants;
+      return buildVariantSafariCss(scopeId, variantsForCss);
+    },
+    [cacheControlled, cacheVariant, scopeId, prediction.variants]
   );
-
   const structuredLayout = prediction.structuredLayout;
   const rootClassName = classNames?.root ?? styles.masonrySkeletonRoot;
   const columnClassName = classNames?.column ?? styles.masonrySkeletonCol;

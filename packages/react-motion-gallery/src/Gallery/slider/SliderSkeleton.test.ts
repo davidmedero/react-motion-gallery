@@ -11,6 +11,7 @@ import {
   SliderSkeletonCard,
   type SliderSkeletonNode,
 } from "./SliderSkeleton";
+import { SliderSkeleton, buildScopedInitialHeightCss } from "../skeleton/slider";
 
 const CUSTOM_BREAKPOINTS = {
   ...BREAKPOINT_MAP,
@@ -773,10 +774,119 @@ describe("SliderSkeleton wrapper borders", () => {
     expect(markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(3);
     expect(markup).toContain("@media (min-width:767px)");
     expect(markup).toContain(
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none)"
+    );
+    expect(markup).toContain(
       'data-rmg-skel-text-line="true"]{display:none !important;height:16px !important;}'
     );
     expect(markup).toContain("@media (min-width:1200px)");
     expect(markup).toContain("nth-child(1){max-width:56% !important;}");
+  });
+
+  test("emits Safari text metrics in scoped slider shell height CSS", () => {
+    const css = buildScopedInitialHeightCss({
+      scopeId: "slider-shell-safari",
+      skeletonSpec: {
+        mode: "fit",
+        layout: {
+          kind: "slider",
+          direction: "row",
+          item: {
+            kind: "text",
+            barHeight: 13,
+            lineHeight: 1.62,
+            lines: 3,
+          },
+        },
+      },
+      responsiveCount: 1,
+      fallbackCount: 1,
+      breakpointMap: BREAKPOINT_MAP,
+    });
+
+    expect(css).toContain("--rmg-slider-row-height:63.140625px;");
+    expect(css).toContain(
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none)"
+    );
+    expect(css).toContain("--rmg-slider-row-height:63px;");
+    expect(css).toContain("--rmg-slider-initial-height:63px;");
+  });
+
+  test("locks the loading shell to slider skeleton height while content settles", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        SliderSkeleton,
+        {
+          ready: false,
+          layout: {
+            mode: "fit",
+            layout: {
+              kind: "slider",
+              direction: "row",
+              item: {
+                kind: "rect",
+                style: {
+                  width: "100%",
+                  height: 120,
+                },
+              },
+            },
+          },
+        },
+        React.createElement("div", { style: { height: 999 } }, "content")
+      )
+    );
+
+    expect(markup).toContain('data-rmg-skeleton-wrapper="true"');
+    expect(markup).toContain('data-rmg-skeleton-layout-owner="content"');
+    expect(markup).toContain(
+      "height:var(--rmg-slider-initial-height, var(--rmg-slider-height, 320px))"
+    );
+    expect(markup).toContain(
+      "min-height:var(--rmg-slider-initial-height, var(--rmg-slider-height, 320px))"
+    );
+    expect(markup).toContain("overflow:hidden");
+  });
+
+  test("emits slider restore script before skeleton card markup", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        SliderSkeleton,
+        {
+          ready: false,
+          layout: {
+            mode: "fit",
+            layout: {
+              kind: "slider",
+              direction: "row",
+              item: {
+                kind: "rect",
+                style: {
+                  width: "100%",
+                  height: 120,
+                },
+              },
+            },
+          },
+          restore: {
+            kind: "slider",
+            enabled: true,
+            key: "restore-order",
+            slider: { handleRef: React.createRef() },
+            itemCount: 3,
+            visibleCount: 1,
+          },
+        },
+        React.createElement("div", null, "content")
+      )
+    );
+
+    const restoreScriptIndex = markup.indexOf("sessionStorage.getItem");
+    const cardIndex = markup.indexOf('data-rmg-skel-part="overlay"');
+
+    expect(restoreScriptIndex).toBeGreaterThan(-1);
+    expect(cardIndex).toBeGreaterThan(-1);
+    expect(restoreScriptIndex).toBeLessThan(cardIndex);
   });
 
   test("applies cached text snapshots without responsive text CSS", () => {
@@ -792,7 +902,10 @@ describe("SliderSkeleton wrapper borders", () => {
               kind: "text",
               textId: "body",
               barHeight: 16,
-              lineHeight: 1.5,
+              lineHeight: {
+                0: 1.2,
+                900: 1.5,
+              },
               lines: {
                 0: 4,
                 900: 1,
@@ -816,7 +929,8 @@ describe("SliderSkeleton wrapper borders", () => {
               lines: 2,
               lineWidthsPx: [121, 88],
               barHeight: 12,
-              lineHeight: 1.4,
+              lineHeight: 9,
+              containerWidthPx: 900,
             },
           },
         },
@@ -825,7 +939,11 @@ describe("SliderSkeleton wrapper borders", () => {
 
     expect(markup.match(/data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(2);
     expect(markup).toContain('data-rmg-skel-text-id="body"');
+    expect(markup).toContain("height:36px");
+    expect(markup).toContain("max-height:36px");
     expect(markup).toContain("height:12px");
+    expect(markup).toContain("--rmg-skel-text-safari-height:36px");
+    expect(markup).not.toContain("height:216px");
     expect(markup).toContain("width:121px");
     expect(markup).toContain("width:88px");
     expect(markup).not.toContain("@media (min-width:900px)");

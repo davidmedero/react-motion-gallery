@@ -98,8 +98,7 @@ function measureContentLineWidths(node: HTMLElement) {
 
 function measureSkeletonTextMetrics(
   skeletonRoot: HTMLElement | null,
-  textId: string,
-  lines: number
+  textId: string
 ) {
   const skeletonNode = skeletonRoot
     ? queryByTextId<HTMLElement>(
@@ -112,17 +111,9 @@ function measureSkeletonTextMetrics(
     '[data-rmg-skel-text-line="true"]'
   );
   const barHeight = firstLine?.getBoundingClientRect().height;
-  const totalHeight = skeletonNode?.getBoundingClientRect().height;
-  const lineHeight =
-    barHeight && barHeight > 0 && totalHeight && totalHeight > 0
-      ? totalHeight / Math.max(1, lines) / barHeight
-      : undefined;
 
   return {
     ...(barHeight && barHeight > 0 ? { barHeight: roundPx(barHeight) } : null),
-    ...(lineHeight && Number.isFinite(lineHeight)
-      ? { lineHeight: roundPx(lineHeight) }
-      : null),
   };
 }
 
@@ -145,10 +136,14 @@ function measureTextSnapshot(args: {
     if (!lineWidthsPx.length) return null;
 
     const lines = Math.max(1, lineWidthsPx.length);
+    const containerRect = contentNode.getBoundingClientRect();
+    const containerWidthPx =
+      containerRect.width > 0 ? roundPx(containerRect.width) : undefined;
     text[textId] = {
       lines,
       lineWidthsPx,
-      ...measureSkeletonTextMetrics(args.skeletonRoot, textId, lines),
+      ...(containerWidthPx != null ? { containerWidthPx } : null),
+      ...measureSkeletonTextMetrics(args.skeletonRoot, textId),
     };
   }
 

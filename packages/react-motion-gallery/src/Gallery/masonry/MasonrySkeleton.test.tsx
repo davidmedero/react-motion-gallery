@@ -226,7 +226,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
       );
       const variantStyle = variant?.getAttribute("style") ?? "";
 
-      expect(variantStyle).toContain("103.264");
+      expect(variantStyle).toContain("103.25");
       expect(variantStyle).not.toContain("34.816");
     } finally {
       await React.act(async () => {
@@ -278,7 +278,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).toContain("min-height:calc(");
   });
 
-  test("streams paintable masonry skeleton DOM before Safari-only CSS", () => {
+  test("streams paintable masonry skeleton DOM without browser-specific CSS", () => {
     const markup = renderToStaticMarkup(
       <MasonrySkeleton
         layout={{
@@ -331,25 +331,13 @@ describe("MasonrySkeleton layout and text nodes", () => {
       "<div data-rmg-mskel-index",
       firstVariantIndex
     );
-    const variantSafariIndex = markup.indexOf(
-      "@supports (font: -apple-system-body) and (-webkit-hyphens: none){[data-rmg-mskel-scope",
-      firstSkeletonItemIndex
-    );
-    const shellReserveSafariIndex = markup.indexOf(
-      "@supports (font: -apple-system-body) and (-webkit-hyphens: none){[data-rmg-masonry-skeleton-shell",
-      firstSkeletonItemIndex
-    );
 
     expect(reserveStyleIndex).toBeGreaterThanOrEqual(0);
     expect(wrapperIndex).toBeGreaterThanOrEqual(0);
     expect(firstVariantIndex).toBeGreaterThan(wrapperIndex);
     expect(firstSkeletonItemIndex).toBeGreaterThan(firstVariantIndex);
     expect(reserveStyleIndex).toBeLessThan(wrapperIndex);
-    expect(variantSafariIndex).toBeGreaterThan(firstSkeletonItemIndex);
-    expect(shellReserveSafariIndex).toBeGreaterThan(firstSkeletonItemIndex);
-    expect(markup.slice(reserveStyleIndex, wrapperIndex)).not.toContain(
-      "@supports (font: -apple-system-body)"
-    );
+    expect(markup).not.toContain("rmg-mskel-safari");
     expect(firstSkeletonItemIndex - wrapperIndex).toBeLessThan(300_000);
   });
 
@@ -429,14 +417,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).not.toContain("height:max(");
     expect(markup).not.toContain("position:absolute;top:calc(");
 
-    const safariVariantCssIndex = markup.lastIndexOf(
-      "@supports (font: -apple-system-body) and (-webkit-hyphens: none){[data-rmg-mskel-scope"
-    );
-    const safariVariantCss =
-      safariVariantCssIndex >= 0 ? markup.slice(safariVariantCssIndex) : "";
-
-    expect(safariVariantCss).toContain("data-rmg-mskel-index");
-    expect(safariVariantCss).not.toContain("top:");
+    expect(markup).not.toContain("rmg-mskel-safari");
   });
 
   test("does not add a trailing bottom gap to flow-layout masonry columns", () => {
@@ -579,7 +560,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).toContain('data-rmg-mskel-index="1"');
     expect(markup).toContain("@container (min-width:856px)");
     expect(markup).toContain(
-      '--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (147.43200000000002px)) + (20)) !important;'
+      '--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (147.40625px)) + (20)) !important;'
     );
     expect(markup).toContain(
       '> [data-rmg-mskel-index="4"]{top:calc((var(--rmg-mskel-height-1)) + (18px)) !important;'
@@ -882,6 +863,34 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).toContain("height:72px");
   });
 
+  test("renders Safari geometry overrides for structured masonry text", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 1,
+        columns: 2,
+        spans: [2],
+        spec: {
+          layout: {
+            kind: "masonry",
+            item: {
+              kind: "text",
+              barHeight: 13,
+              lineHeight: 1.62,
+              lines: 3,
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain(
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none)"
+    );
+    expect(markup).toContain("--rmg-mskel-height-0:63px");
+    expect(markup).toContain("height:var(--rmg-mskel-height-0)");
+    expect(markup).toContain("height:var(--rmg-mskel-height-0) !important");
+  });
+
   test("renders compact active masonry snapshot markup when cache is valid", () => {
     const markup = renderToStaticMarkup(
       React.createElement(MasonrySkeletonCard, {
@@ -929,9 +938,10 @@ describe("MasonrySkeleton layout and text nodes", () => {
       })
     );
 
-    expect(markup.match(/data-rmg-mskel-variant=/g) ?? []).toHaveLength(1);
+    expect(markup.match(/<div[^>]*data-rmg-mskel-variant=/g) ?? []).toHaveLength(1);
     expect(markup).toContain('data-rmg-mskel-variant="c2_g8"');
     expect(markup).toContain("height:123px");
+    expect(markup).toContain("@supports (font: -apple-system-body) and (-webkit-hyphens: none)");
     expect(markup).not.toContain("nth-child");
     expect(markup).not.toContain("@media (min-width:900px)");
     expect(markup).not.toContain("@container");
@@ -1021,13 +1031,13 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(
       (markup.match(/data-rmg-skel-text-line="true"/g) ?? []).length
     ).toBeGreaterThanOrEqual(3);
-    expect(markup).toMatch(/height:68\.448/);
+    expect(markup).toMatch(/height:68\.4375/);
     expect(markup).toContain(
       "nth-child(-n+3){display:block !important;width:100% !important;max-width:100% !important;}"
     );
     expect(markup).toContain("@media (min-width:900px)");
     expect(markup).toContain("nth-child(3){max-width:20% !important;}");
-    expect(markup).toContain("height:68.44800000000001px");
+    expect(markup).toContain("height:68.4375px");
   });
 
   test("grows the masonry shell when structured content is taller than the fallback ratio", () => {

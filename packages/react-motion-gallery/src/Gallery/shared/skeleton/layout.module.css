@@ -34,14 +34,17 @@
   flex-direction: column;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   box-sizing: border-box;
   align-items: flex-start;
   align-content: flex-start;
+  overflow: hidden;
 }
 
 @supports (font: -apple-system-body) and (-webkit-hyphens: none) {
   .skelText {
     height: var(--rmg-skel-text-safari-height) !important;
+    max-height: var(--rmg-skel-text-safari-height) !important;
     padding-block: var(--rmg-skel-text-safari-padding-block) !important;
     row-gap: var(--rmg-skel-text-safari-row-gap) !important;
   }
@@ -50,6 +53,7 @@
 .skelTextLine {
   min-width: 0;
   align-self: flex-start;
+  flex: 0 0 auto;
 }
 
 .skelTile {

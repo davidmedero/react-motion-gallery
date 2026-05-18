@@ -186,6 +186,7 @@ export type SkeletonTextSnapshotRecord = {
   lineWidthsPx?: number[];
   barHeight?: number;
   lineHeight?: number;
+  containerWidthPx?: number;
 };
 
 export type SkeletonTextSnapshotMap = Record<string, SkeletonTextSnapshotRecord>;
@@ -634,7 +635,9 @@ function textWrapperStyleVars(
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
   if (height != null) {
-    s.height = `${height}px`;
+    const resolvedHeight = `${height}px`;
+    s.height = resolvedHeight;
+    s.maxHeight = resolvedHeight;
   }
 
   const w = cssLen(base?.width);
@@ -964,6 +967,11 @@ function applyTextSnapshotToNode(
 
   const lines = normalizeSnapshotLines(record.lines);
   const barWidth = toSnapshotBarWidths(record);
+  const snapshotMinWidth =
+    typeof record.containerWidthPx === "number" &&
+    Number.isFinite(record.containerWidthPx)
+      ? record.containerWidthPx
+      : 0;
   const barHeight =
     typeof record.barHeight === "number" && Number.isFinite(record.barHeight)
       ? record.barHeight
@@ -972,20 +980,22 @@ function applyTextSnapshotToNode(
       : resolveResponsiveTextBarHeight(
           node.barHeight,
           0,
-          0,
+          snapshotMinWidth,
           breakpointMap
         );
   const lineHeight =
-    typeof record.lineHeight === "number" && Number.isFinite(record.lineHeight)
-      ? record.lineHeight
-      : typeof node.lineHeight === "number"
+    typeof node.lineHeight === "number"
       ? node.lineHeight
-      : resolveResponsiveTextLineHeight(
+      : node.lineHeight != null
+      ? resolveResponsiveTextLineHeight(
           node.lineHeight,
           1,
-          0,
+          snapshotMinWidth,
           breakpointMap
-        );
+        )
+      : typeof record.lineHeight === "number" && Number.isFinite(record.lineHeight)
+      ? record.lineHeight
+      : 1;
 
   return {
     ...node,

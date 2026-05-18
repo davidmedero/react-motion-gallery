@@ -135,6 +135,8 @@ describe("skeleton cache writer", () => {
     expect(first?.text.body.lines).toBe(1);
     expect(first?.text.body.lineWidthsPx).toEqual([180]);
     expect(first?.text.body.barWidths).toBeUndefined();
+    expect(first?.text.body.containerWidthPx).toBe(180);
+    expect(first?.text.body.lineHeight).toBeUndefined();
     expect(first?.masonry?.variantKey).toBe("c2_g8");
 
     vi.setSystemTime(2000);

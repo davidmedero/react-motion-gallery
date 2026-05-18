@@ -78,6 +78,16 @@
   overflow-wrap: break-word;
 }
 
+.skeletonShell {
+  --rmg-auto-height-footer-pill-height: 30px;
+}
+
+@supports (font: -apple-system-body) and (-webkit-hyphens: none) {
+  .skeletonShell {
+    --rmg-auto-height-footer-pill-height: 29px;
+  }
+}
+
 @media (max-width: 640px) {
   .cell {
     grid-template-rows: calc(var(--media-height) - 28px) auto;

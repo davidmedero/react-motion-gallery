@@ -7,7 +7,6 @@ export type MasonryLayoutSeed = {
   initialHeights?: ReadonlyArray<number | undefined>;
   responsiveCss?: string;
   shellReserveCss?: string;
-  shellReserveSafariCss?: string;
 };
 
 const MasonryLayoutSeedContext = React.createContext<MasonryLayoutSeed | null>(null);

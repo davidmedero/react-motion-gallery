@@ -129,4 +129,36 @@ describe("Masonry responsive node styles", () => {
       160,
     ]);
   });
+
+  test("uses Safari text metrics for structured masonry prediction", () => {
+    const prediction = buildMasonrySkeletonPrediction({
+      count: 1,
+      columns: 1,
+      gap: 0,
+      spec: {
+        layout: {
+          kind: "masonry",
+          item: {
+            kind: "text",
+            barHeight: 13,
+            lineHeight: 1.62,
+            lines: 3,
+          },
+        },
+      },
+    });
+
+    const item = prediction.variants[0]?.items[0];
+
+    expect(item?.height).toBe(64);
+    expect(item?.safariHeight).toBe(63);
+    expect(item?.heightCssExpr).toBe("var(--rmg-mskel-height-0)");
+    expect(item?.safariHeightCssExpr).toBe("var(--rmg-mskel-height-0)");
+    expect(prediction.variants[0]?.positionedCssVars?.["--rmg-mskel-height-0"]).toBe(
+      "63.140625px"
+    );
+    expect(
+      prediction.variants[0]?.safariPositionedCssVars?.["--rmg-mskel-height-0"]
+    ).toBe("63px");
+  });
 });

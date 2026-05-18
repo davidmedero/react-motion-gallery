@@ -4,6 +4,7 @@ import {
   buildActiveMasonrySeedHeights,
   buildMasonryFirstPaintLayoutCss,
   buildMasonryPositionedLayout,
+  buildMasonryShellReserveCss,
   buildMasonrySkeletonPrediction,
   resolveActiveMasonryPredictionVariant,
   resolveActiveFlexStateKey,
@@ -470,10 +471,25 @@ describe("shared masonry skeleton prediction", () => {
       scopeId: "seed_test",
       prediction,
     });
+    const shellReserveCss = buildMasonryShellReserveCss({
+      scopeId: "seed_test",
+      prediction,
+    });
 
     expect(firstPaintCss).toContain("@container (min-width:856px)");
     expect(firstPaintCss).toContain("@container (min-width:963.936px)");
-    expect(firstPaintCss).toContain("--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (147.43200000000002px)) + (20)) !important;");
-    expect(firstPaintCss).toContain("--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (127.84800000000001px)) + (20)) !important;");
+    expect(firstPaintCss).toContain(
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none)"
+    );
+    expect(firstPaintCss).toContain(
+      "--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (170.21875px)) + (20)) !important;"
+    );
+    expect(firstPaintCss).toContain(
+      "--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (165px)) + (20)) !important;"
+    );
+    expect(shellReserveCss).toContain(
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none)"
+    );
+    expect(shellReserveCss).toContain("min-height:");
   });
 });

@@ -202,7 +202,10 @@ describe("skeleton responsive style helpers", () => {
       kind: "text",
       textId: "body",
       barHeight: 14,
-      lineHeight: 1.5,
+      lineHeight: {
+        0: 1.2,
+        420: 1.5,
+      },
       lines: {
         0: 4,
         420: 2,
@@ -220,7 +223,8 @@ describe("skeleton responsive style helpers", () => {
           lines: 2,
           barWidths: ["300px", "120px"],
           barHeight: 14,
-          lineHeight: 1.5,
+          lineHeight: 9,
+          containerWidthPx: 420,
         },
       },
       "__standalone__"
@@ -247,6 +251,9 @@ describe("skeleton responsive style helpers", () => {
       "300px",
       "120px",
     ]);
+    expect((prepared as Extract<SkeletonNode, { kind: "text" }>).lineHeight).toBe(
+      1.5
+    );
   });
 
   test("serializes typed flex container and item style props", () => {

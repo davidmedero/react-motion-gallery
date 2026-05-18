@@ -22,7 +22,6 @@ import { MasonryLayoutSeedProvider } from "../masonry/MasonryLayoutSeedContext";
 import {
   buildMasonryFirstPaintLayoutCss,
   buildMasonryShellReserveCss,
-  buildMasonryShellReserveSafariCss,
   buildMasonrySkeletonPrediction,
   resolveActiveMasonryPredictionVariant,
 } from "../masonry/prediction";
@@ -433,10 +432,6 @@ export function MasonrySkeleton({
         scopeId: seedScopeId,
         prediction: compactPrediction,
       }),
-      shellReserveSafariCss: buildMasonryShellReserveSafariCss({
-        scopeId: seedScopeId,
-        prediction: compactPrediction,
-      }),
     };
   }, [
     effectiveBreakpoints,
@@ -605,13 +600,6 @@ export function MasonrySkeleton({
         />
       ) : null}
       {framedSkeleton}
-      {reserveShell && masonryLayoutSeed.shellReserveSafariCss ? (
-        <style
-          dangerouslySetInnerHTML={{
-            __html: masonryLayoutSeed.shellReserveSafariCss,
-          }}
-        />
-      ) : null}
     </div>
   );
 }

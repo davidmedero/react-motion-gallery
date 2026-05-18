@@ -21,8 +21,8 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `masonry/ready` | 323.0B |
 | `masonry/lazy-load` | 3.3kB |
 | `Skeleton base` | 10.7kB |
-| `skeleton/slider` | 19.3kB |
-| `skeleton/grid` | 13.0kB |
+| `skeleton/slider` | 19.6kB |
+| `skeleton/grid` | 13.1kB |
 | `skeleton/masonry` | 21.9kB |
 | `Slider core` | 18.7kB |
 | `slider/ready` | 894.0B |

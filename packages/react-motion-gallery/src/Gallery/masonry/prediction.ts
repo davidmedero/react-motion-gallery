@@ -2764,35 +2764,6 @@ export function buildMasonryShellReserveCss(args: {
         )}}`
       )
       .join("");
-
-    return `${baseCss}${containerCss}`;
-  };
-
-  return args.prediction.variants
-    .map((variant) => {
-      const css = buildVariantCss(variant);
-      if (variant.state.minWidth <= 0) return css;
-      return `@media (min-width:${variant.state.minWidth}px){${css}}`;
-    })
-    .join("\n");
-}
-
-export function buildMasonryShellReserveSafariCss(args: {
-  scopeId: string;
-  prediction: MasonrySkeletonPrediction;
-}) {
-  if (!args.scopeId || !args.prediction.variants.length) return "";
-
-  const scopeSelector = `[data-rmg-masonry-skeleton-shell="${escapeAttrValue(args.scopeId)}"]`;
-
-  const buildRuleCss = (rootDecls: Array<[string, string | number]>) =>
-    `${scopeSelector}{` +
-    toShellReserveDecls(rootDecls)
-      .map(([name, value]) => importantDecl(name, value))
-      .join("") +
-    `}`;
-
-  const buildVariantCss = (variant: MasonryPredictionVariant) => {
     const safariCss = buildRuleCss(buildMasonrySeedRootDecls(variant, "safari"));
     const safariContainerCss = (variant.safariContainerCssRules ?? [])
       .map((rule) =>
@@ -2802,7 +2773,7 @@ export function buildMasonryShellReserveSafariCss(args: {
       )
       .join("");
 
-    return `@supports ${SAFARI_TEXT_SKELETON_SUPPORTS}{${safariCss}${safariContainerCss}}`;
+    return `${baseCss}${containerCss}@supports ${SAFARI_TEXT_SKELETON_SUPPORTS}{${safariCss}${safariContainerCss}}`;
   };
 
   return args.prediction.variants
