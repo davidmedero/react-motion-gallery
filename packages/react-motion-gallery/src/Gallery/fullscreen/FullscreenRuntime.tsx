@@ -198,6 +198,22 @@ function fullscreenMediaSignature(items: MediaItem[]) {
     .join('||');
 }
 
+function isCrossOriginMediaUrl(src: string) {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    const url = new URL(src, window.location.href);
+    return url.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function shouldUseAnonymousCrossOrigin(src: string) {
+  if (!isCrossOriginMediaUrl(src)) return false;
+  return /\.(?:mp4|m4v|webm|ogv|ogg|mov)(?:[?#]|$)/i.test(src);
+}
+
 function pausePlyrApi(api: APITypes | null) {
   if (!api) return;
 
@@ -1318,10 +1334,12 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       if (typeof mp4 === 'string' && mp4) {
         try {
           const v = document.createElement('video');
+          if (shouldUseAnonymousCrossOrigin(mp4)) {
+            v.crossOrigin = 'anonymous';
+          }
           v.preload = 'auto';
           v.muted = true;
           v.playsInline = true;
-          // v.crossOrigin = 'anonymous'; // enable only if your CDN sends CORS headers
           if (poster) v.poster = poster;
           v.src = mp4;
 

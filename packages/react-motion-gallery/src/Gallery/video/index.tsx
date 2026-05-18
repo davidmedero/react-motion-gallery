@@ -171,6 +171,11 @@ function isCrossOriginMediaUrl(src: string) {
   }
 }
 
+function shouldUseAnonymousCrossOrigin(src: string) {
+  if (!isCrossOriginMediaUrl(src)) return false;
+  return /\.(?:mp4|m4v|webm|ogv|ogg|mov)(?:[?#]|$)/i.test(src);
+}
+
 function setPlayerVisible(playerEl: HTMLElement | null, visible: boolean) {
   if (!playerEl) return;
   playerEl.style.opacity = visible ? '1' : '0';
@@ -370,6 +375,9 @@ export function Video(props: VideoProps) {
 
     try {
       const v = document.createElement('video');
+      if (shouldUseAnonymousCrossOrigin(mp4)) {
+        v.crossOrigin = 'anonymous';
+      }
       v.preload = 'auto';
       v.muted = true;
       v.playsInline = true;
