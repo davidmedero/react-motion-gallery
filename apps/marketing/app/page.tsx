@@ -37,7 +37,7 @@ export default async function Home() {
           <div className="home-intro__visual" aria-hidden>
             <Image
               className="home-intro__visualImage"
-              src="https://cdn.react-motion-gallery.com/nav/rmg-icon-v3.png"
+              src="https://cdn.react-motion-gallery.com/nav/rmg-icon-v5.png"
               alt=""
               fill
               priority
