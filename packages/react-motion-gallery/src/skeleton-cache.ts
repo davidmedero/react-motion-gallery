@@ -15,6 +15,8 @@ export type {
   SkeletonCacheMasonrySnapshot,
   SkeletonCacheOptions,
   SkeletonCacheProviderProps,
+  SkeletonCacheSliderRestoreSnapshot,
+  SkeletonCacheSliderSnapshot,
   SkeletonCacheSnapshot,
   SkeletonCacheTextRecord,
 } from "./Gallery/skeleton/cache";

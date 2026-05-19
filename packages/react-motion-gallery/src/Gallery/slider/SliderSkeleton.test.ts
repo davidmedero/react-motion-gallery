@@ -1,8 +1,17 @@
+// @vitest-environment jsdom
 import * as React from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { BREAKPOINT_MAP } from "../shared/responsive";
+import { buildStableScopeId } from "../shared/stableScope";
+import {
+  getSkeletonCacheCookieName,
+  parseSkeletonCacheCookie,
+  serializeSkeletonCacheSnapshot,
+} from "../skeleton/cache";
+import type { SliderHandle } from "./types";
 import {
   buildCenterFirstSpacerWidthFromSkeletonSpecCssExpr,
   buildInitialHeightFromSkeletonSpecCssExpr,
@@ -17,6 +26,18 @@ const CUSTOM_BREAKPOINTS = {
   ...BREAKPOINT_MAP,
   tablet: 840,
 };
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+beforeEach(() => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+});
+
+afterEach(() => {
+  delete (globalThis as any).IS_REACT_ACT_ENVIRONMENT;
+});
 
 describe("SliderSkeleton wrapper borders", () => {
   test("keeps explicit wrapper height as the outer border-box height", () => {
@@ -881,7 +902,7 @@ describe("SliderSkeleton wrapper borders", () => {
       )
     );
 
-    const restoreScriptIndex = markup.indexOf("sessionStorage.getItem");
+    const restoreScriptIndex = markup.indexOf("rmg_slider_restore_");
     const cardIndex = markup.indexOf('data-rmg-skel-part="overlay"');
 
     expect(restoreScriptIndex).toBeGreaterThan(-1);
@@ -889,7 +910,7 @@ describe("SliderSkeleton wrapper borders", () => {
     expect(restoreScriptIndex).toBeLessThan(cardIndex);
   });
 
-  test("applies cached text snapshots without responsive text CSS", () => {
+  test("preserves source responsive metrics while rendering cached text widths", () => {
     const markup = renderToStaticMarkup(
       React.createElement(SliderSkeletonCard, {
         count: 1,
@@ -937,16 +958,615 @@ describe("SliderSkeleton wrapper borders", () => {
       })
     );
 
-    expect(markup.match(/data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(2);
+    expect(markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(1);
     expect(markup).toContain('data-rmg-skel-text-id="body"');
-    expect(markup).toContain("height:36px");
-    expect(markup).toContain("max-height:36px");
-    expect(markup).toContain("height:12px");
-    expect(markup).toContain("--rmg-skel-text-safari-height:36px");
+    expect(markup).not.toContain("@media");
+    expect(markup).not.toContain("@container");
+    expect(markup).toContain("height:24px");
+    expect(markup).toContain("max-height:24px");
+    expect(markup).toContain("height:16px");
+    expect(markup).not.toContain("height:12px");
+    expect(markup).not.toContain("height:36px");
     expect(markup).not.toContain("height:216px");
-    expect(markup).toContain("width:121px");
-    expect(markup).toContain("width:88px");
-    expect(markup).not.toContain("@media (min-width:900px)");
+    expect(markup).toContain("max-width:121px");
+    expect(markup).not.toContain("max-width:88px");
+  });
+
+  test("uses cached line counts only when source text omits lines", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(SliderSkeletonCard, {
+        count: 1,
+        maxSlots: 1,
+        spec: {
+          layout: {
+            kind: "slider",
+            direction: "row",
+            item: {
+              kind: "text",
+              textId: "body",
+              barHeight: 16,
+              lineHeight: 1.5,
+              style: {
+                width: "88%",
+              },
+            },
+          },
+        },
+        cacheSnapshot: {
+          version: 1,
+          key: "slider-demo",
+          scopeId: "scope-a",
+          kind: "slider",
+          createdAt: 1000,
+          widthBucketMin: 900,
+          viewportWidth: 1200,
+          text: {
+            body: {
+              lines: 2,
+              lineWidthsPx: [121, 88],
+              barHeight: 12,
+              lineHeight: 9,
+              containerWidthPx: 900,
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(2);
+    expect(markup).toContain("height:48px");
+    expect(markup).toContain("max-height:48px");
+    expect(markup).toContain("height:16px");
+    expect(markup).not.toContain("@media");
+    expect(markup).not.toContain("@container");
+    expect(markup).not.toContain("height:216px");
+    expect(markup).not.toContain("height:12px");
+    expect(markup).toContain("max-width:121px");
+    expect(markup).toContain("max-width:88px");
+  });
+
+  test("uses snapshot viewport width for source viewport-responsive text", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(SliderSkeletonCard, {
+        count: 1,
+        maxSlots: 1,
+        spec: {
+          layout: {
+            kind: "slider",
+            direction: "row",
+            item: {
+              kind: "text",
+              textId: "body",
+              barHeight: 10,
+              lineHeight: {
+                0: 1,
+                900: 3,
+              },
+              lines: 1,
+            },
+          },
+        },
+        cacheSnapshot: {
+          version: 1,
+          key: "slider-demo",
+          scopeId: "scope-a",
+          kind: "slider",
+          createdAt: 1000,
+          widthBucketMin: 900,
+          viewportWidth: 1200,
+          text: {
+            body: {
+              lines: 2,
+              lineWidthsPx: [121, 88],
+              barHeight: 5,
+              lineHeight: 9,
+              containerWidthPx: 500,
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain("max-height:30px");
+    expect(markup).not.toContain("max-height:10px");
+  });
+
+  test("uses cached container width for container-responsive source text", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(SliderSkeletonCard, {
+        count: 1,
+        maxSlots: 1,
+        spec: {
+          layout: {
+            kind: "slider",
+            direction: "row",
+            item: {
+              kind: "text",
+              textId: "body",
+              responsiveBy: "container",
+              barHeight: 10,
+              lineHeight: {
+                0: 1,
+                900: 3,
+              },
+              lines: 1,
+            },
+          },
+        },
+        cacheSnapshot: {
+          version: 1,
+          key: "slider-demo",
+          scopeId: "scope-a",
+          kind: "slider",
+          createdAt: 1000,
+          widthBucketMin: 900,
+          viewportWidth: 1200,
+          layoutWidthPx: 1200,
+          text: {
+            body: {
+              lines: 2,
+              lineWidthsPx: [121, 88],
+              barHeight: 5,
+              lineHeight: 9,
+              containerWidthPx: 500,
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain("max-height:10px");
+    expect(markup).not.toContain("max-height:30px");
+  });
+
+  test("applies slider cache as a first-paint render context", () => {
+    const layout = {
+      mode: "fit" as const,
+      layout: {
+        kind: "slider" as const,
+        direction: "row" as const,
+        item: {
+          kind: "text" as const,
+          textId: "body",
+          barHeight: 16,
+          lineHeight: 1.5,
+          lines: 1,
+        },
+      },
+    };
+    const scopeId = buildStableScopeId("skel_", {
+      layout,
+      breakpoints: BREAKPOINT_MAP,
+      backgroundColor: undefined,
+      radius: undefined,
+      shimmer: undefined,
+      disableShimmer: undefined,
+    });
+    const markup = renderToStaticMarkup(
+      React.createElement(SliderSkeleton, {
+        ready: false,
+        layout,
+        cache: {
+          key: "slider-demo",
+          snapshot: {
+            version: 1,
+            key: "slider-demo",
+            scopeId,
+            kind: "slider",
+            createdAt: Date.now(),
+            widthBucketMin: 0,
+            viewportWidth: 1200,
+            text: {
+              body: {
+                lines: 2,
+                lineWidthsPx: [121, 88],
+                barHeight: 12,
+                lineHeight: 9,
+                containerWidthPx: 900,
+              },
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain("--rmg-slider-row-height:24px");
+    expect(markup).toContain("max-width:121px");
+    expect(markup).not.toContain("@media");
+    expect(markup).not.toContain("@container");
+    expect(markup).not.toContain("height:216px");
+  });
+
+  test("cached wrapper height CSS resolves only the current breakpoint", () => {
+    const layout = {
+      mode: "fit" as const,
+      layout: {
+        kind: "slider" as const,
+        direction: "row" as const,
+        item: {
+          kind: "text" as const,
+          textId: "body",
+          barHeight: 16,
+          lineHeight: {
+            0: 1,
+            900: 2,
+          },
+          lines: 1,
+        },
+      },
+    };
+    const scopeId = buildStableScopeId("skel_", {
+      layout,
+      breakpoints: BREAKPOINT_MAP,
+      backgroundColor: undefined,
+      radius: undefined,
+      shimmer: undefined,
+      disableShimmer: undefined,
+    });
+    const markup = renderToStaticMarkup(
+      React.createElement(SliderSkeleton, {
+        ready: false,
+        layout,
+        cache: {
+          key: "slider-demo",
+          snapshot: {
+            version: 1,
+            key: "slider-demo",
+            scopeId,
+            kind: "slider",
+            createdAt: Date.now(),
+            widthBucketMin: 0,
+            viewportWidth: 1200,
+            text: {
+              body: {
+                lines: 3,
+                lineWidthsPx: [121, 88, 72],
+                barHeight: 8,
+                lineHeight: 9,
+                containerWidthPx: 500,
+              },
+            },
+          },
+        },
+      })
+    );
+
+    expect(markup).toContain("--rmg-slider-row-height:32px");
+    expect(markup).not.toContain("--rmg-slider-row-height:16px");
+    expect(markup).not.toContain("@media");
+    expect(markup).not.toContain("@container");
+  });
+
+  test("seeds cache-backed restore as initial skeleton and child slider state", () => {
+    const layout = {
+      mode: "fit" as const,
+      layout: {
+        kind: "slider" as const,
+        direction: "row" as const,
+        item: {
+          kind: "rect" as const,
+          style: {
+            width: "100%",
+            height: 120,
+          },
+        },
+      },
+    };
+    function ChildSlider(props: { initialIndex?: number }) {
+      return React.createElement("div", {
+        "data-child-initial-index": props.initialIndex ?? "",
+      });
+    }
+    const scopeId = buildStableScopeId("skel_", {
+      layout,
+      breakpoints: BREAKPOINT_MAP,
+      backgroundColor: undefined,
+      radius: undefined,
+      shimmer: undefined,
+      disableShimmer: undefined,
+    });
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        SliderSkeleton,
+        {
+          ready: false,
+          layout,
+          cache: {
+            key: "slider-auto-height",
+            routeKey: "/demos?demo=slider-auto-height",
+            snapshot: {
+              version: 1,
+              key: "slider-auto-height",
+              scopeId,
+              kind: "slider",
+              routeKey: "/demos?demo=slider-auto-height",
+              createdAt: Date.now(),
+              widthBucketMin: 0,
+              viewportWidth: 1200,
+              slider: {
+                restore: {
+                  version: 1,
+                  index: 2,
+                  heightPx: 461,
+                  viewportWidth: 1200,
+                  slideCount: 5,
+                  skeletonSlotCount: 5,
+                  timestamp: Date.now(),
+                  scrollY: 0,
+                  scrollMax: 0,
+                  wasAtBottom: false,
+                  storageKeyId: "slider-auto-height",
+                  routeKey: "/demos?demo=slider-auto-height",
+                  scopeId,
+                },
+              },
+              text: {},
+            },
+          },
+          restore: {
+            kind: "slider",
+            enabled: true,
+            key: "slider-auto-height",
+            slider: { handleRef: React.createRef() },
+            itemCount: 5,
+            visibleCount: 3,
+            loop: true,
+            activeSlotOffset: 1,
+          },
+        },
+        React.createElement(ChildSlider)
+      )
+    );
+
+    expect(markup).not.toContain("data-rmg-slider-restore-active");
+    expect(markup).not.toContain("data-rmg-slider-restore-static");
+    expect(markup).not.toContain("data-rmg-slider-restore-style");
+    expect(markup).not.toContain("rmg_slider_restore_");
+    expect(markup).not.toContain('"heightPx":461');
+    expect(markup).toContain('data-child-initial-index="2"');
+    expect(markup).toContain("--rmg-slider-initial-height:461px!important");
+    expect(markup).toContain("--rmg-slider-row-height:461px!important");
+    expect(markup).toContain("--rmg-slider-row-height:max(120px");
+    expect(markup).toContain('[data-rmg-skel-slot="3"]');
+  });
+
+  test("does not emit cache-backed restore CSS for first-slide no-op state", () => {
+    const layout = {
+      mode: "fit" as const,
+      layout: {
+        kind: "slider" as const,
+        direction: "row" as const,
+        item: {
+          kind: "rect" as const,
+          style: {
+            width: "100%",
+            height: 120,
+          },
+        },
+      },
+    };
+    const scopeId = buildStableScopeId("skel_", {
+      layout,
+      breakpoints: BREAKPOINT_MAP,
+      backgroundColor: undefined,
+      radius: undefined,
+      shimmer: undefined,
+      disableShimmer: undefined,
+    });
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        SliderSkeleton,
+        {
+          ready: false,
+          layout,
+          cache: {
+            key: "slider-auto-height",
+            routeKey: "/demos?demo=slider-auto-height",
+            snapshot: {
+              version: 1,
+              key: "slider-auto-height",
+              scopeId,
+              kind: "slider",
+              routeKey: "/demos?demo=slider-auto-height",
+              createdAt: Date.now(),
+              widthBucketMin: 0,
+              viewportWidth: 1200,
+              slider: {
+                restore: {
+                  version: 1,
+                  index: 0,
+                  heightPx: 461,
+                  viewportWidth: 1200,
+                  slideCount: 5,
+                  skeletonSlotCount: 5,
+                  timestamp: Date.now(),
+                  scrollY: 0,
+                  scrollMax: 0,
+                  wasAtBottom: false,
+                  storageKeyId: "slider-auto-height",
+                  routeKey: "/demos?demo=slider-auto-height",
+                  scopeId,
+                },
+              },
+              text: {},
+            },
+          },
+          restore: {
+            kind: "slider",
+            enabled: true,
+            key: "slider-auto-height",
+            slider: { handleRef: React.createRef() },
+            itemCount: 5,
+            visibleCount: 3,
+            loop: true,
+            activeSlotOffset: 1,
+          },
+        },
+        React.createElement("div", null, "content")
+      )
+    );
+
+    expect(markup).not.toContain("data-rmg-slider-restore-static");
+    expect(markup).not.toContain("data-rmg-slider-restore-style");
+    expect(markup).not.toContain("rmg_slider_restore_");
+    expect(markup).not.toContain('"heightPx":461');
+  });
+
+  test("updates the cache restore payload after a stable slider index change", async () => {
+    const layout = {
+      mode: "fit" as const,
+      layout: {
+        kind: "slider" as const,
+        direction: "row" as const,
+        item: {
+          kind: "rect" as const,
+          style: {
+            width: "100%",
+            height: 120,
+          },
+        },
+      },
+    };
+    const scopeId = buildStableScopeId("skel_", {
+      layout,
+      breakpoints: BREAKPOINT_MAP,
+      backgroundColor: undefined,
+      radius: undefined,
+      shimmer: undefined,
+      disableShimmer: undefined,
+    });
+    const cacheKey = "slider-live-restore";
+    const cookieName = getSkeletonCacheCookieName(cacheKey);
+    const routeKey = `${window.location.pathname}${window.location.search}`;
+    let index = 0;
+    let height = 461;
+    const indexSubscribers = new Set<
+      (i: number, meta: { mode: "instant" }) => void
+    >();
+    const readySubscribers = new Set<(nodes: HTMLElement[]) => void>();
+    const viewport = document.createElement("div");
+    viewport.getBoundingClientRect = () =>
+      ({
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 400,
+        bottom: height,
+        width: 400,
+        height,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    const handle = {
+      getIndex: () => index,
+      setIndex: (nextIndex: number) => {
+        index = nextIndex;
+      },
+      isReady: () => true,
+      getViewportNode: () => viewport,
+      onIndexChange: (cb: (i: number, meta: { mode: "instant" }) => void) => {
+        indexSubscribers.add(cb);
+        return () => indexSubscribers.delete(cb);
+      },
+      onReady: (cb: (nodes: HTMLElement[]) => void) => {
+        readySubscribers.add(cb);
+        return () => readySubscribers.delete(cb);
+      },
+    } as unknown as SliderHandle;
+    const handleRef = { current: null } as React.MutableRefObject<SliderHandle | null>;
+    const container = document.createElement("div");
+    let root: Root | null = null;
+
+    document.cookie = `${cookieName}=; path=/; max-age=0`;
+    document.cookie = `${cookieName}=${encodeURIComponent(
+      serializeSkeletonCacheSnapshot({
+        version: 1,
+        key: cacheKey,
+        scopeId,
+        kind: "slider",
+        routeKey,
+        createdAt: Date.now(),
+        widthBucketMin: 0,
+        viewportWidth: window.innerWidth,
+        slider: {
+          restore: {
+            version: 1,
+            index: 0,
+            heightPx: 461,
+            viewportWidth: window.innerWidth,
+            slideCount: 5,
+            skeletonSlotCount: 5,
+            timestamp: Date.now(),
+            scrollY: 0,
+            scrollMax: 0,
+            wasAtBottom: false,
+            storageKeyId: cacheKey,
+            routeKey,
+            scopeId,
+          },
+        },
+        text: {},
+      })
+    )}; path=/`;
+
+    try {
+      root = createRoot(container);
+
+      await React.act(async () => {
+        root?.render(
+          React.createElement(
+            SliderSkeleton,
+            {
+              ready: true,
+              layout,
+              cache: {
+                key: cacheKey,
+              },
+              restore: {
+                kind: "slider",
+                enabled: true,
+                key: cacheKey,
+                slider: { handleRef },
+                itemCount: 5,
+                visibleCount: 3,
+                loop: true,
+                activeSlotOffset: 1,
+              },
+            },
+            React.createElement("div", null, "content")
+          )
+        );
+        await wait(80);
+      });
+
+      handleRef.current = handle;
+      await React.act(async () => {
+        await wait(350);
+      });
+      expect(indexSubscribers.size).toBeGreaterThan(0);
+
+      index = 3;
+      height = 552;
+      await React.act(async () => {
+        indexSubscribers.forEach((cb) => cb(3, { mode: "instant" }));
+        await wait(120);
+      });
+
+      const raw = document.cookie
+        .split("; ")
+        .find((part) => part.startsWith(`${cookieName}=`))
+        ?.split("=")[1];
+      const parsed = parseSkeletonCacheCookie(raw ? decodeURIComponent(raw) : null);
+
+      expect(parsed?.slider?.restore?.index).toBe(3);
+      expect(parsed?.slider?.restore?.heightPx).toBe(552);
+      expect(parsed?.text).toEqual({});
+    } finally {
+      await React.act(async () => {
+        root?.unmount();
+      });
+      document.cookie = `${cookieName}=; path=/; max-age=0`;
+    }
   });
 
   test("emits responsive CSS for shape, text style, and media tile styles with custom aliases", () => {

@@ -2,16 +2,19 @@
 
 import * as React from "react";
 
+import { isMeaningfulSliderRestoreState } from "../slider/SliderRestore";
 import {
   DEFAULT_SKELETON_CACHE_DEBOUNCE_MS,
   DEFAULT_SKELETON_CACHE_TTL_MS,
   SKELETON_CACHE_VERSION,
   getSkeletonCacheCookieName,
   getSkeletonCacheRouteKey,
+  parseSkeletonCacheCookie,
   serializeSkeletonCacheSnapshot,
   type SkeletonCacheKind,
   type SkeletonCacheMasonrySnapshot,
   type SkeletonCacheOptions,
+  type SkeletonCacheSliderRestoreSnapshot,
   type SkeletonCacheSnapshot,
   type SkeletonCacheTextRecord,
 } from "./cache";
@@ -31,6 +34,7 @@ type UseSkeletonCacheWriterArgs = {
   skeletonRootRef: React.RefObject<HTMLElement | null>;
   shellRef?: React.RefObject<HTMLElement | null>;
   getGeometrySnapshot?: () => GeometrySnapshot | null;
+  getSliderRestoreSnapshot?: () => SkeletonCacheSliderRestoreSnapshot | null;
 };
 
 function roundPx(value: number) {
@@ -158,7 +162,17 @@ function contentRootFromShell(shell: HTMLElement | null) {
   );
 }
 
-function writeCookie(args: {
+function readCookieValue(name: string) {
+  if (typeof document === "undefined" || !document.cookie) return null;
+
+  const prefix = `${name}=`;
+  for (const part of document.cookie.split("; ")) {
+    if (part.startsWith(prefix)) return part.slice(prefix.length);
+  }
+  return null;
+}
+
+export function writeSkeletonCacheSnapshotCookie(args: {
   cache: SkeletonCacheOptions;
   snapshot: SkeletonCacheSnapshot;
 }) {
@@ -184,6 +198,66 @@ function writeCookie(args: {
     .join("; ");
 }
 
+export function readSkeletonCacheSnapshotCookie(
+  cache: SkeletonCacheOptions,
+  options: {
+    scopeId?: string;
+    kind?: SkeletonCacheKind;
+    routeKey?: string;
+  } = {}
+) {
+  return parseSkeletonCacheCookie(
+    readCookieValue(getSkeletonCacheCookieName(cache.key)),
+    {
+      key: cache.key,
+      scopeId: options.scopeId,
+      kind: options.kind,
+      routeKey: options.routeKey,
+      ttlMs: cache.ttlMs,
+    }
+  );
+}
+
+export function updateSkeletonCacheSliderRestoreCookie(args: {
+  cache: SkeletonCacheOptions;
+  kind: SkeletonCacheKind;
+  scopeId: string;
+  restore: SkeletonCacheSliderRestoreSnapshot;
+}) {
+  if (typeof document === "undefined") return false;
+
+  const routeKey = args.cache.routeKey ?? getSkeletonCacheRouteKey(window.location);
+  const snapshot = readSkeletonCacheSnapshotCookie(args.cache, {
+    scopeId: args.scopeId,
+    kind: args.kind,
+    routeKey,
+  });
+  if (!snapshot) return false;
+
+  const existingSlider = snapshot.slider ?? {};
+  const nextSlider = isMeaningfulSliderRestoreState(args.restore)
+    ? {
+        ...existingSlider,
+        restore: args.restore,
+      }
+    : (() => {
+        const rest = { ...existingSlider };
+        delete rest.restore;
+        return Object.keys(rest).length > 0 ? rest : undefined;
+      })();
+
+  writeSkeletonCacheSnapshotCookie({
+    cache: args.cache,
+    snapshot: {
+      ...snapshot,
+      routeKey,
+      createdAt: Date.now(),
+      slider: nextSlider,
+    },
+  });
+  return true;
+}
+
 export function useSkeletonCacheWriter({
   cache,
   kind,
@@ -192,6 +266,7 @@ export function useSkeletonCacheWriter({
   skeletonRootRef,
   shellRef,
   getGeometrySnapshot,
+  getSliderRestoreSnapshot,
 }: UseSkeletonCacheWriterArgs) {
   const textIdsKey = textIds.join("\u0001");
 
@@ -223,6 +298,7 @@ export function useSkeletonCacheWriter({
         widthBucketMin: 0,
       };
       if (!geometry) return;
+      const sliderRestore = getSliderRestoreSnapshot?.() ?? null;
 
       const doc = document.documentElement;
       const viewportWidth =
@@ -230,7 +306,7 @@ export function useSkeletonCacheWriter({
         (window.innerWidth || doc.clientWidth || 0);
       if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) return;
 
-      writeCookie({
+      writeSkeletonCacheSnapshotCookie({
         cache,
         snapshot: {
           version: SKELETON_CACHE_VERSION,
@@ -245,6 +321,9 @@ export function useSkeletonCacheWriter({
             ? { layoutWidthPx: roundPx(geometry.layoutWidthPx) }
             : null),
           ...(geometry.masonry ? { masonry: geometry.masonry } : null),
+          ...(sliderRestore
+            ? { slider: { restore: sliderRestore } }
+            : null),
           text,
         },
       });
@@ -273,6 +352,7 @@ export function useSkeletonCacheWriter({
   }, [
     cache,
     getGeometrySnapshot,
+    getSliderRestoreSnapshot,
     kind,
     scopeId,
     shellRef,

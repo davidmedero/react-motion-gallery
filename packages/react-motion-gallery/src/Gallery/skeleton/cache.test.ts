@@ -98,6 +98,51 @@ describe("skeleton cache cookies", () => {
     }
   });
 
+  test("round-trips optional slider restore data without rejecting old cookies", () => {
+    const sliderSnapshot: SkeletonCacheSnapshot = {
+      ...baseSnapshot,
+      kind: "slider",
+      masonry: undefined,
+      slider: {
+        restore: {
+          version: 1,
+          index: 2,
+          heightPx: 461,
+          viewportWidth: 1280,
+          slideCount: 5,
+          skeletonSlotCount: 5,
+          timestamp: 1100,
+          scrollY: 40,
+          scrollMax: 200,
+          wasAtBottom: false,
+          storageKeyId: "slider-auto-height",
+          routeKey: "/demos?demo=slider-auto-height",
+          scopeId: "scope-a",
+        },
+      },
+    };
+
+    const parsed = parseSkeletonCacheCookie(
+      encodeURIComponent(serializeSkeletonCacheSnapshot(sliderSnapshot)),
+      {
+        key: sliderSnapshot.key,
+        scopeId: sliderSnapshot.scopeId,
+        kind: "slider",
+        ttlMs: 5000,
+        now: 1200,
+      }
+    );
+
+    expect(parsed?.slider?.restore?.index).toBe(2);
+    expect(parsed?.slider?.restore?.heightPx).toBe(461);
+
+    const oldCookie = serializeSkeletonCacheSnapshot({
+      ...sliderSnapshot,
+      slider: undefined,
+    });
+    expect(parseSkeletonCacheCookie(oldCookie)?.slider).toBeUndefined();
+  });
+
   test("rejects expired and mismatched snapshots", () => {
     expect(
       validateSkeletonCacheSnapshot(baseSnapshot, {

@@ -21,15 +21,19 @@ import { SAFARI_TEXT_SKELETON_SUPPORTS } from "../shared/skeleton/text";
 import { buildStableScopeId } from "../shared/stableScope";
 import {
   DEFAULT_SLIDER_RESTORE_TTL_MS,
+  buildSliderRestoreCss,
   buildSliderRestoreScript,
+  createSliderRestoreStateForWindow,
   getSliderRestoreVisibleSlots,
+  isMeaningfulSliderRestoreState,
+  readSliderRestoreStateFromCache,
   readSliderRestoreStateFromWindow,
+  validateSliderRestoreState,
   writeSliderRestoreStateToWindow,
   type SliderRestoreRuntimeOptions,
 } from "../slider/SliderRestore";
 import {
   SliderSkeletonCard,
-  applySliderSkeletonTextSnapshot,
   buildCenterFirstSpacerWidthFromSkeletonSpecCssExpr,
   buildExtrasHeightFromSkeletonSpecCssExpr,
   buildInitialHeightFromSkeletonSpecCssExpr,
@@ -40,7 +44,6 @@ import {
   collectResponsiveSliderContainerBreakpoints,
   collectResponsiveSliderTextLineBreakpoints,
   type SkeletonLength as SliderSkeletonLength,
-  type SliderSkeletonNode,
   type SliderSkeletonSliderNode,
   type SliderSkeletonSpec,
 } from "../slider/SliderSkeleton";
@@ -50,13 +53,16 @@ import {
   type SkeletonForceOptions,
   type SkeletonTimingOptions,
 } from "./base";
-import type { SkeletonCacheOptions } from "./cache";
+import type { SkeletonCacheOptions, SkeletonCacheSnapshot } from "./cache";
 import { validateSkeletonCacheSnapshot } from "./cache";
 import {
   resolveSkeletonCacheOptions,
   useSkeletonCacheContext,
 } from "./cache-context";
-import { useSkeletonCacheWriter } from "./cache-writer";
+import {
+  updateSkeletonCacheSliderRestoreCookie,
+  useSkeletonCacheWriter,
+} from "./cache-writer";
 
 export type SkeletonSliderLayout = SliderSkeletonSliderNode & {
   mode?: SliderSkeletonSpec["mode"];
@@ -231,9 +237,14 @@ function removeSliderRestoreStyle(scopeId: string) {
   if (typeof document === "undefined") return;
 
   document
-    .querySelectorAll<HTMLStyleElement>("style[data-rmg-slider-restore-style]")
+    .querySelectorAll<HTMLStyleElement>(
+      "style[data-rmg-slider-restore-style],style[data-rmg-slider-restore-static]"
+    )
     .forEach((style) => {
-      if (style.getAttribute("data-rmg-slider-restore-style") === scopeId) {
+      if (
+        style.getAttribute("data-rmg-slider-restore-style") === scopeId ||
+        style.getAttribute("data-rmg-slider-restore-static") === scopeId
+      ) {
         style.remove();
       }
     });
@@ -246,6 +257,20 @@ function buildScopedRestoredSliderHeightCss(scopeId: string, heightPx: number | 
   return `${buildSliderShellScopeSelector(scopeId)}{--rmg-slider-initial-height:${h}px!important;--rmg-slider-row-height:${h}px!important;}`;
 }
 
+function cacheSnapshotResponsiveMinWidth(
+  snapshot: SkeletonCacheSnapshot | null | undefined
+) {
+  const viewportWidth = Number(snapshot?.viewportWidth);
+  if (Number.isFinite(viewportWidth) && viewportWidth >= 0) {
+    return viewportWidth;
+  }
+
+  const widthBucketMin = Number(snapshot?.widthBucketMin);
+  return Number.isFinite(widthBucketMin) && widthBucketMin >= 0
+    ? widthBucketMin
+    : 0;
+}
+
 export function buildScopedInitialHeightCss(args: {
   scopeId: string;
   skeletonSpec: SliderSkeletonSpec;
@@ -253,6 +278,7 @@ export function buildScopedInitialHeightCss(args: {
   fallbackCount: number;
   breakpointMap: BreakpointMap;
   centerFirstSpacer?: boolean;
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
 }) {
   const layout = args.skeletonSpec.layout;
   if (!layout) return "";
@@ -292,7 +318,8 @@ export function buildScopedInitialHeightCss(args: {
       mode,
       minWidth,
       args.breakpointMap,
-      textMetricsMode
+      textMetricsMode,
+      args.cacheSnapshot
     );
     const rowExpr = buildRowHeightFromSkeletonSpecCssExpr(
       layout,
@@ -300,13 +327,15 @@ export function buildScopedInitialHeightCss(args: {
       mode,
       minWidth,
       args.breakpointMap,
-      textMetricsMode
+      textMetricsMode,
+      args.cacheSnapshot
     );
     const extrasExpr = buildExtrasHeightFromSkeletonSpecCssExpr(
       layout,
       minWidth,
       args.breakpointMap,
-      textMetricsMode
+      textMetricsMode,
+      args.cacheSnapshot
     );
     const spacerExpr = args.centerFirstSpacer
       ? buildCenterFirstSpacerWidthFromSkeletonSpecCssExpr(
@@ -331,6 +360,18 @@ export function buildScopedInitialHeightCss(args: {
 
     return `${shellSel}{${decls}}`;
   };
+
+  if (args.cacheSnapshot) {
+    const minWidth = cacheSnapshotResponsiveMinWidth(args.cacheSnapshot);
+    const count = resolveCountAtMinWidth(minWidth);
+    const rule = mkRule(count, minWidth);
+    if (!rule) return "";
+
+    const safariRule = mkRule(count, minWidth, "safari");
+    return safariRule && safariRule !== rule
+      ? `${rule}@supports ${SAFARI_TEXT_SKELETON_SUPPORTS}{${safariRule}}`
+      : rule;
+  }
 
   const allBreakpoints = Array.from(
     new Set<number>([
@@ -426,52 +467,13 @@ export function SliderSkeleton({
       textIds,
     }
   );
-  const effectiveSliderSpec = React.useMemo(() => {
-    if (!validCacheSnapshot?.text || !sliderSpec?.layout) return sliderSpec;
-    return {
-      ...sliderSpec,
-      layout: applySliderSkeletonTextSnapshot(
-        sliderSpec.layout,
-        validCacheSnapshot.text,
-        effectiveBreakpoints
-      ) as SliderSkeletonNode,
-    } as SliderSkeletonSpec;
-  }, [effectiveBreakpoints, sliderSpec, validCacheSnapshot]);
-  const sliderLayout = effectiveSliderSpec?.layout?.kind === "slider"
-    ? (effectiveSliderSpec.layout as SliderSkeletonSliderNode)
+  const sliderLayout = sliderSpec?.layout?.kind === "slider"
+    ? (sliderSpec.layout as SliderSkeletonSliderNode)
     : null;
   const skeletonRootRef = React.useRef<HTMLDivElement | null>(null);
   const shellRef = React.useRef<HTMLDivElement | null>(null);
   const sliderRestore = restore?.kind === "slider" ? restore : null;
   const sliderRestoreHandleRef = sliderRestore?.slider?.handleRef ?? null;
-  const sliderRestoreGateKey =
-    sliderRestore &&
-    sliderRestore.enabled !== false &&
-    sliderRestore.slider?.handleRef
-      ? [
-          sliderRestore.key ?? "",
-          sliderRestore.itemCount,
-          JSON.stringify(sliderRestore.visibleCount ?? null),
-          sliderRestore.loop === true ? "loop" : "no-loop",
-          sliderRestore.activeSlotOffset ?? "",
-        ].join(":")
-      : "";
-  const shouldGateSliderRestore = sliderRestoreGateKey !== "";
-  const [sliderRestoreSettled, setSliderRestoreSettled] = React.useState(
-    () => !shouldGateSliderRestore
-  );
-  const [sliderRestoreIndex, setSliderRestoreIndex] = React.useState<number | null>(null);
-  const [sliderRestoreHeightPx, setSliderRestoreHeightPx] = React.useState<number | null>(null);
-  const contentReady =
-    ready === true && (!shouldGateSliderRestore || sliderRestoreSettled);
-  useSkeletonCacheWriter({
-    cache: effectiveCache,
-    kind: "slider",
-    scopeId,
-    textIds: contentReady ? textIds : [],
-    skeletonRootRef,
-    shellRef,
-  });
   const hasSliderLayout = !!sliderLayout;
   const sliderVisibleCount =
     sliderRestore?.visibleCount ??
@@ -486,8 +488,8 @@ export function SliderSkeleton({
         : 1;
   const sliderCenterFirst =
     !!sliderLayout &&
-    effectiveSliderSpec?.centering === "first" &&
-    (effectiveSliderSpec?.mode ?? "fit") === "peek";
+    sliderSpec?.centering === "first" &&
+    (sliderSpec?.mode ?? "fit") === "peek";
   const sliderCenterFirstSpacer =
     sliderCenterFirst &&
     maxResolvedSkeletonCount(
@@ -537,8 +539,11 @@ export function SliderSkeleton({
           : DEFAULT_SLIDER_RESTORE_TTL_MS,
       slideCount: itemCount,
       skeletonSlotCount: Math.max(itemCount, sliderSlotCount),
+      scopeId,
+      routeKey: effectiveCache?.routeKey,
     };
   }, [
+    effectiveCache?.routeKey,
     hasSliderLayout,
     scopeId,
     sliderRestore?.enabled,
@@ -547,6 +552,116 @@ export function SliderSkeleton({
     sliderRestore?.ttlMs,
     sliderSlotCount,
   ]);
+  const cachedSliderRestoreState = React.useMemo(() => {
+    if (!validCacheSnapshot?.slider?.restore || !sliderRestoreRuntime?.enabled) {
+      return null;
+    }
+
+    const state = validateSliderRestoreState(validCacheSnapshot.slider.restore, {
+      ttlMs: sliderRestoreRuntime.ttlMs,
+      slideCount: sliderRestoreRuntime.slideCount,
+      skeletonSlotCount: sliderRestoreRuntime.skeletonSlotCount,
+      storageKeyId: sliderRestoreRuntime.storageKeyId,
+      routeKey: validCacheSnapshot.routeKey,
+      scopeId: validCacheSnapshot.scopeId,
+    });
+    return isMeaningfulSliderRestoreState(state) ? state : null;
+  }, [sliderRestoreRuntime, validCacheSnapshot]);
+  const shouldUseCacheInitialRestore =
+    !!effectiveCache?.key && !!cachedSliderRestoreState;
+  const canSeedCacheInitialRestore =
+    shouldUseCacheInitialRestore &&
+    React.isValidElement(children) &&
+    typeof children.type !== "string" &&
+    children.type !== React.Fragment &&
+    (children.props as { initialIndex?: unknown }).initialIndex == null;
+  const shouldApplySliderRestoreEffect =
+    !!sliderRestoreRuntime?.enabled &&
+    (!shouldUseCacheInitialRestore || !canSeedCacheInitialRestore);
+  const shouldGateSliderRestore =
+    !!sliderRestoreHandleRef &&
+    shouldApplySliderRestoreEffect &&
+    (!effectiveCache?.key || !!cachedSliderRestoreState);
+  const sliderRestoreGateKey = shouldGateSliderRestore
+    ? [
+        sliderRestoreRuntime?.storageKeyId ?? "",
+        sliderRestoreRuntime?.slideCount ?? "",
+        sliderRestoreRuntime?.skeletonSlotCount ?? "",
+        JSON.stringify(sliderRestore?.visibleCount ?? null),
+        sliderRestore?.loop === true ? "loop" : "no-loop",
+        sliderRestore?.activeSlotOffset ?? "",
+        cachedSliderRestoreState
+          ? [
+              cachedSliderRestoreState.timestamp,
+              cachedSliderRestoreState.index,
+              cachedSliderRestoreState.heightPx ?? "",
+            ].join("/")
+          : "standalone",
+      ].join(":")
+    : "";
+  const [sliderRestoreIndex, setSliderRestoreIndex] = React.useState<number | null>(
+    () => cachedSliderRestoreState?.index ?? null
+  );
+  const [sliderRestoreHeightPx, setSliderRestoreHeightPx] = React.useState<number | null>(
+    () => cachedSliderRestoreState?.heightPx ?? null
+  );
+  const [sliderRestoreSettled, setSliderRestoreSettled] = React.useState(
+    () => !shouldGateSliderRestore
+  );
+  const contentReady =
+    ready === true && (!shouldGateSliderRestore || sliderRestoreSettled);
+  const getSliderRestoreSnapshot = React.useCallback(() => {
+    if (!sliderRestoreRuntime?.enabled || !sliderRestoreHandleRef) return null;
+    if (typeof window === "undefined") return null;
+
+    const handle = sliderRestoreHandleRef.current;
+    if (!handle || !handle.isReady()) return null;
+
+    const viewport = handle.getViewportNode();
+    const heightPx = viewport?.getBoundingClientRect().height;
+    if (!Number.isFinite(heightPx) || (heightPx ?? 0) <= 0) return null;
+
+    return createSliderRestoreStateForWindow(
+      sliderRestoreRuntime,
+      {
+        index: handle.getIndex(),
+        slideCount: sliderRestoreRuntime.slideCount,
+        skeletonSlotCount: sliderRestoreRuntime.skeletonSlotCount,
+        heightPx,
+      },
+      window
+    );
+  }, [sliderRestoreHandleRef, sliderRestoreRuntime]);
+  const writeSliderRestoreSnapshot = React.useCallback((restoreSnapshot = getSliderRestoreSnapshot()) => {
+    if (!sliderRestoreRuntime?.enabled) return false;
+    if (!restoreSnapshot) return false;
+
+    if (effectiveCache?.key) {
+      return updateSkeletonCacheSliderRestoreCookie({
+        cache: effectiveCache,
+        kind: "slider",
+        scopeId,
+        restore: restoreSnapshot,
+      });
+    }
+
+    writeSliderRestoreStateToWindow(sliderRestoreRuntime, restoreSnapshot);
+    return true;
+  }, [
+    effectiveCache,
+    getSliderRestoreSnapshot,
+    scopeId,
+    sliderRestoreRuntime,
+  ]);
+  useSkeletonCacheWriter({
+    cache: effectiveCache,
+    kind: "slider",
+    scopeId,
+    textIds: contentReady ? textIds : [],
+    skeletonRootRef,
+    shellRef,
+    getSliderRestoreSnapshot,
+  });
   const sliderCountCss = React.useMemo(() => {
     if (!sliderLayout) return { cssText: "", ssrBaseCount: sliderFallbackCount };
     return buildScopedSkeletonCountCss({
@@ -587,14 +702,15 @@ export function SliderSkeleton({
     sliderVisibleCount,
   ]);
   const sliderInitialHeightCss = React.useMemo(() => {
-    if (!sliderLayout || !effectiveSliderSpec) return "";
+    if (!sliderLayout || !sliderSpec) return "";
     return buildScopedInitialHeightCss({
       scopeId,
-      skeletonSpec: effectiveSliderSpec,
+      skeletonSpec: sliderSpec,
       responsiveCount: sliderVisibleCount,
       fallbackCount: sliderCountCss.ssrBaseCount,
       breakpointMap: effectiveBreakpoints,
       centerFirstSpacer: sliderCenterFirstSpacer,
+      cacheSnapshot: validCacheSnapshot,
     });
   }, [
     effectiveBreakpoints,
@@ -602,11 +718,53 @@ export function SliderSkeleton({
     sliderCenterFirstSpacer,
     sliderCountCss.ssrBaseCount,
     sliderLayout,
-    effectiveSliderSpec,
+    sliderSpec,
+    validCacheSnapshot,
+    sliderVisibleCount,
+  ]);
+  const sliderRestoreStaticCss = React.useMemo(() => {
+    if (!cachedSliderRestoreState || !sliderRestoreRuntime?.enabled || !sliderRestore || !sliderLayout) {
+      return "";
+    }
+    if (canSeedCacheInitialRestore) return "";
+
+    return buildSliderRestoreCss({
+      scopeId,
+      storageKeyId: sliderRestoreRuntime.storageKeyId,
+      ttlMs: sliderRestoreRuntime.ttlMs,
+      slideCount: sliderRestoreRuntime.slideCount,
+      skeletonSlotCount: sliderRestoreRuntime.skeletonSlotCount,
+      maxSlots: sliderMaxSlots,
+      loop: sliderRestore.loop === true,
+      activeSlotOffset:
+        sliderRestore.activeSlotOffset ??
+        (typeof sliderLayout.initialHeightSlot === "number"
+          ? sliderLayout.initialHeightSlot
+          : 0),
+      responsiveCount: sliderVisibleCount,
+      fallbackCount: sliderCountCss.ssrBaseCount,
+      breakpointMap: effectiveBreakpoints,
+      state: cachedSliderRestoreState,
+      dotStyles: collectSliderDotRestoreStyles(sliderLayout),
+    });
+  }, [
+    cachedSliderRestoreState,
+    canSeedCacheInitialRestore,
+    effectiveBreakpoints,
+    scopeId,
+    sliderCountCss.ssrBaseCount,
+    sliderLayout,
+    sliderMaxSlots,
+    sliderRestore?.activeSlotOffset,
+    sliderRestore?.enabled,
+    sliderRestore?.loop,
+    sliderRestoreRuntime,
     sliderVisibleCount,
   ]);
   const sliderRestoreScript = React.useMemo(() => {
     if (!sliderRestoreRuntime?.enabled || !sliderRestore || !sliderLayout) return "";
+    if (canSeedCacheInitialRestore) return "";
+    if (effectiveCache?.key && !cachedSliderRestoreState) return "";
     return buildSliderRestoreScript({
       scopeId,
       storageKeyId: sliderRestoreRuntime.storageKeyId,
@@ -624,8 +782,12 @@ export function SliderSkeleton({
       fallbackCount: sliderCountCss.ssrBaseCount,
       breakpointMap: effectiveBreakpoints,
       dotStyles: collectSliderDotRestoreStyles(sliderLayout),
+      state: cachedSliderRestoreState,
     });
   }, [
+    cachedSliderRestoreState,
+    canSeedCacheInitialRestore,
+    effectiveCache?.key,
     effectiveBreakpoints,
     scopeId,
     sliderCountCss.ssrBaseCount,
@@ -646,16 +808,22 @@ export function SliderSkeleton({
 
   React.useLayoutEffect(() => {
     setSliderRestoreSettled(!shouldGateSliderRestore);
-    setSliderRestoreIndex(null);
-    setSliderRestoreHeightPx(null);
-  }, [shouldGateSliderRestore, sliderRestoreGateKey]);
+    setSliderRestoreIndex(cachedSliderRestoreState?.index ?? null);
+    setSliderRestoreHeightPx(cachedSliderRestoreState?.heightPx ?? null);
+  }, [cachedSliderRestoreState, shouldGateSliderRestore, sliderRestoreGateKey]);
 
   React.useLayoutEffect(() => {
+    if (!shouldApplySliderRestoreEffect) return;
     if (!sliderRestoreRuntime?.enabled || !sliderRestoreHandleRef) return;
     if (typeof window === "undefined") return;
 
     let rafId: number | null = null;
     let cancelled = false;
+
+    const settleRestore = () => {
+      removeSliderRestoreStyle(scopeId);
+      setSliderRestoreSettled(true);
+    };
 
     const tryApply = () => {
       if (cancelled) return;
@@ -666,11 +834,13 @@ export function SliderSkeleton({
         return;
       }
 
-      const state = readSliderRestoreStateFromWindow(
-        sliderRestoreRuntime,
-        window,
-        { requireNavigationRestore: false }
-      );
+      const state = validCacheSnapshot
+        ? readSliderRestoreStateFromCache(
+            validCacheSnapshot,
+            sliderRestoreRuntime,
+            window
+          )
+        : readSliderRestoreStateFromWindow(sliderRestoreRuntime, window);
       if (!state) {
         removeSliderRestoreStyle(scopeId);
         setSliderRestoreIndex(null);
@@ -680,7 +850,6 @@ export function SliderSkeleton({
       }
       setSliderRestoreIndex(state.index);
       setSliderRestoreHeightPx(state.heightPx ?? null);
-      removeSliderRestoreStyle(scopeId);
 
       const restoreKey = [
         sliderRestoreRuntime.storageKeyId,
@@ -694,7 +863,7 @@ export function SliderSkeleton({
       }
 
       if (appliedSliderRestoreKeyRef.current === restoreKey) {
-        setSliderRestoreSettled(true);
+        settleRestore();
         return;
       }
 
@@ -719,7 +888,7 @@ export function SliderSkeleton({
           if (cancelled) return;
           rafId = window.requestAnimationFrame(() => {
             rafId = null;
-            if (!cancelled) setSliderRestoreSettled(true);
+            if (!cancelled) settleRestore();
           });
         });
       });
@@ -732,23 +901,21 @@ export function SliderSkeleton({
       if (rafId != null) window.cancelAnimationFrame(rafId);
       removeSliderRestoreStyle(scopeId);
     };
-  }, [scopeId, sliderRestoreHandleRef, sliderRestoreRuntime]);
+  }, [
+    cachedSliderRestoreState,
+    shouldApplySliderRestoreEffect,
+    scopeId,
+    sliderRestoreHandleRef,
+    sliderRestoreRuntime,
+    validCacheSnapshot,
+  ]);
 
   React.useEffect(() => {
     if (!sliderRestoreRuntime?.enabled || !sliderRestoreHandleRef) return;
     if (typeof window === "undefined") return;
 
     const write = () => {
-      const handle = sliderRestoreHandleRef.current;
-      if (!handle) return;
-      const viewport = handle.getViewportNode();
-      const heightPx = viewport?.getBoundingClientRect().height;
-      writeSliderRestoreStateToWindow(sliderRestoreRuntime, {
-        index: handle.getIndex(),
-        slideCount: sliderRestoreRuntime.slideCount,
-        skeletonSlotCount: sliderRestoreRuntime.skeletonSlotCount,
-        heightPx: heightPx && heightPx > 0 ? heightPx : undefined,
-      });
+      writeSliderRestoreSnapshot();
     };
 
     window.addEventListener("pagehide", write);
@@ -758,7 +925,154 @@ export function SliderSkeleton({
       window.removeEventListener("pagehide", write);
       window.removeEventListener("beforeunload", write);
     };
-  }, [sliderRestoreHandleRef, sliderRestoreRuntime]);
+  }, [
+    sliderRestoreHandleRef,
+    sliderRestoreRuntime,
+    writeSliderRestoreSnapshot,
+  ]);
+
+  React.useEffect(() => {
+    if (!contentReady || !sliderRestoreRuntime?.enabled || !sliderRestoreHandleRef) {
+      return;
+    }
+    if (typeof window === "undefined") return;
+
+    const restoreHandleRef = sliderRestoreHandleRef;
+    let rafId = 0;
+    let timeoutId = 0;
+    let intervalId = 0;
+    let disposed = false;
+    let attachedHandle: SliderHandle | null = null;
+    let attachedViewport: HTMLElement | null = null;
+    let offIndex: (() => void) | null = null;
+    let offReady: (() => void) | null = null;
+    let resizeObserver: ResizeObserver | null = null;
+    let lastWrittenKey: string | null = null;
+
+    const cancelPending = () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+        timeoutId = 0;
+      }
+    };
+    function cleanupHandleListeners() {
+      offIndex?.();
+      offIndex = null;
+      offReady?.();
+      offReady = null;
+      attachedViewport?.removeEventListener("transitionend", onTransitionEnd);
+      attachedViewport = null;
+      resizeObserver?.disconnect();
+      resizeObserver = null;
+      attachedHandle = null;
+    }
+    const snapshotKey = (snapshot: NonNullable<ReturnType<typeof getSliderRestoreSnapshot>>) =>
+      [
+        snapshot.index,
+        snapshot.heightPx == null
+          ? ""
+          : Math.round((snapshot.heightPx + Number.EPSILON) * 1000) / 1000,
+        snapshot.viewportWidth,
+      ].join(":");
+    const writeIfChanged = (
+      snapshot: NonNullable<ReturnType<typeof getSliderRestoreSnapshot>>
+    ) => {
+      const key = snapshotKey(snapshot);
+      if (key === lastWrittenKey) return;
+      if (writeSliderRestoreSnapshot(snapshot)) lastWrittenKey = key;
+    };
+
+    function attachHandleListeners() {
+      const handle = restoreHandleRef.current;
+      if (!handle || handle === attachedHandle) return;
+
+      cleanupHandleListeners();
+      attachedHandle = handle;
+      attachedViewport = handle.getViewportNode();
+      offIndex = handle.onIndexChange(() => {
+        scheduleStableWrite();
+      });
+      offReady = handle.onReady(() => {
+        scheduleStableWrite();
+      });
+      attachedViewport?.addEventListener("transitionend", onTransitionEnd);
+
+      if (attachedViewport && typeof ResizeObserver !== "undefined") {
+        resizeObserver = new ResizeObserver(() => {
+          scheduleStableWrite();
+        });
+        resizeObserver.observe(attachedViewport);
+      }
+    }
+
+    function scheduleStableWrite(delayMs = 0) {
+      attachHandleListeners();
+      cancelPending();
+
+      timeoutId = window.setTimeout(() => {
+        timeoutId = 0;
+        const startedAt = window.performance?.now?.() ?? Date.now();
+        let lastHeight: number | null = null;
+        let stableFrames = 0;
+
+        const sample = () => {
+          rafId = 0;
+          if (disposed) return;
+
+          attachHandleListeners();
+          const snapshot = getSliderRestoreSnapshot();
+          const height = snapshot?.heightPx ?? 0;
+          if (Number.isFinite(height) && height > 0) {
+            if (lastHeight != null && Math.abs(height - lastHeight) < 0.25) {
+              stableFrames += 1;
+            } else {
+              stableFrames = 0;
+            }
+            lastHeight = height;
+          }
+
+          const now = window.performance?.now?.() ?? Date.now();
+          if (stableFrames >= 2 || now - startedAt > 1200) {
+            if (snapshot) writeIfChanged(snapshot);
+            return;
+          }
+
+          rafId = window.requestAnimationFrame(sample);
+        };
+
+        rafId = window.requestAnimationFrame(sample);
+      }, delayMs);
+    }
+
+    function onTransitionEnd(event: TransitionEvent) {
+      if (event.propertyName && event.propertyName !== "height") return;
+      scheduleStableWrite();
+    }
+
+    attachHandleListeners();
+    scheduleStableWrite();
+    intervalId = window.setInterval(() => {
+      attachHandleListeners();
+      scheduleStableWrite();
+    }, 250);
+
+    return () => {
+      disposed = true;
+      cancelPending();
+      if (intervalId) window.clearInterval(intervalId);
+      cleanupHandleListeners();
+    };
+  }, [
+    contentReady,
+    getSliderRestoreSnapshot,
+    sliderRestoreHandleRef,
+    sliderRestoreRuntime,
+    writeSliderRestoreSnapshot,
+  ]);
 
   const rootStyle: React.CSSProperties = {
     position: "relative",
@@ -776,7 +1090,7 @@ export function SliderSkeleton({
     ...(disableShimmer ? null : (shimmerStyleVars(shimmer) as React.CSSProperties)),
   };
   const sliderSkeletonNode =
-    sliderLayout && effectiveSliderSpec ? (
+    sliderLayout && sliderSpec ? (
       <div
         data-rmg-skeleton-scope={scopeId}
         ref={skeletonRootRef}
@@ -787,7 +1101,9 @@ export function SliderSkeleton({
         role={ariaLabel ? "status" : undefined}
         aria-live={ariaLabel ? "polite" : undefined}
       >
-        {sliderCountCss.cssText || sliderInitialHeightCss || sliderRestoreHeightCss ? (
+        {sliderCountCss.cssText ||
+        sliderInitialHeightCss ||
+        sliderRestoreHeightCss ? (
           <style
             dangerouslySetInnerHTML={{
               __html: [
@@ -800,6 +1116,14 @@ export function SliderSkeleton({
             }}
           />
         ) : null}
+        {sliderRestoreStaticCss ? (
+          <style
+            media="not all"
+            data-rmg-slider-restore-static={scopeId}
+            suppressHydrationWarning
+            dangerouslySetInnerHTML={{ __html: sliderRestoreStaticCss }}
+          />
+        ) : null}
         {sliderRestoreScript ? (
           <script dangerouslySetInnerHTML={{ __html: sliderRestoreScript }} />
         ) : null}
@@ -807,7 +1131,7 @@ export function SliderSkeleton({
           count={sliderCountCss.ssrBaseCount}
           maxSlots={sliderMaxSlots}
           activeDotIndex={sliderRestoreIndex ?? undefined}
-          spec={effectiveSliderSpec}
+          spec={sliderSpec}
           breakpoints={effectiveBreakpoints}
           centerFirst={sliderCenterFirst}
           hasLeadingSpacer={sliderCenterFirstSpacer}
@@ -829,6 +1153,16 @@ export function SliderSkeleton({
         overflow: "hidden",
       } satisfies React.CSSProperties)
     : null;
+  const renderedChildren = React.useMemo(() => {
+    if (!canSeedCacheInitialRestore || !cachedSliderRestoreState) {
+      return children;
+    }
+    if (!React.isValidElement(children)) return children;
+
+    return React.cloneElement(children, {
+      initialIndex: cachedSliderRestoreState.index,
+    } as Record<string, unknown>);
+  }, [cachedSliderRestoreState, canSeedCacheInitialRestore, children]);
 
   if (!sliderSkeletonNode) return null;
 
@@ -866,7 +1200,7 @@ export function SliderSkeleton({
         }}
         shellRef={shellRef}
       >
-        {children}
+        {renderedChildren}
       </SkeletonFrame>
     </div>
   );

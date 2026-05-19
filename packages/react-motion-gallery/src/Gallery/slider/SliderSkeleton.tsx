@@ -9,12 +9,15 @@ import {
 } from "../shared/responsive";
 import {
   TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER,
+  TEXT_SKELETON_LAST_BAR_WIDTH,
   buildResponsiveTextCssRules,
   collectResponsiveTextBreakpoints,
   getResponsiveTextRenderState,
   getSafariTextSkeletonMetricsFromMetrics,
   getTextSkeletonMetrics,
   resolveResponsiveTextBarHeight,
+  resolveResponsiveTextBarWidth,
+  resolveResponsiveTextLastBarWidth,
   resolveResponsiveTextLineHeight,
   resolveResponsiveTextLineCount,
   type ResponsiveTextBarHeight,
@@ -22,6 +25,8 @@ import {
   type ResponsiveTextLineHeight,
   type ResponsiveTextLineCount,
   type ResponsiveTextLastBarWidth,
+  type ResponsiveTextRenderState,
+  type TextSkeletonResponsiveBy,
 } from "../shared/skeleton/text";
 import {
   buildResponsiveBaseStyleCssRules,
@@ -187,6 +192,7 @@ export type SkeletonNode =
       lineHeight: ResponsiveTextLineHeight;
       lines?: ResponsiveTextLineCount;
       lastBarWidth?: ResponsiveTextLastBarWidth;
+      responsiveBy?: TextSkeletonResponsiveBy;
       style?: SkeletonBaseStyleResponsive;
       shimmer?: SkeletonShimmer
     };
@@ -204,6 +210,11 @@ export type SliderSkeletonSpec = {
 };
 
 type SliderTextMetricsMode = "default" | "safari";
+
+type SliderSkeletonCacheRenderContext = {
+  snapshot: SkeletonCacheSnapshot;
+  responsiveMinWidth: number;
+};
 
 export type SliderSkeletonCardProps = {
   count: number;
@@ -459,6 +470,193 @@ function baseStylesPlain(style?: SkeletonBaseStyle): React.CSSProperties {
   };
 }
 
+function finiteNonNegativeNumber(value: unknown): number | null {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
+}
+
+function snapshotResponsiveMinWidth(
+  snapshot: SkeletonCacheSnapshot | null | undefined
+) {
+  return (
+    finiteNonNegativeNumber(snapshot?.viewportWidth) ??
+    finiteNonNegativeNumber(snapshot?.widthBucketMin) ??
+    0
+  );
+}
+
+function resolveBaseStyleForRender(
+  style: SkeletonBaseStyleResponsive | undefined,
+  breakpointMap: BreakpointMap,
+  cacheContext?: SliderSkeletonCacheRenderContext | null
+) {
+  return cacheContext
+    ? resolveResponsiveBaseStyleAtMinWidth(
+        style,
+        cacheContext.responsiveMinWidth,
+        breakpointMap
+      )
+    : resolveInlineResponsiveBaseStyle(style, breakpointMap);
+}
+
+function resolveContainerStyleForRender(
+  style: SkeletonContainerStyleResponsive | undefined,
+  breakpointMap: BreakpointMap,
+  cacheContext?: SliderSkeletonCacheRenderContext | null
+) {
+  return cacheContext
+    ? resolveResponsiveContainerStyleAtMinWidth(
+        style,
+        cacheContext.responsiveMinWidth,
+        breakpointMap
+      )
+    : resolveInlineResponsiveContainerStyle(style, breakpointMap);
+}
+
+function getTextSnapshotRecord(
+  node: Extract<SkeletonNode, { kind: "text" }>,
+  snapshot: SkeletonCacheSnapshot | null | undefined
+) {
+  return node.textId ? snapshot?.text?.[node.textId] : undefined;
+}
+
+function textMetricMinWidthForSnapshot(
+  node: Extract<SkeletonNode, { kind: "text" }>,
+  snapshot: SkeletonCacheSnapshot | null | undefined,
+  fallbackMinWidth: number
+) {
+  if (!snapshot) return fallbackMinWidth;
+
+  if (node.responsiveBy === "container") {
+    const record = getTextSnapshotRecord(node, snapshot);
+    return (
+      finiteNonNegativeNumber(record?.containerWidthPx) ??
+      finiteNonNegativeNumber(snapshot.layoutWidthPx) ??
+      fallbackMinWidth
+    );
+  }
+
+  return snapshotResponsiveMinWidth(snapshot);
+}
+
+function normalizeResolvedTextBarWidths(args: {
+  barWidths: string[];
+  lineCount: number;
+  fallbackBarWidths?: string[];
+  finalBarWidthFallback: string;
+}) {
+  const { barWidths, lineCount, fallbackBarWidths, finalBarWidthFallback } =
+    args;
+  const count = Math.max(1, Math.trunc(lineCount));
+
+  if (barWidths.length >= count) return barWidths.slice(0, count);
+
+  return Array.from({ length: count }, (_, index) => {
+    if (index < barWidths.length) return barWidths[index]!;
+    if (fallbackBarWidths?.[index]) return fallbackBarWidths[index]!;
+    return index === count - 1 ? finalBarWidthFallback : "100%";
+  });
+}
+
+function resolveSourceTextBarWidths(args: {
+  node: Extract<SkeletonNode, { kind: "text" }>;
+  lineCount: number;
+  minWidth: number;
+  breakpointMap: BreakpointMap;
+}) {
+  const { node, lineCount, minWidth, breakpointMap } = args;
+  const lastBarWidth = resolveResponsiveTextLastBarWidth(
+    node.lastBarWidth,
+    TEXT_SKELETON_LAST_BAR_WIDTH,
+    minWidth,
+    breakpointMap
+  );
+  const resolvedBarWidth = resolveResponsiveTextBarWidth(
+    node.barWidth,
+    "100%",
+    minWidth,
+    breakpointMap
+  );
+  const barWidths =
+    node.barWidth == null
+      ? Array.from({ length: lineCount }, (_, index) =>
+          index === lineCount - 1 ? lastBarWidth : "100%"
+        )
+      : Array.isArray(resolvedBarWidth)
+        ? resolvedBarWidth
+        : Array.from({ length: lineCount }, () => resolvedBarWidth);
+
+  return normalizeResolvedTextBarWidths({
+    barWidths,
+    lineCount,
+    finalBarWidthFallback: node.barWidth == null ? lastBarWidth : "100%",
+  });
+}
+
+function resolveCachedTextRenderState(args: {
+  node: Extract<SkeletonNode, { kind: "text" }>;
+  breakpointMap: BreakpointMap;
+  cacheContext: SliderSkeletonCacheRenderContext;
+}): ResponsiveTextRenderState {
+  const { node, breakpointMap, cacheContext } = args;
+  const record = getTextSnapshotRecord(node, cacheContext.snapshot);
+  const minWidth = textMetricMinWidthForSnapshot(
+    node,
+    cacheContext.snapshot,
+    cacheContext.responsiveMinWidth
+  );
+  const fallbackLines = record ? normalizeSnapshotLines(record.lines) : 1;
+  const lineCount =
+    node.lines == null
+      ? fallbackLines
+      : resolveResponsiveTextLineCount(
+          node.lines,
+          fallbackLines,
+          minWidth,
+          breakpointMap
+        );
+  const barHeight = resolveResponsiveTextBarHeight(
+    node.barHeight,
+    typeof node.barHeight === "number"
+      ? node.barHeight
+      : finiteNonNegativeNumber(record?.barHeight) ?? 0,
+    minWidth,
+    breakpointMap
+  );
+  const lineHeight = resolveResponsiveTextLineHeight(
+    node.lineHeight,
+    typeof node.lineHeight === "number"
+      ? node.lineHeight
+      : finiteNonNegativeNumber(record?.lineHeight) ?? 1,
+    minWidth,
+    breakpointMap
+  );
+  const sourceBarWidths = resolveSourceTextBarWidths({
+    node,
+    lineCount,
+    minWidth,
+    breakpointMap,
+  });
+  const snapshotBarWidths = record ? toSnapshotBarWidths(record) : undefined;
+  const barWidths = snapshotBarWidths?.length
+    ? normalizeResolvedTextBarWidths({
+        barWidths: snapshotBarWidths,
+        fallbackBarWidths: sourceBarWidths,
+        lineCount,
+        finalBarWidthFallback: sourceBarWidths[lineCount - 1] ?? "100%",
+      })
+    : sourceBarWidths;
+
+  return getResponsiveTextRenderState({
+    barHeight,
+    barWidth: barWidths,
+    lineHeight,
+    lines: lineCount,
+    responsiveBy: node.responsiveBy,
+    breakpointMap,
+  });
+}
+
 function escapeAttrValue(v: string) {
   return v.replace(/"/g, '\\"');
 }
@@ -467,6 +665,7 @@ type ResponsiveCssRule = {
   minWidth: number;
   css: string;
   raw?: boolean;
+  query?: TextSkeletonResponsiveBy;
 };
 
 function collectResponsiveCss(
@@ -498,6 +697,7 @@ function collectResponsiveCss(
           lineHeight: node.lineHeight,
           lines: node.lines,
           lastBarWidth: node.lastBarWidth,
+          responsiveBy: node.responsiveBy,
           fitContent: styleUsesMaxContentWidth(node.style),
           breakpointMap,
         }).map((rule) => ({ ...rule, raw: true })),
@@ -630,6 +830,8 @@ function buildResponsiveCssText(
 
       if (r.minWidth <= 0) {
         lines.push(cssText);
+      } else if (r.query === "container") {
+        lines.push(`@container (min-width:${r.minWidth}px){${cssText}}`);
       } else {
         lines.push(`@media (min-width:${r.minWidth}px){${cssText}}`);
       }
@@ -649,101 +851,6 @@ function toSnapshotBarWidths(record: SkeletonCacheTextRecord) {
 
 function normalizeSnapshotLines(value: number) {
   return Math.max(1, Math.min(64, Math.trunc(value)));
-}
-
-export function applySliderSkeletonTextSnapshot(
-  node: SliderSkeletonNode,
-  snapshot: Record<string, SkeletonCacheTextRecord> | undefined,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
-): SliderSkeletonNode {
-  if (!snapshot) return node;
-
-  if (node.kind === "text") {
-    const record = node.textId ? snapshot[node.textId] : undefined;
-    if (!record) return node;
-
-    const lines = normalizeSnapshotLines(record.lines);
-    const barWidth = toSnapshotBarWidths(record);
-    const snapshotMinWidth =
-      typeof record.containerWidthPx === "number" &&
-      Number.isFinite(record.containerWidthPx)
-        ? record.containerWidthPx
-        : 0;
-    const barHeight =
-      typeof record.barHeight === "number" && Number.isFinite(record.barHeight)
-        ? record.barHeight
-        : typeof node.barHeight === "number"
-        ? node.barHeight
-        : resolveResponsiveTextBarHeight(
-            node.barHeight,
-            0,
-            snapshotMinWidth,
-            breakpointMap
-          );
-    const lineHeight =
-      typeof node.lineHeight === "number"
-        ? node.lineHeight
-        : node.lineHeight != null
-        ? resolveResponsiveTextLineHeight(
-            node.lineHeight,
-            1,
-            snapshotMinWidth,
-            breakpointMap
-          )
-        : typeof record.lineHeight === "number" &&
-          Number.isFinite(record.lineHeight)
-        ? record.lineHeight
-        : 1;
-
-    return {
-      ...node,
-      barHeight,
-      lineHeight,
-      lines,
-      ...(barWidth?.length ? { barWidth } : null),
-      lastBarWidth: barWidth?.[Math.min(lines, barWidth.length) - 1] ?? node.lastBarWidth,
-    };
-  }
-
-  if (node.kind === "media" || node.kind === "sliderDots") return node;
-
-  if (node.kind === "slider") {
-    return {
-      ...node,
-      item: applySliderSkeletonTextSnapshot(
-        node.item,
-        snapshot,
-        breakpointMap
-      ) as SkeletonNode,
-      children: node.children?.map((child) =>
-        applySliderSkeletonTextSnapshot(child, snapshot, breakpointMap) as SkeletonNode
-      ),
-      overlays: node.overlays?.map((child) =>
-        applySliderSkeletonTextSnapshot(child, snapshot, breakpointMap) as SkeletonNode
-      ),
-      slots: node.slots?.map((slot) => ({
-        ...slot,
-        item: slot.item
-          ? (applySliderSkeletonTextSnapshot(
-              slot.item,
-              snapshot,
-              breakpointMap
-            ) as SkeletonNode)
-          : slot.item,
-      })),
-    };
-  }
-
-  if (node.kind === "stack" || node.kind === "row" || node.kind === "col") {
-    return {
-      ...node,
-      children: node.children.map((child: SkeletonNode) =>
-        applySliderSkeletonTextSnapshot(child, snapshot, breakpointMap) as SkeletonNode
-      ),
-    };
-  }
-
-  return node;
 }
 
 export function collectSliderSkeletonTextIds(
@@ -779,11 +886,16 @@ function ShapeNode(
   props: Extract<SkeletonNode, { kind: "rect" | "square" | "circle" }> & {
     breakpointMap: BreakpointMap;
     mediaTile?: boolean;
+    cacheContext?: SliderSkeletonCacheRenderContext | null;
   }
 ) {
-  const { kind, style, shimmer, breakpointMap, mediaTile } = props;
+  const { kind, style, shimmer, breakpointMap, mediaTile, cacheContext } = props;
   const extra: React.CSSProperties = {};
-  const inlineStyle = resolveInlineResponsiveBaseStyle(style, breakpointMap);
+  const inlineStyle = resolveBaseStyleForRender(
+    style,
+    breakpointMap,
+    cacheContext
+  );
   const nodeId = (props as any).__rmgNodeId as string | undefined;
 
   if (kind === "circle") extra.borderRadius = "9999px";
@@ -812,21 +924,27 @@ function ShapeNode(
 function TextNode({
   node,
   breakpointMap,
+  cacheContext,
 }: {
   node: Extract<SkeletonNode, { kind: "text" }>;
   breakpointMap: BreakpointMap;
+  cacheContext?: SliderSkeletonCacheRenderContext | null;
 }) {
-  const renderState = getResponsiveTextRenderState({
-    barHeight: node.barHeight,
-    barWidth: node.barWidth,
-    lineHeight: node.lineHeight,
-    lines: node.lines,
-    lastBarWidth: node.lastBarWidth,
-    breakpointMap,
-  });
-  const inlineStyle = resolveInlineResponsiveBaseStyle(
+  const renderState = cacheContext
+    ? resolveCachedTextRenderState({ node, breakpointMap, cacheContext })
+    : getResponsiveTextRenderState({
+        barHeight: node.barHeight,
+        barWidth: node.barWidth,
+        lineHeight: node.lineHeight,
+        lines: node.lines,
+        lastBarWidth: node.lastBarWidth,
+        responsiveBy: node.responsiveBy,
+        breakpointMap,
+      });
+  const inlineStyle = resolveBaseStyleForRender(
     node.style,
-    breakpointMap
+    breakpointMap,
+    cacheContext
   );
   const usesResponsiveTextLayoutCss = renderState.states.some(
     ({ state }) =>
@@ -913,16 +1031,24 @@ function LayoutNode({
   node,
   breakpointMap,
   activeDotIndex,
+  cacheContext,
 }: {
   node: SkeletonNode;
   breakpointMap: BreakpointMap;
   activeDotIndex?: number;
+  cacheContext?: SliderSkeletonCacheRenderContext | null;
 }) {
   switch (node.kind) {
     case "rect":
     case "square":
     case "circle":
-      return <ShapeNode {...node} breakpointMap={breakpointMap} />;
+      return (
+        <ShapeNode
+          {...node}
+          breakpointMap={breakpointMap}
+          cacheContext={cacheContext}
+        />
+      );
 
     case "media": {
       const count = Math.max(0, node.count | 0);
@@ -931,9 +1057,10 @@ function LayoutNode({
 
       const nodeId = (node as any).__rmgNodeId as string | undefined;
       const plainStyle = containerStylesPlain(
-        resolveInlineResponsiveContainerStyle(
+        resolveContainerStyleForRender(
           node.style,
-          breakpointMap
+          breakpointMap,
+          cacheContext
         )
       );
 
@@ -954,6 +1081,7 @@ function LayoutNode({
               style={node.tile?.style}
               shimmer={node.tile?.shimmer}
               breakpointMap={breakpointMap}
+              cacheContext={cacheContext}
               mediaTile
             />
           ))}
@@ -965,19 +1093,20 @@ function LayoutNode({
       const count = Math.max(0, node.count | 0);
       const nodeId = (node as any).__rmgNodeId as string | undefined;
       const plainStyle = containerStylesPlain(
-        resolveInlineResponsiveContainerStyle(
+        resolveContainerStyleForRender(
           node.style,
-          breakpointMap
+          breakpointMap,
+          cacheContext
         )
       );
       const dotStyle = baseStylesPlain(
-        resolveInlineResponsiveBaseStyle(node.dotStyle, breakpointMap)
+        resolveBaseStyleForRender(node.dotStyle, breakpointMap, cacheContext)
       );
       const activeStyle = baseStylesPlain(
-        resolveInlineResponsiveBaseStyle(node.activeStyle, breakpointMap)
+        resolveBaseStyleForRender(node.activeStyle, breakpointMap, cacheContext)
       );
       const inactiveStyle = baseStylesPlain(
-        resolveInlineResponsiveBaseStyle(node.inactiveStyle, breakpointMap)
+        resolveBaseStyleForRender(node.inactiveStyle, breakpointMap, cacheContext)
       );
       const activeIndex =
         typeof activeDotIndex === "number" && Number.isFinite(activeDotIndex)
@@ -1024,9 +1153,10 @@ function LayoutNode({
 
       const nodeId = (node as any).__rmgNodeId as string | undefined;
       const plainStyle = containerStylesPlain(
-        resolveInlineResponsiveContainerStyle(
+        resolveContainerStyleForRender(
           node.style,
-          breakpointMap
+          breakpointMap,
+          cacheContext
         )
       );
 
@@ -1046,6 +1176,7 @@ function LayoutNode({
               node={child}
               breakpointMap={breakpointMap}
               activeDotIndex={activeDotIndex}
+              cacheContext={cacheContext}
             />
           ))}
         </div>
@@ -1053,7 +1184,13 @@ function LayoutNode({
     }
 
     case "text": {
-      return <TextNode node={node} breakpointMap={breakpointMap} />;
+      return (
+        <TextNode
+          node={node}
+          breakpointMap={breakpointMap}
+          cacheContext={cacheContext}
+        />
+      );
     }
 
     default:
@@ -1409,7 +1546,8 @@ function sliderRowHeightExpr(
   mode: "fit" | "peek",
   responsiveMinWidth = 0,
   breakpointMap: BreakpointMap = BREAKPOINT_MAP,
-  textMetricsMode: SliderTextMetricsMode = "default"
+  textMetricsMode: SliderTextMetricsMode = "default",
+  textSnapshot?: SkeletonCacheSnapshot | null
 ): string | null {
   const stylePlain = resolveContainerStyleAtMinWidth(
     slider.style,
@@ -1451,7 +1589,8 @@ function sliderRowHeightExpr(
       itemContentWExpr,
       responsiveMinWidth,
       breakpointMap,
-      textMetricsMode
+      textMetricsMode,
+      textSnapshot
     );
     const borderY = wrapBorderBlockExpr(itemWrapStyle);
     const marginsY = marginsTBExpr(itemWrapStyle);
@@ -1503,7 +1642,8 @@ function sliderChildrenHeightExpr(
   slider: SliderSkeletonSliderNode,
   responsiveMinWidth = 0,
   breakpointMap: BreakpointMap = BREAKPOINT_MAP,
-  textMetricsMode: SliderTextMetricsMode = "default"
+  textMetricsMode: SliderTextMetricsMode = "default",
+  textSnapshot?: SkeletonCacheSnapshot | null
 ): string | null {
   return sumExpr(
     (slider.children ?? []).map((child) =>
@@ -1512,7 +1652,8 @@ function sliderChildrenHeightExpr(
         "100cqw",
         responsiveMinWidth,
         breakpointMap,
-        textMetricsMode
+        textMetricsMode,
+        textSnapshot
       )
     )
   );
@@ -1523,7 +1664,8 @@ function nodeHeightExpr(
   tileWidthExpr: string,
   responsiveMinWidth = 0,
   breakpointMap: BreakpointMap = BREAKPOINT_MAP,
-  textMetricsMode: SliderTextMetricsMode = "default"
+  textMetricsMode: SliderTextMetricsMode = "default",
+  textSnapshot?: SkeletonCacheSnapshot | null
 ): string | null {
   if (node.kind === "rect" || node.kind === "square" || node.kind === "circle") {
     const style = resolveResponsiveBaseStyleAtMinWidth(
@@ -1573,7 +1715,8 @@ function nodeHeightExpr(
       contentWidthExpr,
       responsiveMinWidth,
       breakpointMap,
-      textMetricsMode
+      textMetricsMode,
+      textSnapshot
     );
     if (!tileH) return null;
 
@@ -1631,7 +1774,8 @@ function nodeHeightExpr(
         contentWidthExpr,
         responsiveMinWidth,
         breakpointMap,
-        textMetricsMode
+        textMetricsMode,
+        textSnapshot
       )
     );
 
@@ -1654,23 +1798,34 @@ function nodeHeightExpr(
       responsiveMinWidth,
       breakpointMap
     );
+    const metricMinWidth = textMetricMinWidthForSnapshot(
+      node,
+      textSnapshot,
+      responsiveMinWidth
+    );
+    const record = getTextSnapshotRecord(node, textSnapshot);
+    const fallbackLines = record ? normalizeSnapshotLines(record.lines) : 1;
     const metrics = getTextSkeletonMetrics({
       barHeight: resolveResponsiveTextBarHeight(
         node.barHeight,
-        typeof node.barHeight === "number" ? node.barHeight : 0,
-        responsiveMinWidth,
+        typeof node.barHeight === "number"
+          ? node.barHeight
+          : finiteNonNegativeNumber(record?.barHeight) ?? 0,
+        metricMinWidth,
         breakpointMap
       ),
       lineHeight: resolveResponsiveTextLineHeight(
         node.lineHeight,
-        typeof node.lineHeight === "number" ? node.lineHeight : 1,
-        responsiveMinWidth,
+        typeof node.lineHeight === "number"
+          ? node.lineHeight
+          : finiteNonNegativeNumber(record?.lineHeight) ?? 1,
+        metricMinWidth,
         breakpointMap
       ),
       lines: resolveResponsiveTextLineCount(
         node.lines,
-        1,
-        responsiveMinWidth,
+        fallbackLines,
+        metricMinWidth,
         breakpointMap
       ),
     });
@@ -1690,7 +1845,8 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
   mode: "fit" | "peek",
   responsiveMinWidth = 0,
   breakpointMap: BreakpointMap = BREAKPOINT_MAP,
-  textMetricsMode: SliderTextMetricsMode = "default"
+  textMetricsMode: SliderTextMetricsMode = "default",
+  textSnapshot?: SkeletonCacheSnapshot | null
 ): string | null {
   const slider = (layout as any).kind === "slider"
     ? (layout as SliderSkeletonSliderNode)
@@ -1702,7 +1858,8 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
       "100cqw",
       responsiveMinWidth,
       breakpointMap,
-      textMetricsMode
+      textMetricsMode,
+      textSnapshot
     );
   }
 
@@ -1712,13 +1869,15 @@ export function buildInitialHeightFromSkeletonSpecCssExpr(
     mode,
     responsiveMinWidth,
     breakpointMap,
-    textMetricsMode
+    textMetricsMode,
+    textSnapshot
   );
   const childrenH = sliderChildrenHeightExpr(
     slider,
     responsiveMinWidth,
     breakpointMap,
-    textMetricsMode
+    textMetricsMode,
+    textSnapshot
   );
 
   return sumExpr([rowH, childrenH]);
@@ -1728,7 +1887,8 @@ export function buildExtrasHeightFromSkeletonSpecCssExpr(
   layout: SliderSkeletonNode,
   responsiveMinWidth = 0,
   breakpointMap: BreakpointMap = BREAKPOINT_MAP,
-  textMetricsMode: SliderTextMetricsMode = "default"
+  textMetricsMode: SliderTextMetricsMode = "default",
+  textSnapshot?: SkeletonCacheSnapshot | null
 ): string | null {
   const slider = (layout as any).kind === "slider"
     ? (layout as SliderSkeletonSliderNode)
@@ -1740,7 +1900,8 @@ export function buildExtrasHeightFromSkeletonSpecCssExpr(
     slider,
     responsiveMinWidth,
     breakpointMap,
-    textMetricsMode
+    textMetricsMode,
+    textSnapshot
   );
 }
 
@@ -1787,7 +1948,8 @@ export function buildRowHeightFromSkeletonSpecCssExpr(
   mode: "fit" | "peek",
   responsiveMinWidth = 0,
   breakpointMap: BreakpointMap = BREAKPOINT_MAP,
-  textMetricsMode: SliderTextMetricsMode = "default"
+  textMetricsMode: SliderTextMetricsMode = "default",
+  textSnapshot?: SkeletonCacheSnapshot | null
 ): string | null {
   const slider = (layout as any).kind === "slider"
     ? (layout as SliderSkeletonSliderNode)
@@ -1799,7 +1961,8 @@ export function buildRowHeightFromSkeletonSpecCssExpr(
       "100cqw",
       responsiveMinWidth,
       breakpointMap,
-      textMetricsMode
+      textMetricsMode,
+      textSnapshot
     );
   }
 
@@ -1809,7 +1972,8 @@ export function buildRowHeightFromSkeletonSpecCssExpr(
     mode,
     responsiveMinWidth,
     breakpointMap,
-    textMetricsMode
+    textMetricsMode,
+    textSnapshot
   );
 }
 
@@ -2093,14 +2257,18 @@ export function SliderSkeletonCard({
 
   const layoutIn: SliderSkeletonNode = React.useMemo(() => {
     const source = s.layout ?? (defaultSliderSpec().layout as SliderSkeletonNode);
-    return cacheSnapshot?.text
-      ? applySliderSkeletonTextSnapshot(
-          source,
-          cacheSnapshot.text,
-          effectiveBreakpoints
-        )
-      : source;
-  }, [cacheSnapshot, effectiveBreakpoints, s.layout]);
+    return source;
+  }, [s.layout]);
+  const cacheContext = React.useMemo<SliderSkeletonCacheRenderContext | null>(
+    () =>
+      cacheSnapshot
+        ? {
+            snapshot: cacheSnapshot,
+            responsiveMinWidth: snapshotResponsiveMinWidth(cacheSnapshot),
+          }
+        : null,
+    [cacheSnapshot]
+  );
   const internalScopeId = React.useMemo(
     () =>
       buildStableScopeId("ssk_", {
@@ -2129,9 +2297,11 @@ export function SliderSkeletonCard({
   if (s.radius != null) (rootStyle as any)["--rmg-skel-radius"] = cssLen(s.radius);
 
   const { layout, responsiveCss } = React.useMemo(() => {
+    if (cacheContext) return { layout: layoutIn, responsiveCss: "" };
+
     let n = 0;
     const allocId = () => `n${++n}`;
-    const collected: Array<{ nodeId: string; rules: Array<{ minWidth: number; css: string }> }> = [];
+    const collected: Array<{ nodeId: string; rules: ResponsiveCssRule[] }> = [];
 
     const withIds = collectResponsiveCss(
       layoutIn,
@@ -2141,15 +2311,16 @@ export function SliderSkeletonCard({
     );
     const cssText = buildResponsiveCssText(scopeSelector, collected);
     return { layout: withIds, responsiveCss: cssText };
-  }, [layoutIn, scopeSelector, effectiveBreakpoints]);
+  }, [cacheContext, layoutIn, scopeSelector, effectiveBreakpoints]);
 
   const sliderNode = layout as SliderSkeletonSliderNode;
 
   const sliderNodeId = (sliderNode as any).__rmgNodeId as string | undefined;
   const plainSliderStyle = containerStylesPlain(
-    resolveInlineResponsiveContainerStyle(
+    resolveContainerStyleForRender(
       sliderNode.style,
-      effectiveBreakpoints
+      effectiveBreakpoints,
+      cacheContext
     )
   );
 
@@ -2257,6 +2428,7 @@ export function SliderSkeletonCard({
                     node={slot.item}
                     breakpointMap={effectiveBreakpoints}
                     activeDotIndex={activeDotIndex}
+                    cacheContext={cacheContext}
                   />
                 </div>
               </div>
@@ -2272,6 +2444,7 @@ export function SliderSkeletonCard({
                 node={child}
                 breakpointMap={effectiveBreakpoints}
                 activeDotIndex={activeDotIndex}
+                cacheContext={cacheContext}
               />
             ))}
           </div>
@@ -2286,6 +2459,7 @@ export function SliderSkeletonCard({
               node={child}
               breakpointMap={effectiveBreakpoints}
               activeDotIndex={activeDotIndex}
+              cacheContext={cacheContext}
             />
           ))}
         </div>

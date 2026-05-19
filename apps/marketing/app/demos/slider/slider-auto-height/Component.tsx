@@ -412,7 +412,7 @@ export function SliderAutoHeightDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
-        // cache={demoSkeletonCache("slider-auto-height")}
+        cache={demoSkeletonCache("slider-auto-height")}
         layout={AUTO_HEIGHT_SKELETON}
         shellClassName={styles.skeletonShell}
         ready={sliderReady}

@@ -3,6 +3,10 @@ import {
   type BreakpointMap,
   type ResponsiveNumber,
 } from "../shared/responsive";
+import type {
+  SkeletonCacheSliderRestoreSnapshot,
+  SkeletonCacheSnapshot,
+} from "../skeleton/cache";
 
 export type SliderLoadingRestoreOptions = {
   enabled?: boolean;
@@ -21,6 +25,9 @@ export type SliderRestoreState = {
   scrollY: number;
   scrollMax: number;
   wasAtBottom: boolean;
+  storageKeyId?: string;
+  routeKey?: string;
+  scopeId?: string;
 };
 
 export type SliderRestoreRuntimeOptions = {
@@ -30,6 +37,8 @@ export type SliderRestoreRuntimeOptions = {
   slideCount: number;
   skeletonSlotCount: number;
   controlled?: boolean;
+  scopeId?: string;
+  routeKey?: string;
 };
 
 export type SliderRestoreReadOptions = {
@@ -44,7 +53,7 @@ export type SliderRestoreVisibleSlot = {
 export const DEFAULT_SLIDER_RESTORE_TTL_MS = 5 * 60 * 1000;
 export const SLIDER_RESTORE_VIEWPORT_TOLERANCE_PX = 2;
 
-const STORAGE_PREFIX = "rmg:slider-restore";
+const COOKIE_PREFIX = "rmg_slider_restore";
 const NAVIGATION_TYPES = new Set(["reload", "back_forward"]);
 
 function mod(value: number, length: number) {
@@ -82,13 +91,38 @@ export function normalizeSliderRestoreOptions(
   };
 }
 
-export function getSliderRestoreStorageKey(
+function getSliderRestoreRouteKey(
+  loc: Pick<Location, "pathname" | "search"> | undefined =
+    typeof window !== "undefined" ? window.location : undefined
+) {
+  return loc ? `${loc.pathname}${loc.search}` : "";
+}
+
+function hashKey(value: string) {
+  let hash = 5381;
+  for (let index = 0; index < value.length; index++) {
+    hash = ((hash << 5) + hash) ^ value.charCodeAt(index);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function slugKey(value: string) {
+  const slug = value
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 48);
+  return slug || "default";
+}
+
+export function getSliderRestoreCookieName(
   storageKeyId: string,
   loc: Pick<Location, "pathname" | "search"> | undefined =
     typeof window !== "undefined" ? window.location : undefined
 ) {
-  const path = loc ? `${loc.pathname}${loc.search}` : "";
-  return `${STORAGE_PREFIX}:${storageKeyId}:${path}`;
+  const routeKey = getSliderRestoreRouteKey(loc);
+  const key = `${storageKeyId}:${routeKey}`;
+  return `${COOKIE_PREFIX}_${slugKey(storageKeyId)}_${hashKey(key)}`;
 }
 
 export function getSliderRestoreNavigationType(win: Window = window): string | null {
@@ -138,6 +172,18 @@ export function parseSliderRestoreState(raw: string | null | undefined): SliderR
   const scrollMax = Number(parsed.scrollMax);
   const heightPx =
     parsed.heightPx == null ? undefined : Number(parsed.heightPx);
+  const storageKeyId =
+    typeof parsed.storageKeyId === "string" && parsed.storageKeyId.trim()
+      ? parsed.storageKeyId.trim()
+      : undefined;
+  const routeKey =
+    typeof parsed.routeKey === "string" && parsed.routeKey.trim()
+      ? parsed.routeKey.trim()
+      : undefined;
+  const scopeId =
+    typeof parsed.scopeId === "string" && parsed.scopeId.trim()
+      ? parsed.scopeId.trim()
+      : undefined;
 
   if (!Number.isInteger(index) || index < 0) return null;
   if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) return null;
@@ -157,18 +203,27 @@ export function parseSliderRestoreState(raw: string | null | undefined): SliderR
     scrollY: Number.isFinite(scrollY) ? Math.max(0, scrollY) : 0,
     scrollMax: Number.isFinite(scrollMax) ? Math.max(0, scrollMax) : 0,
     wasAtBottom: parsed.wasAtBottom === true,
+    ...(storageKeyId ? { storageKeyId } : {}),
+    ...(routeKey ? { routeKey } : {}),
+    ...(scopeId ? { scopeId } : {}),
   };
 }
 
 export function validateSliderRestoreState(
-  state: SliderRestoreState | null,
+  state:
+    | SliderRestoreState
+    | SkeletonCacheSliderRestoreSnapshot
+    | null,
   args: {
     ttlMs: number;
     now?: number;
-    viewportWidth: number;
+    viewportWidth?: number;
     slideCount: number;
     skeletonSlotCount: number;
     viewportTolerancePx?: number;
+    storageKeyId?: string;
+    routeKey?: string;
+    scopeId?: string;
   }
 ) {
   if (!state) return null;
@@ -179,11 +234,29 @@ export function validateSliderRestoreState(
   if (state.slideCount !== args.slideCount) return null;
   if (state.skeletonSlotCount !== args.skeletonSlotCount) return null;
   if (state.index < 0 || state.index >= args.slideCount) return null;
+  if (args.storageKeyId != null && state.storageKeyId !== args.storageKeyId) {
+    return null;
+  }
+  if (args.routeKey != null && state.routeKey !== args.routeKey) return null;
+  if (args.scopeId != null && state.scopeId !== args.scopeId) return null;
 
-  const tolerance = args.viewportTolerancePx ?? SLIDER_RESTORE_VIEWPORT_TOLERANCE_PX;
-  if (Math.abs(state.viewportWidth - args.viewportWidth) > tolerance) return null;
+  if (args.viewportWidth != null) {
+    const tolerance = args.viewportTolerancePx ?? SLIDER_RESTORE_VIEWPORT_TOLERANCE_PX;
+    if (Math.abs(state.viewportWidth - args.viewportWidth) > tolerance) return null;
+  }
 
   return state;
+}
+
+export function isMeaningfulSliderRestoreState(
+  state:
+    | SliderRestoreState
+    | SkeletonCacheSliderRestoreSnapshot
+    | null
+    | undefined
+) {
+  if (!state) return false;
+  return state.index > 0 || state.wasAtBottom === true;
 }
 
 export function readSliderRestoreStateFromWindow(
@@ -197,27 +270,90 @@ export function readSliderRestoreStateFromWindow(
   }
 
   try {
-    const raw = win.sessionStorage.getItem(
-      getSliderRestoreStorageKey(runtime.storageKeyId, win.location)
+    const raw = readSliderRestoreCookie(
+      getSliderRestoreCookieName(runtime.storageKeyId, win.location),
+      win
     );
-    return validateSliderRestoreState(parseSliderRestoreState(raw), {
+    const state = validateSliderRestoreState(parseSliderRestoreState(raw), {
       ttlMs: runtime.ttlMs,
       viewportWidth: win.innerWidth || win.document.documentElement.clientWidth || 0,
       slideCount: runtime.slideCount,
       skeletonSlotCount: runtime.skeletonSlotCount,
+      storageKeyId: runtime.storageKeyId,
+      routeKey: getSliderRestoreRouteKey(win.location),
+      scopeId: runtime.scopeId,
     });
+    return isMeaningfulSliderRestoreState(state) ? state : null;
   } catch {
     return null;
   }
 }
 
-export function writeSliderRestoreStateToWindow(
+export function readSliderRestoreStateFromCache(
+  snapshot: SkeletonCacheSnapshot | null | undefined,
+  runtime: SliderRestoreRuntimeOptions | null | undefined,
+  win: Window = window,
+  options: SliderRestoreReadOptions = {}
+) {
+  if (!runtime?.enabled || runtime.controlled) return null;
+  if (options.requireNavigationRestore !== false && !isSliderRestoreNavigation(win)) {
+    return null;
+  }
+
+  const state = validateSliderRestoreState(snapshot?.slider?.restore ?? null, {
+    ttlMs: runtime.ttlMs,
+    viewportWidth: win.innerWidth || win.document.documentElement.clientWidth || 0,
+    slideCount: runtime.slideCount,
+    skeletonSlotCount: runtime.skeletonSlotCount,
+    storageKeyId: runtime.storageKeyId,
+    routeKey: snapshot?.routeKey ?? runtime.routeKey,
+    scopeId: snapshot?.scopeId ?? runtime.scopeId,
+  });
+  return isMeaningfulSliderRestoreState(state) ? state : null;
+}
+
+function readSliderRestoreCookie(name: string, win: Window = window) {
+  const cookie = win.document.cookie;
+  if (!cookie) return null;
+
+  const prefix = `${name}=`;
+  for (const part of cookie.split("; ")) {
+    if (!part.startsWith(prefix)) continue;
+    const raw = part.slice(prefix.length);
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+  return null;
+}
+
+function writeSliderRestoreCookie(args: {
+  runtime: SliderRestoreRuntimeOptions;
+  state: SliderRestoreState;
+  win: Window;
+}) {
+  const ttlMs = Math.max(0, args.runtime.ttlMs);
+  const maxAge = Math.max(0, Math.ceil(ttlMs / 1000));
+  args.win.document.cookie = [
+    `${getSliderRestoreCookieName(
+      args.runtime.storageKeyId,
+      args.win.location
+    )}=${encodeURIComponent(JSON.stringify(args.state))}`,
+    "path=/",
+    `max-age=${maxAge}`,
+    "samesite=lax",
+  ].join("; ");
+}
+
+export function createSliderRestoreStateForWindow(
   runtime: SliderRestoreRuntimeOptions | null | undefined,
   state: Pick<SliderRestoreState, "index" | "slideCount" | "skeletonSlotCount"> &
     Partial<SliderRestoreState>,
   win: Window = window
 ) {
-  if (!runtime?.enabled || runtime.controlled) return;
+  if (!runtime?.enabled || runtime.controlled) return null;
 
   try {
     const doc = win.document.documentElement;
@@ -242,14 +378,30 @@ export function writeSliderRestoreStateToWindow(
       scrollY,
       scrollMax,
       wasAtBottom,
+      storageKeyId: runtime.storageKeyId,
+      routeKey: getSliderRestoreRouteKey(win.location),
+      ...(runtime.scopeId ? { scopeId: runtime.scopeId } : {}),
     };
 
-    win.sessionStorage.setItem(
-      getSliderRestoreStorageKey(runtime.storageKeyId, win.location),
-      JSON.stringify(next)
-    );
+    return next;
   } catch {
-    // Session storage can be unavailable in private contexts.
+    return null;
+  }
+}
+
+export function writeSliderRestoreStateToWindow(
+  runtime: SliderRestoreRuntimeOptions | null | undefined,
+  state: Pick<SliderRestoreState, "index" | "slideCount" | "skeletonSlotCount"> &
+    Partial<SliderRestoreState>,
+  win: Window = window
+) {
+  const next = createSliderRestoreStateForWindow(runtime, state, win);
+  if (!next || !runtime?.enabled || runtime.controlled) return;
+
+  try {
+    writeSliderRestoreCookie({ runtime, state: next, win });
+  } catch {
+    // Cookies can be unavailable in private or locked-down contexts.
   }
 }
 
@@ -301,7 +453,27 @@ function jsonForScript(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
-function buildSliderRestoreScriptSource(cfg: {
+function escapeCssAttrValue(value: string) {
+  return value.replace(/["\\]/g, "\\$&");
+}
+
+function cssName(prop: string) {
+  return prop.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`);
+}
+
+function cssDecls(obj: Record<string, unknown> | undefined) {
+  if (!obj) return "";
+
+  let out = "";
+  for (const [prop, value] of Object.entries(obj)) {
+    if (value == null) continue;
+    const name = prop.startsWith("--") ? prop : cssName(prop);
+    out += `${name}:${String(value)}!important;`;
+  }
+  return out;
+}
+
+type SliderRestoreStyleConfig = {
   scopeId: string;
   storageKeyId: string;
   ttlMs: number;
@@ -316,23 +488,149 @@ function buildSliderRestoreScriptSource(cfg: {
     inactiveStyle?: Record<string, unknown>;
   }>;
   viewportTolerancePx: number;
+};
+
+function resolveSliderRestoreCount(
+  countRules: ReturnType<typeof normalizeResponsiveToMinWidthRules>,
+  width: number,
+  skeletonSlotCount: number
+) {
+  let count = countRules[0]?.count ?? 1;
+  for (const rule of countRules) {
+    if (width >= rule.minWidth) count = rule.count;
+  }
+  return Math.max(1, Math.min(skeletonSlotCount, Math.floor(count)));
+}
+
+function buildSliderRestoreStyleCss(args: {
+  cfg: SliderRestoreStyleConfig;
+  state: SliderRestoreState | SkeletonCacheSliderRestoreSnapshot;
+}) {
+  const { cfg, state } = args;
+  const count = resolveSliderRestoreCount(
+    cfg.countRules,
+    state.viewportWidth,
+    cfg.skeletonSlotCount
+  );
+  const rootSel = `[data-rmg-scope="${escapeCssAttrValue(cfg.scopeId)}"]`;
+  const shellSel = `${rootSel} > [data-rmg-scope-shell="true"]`;
+  const active = Math.max(
+    0,
+    Math.min(cfg.slideCount - 1, Math.floor(state.index))
+  );
+  const activeOffset = Math.max(
+    0,
+    Math.min(count - 1, Math.floor(cfg.activeSlotOffset))
+  );
+  const start = cfg.loop
+    ? active
+    : Math.min(
+        Math.max(0, active - activeOffset),
+        Math.max(0, cfg.skeletonSlotCount - count)
+      );
+
+  let css = `${rootSel} [data-rmg-skel-slot]{display:none!important;order:0!important;}`;
+  for (let order = 0; order < count; order += 1) {
+    const slot = cfg.loop
+      ? mod(start + order, cfg.skeletonSlotCount)
+      : start + order;
+    if (slot < 0 || slot >= cfg.skeletonSlotCount) continue;
+    css += `${rootSel} [data-rmg-skel-slot="${slot + 1}"]{display:block!important;order:${order}!important;}`;
+  }
+
+  if (Number.isFinite(state.heightPx) && (state.heightPx ?? 0) > 0) {
+    const h = Math.round(((state.heightPx ?? 0) + Number.EPSILON) * 1000) / 1000;
+    css += `${shellSel}{--rmg-slider-initial-height:${h}px!important;--rmg-slider-row-height:${h}px!important;}`;
+  }
+
+  for (const dotStyle of cfg.dotStyles) {
+    const inactiveDecls = cssDecls(dotStyle.inactiveStyle);
+    const activeDecls = cssDecls(dotStyle.activeStyle);
+    if (inactiveDecls) {
+      css += `${rootSel} [data-rmg-skel-slider-dots] [data-rmg-skel-slider-dot]{${inactiveDecls}}`;
+    }
+    if (activeDecls) {
+      css += `${rootSel} [data-rmg-skel-slider-dots] [data-rmg-skel-slider-dot="${active}"]{${activeDecls}}`;
+    }
+  }
+
+  return css;
+}
+
+export function buildSliderRestoreCss(args: {
+  scopeId: string;
+  storageKeyId: string;
+  ttlMs: number;
+  slideCount: number;
+  skeletonSlotCount: number;
+  maxSlots: number;
+  loop: boolean;
+  activeSlotOffset: number;
+  responsiveCount: ResponsiveNumber | undefined;
+  fallbackCount: number;
+  breakpointMap: BreakpointMap;
+  state: SliderRestoreState | SkeletonCacheSliderRestoreSnapshot | null | undefined;
+  dotStyles?: Array<{
+    activeStyle?: Record<string, unknown>;
+    inactiveStyle?: Record<string, unknown>;
+  }>;
+}) {
+  if (!args.state || args.slideCount <= 0 || args.skeletonSlotCount <= 0) return "";
+  if (!isMeaningfulSliderRestoreState(args.state)) return "";
+
+  const cfg: SliderRestoreStyleConfig = {
+    scopeId: args.scopeId,
+    storageKeyId: args.storageKeyId,
+    ttlMs: args.ttlMs,
+    slideCount: args.slideCount,
+    skeletonSlotCount: args.skeletonSlotCount,
+    maxSlots: args.maxSlots,
+    loop: args.loop,
+    activeSlotOffset: args.activeSlotOffset,
+    countRules: normalizeResponsiveToMinWidthRules(
+      args.responsiveCount,
+      args.fallbackCount,
+      args.breakpointMap
+    ),
+    dotStyles: args.dotStyles ?? [],
+    viewportTolerancePx: SLIDER_RESTORE_VIEWPORT_TOLERANCE_PX,
+  };
+
+  return buildSliderRestoreStyleCss({
+    cfg,
+    state: args.state,
+  });
+}
+
+function buildSliderRestoreScriptSource(cfg: SliderRestoreStyleConfig & {
+  state?: SliderRestoreState | SkeletonCacheSliderRestoreSnapshot | null;
+  cookieName?: string;
 }) {
   return `(function(){try{
 var cfg=${jsonForScript(cfg)};
 var nav=(performance.getEntriesByType&&performance.getEntriesByType("navigation")[0]||{}).type;
 if(!nav&&performance.navigation){nav=performance.navigation.type===performance.navigation.TYPE_RELOAD?"reload":performance.navigation.type===performance.navigation.TYPE_BACK_FORWARD?"back_forward":"";}
 if(nav!=="reload"&&nav!=="back_forward")return;
-var key="${STORAGE_PREFIX}:"+cfg.storageKeyId+":"+location.pathname+location.search;
-var raw=sessionStorage.getItem(key);
-if(!raw)return;
-var state=JSON.parse(raw);
+var readCookie=function(name){var prefix=name+"=";var parts=document.cookie?document.cookie.split(/; */):[];for(var i=0;i<parts.length;i++){if(parts[i].indexOf(prefix)===0){var raw=parts[i].slice(prefix.length);try{return decodeURIComponent(raw);}catch(e){return raw;}}}return null;};
+var state=cfg.state||null;
+if(!state){var slug=function(value){return String(value||"default").trim().replace(/[^a-zA-Z0-9_-]+/g,"_").replace(/^_+|_+$/g,"").slice(0,48)||"default";};var hash=function(value){var h=5381;for(var x=0;x<value.length;x++){h=((h<<5)+h)^value.charCodeAt(x);}return (h>>>0).toString(36);};var cookieName=cfg.cookieName||"rmg_slider_restore_"+slug(cfg.storageKeyId)+"_"+hash(cfg.storageKeyId+":"+location.pathname+location.search);var raw=readCookie(cookieName);if(!raw)return;state=JSON.parse(raw);}
+if(!state)return;
 var width=innerWidth||document.documentElement.clientWidth||0;
 if(!state||state.version!==1)return;
 var age=Date.now()-state.timestamp;
 if(cfg.ttlMs>0&&(age<0||age>cfg.ttlMs))return;
 if(state.slideCount!==cfg.slideCount||state.skeletonSlotCount!==cfg.skeletonSlotCount)return;
 if(state.index<0||state.index>=cfg.slideCount)return;
+if(state.storageKeyId!==cfg.storageKeyId)return;
+if(state.routeKey!==location.pathname+location.search)return;
+if(state.scopeId&&state.scopeId!==cfg.scopeId)return;
 if(Math.abs(state.viewportWidth-width)>cfg.viewportTolerancePx)return;
+if(!state.wasAtBottom&&Math.floor(state.index)===0)return;
+var staticStyle=null;
+var staticStyles=document.querySelectorAll("style[data-rmg-slider-restore-static]");
+for(var ss=0;ss<staticStyles.length;ss++){if(staticStyles[ss].getAttribute("data-rmg-slider-restore-static")===cfg.scopeId){staticStyle=staticStyles[ss];break;}}
+if(staticStyle){staticStyle.removeAttribute("media");staticStyle.setAttribute("data-rmg-slider-restore-style",cfg.scopeId);}
+else{
 var count=cfg.countRules[0]?cfg.countRules[0].count:1;
 for(var i=0;i<cfg.countRules.length;i++){if(width>=cfg.countRules[i].minWidth)count=cfg.countRules[i].count;}
 count=Math.max(1,Math.min(cfg.skeletonSlotCount,Math.floor(count)));
@@ -352,6 +650,7 @@ var style=document.createElement("style");
 style.setAttribute("data-rmg-slider-restore-style",cfg.scopeId);
 style.textContent=css;
 document.head.appendChild(style);
+}
 if(state.wasAtBottom){var keep=function(){var doc=document.documentElement;var body=document.body;var max=Math.max(0,Math.max(doc.scrollHeight,body?body.scrollHeight:0)-(innerHeight||doc.clientHeight||0));scrollTo(scrollX||0,max);};requestAnimationFrame(keep);setTimeout(keep,50);addEventListener("load",function(){requestAnimationFrame(keep);setTimeout(keep,120);},{once:true});}
 }catch(e){}})();`;
 }
@@ -372,6 +671,8 @@ export function buildSliderRestoreScript(args: {
     activeStyle?: Record<string, unknown>;
     inactiveStyle?: Record<string, unknown>;
   }>;
+  state?: SliderRestoreState | SkeletonCacheSliderRestoreSnapshot | null;
+  cookieName?: string;
 }) {
   if (args.slideCount <= 0 || args.skeletonSlotCount <= 0) return "";
 
@@ -392,6 +693,8 @@ export function buildSliderRestoreScript(args: {
     countRules,
     dotStyles: args.dotStyles ?? [],
     viewportTolerancePx: SLIDER_RESTORE_VIEWPORT_TOLERANCE_PX,
+    ...(args.state ? { state: args.state } : {}),
+    ...(args.cookieName ? { cookieName: args.cookieName } : {}),
   };
 
   return buildSliderRestoreScriptSource(cfg);

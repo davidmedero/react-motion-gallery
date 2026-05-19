@@ -26,6 +26,26 @@ export type SkeletonCacheMasonrySnapshot = {
   itemHeightsPx?: number[];
 };
 
+export type SkeletonCacheSliderRestoreSnapshot = {
+  version: 1;
+  index: number;
+  heightPx?: number;
+  viewportWidth: number;
+  slideCount: number;
+  skeletonSlotCount: number;
+  timestamp: number;
+  scrollY: number;
+  scrollMax: number;
+  wasAtBottom: boolean;
+  storageKeyId?: string;
+  routeKey?: string;
+  scopeId?: string;
+};
+
+export type SkeletonCacheSliderSnapshot = {
+  restore?: SkeletonCacheSliderRestoreSnapshot;
+};
+
 export type SkeletonCacheSnapshot = {
   version: 1;
   key: string;
@@ -37,6 +57,7 @@ export type SkeletonCacheSnapshot = {
   viewportWidth: number;
   layoutWidthPx?: number;
   masonry?: SkeletonCacheMasonrySnapshot;
+  slider?: SkeletonCacheSliderSnapshot;
   text: Record<string, SkeletonCacheTextRecord>;
 };
 
@@ -284,6 +305,120 @@ function normalizeMasonrySnapshot(
   };
 }
 
+function normalizeSliderRestoreSnapshot(
+  value: unknown
+): SkeletonCacheSliderRestoreSnapshot | undefined | null {
+  if (value == null) return undefined;
+  if (!isRecord(value)) return null;
+
+  const rawVersion = value.version ?? value.v;
+  if (rawVersion != null && rawVersion !== 1) return null;
+
+  const index = normalizeFiniteNumber(value.index ?? value.i, {
+    min: 0,
+    max: 10000,
+    integer: true,
+  });
+  const rawHeightPx = value.heightPx ?? value.h;
+  const heightPx =
+    rawHeightPx == null
+      ? undefined
+      : normalizeFiniteNumber(rawHeightPx, { min: 0, max: 100000 });
+  const viewportWidth = normalizeFiniteNumber(value.viewportWidth ?? value.w, {
+    min: 1,
+    max: 100000,
+  });
+  const slideCount = normalizeFiniteNumber(value.slideCount ?? value.c, {
+    min: 1,
+    max: 10000,
+    integer: true,
+  });
+  const skeletonSlotCount = normalizeFiniteNumber(
+    value.skeletonSlotCount ?? value.n,
+    {
+      min: 1,
+      max: 10000,
+      integer: true,
+    }
+  );
+  const timestamp = normalizeFiniteNumber(value.timestamp ?? value.t, {
+    min: 1,
+  });
+  const scrollY =
+    (value.scrollY ?? value.y) == null
+      ? 0
+      : normalizeFiniteNumber(value.scrollY ?? value.y, {
+          min: 0,
+          max: 1000000,
+        });
+  const scrollMax =
+    (value.scrollMax ?? value.m) == null
+      ? 0
+      : normalizeFiniteNumber(value.scrollMax ?? value.m, {
+          min: 0,
+          max: 1000000,
+        });
+  const rawWasAtBottom = value.wasAtBottom ?? value.b;
+  const storageKeyId =
+    (value.storageKeyId ?? value.k) == null
+      ? undefined
+      : normalizeString(value.storageKeyId ?? value.k);
+  const routeKey =
+    (value.routeKey ?? value.r) == null
+      ? undefined
+      : normalizeString(value.routeKey ?? value.r);
+  const scopeId =
+    (value.scopeId ?? value.s) == null
+      ? undefined
+      : normalizeString(value.scopeId ?? value.s);
+
+  if (
+    index == null ||
+    (rawHeightPx != null && heightPx == null) ||
+    viewportWidth == null ||
+    slideCount == null ||
+    skeletonSlotCount == null ||
+    timestamp == null ||
+    scrollY == null ||
+    scrollMax == null ||
+    ((value.storageKeyId ?? value.k) != null && !storageKeyId) ||
+    ((value.routeKey ?? value.r) != null && !routeKey) ||
+    ((value.scopeId ?? value.s) != null && !scopeId)
+  ) {
+    return null;
+  }
+
+  return {
+    version: 1,
+    index,
+    ...(heightPx != null ? { heightPx } : null),
+    viewportWidth,
+    slideCount,
+    skeletonSlotCount,
+    timestamp,
+    scrollY,
+    scrollMax,
+    wasAtBottom: rawWasAtBottom === true || rawWasAtBottom === 1,
+    ...(storageKeyId ? { storageKeyId } : null),
+    ...(routeKey ? { routeKey } : null),
+    ...(scopeId ? { scopeId } : null),
+  };
+}
+
+function normalizeSliderSnapshot(
+  value: unknown
+): SkeletonCacheSliderSnapshot | undefined | null {
+  if (value == null) return undefined;
+  if (!isRecord(value)) return null;
+
+  const restore = normalizeSliderRestoreSnapshot(value.restore ?? value.r);
+  if (restore === null) return null;
+
+  return {
+    ...(restore ? { restore } : null),
+  };
+}
+
 function decodeCookieValue(raw: string) {
   try {
     return decodeURIComponent(raw);
@@ -350,6 +485,7 @@ function normalizeSnapshot(value: unknown): SkeletonCacheSnapshot | null {
       : normalizeString(value.routeKey ?? value.r);
   const text = normalizeTextMap(value.text ?? value.x);
   const masonry = normalizeMasonrySnapshot(value.masonry ?? value.m);
+  const slider = normalizeSliderSnapshot(value.slider ?? value.z);
 
   if (
     !key ||
@@ -361,7 +497,8 @@ function normalizeSnapshot(value: unknown): SkeletonCacheSnapshot | null {
     (rawLayoutWidthPx != null && layoutWidthPx == null) ||
     ((value.routeKey ?? value.r) != null && !routeKey) ||
     !text ||
-    masonry === null
+    masonry === null ||
+    slider === null
   ) {
     return null;
   }
@@ -377,6 +514,7 @@ function normalizeSnapshot(value: unknown): SkeletonCacheSnapshot | null {
     viewportWidth,
     ...(layoutWidthPx != null ? { layoutWidthPx } : null),
     ...(masonry ? { masonry } : null),
+    ...(slider ? { slider } : null),
     text,
   };
 }
@@ -434,6 +572,35 @@ export function serializeSkeletonCacheSnapshot(
             ...(snapshot.masonry.itemHeightsPx?.length
               ? { i: snapshot.masonry.itemHeightsPx }
               : null),
+          },
+        }
+      : null),
+    ...(snapshot.slider?.restore
+      ? {
+          z: {
+            r: {
+              v: snapshot.slider.restore.version,
+              i: snapshot.slider.restore.index,
+              ...(snapshot.slider.restore.heightPx != null
+                ? { h: snapshot.slider.restore.heightPx }
+                : null),
+              w: snapshot.slider.restore.viewportWidth,
+              c: snapshot.slider.restore.slideCount,
+              n: snapshot.slider.restore.skeletonSlotCount,
+              t: snapshot.slider.restore.timestamp,
+              y: snapshot.slider.restore.scrollY,
+              m: snapshot.slider.restore.scrollMax,
+              ...(snapshot.slider.restore.wasAtBottom ? { b: 1 } : null),
+              ...(snapshot.slider.restore.storageKeyId
+                ? { k: snapshot.slider.restore.storageKeyId }
+                : null),
+              ...(snapshot.slider.restore.routeKey
+                ? { r: snapshot.slider.restore.routeKey }
+                : null),
+              ...(snapshot.slider.restore.scopeId
+                ? { s: snapshot.slider.restore.scopeId }
+                : null),
+            },
           },
         }
       : null),

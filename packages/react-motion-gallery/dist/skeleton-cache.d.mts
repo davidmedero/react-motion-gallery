@@ -17,6 +17,24 @@ type SkeletonCacheMasonrySnapshot = {
     shellHeightPx?: number;
     itemHeightsPx?: number[];
 };
+type SkeletonCacheSliderRestoreSnapshot = {
+    version: 1;
+    index: number;
+    heightPx?: number;
+    viewportWidth: number;
+    slideCount: number;
+    skeletonSlotCount: number;
+    timestamp: number;
+    scrollY: number;
+    scrollMax: number;
+    wasAtBottom: boolean;
+    storageKeyId?: string;
+    routeKey?: string;
+    scopeId?: string;
+};
+type SkeletonCacheSliderSnapshot = {
+    restore?: SkeletonCacheSliderRestoreSnapshot;
+};
 type SkeletonCacheSnapshot = {
     version: 1;
     key: string;
@@ -28,6 +46,7 @@ type SkeletonCacheSnapshot = {
     viewportWidth: number;
     layoutWidthPx?: number;
     masonry?: SkeletonCacheMasonrySnapshot;
+    slider?: SkeletonCacheSliderSnapshot;
     text: Record<string, SkeletonCacheTextRecord>;
 };
 type SkeletonCacheCookieOptions = {
@@ -67,4 +86,4 @@ declare function validateSkeletonCacheSnapshot(snapshot: SkeletonCacheSnapshot |
 declare function parseSkeletonCacheCookie(raw: string | null | undefined, options?: SkeletonCacheParseOptions): SkeletonCacheSnapshot | null;
 declare function getSkeletonCacheRouteKey(loc?: Pick<Location, "pathname" | "search"> | undefined): string;
 
-export { DEFAULT_SKELETON_CACHE_DEBOUNCE_MS, DEFAULT_SKELETON_CACHE_TTL_MS, SKELETON_CACHE_VERSION, type SkeletonCacheCookieOptions, type SkeletonCacheKind, type SkeletonCacheMasonrySnapshot, type SkeletonCacheOptions, type SkeletonCacheProviderProps, type SkeletonCacheSnapshot, type SkeletonCacheTextRecord, getSkeletonCacheCookieName, getSkeletonCacheRouteKey, parseSkeletonCacheCookie, serializeSkeletonCacheSnapshot, validateSkeletonCacheSnapshot };
+export { DEFAULT_SKELETON_CACHE_DEBOUNCE_MS, DEFAULT_SKELETON_CACHE_TTL_MS, SKELETON_CACHE_VERSION, type SkeletonCacheCookieOptions, type SkeletonCacheKind, type SkeletonCacheMasonrySnapshot, type SkeletonCacheOptions, type SkeletonCacheProviderProps, type SkeletonCacheSliderRestoreSnapshot, type SkeletonCacheSliderSnapshot, type SkeletonCacheSnapshot, type SkeletonCacheTextRecord, getSkeletonCacheCookieName, getSkeletonCacheRouteKey, parseSkeletonCacheCookie, serializeSkeletonCacheSnapshot, validateSkeletonCacheSnapshot };

@@ -11,7 +11,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 <!-- bundle-size:start -->
 | Surface | JS gzip |
 | --- | --- |
-| `Entries` | 15.7kB |
+| `Entries` | 15.9kB |
 | `FullscreenThumbnailSlider` | 20.3kB |
 | `GalleryCore` | 2.6kB |
 | `Grid` | 6.3kB |
@@ -20,10 +20,10 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `Masonry` | 6.5kB |
 | `masonry/ready` | 323.0B |
 | `masonry/lazy-load` | 3.3kB |
-| `Skeleton base` | 10.7kB |
-| `skeleton/slider` | 19.6kB |
-| `skeleton/grid` | 13.1kB |
-| `skeleton/masonry` | 21.9kB |
+| `Skeleton base` | 10.9kB |
+| `skeleton/slider` | 23.9kB |
+| `skeleton/grid` | 13.2kB |
+| `skeleton/masonry` | 22.1kB |
 | `Slider core` | 18.7kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
@@ -158,7 +158,7 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/skeleton/grid` | `GridSkeleton` and grid skeleton authoring types |
 | `react-motion-gallery/skeleton/masonry` | `MasonrySkeleton` and masonry skeleton authoring types |
 | `react-motion-gallery/skeleton/cache` | Server-safe skeleton cookie cache helpers and types |
-| `react-motion-gallery/skeleton/cache/provider` | Client `SkeletonCacheProvider` for SSR snapshots |
+| `react-motion-gallery/skeleton/cache/provider` | Client `SkeletonCacheProvider` for SSR snapshots and client cookie refresh |
 | `react-motion-gallery/fullscreen` | `useFullscreenController` and fullscreen types |
 | `react-motion-gallery/fullscreen/slider` | `fullscreenSlider` |
 | `react-motion-gallery/fullscreen/controls` | `fullscreenControls` |
@@ -474,6 +474,7 @@ What the cache stores:
 - cache version, cache key, scope id, route key, timestamp, viewport width, and active width bucket
 - measured skeleton text records keyed by `textId`: line count, per-line widths, and optional bar metrics
 - masonry-only active geometry: variant key, shell height, and item heights
+- slider-only restore state when enabled: active index, measured shell height, slide count, skeleton slot count, route key, scope id, viewport width, and timestamp
 - no text strings, no media URLs, and no full CSS text
 
 Benefits:
@@ -481,6 +482,7 @@ Benefits:
 - first visit remains unchanged and uses the full responsive skeleton behavior
 - later reloads can parse much less skeleton CSS for the active breakpoint
 - text-heavy masonry, grid, slider, entries, and standalone skeletons can keep layout stability while reducing first-paint CSS work
+- cache-backed slider restore can render the restored slot order and auto-height before the slider handle is ready
 - stale, expired, route-mismatched, scope-mismatched, or malformed cookies silently fall back to the normal responsive path
 
 Defaults: `ttlMs` is `10 * 60 * 1000`, `debounceMs` is `250`, cookie `path` is `/`, and `sameSite` is `lax`. Use a stable `key` per skeleton surface and a stable `routeKey` when a skeleton only applies to one route.
@@ -534,7 +536,7 @@ export default async function GalleryPage() {
 }
 ```
 
-Wrap the client tree in `SkeletonCacheProvider`, then opt individual skeletons in with `cache={{ key, routeKey }}`. Per-skeleton `cache.snapshot` takes precedence over provider snapshots when you need to pass one directly.
+Wrap the client tree in `SkeletonCacheProvider`, then opt individual skeletons in with `cache={{ key, routeKey }}`. Per-skeleton `cache.snapshot` takes precedence over provider snapshots when you need to pass one directly. The provider uses server snapshots for hydration, then refreshes readable cache cookies on later client mounts and history restores so back/forward navigation can pick up snapshots written after the original server render.
 
 ```tsx
 // app/gallery/GalleryPageClient.tsx
@@ -723,6 +725,52 @@ Use `SliderSkeleton` to own slider loading. `useSliderReady()` exposes the slide
 `centering: "first"` is designed for center-aligned peek sliders. When the real slider uses `align="center"` and the skeleton uses `mode: "peek"` with `layout.kind: "slider"`, the skeleton renderer inserts the leading spacer needed to center the first visible placeholder. You should not add that spacer manually.
 
 When you provide `SliderSkeleton.timing`, `exitMs` controls both how long the loading layer remains mounted after exit starts and its opacity transition duration.
+
+For sliders that need reload or back/forward restore, pair `SliderSkeleton.restore` with the same skeleton `cache` key. When cache is enabled, the restore payload is written into the skeleton cache cookie alongside text measurements. A valid cached restore can reserve the restored auto-height and slot order immediately, and `SliderSkeleton` can seed a direct `Slider` child with `initialIndex` before the handle is ready.
+
+```tsx
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
+import { Slider } from "react-motion-gallery/slider";
+import { useSliderReady } from "react-motion-gallery/slider/ready";
+import { sliderAutoHeight } from "react-motion-gallery/slider/auto-height";
+
+const sliderCache = { key: "story-slider", routeKey: "/stories" };
+
+export function RestoredAutoHeightSlider() {
+  const slider = useSliderReady();
+
+  return (
+    <SliderSkeleton
+      cache={sliderCache}
+      layout={storySliderSkeleton}
+      ready={slider.ready}
+      restore={{
+        kind: "slider",
+        enabled: true,
+        key: sliderCache.key,
+        slider: { handleRef: slider.handleRef },
+        itemCount: slides.length,
+        visibleCount: 3,
+        loop: true,
+        activeSlotOffset: 1,
+      }}
+    >
+      <Slider
+        ref={slider.ref}
+        align="center"
+        scroll={{ loop: true }}
+        plugins={[sliderAutoHeight()]}
+      >
+        {slides.map((slide) => (
+          <Slide key={slide.id} slide={slide} />
+        ))}
+      </Slider>
+    </SliderSkeleton>
+  );
+}
+```
+
+Keep `restore.key` stable and match it to the cache key for cache-backed restore. `itemCount` must match the real slide count, while `visibleCount`, `loop`, and `activeSlotOffset` should mirror the skeleton layout and slider scroll behavior. If the skeleton wraps a single custom child that does not already provide `initialIndex`, `SliderSkeleton` seeds that child with the cached restored index. If you pass your own `initialIndex`, wrap the slider in another component, or render multiple children, wire the initial index yourself; the restore fallback can still correct after mount, but it is not as first-paint precise. The default first slide is treated as no-op restore state unless the page also needs bottom-scroll preservation.
 
 ```typescript
 import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
