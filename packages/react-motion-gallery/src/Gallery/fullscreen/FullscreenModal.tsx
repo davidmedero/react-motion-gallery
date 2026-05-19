@@ -297,10 +297,6 @@ function waitForAnimationFrames(count: number): Promise<void> {
   });
 }
 
-function waitForBaseSliderVisualUpdate() {
-  return waitForAnimationFrames(4);
-}
-
 type ObjectFitMode = "contain" | "cover";
 type ObjectPosition = { x: number; y: number };
 type RectTransform = { cx: number; cy: number; scale: number };
@@ -592,7 +588,7 @@ async function findThumbInfoEnsuringVisible(
     )
 
     if (moved) {
-      await waitForBaseSliderVisualUpdate()
+      void slider.offsetWidth
       targetCell = findRenderedCellForIndex(slider, viewport, wrapIndex) ?? targetCell
     }
   }
@@ -728,6 +724,119 @@ function isElementOnScreen(el: HTMLElement, visibleThreshold = 0.4): boolean {
   return visibleHeight >= rect.height * visibleThreshold
 }
 
+type OcclusionVisibilityOptions = {
+  ignoredElements?: Array<Element | null | undefined>;
+};
+
+function getViewportIntersectionRect(rect: DOMRect): DOMRect | null {
+  const vw = window.innerWidth || document.documentElement.clientWidth;
+  const vh = window.innerHeight || document.documentElement.clientHeight;
+  const left = Math.max(0, rect.left);
+  const top = Math.max(0, rect.top);
+  const right = Math.min(vw, rect.right);
+  const bottom = Math.min(vh, rect.bottom);
+
+  if (right <= left || bottom <= top) return null;
+  return new DOMRect(left, top, right - left, bottom - top);
+}
+
+function isIgnoredOcclusionElement(
+  el: Element,
+  ignoredElements: Array<Element | null | undefined>
+) {
+  if (el instanceof HTMLElement && el.getAttribute("data-rmg-fs-shield") === "true") {
+    return true;
+  }
+
+  return ignoredElements.some(
+    (ignored) => ignored === el || !!ignored?.contains(el)
+  );
+}
+
+function isPaintedOcclusionElement(el: Element) {
+  const isSvgElement =
+    typeof SVGElement !== "undefined" && el instanceof SVGElement;
+  if (!(el instanceof HTMLElement) && !isSvgElement) return true;
+
+  const style = getComputedStyle(el);
+  if (style.display === "none") return false;
+  if (style.visibility === "hidden" || style.visibility === "collapse") return false;
+
+  const opacity = Number.parseFloat(style.opacity || "1");
+  return !Number.isFinite(opacity) || opacity > 0.01;
+}
+
+function isTargetOrTargetOwner(el: Element, target: HTMLElement) {
+  if (el === target || target.contains(el)) return true;
+  if (el === document.body || el === document.documentElement) return false;
+  return el.contains(target);
+}
+
+function firstRelevantElementFromPoint(
+  x: number,
+  y: number,
+  ignoredElements: Array<Element | null | undefined>
+): Element | null {
+  const stack =
+    typeof document.elementsFromPoint === "function"
+      ? document.elementsFromPoint(x, y)
+      : [document.elementFromPoint?.(x, y)].filter(Boolean);
+
+  for (const el of stack) {
+    if (!el) continue;
+    if (isIgnoredOcclusionElement(el, ignoredElements)) continue;
+    if (!isPaintedOcclusionElement(el)) continue;
+    return el;
+  }
+
+  return null;
+}
+
+function sampleRectPoints(rect: DOMRect) {
+  const xs = rect.width < 4
+    ? [rect.left + rect.width / 2]
+    : [
+        rect.left + rect.width * 0.02,
+        rect.left + rect.width * 0.5,
+        rect.left + rect.width * 0.98,
+      ];
+  const ys = rect.height < 4
+    ? [rect.top + rect.height / 2]
+    : [
+        rect.top + rect.height * 0.02,
+        rect.top + rect.height * 0.5,
+        rect.top + rect.height * 0.98,
+      ];
+
+  return ys.flatMap((y) => xs.map((x) => ({ x, y })));
+}
+
+export function isElementVisiblyOnScreen(
+  el: HTMLElement,
+  visibleThreshold = 0.4,
+  options: OcclusionVisibilityOptions = {}
+): boolean {
+  if (!isElementOnScreen(el, visibleThreshold)) return false;
+  if (!isPaintedOcclusionElement(el)) return false;
+
+  const viewportRect = getViewportIntersectionRect(el.getBoundingClientRect());
+  if (!viewportRect) return false;
+
+  const hasHitTestApi =
+    typeof document.elementsFromPoint === "function" ||
+    typeof document.elementFromPoint === "function";
+  if (!hasHitTestApi) return true;
+
+  return sampleRectPoints(viewportRect).some(({ x, y }) => {
+    const top = firstRelevantElementFromPoint(
+      x,
+      y,
+      options.ignoredElements ?? []
+    );
+    return !!top && isTargetOrTargetOwner(top, el);
+  });
+}
+
 export function resolveCenteredScrollTop(args: {
   rectTop: number;
   rectHeight: number;
@@ -814,8 +923,6 @@ async function waitForWindowScrollSettle(targetTop: number): Promise<void> {
 async function scrollElementIntoCenterView(el: HTMLElement | null): Promise<boolean> {
   if (!el) return false;
 
-  // if (isElementOnScreen(el, 1)) return;
-
   const rect = el.getBoundingClientRect();
   const scrollY = readWindowScrollY();
   const visualViewport = window.visualViewport;
@@ -842,7 +949,6 @@ async function scrollElementIntoCenterView(el: HTMLElement | null): Promise<bool
     return true;
   }
 
-  await waitForAnimationFrames(1);
   return false;
 }
 
@@ -2039,7 +2145,13 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       gridishTransformDestImg = resolveGridishTransformDestImg(canonicalIdx);
       if (
         gridishTransformDestImg &&
-        !isElementOnScreen(gridishTransformDestImg, 0.05)
+        !isElementVisiblyOnScreen(gridishTransformDestImg, 0.05, {
+          ignoredElements: [
+            modalRef.current,
+            overlayDivRef.current,
+            shieldRef.current,
+          ],
+        })
       ) {
         gridishTransformDestImg = null;
       }
@@ -2105,17 +2217,6 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         });
       };
 
-      if (!moveBaseSliderToSlide(
-        localSlideIdx,
-        slides,
-        centerSlider,
-        setSliderIndex
-      )) {
-        safeTeardown();
-        return;
-      }
-
-      await waitForBaseSliderVisualUpdate();
       await measureAndAnimate();
       return;
     }

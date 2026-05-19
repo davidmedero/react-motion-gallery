@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vite
 
 import {
   FullscreenModal,
+  isElementVisiblyOnScreen,
   isLikelyFullscreenCloseScrollMobile,
   resolveCenteredScrollTop,
   resolveCloseShieldReleaseMs,
@@ -65,6 +66,9 @@ beforeAll(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  if (Object.prototype.hasOwnProperty.call(document, "elementsFromPoint")) {
+    delete (document as any).elementsFromPoint;
+  }
   document.body.innerHTML = "";
 });
 
@@ -208,6 +212,68 @@ describe("resolveCenteredScrollTop", () => {
   });
 });
 
+describe("isElementVisiblyOnScreen", () => {
+  function setupTargetAndOccluder() {
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      value: 700,
+    });
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 390,
+    });
+
+    const target = document.createElement("img");
+    target.setAttribute("data-rmg-test", "target");
+    document.body.appendChild(target);
+
+    const occluder = document.createElement("nav");
+    occluder.setAttribute("data-rmg-test", "occluder");
+    document.body.appendChild(occluder);
+
+    const ignored = document.createElement("div");
+    ignored.setAttribute("data-rmg-fs-shield", "true");
+    document.body.appendChild(ignored);
+
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: HTMLElement
+    ) {
+      const testId = this.getAttribute("data-rmg-test");
+      if (testId === "target") return rect(24, 80, 180, 200);
+      if (testId === "occluder") return rect(0, 0, 390, 320);
+      return rect(0, 0, 390, 700);
+    });
+
+    return { ignored, occluder, target };
+  }
+
+  test("treats an on-screen element as hidden when another element covers every sampled point", () => {
+    const { ignored, occluder, target } = setupTargetAndOccluder();
+
+    Object.defineProperty(document, "elementsFromPoint", {
+      configurable: true,
+      value: vi.fn(() => [ignored, occluder, target, document.body]),
+    });
+
+    expect(
+      isElementVisiblyOnScreen(target, 0.05, { ignoredElements: [ignored] })
+    ).toBe(false);
+  });
+
+  test("ignores fullscreen close layers when checking the base element", () => {
+    const { ignored, target } = setupTargetAndOccluder();
+
+    Object.defineProperty(document, "elementsFromPoint", {
+      configurable: true,
+      value: vi.fn(() => [ignored, target, document.body]),
+    });
+
+    expect(
+      isElementVisiblyOnScreen(target, 0.05, { ignoredElements: [ignored] })
+    ).toBe(true);
+  });
+});
+
 describe("fullscreen close scroll policy", () => {
   const mobileContext = {
     viewportWidth: 390,
@@ -294,13 +360,21 @@ describe("fullscreen close sequencing", () => {
   function setupGridCloseScenario(
     closeScroll?: any,
     introDuration?: any,
-    introEasing: any = "linear"
+    introEasing: any = "linear",
+    options: {
+      destDocumentTop?: number;
+      layout?: "grid" | "slider";
+      coverDestWithNav?: boolean;
+    } = {}
   ) {
     vi.useFakeTimers();
 
     const events: string[] = [];
     let scrollY = 0;
     let rafNow = 0;
+    const destDocumentTop = options.destDocumentTop ?? 900;
+    const layout = options.layout ?? "grid";
+    const navCoverBottom = 320;
 
     Object.defineProperty(window, "innerHeight", {
       configurable: true,
@@ -356,17 +430,54 @@ describe("fullscreen close sequencing", () => {
     destImg.style.objectFit = "cover";
     destImg.style.objectPosition = "50% 50%";
     destHost.appendChild(destImg);
-    document.body.appendChild(destHost);
+
+    let sliderTrack: HTMLDivElement | null = null;
+    if (layout === "slider") {
+      const sliderViewport = document.createElement("div");
+      sliderTrack = document.createElement("div");
+      destHost.setAttribute("data-rmg-slide", "true");
+      sliderTrack.appendChild(destHost);
+      sliderViewport.appendChild(sliderTrack);
+      document.body.appendChild(sliderViewport);
+    } else {
+      document.body.appendChild(destHost);
+    }
+
+    const coveringNav = document.createElement("nav");
+    coveringNav.setAttribute("data-rmg-test", "covering-nav");
+    if (options.coverDestWithNav) {
+      document.body.appendChild(coveringNav);
+    }
 
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
       this: HTMLElement
     ) {
       const testId = this.getAttribute("data-rmg-test");
-      if (testId === "dest-host") return rect(24, 900 - scrollY, 180, 200);
-      if (testId === "dest-img") return rect(24, 900 - scrollY, 180, 200);
+      if (testId === "dest-host") return rect(24, destDocumentTop - scrollY, 180, 200);
+      if (testId === "dest-img") return rect(24, destDocumentTop - scrollY, 180, 200);
+      if (testId === "covering-nav") return rect(0, 0, 390, navCoverBottom);
       if (testId === "fs-img") return rect(40, 80, 300, 420);
       if (this.classList.contains("fs_modal")) return rect(0, 0, 390, 700);
       return rect(0, 0, 390, 700);
+    });
+
+    Object.defineProperty(document, "elementsFromPoint", {
+      configurable: true,
+      value: vi.fn((x: number, y: number) => {
+        const stack: Element[] = [];
+        const shield = document.querySelector("[data-rmg-fs-shield='true']");
+        if (shield) stack.push(shield);
+        const destTop = destDocumentTop - scrollY;
+        const destBottom = destTop + 200;
+        const pointHitsDest = x >= 24 && x <= 204 && y >= destTop && y <= destBottom;
+        const pointHitsCoveringNav =
+          options.coverDestWithNav && x >= 0 && x <= 390 && y >= 0 && y <= navCoverBottom;
+
+        if (pointHitsCoveringNav) stack.push(coveringNav);
+        if (pointHitsDest) stack.push(destImg, destHost);
+        stack.push(document.body, document.documentElement);
+        return stack;
+      }),
     });
 
     const setClosingModal = vi.fn((value: boolean) => {
@@ -424,12 +535,17 @@ describe("fullscreen close sequencing", () => {
           setShowFullscreenSlider: vi.fn(),
           cellCount: 1,
           setClosingModal,
-          slides: { current: [] },
-          slider: { current: null },
+          slides: {
+            current:
+              layout === "slider"
+                ? [{ cells: [{ element: destHost, index: 0 }], target: 0 }]
+                : [],
+          },
+          slider: { current: sliderTrack },
           wrappedItems: [{ src: "/a.jpg" }, { src: "/b.jpg" }, { src: "/c.jpg" }],
           setSliderIndex: vi.fn(),
           onForceResetZoom: vi.fn(),
-          layout: "grid",
+          layout,
           expandableImageRefs: { current: [{ current: destImg }] },
           resolveLayoutlessTarget: () => ({
             host: destHost,
@@ -499,10 +615,83 @@ describe("fullscreen close sequencing", () => {
     unmount(root, container);
   });
 
+  test("does not wait when closeScroll is enabled but no page scroll is needed", async () => {
+    const { closeButton, container, events, root } = setupGridCloseScenario(
+      true,
+      undefined,
+      "linear",
+      { destDocumentTop: 250 }
+    );
+
+    await clickClose(closeButton);
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(540);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true", "closing:false"]);
+
+    unmount(root, container);
+  });
+
+  test("starts slider close immediately when the thumbnail is already visible", async () => {
+    const { closeButton, container, events, root } = setupGridCloseScenario(
+      undefined,
+      undefined,
+      "linear",
+      { destDocumentTop: 250, layout: "slider" }
+    );
+
+    await clickClose(closeButton);
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(540);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true", "closing:false"]);
+
+    unmount(root, container);
+  });
+
   test("uses fade timing for the invisible-thumb close fallback", async () => {
     const { closeButton, container, events, root } = setupGridCloseScenario(
       undefined,
       { transform: 500, fade: 180 }
+    );
+
+    await clickClose(closeButton);
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(219);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(1);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true", "closing:false"]);
+
+    unmount(root, container);
+  });
+
+  test("uses fade timing when the visible thumbnail is fully covered", async () => {
+    const { closeButton, container, events, root } = setupGridCloseScenario(
+      undefined,
+      { transform: 500, fade: 180 },
+      "linear",
+      { destDocumentTop: 80, coverDestWithNav: true }
     );
 
     await clickClose(closeButton);

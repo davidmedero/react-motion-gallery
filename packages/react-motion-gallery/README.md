@@ -39,7 +39,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `slider/fullscreen` | 959.0B |
 | `ThumbnailSlider` | 18.9kB |
 | `useFullscreenController` | 5.0kB |
-| `fullscreen/slider` | 37.8kB |
+| `fullscreen/slider` | 38.3kB |
 | `fullscreen/controls` | 173.0B |
 | `fullscreen/captions` | 13.1kB |
 | `fullscreen/zoom-pan` | 9.9kB |
@@ -1978,7 +1978,9 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `lazyLoad.videos.spinnerClassName` | `string` | `—` | Spinner class for video slides. |
 | `lazyLoad.videos.spinnerStyle` | `React.CSSProperties` | `—` | Spinner style for video slides. |
 
-Use `fullscreen.closeScroll` when the base gallery item might be offscreen by the time the user closes fullscreen. This keeps the close animation anchored to the matching item instead of landing on a hidden or distant origin.
+Fullscreen uses the transform close path only when the matching base image is actually exposed in the viewport. If that image is missing, offscreen, or fully covered by another page element, fullscreen falls back to the opacity close path.
+
+Use `fullscreen.closeScroll` when the base gallery item might be offscreen by the time the user closes fullscreen. This can bring the matching item into view before the close-path decision, keeping the transform close animation anchored to the item instead of falling back because the origin is hidden or distant.
 
 Fullscreen `effects.crossfade.wheel` uses the same `true`, `false`, or object form as slider wheel crossfade. Its `durationMs` default follows fullscreen `effects.crossfade.durationMs`, which defaults to `120`.
 
