@@ -63,7 +63,7 @@ export const HOME_SURFACE_LINKS = [
   },
   {
     title: "Skeletons",
-    description: "Auto-generated SSR-stable placeholders that mirror full responsive layouts, including wrapped text, with cookie-cached layout snapshots to ensure stability at first paint.",
+    description: "Auto-generated SSR-stable placeholders that mirror full responsive layouts, including wrapped text, with cookie-cached layout snapshots to ensure stability on first paint.",
     href: "/demos?demo=skeleton-flex-cards",
     Icon: Sparkles,
     tone: "cyan",
