@@ -1,26 +1,32 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
-import { HomeShowcase } from "./HomeShowcase";
-import { SafariReloadScrollRestorationGuard } from "./components/SafariReloadScrollRestorationGuard";
+// import { HomeShowcase } from "./HomeShowcase";
+// import { SafariReloadScrollRestorationGuard } from "./components/SafariReloadScrollRestorationGuard";
 import { HOME_SURFACE_LINKS } from "./home-surface-links";
-import { readSkeletonCacheSnapshots } from "./skeleton-cache-server";
+// import { readSkeletonCacheSnapshots } from "./skeleton-cache-server";
 import packageJson from "../../../packages/react-motion-gallery/package.json";
 
 export default async function Home() {
-  const skeletonCacheSnapshots = await readSkeletonCacheSnapshots();
+  // const skeletonCacheSnapshots = await readSkeletonCacheSnapshots();
 
   return (
     <>
-      <SafariReloadScrollRestorationGuard />
+      {/* <SafariReloadScrollRestorationGuard /> */}
       <main className="rmgHome">
         <section className="home-intro" aria-labelledby="home-intro-title">
           <div className="home-intro__hero">
             <div className="home-intro__copy">
               <span className="home-intro__version">v{packageJson.version}</span>
-              <h1 id="home-intro-title">React Motion Gallery</h1>
+              <h1 id="home-intro-title">
+                <span className="home-intro__titleText">
+                  React <br className="home-intro__titleBreak" />
+                  Motion <br className="home-intro__titleBreak" />
+                  Gallery
+                </span>
+              </h1>
               <p className="home-intro__lede">
-                A motion-first gallery and lightbox system for React, with a complete slider library, Grid and Masonry layouts, structured Entries for record-based media collections, fullscreen slider with captions, overlays and thumbnails, SSR-stable skeletons, first-class Video surfaces and smooth zoom and pan gestures.
+                A motion-first gallery and lightbox system for React, with a complete carousel library, grid and masonry layouts, structured entries for record-based media collections, fullscreen carousel with captions, overlays and thumbnails, SSR-stable skeletons, first-class video surfaces and smooth zoom and pan gestures.
               </p>
               <p className="home-intro__license">
                 Free for non-commercial use,{" "}
@@ -95,7 +101,7 @@ export default async function Home() {
             </Link>
           </div>
         </section>
-        <HomeShowcase skeletonCacheSnapshots={skeletonCacheSnapshots} />
+        {/* <HomeShowcase skeletonCacheSnapshots={skeletonCacheSnapshots} /> */}
       </main>
     </>
   );
