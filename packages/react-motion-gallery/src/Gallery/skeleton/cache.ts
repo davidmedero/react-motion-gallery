@@ -3,6 +3,8 @@ import type * as React from "react";
 export const SKELETON_CACHE_VERSION = 1;
 export const DEFAULT_SKELETON_CACHE_TTL_MS = 10 * 60 * 1000;
 export const DEFAULT_SKELETON_CACHE_DEBOUNCE_MS = 250;
+export const DEFAULT_SKELETON_CACHE_COOKIE_MAX_BYTES = 3000;
+export const DEFAULT_SKELETON_CACHE_COOKIE_MAX_TOTAL_BYTES = 8000;
 
 export type SkeletonCacheKind =
   | "skeleton"
@@ -65,6 +67,8 @@ export type SkeletonCacheCookieOptions = {
   path?: string;
   sameSite?: "lax" | "strict" | "none";
   secure?: boolean;
+  maxCookieBytes?: number;
+  maxTotalCookieBytes?: number;
 };
 
 export type SkeletonCacheOptions = {

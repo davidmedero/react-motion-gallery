@@ -3,6 +3,8 @@ import * as React from 'react';
 declare const SKELETON_CACHE_VERSION = 1;
 declare const DEFAULT_SKELETON_CACHE_TTL_MS: number;
 declare const DEFAULT_SKELETON_CACHE_DEBOUNCE_MS = 250;
+declare const DEFAULT_SKELETON_CACHE_COOKIE_MAX_BYTES = 3000;
+declare const DEFAULT_SKELETON_CACHE_COOKIE_MAX_TOTAL_BYTES = 8000;
 type SkeletonCacheKind = "skeleton" | "slider" | "grid" | "masonry" | "entries";
 type SkeletonCacheTextRecord = {
     lines: number;
@@ -53,6 +55,8 @@ type SkeletonCacheCookieOptions = {
     path?: string;
     sameSite?: "lax" | "strict" | "none";
     secure?: boolean;
+    maxCookieBytes?: number;
+    maxTotalCookieBytes?: number;
 };
 type SkeletonCacheOptions = {
     key: string;
@@ -86,4 +90,4 @@ declare function validateSkeletonCacheSnapshot(snapshot: SkeletonCacheSnapshot |
 declare function parseSkeletonCacheCookie(raw: string | null | undefined, options?: SkeletonCacheParseOptions): SkeletonCacheSnapshot | null;
 declare function getSkeletonCacheRouteKey(loc?: Pick<Location, "pathname" | "search"> | undefined): string;
 
-export { DEFAULT_SKELETON_CACHE_DEBOUNCE_MS, DEFAULT_SKELETON_CACHE_TTL_MS, SKELETON_CACHE_VERSION, type SkeletonCacheCookieOptions, type SkeletonCacheKind, type SkeletonCacheMasonrySnapshot, type SkeletonCacheOptions, type SkeletonCacheProviderProps, type SkeletonCacheSliderRestoreSnapshot, type SkeletonCacheSliderSnapshot, type SkeletonCacheSnapshot, type SkeletonCacheTextRecord, getSkeletonCacheCookieName, getSkeletonCacheRouteKey, parseSkeletonCacheCookie, serializeSkeletonCacheSnapshot, validateSkeletonCacheSnapshot };
+export { DEFAULT_SKELETON_CACHE_COOKIE_MAX_BYTES, DEFAULT_SKELETON_CACHE_COOKIE_MAX_TOTAL_BYTES, DEFAULT_SKELETON_CACHE_DEBOUNCE_MS, DEFAULT_SKELETON_CACHE_TTL_MS, SKELETON_CACHE_VERSION, type SkeletonCacheCookieOptions, type SkeletonCacheKind, type SkeletonCacheMasonrySnapshot, type SkeletonCacheOptions, type SkeletonCacheProviderProps, type SkeletonCacheSliderRestoreSnapshot, type SkeletonCacheSliderSnapshot, type SkeletonCacheSnapshot, type SkeletonCacheTextRecord, getSkeletonCacheCookieName, getSkeletonCacheRouteKey, parseSkeletonCacheCookie, serializeSkeletonCacheSnapshot, validateSkeletonCacheSnapshot };

@@ -11,7 +11,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 <!-- bundle-size:start -->
 | Surface | JS gzip |
 | --- | --- |
-| `Entries` | 15.9kB |
+| `Entries` | 17.7kB |
 | `FullscreenThumbnailSlider` | 20.3kB |
 | `GalleryCore` | 2.6kB |
 | `Grid` | 6.3kB |
@@ -20,10 +20,10 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `Masonry` | 6.5kB |
 | `masonry/ready` | 323.0B |
 | `masonry/lazy-load` | 3.3kB |
-| `Skeleton base` | 11.0kB |
-| `skeleton/slider` | 24.0kB |
-| `skeleton/grid` | 13.3kB |
-| `skeleton/masonry` | 22.2kB |
+| `Skeleton base` | 12.7kB |
+| `skeleton/slider` | 24.5kB |
+| `skeleton/grid` | 15.1kB |
+| `skeleton/masonry` | 24.0kB |
 | `Slider core` | 18.7kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
@@ -485,7 +485,7 @@ Benefits:
 - cache-backed slider restore can render the restored slot order and auto-height before the slider handle is ready
 - stale, expired, route-mismatched, scope-mismatched, or malformed cookies silently fall back to the normal responsive path
 
-Defaults: `ttlMs` is `10 * 60 * 1000`, `debounceMs` is `250`, cookie `path` is `/`, and `sameSite` is `lax`. Use a stable `key` per skeleton surface and a stable `routeKey` when a skeleton only applies to one route.
+Defaults: `ttlMs` is `10 * 60 * 1000`, `debounceMs` is `250`, cookie `path` is `/`, `sameSite` is `lax`, `maxCookieBytes` is `3000`, and `maxTotalCookieBytes` is `8000`. Oversized snapshots are skipped, and when the combined React Motion Gallery skeleton cache cookies would exceed the total budget, older cache cookies are pruned before writing the new snapshot. Use a stable `key` per skeleton surface and a stable `routeKey` when a skeleton only applies to one route.
 
 For skeleton text to be measurable, the skeleton `text` node needs a `textId`, and the matching real content text needs `data-skeleton-text-id`. Browser-generated skeleton text modules include `textId` automatically, so existing spreads such as `...skeletonText.body` are cache-ready.
 
@@ -611,6 +611,8 @@ Cookie options can be tuned per skeleton:
     cookie: {
       path: "/",
       sameSite: "lax",
+      maxCookieBytes: 3000,
+      maxTotalCookieBytes: 8000,
     },
   }}
   layout={productGridSkeleton}

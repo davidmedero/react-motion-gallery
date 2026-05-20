@@ -8,10 +8,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   getSkeletonCacheCookieName,
   parseSkeletonCacheCookie,
+  serializeSkeletonCacheSnapshot,
+  type SkeletonCacheSnapshot,
 } from "./cache";
 import {
   updateSkeletonCacheSliderRestoreCookie,
   useSkeletonCacheWriter,
+  writeSkeletonCacheSnapshotCookie,
 } from "./cache-writer";
 
 function Harness({ restore = false }: { restore?: boolean }) {
@@ -72,6 +75,57 @@ function Harness({ restore = false }: { restore?: boolean }) {
   );
 }
 
+function clearSkeletonCacheCookies() {
+  for (const pair of document.cookie.split("; ")) {
+    const name = pair.split("=")[0];
+    if (name?.startsWith("rmg_skel_cache_")) {
+      document.cookie = `${name}=; path=/; max-age=0`;
+    }
+  }
+}
+
+function byteLength(value: string) {
+  return new TextEncoder().encode(value).byteLength;
+}
+
+function makeSnapshot(
+  key: string,
+  options: {
+    createdAt?: number;
+    bodyWidth?: number;
+    bodyLines?: number[];
+  } = {}
+): SkeletonCacheSnapshot {
+  return {
+    version: 1,
+    key,
+    scopeId: "scope",
+    kind: "masonry",
+    routeKey: "/demo",
+    createdAt: options.createdAt ?? 1000,
+    widthBucketMin: 900,
+    viewportWidth: 920,
+    masonry: {
+      variantKey: "c2_g8",
+      shellHeightPx: 200,
+      itemHeightsPx: [200],
+    },
+    text: {
+      body: {
+        lines: options.bodyLines?.length ?? 1,
+        lineWidthsPx: options.bodyLines ?? [options.bodyWidth ?? 180],
+        containerWidthPx: options.bodyWidth ?? 180,
+      },
+    },
+  };
+}
+
+function cookiePairForSnapshot(snapshot: SkeletonCacheSnapshot) {
+  return `${getSkeletonCacheCookieName(snapshot.key)}=${encodeURIComponent(
+    serializeSkeletonCacheSnapshot(snapshot)
+  )}`;
+}
+
 describe("skeleton cache writer", () => {
   let root: Root | null = null;
   let container: HTMLDivElement | null = null;
@@ -113,7 +167,7 @@ describe("skeleton cache writer", () => {
       }
     );
 
-    document.cookie = `${getSkeletonCacheCookieName("writer-demo")}=; path=/; max-age=0`;
+    clearSkeletonCacheCookies();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -124,7 +178,7 @@ describe("skeleton cache writer", () => {
       root?.unmount();
     });
     container?.remove();
-    document.cookie = `${getSkeletonCacheCookieName("writer-demo")}=; path=/; max-age=0`;
+    clearSkeletonCacheCookies();
     vi.restoreAllMocks();
     vi.useRealTimers();
     delete (globalThis as any).IS_REACT_ACT_ENVIRONMENT;
@@ -293,5 +347,73 @@ describe("skeleton cache writer", () => {
     expect(cleared).toBe(true);
     expect(withoutRestore?.text.body.lineWidthsPx).toEqual([180]);
     expect(withoutRestore?.slider?.restore).toBeUndefined();
+  });
+
+  test("skips an oversized snapshot cookie and clears the existing cache entry", () => {
+    const key = "oversized-demo";
+    const name = getSkeletonCacheCookieName(key);
+    const smallSnapshot = makeSnapshot(key, { createdAt: 100 });
+    const largeSnapshot = makeSnapshot(key, {
+      createdAt: 200,
+      bodyLines: Array.from({ length: 80 }, (_, index) => 100 + index),
+    });
+
+    expect(
+      writeSkeletonCacheSnapshotCookie({
+        cache: { key, routeKey: "/demo" },
+        snapshot: smallSnapshot,
+      })
+    ).toBe(true);
+    expect(document.cookie).toContain(`${name}=`);
+
+    expect(
+      writeSkeletonCacheSnapshotCookie({
+        cache: {
+          key,
+          routeKey: "/demo",
+          cookie: { maxCookieBytes: 120 },
+        },
+        snapshot: largeSnapshot,
+      })
+    ).toBe(false);
+    expect(document.cookie).not.toContain(`${name}=`);
+  });
+
+  test("prunes the oldest skeleton cache cookies before writing a new snapshot", () => {
+    const first = makeSnapshot("first-demo", { createdAt: 100 });
+    const second = makeSnapshot("second-demo", { createdAt: 200 });
+    const next = makeSnapshot("next-demo", { createdAt: 300 });
+    const secondPairBytes = byteLength(cookiePairForSnapshot(second));
+    const nextPairBytes = byteLength(cookiePairForSnapshot(next));
+    const maxTotalCookieBytes = secondPairBytes + nextPairBytes + 2;
+
+    writeSkeletonCacheSnapshotCookie({
+      cache: { key: first.key, routeKey: "/demo" },
+      snapshot: first,
+    });
+    writeSkeletonCacheSnapshotCookie({
+      cache: { key: second.key, routeKey: "/demo" },
+      snapshot: second,
+    });
+
+    expect(document.cookie).toContain(`${getSkeletonCacheCookieName(first.key)}=`);
+    expect(document.cookie).toContain(`${getSkeletonCacheCookieName(second.key)}=`);
+
+    expect(
+      writeSkeletonCacheSnapshotCookie({
+        cache: {
+          key: next.key,
+          routeKey: "/demo",
+          cookie: { maxTotalCookieBytes },
+        },
+        snapshot: next,
+      })
+    ).toBe(true);
+
+    expect(document.cookie).not.toContain(
+      `${getSkeletonCacheCookieName(first.key)}=`
+    );
+    expect(document.cookie).toContain(`${getSkeletonCacheCookieName(second.key)}=`);
+    expect(document.cookie).toContain(`${getSkeletonCacheCookieName(next.key)}=`);
   });
 });
