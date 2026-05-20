@@ -37,6 +37,7 @@ export const metadata: Metadata = {
   description:
     "Manage your React Motion Gallery account, licenses, and commercial billing.",
   alternates: { canonical: "/account" },
+  robots: { index: false, follow: true },
 };
 
 type AccountPageProps = {

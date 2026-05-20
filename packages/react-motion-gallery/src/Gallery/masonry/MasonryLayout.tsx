@@ -6,6 +6,7 @@ import {
   type ResponsiveNumber,
 } from '../shared/responsive';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
+import { useSkeletonIntroGate } from '../shared/loading/skeletonIntroGate';
 import { useOptionalGalleryCore } from '../core';
 import { MasonryCore } from './Masonry';
 import { useMasonryLayoutSeed } from './MasonryLayoutSeedContext';
@@ -79,6 +80,7 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
     forwardedRef
   ) {
     const core = useOptionalGalleryCore();
+    const skeletonIntroGate = useSkeletonIntroGate();
     const layoutSeed = useMasonryLayoutSeed();
     const localRootRef = React.useRef<HTMLElement | null>(null);
     const shellRef = React.useRef<HTMLDivElement | null>(null);
@@ -232,7 +234,7 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
       }
     }, [items.length, measurementKey]);
 
-    const introActive = clientReady && introReady;
+    const introActive = clientReady && introReady && (skeletonIntroGate ?? true);
     const masonryRootClassName = [
       styles.masonryRoot,
       styles.introContainer,

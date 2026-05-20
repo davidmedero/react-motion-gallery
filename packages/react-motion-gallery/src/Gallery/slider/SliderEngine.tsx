@@ -47,6 +47,7 @@ import { Counter, CounterType } from '../shared/motion/counter';
 import { useParallaxEffect } from './effects/useParallaxEffect';
 import { useScaleEffect } from './effects/useScaleEffect';
 import { useFadeEffect } from './effects/useFadeEffect';
+import { useSkeletonIntroGate } from '../shared/loading/skeletonIntroGate';
 import { BaseLimit, createBaseLimit } from '../shared/motion/baseLimit';
 import { WindowType } from '../shared/input/pointerTypes'
 import { AXSpec } from '../shared/types/axis';
@@ -768,6 +769,7 @@ function cloneSlide(
       position: 'relative',
       flex: '0 0 auto',
       ...(extraStyle || {}),
+      ['--rmg-intro-index' as any]: normIdx,
       transform: 'scale(var(--rmg-scale, 1))',
       transformOrigin: 'center',
       userSelect: 'none',
@@ -892,6 +894,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   }: SliderProps,
   ref: Ref<SliderCoreHandle>
 ) {
+  const skeletonIntroGate = useSkeletonIntroGate();
   const hasInitialIndexRef = useRef(isValidSliderInitialIndex(initialIndex));
   const initialSelectedIndexRef = useRef(normalizeSliderInitialIndex(initialIndex));
   const hasAppliedInitialIndexRef = useRef(false);
@@ -4874,8 +4877,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
   const introEnabled = introOptions != null;
   const introInView = inView || normalizedIntro.inView;
+  const skeletonIntroUnlocked = skeletonIntroGate ?? true;
   const introActive =
-    !introEnabled || (isReady && introInView && (introUnlocked ?? true));
+    !introEnabled ||
+    (isReady && introInView && (introUnlocked ?? true) && skeletonIntroUnlocked);
 
   const introChildren = useMemo(
     () =>

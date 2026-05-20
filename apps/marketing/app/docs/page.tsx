@@ -4,6 +4,7 @@ import type { JSX, ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CodeBlock } from "@/components/ui/code-block";
+import { JsonLd, buildDocsJsonLd } from "@/lib/seo/structured-data";
 import { DocsTableOfContents } from "./DocsTableOfContents";
 import styles from "./docs.module.css";
 
@@ -12,6 +13,9 @@ export const metadata: Metadata = {
   description:
     "The React Motion Gallery README, with package entry points and API reference.",
   alternates: { canonical: "/docs" },
+  openGraph: {
+    url: "/docs",
+  },
 };
 
 const PACKAGE_README_RELATIVE_PATH = "packages/react-motion-gallery/README.md";
@@ -1073,21 +1077,34 @@ export default async function DocsPage(): Promise<JSX.Element> {
   const tocItems = buildTableOfContents(readme.bodyBlocks);
 
   return (
-    <main className={styles.docsPage}>
-      <div className={styles.docsShell}>
-        <aside className={styles.toc} aria-label="README sections">
-          <p>README</p>
-          <DocsTableOfContents items={tocItems} />
-        </aside>
+    <>
+      <JsonLd id="docs-json-ld" data={buildDocsJsonLd(entryPoints)} />
+      <main className={styles.docsPage}>
+        <div className={styles.docsShell}>
+          <aside className={styles.toc} aria-label="README sections">
+            <p>README</p>
+            <DocsTableOfContents items={tocItems} />
+          </aside>
 
-        <article className={styles.readmeArticle}>
-          <EntryPointsSection />
+          <article className={styles.readmeArticle}>
+            <header className={styles.readmeHeader}>
+              <p className={styles.kicker}>Docs</p>
+              <h1>{readme.title}</h1>
+              {readme.introBlocks.length > 0 ? (
+                <div className={styles.readmeIntro}>
+                  <MarkdownBlocks blocks={readme.introBlocks} />
+                </div>
+              ) : null}
+            </header>
 
-          <div className={styles.markdown}>
-            <MarkdownBlocks blocks={readme.bodyBlocks} />
-          </div>
-        </article>
-      </div>
-    </main>
+            <EntryPointsSection />
+
+            <div className={styles.markdown}>
+              <MarkdownBlocks blocks={readme.bodyBlocks} />
+            </div>
+          </article>
+        </div>
+      </main>
+    </>
   );
 }

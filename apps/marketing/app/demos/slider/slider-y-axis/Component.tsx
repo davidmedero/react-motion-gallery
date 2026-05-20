@@ -103,6 +103,11 @@ function SliderYAxisGallery() {
             },
           },
         }}
+        transitions={{
+          intro: {
+            staggerMs: 160
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),

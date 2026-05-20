@@ -11,6 +11,7 @@ import {
   resolveNumberFromResponsive,
 } from "../shared/responsiveNumber";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
+import { useSkeletonIntroGate } from "../shared/loading/skeletonIntroGate";
 import type { BreakpointMap } from "../shared/responsiveNumber";
 import type {
   SliderAutoPlayTimer,
@@ -80,6 +81,7 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
   const autoPlayTimerRef = React.useRef<SliderAutoPlayTimer | null>(null);
   const intro = sliderOptions.transitions?.intro;
   const introRef = React.useRef<HTMLDivElement | null>(null);
+  const skeletonIntroGate = useSkeletonIntroGate();
   const [introInView, setIntroInView] = React.useState(false);
   const [index, setIndex] = React.useState(
     normalizeSliderInitialIndex(props.initialIndex)
@@ -540,7 +542,7 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
 
   if (!intro) return withPlugins;
 
-  const introActive = introInView;
+  const introActive = introInView && (skeletonIntroGate ?? true);
   const baseContainerProps: React.HTMLAttributes<HTMLDivElement> = {
     className: [
       styles.fade_container,

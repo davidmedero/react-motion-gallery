@@ -113,7 +113,7 @@ export function SliderScaleDemo() {
         scroll={{
           loop: true,
         }}
-
+        
         plugins={[
           sliderFullscreen(),
           sliderRipple(),

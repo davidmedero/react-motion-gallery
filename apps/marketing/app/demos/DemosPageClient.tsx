@@ -6,9 +6,11 @@ import {
 } from "@/lib/demo-canvas-shell";
 import { CodeBlock } from "@/components/ui/code-block";
 import { ChevronDown } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type SimpleBarCore from "simplebar-core";
 import SimpleBar from "simplebar-react";
+import { getDemoPath, getDemoTitle } from "./demo-catalog";
 import {
   memo,
   startTransition,
@@ -1605,8 +1607,6 @@ function toDemoCanvasClassName(demoId: string) {
   return `demoCanvas${toPascalCase(demoId)}`;
 }
 
-const DEFAULT_DEMO_ID = DEMOS[0]?.id ?? "";
-
 function DemosPageContent(props: {
   searchParamsString: string;
   onSearchParamsStringChange?: (nextSearchParamsString: string) => void;
@@ -1621,7 +1621,8 @@ function DemosPageContent(props: {
   const fallbackDemo = DEMOS[0];
   const fallbackCategory = DEMO_CATEGORIES[0];
   const requestedDemoId = searchParams.get("demo");
-  const selectedDemo = DEMO_BY_ID.get(requestedDemoId ?? "") ?? fallbackDemo;
+  const requestedDemo = DEMO_BY_ID.get(requestedDemoId ?? "");
+  const selectedDemo = requestedDemo ?? fallbackDemo;
   const selectedCategory =
     DEMO_CATEGORIES.find((category) => category.id === selectedDemo?.categoryId) ??
     fallbackCategory;
@@ -1641,6 +1642,9 @@ function DemosPageContent(props: {
   );
   const selectedDemoCanvasClassName = styles[toDemoCanvasClassName(selectedDemo.id)];
   const selectedDemoSource = selectedDemo.source;
+  const pageHeading = requestedDemo
+    ? getDemoTitle(requestedDemo)
+    : "React Motion Gallery demos";
 
   function toggleCategory(categoryId: DemoCategoryId) {
     setSidebarExpansion((current) => {
@@ -1662,11 +1666,7 @@ function DemosPageContent(props: {
   function selectDemo(demo: DemoDefinition) {
     const nextParams = new URLSearchParams(searchParams.toString());
 
-    if (demo.id === DEFAULT_DEMO_ID) {
-      nextParams.delete("demo");
-    } else {
-      nextParams.set("demo", demo.id);
-    }
+    nextParams.set("demo", demo.id);
 
     const query = nextParams.toString();
     onSearchParamsStringChange?.(query);
@@ -1718,18 +1718,22 @@ function DemosPageContent(props: {
                     const isActive = demo.id === selectedDemo.id;
 
                     return (
-                      <button
+                      <Link
                         key={demo.id}
-                        type="button"
+                        href={getDemoPath(demo.id)}
+                        scroll={false}
                         className={cx(
                           styles.demoLink,
                           isActive && styles.demoLinkActive
                         )}
-                        onClick={() => selectDemo(demo)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          selectDemo(demo);
+                        }}
                         aria-current={isActive ? "page" : undefined}
                       >
                         <strong className={styles.demoLinkTitle}>{demo.title}</strong>
-                      </button>
+                      </Link>
                     );
                   }
 
@@ -1747,20 +1751,24 @@ function DemosPageContent(props: {
                           const isActive = demo.id === selectedDemo.id;
 
                           return (
-                            <button
+                            <Link
                               key={demo.id}
-                              type="button"
+                              href={getDemoPath(demo.id)}
+                              scroll={false}
                               className={cx(
                                 styles.demoLink,
                                 isActive && styles.demoLinkActive
                               )}
-                              onClick={() => selectDemo(demo)}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                selectDemo(demo);
+                              }}
                               aria-current={isActive ? "page" : undefined}
                             >
                               <strong className={styles.demoLinkTitle}>
                                 {demo.title}
                               </strong>
-                            </button>
+                            </Link>
                           );
                         })}
                       </div>
@@ -1799,6 +1807,7 @@ function DemosPageContent(props: {
           </aside>
 
           <main className={styles.main}>
+            <h1 className={styles.visuallyHidden}>{pageHeading}</h1>
             <SelectedDemoPane
               key={selectedDemo.id}
               selectedCategoryLabel={selectedCategory.label}

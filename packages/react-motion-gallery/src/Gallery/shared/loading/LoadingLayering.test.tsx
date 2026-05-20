@@ -15,7 +15,9 @@ import ThumbnailSlider, {
   resolveThumbnailLoadingVisualState,
 } from "../../thumbnails/index";
 import ThumbnailStyles from "../../thumbnails/Thumbnails.module.css";
+import { SkeletonFrame } from "../../skeleton/base";
 import { resolveCompareLoadingLayerStyle } from "./force";
+import { useSkeletonIntroGate } from "./skeletonIntroGate";
 
 vi.mock("../../entries/hooks/useEntryInView", () => ({
   useEntryInView: () => ({
@@ -103,6 +105,12 @@ function dispatchOpacityTransitionEnd(node: Element) {
   const event = new Event("transitionend", { bubbles: true });
   Object.defineProperty(event, "propertyName", { value: "opacity" });
   node.dispatchEvent(event);
+}
+
+function SkeletonIntroGateProbe() {
+  const gate = useSkeletonIntroGate();
+  const label = gate == null ? "none" : gate ? "unlocked" : "locked";
+  return <div data-skeleton-intro-gate={label} />;
 }
 
 describe("loading layer stacking", () => {
@@ -200,6 +208,67 @@ describe("loading layer stacking", () => {
     expect(gridCss).toMatch(/\.introContainer\s*\{[^}]*opacity:\s*0;[^}]*transition:/s);
     expect(masonryCss).toMatch(/\.introContainer\s*\{[^}]*opacity:\s*0;[^}]*transition:/s);
     expect(sliderCss).toMatch(/\.fade_container\s*\{[^}]*transition:/s);
+
+    expect(gridCss).not.toContain("data-rmg-skeleton-intro-gate");
+    expect(masonryCss).not.toContain("data-rmg-skeleton-intro-gate");
+    expect(sliderCss).not.toContain("data-rmg-skeleton-intro-gate");
+  });
+
+  test("provides an internal intro gate from skeleton content", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+
+    try {
+      await React.act(async () => {
+        root.render(
+          <SkeletonFrame
+            skeletonNode={<div data-skeleton="true" />}
+            ready={false}
+            timing={{ minVisibleMs: 0, exitMs: 0 }}
+          >
+            <SkeletonIntroGateProbe />
+          </SkeletonFrame>
+        );
+      });
+
+      expect(
+        host.querySelector<HTMLElement>("[data-skeleton-intro-gate]")?.dataset
+          .skeletonIntroGate
+      ).toBe("locked");
+
+      await React.act(async () => {
+        root.render(
+          <SkeletonFrame
+            skeletonNode={<div data-skeleton="true" />}
+            ready={true}
+            force={{ enabled: true, showContent: true }}
+            timing={{ minVisibleMs: 0, exitMs: 0 }}
+          >
+            <SkeletonIntroGateProbe />
+          </SkeletonFrame>
+        );
+      });
+
+      expect(
+        host.querySelector<HTMLElement>("[data-skeleton-intro-gate]")?.dataset
+          .skeletonIntroGate
+      ).toBe("unlocked");
+
+      await React.act(async () => {
+        root.render(<SkeletonIntroGateProbe />);
+      });
+
+      expect(
+        host.querySelector<HTMLElement>("[data-skeleton-intro-gate]")?.dataset
+          .skeletonIntroGate
+      ).toBe("none");
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      host.remove();
+    }
   });
 
   test("uses slider-style shimmer vars for built-in thumbnail placeholders", () => {

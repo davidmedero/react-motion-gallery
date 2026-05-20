@@ -133,6 +133,11 @@ export function SliderVariableWidthsDemo() {
         ref={sliderRef}
         align="center"
         scroll={{ containScroll: true }}
+        transitions={{
+          intro: {
+            staggerMs: 120
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),

@@ -100,6 +100,11 @@ export function SliderSkipSnapsDemo() {
         scroll={{
           skipSnaps: { threshold: 1.5 },
         }}
+        transitions={{
+          intro: {
+            staggerMs: 160
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),

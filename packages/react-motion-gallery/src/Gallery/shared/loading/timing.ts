@@ -71,15 +71,18 @@ export function scheduleLoadingExit(args: LoadingExitSchedulerArgs) {
   let exitTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   const beginExit = () => {
-    args.setIntroUnlocked(true);
-
     if (args.exitMs === 0) {
+      args.setIntroUnlocked(true);
       args.setLoadingExiting(false);
       args.setShowLoadingLayer(false);
       return;
     }
 
     args.setLoadingExiting(true);
+
+    introTimeoutId = setTimeout(() => {
+      args.setIntroUnlocked(true);
+    }, 0);
 
     exitTimeoutId = setTimeout(() => {
       args.setShowLoadingLayer(false);
@@ -102,6 +105,10 @@ export function scheduleLoadingExit(args: LoadingExitSchedulerArgs) {
 
     if (exitTimeoutId !== null) {
       clearTimeout(exitTimeoutId);
+    }
+
+    if (introTimeoutId !== null) {
+      clearTimeout(introTimeoutId);
     }
   };
 }

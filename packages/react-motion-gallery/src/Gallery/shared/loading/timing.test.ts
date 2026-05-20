@@ -53,7 +53,7 @@ describe("shared loading timing helpers", () => {
     });
   });
 
-  test("unlocks intro immediately when exit begins after the minimum visible window", () => {
+  test("unlocks intro just after exit begins after the minimum visible window", () => {
     vi.useFakeTimers();
     const setLoadingExiting = vi.fn();
     const setShowLoadingLayer = vi.fn();
@@ -69,8 +69,11 @@ describe("shared loading timing helpers", () => {
     });
 
     expect(setLoadingExiting).toHaveBeenCalledWith(true);
-    expect(setIntroUnlocked).toHaveBeenCalledWith(true);
+    expect(setIntroUnlocked).not.toHaveBeenCalled();
     expect(setShowLoadingLayer).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(0);
+    expect(setIntroUnlocked).toHaveBeenCalledWith(true);
 
     vi.advanceTimersByTime(219);
     expect(setShowLoadingLayer).not.toHaveBeenCalled();
@@ -97,8 +100,11 @@ describe("shared loading timing helpers", () => {
     });
 
     expect(setLoadingExiting).toHaveBeenCalledWith(true);
-    expect(setIntroUnlocked).toHaveBeenCalledWith(true);
+    expect(setIntroUnlocked).not.toHaveBeenCalled();
     expect(setShowLoadingLayer).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(0);
+    expect(setIntroUnlocked).toHaveBeenCalledWith(true);
 
     vi.advanceTimersByTime(219);
     expect(setShowLoadingLayer).not.toHaveBeenCalled();

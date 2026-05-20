@@ -96,6 +96,11 @@ export function SliderRightToLeftDemo() {
         direction={{
           dir: "rtl",
         }}
+        transitions={{
+          intro: {
+            staggerMs: 160
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),

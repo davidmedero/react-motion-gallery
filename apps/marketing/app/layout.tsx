@@ -5,6 +5,13 @@ import "./globals.css";
 import "simplebar-react/dist/simplebar.min.css";
 import "react-motion-gallery/styles.css";
 import "plyr-react/plyr.css";
+import {
+  ICON_URL,
+  OG_IMAGE_URL,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo/structured-data";
 import { Nav } from "./components/Nav";
 import { RouteProgress } from "./components/RouteProgress";
 
@@ -38,42 +45,35 @@ const fontMono = JetBrains_Mono({
 /* -----------------------------------------------------
    Metadata
 ----------------------------------------------------- */
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://react-motion-gallery.com";
-
-const OG_URL =
-  "https://firebasestorage.googleapis.com/v0/b/reac-motion-gallery-blog.firebasestorage.app/o/social-card-rmg.jpg?alt=media&token=41bab79d-d6c6-41e6-92f5-f80e5fbdbf71";
-
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "React Motion Gallery",
-    template: "%s | React Motion Gallery",
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Composable React media gallery primitives for sliders, grids, masonry, fullscreen, video, zoom/pan, and stable skeleton loading.",
+  description: SITE_DESCRIPTION,
   openGraph: {
     type: "website",
-    siteName: "React Motion Gallery",
+    siteName: SITE_NAME,
     url: SITE_URL,
     images: [
       {
-        url: OG_URL,
+        url: OG_IMAGE_URL,
         width: 1200,
         height: 630,
-        alt: "React Motion Gallery",
+        alt: SITE_NAME,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     site: "@davidmedero",
-    images: [OG_URL],
+    images: [OG_IMAGE_URL],
   },
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   icons: {
-    icon: "https://cdn.react-motion-gallery.com/nav/rmg-tab-icon.png",
+    icon: ICON_URL,
   },
 };
 

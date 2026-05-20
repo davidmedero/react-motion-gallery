@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
+import { JsonLd, buildHomeJsonLd } from "@/lib/seo/structured-data";
 // import { HomeShowcase } from "./HomeShowcase";
 // import { SafariReloadScrollRestorationGuard } from "./components/SafariReloadScrollRestorationGuard";
 import { HOME_SURFACE_LINKS } from "./home-surface-links";
@@ -12,6 +13,7 @@ export default async function Home() {
 
   return (
     <>
+      <JsonLd id="home-json-ld" data={buildHomeJsonLd(HOME_SURFACE_LINKS)} />
       {/* <SafariReloadScrollRestorationGuard /> */}
       <main className="rmgHome">
         <section className="home-intro" aria-labelledby="home-intro-title">
@@ -29,7 +31,7 @@ export default async function Home() {
                 A motion-first gallery and lightbox system for React, with a complete carousel library, grid and masonry layouts, structured entries for record-based media collections, fullscreen carousel with captions, overlays and thumbnails, SSR-stable skeletons, first-class video surfaces and smooth zoom and pan gestures.
               </p>
               <p className="home-intro__license">
-                Free for non-commercial use,{" "}
+                Free for non-commercial use, source visible on{" "}
                 <a
                   href="https://github.com/davidmedero/react-motion-gallery/tree/main/packages/react-motion-gallery"
                   target="_blank"
@@ -37,9 +39,8 @@ export default async function Home() {
                   aria-label="React Motion Gallery source on GitHub"
                   className="githubLink"
                 >
-                  source-visible
-                </a>{" "}
-                and commercially licensed for production work.
+                  Github
+                </a>.{" "}
               </p>
             </div>
 

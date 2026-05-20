@@ -185,6 +185,7 @@ function cloneCoreSlide(
         position: "relative",
         flex: "0 0 auto",
         ...(extraStyle || {}),
+        ["--rmg-intro-index" as any]: normIdx,
         transform: "scale(var(--rmg-scale, 1))",
         transformOrigin: "center",
         userSelect: "none",

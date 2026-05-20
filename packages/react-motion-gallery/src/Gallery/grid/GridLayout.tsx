@@ -10,6 +10,7 @@ import {
 } from '../shared/responsive';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
+import { useSkeletonIntroGate } from '../shared/loading/skeletonIntroGate';
 import { RmgSlideProvider } from '../shared/slideContext';
 import { createRmgSlideStoreBag } from '../shared/slideStoreBag';
 import { buildStableScopeId } from '../shared/stableScope';
@@ -298,6 +299,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   const core = useOptionalGalleryCore();
   const breakpointMap = breakpoints ?? BREAKPOINT_MAP;
   const gridRootRef = React.useRef<HTMLDivElement | null>(null);
+  const skeletonIntroGate = useSkeletonIntroGate();
   const layoutStoreBag = React.useMemo(() => createRmgSlideStoreBag(), []);
   const [inView, setInView] = React.useState(false);
   const [mediaReady, setMediaReady] = React.useState(false);
@@ -333,7 +335,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   }, []);
 
   const contentReady = pluginBlocksMediaReady ? clientReady : mediaReady;
-  const introActive = contentReady && inView && introReady;
+  const introActive =
+    contentReady && inView && introReady && (skeletonIntroGate ?? true);
 
   const getItemNodes = React.useCallback(() => {
     const root = gridRootRef.current;

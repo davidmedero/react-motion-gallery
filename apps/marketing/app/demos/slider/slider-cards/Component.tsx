@@ -346,6 +346,9 @@ export function SliderCardsDemo() {
         cache={demoSkeletonCache("slider-cards")}
         layout={SLIDER_CARDS_SKELETON}
         ready={sliderReady}
+        timing={{
+          exitMs: 800
+        }}
       >
       <Slider
         ref={sliderRef}
@@ -359,6 +362,11 @@ export function SliderCardsDemo() {
         elements={{
           viewport: {
             className: styles.slider_viewport
+          }
+        }}
+        transitions={{
+          intro: {
+            staggerMs: 120
           }
         }}
 

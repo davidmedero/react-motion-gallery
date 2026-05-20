@@ -94,6 +94,11 @@ export function SliderLoopDemo() {
         }}
         initialIndex={2}
         align="center"
+        transitions={{
+          intro: {
+            staggerMs: 80
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),

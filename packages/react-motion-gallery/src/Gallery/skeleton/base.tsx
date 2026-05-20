@@ -15,6 +15,7 @@ import {
   type LoadingForceOptions,
 } from "../shared/loading/force";
 import { resolveLoadingTiming } from "../shared/loading/timing";
+import { SkeletonIntroGateProvider } from "../shared/loading/skeletonIntroGate";
 import type { LoadingTimingOptions } from "../shared/types/transitions";
 import { buildStableScopeId } from "../shared/stableScope";
 import {
@@ -118,7 +119,7 @@ export function SkeletonFrame({
       }),
     [prefersReducedMotion, timing]
   );
-  const { showLoadingLayer, loadingExiting } = useLoadingLayerState({
+  const { showLoadingLayer, loadingExiting, introUnlocked } = useLoadingLayerState({
     loadingActive,
     exitMs: loadingTiming.exitMs,
     minVisibleMs: loadingTiming.minVisibleMs,
@@ -175,6 +176,7 @@ export function SkeletonFrame({
       {skeletonNode}
     </div>
   ) : null;
+  const introGateUnlocked = introUnlocked || loadingVisualState.compareMode;
 
   return (
     <div
@@ -208,7 +210,9 @@ export function SkeletonFrame({
         aria-hidden={contentVisible ? undefined : true}
         data-rmg-skeleton-content-layer="true"
       >
-        {renderedContent}
+        <SkeletonIntroGateProvider value={introGateUnlocked}>
+          {renderedContent}
+        </SkeletonIntroGateProvider>
       </div>
       {loadingLayerFirst ? null : loadingLayerNode}
     </div>
