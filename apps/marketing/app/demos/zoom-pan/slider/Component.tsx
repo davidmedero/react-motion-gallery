@@ -4,7 +4,7 @@ import { GalleryCore } from "react-motion-gallery/core";
 import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { ZoomPanImage } from "react-motion-gallery/zoomPan";
-import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
 import styles from "./slider-demo.module.css";
 import { demoSkeletonCache } from "../../skeleton-cache";
 

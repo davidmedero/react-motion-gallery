@@ -17,6 +17,11 @@ const README_END = "<!-- bundle-size:end -->";
 const REPORTED_SURFACES = [
   { label: "Entries", exportName: "Entries", entry: "dist/entries.mjs" },
   {
+    label: "entries/cache",
+    exportName: "CachedEntries",
+    entry: "dist/entries-cache.mjs",
+  },
+  {
     label: "FullscreenThumbnailSlider",
     exportName: "FullscreenThumbnailSlider",
     entry: "dist/fullscreenThumbnails.mjs",
@@ -50,9 +55,24 @@ const REPORTED_SURFACES = [
     entry: "dist/skeleton-base.mjs",
   },
   {
+    label: "skeleton/cache/base",
+    exportName: "CachedSkeleton",
+    entry: "dist/skeleton-cache-base.mjs",
+  },
+  {
     label: "skeleton/slider",
     exportName: "SliderSkeleton",
     entry: "dist/skeleton-slider.mjs",
+  },
+  {
+    label: "skeleton/cache/slider",
+    exportName: "CachedSliderSkeleton",
+    entry: "dist/skeleton-cache-slider.mjs",
+  },
+  {
+    label: "skeleton/slider/restore",
+    exportName: "RestoredSliderSkeleton",
+    entry: "dist/skeleton-slider-restore.mjs",
   },
   {
     label: "skeleton/grid",
@@ -60,9 +80,19 @@ const REPORTED_SURFACES = [
     entry: "dist/skeleton-grid.mjs",
   },
   {
+    label: "skeleton/cache/grid",
+    exportName: "CachedGridSkeleton",
+    entry: "dist/skeleton-cache-grid.mjs",
+  },
+  {
     label: "skeleton/masonry",
     exportName: "MasonrySkeleton",
     entry: "dist/skeleton-masonry.mjs",
+  },
+  {
+    label: "skeleton/cache/masonry",
+    exportName: "CachedMasonrySkeleton",
+    entry: "dist/skeleton-cache-masonry.mjs",
   },
   {
     label: "Slider core",

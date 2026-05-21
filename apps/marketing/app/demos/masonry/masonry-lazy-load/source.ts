@@ -7,14 +7,14 @@ import { Masonry } from "react-motion-gallery/masonry";
 import { useMasonryReady } from "react-motion-gallery/masonry/ready";
 import { masonryLazyLoad } from "react-motion-gallery/masonry/lazy-load";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";
+import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
 import type {
   MasonrySkeletonSpec,
   SkeletonNode,
-} from "react-motion-gallery/skeleton/masonry";
+} from "react-motion-gallery/skeleton/cache/masonry";
 import styles from "./masonry-lazy-load-demo.module.css";
 import { masonryLazyLoadSkeletonText } from "./masonry-lazy-load.skeleton-text.generated";
 import { demoSkeletonCache } from "../../skeleton-cache";

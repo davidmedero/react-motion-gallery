@@ -15,6 +15,7 @@ import { BREAKPOINT_MAP } from "../shared/responsive";
 import { toMediaItems, type MediaItem } from "../shared/types/media";
 import { useOptionalGalleryCore } from "../core";
 import { SliderHandle } from "../slider/types";
+import type { SkeletonCacheSnapshot } from "../skeleton/cache";
 
 export type EntriesMediaContainerRender = (args: {
   entryIndex: number;
@@ -93,7 +94,13 @@ export type EntriesProps = {
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
 };
 
-export function Entries(props: EntriesProps) {
+export type EntriesCoreProps = EntriesProps & {
+  entryListCacheSnapshot?: SkeletonCacheSnapshot | null;
+  entryListCacheScopeId?: string;
+  entryListRef?: React.RefObject<HTMLDivElement | null>;
+};
+
+export function EntriesCore(props: EntriesCoreProps) {
   const {
     enabled = true,
     entries,
@@ -224,8 +231,15 @@ export function Entries(props: EntriesProps) {
       renderMediaContainer={renderMediaContainer}
       entrySliderRefs={entrySliderRefs}
       breakpoints={effectiveBreakpoints}
+      cacheSnapshot={props.entryListCacheSnapshot}
+      listRef={props.entryListRef}
+      skeletonCacheScopeId={props.entryListCacheScopeId}
     />
   );
+}
+
+export function Entries(props: EntriesProps) {
+  return <EntriesCore {...props} />;
 }
 
 export default Entries;

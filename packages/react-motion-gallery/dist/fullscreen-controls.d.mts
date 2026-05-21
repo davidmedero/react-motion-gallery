@@ -1,4 +1,4 @@
-import { e as FullscreenControlsOptions, l as FullscreenPlugin } from './responsive-MOdk42GH.mjs';
+import { e as FullscreenControlsOptions, l as FullscreenPlugin } from './responsive-CxGNsJyB.mjs';
 import './types-DXFoG8LC.mjs';
 import 'react';
 import './responsiveNumber-CouEMJ9O.mjs';
@@ -10,7 +10,6 @@ import './plyrTypes-DhzgHNfX.mjs';
 import 'plyr';
 import './types-Dhh8xfHo.mjs';
 import './text-BBcRGVzn.mjs';
-import './skeleton-cache.mjs';
 import 'plyr-react';
 import './types-DNd5jSkS.mjs';
 import 'react-dom/client';

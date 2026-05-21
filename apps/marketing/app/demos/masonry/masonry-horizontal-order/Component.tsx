@@ -8,14 +8,14 @@ import { Masonry, type ResponsiveMasonrySpan } from "react-motion-gallery/masonr
 import { useMasonryReady } from "react-motion-gallery/masonry/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";
+import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
 import type {
   MasonrySkeletonSpec,
   SkeletonNode,
-} from "react-motion-gallery/skeleton/masonry";
+} from "react-motion-gallery/skeleton/cache/masonry";
 import styles from "./masonry-horizontal-order-demo.module.css";
 import { masonryHorizontalOrderSkeletonText } from "./masonry-horizontal-order.skeleton-text.generated";
 import {

@@ -3,18 +3,16 @@ export {
   SliderSkeleton as Skeleton,
   SliderSkeleton as default,
   buildScopedInitialHeightCss,
-} from "./Gallery/skeleton/slider";
+} from "./Gallery/skeleton/slider-core";
 
 export type {
   SkeletonSliderLayout,
-  SkeletonSliderReadyHandle,
-  SkeletonSliderRestoreOptions,
   SkeletonNode,
   SliderSkeletonNode,
   SliderSkeletonProps,
   SliderSkeletonSlot,
   SliderSkeletonSpec,
-} from "./Gallery/skeleton/slider";
+} from "./Gallery/skeleton/slider-core";
 
 export type {
   SkeletonForceOptions,

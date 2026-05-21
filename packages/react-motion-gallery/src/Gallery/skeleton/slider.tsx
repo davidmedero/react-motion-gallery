@@ -115,6 +115,22 @@ export type SliderSkeletonProps = {
   cache?: SkeletonCacheOptions;
 };
 
+export type SliderSkeletonCoreProps = SliderSkeletonProps & {
+  activeDotIndex?: number;
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
+  maxSlotCount?: number;
+  renderedChildren?: React.ReactNode;
+  restoreScript?: string;
+  restoreStaticCss?: string;
+  restoredHeightPx?: number | null;
+  scopeId?: string;
+  skeletonRootRef?: React.RefObject<HTMLDivElement | null>;
+  shellRef?: React.Ref<HTMLDivElement>;
+  slotOrderForCount?: (count: number) => number[];
+  contentReady?: boolean;
+  visibleCount?: ResponsiveNumber;
+};
+
 function isSliderLayoutSpec(
   layout: SliderSkeletonProps["layout"]
 ): layout is SliderSkeletonSpec {

@@ -1,8 +1,9 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { E as EntriesOptions, M as MediaEntryLink, S as SlideOwner, u as EntryItem } from './responsive-MOdk42GH.mjs';
+import { E as EntriesOptions, M as MediaEntryLink, S as SlideOwner, v as EntryItem } from './responsive-CxGNsJyB.mjs';
 import * as React from 'react';
 import { MediaItem } from './media.mjs';
 import { j as SliderHandle } from './types-BiXSaEk7.mjs';
+import { SkeletonCacheSnapshot } from './skeleton-cache.mjs';
 
 type EntriesMediaContainerRender = (args: {
     entryIndex: number;
@@ -32,6 +33,12 @@ type EntriesProps = {
     fsOwnersRef?: React.RefObject<SlideOwner[]>;
     entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
 };
+type EntriesCoreProps = EntriesProps & {
+    entryListCacheSnapshot?: SkeletonCacheSnapshot | null;
+    entryListCacheScopeId?: string;
+    entryListRef?: React.RefObject<HTMLDivElement | null>;
+};
+declare function EntriesCore(props: EntriesCoreProps): react_jsx_runtime.JSX.Element;
 declare function Entries(props: EntriesProps): react_jsx_runtime.JSX.Element;
 
-export { Entries as E, type EntriesMediaContainerRender as a, type EntriesProps as b, flattenEntries as f, nodeFromMediaDefault as n };
+export { Entries as E, type EntriesProps as a, type EntriesMediaContainerRender as b, type EntriesCoreProps as c, EntriesCore as d, flattenEntries as f, nodeFromMediaDefault as n };

@@ -3,9 +3,8 @@ import * as React from 'react';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
 import { L as LoadingForceOptions } from './force-C5m1QpdF.mjs';
 import { L as LoadingTimingOptions } from './transitions-DU3ftmIq.mjs';
-import { SkeletonCacheOptions } from './skeleton-cache.mjs';
-import { S as SkeletonNode, a as SkeletonLength, b as SkeletonShimmer } from './layout-BOy4geKv.mjs';
-export { e as SkeletonBaseStyle, f as SkeletonBaseStyleResponsive, g as SkeletonContainerStyle, h as SkeletonContainerStyleResponsive } from './layout-BOy4geKv.mjs';
+import { S as SkeletonNode, e as SkeletonLength, f as SkeletonShimmer } from './layout-BSjd7pwQ.mjs';
+export { a as SkeletonBaseStyle, b as SkeletonBaseStyleResponsive, c as SkeletonContainerStyle, d as SkeletonContainerStyleResponsive } from './layout-BSjd7pwQ.mjs';
 export { R as ResponsiveTextBarHeight, a as ResponsiveTextBarWidth, d as ResponsiveTextLastBarWidth, c as ResponsiveTextLineCount, b as ResponsiveTextLineHeight, T as TextSkeletonResponsiveBy } from './text-BBcRGVzn.mjs';
 
 type SkeletonForceOptions = LoadingForceOptions;
@@ -47,9 +46,8 @@ type SkeletonProps = {
     enabled?: boolean;
     force?: SkeletonForceOptions;
     timing?: SkeletonTimingOptions;
-    cache?: SkeletonCacheOptions;
 };
 declare function SkeletonFrame({ skeletonNode, children, ready, enabled, force, timing, shellClassName, shellStyle, loadingShellStyle, contentClassName, contentStyle, contentOwnsWrapperLayout, loadingLayerFirst, contentWrapper, shellDataAttributes, shellRef, }: SkeletonFrameProps): react_jsx_runtime.JSX.Element;
-declare function Skeleton({ layout, children, breakpoints, className, style, shellClassName, shellStyle, contentClassName, contentStyle, backgroundColor, radius, shimmer, disableShimmer, ariaLabel, ready, enabled, force, timing, cache, }: SkeletonProps): react_jsx_runtime.JSX.Element;
+declare function Skeleton(props: SkeletonProps): react_jsx_runtime.JSX.Element;
 
-export { Skeleton, SkeletonCacheOptions, type SkeletonForceOptions, SkeletonFrame, type SkeletonFrameProps, SkeletonLength, SkeletonNode, type SkeletonProps, SkeletonShimmer, type SkeletonTimingOptions, Skeleton as default };
+export { Skeleton, type SkeletonForceOptions, SkeletonFrame, type SkeletonFrameProps, SkeletonLength, SkeletonNode, type SkeletonProps, SkeletonShimmer, type SkeletonTimingOptions, Skeleton as default };

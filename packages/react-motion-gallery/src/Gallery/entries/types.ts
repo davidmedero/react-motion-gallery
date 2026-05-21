@@ -6,7 +6,6 @@ import type {
   ResponsiveLength,
 } from "../shared/responsive";
 import type { EntrySkeletonSpec, SkeletonLength } from "./components/EntrySkeleton";
-import type { SkeletonCacheOptions } from "../skeleton/cache";
 
 export type EntryItem = {
   media?: MediaItem[];
@@ -78,7 +77,6 @@ export type EntriesLoadingOptions = {
   waitForDecode?: boolean; // default true
   decodeTimeoutMs?: number; // default 8000
   skeletonWrap?: ElementStyle;
-  cache?: SkeletonCacheOptions;
 };
 
 export type IntroOptions = {

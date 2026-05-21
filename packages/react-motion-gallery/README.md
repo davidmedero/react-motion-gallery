@@ -11,7 +11,8 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 <!-- bundle-size:start -->
 | Surface | JS gzip |
 | --- | --- |
-| `Entries` | 18.5kB |
+| `Entries` | 12.2kB |
+| `entries/cache` | 16.9kB |
 | `FullscreenThumbnailSlider` | 20.3kB |
 | `GalleryCore` | 2.6kB |
 | `Grid` | 6.3kB |
@@ -20,10 +21,15 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `Masonry` | 7.1kB |
 | `masonry/ready` | 323.0B |
 | `masonry/lazy-load` | 3.3kB |
-| `Skeleton base` | 13.4kB |
-| `skeleton/slider` | 25.6kB |
-| `skeleton/grid` | 15.8kB |
-| `skeleton/masonry` | 24.6kB |
+| `Skeleton base` | 8.9kB |
+| `skeleton/cache/base` | 13.6kB |
+| `skeleton/slider` | 14.6kB |
+| `skeleton/cache/slider` | 19.3kB |
+| `skeleton/slider/restore` | 25.2kB |
+| `skeleton/grid` | 11.2kB |
+| `skeleton/cache/grid` | 16.0kB |
+| `skeleton/masonry` | 20.0kB |
+| `skeleton/cache/masonry` | 25.2kB |
 | `Slider core` | 18.7kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
@@ -153,12 +159,18 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/masonry/ready` | `useMasonryReady` |
 | `react-motion-gallery/masonry/lazy-load` | `masonryLazyLoad` |
 | `react-motion-gallery/entries` | `Entries`, `flattenEntries`, entry media container helpers |
+| `react-motion-gallery/entries/cache` | `CachedEntries` with `entries.loading.cache` |
 | `react-motion-gallery/skeleton/base` | Standalone `Skeleton` and generic skeleton authoring types |
 | `react-motion-gallery/skeleton/slider` | `SliderSkeleton` and slider skeleton authoring types |
 | `react-motion-gallery/skeleton/grid` | `GridSkeleton` and grid skeleton authoring types |
 | `react-motion-gallery/skeleton/masonry` | `MasonrySkeleton` and masonry skeleton authoring types |
 | `react-motion-gallery/skeleton/cache` | Server-safe skeleton cookie cache helpers and types |
 | `react-motion-gallery/skeleton/cache/provider` | Client `SkeletonCacheProvider` for SSR snapshots and client cookie refresh |
+| `react-motion-gallery/skeleton/cache/base` | `CachedSkeleton` with `cache` |
+| `react-motion-gallery/skeleton/cache/slider` | `CachedSliderSkeleton` with `cache` |
+| `react-motion-gallery/skeleton/cache/grid` | `CachedGridSkeleton` with `cache` |
+| `react-motion-gallery/skeleton/cache/masonry` | `CachedMasonrySkeleton` with `cache` |
+| `react-motion-gallery/skeleton/slider/restore` | `RestoredSliderSkeleton` with `restore` and optional `cache` |
 | `react-motion-gallery/fullscreen` | `useFullscreenController` and fullscreen types |
 | `react-motion-gallery/fullscreen/slider` | `fullscreenSlider` |
 | `react-motion-gallery/fullscreen/controls` | `fullscreenControls` |
@@ -445,9 +457,18 @@ export function LoadingShell({ ready, children }: { ready: boolean; children: Re
 | `timing.minVisibleMs` | `number` | `220` | Minimum time the skeleton stays visible before exit can begin. |
 | `shellClassName` / `shellStyle` | `string` / `CSSProperties` | `—` | Wrapper-layer class and style for content+skeleton mode. |
 | `contentClassName` / `contentStyle` | `string` / `CSSProperties` | `—` | Content-layer class and style for wrapper mode. |
-| `cache` | `SkeletonCacheOptions` | `—` | Opts into the cookie snapshot cache. Available on standalone `Skeleton`, `SliderSkeleton`, `GridSkeleton`, `MasonrySkeleton`, and `Entries.loading.cache`. |
 
 The wrapper timing model matches the gallery loading layers: content begins fading in as soon as the skeleton exit starts; it does not wait for the skeleton to unmount.
+
+Default skeleton imports are cache-free. Use the opt-in cache subpaths when a surface should read and write skeleton snapshot cookies: `CachedSkeleton`, `CachedSliderSkeleton`, `CachedGridSkeleton`, `CachedMasonrySkeleton`, or `CachedEntries`.
+
+Migration notes for cache and restore:
+
+- replace `react-motion-gallery/skeleton/base` imports with `react-motion-gallery/skeleton/cache/base` when passing `cache`
+- replace `react-motion-gallery/skeleton/slider` imports with `react-motion-gallery/skeleton/cache/slider` when passing only `cache`
+- replace `react-motion-gallery/skeleton/slider` imports with `react-motion-gallery/skeleton/slider/restore` when passing `restore`
+- replace `react-motion-gallery/skeleton/grid` and `/masonry` imports with their `skeleton/cache/*` counterparts when passing `cache`
+- replace `react-motion-gallery/entries` with `react-motion-gallery/entries/cache` when using `entries.loading.cache`
 
 ### Browser-measured skeleton text authoring
 
@@ -544,7 +565,7 @@ Wrap the client tree in `SkeletonCacheProvider`, then opt individual skeletons i
 
 import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
 import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";
+import { CachedMasonrySkeleton as MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry";
 import { Masonry } from "react-motion-gallery/masonry";
 import { useMasonryReady } from "react-motion-gallery/masonry/ready";
 
@@ -581,9 +602,11 @@ export function GalleryPageClient({
 }
 ```
 
-Use the same `cache` object on `SliderSkeleton`, `GridSkeleton`, and standalone `Skeleton`. For `Entries`, put it under `entries.loading.cache`.
+Use the same `cache` object on the opt-in cache components: `CachedSliderSkeleton`, `CachedGridSkeleton`, and standalone `CachedSkeleton`. For `Entries`, import `CachedEntries` from `react-motion-gallery/entries/cache` and put the cache object under `entries.loading.cache`.
 
 ```tsx
+import { CachedEntries as Entries } from "react-motion-gallery/entries/cache";
+
 <Entries
   entries={{
     items,
@@ -602,6 +625,8 @@ Use the same `cache` object on `SliderSkeleton`, `GridSkeleton`, and standalone 
 Cookie options can be tuned per skeleton:
 
 ```tsx
+import { CachedGridSkeleton as GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
+
 <GridSkeleton
   cache={{
     key: "product-grid",
@@ -621,7 +646,7 @@ Cookie options can be tuned per skeleton:
 
 ## Slider
 
-The default `Slider` is the small synchronous core: children, drag, wheel navigation, snapping, grouping, looping, index channels, intro, and the imperative ref API. Heavier behavior is opt-in through first-party plugins, so importing one feature, such as arrows or parallax, does not pull in the rest of the slider feature set. Structured slider skeletons and restore behavior are owned by `SliderSkeleton`, composed with `useSliderReady()`.
+The default `Slider` is the small synchronous core: children, drag, wheel navigation, snapping, grouping, looping, index channels, intro, and the imperative ref API. Heavier behavior is opt-in through first-party plugins, so importing one feature, such as arrows or parallax, does not pull in the rest of the slider feature set. Structured slider skeletons are owned by `SliderSkeleton`; reload and back/forward restore lives in the opt-in `RestoredSliderSkeleton`, composed with `useSliderReady()`.
 
 ```typescript
 import { Slider } from "react-motion-gallery/slider";
@@ -728,10 +753,10 @@ Use `SliderSkeleton` to own slider loading. `useSliderReady()` exposes the slide
 
 When you provide `SliderSkeleton.timing`, `exitMs` controls both how long the loading layer remains mounted after exit starts and its opacity transition duration.
 
-For sliders that need reload or back/forward restore, pair `SliderSkeleton.restore` with the same skeleton `cache` key. When cache is enabled, the restore payload is written into the skeleton cache cookie alongside text measurements. A valid cached restore can reserve the restored auto-height and slot order immediately, and `SliderSkeleton` can seed a direct `Slider` child with `initialIndex` before the handle is ready.
+For sliders that need reload or back/forward restore, pair `RestoredSliderSkeleton.restore` with the same skeleton `cache` key. When cache is enabled, the restore payload is written into the skeleton cache cookie alongside text measurements. A valid cached restore can reserve the restored auto-height and slot order immediately, and `RestoredSliderSkeleton` can seed a direct `Slider` child with `initialIndex` before the handle is ready.
 
 ```tsx
-import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
+import { RestoredSliderSkeleton as SliderSkeleton } from "react-motion-gallery/skeleton/slider/restore";
 import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { sliderAutoHeight } from "react-motion-gallery/slider/auto-height";

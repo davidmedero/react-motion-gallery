@@ -4,8 +4,8 @@ import { GalleryCore } from "react-motion-gallery/core";
 import { Grid } from "react-motion-gallery/grid";
 import { useGridReady } from "react-motion-gallery/grid/ready";
 import { ZoomPanImage } from "react-motion-gallery/zoomPan";
-import { GridSkeleton } from "react-motion-gallery/skeleton/grid";
-import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
+import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
+import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/cache/grid";
 import styles from "./grid-demo.module.css";
 import { demoSkeletonCache } from "../../skeleton-cache";
 

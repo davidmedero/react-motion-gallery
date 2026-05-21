@@ -15,7 +15,7 @@ import {
   type EntryCardRenderArgs,
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
-} from "react-motion-gallery/entries";
+} from "react-motion-gallery/entries/cache";
 import styles from "./entries-slider-html5-demo.module.css";
 import { entriesSliderHtml5SkeletonText } from "./entries-slider-html5.skeleton-text.generated";
 import { demoSkeletonCache } from "../../skeleton-cache";

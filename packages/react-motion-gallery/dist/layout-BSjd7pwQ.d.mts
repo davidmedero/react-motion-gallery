@@ -135,4 +135,4 @@ type SkeletonLayoutRoot<TKind extends string> = {
     itemWrapStyle?: SkeletonWrapStyle;
 };
 
-export type { SkeletonNode as S, SkeletonLength as a, SkeletonShimmer as b, SkeletonLayoutRoot as c, SkeletonWrapStyle as d, SkeletonBaseStyle as e, SkeletonBaseStyleResponsive as f, SkeletonContainerStyle as g, SkeletonContainerStyleResponsive as h };
+export type { SkeletonNode as S, SkeletonBaseStyle as a, SkeletonBaseStyleResponsive as b, SkeletonContainerStyle as c, SkeletonContainerStyleResponsive as d, SkeletonLength as e, SkeletonShimmer as f, SkeletonLayoutRoot as g, SkeletonWrapStyle as h };

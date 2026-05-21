@@ -7,13 +7,13 @@ import { toMediaItems } from "react-motion-gallery/media";
 import { Grid, type ResponsiveGridSpan } from "react-motion-gallery/grid";
 import { useGridReady } from "react-motion-gallery/grid/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { GridSkeleton } from "react-motion-gallery/skeleton/grid";
+import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import type {
   GridSkeletonSpec,
   SkeletonNode,
-} from "react-motion-gallery/skeleton/grid";
+} from "react-motion-gallery/skeleton/cache/grid";
 import styles from "./grid-template-columns-demo.module.css";
 import {
   bridgeSpanBody,

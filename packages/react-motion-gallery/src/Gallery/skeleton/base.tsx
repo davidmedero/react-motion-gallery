@@ -8,7 +8,6 @@ import {
 } from "../shared/responsive";
 import { useLoadingLayerState } from "../shared/hooks/useLoadingLayerState";
 import { usePrefersReducedMotion } from "../shared/hooks/usePrefersReducedMotion";
-import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import {
   resolveCompareLoadingLayerStyle,
   resolveCompareLoadingLayerVisualState,
@@ -23,7 +22,6 @@ import {
   applySkeletonTextSnapshot,
   SkeletonLayoutNode,
   buildResponsiveCssText,
-  collectSkeletonTextIds,
   collectResponsiveCss,
   cssLen,
   shimmerStyleVars,
@@ -33,14 +31,7 @@ import {
   type SkeletonShimmer,
 } from "../shared/skeleton/layout";
 import styles from "./Skeleton.module.css";
-import type { SkeletonCacheOptions } from "./cache";
-import {
-  resolveSkeletonCacheOptions,
-  useSkeletonCacheRenderSnapshot,
-  useSkeletonCacheContext,
-} from "./cache-context";
-import { validateSkeletonCacheSnapshot } from "./cache";
-import { useSkeletonCacheWriter } from "./cache-writer";
+import type { SkeletonCacheSnapshot } from "./cache";
 
 export type SkeletonForceOptions = LoadingForceOptions;
 export type SkeletonTimingOptions = LoadingTimingOptions;
@@ -83,7 +74,13 @@ export type SkeletonProps = {
   enabled?: boolean;
   force?: SkeletonForceOptions;
   timing?: SkeletonTimingOptions;
-  cache?: SkeletonCacheOptions;
+};
+
+export type SkeletonCoreProps = SkeletonProps & {
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
+  scopeId?: string;
+  skeletonRootRef?: React.RefObject<HTMLDivElement | null>;
+  shellRef?: React.Ref<HTMLDivElement>;
 };
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -221,7 +218,7 @@ export function SkeletonFrame({
   );
 }
 
-export function Skeleton({
+export function SkeletonCore({
   layout,
   children,
   breakpoints,
@@ -240,13 +237,16 @@ export function Skeleton({
   enabled,
   force,
   timing,
-  cache,
-}: SkeletonProps) {
+  cacheSnapshot,
+  scopeId: providedScopeId,
+  skeletonRootRef: providedSkeletonRootRef,
+  shellRef: providedShellRef,
+}: SkeletonCoreProps) {
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
     [breakpoints]
   );
-  const scopeId = React.useMemo(
+  const generatedScopeId = React.useMemo(
     () =>
       buildStableScopeId("skel_", {
         layout,
@@ -265,44 +265,17 @@ export function Skeleton({
       disableShimmer,
     ]
   );
-  const cacheContext = useSkeletonCacheContext();
-  const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
-  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
-  const clientViewportWidth = useViewportWidth();
-  const textIds = React.useMemo(
-    () => Array.from(collectSkeletonTextIds(layout, "__standalone__")),
-    [layout]
-  );
-  const validSnapshot = validateSkeletonCacheSnapshot(
-    renderCacheSnapshot,
-    {
-      key: effectiveCache?.key,
-      scopeId,
-      kind: "skeleton",
-      routeKey: effectiveCache?.routeKey,
-      ttlMs: effectiveCache?.ttlMs,
-      viewportWidth: clientViewportWidth || undefined,
-      textIds,
-    }
-  );
-  const skeletonRootRef = React.useRef<HTMLDivElement | null>(null);
-  const shellRef = React.useRef<HTMLDivElement | null>(null);
-  useSkeletonCacheWriter({
-    cache: effectiveCache,
-    kind: "skeleton",
-    scopeId,
-    textIds,
-    skeletonRootRef,
-    shellRef,
-  });
+  const scopeId = providedScopeId ?? generatedScopeId;
+  const localSkeletonRootRef = React.useRef<HTMLDivElement | null>(null);
+  const skeletonRootRef = providedSkeletonRootRef ?? localSkeletonRootRef;
   const { layout: preparedLayout, responsiveCss } = React.useMemo(() => {
     let n = 0;
     const allocId = () => `n${++n}`;
     const collected: SkeletonResponsiveCssEntry[] = [];
-    const cachedLayout = validSnapshot
+    const cachedLayout = cacheSnapshot
       ? (applySkeletonTextSnapshot(
           layout,
-          validSnapshot.text,
+          cacheSnapshot.text,
           "__standalone__",
           effectiveBreakpoints
         ) as SkeletonNode)
@@ -323,7 +296,7 @@ export function Skeleton({
         rules: collected,
       }),
     };
-  }, [layout, scopeId, effectiveBreakpoints, validSnapshot]);
+  }, [layout, scopeId, effectiveBreakpoints, cacheSnapshot]);
   const rootStyle: React.CSSProperties = {
     ...style,
     ...(backgroundColor
@@ -371,18 +344,18 @@ export function Skeleton({
       shellStyle={shellStyle}
       contentClassName={contentClassName}
       contentStyle={contentStyle}
-      shellRef={shellRef}
+      shellRef={providedShellRef}
     >
       {children}
     </SkeletonFrame>
   );
 }
 
-export default Skeleton;
+export function Skeleton(props: SkeletonProps) {
+  return <SkeletonCore {...props} />;
+}
 
-export type {
-  SkeletonCacheOptions,
-} from "./cache";
+export default Skeleton;
 
 export type {
   ResponsiveTextBarHeight,

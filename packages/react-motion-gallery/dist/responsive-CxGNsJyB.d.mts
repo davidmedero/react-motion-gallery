@@ -6,7 +6,6 @@ import { P as PlyrSourceBuilder, a as PlyrOptionsBuilder } from './plyrTypes-Dhz
 import { a as ZoomPanOptions } from './types-Dhh8xfHo.mjs';
 import { L as LoadingForceOptions } from './force-C5m1QpdF.mjs';
 import { R as ResponsiveTextBarHeight, a as ResponsiveTextBarWidth, b as ResponsiveTextLineHeight, c as ResponsiveTextLineCount, d as ResponsiveTextLastBarWidth, T as TextSkeletonResponsiveBy } from './text-BBcRGVzn.mjs';
-import { SkeletonCacheOptions } from './skeleton-cache.mjs';
 import { APITypes } from 'plyr-react';
 import { c as FullscreenThumbnailSlotLayout } from './types-DNd5jSkS.mjs';
 import { Root } from 'react-dom/client';
@@ -154,7 +153,6 @@ type EntriesLoadingOptions = {
     waitForDecode?: boolean;
     decodeTimeoutMs?: number;
     skeletonWrap?: ElementStyle;
-    cache?: SkeletonCacheOptions;
 };
 type IntroOptions = {
     renderIntro?: (args: {
@@ -558,4 +556,4 @@ type ResponsiveLength = ResponsiveLengthValue | Record<string, ResponsiveLengthV
 type ResponsivePosition = ThumbnailPosition | Array<ThumbnailPosition> | Record<string, ThumbnailPosition>;
 type ResponsiveCaptionPlacement = FsCaptionPlacement | Array<FsCaptionPlacement> | Record<string, FsCaptionPlacement>;
 
-export type { EntrySkeletonResolverArgs as A, EntriesLoadingOptions as B, EntrySkeletonRenderArgs as C, FullscreenClose as D, EntriesOptions as E, FullscreenCaptionOptions as F, FullscreenArrows as G, FullscreenCounter as H, IntroOptions as I, FsCaptionRenderArgs as J, FSImageRender as K, ResponsivePosition as L, MediaEntryLink as M, PanAxisType as P, ResponsiveCaptionPlacement as R, SlideOwner as S, FullscreenCloseScrollContext as a, FullscreenCloseScrollEnabled as b, FullscreenCloseScrollOptions as c, FullscreenCloseScrollTiming as d, FullscreenControlsOptions as e, FullscreenCrossfadeOptions as f, FullscreenEffectsOptions as g, FullscreenIntroPathTiming as h, FullscreenLazyLoadOptions as i, FullscreenMobileDetectionContext as j, FullscreenOptions as k, FullscreenPlugin as l, FullscreenPluginKind as m, FullscreenSliderOptions as n, FullscreenVideoOptions as o, FullscreenZoomPanOptions as p, FsCaptionPlacement as q, FsIntroRequest as r, ResponsiveLength as s, ResponsiveLengthValue as t, EntryItem as u, EntryMediaRenderArgs as v, EntryOverlayRenderArgs as w, EntryOverlayStyle as x, EntryMediaLayout as y, EntryCardRenderArgs as z };
+export type { EntrySkeletonRenderArgs as A, EntrySkeletonResolverArgs as B, EntriesLoadingOptions as C, FullscreenClose as D, EntriesOptions as E, FullscreenCaptionOptions as F, FullscreenArrows as G, FullscreenCounter as H, IntroOptions as I, FsCaptionRenderArgs as J, FSImageRender as K, ResponsivePosition as L, MediaEntryLink as M, PanAxisType as P, ResponsiveCaptionPlacement as R, SlideOwner as S, FullscreenCloseScrollContext as a, FullscreenCloseScrollEnabled as b, FullscreenCloseScrollOptions as c, FullscreenCloseScrollTiming as d, FullscreenControlsOptions as e, FullscreenCrossfadeOptions as f, FullscreenEffectsOptions as g, FullscreenIntroPathTiming as h, FullscreenLazyLoadOptions as i, FullscreenMobileDetectionContext as j, FullscreenOptions as k, FullscreenPlugin as l, FullscreenPluginKind as m, FullscreenSliderOptions as n, FullscreenVideoOptions as o, FullscreenZoomPanOptions as p, FsCaptionPlacement as q, FsIntroRequest as r, ResponsiveLength as s, ResponsiveLengthValue as t, EntryCardRenderArgs as u, EntryItem as v, EntryMediaLayout as w, EntryMediaRenderArgs as x, EntryOverlayRenderArgs as y, EntryOverlayStyle as z };

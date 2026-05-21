@@ -5,11 +5,9 @@ import type { BreakpointMap } from "../../shared/responsive";
 import { useEntryInView } from "../hooks/useEntryInView";
 import { useEntryDecodeReady } from "../hooks/useEntryDecodeReady";
 import { usePrefersReducedMotion } from "../../shared/hooks/usePrefersReducedMotion";
-import { useViewportWidth } from "../../shared/hooks/useViewportWidth";
 import {
   EntrySkeletonCard,
   EntrySkeletonSpec,
-  collectEntrySkeletonTextIds,
 } from "./EntrySkeleton";
 import { useNormalizedEntriesIntro, useNormalizedEntriesLoading } from "../normalize";
 import { MediaItem } from "../../shared/types/media";
@@ -19,15 +17,7 @@ import {
   resolveLoadingForceOptions,
   type LoadingForceOptions,
 } from "../../shared/loading/force";
-import { validateSkeletonCacheSnapshot } from "../../skeleton/cache";
-import type { SkeletonCacheOptions } from "../../skeleton/cache";
-import {
-  resolveSkeletonCacheOptions,
-  useSkeletonCacheRenderSnapshot,
-  useSkeletonCacheContext,
-} from "../../skeleton/cache-context";
-import { useSkeletonCacheWriter } from "../../skeleton/cache-writer";
-import { buildStableScopeId } from "../../shared/stableScope";
+import type { SkeletonCacheSnapshot } from "../../skeleton/cache";
 
 const SKELETON_EXIT_MS = 220;
 const INTRO_OVERLAP_MS = 220;
@@ -48,6 +38,9 @@ type Props = {
   breakpoints: BreakpointMap;
   registerExpandableImage?: (globalIndex: number, node: HTMLImageElement | HTMLVideoElement | null) => void;
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
+  listRef?: React.RefObject<HTMLDivElement | null>;
+  skeletonCacheScopeId?: string;
 };
 
 export function resolveEntryLoadingVisualState(args: {
@@ -146,6 +139,9 @@ export function EntryList({
   breakpoints,
   registerExpandableImage,
   entrySliderRefs,
+  cacheSnapshot,
+  listRef: providedListRef,
+  skeletonCacheScopeId,
 }: Props) {
   const DRAG_PX = 6;
 
@@ -228,64 +224,19 @@ export function EntryList({
     | {
         enabled?: boolean;
         force?: LoadingForceOptions;
-        cache?: SkeletonCacheOptions;
       }
     | undefined;
   const loadingEnabled = loadingOpts?.enabled ?? true;
   const loadingForce = resolveLoadingForceOptions(loadingOpts?.force);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const cacheContext = useSkeletonCacheContext();
-  const effectiveCache = resolveSkeletonCacheOptions(
-    loadingOpts?.cache,
-    cacheContext
-  );
-  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
-  const clientViewportWidth = useViewportWidth();
   const entrySkeletonSpecs = React.useMemo(
     () => items.map((entry, entryIndex) => resolveEntrySkeletonSpec(entry, entryIndex)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [items, entries.loading?.skeleton]
   );
-  const textIds = React.useMemo(
-    () =>
-      Array.from(
-        entrySkeletonSpecs.reduce((out, spec) => {
-          collectEntrySkeletonTextIds(spec.layout, out);
-          return out;
-        }, new Set<string>())
-      ),
-    [entrySkeletonSpecs]
-  );
-  const scopeId = React.useMemo(
-    () =>
-      buildStableScopeId("esk_", {
-        breakpoints,
-        entryKeySignature,
-        skeletons: entrySkeletonSpecs,
-      }),
-    [breakpoints, entryKeySignature, entrySkeletonSpecs]
-  );
-  const validCacheSnapshot = validateSkeletonCacheSnapshot(
-    renderCacheSnapshot,
-    {
-      key: effectiveCache?.key,
-      scopeId,
-      kind: "entries",
-      routeKey: effectiveCache?.routeKey,
-      ttlMs: effectiveCache?.ttlMs,
-      viewportWidth: clientViewportWidth || undefined,
-      textIds,
-    }
-  );
-  const listRef = React.useRef<HTMLDivElement | null>(null);
-  useSkeletonCacheWriter({
-    cache: effectiveCache,
-    kind: "entries",
-    scopeId,
-    textIds,
-    skeletonRootRef: listRef,
-    shellRef: listRef,
-  });
+  const scopeId = skeletonCacheScopeId;
+  const localListRef = React.useRef<HTMLDivElement | null>(null);
+  const listRef = providedListRef ?? localListRef;
 
   const loadingActive = enabled && loadingEnabled;
   const shouldStageEntryReveal =
@@ -543,7 +494,7 @@ export function EntryList({
                     <EntrySkeletonCard
                       spec={spec}
                       breakpoints={breakpoints}
-                      cacheSnapshot={validCacheSnapshot}
+                      cacheSnapshot={cacheSnapshot}
                     />
                   )}
                 </div>

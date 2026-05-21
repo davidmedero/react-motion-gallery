@@ -5,7 +5,7 @@ import { ZoomPanImage } from "react-motion-gallery/zoomPan";
 import {
   Skeleton,
   type SkeletonNode,
-} from "react-motion-gallery/skeleton/base";
+} from "react-motion-gallery/skeleton/cache/base";
 import styles from "./standalone-demo.module.css";
 import { demoSkeletonCache } from "../../skeleton-cache";
 

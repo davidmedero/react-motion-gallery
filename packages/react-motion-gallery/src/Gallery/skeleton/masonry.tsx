@@ -8,10 +8,8 @@ import {
   type BreakpointMap,
   type ResponsiveNumber,
 } from "../shared/responsive";
-import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import {
   applySkeletonTextSnapshot,
-  collectSkeletonTextIds,
   cssLen,
   shimmerStyleVars,
   type SkeletonLength,
@@ -39,14 +37,7 @@ import {
   type SkeletonForceOptions,
   type SkeletonTimingOptions,
 } from "./base";
-import type { SkeletonCacheOptions } from "./cache";
-import { validateSkeletonCacheSnapshot } from "./cache";
-import {
-  resolveSkeletonCacheOptions,
-  useSkeletonCacheRenderSnapshot,
-  useSkeletonCacheContext,
-} from "./cache-context";
-import { useSkeletonCacheWriter } from "./cache-writer";
+import type { SkeletonCacheSnapshot } from "./cache";
 
 export type SkeletonMasonryOptions = {
   count?: number;
@@ -95,7 +86,27 @@ export type MasonrySkeletonProps = {
   force?: SkeletonForceOptions;
   timing?: SkeletonTimingOptions;
   masonry?: SkeletonMasonryOptions;
-  cache?: SkeletonCacheOptions;
+};
+
+export type MasonrySkeletonGeometrySnapshot = {
+  widthBucketMin: number;
+  viewportWidth?: number;
+  layoutWidthPx?: number;
+  masonry?: {
+    variantKey: string;
+    shellHeightPx?: number;
+    itemHeightsPx?: number[];
+  };
+};
+
+export type MasonrySkeletonCoreProps = MasonrySkeletonProps & {
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
+  scopeId?: string;
+  skeletonRootRef?: React.RefObject<HTMLDivElement | null>;
+  shellRef?: React.RefObject<HTMLDivElement | null>;
+  geometrySnapshotRef?: React.MutableRefObject<
+    (() => MasonrySkeletonGeometrySnapshot | null) | null
+  >;
 };
 
 function isMasonryLayoutSpec(
@@ -174,7 +185,7 @@ function readIndexedHeights(root: ParentNode, selector: string) {
     .map(([, height]) => height);
 }
 
-export function MasonrySkeleton({
+export function MasonrySkeletonCore({
   layout,
   children,
   breakpoints,
@@ -194,13 +205,17 @@ export function MasonrySkeleton({
   force,
   timing,
   masonry,
-  cache,
-}: MasonrySkeletonProps) {
+  cacheSnapshot,
+  scopeId: providedScopeId,
+  skeletonRootRef: providedSkeletonRootRef,
+  shellRef: providedShellRef,
+  geometrySnapshotRef,
+}: MasonrySkeletonCoreProps) {
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
     [breakpoints]
   );
-  const scopeId = React.useMemo(
+  const generatedScopeId = React.useMemo(
     () =>
       buildStableScopeId("skel_", {
         layout,
@@ -221,29 +236,21 @@ export function MasonrySkeleton({
       masonry,
     ]
   );
+  const scopeId = providedScopeId ?? generatedScopeId;
   const masonrySpec = React.useMemo(() => {
     if (isMasonryLayout(layout) || isMasonryLayoutSpec(layout)) {
       return toMasonrySkeletonSpec(layout);
     }
     return null;
   }, [layout]);
-  const cacheContext = useSkeletonCacheContext();
-  const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
-  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
-  const clientViewportWidth = useViewportWidth();
   const masonryLayout = masonrySpec?.layout?.kind === "masonry"
     ? (masonrySpec.layout as MasonrySkeletonLayoutNode)
     : null;
-  const textIds = React.useMemo(
-    () =>
-      masonrySpec?.layout
-        ? Array.from(collectSkeletonTextIds(masonrySpec.layout, "masonry"))
-        : [],
-    [masonrySpec]
-  );
   const masonrySourceLayout = isMasonryLayout(layout) ? layout : null;
-  const skeletonRootRef = React.useRef<HTMLDivElement | null>(null);
-  const shellRef = React.useRef<HTMLDivElement | null>(null);
+  const localSkeletonRootRef = React.useRef<HTMLDivElement | null>(null);
+  const localShellRef = React.useRef<HTMLDivElement | null>(null);
+  const skeletonRootRef = providedSkeletonRootRef ?? localSkeletonRootRef;
+  const shellRef = providedShellRef ?? localShellRef;
   const explicitLayoutWidthPx =
     masonry?.layoutWidthPx ?? masonrySourceLayout?.layoutWidthPx;
   const [measuredLayoutWidthPx, setMeasuredLayoutWidthPx] = React.useState<
@@ -310,57 +317,7 @@ export function MasonrySkeleton({
           disableShimmer,
         }
       : null;
-  const validCacheSnapshot = React.useMemo(() => {
-    const basic = validateSkeletonCacheSnapshot(renderCacheSnapshot, {
-      key: effectiveCache?.key,
-      scopeId,
-      kind: "masonry",
-      routeKey: effectiveCache?.routeKey,
-      ttlMs: effectiveCache?.ttlMs,
-      viewportWidth: clientViewportWidth || undefined,
-      textIds,
-      itemCount: masonryRenderOptions?.count,
-    });
-    if (!basic || !masonrySpec || !masonryRenderOptions) return null;
-
-    const validationPrediction = buildMasonrySkeletonPrediction({
-      count: masonryRenderOptions.count,
-      columns: masonryRenderOptions.columns,
-      gap: masonryRenderOptions.gap,
-      breakpoints: effectiveBreakpoints,
-      ratios: masonryRenderOptions.ratios,
-      heightsPx: masonryRenderOptions.heightsPx,
-      spans: masonryRenderOptions.spans,
-      placement: masonryRenderOptions.placement,
-      spec: masonrySpec,
-      scopeId: "__rmg_cache_validate__",
-      viewportWidth: basic.viewportWidth,
-      layoutWidthPx: basic.layoutWidthPx,
-    });
-
-    if (
-      !validationPrediction.variants.some(
-        (variant) =>
-          variant.state.key === basic.masonry?.variantKey &&
-          variant.state.minWidth === basic.widthBucketMin
-      )
-    ) {
-      return null;
-    }
-
-    return basic;
-  }, [
-    effectiveBreakpoints,
-    effectiveCache?.key,
-    effectiveCache?.routeKey,
-    effectiveCache?.ttlMs,
-    clientViewportWidth,
-    renderCacheSnapshot,
-    masonryRenderOptions,
-    masonrySpec,
-    scopeId,
-    textIds,
-  ]);
+  const validCacheSnapshot = cacheSnapshot ?? null;
   const effectiveMasonrySpec = React.useMemo(() => {
     if (!validCacheSnapshot?.text || !masonrySpec) return masonrySpec;
 
@@ -508,15 +465,9 @@ export function MasonrySkeleton({
       },
     };
   }, [masonryLayoutSeed]);
-  useSkeletonCacheWriter({
-    cache: effectiveCache,
-    kind: "masonry",
-    scopeId,
-    textIds,
-    skeletonRootRef,
-    shellRef,
-    getGeometrySnapshot: getCacheGeometrySnapshot,
-  });
+  if (geometrySnapshotRef) {
+    geometrySnapshotRef.current = getCacheGeometrySnapshot;
+  }
   const rootStyle: React.CSSProperties = {
     ...style,
     ...(backgroundColor
@@ -608,6 +559,10 @@ export function MasonrySkeleton({
       {framedSkeleton}
     </div>
   );
+}
+
+export function MasonrySkeleton(props: MasonrySkeletonProps) {
+  return <MasonrySkeletonCore {...props} />;
 }
 
 export default MasonrySkeleton;

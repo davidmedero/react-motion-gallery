@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
+import { CachedMasonrySkeleton } from "../skeleton/cache-masonry";
 import { MasonrySkeleton } from "../skeleton/masonry";
 import {
   MasonrySkeletonCard,
@@ -949,7 +950,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
 
   test("falls back to responsive output when a masonry snapshot scope mismatches", () => {
     const markup = renderToStaticMarkup(
-      <MasonrySkeleton
+      <CachedMasonrySkeleton
         layout={{
           layout: {
             kind: "masonry",

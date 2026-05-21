@@ -23,7 +23,3 @@ export type {
   SkeletonTimingOptions,
   TextSkeletonResponsiveBy,
 } from "./Gallery/skeleton/base";
-
-export type {
-  SkeletonCacheOptions,
-} from "./Gallery/skeleton/cache";

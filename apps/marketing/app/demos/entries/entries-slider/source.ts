@@ -12,7 +12,7 @@ import {
   type EntryCardRenderArgs,
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
-} from "react-motion-gallery/entries";
+} from "react-motion-gallery/entries/cache";
 import styles from "./entries-slider-demo.module.css";
 import { entriesSliderSkeletonText } from "./entries-slider.skeleton-text.generated";
 import { demoSkeletonCache } from "../../skeleton-cache";

@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Skeleton,
   type SkeletonNode,
-} from "react-motion-gallery/skeleton/base";
+} from "react-motion-gallery/skeleton/cache/base";
 import styles from "./skeleton-force-overlay-demo.module.css";
 import { skeletonForceOverlaySkeletonText } from "./skeleton-force-overlay.skeleton-text.generated";
 import { demoSkeletonCache } from "../../skeleton-cache";

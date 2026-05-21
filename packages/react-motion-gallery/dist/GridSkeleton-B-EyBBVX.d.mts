@@ -1,4 +1,4 @@
-import { c as SkeletonLayoutRoot, S as SkeletonNode$1, d as SkeletonWrapStyle, a as SkeletonLength, b as SkeletonShimmer } from './layout-BOy4geKv.mjs';
+import { g as SkeletonLayoutRoot, S as SkeletonNode$1, h as SkeletonWrapStyle, e as SkeletonLength, f as SkeletonShimmer } from './layout-BSjd7pwQ.mjs';
 import { R as ResponsiveGridSpan } from './types-Do4Pq-Td.mjs';
 
 type GridSkeletonWrapStyle = SkeletonWrapStyle;

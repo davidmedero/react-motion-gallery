@@ -1,12 +1,11 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { R as ResponsiveNumber, B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
-import { SkeletonCacheOptions } from './skeleton-cache.mjs';
-import { a as SkeletonLength, b as SkeletonShimmer } from './layout-BOy4geKv.mjs';
-export { S as SkeletonNode } from './layout-BOy4geKv.mjs';
+import { e as SkeletonLength, f as SkeletonShimmer } from './layout-BSjd7pwQ.mjs';
+export { S as SkeletonNode } from './layout-BSjd7pwQ.mjs';
 import { R as ResponsiveMasonrySpan } from './types-Br27DWP7.mjs';
-import { M as MasonrySkeletonLayoutNode, a as MasonryPlacement, b as MasonrySkeletonSpec } from './MasonrySkeleton-Cs0x-4yL.mjs';
-export { c as MasonrySkeletonNode, d as MasonrySkeletonSlot } from './MasonrySkeleton-Cs0x-4yL.mjs';
+import { d as MasonrySkeletonLayoutNode, M as MasonryPlacement, c as MasonrySkeletonSpec } from './MasonrySkeleton-bp_Cp0OB.mjs';
+export { a as MasonrySkeletonNode, b as MasonrySkeletonSlot } from './MasonrySkeleton-bp_Cp0OB.mjs';
 import { SkeletonForceOptions, SkeletonTimingOptions } from './skeleton-base.mjs';
 import './text-BBcRGVzn.mjs';
 import './force-C5m1QpdF.mjs';
@@ -57,8 +56,7 @@ type MasonrySkeletonProps = {
     force?: SkeletonForceOptions;
     timing?: SkeletonTimingOptions;
     masonry?: SkeletonMasonryOptions;
-    cache?: SkeletonCacheOptions;
 };
-declare function MasonrySkeleton({ layout, children, breakpoints, className, style, shellClassName, shellStyle, contentClassName, contentStyle, backgroundColor, radius, shimmer, disableShimmer, ariaLabel, ready, enabled, force, timing, masonry, cache, }: MasonrySkeletonProps): react_jsx_runtime.JSX.Element | null;
+declare function MasonrySkeleton(props: MasonrySkeletonProps): react_jsx_runtime.JSX.Element;
 
-export { MasonryPlacement, MasonrySkeleton, type MasonrySkeletonProps, MasonrySkeletonSpec, MasonrySkeleton as Skeleton, SkeletonCacheOptions, SkeletonForceOptions, type SkeletonMasonryLayout, type SkeletonMasonryOptions, SkeletonTimingOptions, MasonrySkeleton as default };
+export { MasonryPlacement, MasonrySkeleton, type MasonrySkeletonProps, MasonrySkeletonSpec, MasonrySkeleton as Skeleton, SkeletonForceOptions, type SkeletonMasonryLayout, type SkeletonMasonryOptions, SkeletonTimingOptions, MasonrySkeleton as default };

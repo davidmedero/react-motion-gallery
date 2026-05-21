@@ -5,7 +5,7 @@ import * as React from "react";
 import { GalleryCore, useGalleryCore, type GalleryApi } from "react-motion-gallery/core";
 import { Slider, createSliderIndexChannel, type SliderHandle, type SliderIndexChannel } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
-import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";

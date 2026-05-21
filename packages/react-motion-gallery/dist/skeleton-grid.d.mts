@@ -1,12 +1,11 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { R as ResponsiveNumber, B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
-import { SkeletonCacheOptions } from './skeleton-cache.mjs';
-import { a as SkeletonLength, b as SkeletonShimmer } from './layout-BOy4geKv.mjs';
-export { S as SkeletonNode } from './layout-BOy4geKv.mjs';
+import { e as SkeletonLength, f as SkeletonShimmer } from './layout-BSjd7pwQ.mjs';
+export { S as SkeletonNode } from './layout-BSjd7pwQ.mjs';
 import { f as ResponsiveGridTemplate, R as ResponsiveGridSpan } from './types-Do4Pq-Td.mjs';
-import { c as GridSkeletonLayoutNode, b as GridSkeletonSpec } from './GridSkeleton-Dpsi5tXc.mjs';
-export { G as GridSkeletonNode, a as GridSkeletonSlot } from './GridSkeleton-Dpsi5tXc.mjs';
+import { c as GridSkeletonLayoutNode, b as GridSkeletonSpec } from './GridSkeleton-B-EyBBVX.mjs';
+export { G as GridSkeletonNode, a as GridSkeletonSlot } from './GridSkeleton-B-EyBBVX.mjs';
 import { SkeletonForceOptions, SkeletonTimingOptions } from './skeleton-base.mjs';
 import './text-BBcRGVzn.mjs';
 import './force-C5m1QpdF.mjs';
@@ -58,8 +57,7 @@ type GridSkeletonProps = {
     force?: SkeletonForceOptions;
     timing?: SkeletonTimingOptions;
     grid?: SkeletonGridOptions;
-    cache?: SkeletonCacheOptions;
 };
-declare function GridSkeleton({ layout, children, breakpoints, className, style, shellClassName, shellStyle, contentClassName, contentStyle, backgroundColor, radius, shimmer, disableShimmer, ariaLabel, ready, enabled, force, timing, grid, cache, }: GridSkeletonProps): react_jsx_runtime.JSX.Element | null;
+declare function GridSkeleton(props: GridSkeletonProps): react_jsx_runtime.JSX.Element;
 
 export { GridSkeleton, type GridSkeletonProps, GridSkeletonSpec, GridSkeleton as Skeleton, SkeletonForceOptions, type SkeletonGridLayout, type SkeletonGridOptions, SkeletonTimingOptions, GridSkeleton as default };

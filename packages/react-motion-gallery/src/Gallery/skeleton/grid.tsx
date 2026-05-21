@@ -7,9 +7,7 @@ import {
   type BreakpointMap,
   type ResponsiveNumber,
 } from "../shared/responsive";
-import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import {
-  collectSkeletonTextIds,
   cssLen,
   shimmerStyleVars,
   type SkeletonLength,
@@ -29,14 +27,7 @@ import {
   type SkeletonForceOptions,
   type SkeletonTimingOptions,
 } from "./base";
-import type { SkeletonCacheOptions } from "./cache";
-import { validateSkeletonCacheSnapshot } from "./cache";
-import {
-  resolveSkeletonCacheOptions,
-  useSkeletonCacheRenderSnapshot,
-  useSkeletonCacheContext,
-} from "./cache-context";
-import { useSkeletonCacheWriter } from "./cache-writer";
+import type { SkeletonCacheSnapshot } from "./cache";
 
 export type SkeletonGridOptions = {
   count?: number;
@@ -86,7 +77,13 @@ export type GridSkeletonProps = {
   force?: SkeletonForceOptions;
   timing?: SkeletonTimingOptions;
   grid?: SkeletonGridOptions;
-  cache?: SkeletonCacheOptions;
+};
+
+export type GridSkeletonCoreProps = GridSkeletonProps & {
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
+  scopeId?: string;
+  skeletonRootRef?: React.RefObject<HTMLDivElement | null>;
+  shellRef?: React.Ref<HTMLDivElement>;
 };
 
 function isGridLayoutSpec(
@@ -136,7 +133,7 @@ function toGridSkeletonSpec(
   };
 }
 
-export function GridSkeleton({
+export function GridSkeletonCore({
   layout,
   children,
   breakpoints,
@@ -156,13 +153,16 @@ export function GridSkeleton({
   force,
   timing,
   grid,
-  cache,
-}: GridSkeletonProps) {
+  cacheSnapshot,
+  scopeId: providedScopeId,
+  skeletonRootRef: providedSkeletonRootRef,
+  shellRef: providedShellRef,
+}: GridSkeletonCoreProps) {
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
     [breakpoints]
   );
-  const scopeId = React.useMemo(
+  const generatedScopeId = React.useMemo(
     () =>
       buildStableScopeId("skel_", {
         layout,
@@ -183,45 +183,15 @@ export function GridSkeleton({
       grid,
     ]
   );
+  const scopeId = providedScopeId ?? generatedScopeId;
   const gridSpec = React.useMemo(() => {
     if (isGridLayout(layout) || isGridLayoutSpec(layout)) {
       return toGridSkeletonSpec(layout);
     }
     return null;
   }, [layout]);
-  const cacheContext = useSkeletonCacheContext();
-  const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
-  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
-  const clientViewportWidth = useViewportWidth();
-  const textIds = React.useMemo(
-    () =>
-      gridSpec?.layout
-        ? Array.from(collectSkeletonTextIds(gridSpec.layout, "grid"))
-        : [],
-    [gridSpec]
-  );
-  const validCacheSnapshot = validateSkeletonCacheSnapshot(
-    renderCacheSnapshot,
-    {
-      key: effectiveCache?.key,
-      scopeId,
-      kind: "grid",
-      routeKey: effectiveCache?.routeKey,
-      ttlMs: effectiveCache?.ttlMs,
-      viewportWidth: clientViewportWidth || undefined,
-      textIds,
-    }
-  );
-  const skeletonRootRef = React.useRef<HTMLDivElement | null>(null);
-  const shellRef = React.useRef<HTMLDivElement | null>(null);
-  useSkeletonCacheWriter({
-    cache: effectiveCache,
-    kind: "grid",
-    scopeId,
-    textIds,
-    skeletonRootRef,
-    shellRef,
-  });
+  const localSkeletonRootRef = React.useRef<HTMLDivElement | null>(null);
+  const skeletonRootRef = providedSkeletonRootRef ?? localSkeletonRootRef;
   const gridLayout = gridSpec?.layout?.kind === "grid"
     ? (gridSpec.layout as GridSkeletonLayoutNode)
     : null;
@@ -270,7 +240,7 @@ export function GridSkeleton({
           {...gridRenderOptions}
           spec={gridSpec}
           breakpoints={effectiveBreakpoints}
-          cacheSnapshot={validCacheSnapshot}
+          cacheSnapshot={cacheSnapshot}
         />
       </div>
     ) : null;
@@ -289,11 +259,15 @@ export function GridSkeleton({
       contentClassName={contentClassName}
       contentStyle={contentStyle}
       contentOwnsWrapperLayout={children !== undefined}
-      shellRef={shellRef}
+      shellRef={providedShellRef}
     >
       {children}
     </SkeletonFrame>
   );
+}
+
+export function GridSkeleton(props: GridSkeletonProps) {
+  return <GridSkeletonCore {...props} />;
 }
 
 export default GridSkeleton;

@@ -1,4 +1,4 @@
-import { c as SkeletonLayoutRoot, S as SkeletonNode$1, d as SkeletonWrapStyle, a as SkeletonLength, b as SkeletonShimmer } from './layout-BOy4geKv.mjs';
+import { g as SkeletonLayoutRoot, S as SkeletonNode$1, h as SkeletonWrapStyle, e as SkeletonLength, f as SkeletonShimmer } from './layout-BSjd7pwQ.mjs';
 import { R as ResponsiveMasonrySpan } from './types-Br27DWP7.mjs';
 
 type MasonryPlacement = "balanced" | "roundRobin" | "horizontalOrder";
@@ -26,4 +26,4 @@ type MasonrySkeletonSpec = {
     shimmer?: SkeletonShimmer;
 };
 
-export type { MasonrySkeletonLayoutNode as M, MasonryPlacement as a, MasonrySkeletonSpec as b, MasonrySkeletonNode as c, MasonrySkeletonSlot as d };
+export type { MasonryPlacement as M, MasonrySkeletonNode as a, MasonrySkeletonSlot as b, MasonrySkeletonSpec as c, MasonrySkeletonLayoutNode as d };
