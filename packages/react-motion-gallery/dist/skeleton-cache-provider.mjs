@@ -1,1 +1,1 @@
-export{a as SkeletonCacheProvider}from'./chunk-SMEYJ2X3.mjs';import'./chunk-4NURIV3U.mjs';
+export{a as SkeletonCacheProvider}from'./chunk-FPSEC6V4.mjs';import'./chunk-TLLL2WEG.mjs';

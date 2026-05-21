@@ -5,6 +5,7 @@ import {
   type BreakpointMap,
   type ResponsiveNumber,
 } from '../shared/responsive';
+import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
 import { useSkeletonIntroGate } from '../shared/loading/skeletonIntroGate';
 import { useOptionalGalleryCore } from '../core';
@@ -97,6 +98,7 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
     const [layoutMeasured, setLayoutMeasured] = React.useState(items.length === 0);
     const [mediaReady, setMediaReady] = React.useState(false);
     const [clientReady, setClientReady] = React.useState(false);
+    const [inView, setInView] = React.useState(false);
     const [firstPaintSeedActive, setFirstPaintSeedActive] = React.useState(true);
 
     React.useLayoutEffect(() => {
@@ -145,6 +147,7 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
     );
 
     useMediaReady(!pluginBlocksMediaReady, localRootRef as any, setMediaReady);
+    useInViewOnce(true, localRootRef as any, () => setInView(true));
 
     const viewportReady = stableViewportWidth > 0;
     const masonryCanMount = viewportReady;
@@ -234,7 +237,7 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
       }
     }, [items.length, measurementKey]);
 
-    const introActive = clientReady && introReady && (skeletonIntroGate ?? true);
+    const introActive = clientReady && inView && introReady && (skeletonIntroGate ?? true);
     const masonryRootClassName = [
       styles.masonryRoot,
       styles.introContainer,

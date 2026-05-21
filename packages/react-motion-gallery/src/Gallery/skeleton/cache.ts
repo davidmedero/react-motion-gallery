@@ -5,6 +5,8 @@ export const DEFAULT_SKELETON_CACHE_TTL_MS = 10 * 60 * 1000;
 export const DEFAULT_SKELETON_CACHE_DEBOUNCE_MS = 250;
 export const DEFAULT_SKELETON_CACHE_COOKIE_MAX_BYTES = 3000;
 export const DEFAULT_SKELETON_CACHE_COOKIE_MAX_TOTAL_BYTES = 8000;
+export const DEFAULT_SKELETON_CACHE_VIEWPORT_TOLERANCE_PX = 2;
+export const SKELETON_CACHE_CHANGE_EVENT = "rmg:skeleton-cache-change";
 
 export type SkeletonCacheKind =
   | "skeleton"
@@ -94,6 +96,8 @@ export type SkeletonCacheParseOptions = {
   routeKey?: string;
   ttlMs?: number;
   now?: number;
+  viewportWidth?: number;
+  viewportTolerancePx?: number;
   textIds?: readonly string[];
   itemCount?: number;
   variantKeys?: readonly string[];
@@ -638,6 +642,16 @@ export function validateSkeletonCacheSnapshot(
     snapshot.widthBucketMin !== options.widthBucketMin
   ) {
     return null;
+  }
+  if (options.viewportWidth != null) {
+    const tolerance =
+      typeof options.viewportTolerancePx === "number" &&
+      Number.isFinite(options.viewportTolerancePx)
+        ? Math.max(0, options.viewportTolerancePx)
+        : DEFAULT_SKELETON_CACHE_VIEWPORT_TOLERANCE_PX;
+    if (Math.abs(snapshot.viewportWidth - options.viewportWidth) > tolerance) {
+      return null;
+    }
   }
 
   if (options.textIds?.length) {

@@ -9,6 +9,7 @@ import {
   getSkeletonCacheCookieName,
   parseSkeletonCacheCookie,
   serializeSkeletonCacheSnapshot,
+  SKELETON_CACHE_CHANGE_EVENT,
   type SkeletonCacheSnapshot,
 } from "./cache";
 import {
@@ -59,6 +60,57 @@ function Harness({ restore = false }: { restore?: boolean }) {
           scopeId: "scope",
         })
       : undefined,
+  });
+
+  return (
+    <div ref={shellRef}>
+      <div ref={skeletonRootRef}>
+        <div data-rmg-skel-text-id="body">
+          <div data-rmg-skel-text-line="true" />
+        </div>
+      </div>
+      <div data-rmg-skeleton-content-layer="true">
+        <p data-skeleton-text-id="body">Measured text</p>
+      </div>
+    </div>
+  );
+}
+
+function SnapshotOnlyRerenderHarness({
+  snapshotCreatedAt,
+}: {
+  snapshotCreatedAt: number;
+}) {
+  const skeletonRootRef = React.useRef<HTMLDivElement | null>(null);
+  const shellRef = React.useRef<HTMLDivElement | null>(null);
+  const textIds = React.useMemo(() => ["body"], []);
+  const getGeometrySnapshot = React.useCallback(
+    () => ({
+      widthBucketMin: 900,
+      viewportWidth: 920,
+      layoutWidthPx: 640,
+      masonry: {
+        variantKey: "c2_g8",
+        shellHeightPx: 200,
+        itemHeightsPx: [200],
+      },
+    }),
+    []
+  );
+
+  useSkeletonCacheWriter({
+    cache: {
+      key: "writer-demo",
+      debounceMs: 250,
+      routeKey: "/demo",
+      snapshot: makeSnapshot("writer-demo", { createdAt: snapshotCreatedAt }),
+    },
+    kind: "masonry",
+    scopeId: "scope",
+    textIds,
+    skeletonRootRef,
+    shellRef,
+    getGeometrySnapshot,
   });
 
   return (
@@ -216,14 +268,20 @@ describe("skeleton cache writer", () => {
     vi.setSystemTime(2000);
     window.dispatchEvent(new Event("resize"));
 
+    const clearedRaw = document.cookie
+      .split("; ")
+      .find((entry) => entry.startsWith(`${name}=`))
+      ?.slice(name.length + 1);
+    expect(clearedRaw).toBeUndefined();
+
     await React.act(async () => {
       vi.advanceTimersByTime(249);
     });
-    const beforeDebounce = parseSkeletonCacheCookie(firstRaw, {
-      key: "writer-demo",
-      now: 2000,
-    });
-    expect(beforeDebounce?.createdAt).toBe(first?.createdAt);
+    const beforeDebounceRaw = document.cookie
+      .split("; ")
+      .find((entry) => entry.startsWith(`${name}=`))
+      ?.slice(name.length + 1);
+    expect(beforeDebounceRaw).toBeUndefined();
 
     await React.act(async () => {
       vi.advanceTimersByTime(1);
@@ -240,6 +298,68 @@ describe("skeleton cache writer", () => {
     });
 
     expect(next?.createdAt).toBeGreaterThan(first?.createdAt ?? 0);
+  });
+
+  test("does not rewrite when only the resolved cache snapshot changes", async () => {
+    await React.act(async () => {
+      root?.render(<SnapshotOnlyRerenderHarness snapshotCreatedAt={1000} />);
+    });
+    await React.act(async () => {
+      vi.runAllTimers();
+    });
+
+    const name = getSkeletonCacheCookieName("writer-demo");
+    const firstRaw = document.cookie
+      .split("; ")
+      .find((entry) => entry.startsWith(`${name}=`))
+      ?.slice(name.length + 1);
+    const first = parseSkeletonCacheCookie(firstRaw, {
+      key: "writer-demo",
+      now: 1100,
+    });
+
+    vi.setSystemTime(2000);
+    await React.act(async () => {
+      root?.render(<SnapshotOnlyRerenderHarness snapshotCreatedAt={2000} />);
+    });
+    await React.act(async () => {
+      vi.runAllTimers();
+    });
+
+    const nextRaw = document.cookie
+      .split("; ")
+      .find((entry) => entry.startsWith(`${name}=`))
+      ?.slice(name.length + 1);
+    const next = parseSkeletonCacheCookie(nextRaw, {
+      key: "writer-demo",
+      now: 2100,
+    });
+
+    expect(next?.createdAt).toBe(first?.createdAt);
+  });
+
+  test("emits cache-change events after writes and resize clears", async () => {
+    const onChange = vi.fn();
+    window.addEventListener(SKELETON_CACHE_CHANGE_EVENT, onChange);
+
+    await React.act(async () => {
+      root?.render(<Harness />);
+    });
+    await React.act(async () => {
+      vi.runAllTimers();
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    window.dispatchEvent(new Event("resize"));
+    expect(onChange).toHaveBeenCalledTimes(2);
+
+    await React.act(async () => {
+      vi.runAllTimers();
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(3);
+    window.removeEventListener(SKELETON_CACHE_CHANGE_EVENT, onChange);
   });
 
   test("writes and updates slider restore data while preserving text data", async () => {
@@ -347,6 +467,46 @@ describe("skeleton cache writer", () => {
     expect(cleared).toBe(true);
     expect(withoutRestore?.text.body.lineWidthsPx).toEqual([180]);
     expect(withoutRestore?.slider?.restore).toBeUndefined();
+  });
+
+  test("does not rewrite slider restore data when only the restore timestamp changes", () => {
+    const key = "writer-demo";
+    const baseRestore = {
+      version: 1 as const,
+      index: 3,
+      heightPx: 552,
+      viewportWidth: 920,
+      slideCount: 5,
+      skeletonSlotCount: 5,
+      timestamp: 1000,
+      scrollY: 10,
+      scrollMax: 100,
+      wasAtBottom: false,
+      storageKeyId: key,
+      routeKey: "/demo",
+      scopeId: "scope",
+    };
+
+    writeSkeletonCacheSnapshotCookie({
+      cache: { key, routeKey: "/demo" },
+      snapshot: {
+        ...makeSnapshot(key),
+        kind: "slider",
+        slider: { restore: baseRestore },
+      },
+    });
+
+    const skipped = updateSkeletonCacheSliderRestoreCookie({
+      cache: { key, routeKey: "/demo" },
+      kind: "slider",
+      scopeId: "scope",
+      restore: {
+        ...baseRestore,
+        timestamp: 2000,
+      },
+    });
+
+    expect(skipped).toBe(false);
   });
 
   test("skips an oversized snapshot cookie and clears the existing cache entry", () => {

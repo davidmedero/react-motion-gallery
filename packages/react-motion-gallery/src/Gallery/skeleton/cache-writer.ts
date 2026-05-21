@@ -9,6 +9,7 @@ import {
   DEFAULT_SKELETON_CACHE_DEBOUNCE_MS,
   DEFAULT_SKELETON_CACHE_TTL_MS,
   SKELETON_CACHE_VERSION,
+  SKELETON_CACHE_CHANGE_EVENT,
   getSkeletonCacheCookieName,
   getSkeletonCacheRouteKey,
   parseSkeletonCacheCookie,
@@ -20,6 +21,9 @@ import {
   type SkeletonCacheSnapshot,
   type SkeletonCacheTextRecord,
 } from "./cache";
+
+const useClientLayoutEffect =
+  typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 
 const SKELETON_CACHE_COOKIE_PREFIX = "rmg_skel_cache_";
 
@@ -199,6 +203,11 @@ function readCookieValue(name: string) {
   return null;
 }
 
+function dispatchSkeletonCacheChange() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(SKELETON_CACHE_CHANGE_EVENT));
+}
+
 function deleteSkeletonCacheCookie(args: {
   name: string;
   path: string;
@@ -214,6 +223,27 @@ function deleteSkeletonCacheCookie(args: {
   ]
     .filter(Boolean)
     .join("; ");
+}
+
+function clearSkeletonCacheCookies(args: {
+  path: string;
+  sameSite: "lax" | "strict" | "none";
+  secure: boolean;
+}) {
+  const cookies = listSkeletonCacheCookies();
+  if (!cookies.length) return false;
+
+  for (const cookie of cookies) {
+    deleteSkeletonCacheCookie({
+      name: cookie.name,
+      path: args.path,
+      sameSite: args.sameSite,
+      secure: args.secure,
+    });
+  }
+
+  dispatchSkeletonCacheChange();
+  return true;
 }
 
 function listSkeletonCacheCookies() {
@@ -240,6 +270,33 @@ function listSkeletonCacheCookies() {
       };
     })
     .filter((entry): entry is SkeletonCacheCookieEntry => entry != null);
+}
+
+function sameNullableNumber(a: number | undefined, b: number | undefined) {
+  if (a == null || b == null) return a == null && b == null;
+  return Math.abs(a - b) < 0.001;
+}
+
+function sameSliderRestoreSnapshot(
+  a: SkeletonCacheSliderRestoreSnapshot | undefined,
+  b: SkeletonCacheSliderRestoreSnapshot | undefined
+) {
+  if (!a || !b) return !a && !b;
+
+  return (
+    a.version === b.version &&
+    a.index === b.index &&
+    sameNullableNumber(a.heightPx, b.heightPx) &&
+    a.viewportWidth === b.viewportWidth &&
+    a.slideCount === b.slideCount &&
+    a.skeletonSlotCount === b.skeletonSlotCount &&
+    a.scrollY === b.scrollY &&
+    a.scrollMax === b.scrollMax &&
+    a.wasAtBottom === b.wasAtBottom &&
+    (a.storageKeyId ?? "") === (b.storageKeyId ?? "") &&
+    (a.routeKey ?? "") === (b.routeKey ?? "") &&
+    (a.scopeId ?? "") === (b.scopeId ?? "")
+  );
 }
 
 function combinedCookiePairsBytes(pairBytes: readonly number[]) {
@@ -330,6 +387,7 @@ export function writeSkeletonCacheSnapshotCookie(args: {
     })
   ) {
     deleteSkeletonCacheCookie({ name, path, sameSite, secure });
+    dispatchSkeletonCacheChange();
     return false;
   }
 
@@ -342,6 +400,7 @@ export function writeSkeletonCacheSnapshotCookie(args: {
   ]
     .filter(Boolean)
     .join("; ");
+  dispatchSkeletonCacheChange();
   return true;
 }
 
@@ -382,10 +441,18 @@ export function updateSkeletonCacheSliderRestoreCookie(args: {
   if (!snapshot) return false;
 
   const existingSlider = snapshot.slider ?? {};
-  const nextSlider = isMeaningfulSliderRestoreState(args.restore)
+  const nextRestore = isMeaningfulSliderRestoreState(args.restore)
+    ? args.restore
+    : undefined;
+
+  if (sameSliderRestoreSnapshot(existingSlider.restore, nextRestore)) {
+    return false;
+  }
+
+  const nextSlider = nextRestore
     ? {
         ...existingSlider,
-        restore: args.restore,
+        restore: nextRestore,
       }
     : (() => {
         const rest = { ...existingSlider };
@@ -393,14 +460,16 @@ export function updateSkeletonCacheSliderRestoreCookie(args: {
         return Object.keys(rest).length > 0 ? rest : undefined;
       })();
 
+  const nextSnapshot: SkeletonCacheSnapshot = {
+    ...snapshot,
+    routeKey,
+    createdAt: Date.now(),
+    slider: nextSlider,
+  };
+
   return writeSkeletonCacheSnapshotCookie({
     cache: args.cache,
-    snapshot: {
-      ...snapshot,
-      routeKey,
-      createdAt: Date.now(),
-      slider: nextSlider,
-    },
+    snapshot: nextSnapshot,
   });
 }
 
@@ -415,17 +484,74 @@ export function useSkeletonCacheWriter({
   getSliderRestoreSnapshot,
 }: UseSkeletonCacheWriterArgs) {
   const textIdsKey = textIds.join("\u0001");
+  const stableTextIds = React.useMemo(() => [...textIds], [textIdsKey]);
+  const cacheKey = cache?.key;
+  const cacheTtlMs = cache?.ttlMs;
+  const cacheDebounceMs = cache?.debounceMs;
+  const cacheRouteKey = cache?.routeKey;
+  const cacheCookiePath = cache?.cookie?.path;
+  const cacheCookieSameSite = cache?.cookie?.sameSite;
+  const cacheCookieSecure = cache?.cookie?.secure;
+  const cacheCookieMaxBytes = cache?.cookie?.maxCookieBytes;
+  const cacheCookieMaxTotalBytes = cache?.cookie?.maxTotalCookieBytes;
+  const cacheWriteOptions = React.useMemo<SkeletonCacheOptions | null>(() => {
+    if (!cacheKey) return null;
 
-  React.useEffect(() => {
-    if (!cache?.key || !textIds.length) return;
+    const cookie =
+      cacheCookiePath != null ||
+      cacheCookieSameSite != null ||
+      cacheCookieSecure != null ||
+      cacheCookieMaxBytes != null ||
+      cacheCookieMaxTotalBytes != null
+        ? {
+            ...(cacheCookiePath != null ? { path: cacheCookiePath } : null),
+            ...(cacheCookieSameSite != null
+              ? { sameSite: cacheCookieSameSite }
+              : null),
+            ...(cacheCookieSecure != null ? { secure: cacheCookieSecure } : null),
+            ...(cacheCookieMaxBytes != null
+              ? { maxCookieBytes: cacheCookieMaxBytes }
+              : null),
+            ...(cacheCookieMaxTotalBytes != null
+              ? { maxTotalCookieBytes: cacheCookieMaxTotalBytes }
+              : null),
+          }
+        : undefined;
+
+    return {
+      key: cacheKey,
+      ...(cacheTtlMs != null ? { ttlMs: cacheTtlMs } : null),
+      ...(cacheDebounceMs != null ? { debounceMs: cacheDebounceMs } : null),
+      ...(cacheRouteKey != null ? { routeKey: cacheRouteKey } : null),
+      ...(cookie ? { cookie } : null),
+    };
+  }, [
+    cacheCookieMaxBytes,
+    cacheCookieMaxTotalBytes,
+    cacheCookiePath,
+    cacheCookieSameSite,
+    cacheCookieSecure,
+    cacheDebounceMs,
+    cacheKey,
+    cacheRouteKey,
+    cacheTtlMs,
+  ]);
+
+  useClientLayoutEffect(() => {
+    if (!cacheWriteOptions?.key || !stableTextIds.length) return;
 
     let frame = 0;
     let timer = 0;
     let disposed = false;
     const debounceMs =
-      typeof cache.debounceMs === "number" && Number.isFinite(cache.debounceMs)
-        ? Math.max(0, cache.debounceMs)
+      typeof cacheWriteOptions.debounceMs === "number" &&
+      Number.isFinite(cacheWriteOptions.debounceMs)
+        ? Math.max(0, cacheWriteOptions.debounceMs)
         : DEFAULT_SKELETON_CACHE_DEBOUNCE_MS;
+    const cookie = cacheWriteOptions.cookie ?? {};
+    const sameSite = cookie.sameSite ?? "lax";
+    const path = cookie.path ?? "/";
+    const secure = cookie.secure || sameSite === "none";
 
     const writeSnapshot = () => {
       if (disposed) return;
@@ -434,7 +560,7 @@ export function useSkeletonCacheWriter({
       const shell = shellRef?.current ?? null;
       const contentRoot = contentRootFromShell(shell);
       const text = measureTextSnapshot({
-        textIds,
+        textIds: stableTextIds,
         skeletonRoot,
         contentRoot,
       });
@@ -452,26 +578,29 @@ export function useSkeletonCacheWriter({
         (window.innerWidth || doc.clientWidth || 0);
       if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) return;
 
+      const snapshot: SkeletonCacheSnapshot = {
+        version: SKELETON_CACHE_VERSION,
+        key: cacheWriteOptions.key,
+        scopeId,
+        kind,
+        routeKey:
+          cacheWriteOptions.routeKey ?? getSkeletonCacheRouteKey(window.location),
+        createdAt: Date.now(),
+        widthBucketMin: Math.max(0, roundPx(geometry.widthBucketMin)),
+        viewportWidth: roundPx(viewportWidth),
+        ...(geometry.layoutWidthPx != null
+          ? { layoutWidthPx: roundPx(geometry.layoutWidthPx) }
+          : null),
+        ...(geometry.masonry ? { masonry: geometry.masonry } : null),
+        ...(sliderRestore
+          ? { slider: { restore: sliderRestore } }
+          : null),
+        text,
+      };
+
       writeSkeletonCacheSnapshotCookie({
-        cache,
-        snapshot: {
-          version: SKELETON_CACHE_VERSION,
-          key: cache.key,
-          scopeId,
-          kind,
-          routeKey: cache.routeKey ?? getSkeletonCacheRouteKey(window.location),
-          createdAt: Date.now(),
-          widthBucketMin: Math.max(0, roundPx(geometry.widthBucketMin)),
-          viewportWidth: roundPx(viewportWidth),
-          ...(geometry.layoutWidthPx != null
-            ? { layoutWidthPx: roundPx(geometry.layoutWidthPx) }
-            : null),
-          ...(geometry.masonry ? { masonry: geometry.masonry } : null),
-          ...(sliderRestore
-            ? { slider: { restore: sliderRestore } }
-            : null),
-          text,
-        },
+        cache: cacheWriteOptions,
+        snapshot,
       });
     };
 
@@ -484,9 +613,12 @@ export function useSkeletonCacheWriter({
       }, delay);
     };
 
-    scheduleWrite(0);
+    writeSnapshot();
 
-    const onResize = () => scheduleWrite(debounceMs);
+    const onResize = () => {
+      clearSkeletonCacheCookies({ path, sameSite, secure });
+      scheduleWrite(debounceMs);
+    };
     window.addEventListener("resize", onResize);
 
     return () => {
@@ -496,14 +628,13 @@ export function useSkeletonCacheWriter({
       window.removeEventListener("resize", onResize);
     };
   }, [
-    cache,
+    cacheWriteOptions,
     getGeometrySnapshot,
     getSliderRestoreSnapshot,
     kind,
     scopeId,
     shellRef,
     skeletonRootRef,
-    textIds,
-    textIdsKey,
+    stableTextIds,
   ]);
 }

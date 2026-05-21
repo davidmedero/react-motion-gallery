@@ -28,7 +28,7 @@ export default async function Home() {
                 </span>
               </h1>
               <p className="home-intro__lede">
-                A motion-first gallery and lightbox system for React, with a complete carousel library, grid and masonry layouts, structured entries for record-based media collections, fullscreen carousel with captions, overlays and thumbnails, SSR-stable skeletons, first-class video surfaces and smooth zoom and pan gestures.
+                A motion-first gallery and lightbox system for React, with a complete carousel library, grid and masonry layouts, reveal animations, structured entries for record-based media collections, fullscreen carousel with captions, overlays and thumbnails, SSR-stable skeletons, first-class video surfaces and smooth zoom and pan gestures.
               </p>
               <p className="home-intro__license">
                 Free for non-commercial use, source visible on{" "}

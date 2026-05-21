@@ -102,6 +102,18 @@ export function seedUnmeasuredMasonryHeights(args: {
   return changed ? next : args.previousHeights;
 }
 
+function stableMasonryInitialHeightsKey(
+  heights: ReadonlyArray<number | undefined> | undefined
+) {
+  if (!heights?.length) return "";
+
+  return heights
+    .map((height) =>
+      Number.isFinite(height) ? Math.round(Number(height) * 1000) / 1000 : ""
+    )
+    .join(",");
+}
+
 export const MasonryCore: React.FC<MasonryProps> = ({
   items,
   masonrySpans,
@@ -131,6 +143,17 @@ export const MasonryCore: React.FC<MasonryProps> = ({
   const previousSeedResetKeyRef = React.useRef<string | undefined>(
     measurementKey
   );
+  const masonryInitialHeightsKey = stableMasonryInitialHeightsKey(
+    masonryInitialHeights
+  );
+  const masonryInitialHeightsRef = React.useRef(masonryInitialHeights);
+  const previousMasonryInitialHeightsKeyRef = React.useRef(
+    masonryInitialHeightsKey
+  );
+  if (previousMasonryInitialHeightsKeyRef.current !== masonryInitialHeightsKey) {
+    previousMasonryInitialHeightsKeyRef.current = masonryInitialHeightsKey;
+    masonryInitialHeightsRef.current = masonryInitialHeights;
+  }
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
     [breakpoints]
@@ -180,13 +203,18 @@ export const MasonryCore: React.FC<MasonryProps> = ({
         itemCount: items.length,
         previousHeights,
         measuredIndices: measuredIndicesRef.current,
-        initialHeights: masonryInitialHeights,
+        initialHeights: masonryInitialHeightsRef.current,
         preferPreviousHeights: seedResetKeyChanged && hasPreservedHeights,
       });
       heightsRef.current = next;
       return next;
     });
-  }, [items.length, masonryInitialHeights, measurementKey, onLayoutMeasured]);
+  }, [
+    items.length,
+    masonryInitialHeightsKey,
+    measurementKey,
+    onLayoutMeasured,
+  ]);
 
   const columnCount = React.useMemo(() => {
     const raw = resolveNumberFromResponsive(

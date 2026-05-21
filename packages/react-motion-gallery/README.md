@@ -11,19 +11,19 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 <!-- bundle-size:start -->
 | Surface | JS gzip |
 | --- | --- |
-| `Entries` | 17.7kB |
+| `Entries` | 18.5kB |
 | `FullscreenThumbnailSlider` | 20.3kB |
 | `GalleryCore` | 2.6kB |
 | `Grid` | 6.3kB |
 | `grid/ready` | 323.0B |
 | `grid/lazy-load` | 3.3kB |
-| `Masonry` | 6.5kB |
+| `Masonry` | 7.1kB |
 | `masonry/ready` | 323.0B |
 | `masonry/lazy-load` | 3.3kB |
-| `Skeleton base` | 12.7kB |
-| `skeleton/slider` | 24.5kB |
-| `skeleton/grid` | 15.1kB |
-| `skeleton/masonry` | 24.0kB |
+| `Skeleton base` | 13.4kB |
+| `skeleton/slider` | 25.6kB |
+| `skeleton/grid` | 15.8kB |
+| `skeleton/masonry` | 24.6kB |
 | `Slider core` | 18.7kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |

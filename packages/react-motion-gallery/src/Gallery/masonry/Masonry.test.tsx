@@ -319,6 +319,101 @@ describe("Masonry spans and positioned runtime", () => {
     }
   });
 
+  test("holds the masonry intro until the root enters view", async () => {
+    const observers: Array<{
+      callback: IntersectionObserverCallback;
+      target: Element | null;
+      disconnect: () => void;
+      observe: (target: Element) => void;
+      takeRecords: () => IntersectionObserverEntry[];
+      unobserve: () => void;
+    }> = [];
+
+    class DeferredIntersectionObserver {
+      callback: IntersectionObserverCallback;
+      target: Element | null = null;
+
+      constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback;
+        observers.push(this);
+      }
+
+      observe(target: Element) {
+        this.target = target;
+      }
+
+      unobserve() {}
+
+      disconnect() {}
+
+      takeRecords() {
+        return [];
+      }
+    }
+
+    vi.stubGlobal("IntersectionObserver", DeferredIntersectionObserver);
+    getBoundingClientRectSpy?.mockImplementation(function getBoundingClientRectMock(
+      this: Element
+    ) {
+      if (
+        this instanceof HTMLElement &&
+        this.classList.contains(styles.masonryRoot)
+      ) {
+        return makeRect({ width: 720, height: 480, top: 2000 });
+      }
+
+      return masonryRectForElement(this);
+    });
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      await renderIntoRoot(
+        root,
+        <Masonry columns={2} gap={12}>
+          <article>alpha</article>
+          <article>beta</article>
+        </Masonry>
+      );
+      await settleMasonryMeasurements();
+
+      expect(container.querySelector(`.${styles.introActive}`)).toBeNull();
+
+      const rootObserver = observers.find(
+        (observer) =>
+          observer.target instanceof HTMLElement &&
+          observer.target.classList.contains(styles.masonryRoot)
+      );
+      expect(rootObserver).toBeDefined();
+      if (!rootObserver?.target) {
+        throw new Error("Expected masonry root intersection observer");
+      }
+
+      await React.act(async () => {
+        rootObserver.callback(
+          [
+            {
+              target: rootObserver.target,
+              isIntersecting: true,
+              intersectionRatio: 1,
+            } as IntersectionObserverEntry,
+          ],
+          rootObserver as unknown as IntersectionObserver
+        );
+        await Promise.resolve();
+      });
+
+      expect(container.querySelector(`.${styles.introActive}`)).not.toBeNull();
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    }
+  });
+
   test("does not restore predicted seed heights after item measurement", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -395,6 +490,58 @@ describe("Masonry spans and positioned runtime", () => {
       );
 
       expect(fifth?.style.top).toBe("168px");
+    } finally {
+      allowMasonryMeasurement = true;
+      await React.act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    }
+  });
+
+  test("ignores replacement skeleton seed arrays when the seed values are unchanged", async () => {
+    allowMasonryMeasurement = false;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const items = Array.from({ length: 3 }, (_, index) => (
+      <article key={index}>item {index + 1}</article>
+    ));
+    const measuredStates: boolean[] = [];
+    const onLayoutMeasured = (measured: boolean) => {
+      measuredStates.push(measured);
+    };
+
+    try {
+      await renderIntoRoot(
+        root,
+        <MasonryCore
+          items={items}
+          masonryColumns={2}
+          masonryGap={12}
+          masonryInitialHeights={[100, 140, 180]}
+          responsiveViewportWidth={1024}
+          measurementKey="same-layout"
+          onLayoutMeasured={onLayoutMeasured}
+        />
+      );
+
+      const callCountAfterFirstRender = measuredStates.length;
+
+      await renderIntoRoot(
+        root,
+        <MasonryCore
+          items={items}
+          masonryColumns={2}
+          masonryGap={12}
+          masonryInitialHeights={[100, 140, 180]}
+          responsiveViewportWidth={1024}
+          measurementKey="same-layout"
+          onLayoutMeasured={onLayoutMeasured}
+        />
+      );
+
+      expect(measuredStates).toHaveLength(callCountAfterFirstRender);
     } finally {
       allowMasonryMeasurement = true;
       await React.act(async () => {

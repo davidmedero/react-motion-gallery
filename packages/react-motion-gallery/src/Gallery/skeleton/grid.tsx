@@ -7,6 +7,7 @@ import {
   type BreakpointMap,
   type ResponsiveNumber,
 } from "../shared/responsive";
+import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import {
   collectSkeletonTextIds,
   cssLen,
@@ -32,6 +33,7 @@ import type { SkeletonCacheOptions } from "./cache";
 import { validateSkeletonCacheSnapshot } from "./cache";
 import {
   resolveSkeletonCacheOptions,
+  useSkeletonCacheRenderSnapshot,
   useSkeletonCacheContext,
 } from "./cache-context";
 import { useSkeletonCacheWriter } from "./cache-writer";
@@ -189,6 +191,8 @@ export function GridSkeleton({
   }, [layout]);
   const cacheContext = useSkeletonCacheContext();
   const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
+  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
+  const clientViewportWidth = useViewportWidth();
   const textIds = React.useMemo(
     () =>
       gridSpec?.layout
@@ -197,13 +201,14 @@ export function GridSkeleton({
     [gridSpec]
   );
   const validCacheSnapshot = validateSkeletonCacheSnapshot(
-    effectiveCache?.snapshot,
+    renderCacheSnapshot,
     {
       key: effectiveCache?.key,
       scopeId,
       kind: "grid",
       routeKey: effectiveCache?.routeKey,
       ttlMs: effectiveCache?.ttlMs,
+      viewportWidth: clientViewportWidth || undefined,
       textIds,
     }
   );

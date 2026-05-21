@@ -11,6 +11,7 @@ import {
 import {
   buildScopedSkeletonCountCss,
 } from "../shared/skeleton/buildScopedSkeletonCountCss";
+import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import {
   cssLen,
   shimmerStyleVars,
@@ -57,6 +58,7 @@ import type { SkeletonCacheOptions, SkeletonCacheSnapshot } from "./cache";
 import { validateSkeletonCacheSnapshot } from "./cache";
 import {
   resolveSkeletonCacheOptions,
+  useSkeletonCacheRenderSnapshot,
   useSkeletonCacheContext,
 } from "./cache-context";
 import {
@@ -452,18 +454,21 @@ export function SliderSkeleton({
   }, [layout]);
   const cacheContext = useSkeletonCacheContext();
   const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
+  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
+  const clientViewportWidth = useViewportWidth();
   const textIds = React.useMemo(
     () => Array.from(collectSliderSkeletonTextIds(sliderSpec?.layout)),
     [sliderSpec]
   );
   const validCacheSnapshot = validateSkeletonCacheSnapshot(
-    effectiveCache?.snapshot,
+    renderCacheSnapshot,
     {
       key: effectiveCache?.key,
       scopeId,
       kind: "slider",
       routeKey: effectiveCache?.routeKey,
       ttlMs: effectiveCache?.ttlMs,
+      viewportWidth: clientViewportWidth || undefined,
       textIds,
     }
   );
@@ -592,24 +597,93 @@ export function SliderSkeleton({
         sliderRestore?.activeSlotOffset ?? "",
         cachedSliderRestoreState
           ? [
-              cachedSliderRestoreState.timestamp,
+              cachedSliderRestoreState.routeKey ?? "",
               cachedSliderRestoreState.index,
               cachedSliderRestoreState.heightPx ?? "",
+              cachedSliderRestoreState.wasAtBottom ? "bottom" : "",
             ].join("/")
           : "standalone",
       ].join(":")
     : "";
+  const cachedSliderRestoreIndex = cachedSliderRestoreState?.index ?? null;
+  const cachedSliderRestoreHeightPx = cachedSliderRestoreState?.heightPx ?? null;
   const [sliderRestoreIndex, setSliderRestoreIndex] = React.useState<number | null>(
-    () => cachedSliderRestoreState?.index ?? null
+    () => cachedSliderRestoreIndex
   );
   const [sliderRestoreHeightPx, setSliderRestoreHeightPx] = React.useState<number | null>(
-    () => cachedSliderRestoreState?.heightPx ?? null
+    () => cachedSliderRestoreHeightPx
   );
   const [sliderRestoreSettled, setSliderRestoreSettled] = React.useState(
     () => !shouldGateSliderRestore
   );
+  const sliderRestoreIndexRef = React.useRef(sliderRestoreIndex);
+  const sliderRestoreHeightPxRef = React.useRef(sliderRestoreHeightPx);
+  const sliderRestoreSettledRef = React.useRef(sliderRestoreSettled);
+  const setSliderRestoreIndexIfChanged = React.useCallback((next: number | null) => {
+    if (Object.is(sliderRestoreIndexRef.current, next)) return;
+    sliderRestoreIndexRef.current = next;
+    setSliderRestoreIndex(next);
+  }, []);
+  const setSliderRestoreHeightPxIfChanged = React.useCallback(
+    (next: number | null) => {
+      if (Object.is(sliderRestoreHeightPxRef.current, next)) return;
+      sliderRestoreHeightPxRef.current = next;
+      setSliderRestoreHeightPx(next);
+    },
+    []
+  );
+  const setSliderRestoreSettledIfChanged = React.useCallback((next: boolean) => {
+    if (sliderRestoreSettledRef.current === next) return;
+    sliderRestoreSettledRef.current = next;
+    setSliderRestoreSettled(next);
+  }, []);
   const contentReady =
     ready === true && (!shouldGateSliderRestore || sliderRestoreSettled);
+  const sliderRestoreCache = React.useMemo<SkeletonCacheOptions | null>(() => {
+    if (!effectiveCache?.key) return null;
+
+    const cookie = effectiveCache.cookie
+      ? {
+          ...(effectiveCache.cookie.path != null
+            ? { path: effectiveCache.cookie.path }
+            : null),
+          ...(effectiveCache.cookie.sameSite != null
+            ? { sameSite: effectiveCache.cookie.sameSite }
+            : null),
+          ...(effectiveCache.cookie.secure != null
+            ? { secure: effectiveCache.cookie.secure }
+            : null),
+          ...(effectiveCache.cookie.maxCookieBytes != null
+            ? { maxCookieBytes: effectiveCache.cookie.maxCookieBytes }
+            : null),
+          ...(effectiveCache.cookie.maxTotalCookieBytes != null
+            ? { maxTotalCookieBytes: effectiveCache.cookie.maxTotalCookieBytes }
+            : null),
+        }
+      : undefined;
+
+    return {
+      key: effectiveCache.key,
+      ...(effectiveCache.ttlMs != null ? { ttlMs: effectiveCache.ttlMs } : null),
+      ...(effectiveCache.debounceMs != null
+        ? { debounceMs: effectiveCache.debounceMs }
+        : null),
+      ...(effectiveCache.routeKey != null
+        ? { routeKey: effectiveCache.routeKey }
+        : null),
+      ...(cookie ? { cookie } : null),
+    };
+  }, [
+    effectiveCache?.cookie?.maxCookieBytes,
+    effectiveCache?.cookie?.maxTotalCookieBytes,
+    effectiveCache?.cookie?.path,
+    effectiveCache?.cookie?.sameSite,
+    effectiveCache?.cookie?.secure,
+    effectiveCache?.debounceMs,
+    effectiveCache?.key,
+    effectiveCache?.routeKey,
+    effectiveCache?.ttlMs,
+  ]);
   const getSliderRestoreSnapshot = React.useCallback(() => {
     if (!sliderRestoreRuntime?.enabled || !sliderRestoreHandleRef) return null;
     if (typeof window === "undefined") return null;
@@ -636,9 +710,9 @@ export function SliderSkeleton({
     if (!sliderRestoreRuntime?.enabled) return false;
     if (!restoreSnapshot) return false;
 
-    if (effectiveCache?.key) {
+    if (sliderRestoreCache?.key) {
       return updateSkeletonCacheSliderRestoreCookie({
-        cache: effectiveCache,
+        cache: sliderRestoreCache,
         kind: "slider",
         scopeId,
         restore: restoreSnapshot,
@@ -648,9 +722,9 @@ export function SliderSkeleton({
     writeSliderRestoreStateToWindow(sliderRestoreRuntime, restoreSnapshot);
     return true;
   }, [
-    effectiveCache,
     getSliderRestoreSnapshot,
     scopeId,
+    sliderRestoreCache,
     sliderRestoreRuntime,
   ]);
   useSkeletonCacheWriter({
@@ -807,10 +881,18 @@ export function SliderSkeleton({
   const appliedSliderRestoreKeyRef = React.useRef<string | null>(null);
 
   React.useLayoutEffect(() => {
-    setSliderRestoreSettled(!shouldGateSliderRestore);
-    setSliderRestoreIndex(cachedSliderRestoreState?.index ?? null);
-    setSliderRestoreHeightPx(cachedSliderRestoreState?.heightPx ?? null);
-  }, [cachedSliderRestoreState, shouldGateSliderRestore, sliderRestoreGateKey]);
+    setSliderRestoreSettledIfChanged(!shouldGateSliderRestore);
+    setSliderRestoreIndexIfChanged(cachedSliderRestoreIndex);
+    setSliderRestoreHeightPxIfChanged(cachedSliderRestoreHeightPx);
+  }, [
+    cachedSliderRestoreHeightPx,
+    cachedSliderRestoreIndex,
+    shouldGateSliderRestore,
+    sliderRestoreGateKey,
+    setSliderRestoreHeightPxIfChanged,
+    setSliderRestoreIndexIfChanged,
+    setSliderRestoreSettledIfChanged,
+  ]);
 
   React.useLayoutEffect(() => {
     if (!shouldApplySliderRestoreEffect) return;
@@ -822,7 +904,7 @@ export function SliderSkeleton({
 
     const settleRestore = () => {
       removeSliderRestoreStyle(scopeId);
-      setSliderRestoreSettled(true);
+      setSliderRestoreSettledIfChanged(true);
     };
 
     const tryApply = () => {
@@ -843,19 +925,23 @@ export function SliderSkeleton({
         : readSliderRestoreStateFromWindow(sliderRestoreRuntime, window);
       if (!state) {
         removeSliderRestoreStyle(scopeId);
-        setSliderRestoreIndex(null);
-        setSliderRestoreHeightPx(null);
-        setSliderRestoreSettled(true);
+        setSliderRestoreIndexIfChanged(null);
+        setSliderRestoreHeightPxIfChanged(null);
+        setSliderRestoreSettledIfChanged(true);
         return;
       }
-      setSliderRestoreIndex(state.index);
-      setSliderRestoreHeightPx(state.heightPx ?? null);
+      setSliderRestoreIndexIfChanged(state.index);
+      setSliderRestoreHeightPxIfChanged(state.heightPx ?? null);
 
       const restoreKey = [
         sliderRestoreRuntime.storageKeyId,
-        state.timestamp,
+        state.routeKey ?? "",
         state.index,
         state.heightPx ?? "",
+        state.viewportWidth,
+        state.slideCount,
+        state.skeletonSlotCount,
+        state.wasAtBottom ? "bottom" : "",
       ].join(":");
 
       if (appliedSliderRestoreKeyRef.current !== restoreKey) {
@@ -902,9 +988,11 @@ export function SliderSkeleton({
       removeSliderRestoreStyle(scopeId);
     };
   }, [
-    cachedSliderRestoreState,
     shouldApplySliderRestoreEffect,
     scopeId,
+    setSliderRestoreHeightPxIfChanged,
+    setSliderRestoreIndexIfChanged,
+    setSliderRestoreSettledIfChanged,
     sliderRestoreHandleRef,
     sliderRestoreRuntime,
     validCacheSnapshot,

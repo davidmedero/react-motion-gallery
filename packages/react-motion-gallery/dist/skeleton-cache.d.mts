@@ -79,6 +79,8 @@ type SkeletonCacheParseOptions = {
     routeKey?: string;
     ttlMs?: number;
     now?: number;
+    viewportWidth?: number;
+    viewportTolerancePx?: number;
     textIds?: readonly string[];
     itemCount?: number;
     variantKeys?: readonly string[];

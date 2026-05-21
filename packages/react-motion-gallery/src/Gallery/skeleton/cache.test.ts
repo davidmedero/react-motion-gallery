@@ -171,6 +171,22 @@ describe("skeleton cache cookies", () => {
       validateSkeletonCacheSnapshot(baseSnapshot, {
         ttlMs: 5000,
         now: 1200,
+        viewportWidth: 720,
+      })
+    ).toBeNull();
+
+    expect(
+      validateSkeletonCacheSnapshot(baseSnapshot, {
+        ttlMs: 5000,
+        now: 1200,
+        viewportWidth: 1279,
+      })
+    ).toBe(baseSnapshot);
+
+    expect(
+      validateSkeletonCacheSnapshot(baseSnapshot, {
+        ttlMs: 5000,
+        now: 1200,
         textIds: ["title", "missing"],
       })
     ).toBeNull();

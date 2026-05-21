@@ -8,6 +8,7 @@ import {
   type BreakpointMap,
   type ResponsiveNumber,
 } from "../shared/responsive";
+import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import {
   applySkeletonTextSnapshot,
   collectSkeletonTextIds,
@@ -42,6 +43,7 @@ import type { SkeletonCacheOptions } from "./cache";
 import { validateSkeletonCacheSnapshot } from "./cache";
 import {
   resolveSkeletonCacheOptions,
+  useSkeletonCacheRenderSnapshot,
   useSkeletonCacheContext,
 } from "./cache-context";
 import { useSkeletonCacheWriter } from "./cache-writer";
@@ -227,6 +229,8 @@ export function MasonrySkeleton({
   }, [layout]);
   const cacheContext = useSkeletonCacheContext();
   const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
+  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
+  const clientViewportWidth = useViewportWidth();
   const masonryLayout = masonrySpec?.layout?.kind === "masonry"
     ? (masonrySpec.layout as MasonrySkeletonLayoutNode)
     : null;
@@ -307,12 +311,13 @@ export function MasonrySkeleton({
         }
       : null;
   const validCacheSnapshot = React.useMemo(() => {
-    const basic = validateSkeletonCacheSnapshot(effectiveCache?.snapshot, {
+    const basic = validateSkeletonCacheSnapshot(renderCacheSnapshot, {
       key: effectiveCache?.key,
       scopeId,
       kind: "masonry",
       routeKey: effectiveCache?.routeKey,
       ttlMs: effectiveCache?.ttlMs,
+      viewportWidth: clientViewportWidth || undefined,
       textIds,
       itemCount: masonryRenderOptions?.count,
     });
@@ -348,8 +353,9 @@ export function MasonrySkeleton({
     effectiveBreakpoints,
     effectiveCache?.key,
     effectiveCache?.routeKey,
-    effectiveCache?.snapshot,
     effectiveCache?.ttlMs,
+    clientViewportWidth,
+    renderCacheSnapshot,
     masonryRenderOptions,
     masonrySpec,
     scopeId,

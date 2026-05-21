@@ -8,6 +8,7 @@ import {
 } from "../shared/responsive";
 import { useLoadingLayerState } from "../shared/hooks/useLoadingLayerState";
 import { usePrefersReducedMotion } from "../shared/hooks/usePrefersReducedMotion";
+import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import {
   resolveCompareLoadingLayerStyle,
   resolveCompareLoadingLayerVisualState,
@@ -35,6 +36,7 @@ import styles from "./Skeleton.module.css";
 import type { SkeletonCacheOptions } from "./cache";
 import {
   resolveSkeletonCacheOptions,
+  useSkeletonCacheRenderSnapshot,
   useSkeletonCacheContext,
 } from "./cache-context";
 import { validateSkeletonCacheSnapshot } from "./cache";
@@ -265,18 +267,21 @@ export function Skeleton({
   );
   const cacheContext = useSkeletonCacheContext();
   const effectiveCache = resolveSkeletonCacheOptions(cache, cacheContext);
+  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
+  const clientViewportWidth = useViewportWidth();
   const textIds = React.useMemo(
     () => Array.from(collectSkeletonTextIds(layout, "__standalone__")),
     [layout]
   );
   const validSnapshot = validateSkeletonCacheSnapshot(
-    effectiveCache?.snapshot,
+    renderCacheSnapshot,
     {
       key: effectiveCache?.key,
       scopeId,
       kind: "skeleton",
       routeKey: effectiveCache?.routeKey,
       ttlMs: effectiveCache?.ttlMs,
+      viewportWidth: clientViewportWidth || undefined,
       textIds,
     }
   );
@@ -340,7 +345,13 @@ export function Skeleton({
       role={ariaLabel ? "status" : undefined}
       aria-live={ariaLabel ? "polite" : undefined}
     >
-      {responsiveCss ? <style dangerouslySetInnerHTML={{ __html: responsiveCss }} /> : null}
+      {responsiveCss ? (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: responsiveCss,
+          }}
+        />
+      ) : null}
       <SkeletonLayoutNode
         node={preparedLayout}
         disableShimmer={disableShimmer}

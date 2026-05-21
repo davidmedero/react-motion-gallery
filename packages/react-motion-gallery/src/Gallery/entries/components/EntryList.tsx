@@ -5,6 +5,7 @@ import type { BreakpointMap } from "../../shared/responsive";
 import { useEntryInView } from "../hooks/useEntryInView";
 import { useEntryDecodeReady } from "../hooks/useEntryDecodeReady";
 import { usePrefersReducedMotion } from "../../shared/hooks/usePrefersReducedMotion";
+import { useViewportWidth } from "../../shared/hooks/useViewportWidth";
 import {
   EntrySkeletonCard,
   EntrySkeletonSpec,
@@ -22,6 +23,7 @@ import { validateSkeletonCacheSnapshot } from "../../skeleton/cache";
 import type { SkeletonCacheOptions } from "../../skeleton/cache";
 import {
   resolveSkeletonCacheOptions,
+  useSkeletonCacheRenderSnapshot,
   useSkeletonCacheContext,
 } from "../../skeleton/cache-context";
 import { useSkeletonCacheWriter } from "../../skeleton/cache-writer";
@@ -237,6 +239,8 @@ export function EntryList({
     loadingOpts?.cache,
     cacheContext
   );
+  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
+  const clientViewportWidth = useViewportWidth();
   const entrySkeletonSpecs = React.useMemo(
     () => items.map((entry, entryIndex) => resolveEntrySkeletonSpec(entry, entryIndex)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -262,13 +266,14 @@ export function EntryList({
     [breakpoints, entryKeySignature, entrySkeletonSpecs]
   );
   const validCacheSnapshot = validateSkeletonCacheSnapshot(
-    effectiveCache?.snapshot,
+    renderCacheSnapshot,
     {
       key: effectiveCache?.key,
       scopeId,
       kind: "entries",
       routeKey: effectiveCache?.routeKey,
       ttlMs: effectiveCache?.ttlMs,
+      viewportWidth: clientViewportWidth || undefined,
       textIds,
     }
   );
@@ -642,7 +647,11 @@ export function EntryList({
     "aria-busy": showGlobalLoading ? true : undefined,
   };
 
-  const inner = <div {...containerProps}>{entryRows}</div>;
+  const inner = (
+    <div {...containerProps}>
+      {entryRows}
+    </div>
+  );
 
   return introN.renderIntro
     ? introN.renderIntro({ active: !showGlobalLoading && introUnlocked, containerProps }, inner)
