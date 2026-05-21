@@ -5,7 +5,8 @@ export type DemoCategoryId =
   | "entries"
   | "zoom-pan"
   | "fullscreen"
-  | "skeleton";
+  | "skeleton"
+  | "reveal";
 
 export type ComponentSurface = {
   id: string;

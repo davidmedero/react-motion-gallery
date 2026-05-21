@@ -33,7 +33,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `Slider core` | 18.7kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
-| `slider/dots` | 933.0B |
+| `slider/dots` | 932.0B |
 | `slider/progress` | 892.0B |
 | `slider/scrollbar` | 1.2kB |
 | `slider/auto-height` | 1.3kB |
@@ -57,6 +57,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `ZoomPanImage` | 8.7kB |
 | `media / toMediaItems` | 260.0B |
 | `responsive / BREAKPOINT_MAP` | 85.0B |
+| `Reveal` | 2.3kB |
 <!-- bundle-size:end -->
 
 ## Installation
@@ -134,6 +135,7 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | --- | --- |
 | `react-motion-gallery/media` | `toMediaItems`, `MediaItem`, `MediaInput` |
 | `react-motion-gallery/responsive` | `BREAKPOINT_MAP` and responsive value types |
+| `react-motion-gallery/reveal` | `Reveal`, `useReveal`, reveal types |
 | `react-motion-gallery/core` | `GalleryCore`, `GalleryCoreProvider`, `useGalleryCore` |
 | `react-motion-gallery/slider` | `Slider`, `createSliderIndexChannel`, slider types |
 | `react-motion-gallery/slider/ready` | `useSliderReady` |
@@ -184,6 +186,39 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/fullscreenThumbnails` | `FullscreenThumbnailSlider` |
 | `react-motion-gallery/video` | `Video` and optional Plyr-backed video types |
 | `react-motion-gallery/zoomPan` | `ZoomPanImage` and zoom/pan types |
+
+## Reveal
+
+`Reveal` is a standalone entrance primitive for page sections and application UI. It is intentionally separate from skeleton loading and gallery intro timing: content is already rendered, then opacity and optional transform animate when the element enters view.
+
+```tsx
+import { Reveal } from "react-motion-gallery/reveal";
+
+export function SectionIntro() {
+  return (
+    <Reveal
+      as="section"
+      transform={{ y: 18, scale: 0.98 }}
+      opacityDurationMs={220}
+      transformDurationMs={680}
+      staggerIndex={1}
+    >
+      <h2>Fast fade, slower motion.</h2>
+      <p>Use durationMs when both transitions should share one duration.</p>
+    </Reveal>
+  );
+}
+```
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `variant` | `"fade" \| "transform"` | `"transform"` | `fade` animates opacity only; `transform` also animates from the configured transform. |
+| `transform` | `RevealTransform` | `{ y: 14 }` | Typed transform object or raw CSS transform string. |
+| `durationMs` | `number` | `520` | Shared fallback duration for opacity and transform. |
+| `opacityDurationMs` | `number` | `durationMs` | Overrides only the opacity transition duration. |
+| `transformDurationMs` | `number` | `durationMs` | Overrides only the transform transition duration. |
+| `delayMs` / `staggerMs` | `number` | `0` / `70` | Shared delay and stagger timing. |
+| `once` | `boolean` | `true` | Set `false` for reversible in-view reveals. |
 
 ## MCP server
 

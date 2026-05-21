@@ -5,7 +5,8 @@ export type DemoCategoryId =
   | "entries"
   | "zoom-pan"
   | "fullscreen"
-  | "skeleton";
+  | "skeleton"
+  | "reveal";
 
 export type DemoNavItem =
   | {
@@ -94,6 +95,7 @@ export const DEMO_METADATA = [
   { id: "skeleton-app-shell", title: "App Shell", eyebrow: "Skeleton", tags: ["standalone", "flex", "dashboard", "nested"], categoryId: "skeleton" },
   { id: "skeleton-responsive-text", title: "Responsive Text", eyebrow: "Skeleton", tags: ["standalone", "text", "container-query", "responsive"], categoryId: "skeleton" },
   { id: "skeleton-force-overlay", title: "Force Overlay", eyebrow: "Skeleton", tags: ["standalone", "force", "compare", "opacity"], categoryId: "skeleton" },
+  { id: "reveal-sections", title: "Sections", eyebrow: "Reveal", tags: ["standalone", "fade", "transform", "stagger"], categoryId: "reveal" },
   { id: "zoom-pan-standalone", title: "Standalone", eyebrow: "Zoom + Pan", tags: ["zoom-pan", "image", "standalone", "crop"], categoryId: "zoom-pan" },
   { id: "zoom-pan-slider", title: "Slider", eyebrow: "Zoom + Pan", tags: ["zoom-pan", "slider", "images"], categoryId: "zoom-pan" },
   { id: "zoom-pan-grid", title: "Grid", eyebrow: "Zoom + Pan", tags: ["zoom-pan", "grid", "images"], categoryId: "zoom-pan" },
@@ -241,6 +243,13 @@ export const DEMO_CATEGORIES = [
       { type: "demo", demoId: "skeleton-responsive-text" },
       { type: "demo", demoId: "skeleton-force-overlay" },
     ],
+  },
+  {
+    id: "reveal",
+    label: "Reveal",
+    description:
+      "Standalone section reveals for app and marketing UI without implying loading state.",
+    items: [{ type: "demo", demoId: "reveal-sections" }],
   },
 ] as const satisfies readonly DemoCategory[];
 

@@ -184,6 +184,21 @@ export const componentCatalog: ComponentSurface[] = [
     relatedTags: ["skeleton", "text", "responsive", "container-query", "force"],
   },
   {
+    id: "reveal",
+    name: "Reveal",
+    importPath: "react-motion-gallery/reveal",
+    exports: ["Reveal", "useReveal"],
+    categoryIds: ["reveal"],
+    description:
+      "Standalone fade and transform reveal primitive for page sections and application UI.",
+    whenToUse: [
+      "Use for entrance animations on already-rendered content.",
+      "Use opacityDurationMs and transformDurationMs when fade and motion should resolve at different speeds.",
+      "Use Skeleton instead when content is loading or readiness needs to gate layout handoff.",
+    ],
+    relatedTags: ["reveal", "fade", "transform", "stagger", "intersection-observer"],
+  },
+  {
     id: "core",
     name: "GalleryCore",
     importPath: "react-motion-gallery/core",
@@ -227,6 +242,8 @@ const categoryDescriptions: Record<DemoCategoryId, string> = {
     "Fullscreen controller demos for custom triggers, captions, overlays, thumbnails, effects, and lazy media.",
   skeleton:
     "Standalone skeleton demos for app shells, cards, responsive text, and forced overlays.",
+  reveal:
+    "Standalone reveal demos for fade, transform, stagger, and section entrance motion.",
 };
 
 let memoizedDemos: DemoMetadata[] | null = null;

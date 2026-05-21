@@ -205,6 +205,9 @@ import { css as skeletonResponsiveTextCss } from "./skeleton/skeleton-responsive
 import { SkeletonForceOverlayDemo } from "./skeleton/skeleton-force-overlay/Component";
 import { source as skeletonForceOverlaySource } from "./skeleton/skeleton-force-overlay/source";
 import { css as skeletonForceOverlayCss } from "./skeleton/skeleton-force-overlay/css";
+import { RevealSectionsDemo } from "./reveal/reveal-sections/Component";
+import { source as revealSectionsSource } from "./reveal/reveal-sections/source";
+import { css as revealSectionsCss } from "./reveal/reveal-sections/css";
 import { ZoomPanStandaloneDemo } from "./zoom-pan/standalone/Component";
 import { source as zoomPanStandaloneSource } from "./zoom-pan/standalone/source";
 import { css as zoomPanStandaloneCss } from "./zoom-pan/standalone/css";
@@ -228,7 +231,8 @@ type DemoCategoryId =
   | "entries"
   | "zoom-pan"
   | "fullscreen"
-  | "skeleton";
+  | "skeleton"
+  | "reveal";
 
 type DemoNavItem =
   | {
@@ -1271,6 +1275,18 @@ const DEMOS: DemoDefinition[] = [
     cssFilename: "skeleton-force-overlay-demo.module.css",
   },
   {
+    id: "reveal-sections",
+    title: "Sections",
+    eyebrow: "Reveal",
+    tags: ["standalone","fade","transform","stagger"],
+    categoryId: "reveal",
+    Component: RevealSectionsDemo,
+    source: revealSectionsSource,
+    css: revealSectionsCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "reveal-sections-demo.module.css",
+  },
+  {
     id: "zoom-pan-standalone",
     title: "Standalone",
     eyebrow: "Zoom + Pan",
@@ -1598,6 +1614,17 @@ const DEMO_CATEGORIES: DemoCategory[] = [
       {
         "type": "demo",
         "demoId": "skeleton-force-overlay"
+      }
+    ]
+  },
+  {
+    "id": "reveal",
+    "label": "Reveal",
+    "description": "Standalone section reveals for app and marketing UI without implying loading state.",
+    "items": [
+      {
+        "type": "demo",
+        "demoId": "reveal-sections"
       }
     ]
   }

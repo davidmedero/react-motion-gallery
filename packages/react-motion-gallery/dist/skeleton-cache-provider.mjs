@@ -1,1 +1,2 @@
+"use client";
 export{a as SkeletonCacheProvider}from'./chunk-FPSEC6V4.mjs';import'./chunk-TLLL2WEG.mjs';

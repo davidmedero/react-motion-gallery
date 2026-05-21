@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.64",
+  "version": "2.0.65",
   "description": "Composable React media gallery primitives for sliders, grids, masonry, fullscreen, video, zoom/pan, and stable skeleton loading",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "React Motion Gallery",
@@ -37,6 +37,10 @@
     "./responsive": {
       "types": "./dist/responsive.d.mts",
       "import": "./dist/responsive.mjs"
+    },
+    "./reveal": {
+      "types": "./dist/reveal.d.mts",
+      "import": "./dist/reveal.mjs"
     },
     "./core": {
       "types": "./dist/core.d.mts",
@@ -262,8 +266,8 @@
     }
   },
   "scripts": {
-    "dev": "tsup --watch --onSuccess \"node ./scripts/merge_styles.mjs\"",
-    "build": "tsup && node ./scripts/merge_styles.mjs",
+    "dev": "tsup --watch --onSuccess \"node ./scripts/preserve_client_directives.mjs && node ./scripts/merge_styles.mjs\"",
+    "build": "tsup && node ./scripts/preserve_client_directives.mjs && node ./scripts/merge_styles.mjs",
     "analyze:skeleton-text": "node --no-warnings --experimental-strip-types ./scripts/analyze_skeleton_text.ts",
     "generate:skeleton-text-module": "node --no-warnings --experimental-strip-types ./scripts/generate_skeleton_text_module.ts",
     "generate:skeleton-text-browser-module": "node --no-warnings --experimental-strip-types ./scripts/generate_skeleton_text_browser_module.ts",

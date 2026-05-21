@@ -12,6 +12,7 @@ export { ThumbnailSlider } from "./Gallery/thumbnails";
 export { Video } from "./Gallery/video";
 export { ZoomPanImage } from "./Gallery/zoomPan";
 export { Skeleton } from "./Gallery/skeleton/base";
+export { Reveal, useReveal } from "./Gallery/reveal/Reveal";
 export { createSliderIndexChannel } from "./Gallery/slider/sliderSub";
 export { createThumbnailSyncBridge } from "./Gallery/thumbnails/syncBridge";
 
@@ -126,6 +127,16 @@ export type {
   SkeletonForceOptions,
   SkeletonTimingOptions,
 } from "./Gallery/skeleton/base";
+export type {
+  RevealAngle,
+  RevealLength,
+  RevealOptions,
+  RevealProps,
+  RevealTransform,
+  RevealTransformObject,
+  RevealVariant,
+  UseRevealResult,
+} from "./Gallery/reveal/Reveal";
 
 export { toMediaItems } from "./Gallery/shared/types/media";
 export { BREAKPOINT_MAP } from "./Gallery/shared/responsive";

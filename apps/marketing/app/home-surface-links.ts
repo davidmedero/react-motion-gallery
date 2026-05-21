@@ -7,6 +7,7 @@ import {
   Rows3,
   ScanSearch,
   Sparkles,
+  WandSparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -67,6 +68,13 @@ export const HOME_SURFACE_LINKS = [
     href: "/demos?demo=skeleton-flex-cards",
     Icon: Sparkles,
     tone: "cyan",
+  },
+  {
+    title: "Reveal",
+    description: "Standalone fade and transform entrances for sections, cards and application UI without implying loading state.",
+    href: "/demos?demo=reveal-sections",
+    Icon: WandSparkles,
+    tone: "blue",
   },
   {
     title: "Zoom/Pan",

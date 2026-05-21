@@ -221,6 +221,7 @@ const REPORTED_SURFACES = [
     exportName: "BREAKPOINT_MAP",
     entry: "dist/responsive.mjs",
   },
+  { label: "Reveal", exportName: "Reveal", entry: "dist/reveal.mjs" },
 ];
 const EXTERNALS = [
   "react",

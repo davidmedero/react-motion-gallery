@@ -6,6 +6,7 @@ export default defineConfig({
     "src/index.ts",
     "src/media.ts",
     "src/responsive.ts",
+    "src/reveal.ts",
     "src/slider.ts",
     "src/slider-ready.ts",
     "src/slider-arrows.ts",

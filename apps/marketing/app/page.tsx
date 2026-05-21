@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
+import { Reveal } from "react-motion-gallery/reveal";
 import { JsonLd, buildHomeJsonLd } from "@/lib/seo/structured-data";
 // import { HomeShowcase } from "./HomeShowcase";
 // import { SafariReloadScrollRestorationGuard } from "./components/SafariReloadScrollRestorationGuard";
@@ -19,18 +20,36 @@ export default async function Home() {
         <section className="home-intro" aria-labelledby="home-intro-title">
           <div className="home-intro__hero">
             <div className="home-intro__copy">
-              <span className="home-intro__version">v{packageJson.version}</span>
+              <Reveal as="span" className="home-intro__version" variant="fade">
+                v{packageJson.version}
+              </Reveal>
               <h1 id="home-intro-title">
-                <span className="home-intro__titleText">
+                <Reveal
+                  as="span"
+                  className="home-intro__titleText"
+                  transform={{ y: 18, scale: 0.98 }}
+                  delayMs={70}
+                >
                   React <br className="home-intro__titleBreak" />
                   Motion <br className="home-intro__titleBreak" />
                   Gallery
-                </span>
+                </Reveal>
               </h1>
-              <p className="home-intro__lede">
+              <Reveal
+                as="p"
+                className="home-intro__lede"
+                transform={{ y: 16 }}
+                delayMs={140}
+              >
                 A motion-first gallery and lightbox system for React, with a complete carousel library, grid and masonry layouts, reveal animations, structured entries for record-based media collections, fullscreen carousel with captions, overlays and thumbnails, SSR-stable skeletons, first-class video surfaces and smooth zoom and pan gestures.
-              </p>
-              <p className="home-intro__license">
+              </Reveal>
+              <Reveal
+                as="p"
+                className="home-intro__license"
+                transform={{ y: 12 }}
+                rootMargin="0px"
+                delayMs={210}
+              >
                 Free for non-commercial use, source visible on{" "}
                 <a
                   href="https://github.com/davidmedero/react-motion-gallery/tree/main/packages/react-motion-gallery"
@@ -41,10 +60,18 @@ export default async function Home() {
                 >
                   Github
                 </a>.{" "}
-              </p>
+              </Reveal>
             </div>
 
-            <div className="home-intro__visual" aria-hidden>
+            <Reveal
+              as="div"
+              className="home-intro__visual"
+              aria-hidden
+              transform={{ y: 18, scale: 0.96, rotate: 1.2 }}
+              delayMs={120}
+              opacityDurationMs={1000}
+              transformDurationMs={560}
+            >
               <Image
                 className="home-intro__visualImage"
                 src="https://cdn.react-motion-gallery.com/nav/rmg-icon-v5.png"
@@ -53,40 +80,52 @@ export default async function Home() {
                 priority
                 sizes="(max-width: 640px) 70vw, (max-width: 920px) 34vw, 360px"
               />
-            </div>
+            </Reveal>
           </div>
 
           <div className="home-intro__cards" role="list">
-            {HOME_SURFACE_LINKS.map((card) => {
+            {HOME_SURFACE_LINKS.map((card, index) => {
               const Icon = card.Icon;
 
               return (
-                <Link
-                  className="home-intro-card"
-                  data-tone={card.tone}
-                  href={card.href}
+                <Reveal
+                  as="div"
+                  className="home-intro-cardReveal"
                   key={card.title}
                   role="listitem"
+                  staggerIndex={index}
+                  transform={{ y: 18, scale: 0.97 }}
                 >
-                  <span className="home-intro-card__icon" aria-hidden>
-                    <Icon size={21} strokeWidth={2.1} />
-                  </span>
-                  <span className="home-intro-card__content">
-                    <strong>{card.title}</strong>
-                    <span>{card.description}</span>
-                  </span>
-                  <ArrowUpRight
-                    className="home-intro-card__arrow"
-                    size={17}
-                    strokeWidth={2.2}
-                    aria-hidden
-                  />
-                </Link>
+                  <Link
+                    className="home-intro-card"
+                    data-tone={card.tone}
+                    href={card.href}
+                  >
+                    <span className="home-intro-card__icon" aria-hidden>
+                      <Icon size={21} strokeWidth={2.1} />
+                    </span>
+                    <span className="home-intro-card__content">
+                      <strong>{card.title}</strong>
+                      <span>{card.description}</span>
+                    </span>
+                    <ArrowUpRight
+                      className="home-intro-card__arrow"
+                      size={17}
+                      strokeWidth={2.2}
+                      aria-hidden
+                    />
+                  </Link>
+                </Reveal>
               );
             })}
           </div>
         </section>
-        <section className="home-mcp-callout" aria-label="MCP server for AI agents">
+        <Reveal
+          as="section"
+          className="home-mcp-callout"
+          aria-label="MCP server for AI agents"
+          transform={{ y: 20, scale: 0.98 }}
+        >
           <div className="home-mcp-callout__inner">
             <div className="home-mcp-callout__copy">
               <span className="home-mcp-callout__eyebrow">
@@ -101,7 +140,7 @@ export default async function Home() {
               Read the workflow
             </Link>
           </div>
-        </section>
+        </Reveal>
         {/* <HomeShowcase skeletonCacheSnapshots={skeletonCacheSnapshots} /> */}
       </main>
     </>

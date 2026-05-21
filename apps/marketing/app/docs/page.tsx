@@ -49,6 +49,13 @@ const entryPoints: EntryPoint[] = [
     description: "Shared breakpoint aliases for public responsive props.",
   },
   {
+    category: "Utilities",
+    entry: "react-motion-gallery/reveal",
+    imports: "Reveal, useReveal",
+    description:
+      "Standalone fade and transform reveals with independent opacity and transform timing.",
+  },
+  {
     category: "Core",
     entry: "react-motion-gallery/core",
     imports: "GalleryCore, GalleryCoreProvider, useGalleryCore",
@@ -369,6 +376,13 @@ const entryPointTabs = [
     language: "tsx",
     filename: "responsive-imports.ts",
     code: 'import { BREAKPOINT_MAP } from "react-motion-gallery/responsive";',
+  },
+  {
+    id: "reveal",
+    label: "Reveal",
+    language: "tsx",
+    filename: "reveal-imports.ts",
+    code: 'import RevealDefault, { Reveal, useReveal } from "react-motion-gallery/reveal";',
   },
   {
     id: "core",
