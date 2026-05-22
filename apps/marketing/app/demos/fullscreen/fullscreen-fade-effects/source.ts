@@ -180,4 +180,5 @@ export function FullscreenFadeEffectsDemo() {
       <FullscreenFadeEffectsAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

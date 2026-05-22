@@ -547,4 +547,5 @@ export function EntriesMasonryDemo() {
       </GalleryCore>
     </div>
   );
-}`;
+}
+`;

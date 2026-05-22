@@ -341,7 +341,7 @@ describe("Reveal", () => {
   test("serializes fade and transform styles", async () => {
     const { container, root } = mount(
       <>
-        <Reveal as="span" variant="fade" opacityDurationMs={180} disabled>
+        <Reveal as="span" variant="fade" durationMs={{ opacity: 180 }} disabled>
           Fade
         </Reveal>
         <Reveal
@@ -374,26 +374,29 @@ describe("Reveal", () => {
     unmount(root, container);
   });
 
-  test("supports shared and property-specific durations", async () => {
+  test("supports shared and property-specific motion timing", async () => {
     const { container, root } = mount(
       <>
-        <Reveal data-id="shared" durationMs={640} disabled />
+        <Reveal data-id="shared" durationMs={640} easing="ease-in-out" disabled />
         <Reveal
           data-id="opacity"
-          durationMs={640}
-          opacityDurationMs={180}
+          durationMs={{ opacity: 180 }}
+          easing={{ opacity: "linear" }}
           disabled
         />
         <Reveal
           data-id="transform"
-          durationMs={640}
-          transformDurationMs={900}
+          durationMs={{ transform: 900 }}
+          easing={{ transform: "ease-out" }}
           disabled
         />
         <Reveal
           data-id="split"
-          opacityDurationMs={120}
-          transformDurationMs={780}
+          durationMs={{ opacity: 120, transform: 780 }}
+          easing={{
+            opacity: "ease-in",
+            transform: "cubic-bezier(0.2, 0.7, 0.2, 1)",
+          }}
           disabled
         />
       </>
@@ -409,23 +412,47 @@ describe("Reveal", () => {
     expect(node("shared").style.getPropertyValue("--rmg-reveal-transform-duration")).toBe(
       "640ms"
     );
+    expect(node("shared").style.getPropertyValue("--rmg-reveal-opacity-easing")).toBe(
+      "ease-in-out"
+    );
+    expect(node("shared").style.getPropertyValue("--rmg-reveal-transform-easing")).toBe(
+      "ease-in-out"
+    );
     expect(node("opacity").style.getPropertyValue("--rmg-reveal-opacity-duration")).toBe(
       "180ms"
     );
     expect(node("opacity").style.getPropertyValue("--rmg-reveal-transform-duration")).toBe(
-      "640ms"
+      "520ms"
+    );
+    expect(node("opacity").style.getPropertyValue("--rmg-reveal-opacity-easing")).toBe(
+      "linear"
+    );
+    expect(node("opacity").style.getPropertyValue("--rmg-reveal-transform-easing")).toBe(
+      "cubic-bezier(0.2, 0.7, 0.2, 1)"
     );
     expect(node("transform").style.getPropertyValue("--rmg-reveal-opacity-duration")).toBe(
-      "640ms"
+      "520ms"
     );
     expect(
       node("transform").style.getPropertyValue("--rmg-reveal-transform-duration")
     ).toBe("900ms");
+    expect(node("transform").style.getPropertyValue("--rmg-reveal-opacity-easing")).toBe(
+      "cubic-bezier(0.2, 0.7, 0.2, 1)"
+    );
+    expect(node("transform").style.getPropertyValue("--rmg-reveal-transform-easing")).toBe(
+      "ease-out"
+    );
     expect(node("split").style.getPropertyValue("--rmg-reveal-opacity-duration")).toBe(
       "120ms"
     );
     expect(node("split").style.getPropertyValue("--rmg-reveal-transform-duration")).toBe(
       "780ms"
+    );
+    expect(node("split").style.getPropertyValue("--rmg-reveal-opacity-easing")).toBe(
+      "ease-in"
+    );
+    expect(node("split").style.getPropertyValue("--rmg-reveal-transform-easing")).toBe(
+      "cubic-bezier(0.2, 0.7, 0.2, 1)"
     );
 
     unmount(root, container);

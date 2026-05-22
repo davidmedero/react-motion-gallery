@@ -436,4 +436,5 @@ export function SkeletonResponsiveTextDemo() {
       </Skeleton>
     </div>
   );
-}`;
+}
+`;

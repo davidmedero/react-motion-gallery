@@ -387,4 +387,5 @@ export function MasonryRoundRobinDemo() {
       <MasonryRoundRobinFullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

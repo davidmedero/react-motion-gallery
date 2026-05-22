@@ -552,4 +552,5 @@ export function EntriesSliderHtml5Demo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

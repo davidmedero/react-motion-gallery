@@ -364,4 +364,5 @@ export function MasonryVideoVimeoDemo() {
       <MasonryVimeoFullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

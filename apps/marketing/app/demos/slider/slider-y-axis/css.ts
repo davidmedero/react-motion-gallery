@@ -16,4 +16,5 @@ export const css = String.raw`.demoCanvasSliderYAxis {
   .demoCanvasSliderYAxis {
     min-height: 280px;
   }
-}`;
+}
+`;

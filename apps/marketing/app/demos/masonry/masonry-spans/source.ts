@@ -15,6 +15,7 @@ import type {
   MasonrySkeletonSpec,
   SkeletonNode,
 } from "react-motion-gallery/skeleton/cache/masonry";
+import type { SkeletonCacheOptions } from "react-motion-gallery/skeleton/cache";
 import styles from "./masonry-spans-demo.module.css";
 import { masonrySpansSkeletonText } from "./masonry-spans.skeleton-text.generated";
 import { demoSkeletonCache } from "../../skeleton-cache";
@@ -38,6 +39,10 @@ type GeneratedSkeletonTextEntry = {
   badge: GeneratedSkeletonTextState;
   title: GeneratedSkeletonTextState;
   body: GeneratedSkeletonTextState;
+};
+
+type MasonrySpansDemoProps = {
+  cache?: SkeletonCacheOptions;
 };
 
 const SPANS_CARD_METRICS = {
@@ -398,7 +403,8 @@ function MasonrySpansFullscreenAddon() {
   return <>{fullscreenNode}</>;
 }
 
-export function MasonrySpansDemo() {
+export function MasonrySpansDemo(props: MasonrySpansDemoProps = {}) {
+  const skeletonCache = props.cache ?? demoSkeletonCache("masonry-spans");
   const fullscreenMedia = toMediaItems(
     ITEMS.map((item) =>
       item.kind === "image"
@@ -416,7 +422,7 @@ export function MasonrySpansDemo() {
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <MasonrySkeleton
-        cache={demoSkeletonCache("masonry-spans")}
+        cache={skeletonCache}
         layout={SPANS_SKELETON}
         ready={masonryReady}
         timing={{ exitMs: 1200 }}
@@ -452,4 +458,5 @@ export function MasonrySpansDemo() {
       <MasonrySpansFullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

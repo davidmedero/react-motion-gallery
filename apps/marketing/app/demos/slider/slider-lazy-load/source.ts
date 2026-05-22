@@ -73,30 +73,29 @@ export function SliderLazyLoadDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-lazy-load")}
         layout={{
-              visibleCount: 2,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    maxWidth: "550px",
-                    aspectRatio: "16 / 9",
-                    borderRadius: 12,
-                  },
-                },
+          visibleCount: 2,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100cqw",
+                maxWidth: "550px",
+                aspectRatio: "16 / 9",
+                borderRadius: 12,
               },
-            }}
+            },
+          },
+        }}
         ready={sliderReady}
       >
       <Slider
         ref={sliderRef}
-
         plugins={[
           sliderFullscreen(),
           sliderRipple(),
@@ -122,4 +121,5 @@ export function SliderLazyLoadDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

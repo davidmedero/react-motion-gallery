@@ -3,6 +3,10 @@ import * as React from 'react';
 type RevealVariant = "fade" | "transform";
 type RevealLength = number | string;
 type RevealAngle = number | string;
+type RevealMotionChannel = "opacity" | "transform";
+type RevealChannelOptions<T> = Partial<Record<RevealMotionChannel, T>>;
+type RevealDuration = number | RevealChannelOptions<number>;
+type RevealEasing = string | RevealChannelOptions<string>;
 type RevealTransformObject = {
     x?: RevealLength;
     y?: RevealLength;
@@ -25,13 +29,11 @@ type RevealOptions = {
     once?: boolean;
     threshold?: number;
     rootMargin?: string;
-    durationMs?: number;
-    opacityDurationMs?: number;
-    transformDurationMs?: number;
+    durationMs?: RevealDuration;
     delayMs?: number;
     staggerIndex?: number;
     staggerMs?: number;
-    easing?: string;
+    easing?: RevealEasing;
     disabled?: boolean;
     onReveal?: () => void;
 };
@@ -64,4 +66,4 @@ declare const Reveal: <E extends React.ElementType = "div">(props: RevealProps<E
     ref?: React.Ref<HTMLElement>;
 }) => React.ReactElement | null;
 
-export { Reveal, type RevealAngle, type RevealLength, type RevealOptions, type RevealProps, type RevealTransform, type RevealTransformObject, type RevealVariant, type UseRevealResult, Reveal as default, resolveRevealTransform, useReveal };
+export { Reveal, type RevealAngle, type RevealChannelOptions, type RevealDuration, type RevealEasing, type RevealLength, type RevealMotionChannel, type RevealOptions, type RevealProps, type RevealTransform, type RevealTransformObject, type RevealVariant, type UseRevealResult, Reveal as default, resolveRevealTransform, useReveal };

@@ -300,4 +300,5 @@ export function GridLazyLoadDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

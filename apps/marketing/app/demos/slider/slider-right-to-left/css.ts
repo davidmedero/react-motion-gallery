@@ -4,4 +4,5 @@ export const css = String.raw`.slide {
   display: block;
   aspect-ratio: 16 / 9;
   border-radius: 12px;
-}`;
+}
+`;

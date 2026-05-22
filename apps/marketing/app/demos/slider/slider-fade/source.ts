@@ -122,4 +122,5 @@ export function SliderFadeDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

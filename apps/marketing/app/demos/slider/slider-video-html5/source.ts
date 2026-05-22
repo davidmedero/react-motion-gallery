@@ -206,4 +206,5 @@ export function SliderVideoHtml5Demo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

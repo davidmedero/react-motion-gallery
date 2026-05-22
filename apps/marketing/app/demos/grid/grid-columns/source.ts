@@ -293,9 +293,6 @@ function FullscreenAddon() {
     plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
       enabled: true,
-      effects: {
-        introDuration: { fade: 500 },
-      },
     },
   });
 
@@ -340,4 +337,5 @@ export function GridColumnsDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

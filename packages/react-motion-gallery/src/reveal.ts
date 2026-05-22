@@ -4,7 +4,11 @@ export { Reveal, Reveal as default, resolveRevealTransform, useReveal } from "./
 
 export type {
   RevealAngle,
+  RevealChannelOptions,
+  RevealDuration,
+  RevealEasing,
   RevealLength,
+  RevealMotionChannel,
   RevealOptions,
   RevealProps,
   RevealTransform,

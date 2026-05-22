@@ -350,4 +350,5 @@ export function MasonryVideoHtml5Demo() {
       <MasonryHtml5FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

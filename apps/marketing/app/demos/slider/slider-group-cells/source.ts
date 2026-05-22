@@ -105,6 +105,11 @@ export function SliderGroupCellsDemo() {
         scroll={{
           groupCells: true,
         }}
+        transitions={{
+          intro: {
+            staggerMs: 100
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),
@@ -125,4 +130,5 @@ export function SliderGroupCellsDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

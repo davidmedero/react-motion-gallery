@@ -311,4 +311,5 @@ export function GridTemplateColumnsDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

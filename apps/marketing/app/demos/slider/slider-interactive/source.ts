@@ -522,4 +522,5 @@ export function SliderInteractiveDemo() {
       <InteractiveSliderCanvas />
     </GalleryCore>
   );
-}`;
+}
+`;

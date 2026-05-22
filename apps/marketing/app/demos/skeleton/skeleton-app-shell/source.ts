@@ -507,4 +507,5 @@ export function SkeletonAppShellDemo() {
       </Skeleton>
     </div>
   );
-}`;
+}
+`;

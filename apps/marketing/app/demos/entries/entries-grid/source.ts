@@ -474,4 +474,5 @@ export function EntriesGridDemo() {
       </GalleryCore>
     </div>
   );
-}`;
+}
+`;

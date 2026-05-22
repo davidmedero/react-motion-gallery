@@ -3,14 +3,16 @@
   --rmg-reveal-transform-duration: 520ms;
   --rmg-reveal-delay: 0ms;
   --rmg-reveal-easing: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --rmg-reveal-opacity-easing: var(--rmg-reveal-easing);
+  --rmg-reveal-transform-easing: var(--rmg-reveal-easing);
   --rmg-reveal-from-transform: translate3d(0, 14px, 0);
   --rmg-reveal-to-transform: none;
 
   opacity: 1;
   transform: var(--rmg-reveal-to-transform);
   transition:
-    opacity var(--rmg-reveal-opacity-duration) var(--rmg-reveal-easing) var(--rmg-reveal-delay),
-    transform var(--rmg-reveal-transform-duration) var(--rmg-reveal-easing) var(--rmg-reveal-delay);
+    opacity var(--rmg-reveal-opacity-duration) var(--rmg-reveal-opacity-easing) var(--rmg-reveal-delay),
+    transform var(--rmg-reveal-transform-duration) var(--rmg-reveal-transform-easing) var(--rmg-reveal-delay);
 }
 
 .reveal[data-rmg-reveal-owned="true"] {

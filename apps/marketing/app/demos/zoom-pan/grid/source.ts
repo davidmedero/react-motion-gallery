@@ -97,4 +97,5 @@ export function ZoomPanGridDemo() {
       </GridSkeleton>
     </GalleryCore>
   );
-}`;
+}
+`;

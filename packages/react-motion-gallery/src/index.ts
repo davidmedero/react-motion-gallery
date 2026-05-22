@@ -129,7 +129,11 @@ export type {
 } from "./Gallery/skeleton/base";
 export type {
   RevealAngle,
+  RevealChannelOptions,
+  RevealDuration,
+  RevealEasing,
   RevealLength,
+  RevealMotionChannel,
   RevealOptions,
   RevealProps,
   RevealTransform,

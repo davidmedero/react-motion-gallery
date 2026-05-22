@@ -344,4 +344,5 @@ export function MasonryLazyLoadDemo() {
       <MasonryLazyFullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

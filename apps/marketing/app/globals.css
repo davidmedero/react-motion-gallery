@@ -336,6 +336,11 @@ code, pre, kbd, samp {
 }
 
 
+.home-intro__titleReveal {
+  display: inline-block;
+  max-width: 100%;
+}
+
 .home-intro__titleText {
   display: inline;
   -webkit-box-decoration-break: slice;

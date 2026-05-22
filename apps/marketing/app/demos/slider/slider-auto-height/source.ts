@@ -464,4 +464,5 @@ export function SliderAutoHeightDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

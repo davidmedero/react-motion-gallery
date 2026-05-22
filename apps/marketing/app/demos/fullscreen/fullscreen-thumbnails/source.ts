@@ -227,4 +227,5 @@ export function FullscreenThumbnailsDemo() {
       <FullscreenThumbnailsAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

@@ -155,4 +155,5 @@ export function FullscreenSlideBoundCaptionDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

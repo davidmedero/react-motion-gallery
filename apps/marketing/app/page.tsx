@@ -20,19 +20,33 @@ export default async function Home() {
         <section className="home-intro" aria-labelledby="home-intro-title">
           <div className="home-intro__hero">
             <div className="home-intro__copy">
-              <Reveal as="span" className="home-intro__version" variant="fade">
+              <Reveal
+                as="span"
+                className="home-intro__version"
+                transform={{ y: -12, scale: 0.98 }}
+                durationMs={{
+                  opacity: 1200,
+                  transform: 720
+                }}
+              >
                 v{packageJson.version}
               </Reveal>
               <h1 id="home-intro-title">
                 <Reveal
                   as="span"
-                  className="home-intro__titleText"
+                  className="home-intro__titleReveal"
                   transform={{ y: 18, scale: 0.98 }}
                   delayMs={70}
+                  durationMs={{
+                    opacity: 1000,
+                    transform: 660
+                  }}
                 >
-                  React <br className="home-intro__titleBreak" />
-                  Motion <br className="home-intro__titleBreak" />
-                  Gallery
+                  <span className="home-intro__titleText">
+                    React <br className="home-intro__titleBreak" />
+                    Motion <br className="home-intro__titleBreak" />
+                    Gallery
+                  </span>
                 </Reveal>
               </h1>
               <Reveal
@@ -69,8 +83,10 @@ export default async function Home() {
               aria-hidden
               transform={{ y: 18, scale: 0.96, rotate: 1.2 }}
               delayMs={120}
-              opacityDurationMs={1000}
-              transformDurationMs={560}
+              durationMs={{
+                opacity: 1000,
+                transform: 660
+              }}
             >
               <Image
                 className="home-intro__visualImage"
@@ -95,6 +111,10 @@ export default async function Home() {
                   role="listitem"
                   staggerIndex={index}
                   transform={{ y: 18, scale: 0.97 }}
+                  durationMs={{
+                    opacity: 1000,
+                    transform: 660
+                  }}
                 >
                   <Link
                     className="home-intro-card"
@@ -125,6 +145,10 @@ export default async function Home() {
           className="home-mcp-callout"
           aria-label="MCP server for AI agents"
           transform={{ y: 20, scale: 0.98 }}
+          durationMs={{
+            opacity: 1000,
+            transform: 660
+          }}
         >
           <div className="home-mcp-callout__inner">
             <div className="home-mcp-callout__copy">

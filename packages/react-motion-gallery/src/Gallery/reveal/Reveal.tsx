@@ -8,6 +8,10 @@ import styles from "./Reveal.module.css";
 export type RevealVariant = "fade" | "transform";
 export type RevealLength = number | string;
 export type RevealAngle = number | string;
+export type RevealMotionChannel = "opacity" | "transform";
+export type RevealChannelOptions<T> = Partial<Record<RevealMotionChannel, T>>;
+export type RevealDuration = number | RevealChannelOptions<number>;
+export type RevealEasing = string | RevealChannelOptions<string>;
 
 export type RevealTransformObject = {
   x?: RevealLength;
@@ -33,13 +37,11 @@ export type RevealOptions = {
   once?: boolean;
   threshold?: number;
   rootMargin?: string;
-  durationMs?: number;
-  opacityDurationMs?: number;
-  transformDurationMs?: number;
+  durationMs?: RevealDuration;
   delayMs?: number;
   staggerIndex?: number;
   staggerMs?: number;
-  easing?: string;
+  easing?: RevealEasing;
   disabled?: boolean;
   onReveal?: () => void;
 };
@@ -122,6 +124,25 @@ function resolveDurationMs(value: number | undefined, fallback: number) {
   return typeof value === "number" && Number.isFinite(value)
     ? Math.max(0, value)
     : fallback;
+}
+
+function resolveRevealDurationMs(
+  duration: RevealDuration | undefined,
+  channel: RevealMotionChannel
+) {
+  if (typeof duration === "number") {
+    return resolveDurationMs(duration, DEFAULT_DURATION_MS);
+  }
+
+  return resolveDurationMs(duration?.[channel], DEFAULT_DURATION_MS);
+}
+
+function resolveRevealEasing(
+  easing: RevealEasing | undefined,
+  channel: RevealMotionChannel
+) {
+  if (typeof easing === "string") return easing;
+  return easing?.[channel] ?? DEFAULT_EASING;
 }
 
 export function resolveRevealTransform(transform: RevealTransform = DEFAULT_TRANSFORM) {
@@ -235,9 +256,10 @@ function buildRevealStyle(
   restingTransform?: string
 ) {
   const variant = options.variant ?? "transform";
-  const durationMs = resolveDurationMs(options.durationMs, DEFAULT_DURATION_MS);
-  const opacityDurationMs = resolveDurationMs(options.opacityDurationMs, durationMs);
-  const transformDurationMs = resolveDurationMs(options.transformDurationMs, durationMs);
+  const opacityDuration = resolveRevealDurationMs(options.durationMs, "opacity");
+  const transformDuration = resolveRevealDurationMs(options.durationMs, "transform");
+  const opacityEasing = resolveRevealEasing(options.easing, "opacity");
+  const transformEasing = resolveRevealEasing(options.easing, "transform");
   const delayMs = prefersReducedMotion || options.disabled ? 0 : resolveDelayMs(options);
   const transform =
     variant === "transform"
@@ -245,10 +267,11 @@ function buildRevealStyle(
       : "none";
 
   return {
-    ["--rmg-reveal-opacity-duration" as any]: `${opacityDurationMs}ms`,
-    ["--rmg-reveal-transform-duration" as any]: `${transformDurationMs}ms`,
+    ["--rmg-reveal-opacity-duration" as any]: `${opacityDuration}ms`,
+    ["--rmg-reveal-transform-duration" as any]: `${transformDuration}ms`,
     ["--rmg-reveal-delay" as any]: `${delayMs}ms`,
-    ["--rmg-reveal-easing" as any]: options.easing ?? DEFAULT_EASING,
+    ["--rmg-reveal-opacity-easing" as any]: opacityEasing,
+    ["--rmg-reveal-transform-easing" as any]: transformEasing,
     ["--rmg-reveal-from-transform" as any]: transform,
     ["--rmg-reveal-to-transform" as any]: restingTransform || "none",
   } as React.CSSProperties;
@@ -453,8 +476,6 @@ const RevealInner = React.forwardRef(function RevealInner<
     threshold,
     rootMargin,
     durationMs,
-    opacityDurationMs,
-    transformDurationMs,
     delayMs,
     staggerIndex,
     staggerMs,
@@ -470,8 +491,6 @@ const RevealInner = React.forwardRef(function RevealInner<
     threshold,
     rootMargin,
     durationMs,
-    opacityDurationMs,
-    transformDurationMs,
     delayMs,
     staggerIndex,
     staggerMs,
@@ -486,8 +505,6 @@ const RevealInner = React.forwardRef(function RevealInner<
       variant,
       transform,
       durationMs,
-      opacityDurationMs,
-      transformDurationMs,
       delayMs,
       staggerIndex,
       staggerMs,

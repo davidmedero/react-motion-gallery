@@ -264,4 +264,5 @@ export function FullscreenLayoutAgnosticDemo() {
       </GalleryCore>
     </div>
   );
-}`;
+}
+`;

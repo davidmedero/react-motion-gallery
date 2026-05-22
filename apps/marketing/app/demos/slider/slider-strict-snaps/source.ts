@@ -74,26 +74,26 @@ export function SliderStrictSnapsDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-strict-snaps")}
         layout={{
-              visibleCount: 3,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                  justify: "center",
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    maxWidth: "550px",
-                    aspectRatio: "16 / 9",
-                    borderRadius: 12,
-                  },
-                },
+          visibleCount: 3,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+              justify: "center",
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100cqw",
+                maxWidth: "550px",
+                aspectRatio: "16 / 9",
+                borderRadius: 12,
               },
-            }}
+            },
+          },
+        }}
         ready={sliderReady}
       >
       <Slider
@@ -123,4 +123,5 @@ export function SliderStrictSnapsDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

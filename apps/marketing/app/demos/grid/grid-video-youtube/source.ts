@@ -262,4 +262,5 @@ export function GridVideoYoutubeDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

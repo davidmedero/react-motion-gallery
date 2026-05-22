@@ -109,7 +109,7 @@ export function SliderParallaxDemo() {
           loop: true,
           freeScroll: true
         }}
-
+        
         plugins={[
           sliderFullscreen(),
           sliderRipple(),
@@ -134,4 +134,5 @@ export function SliderParallaxDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

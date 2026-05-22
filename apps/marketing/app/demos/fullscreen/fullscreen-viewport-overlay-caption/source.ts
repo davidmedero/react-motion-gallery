@@ -140,4 +140,5 @@ export function FullscreenViewportOverlayCaptionDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

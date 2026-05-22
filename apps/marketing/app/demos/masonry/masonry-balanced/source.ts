@@ -413,4 +413,5 @@ export function MasonryBalancedDemo() {
       <MasonryBalancedFullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

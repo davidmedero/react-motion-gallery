@@ -431,4 +431,5 @@ export function MasonryHorizontalOrderDemo() {
       <MasonryHorizontalOrderFullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

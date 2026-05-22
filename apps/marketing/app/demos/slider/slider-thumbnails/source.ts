@@ -164,31 +164,35 @@ export function SliderThumbnailsDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-thumbnails")}
         layout={{
-              visibleCount: 2,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    maxWidth: "550px",
-                    aspectRatio: "16 / 9",
-                    borderRadius: 12,
-                  },
-                },
+          visibleCount: 2,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100cqw",
+                maxWidth: "550px",
+                aspectRatio: "16 / 9",
+                borderRadius: 12,
               },
-            }}
+            },
+          },
+        }}
         ready={sliderReady}
       >
       <Slider
         ref={sliderRef}
         indexChannel={indexChannel}
-
+        transitions={{
+          intro: {
+            staggerMs: 200
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),
@@ -236,10 +240,6 @@ export function SliderThumbnailsDemo() {
           },
           transitions: {
             loading: {
-              // force: {
-              //   showContent: true,
-              //   skeletonOpacity: 0.5,
-              // },
               skeletonCount: 9,
               elements: {
                 container: {
@@ -250,6 +250,9 @@ export function SliderThumbnailsDemo() {
                 },
               },
             },
+            intro: {
+              durationMs: 1000
+            }
           },
         }}
       >
@@ -265,4 +268,5 @@ export function SliderThumbnailsDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

@@ -230,4 +230,5 @@ export function GridVideoHtml5Demo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

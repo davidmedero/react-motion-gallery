@@ -106,6 +106,11 @@ export function SliderFreeScrollDemo() {
           freeScroll: true,
           groupCells: true
         }}
+        transitions={{
+          intro: {
+            staggerMs: 100
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),
@@ -126,4 +131,5 @@ export function SliderFreeScrollDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

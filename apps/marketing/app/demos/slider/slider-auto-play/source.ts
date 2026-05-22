@@ -240,4 +240,5 @@ export function SliderAutoPlayDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

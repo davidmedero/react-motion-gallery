@@ -98,4 +98,5 @@ export function FullscreenLazyLoadDemo() {
       <FullscreenLazyLoadAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

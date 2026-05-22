@@ -99,6 +99,11 @@ export function SliderCenterAlignDemo() {
       <Slider
         ref={sliderRef}
         align="center"
+        transitions={{
+          intro: {
+            staggerMs: 120
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),
@@ -119,4 +124,5 @@ export function SliderCenterAlignDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

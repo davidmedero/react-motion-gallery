@@ -1,12 +1,12 @@
 import {
-  Columns3,
+  LayoutDashboard,
   Film,
   Grid3X3,
-  Images,
+  GalleryHorizontalEnd,
   Maximize2,
   Rows3,
   ScanSearch,
-  Sparkles,
+  Skull,
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -24,7 +24,7 @@ export const HOME_SURFACE_LINKS = [
     title: "Slider",
     description: "A fluid carousel with an extensive API, plugins, SSR support, fullscreen sync and video handling.",
     href: "/demos?demo=slider-cards",
-    Icon: Images,
+    Icon: GalleryHorizontalEnd,
     tone: "cyan",
   },
   {
@@ -38,7 +38,7 @@ export const HOME_SURFACE_LINKS = [
     title: "Masonry",
     description: "Balanced, round-robin, and horizontal-order placement options with responsive spans, lazy load, SSR support and fullscreen.",
     href: "/demos?demo=masonry-spans",
-    Icon: Columns3,
+    Icon: LayoutDashboard,
     tone: "magenta",
   },
   {
@@ -66,7 +66,7 @@ export const HOME_SURFACE_LINKS = [
     title: "Skeletons",
     description: "Auto-generated SSR-stable placeholders that mirror full responsive layouts, including wrapped text, with cached layout snapshots to promote stability on first paint.",
     href: "/demos?demo=skeleton-flex-cards",
-    Icon: Sparkles,
+    Icon: Skull,
     tone: "cyan",
   },
   {

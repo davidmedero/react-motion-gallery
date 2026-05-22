@@ -266,4 +266,5 @@ export function GridVideoVimeoDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

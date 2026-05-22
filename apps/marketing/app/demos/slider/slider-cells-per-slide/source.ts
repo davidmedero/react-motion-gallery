@@ -113,6 +113,11 @@ export function SliderCellsPerSlideDemo() {
         scroll={{
           groupCells: true,
         }}
+        transitions={{
+          intro: {
+            staggerMs: 100
+          }
+        }}
         plugins={[
           sliderFullscreen(),
           sliderRipple(),
@@ -133,4 +138,5 @@ export function SliderCellsPerSlideDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

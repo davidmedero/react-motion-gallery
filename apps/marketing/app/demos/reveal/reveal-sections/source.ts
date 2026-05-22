@@ -32,6 +32,11 @@ const TIMELINE = [
   "Visible sections reveal once their observer enters view.",
 ] as const;
 
+const REVEAL_EASING = {
+  opacity: "ease-out",
+  transform: "cubic-bezier(0.2, 0.7, 0.2, 1)",
+} as const;
+
 export function RevealSectionsDemo() {
   const [runId, setRunId] = useState(0);
 
@@ -57,8 +62,8 @@ export function RevealSectionsDemo() {
           as="header"
           className={styles.header}
           transform={{ y: 18, scale: 0.98 }}
-          opacityDurationMs={260}
-          transformDurationMs={760}
+          durationMs={{ opacity: 1000, transform: 760 }}
+          easing={REVEAL_EASING}
         >
           <span>Standalone primitive</span>
           <h2 id="reveal-sections-title">Reveal sections without implying loading.</h2>
@@ -76,8 +81,8 @@ export function RevealSectionsDemo() {
               data-tone={card.tone}
               key={card.label}
               staggerIndex={index}
-              opacityDurationMs={220}
-              transformDurationMs={680}
+              durationMs={{ opacity: 1000, transform: 680 }}
+              easing={REVEAL_EASING}
               transform={{
                 y: 20,
                 rotate: index === 1 ? 0 : index === 0 ? -1.4 : 1.4,
@@ -98,11 +103,10 @@ export function RevealSectionsDemo() {
               className={styles.timelineItem}
               key={item}
               role="listitem"
-              variant={index === 0 ? "fade" : "transform"}
               staggerIndex={index}
               rootMargin="0px"
-              opacityDurationMs={index === 0 ? 300 : 220}
-              transformDurationMs={620}
+              durationMs={{ opacity: 1000, transform: 620 }}
+              easing={REVEAL_EASING}
               transform={{ x: -18 }}
             >
               <span>{String(index + 1).padStart(2, "0")}</span>

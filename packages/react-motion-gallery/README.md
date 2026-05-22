@@ -199,12 +199,12 @@ export function SectionIntro() {
     <Reveal
       as="section"
       transform={{ y: 18, scale: 0.98 }}
-      opacityDurationMs={220}
-      transformDurationMs={680}
+      durationMs={{ opacity: 220, transform: 680 }}
+      easing={{ opacity: "ease-out", transform: "cubic-bezier(0.2, 0.7, 0.2, 1)" }}
       staggerIndex={1}
     >
       <h2>Fast fade, slower motion.</h2>
-      <p>Use durationMs when both transitions should share one duration.</p>
+      <p>Pass a number when both transitions should share one duration.</p>
     </Reveal>
   );
 }
@@ -214,9 +214,8 @@ export function SectionIntro() {
 | --- | --- | --- | --- |
 | `variant` | `"fade" \| "transform"` | `"transform"` | `fade` animates opacity only; `transform` also animates from the configured transform. |
 | `transform` | `RevealTransform` | `{ y: 14 }` | Typed transform object or raw CSS transform string. |
-| `durationMs` | `number` | `520` | Shared fallback duration for opacity and transform. |
-| `opacityDurationMs` | `number` | `durationMs` | Overrides only the opacity transition duration. |
-| `transformDurationMs` | `number` | `durationMs` | Overrides only the transform transition duration. |
+| `durationMs` | `number \| { opacity?: number; transform?: number }` | `520` | Scalar timing applies to both channels. Object timing lets opacity and transform resolve at different speeds. |
+| `easing` | `string \| { opacity?: string; transform?: string }` | `"cubic-bezier(0.2, 0.7, 0.2, 1)"` | Scalar easing applies to both channels. Object easing lets opacity and transform use separate curves. |
 | `delayMs` / `staggerMs` | `number` | `0` / `70` | Shared delay and stagger timing. |
 | `once` | `boolean` | `true` | Set `false` for reversible in-view reveals. |
 

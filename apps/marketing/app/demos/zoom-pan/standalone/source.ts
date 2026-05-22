@@ -64,4 +64,5 @@ export function ZoomPanStandaloneDemo() {
       </Skeleton>
     </div>
   );
-}`;
+}
+`;

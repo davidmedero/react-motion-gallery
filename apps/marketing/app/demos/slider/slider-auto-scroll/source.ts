@@ -179,4 +179,5 @@ export function SliderAutoScrollDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

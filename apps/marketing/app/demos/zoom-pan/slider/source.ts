@@ -78,4 +78,5 @@ export function ZoomPanSliderDemo() {
       </SliderSkeleton>
     </GalleryCore>
   );
-}`;
+}
+`;

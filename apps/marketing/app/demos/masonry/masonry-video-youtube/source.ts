@@ -359,4 +359,5 @@ export function MasonryVideoYoutubeDemo() {
       <MasonryYoutubeFullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

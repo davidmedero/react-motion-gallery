@@ -481,4 +481,5 @@ export function EntriesSliderDemo() {
       <FullscreenAddon />
     </GalleryCore>
   );
-}`;
+}
+`;

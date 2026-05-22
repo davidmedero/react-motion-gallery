@@ -268,4 +268,5 @@ const { ref: sliderRef, ready: sliderReady } = useSliderReady();
     <FullscreenAddon />
   </GalleryCore>
 );
-}`;
+}
+`;

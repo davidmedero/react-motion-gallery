@@ -67,14 +67,4 @@ export const css = String.raw`.masonryLazyCard {
     #cffafe
   );
   filter: drop-shadow(0 10px 24px rgba(3, 105, 161, 0.28));
-}
-
-.masonryRoot {
-  margin-bottom: -12px;
-}
-
-@media(min-width: 1140px) {
-  .masonryRoot {
-    margin-bottom: -18px;
-  }
 }`;
