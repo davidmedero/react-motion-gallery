@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { R as ResponsiveNumber, B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
 import { L as LoadingForceOptions } from './force-C5m1QpdF.mjs';
-import { E as ElementStyle, A as ArrowRenderArgs } from './types-BiXSaEk7.mjs';
+import { E as ElementStyle, A as ArrowRenderArgs } from './types-CE76Zotl.mjs';
 import { L as LoadingTimingOptions } from './transitions-DU3ftmIq.mjs';
 
 type ThumbnailPosition = "top" | "right" | "bottom" | "left";

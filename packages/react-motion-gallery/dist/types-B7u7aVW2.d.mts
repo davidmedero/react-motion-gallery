@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
-import { T as ThumbnailPosition, g as ThumbnailCrossfadeOptions } from './types-DXFoG8LC.mjs';
-import { I as IndexMode } from './types-BiXSaEk7.mjs';
+import { T as ThumbnailPosition, g as ThumbnailCrossfadeOptions } from './types-CUhbDSjd.mjs';
+import { I as IndexMode } from './types-CE76Zotl.mjs';
 
 type JumpMode = "instant" | "animated";
 type FullscreenRequestMeta = {

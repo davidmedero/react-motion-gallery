@@ -5,7 +5,7 @@ import { RestoredSliderSkeletonProps as SliderSkeletonProps$1, SliderSkeletonSpe
 export { SkeletonNode, SkeletonSliderLayout, SliderSkeletonNode, SliderSkeletonSlot } from './skeleton-slider-restore.mjs';
 export { SkeletonForceOptions, SkeletonTimingOptions } from './skeleton-base.mjs';
 import 'react';
-import './types-BiXSaEk7.mjs';
+import './types-CE76Zotl.mjs';
 import './force-C5m1QpdF.mjs';
 import './media.mjs';
 import './layout-BSjd7pwQ.mjs';

@@ -52,7 +52,7 @@ export type SliderSkipSnapsOptions = {
 export type SliderSkipSnaps = boolean | SliderSkipSnapsOptions;
 
 export type SliderScroll = {
-  groupCells?: boolean;
+  groupCells?: boolean | ResponsiveNumber;
   skipSnaps?: SliderSkipSnaps;
   strictSnaps?: boolean;
   freeScroll?: boolean;

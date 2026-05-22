@@ -14,6 +14,10 @@ import type {
 } from "./types";
 import type { SliderIndexChannel } from "./sliderSub";
 
+type SliderCoreScroll = Omit<SliderScroll, "groupCells"> & {
+  groupCells?: boolean | number;
+};
+
 export type SliderCoreProps = {
   children?: React.ReactNode;
   cellCount: number;
@@ -21,7 +25,7 @@ export type SliderCoreProps = {
   cellsPerSlide?: number;
   direction?: SliderDirection;
   align?: "start" | "center";
-  scroll?: SliderScroll;
+  scroll?: SliderCoreScroll;
   autoHeight?: boolean;
   motion?: SliderMotion;
   initialIndex?: number;
@@ -79,7 +83,7 @@ const SliderCore = React.forwardRef<SliderCoreHandle, SliderCoreProps>(
         loop={scroll?.loop === true}
         containScroll={scroll?.containScroll === true}
         freeScroll={scroll?.freeScroll === true}
-        groupCells={scroll?.groupCells === true}
+        groupCells={scroll?.groupCells}
         centerAlign={align === "center"}
         gap={gap}
         sliderViewportStyles={elements?.viewport?.style}

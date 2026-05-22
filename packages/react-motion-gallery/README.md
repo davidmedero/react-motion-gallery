@@ -30,7 +30,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `skeleton/cache/grid` | 16.0kB |
 | `skeleton/masonry` | 20.0kB |
 | `skeleton/cache/masonry` | 25.2kB |
-| `Slider core` | 18.7kB |
+| `Slider core` | 19.0kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
 | `slider/dots` | 932.0B |
@@ -722,11 +722,29 @@ export function BasicSlider() {
 | `direction.dir` | `"ltr" \| "rtl"` | `"ltr"` | Text direction and arrow direction. |
 | `direction.axis` | `"x" \| "y"` | `"x"` | Horizontal or vertical slider axis. |
 | `align` | `"start" \| "center"` | `"start"` | Slide alignment inside the viewport. |
-| `scroll.groupCells` | `boolean` | `false` | Scrolls by grouped cells instead of every cell. |
+| `scroll.groupCells` | `boolean \| number \| Record<string, number>` | `false` | `true` groups each snap by the cells that fit in the viewport. A number groups exactly that many cells per snap without changing cell sizing. Responsive number maps use the same `breakpoints` prop as other slider responsive values. |
 | `scroll.skipSnaps` | `boolean \| { enabled?: boolean; threshold?: number }` | `false` | Allows momentum to skip snap points. Object form enables skip snaps by default and `threshold` requires release force to reach a multiple of the adjacent snap distance before multi-snap momentum is used. |
 | `scroll.strictSnaps` | `boolean` | `false` | Prevents one drag release from settling more than one snap away from where the drag started. Overrides `scroll.skipSnaps`. |
 | `scroll.freeScroll` | `boolean` | `false` | Enables free dragging instead of strict snapping. |
 | `scroll.loop` | `boolean` | `false` | Wraps around at the ends. |
+
+`scroll.groupCells` affects the snap pages used by drag, wheel, arrows, dots, and imperative navigation. Use `true` for automatic fit-to-viewport grouping, or a count for explicit snap pages:
+
+```tsx
+<Slider
+  breakpoints={{ desktop: 1000 }}
+  scroll={{
+    groupCells: {
+      0: 1,
+      desktop: 3,
+    },
+  }}
+>
+  {slides}
+</Slider>
+```
+
+Numeric values are truncated and clamped to the available slide count. `1`, `0`, negative numbers, `NaN`, and `Infinity` resolve to the normal ungrouped snap behavior, so the slider keeps its standard end-of-track snap handling. Responsive values are re-resolved on viewport resize.
 
 ### Slider element and plugin options
 

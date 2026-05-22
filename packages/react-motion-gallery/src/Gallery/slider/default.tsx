@@ -12,6 +12,7 @@ import {
 } from "../shared/responsiveNumber";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { useSkeletonIntroGate } from "../shared/loading/skeletonIntroGate";
+import { resolveResponsiveSliderGroupCells } from "./groupCells";
 import type { BreakpointMap } from "../shared/responsiveNumber";
 import type {
   SliderAutoPlayTimer,
@@ -424,6 +425,22 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
     return Math.max(0, raw | 0);
   }, [sliderObject.layout.gap, vw, effectiveBreakpoints]);
 
+  const resolvedGroupCells = React.useMemo<boolean | number>(() => {
+    return resolveResponsiveSliderGroupCells(
+      sliderObject.scroll.groupCells,
+      vw,
+      effectiveBreakpoints
+    );
+  }, [sliderObject.scroll.groupCells, vw, effectiveBreakpoints]);
+
+  const resolvedScroll = React.useMemo(
+    () => ({
+      ...sliderObject.scroll,
+      groupCells: resolvedGroupCells,
+    }),
+    [sliderObject.scroll, resolvedGroupCells]
+  );
+
   React.useEffect(() => {
     if (!intro) return;
     if (intro.inView === true) {
@@ -502,7 +519,7 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
       }
       direction={sliderObject.direction}
       align={sliderObject.align}
-      scroll={sliderObject.scroll}
+      scroll={resolvedScroll}
       autoHeight={pluginKinds.has("auto-height")}
       motion={sliderObject.motion}
       initialIndex={sliderOptions.initialIndex}

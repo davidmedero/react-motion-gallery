@@ -92,6 +92,36 @@ describe("slider resize anchoring", () => {
     expect(positions).toEqual([-320, -240, -160, -320]);
   });
 
+  test("reanchors numeric groupCells layouts after resize", () => {
+    expect(
+      shouldReanchorSliderOnResize({
+        wrap: false,
+        centerAlign: false,
+        groupCells: 2,
+      })
+    ).toBe(true);
+  });
+
+  test("ignores numeric groupCells one for resize anchoring", () => {
+    expect(
+      shouldReanchorSliderOnResize({
+        wrap: false,
+        centerAlign: false,
+        groupCells: 1,
+      })
+    ).toBe(false);
+  });
+
+  test("ignores non-positive numeric groupCells for resize anchoring", () => {
+    expect(
+      shouldReanchorSliderOnResize({
+        wrap: false,
+        centerAlign: false,
+        groupCells: 0,
+      })
+    ).toBe(false);
+  });
+
   test("leaves non-loop freeform layouts on clamp-based resize behavior", () => {
     expect(
       shouldReanchorSliderOnResize({

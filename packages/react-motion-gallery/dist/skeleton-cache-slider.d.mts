@@ -10,7 +10,7 @@ import './force-C5m1QpdF.mjs';
 import './transitions-DU3ftmIq.mjs';
 import './layout-BSjd7pwQ.mjs';
 import './text-BBcRGVzn.mjs';
-import './types-BiXSaEk7.mjs';
+import './types-CE76Zotl.mjs';
 import './media.mjs';
 
 type CachedSliderSkeletonProps = SliderSkeletonProps & {

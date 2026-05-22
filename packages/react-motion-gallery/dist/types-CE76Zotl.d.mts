@@ -182,7 +182,7 @@ type SliderSkipSnapsOptions = {
 };
 type SliderSkipSnaps = boolean | SliderSkipSnapsOptions;
 type SliderScroll = {
-    groupCells?: boolean;
+    groupCells?: boolean | ResponsiveNumber;
     skipSnaps?: SliderSkipSnaps;
     strictSnaps?: boolean;
     freeScroll?: boolean;

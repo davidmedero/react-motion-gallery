@@ -55,6 +55,7 @@ import {
   fitsWithinSliderViewport,
   getSliderCenterOffset,
   mergeDuplicateContainedSliderPages,
+  resolveSliderGroupCells,
   roundSliderLayoutMetric,
   resolveSliderMeasuredSize,
   resolveSliderContentSpan,
@@ -94,14 +95,19 @@ export function shouldReanchorSliderOnResize(args: {
   wrap: boolean;
   centerAlign?: boolean;
   cellsPerSlide?: number;
+  groupCells?: boolean | number;
 }) {
-  const { wrap, centerAlign, cellsPerSlide } = args;
+  const { wrap, centerAlign, cellsPerSlide, groupCells } = args;
   const hasFixedCellsPerSlide =
     typeof cellsPerSlide === 'number' &&
     Number.isFinite(cellsPerSlide) &&
     cellsPerSlide > 0;
+  const hasFixedGroupCells =
+    typeof groupCells === 'number' &&
+    Number.isFinite(groupCells) &&
+    groupCells > 1;
 
-  return wrap || !!centerAlign || hasFixedCellsPerSlide;
+  return wrap || !!centerAlign || hasFixedCellsPerSlide || hasFixedGroupCells;
 }
 
 interface SliderProps {
@@ -112,7 +118,7 @@ interface SliderProps {
   loop?: boolean
   containScroll?: boolean
   freeScroll?: boolean
-  groupCells?: boolean
+  groupCells?: boolean | number
   centerAlign?: boolean
   gap: number;
   sliderViewportStyles?: React.CSSProperties;
@@ -325,6 +331,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     wrap,
     centerAlign,
     cellsPerSlide,
+    groupCells,
   });
 
   const scopeId = axis === 'y' ? 'rmg-slider-core-y' : 'rmg-slider-core-x';
@@ -1070,7 +1077,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   }
 
   function computeCloneSig(originals: number, per: number, useCols: boolean) {
-    return `${originals}|per=${per}|cols=${useCols ? cellsPerSlide : 0}|wrap=${wrap ? 1 : 0}`;
+    return `${originals}|per=${per}|cols=${useCols ? cellsPerSlide : 0}|group=${groupCells ?? 0}|wrap=${wrap ? 1 : 0}`;
   }
 
   useEffect(() => {
@@ -1127,6 +1134,11 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
         const useCols =
           typeof cellsPerSlide === "number" && cellsPerSlide > 0;
+        const fixedGroupCells = resolveSliderGroupCells({
+          total: originals,
+          groupCells,
+          cellsPerSlide,
+        }).fixedCount;
 
         let cols = 1;
         let cellSize: number | undefined;
@@ -1162,9 +1174,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
           }
         }
 
-        const per = useCols
+        const measuredPer = useCols
           ? Math.max(1, Math.min(originals, cols))
           : Math.max(2, Math.min(originals, count));
+        const per = Math.max(measuredPer, fixedGroupCells ?? 0);
 
         const shouldLoop = wrap;
         clonesCountRef.current = shouldLoop ? per : 0;
@@ -1283,6 +1296,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     slider,
     visibleImagesRef,
     cellsPerSlide,
+    groupCells,
     buildKey,
     childrenKey,
     autoHeight,
@@ -1479,18 +1493,19 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       const pages: { els: HTMLElement[]; target: number }[] = []
       let i = 0
 
-      const fixedCellsPerSlide =
-        typeof cellsPerSlide === 'number' && cellsPerSlide > 0
-          ? Math.max(1, Math.min(data.length, cellsPerSlide))
-          : null
+      const resolvedGroupCells = resolveSliderGroupCells({
+        total: data.length,
+        groupCells,
+        cellsPerSlide,
+      })
 
-      if (groupCells) {
+      if (resolvedGroupCells.enabled) {
         while (i < data.length) {
           const startLeft = data[i]?.start ?? 0
           let j = i
 
-          if (fixedCellsPerSlide != null) {
-            j = Math.min(data.length, i + fixedCellsPerSlide)
+          if (resolvedGroupCells.fixedCount != null) {
+            j = Math.min(data.length, i + resolvedGroupCells.fixedCount)
           } else {
             const viewRight = startLeft + cw
             const EPS = 0.5
@@ -1572,7 +1587,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       const newSlides = pages.map((page) => {
         let alignSize = 0
 
-        if (groupCells) {
+        if (resolvedGroupCells.enabled) {
           let minStart = Infinity
           let maxEnd = -Infinity
 
@@ -1684,7 +1699,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       if (retryTimer != null) window.clearTimeout(retryTimer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cellCount, childrenKey, clonedChildren, visibleImages, cellsPerSlide, wrap, containScroll]);
+  }, [cellCount, childrenKey, clonedChildren, visibleImages, cellsPerSlide, groupCells, wrap, containScroll]);
 
   const programNavRef = useRef(false);
 

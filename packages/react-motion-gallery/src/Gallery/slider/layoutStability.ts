@@ -53,6 +53,49 @@ export function getSliderCenterOffset(args: {
   return (viewport - alignSize) / 2;
 }
 
+export type SliderGroupCellsInput = boolean | number | undefined;
+
+export function normalizeSliderGroupCellCount(
+  total: number,
+  value?: number
+): number | null {
+  if (!Number.isFinite(total) || total <= 0) return null;
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  const count = Math.trunc(value);
+  if (count <= 0) return null;
+
+  return Math.max(1, Math.min(total, count));
+}
+
+export function resolveSliderGroupCells(args: {
+  total: number;
+  groupCells?: SliderGroupCellsInput;
+  cellsPerSlide?: number;
+}): { enabled: boolean; fixedCount: number | null } {
+  const { total, groupCells, cellsPerSlide } = args;
+
+  if (typeof groupCells === "number") {
+    const numericGroupCells = normalizeSliderGroupCellCount(total, groupCells);
+    if (numericGroupCells == null || numericGroupCells <= 1) {
+      return { enabled: false, fixedCount: null };
+    }
+
+    return { enabled: true, fixedCount: numericGroupCells };
+  }
+
+  if (groupCells !== true) {
+    return { enabled: false, fixedCount: null };
+  }
+
+  return {
+    enabled: true,
+    fixedCount: normalizeSliderGroupCellCount(total, cellsPerSlide),
+  };
+}
+
 export function containSliderScrollSnap(args: {
   snap: number;
   viewport: number;

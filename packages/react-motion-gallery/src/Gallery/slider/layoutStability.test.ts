@@ -5,6 +5,7 @@ import {
   fitsWithinSliderViewport,
   getSliderCenterOffset,
   mergeDuplicateContainedSliderPages,
+  resolveSliderGroupCells,
   resolveSliderMeasuredSize,
   roundSliderLayoutMetric,
   resolveSliderContentSpan,
@@ -120,6 +121,82 @@ describe("slider layout stability helpers", () => {
         centerAlign: true,
       })
     ).toEqual([100, -420]);
+  });
+
+  test("resolves slider groupCells modes", () => {
+    expect(
+      resolveSliderGroupCells({
+        total: 8,
+        groupCells: false,
+        cellsPerSlide: 3,
+      })
+    ).toEqual({ enabled: false, fixedCount: null });
+
+    expect(
+      resolveSliderGroupCells({
+        total: 8,
+        groupCells: true,
+      })
+    ).toEqual({ enabled: true, fixedCount: null });
+
+    expect(
+      resolveSliderGroupCells({
+        total: 8,
+        groupCells: true,
+        cellsPerSlide: 3,
+      })
+    ).toEqual({ enabled: true, fixedCount: 3 });
+  });
+
+  test("resolves numeric groupCells as fixed grouping without using cellsPerSlide", () => {
+    expect(
+      resolveSliderGroupCells({
+        total: 8,
+        groupCells: 2.8,
+        cellsPerSlide: 4,
+      })
+    ).toEqual({ enabled: true, fixedCount: 2 });
+
+    expect(
+      resolveSliderGroupCells({
+        total: 3,
+        groupCells: 10,
+      })
+    ).toEqual({ enabled: true, fixedCount: 3 });
+
+    expect(
+      resolveSliderGroupCells({
+        total: 8,
+        groupCells: 1,
+        cellsPerSlide: 4,
+      })
+    ).toEqual({ enabled: false, fixedCount: null });
+
+    expect(
+      resolveSliderGroupCells({
+        total: 8,
+        groupCells: 1.8,
+        cellsPerSlide: 4,
+      })
+    ).toEqual({ enabled: false, fixedCount: null });
+
+    expect(
+      resolveSliderGroupCells({
+        total: 8,
+        groupCells: 0,
+        cellsPerSlide: 4,
+      })
+    ).toEqual({ enabled: false, fixedCount: null });
+
+    for (const groupCells of [-2, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(
+        resolveSliderGroupCells({
+          total: 8,
+          groupCells,
+          cellsPerSlide: 4,
+        })
+      ).toEqual({ enabled: false, fixedCount: null });
+    }
   });
 
   test("contains center-aligned snaps inside non-loop scroll bounds", () => {
