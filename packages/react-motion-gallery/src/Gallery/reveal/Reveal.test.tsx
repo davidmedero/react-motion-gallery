@@ -263,6 +263,64 @@ describe("useReveal", () => {
     unmount(root, container);
   });
 
+  test("waits for explicit readiness before revealing", async () => {
+    const onReveal = vi.fn();
+    const { container, root } = mount(<HookProbe ready={false} onReveal={onReveal} />);
+    await settle();
+    const probe = container.querySelector<HTMLElement>("[data-probe]");
+
+    React.act(() => {
+      observerInstances[0]!.trigger({ isIntersecting: true, intersectionRatio: 0.7 });
+    });
+
+    expect(probe?.dataset.inView).toBe("true");
+    expect(probe?.dataset.rmgRevealState).toBe("hidden");
+    expect(onReveal).not.toHaveBeenCalled();
+
+    React.act(() => {
+      root.render(<HookProbe ready onReveal={onReveal} />);
+    });
+    await settle();
+
+    React.act(() => {
+      observerInstances[observerInstances.length - 1]!.trigger({
+        isIntersecting: true,
+        intersectionRatio: 0.7,
+      });
+    });
+
+    expect(probe?.dataset.rmgRevealState).toBe("revealed");
+    expect(onReveal).toHaveBeenCalledTimes(1);
+
+    unmount(root, container);
+  });
+
+  test("hides again when readiness drops and once is false", async () => {
+    const { container, root } = mount(<HookProbe once={false} ready />);
+    await settle();
+    const probe = container.querySelector<HTMLElement>("[data-probe]");
+
+    React.act(() => {
+      observerInstances[0]!.trigger({ isIntersecting: true, intersectionRatio: 0.7 });
+    });
+    expect(probe?.dataset.rmgRevealState).toBe("revealed");
+
+    React.act(() => {
+      root.render(<HookProbe once={false} ready={false} />);
+    });
+    await settle();
+
+    React.act(() => {
+      observerInstances[observerInstances.length - 1]!.trigger({
+        isIntersecting: true,
+        intersectionRatio: 0.7,
+      });
+    });
+    expect(probe?.dataset.rmgRevealState).toBe("hidden");
+
+    unmount(root, container);
+  });
+
   test("reveals immediately without IntersectionObserver", async () => {
     vi.unstubAllGlobals();
     stubMotionPreference(false);
@@ -298,6 +356,25 @@ describe("useReveal", () => {
       disabled.container.querySelector<HTMLElement>("[data-probe]")?.dataset.rmgRevealState
     ).toBe("revealed");
     unmount(disabled.root, disabled.container);
+  });
+
+  test("reduced motion still waits for explicit readiness", async () => {
+    stubMotionPreference(true);
+    const { container, root } = mount(<HookProbe ready={false} />);
+    await settle();
+    const probe = container.querySelector<HTMLElement>("[data-probe]");
+
+    expect(probe?.dataset.rmgRevealReduced).toBe("true");
+    expect(probe?.dataset.rmgRevealState).toBe("hidden");
+
+    React.act(() => {
+      root.render(<HookProbe ready />);
+    });
+    await settle();
+
+    expect(probe?.dataset.rmgRevealState).toBe("revealed");
+
+    unmount(root, container);
   });
 
   test("disconnects the observer on cleanup", async () => {

@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -61,7 +61,8 @@ const ITEMS = [
     displayIndex: 2,
     kind: "video" as const,
     src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
     label: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -91,7 +92,8 @@ const ITEMS = [
     displayIndex: 5,
     kind: "video" as const,
     src: "https://cdn.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
     label: "Elit",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",
@@ -280,7 +282,15 @@ const BALANCED_VIDEO_OPTIONS = {
 };
 
 const BALANCED_FULLSCREEN_VIDEO_OPTIONS = {
-  controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "fullscreen"],
+  controls: [
+    "play-large",
+    "play",
+    "progress",
+    "current-time",
+    "mute",
+    "volume",
+    "fullscreen",
+  ],
 };
 
 function MasonryBalancedCard(props: {
@@ -309,13 +319,6 @@ function MasonryBalancedCard(props: {
           />
         ) : (
           <>
-            <img
-              src="/open-fullscreen.png"
-              alt="Open fullscreen"
-              width="24"
-              height="24"
-              className={styles.open_fullscreen_icon}
-            />
             <Video
               src={item.src}
               poster={item.poster}
@@ -323,6 +326,12 @@ function MasonryBalancedCard(props: {
               style={{ height: "100%" }}
               options={BALANCED_VIDEO_OPTIONS}
               alt={item.title}
+            />
+            <button
+              type="button"
+              className={styles.fullscreen_trigger}
+              aria-label="Open fullscreen"
+              data-rmg-fullscreen-trigger
             />
           </>
         )}
@@ -375,8 +384,8 @@ export function MasonryBalancedDemo() {
             kind: "video" as const,
             src: item.src,
             poster: item.poster,
-          }
-    )
+          },
+    ),
   );
 
   const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
@@ -400,13 +409,14 @@ export function MasonryBalancedDemo() {
           gap={{ 0: 12, 1140: 18 }}
         >
           {ITEMS.map((item, index) => (
-          <MasonryBalancedCard
-            key={item.kind === "image" ? item.src : item.poster}
-            item={item}
-            skeletonTextIds={
-              MASONRY_BALANCED_TEXT_IDS[index] ?? MASONRY_BALANCED_TEXT_IDS[0]!
-            }
-          />
+            <MasonryBalancedCard
+              key={item.kind === "image" ? item.src : item.poster}
+              item={item}
+              skeletonTextIds={
+                MASONRY_BALANCED_TEXT_IDS[index] ??
+                MASONRY_BALANCED_TEXT_IDS[0]!
+              }
+            />
           ))}
         </Masonry>
       </MasonrySkeleton>

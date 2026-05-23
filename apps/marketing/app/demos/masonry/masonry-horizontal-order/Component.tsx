@@ -1,10 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { useMemo } from "react";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
-import { Masonry, type ResponsiveMasonrySpan } from "react-motion-gallery/masonry";
+import {
+  Masonry,
+  type ResponsiveMasonrySpan,
+} from "react-motion-gallery/masonry";
 import { useMasonryReady } from "react-motion-gallery/masonry/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
@@ -62,7 +65,8 @@ const ITEMS: DemoItem[] = [
     displayIndex: 2,
     kind: "video",
     src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
     label: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -93,7 +97,8 @@ const ITEMS: DemoItem[] = [
     displayIndex: 5,
     kind: "video",
     src: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg",
     label: "Elit",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",
@@ -283,7 +288,15 @@ const HORIZONTAL_ORDER_VIDEO_OPTIONS = {
 };
 
 const HORIZONTAL_ORDER_FULLSCREEN_VIDEO_OPTIONS = {
-  controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "fullscreen"],
+  controls: [
+    "play-large",
+    "play",
+    "progress",
+    "current-time",
+    "mute",
+    "volume",
+    "fullscreen",
+  ],
 };
 
 function MasonryHorizontalOrderCard(props: {
@@ -312,13 +325,6 @@ function MasonryHorizontalOrderCard(props: {
           />
         ) : (
           <>
-            <img
-              src="/open-fullscreen.png"
-              alt="Open fullscreen"
-              width="24"
-              height="24"
-              className={styles.open_fullscreen_icon}
-            />
             <Video
               src={item.src}
               poster={item.poster}
@@ -326,6 +332,12 @@ function MasonryHorizontalOrderCard(props: {
               style={{ height: "100%" }}
               options={HORIZONTAL_ORDER_VIDEO_OPTIONS}
               alt={item.title}
+            />
+            <button
+              type="button"
+              className={styles.fullscreen_trigger}
+              aria-label={`Open ${item.title} fullscreen`}
+              data-rmg-fullscreen-trigger
             />
           </>
         )}
@@ -372,7 +384,7 @@ function MasonryHorizontalOrderFullscreenAddon() {
 export function MasonryHorizontalOrderDemo() {
   const horizontalOrderSkeleton = useMemo(
     () => createHorizontalOrderSkeleton(),
-    []
+    [],
   );
 
   const fullscreenMedia = toMediaItems(
@@ -383,8 +395,8 @@ export function MasonryHorizontalOrderDemo() {
             kind: "video" as const,
             src: item.src,
             poster: item.poster,
-          }
-    )
+          },
+    ),
   );
 
   const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
@@ -413,18 +425,18 @@ export function MasonryHorizontalOrderDemo() {
           placement="horizontalOrder"
         >
           {ITEMS.map((item, index) => (
-          <Masonry.Item
-            key={item.kind === "image" ? item.src : item.poster}
-            span={item.span}
-          >
-            <MasonryHorizontalOrderCard
-              item={item}
-              skeletonTextIds={
-                MASONRY_HORIZONTAL_ORDER_TEXT_IDS[index] ??
-                MASONRY_HORIZONTAL_ORDER_TEXT_IDS[0]!
-              }
-            />
-          </Masonry.Item>
+            <Masonry.Item
+              key={item.kind === "image" ? item.src : item.poster}
+              span={item.span}
+            >
+              <MasonryHorizontalOrderCard
+                item={item}
+                skeletonTextIds={
+                  MASONRY_HORIZONTAL_ORDER_TEXT_IDS[index] ??
+                  MASONRY_HORIZONTAL_ORDER_TEXT_IDS[0]!
+                }
+              />
+            </Masonry.Item>
           ))}
         </Masonry>
       </MasonrySkeleton>

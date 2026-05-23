@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import * as React from "react";
 import { ZoomPanImage } from "react-motion-gallery/zoomPan";
@@ -26,7 +26,7 @@ export function ZoomPanStandaloneDemo() {
 
   React.useEffect(() => {
     const image = zoomPanRef.current?.querySelector<HTMLImageElement>(
-      'img[data-rmg-zoom-pan-image="true"]'
+      'img[data-rmg-zoom-pan-image="true"]',
     );
 
     if (image?.complete) {

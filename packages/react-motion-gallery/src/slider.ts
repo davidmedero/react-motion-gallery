@@ -15,6 +15,7 @@ export type {
   CrossFadeWheelOptions,
   SliderAutoHeight,
   SliderAutoPlayTimer,
+  SliderRevealOptions,
   SliderSkipSnaps,
   SliderSkipSnapsOptions,
   SliderOptions,

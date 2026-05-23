@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { type MediaItem, toMediaItems } from "react-motion-gallery/media";
@@ -222,8 +222,7 @@ const YOUTUBE_SKELETON: MasonrySkeletonSpec = {
       item: createVideoSkeletonItem({
         item,
         skeletonText:
-          MASONRY_VIDEO_SKELETON_TEXT[index] ??
-          MASONRY_VIDEO_SKELETON_TEXT[0]!,
+          MASONRY_VIDEO_SKELETON_TEXT[index] ?? MASONRY_VIDEO_SKELETON_TEXT[0]!,
       }),
     })),
   },
@@ -264,14 +263,10 @@ function MasonryYoutubeCard(props: {
 
   return (
     <article className={styles.masonryYoutubeCard}>
-      <div className={styles.masonryYoutubeFrame} style={{ aspectRatio: ratio }}>
-        <img
-          src="/open-fullscreen.png"
-          alt="Open fullscreen"
-          width="24"
-          height="24"
-          className={styles.open_fullscreen_icon}
-        />
+      <div
+        className={styles.masonryYoutubeFrame}
+        style={{ aspectRatio: ratio }}
+      >
         <Video
           src={src}
           poster={poster}
@@ -280,6 +275,12 @@ function MasonryYoutubeCard(props: {
           className={styles.masonryYoutubeVideo}
           style={{ height: "100%" }}
           alt={title}
+        />
+        <button
+          type="button"
+          className={styles.fullscreen_trigger}
+          aria-label={`Open ${title} fullscreen`}
+          data-rmg-fullscreen-trigger
         />
       </div>
       <div className={styles.masonryYoutubeMeta}>
@@ -341,18 +342,18 @@ export function MasonryVideoYoutubeDemo() {
           placement="balanced"
         >
           {ITEMS.map((item, index) => (
-          <Masonry.Item key={item.src} span={item.span}>
-            <MasonryYoutubeCard
-              src={item.src}
-              poster={item.poster}
-              title={item.title}
-              body={item.body}
-              ratio={item.ratio}
-              skeletonTextIds={
-                MASONRY_VIDEO_TEXT_IDS[index] ?? MASONRY_VIDEO_TEXT_IDS[0]!
-              }
-            />
-          </Masonry.Item>
+            <Masonry.Item key={item.src} span={item.span}>
+              <MasonryYoutubeCard
+                src={item.src}
+                poster={item.poster}
+                title={item.title}
+                body={item.body}
+                ratio={item.ratio}
+                skeletonTextIds={
+                  MASONRY_VIDEO_TEXT_IDS[index] ?? MASONRY_VIDEO_TEXT_IDS[0]!
+                }
+              />
+            </Masonry.Item>
           ))}
         </Masonry>
       </MasonrySkeleton>

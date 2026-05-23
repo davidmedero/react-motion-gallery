@@ -6,7 +6,7 @@ import { GridLayout } from "./GridLayout";
 import { BREAKPOINT_MAP } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import type { BreakpointMap } from "../shared/responsive";
-import type { GridHandle, GridOptions, IntroOptions } from "./types";
+import type { GridHandle, GridOptions, RevealOptions } from "./types";
 import { useOptionalGalleryCore } from "../core";
 import { GridItem, normalizeGridChild, type GridCell } from "./item";
 
@@ -63,16 +63,19 @@ export const GridLayoutRuntime = React.forwardRef<GridHandle, Props>(function Gr
 
   const [cellsState] = React.useState<GridCell[]>(initialCells);
 
-  function normalizeIntro(src?: IntroOptions) {
+  function normalizeReveal(src?: RevealOptions) {
     return {
-      renderIntro: src?.renderIntro,
+      renderReveal: src?.renderReveal,
       staggerMs: src?.staggerMs ?? 60,
       durationMs: src?.durationMs ?? 600,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
     };
   }
 
-  const gridIntro = React.useMemo(() => normalizeIntro(gridObject.intro), [gridObject.intro]);
+  const gridReveal = React.useMemo(
+    () => normalizeReveal(gridObject.reveal),
+    [gridObject.reveal]
+  );
 
   const expandableImageRefs =
     core?.expandableImageRefs ??
@@ -133,7 +136,7 @@ export const GridLayoutRuntime = React.forwardRef<GridHandle, Props>(function Gr
       grid={gridObject}
       breakpoints={effectiveBreakpoints}
       viewportWidth={vw}
-      intro={gridIntro}
+      reveal={gridReveal}
       enableFullscreen={!!core?.fsEnabled}
       onOpen={onOpen}
       registerExpandableImage={registerExpandableImage}

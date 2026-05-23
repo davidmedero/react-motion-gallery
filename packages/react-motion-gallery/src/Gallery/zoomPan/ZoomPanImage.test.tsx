@@ -4,12 +4,14 @@ import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { fullscreenZoomPan } from "../../fullscreen-zoom-pan";
 import {
   DEFAULT_ZOOM_PAN as rootDefaultZoomPan,
   Grid as RootGrid,
   Masonry as RootMasonry,
   ZoomPanImage as RootZoomPanImage,
 } from "../../index";
+import { useFullscreenZoomPanRuntime } from "../fullscreen/zoomPanRuntime";
 import { RmgSlideProvider } from "../shared/slideContext";
 import { createRmgSlideStoreBag } from "../shared/slideStoreBag";
 import { createSliderIndexChannel } from "../slider/sliderSub";
@@ -17,6 +19,8 @@ import ZoomPanImageDefault, {
   DEFAULT_ZOOM_PAN,
   ZoomPanImage,
 } from "../../zoomPan";
+import { zoomPanHover } from "../../zoomPan-hover";
+import { DEFAULT_ZOOM_PAN as zoomPanDefaults } from "./defaults";
 
 type Metrics = {
   left?: number;
@@ -118,6 +122,37 @@ async function dispatchTouch(
   });
 }
 
+async function dispatchPointer(
+  target: EventTarget,
+  type: string,
+  init: PointerEventInit & { pointerType?: string } = {}
+) {
+  const event = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: init.button ?? 0,
+    clientX: init.clientX ?? 0,
+    clientY: init.clientY ?? 0,
+    pointerId: init.pointerId ?? 1,
+    ...init,
+  });
+
+  Object.defineProperty(event, "pointerType", {
+    configurable: true,
+    value: init.pointerType ?? "mouse",
+  });
+  Object.defineProperty(event, "pointerId", {
+    configurable: true,
+    value: init.pointerId ?? 1,
+  });
+
+  await React.act(async () => {
+    target.dispatchEvent(event);
+  });
+
+  return event;
+}
+
 async function setup(node: React.ReactNode): Promise<SetupResult> {
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -145,6 +180,112 @@ async function setup(node: React.ReactNode): Promise<SetupResult> {
   };
 }
 
+function FullscreenHoverRuntimeHarness(props: {
+  zoom: any;
+}) {
+  const imageRef = React.useRef<HTMLDivElement | null>(null);
+  const imageRefs = React.useRef<React.RefObject<HTMLDivElement | null>[]>([]);
+  imageRefs.current[0] = imageRef;
+
+  const [scale, setScaleState] = React.useState(1);
+  const scaleRef = React.useRef(1);
+  const setScale = React.useCallback((nextScale: number) => {
+    scaleRef.current = nextScale;
+    setScaleState(nextScale);
+  }, []);
+
+  const currentImage = React.useRef<HTMLDivElement | null>(null);
+  const previousZoom = React.useRef({ x: 0, y: 0 });
+  const suppressLoopRef = React.useRef(false);
+  const locX = React.useRef<any>(null);
+  const prevX = React.useRef<any>(null);
+  const offX = React.useRef<any>(null);
+  const tgtX = React.useRef<any>(null);
+  const locY = React.useRef<any>(null);
+  const prevY = React.useRef<any>(null);
+  const offY = React.useRef<any>(null);
+  const tgtY = React.useRef<any>(null);
+  const bodyX = React.useRef<any>(null);
+  const bodyY = React.useRef<any>(null);
+  const boundsX = React.useRef<any>(null);
+  const boundsY = React.useRef<any>(null);
+  const animRef = React.useRef<any>(null);
+  const panRef = React.useRef({ x: 0, y: 0 });
+  const changingSlides = React.useRef(false);
+  const fullscreenSliderApi = React.useRef({ centerSlider: () => {} });
+  const pointerDownRef = React.useRef(false);
+  const interactionModeRef = React.useRef<any>(null);
+  const axisRef = React.useRef<any>(null);
+  const suppressNextClickRef = React.useRef(false);
+
+  const runtime = useFullscreenZoomPanRuntime({
+    fs: { zoom: props.zoom, caption: {}, effects: {} },
+    entriesObject: { overlay: {}, render: {} },
+    hasEntriesViewportOverlay: false,
+    layout: "slider",
+    resolveFsCaptionPlacement: () => null,
+    windowSize: { width: 400, height: 300 },
+    currentImage,
+    scaleRef,
+    setScale,
+    previousZoom,
+    suppressLoopRef,
+    locX,
+    prevX,
+    offX,
+    tgtX,
+    locY,
+    prevY,
+    offY,
+    tgtY,
+    bodyX,
+    bodyY,
+    boundsX,
+    boundsY,
+    animRef,
+    panRef,
+    imageRefs,
+    changingSlides,
+    fullscreenSliderApi,
+    isZoomed: scale > 1.01,
+    pointerDownRef,
+    interactionModeRef,
+    axisRef,
+    suppressNextClickRef,
+    closingModal: false,
+  });
+
+  return (
+    <div data-rmg-fs-track="true">
+      <div data-rmg-fs-slide="true" data-index="0" data-rmg-canonical-idx="0">
+        <div
+          ref={imageRef}
+          data-rmg-zoom-pan-root="true"
+          data-rmg-fs-media="true"
+          data-rmg-fs-media-viewport="true"
+          onPointerEnter={(event) =>
+            runtime.handleHoverPointerEnter(event, imageRef)
+          }
+          onPointerMove={(event) =>
+            runtime.handleHoverPointerMove(event, imageRef)
+          }
+          onPointerLeave={(event) =>
+            runtime.handleHoverPointerLeave(event, imageRef)
+          }
+        >
+          <img
+            alt="Fullscreen Alpha"
+            data-rmg-zoom-pan-image="true"
+            data-index="0"
+            draggable="false"
+            src="/alpha.jpg"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 beforeAll(() => {
   vi.useFakeTimers();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -169,6 +310,17 @@ beforeAll(() => {
 
     vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
   }
+
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query.includes("hover: hover") && query.includes("pointer: fine"),
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }));
 });
 
 afterEach(() => {
@@ -304,7 +456,7 @@ describe("ZoomPanImage", () => {
       );
     });
 
-    expect(transformWriteCount).toBe(1);
+    expect(transformWriteCount).toBe(2);
     expect(img.style.transition).toContain("300ms");
 
     await advanceMotion(350);
@@ -480,6 +632,226 @@ describe("ZoomPanImage", () => {
 
     document.body.removeEventListener("wheel", bubbleSpy);
     addEventListenerSpy.mockRestore();
+    await view.cleanup();
+  });
+
+  test("smoothly zooms on mouse hover, pans with the cursor, and resets on leave", async () => {
+    const view = await setup(
+      <ZoomPanImage
+        src="/alpha.jpg"
+        alt="Alpha"
+        zoom={{
+          plugins: [
+            zoomPanHover({
+              zoomLevel: 2.5,
+              zoomInDurationMs: 180,
+              zoomOutDurationMs: 140,
+            }),
+          ],
+        }}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    const styleProto = Object.getPrototypeOf(img.style) as CSSStyleDeclaration;
+    const transformDescriptor = Object.getOwnPropertyDescriptor(styleProto, "transform");
+    const transformWrites: string[] = [];
+
+    expect(transformDescriptor?.set).toBeTypeOf("function");
+
+    Object.defineProperty(img.style, "transform", {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return transformDescriptor?.get?.call(this) ?? "";
+      },
+      set(value: string) {
+        transformWrites.push(value);
+        transformDescriptor?.set?.call(this, value);
+      },
+    });
+
+    await dispatchPointer(root, "pointerover", {
+      clientX: 200,
+      clientY: 150,
+      pointerType: "mouse",
+    });
+
+    expect(parseScale(img.style.transform)).toBe(1);
+    expect(img.style.transition).toBe("");
+    expect(transformWrites[0]).toContain("scale(1)");
+
+    await advanceMotion(80);
+    const scaleDuringZoom = parseScale(img.style.transform);
+    expect(scaleDuringZoom).toBeGreaterThan(1);
+    expect(scaleDuringZoom).toBeLessThan(2.5);
+
+    const zoomInWriteCount = transformWrites.length;
+    await dispatchPointer(root, "pointermove", {
+      clientX: 400,
+      clientY: 300,
+      pointerType: "mouse",
+    });
+    expect(transformWrites.length).toBe(zoomInWriteCount);
+
+    await advanceMotion(16);
+    expect(transformWrites.length).toBeGreaterThan(zoomInWriteCount);
+    expect(parseScale(img.style.transform)).toBeGreaterThan(scaleDuringZoom);
+    expect(img.style.transition).toBe("");
+
+    await advanceMotion(180);
+
+    const translate = parseTranslate(img.style.transform);
+    expect(translate.x).toBeLessThan(-450);
+    expect(translate.y).toBeLessThan(-320);
+    expect(parseScale(img.style.transform)).toBe(2.5);
+
+    await dispatchPointer(root, "pointerout", {
+      clientX: 400,
+      clientY: 300,
+      pointerType: "mouse",
+    });
+
+    expect(parseScale(img.style.transform)).toBe(1);
+    expect(parseTranslate(img.style.transform)).toEqual({ x: 0, y: 0 });
+    expect(img.style.transition).toContain("140ms");
+
+    await advanceMotion(180);
+    expect(img.style.transition).toBe("");
+
+    Reflect.deleteProperty(img.style, "transform");
+    await view.cleanup();
+  });
+
+  test("does not activate hover zoom when disabled or for touch pointers", async () => {
+    const view = await setup(
+      <ZoomPanImage
+        src="/alpha.jpg"
+        alt="Alpha"
+        disabled
+        zoom={{ plugins: [zoomPanHover()] }}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    await dispatchPointer(root, "pointerover", {
+      clientX: 200,
+      clientY: 150,
+      pointerType: "mouse",
+    });
+
+    expect(parseScale(img.style.transform)).toBe(1);
+
+    await view.render(
+      <ZoomPanImage
+        src="/alpha.jpg"
+        alt="Alpha"
+        zoom={{ plugins: [zoomPanHover()] }}
+      />
+    );
+    const enabledRoot = view.getRoot();
+    const enabledImg = view.getImage();
+    setImageMetrics(enabledRoot, enabledImg, { width: 400, height: 300 });
+
+    await dispatchPointer(enabledRoot, "pointerover", {
+      clientX: 200,
+      clientY: 150,
+      pointerType: "touch",
+    });
+
+    expect(parseScale(enabledImg.style.transform)).toBe(1);
+
+    await view.cleanup();
+  });
+
+  test("uses zoom-out timing for hover zoom-in when no zoom-in duration is set", async () => {
+    const view = await setup(
+      <ZoomPanImage
+        src="/alpha.jpg"
+        alt="Alpha"
+        zoom={{
+          plugins: [zoomPanHover({ zoomLevel: 2, zoomOutDurationMs: 190 })],
+        }}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    await dispatchPointer(root, "pointerover", {
+      clientX: 200,
+      clientY: 150,
+      pointerType: "mouse",
+    });
+
+    expect(img.style.transition).toBe("");
+
+    await advanceMotion(90);
+    expect(parseScale(img.style.transform)).toBeGreaterThan(1);
+    expect(parseScale(img.style.transform)).toBeLessThan(2);
+
+    await advanceMotion(140);
+    expect(parseScale(img.style.transform)).toBe(2);
+
+    await dispatchPointer(root, "pointerout", {
+      clientX: 200,
+      clientY: 150,
+      pointerType: "mouse",
+    });
+
+    expect(img.style.transition).toContain("190ms");
+
+    await view.cleanup();
+  });
+
+  test("suppresses hover mouse clicks instead of toggling zoom before leave", async () => {
+    const view = await setup(
+      <ZoomPanImage
+        src="/alpha.jpg"
+        alt="Alpha"
+        zoom={{ plugins: [zoomPanHover()] }}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    await dispatchPointer(root, "pointerover", {
+      clientX: 200,
+      clientY: 150,
+      pointerType: "mouse",
+    });
+    await advanceMotion(40);
+
+    expect(parseScale(img.style.transform)).toBeGreaterThan(1);
+
+    await dispatchPointer(root, "pointerdown", {
+      clientX: 200,
+      clientY: 150,
+      pointerType: "mouse",
+      button: 0,
+    });
+
+    const click = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      clientX: 200,
+      clientY: 150,
+    });
+
+    let dispatchResult = true;
+    await React.act(async () => {
+      dispatchResult = root.dispatchEvent(click);
+    });
+
+    expect(dispatchResult).toBe(false);
+    expect(click.defaultPrevented).toBe(true);
+    expect(parseScale(img.style.transform)).toBeGreaterThan(1);
+
     await view.cleanup();
   });
 
@@ -927,5 +1299,129 @@ describe("ZoomPanImage", () => {
     expect(ZoomPanImageDefault).toBe(ZoomPanImage);
     expect(RootZoomPanImage).toBe(ZoomPanImage);
     expect(rootDefaultZoomPan).toEqual(DEFAULT_ZOOM_PAN);
+  });
+
+  test("exports the hover plugin subpath", () => {
+    expect(zoomPanHover).toBeTypeOf("function");
+    expect(zoomPanHover()).toMatchObject({
+      __rmgZoomPanPlugin: true,
+      kind: "hover",
+    });
+  });
+
+  test("passes hover zoom-pan plugins through the fullscreen zoomPan entry", () => {
+    const hoverPlugin = zoomPanHover({
+      zoomLevel: 2,
+      zoomInDurationMs: 180,
+      zoomOutDurationMs: 140,
+    });
+    const fullscreenPlugin = fullscreenZoomPan({
+      ...zoomPanDefaults,
+      plugins: [hoverPlugin],
+    });
+
+    expect(fullscreenPlugin).toMatchObject({
+      __rmgFullscreenPlugin: true,
+      kind: "zoom-pan",
+      options: {
+        zoom: {
+          plugins: [hoverPlugin],
+        },
+      },
+    });
+    expect(fullscreenPlugin.runtime?.useZoomPanRuntime).toBeTypeOf("function");
+  });
+
+  test("fullscreen hover runtime transforms images and resets on leave", async () => {
+    const hoverPlugin = zoomPanHover({
+      zoomLevel: 2.25,
+      zoomInDurationMs: 120,
+      zoomOutDurationMs: 90,
+    });
+    const fullscreenPlugin = fullscreenZoomPan({
+      ...zoomPanDefaults,
+      plugins: [hoverPlugin],
+    });
+    const view = await setup(
+      <FullscreenHoverRuntimeHarness
+        zoom={(fullscreenPlugin.options as any).zoom}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    const previousElementFromPoint = document.elementFromPoint;
+    const elementFromPointSpy = vi.fn(() => img as Element);
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: elementFromPointSpy,
+    });
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 200,
+          clientY: 150,
+          pointerId: 1,
+          pointerType: "mouse",
+        })
+      );
+    });
+
+    await advanceMotion(56);
+    expect(parseScale(img.style.transform)).toBeGreaterThan(1);
+    expect(parseScale(img.style.transform)).toBeLessThan(2.25);
+    expect(img.style.transition).toBe("");
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 400,
+          clientY: 300,
+          pointerId: 1,
+          pointerType: "mouse",
+        })
+      );
+    });
+    await advanceMotion(120);
+
+    const translate = parseTranslate(img.style.transform);
+    expect(translate.x).toBeLessThan(-400);
+    expect(translate.y).toBeLessThan(-280);
+    expect(parseScale(img.style.transform)).toBe(2.25);
+
+    elementFromPointSpy.mockReturnValue(null);
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 500,
+          clientY: 350,
+          pointerId: 1,
+          pointerType: "mouse",
+        })
+      );
+    });
+
+    expect(parseScale(img.style.transform)).toBe(1);
+    expect(parseTranslate(img.style.transform)).toEqual({ x: 0, y: 0 });
+    expect(img.style.transition).toContain("90ms");
+
+    if (previousElementFromPoint) {
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: previousElementFromPoint,
+      });
+    } else {
+      Reflect.deleteProperty(document, "elementFromPoint");
+    }
+    await view.cleanup();
   });
 });

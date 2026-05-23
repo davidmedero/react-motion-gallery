@@ -5,6 +5,7 @@ export default defineConfig({
     "src/core.ts",
     "src/index.ts",
     "src/media.ts",
+    "src/media-ready.ts",
     "src/responsive.ts",
     "src/reveal.ts",
     "src/slider.ts",
@@ -56,6 +57,7 @@ export default defineConfig({
     "src/fullscreenThumbnails.ts",
     "src/video.ts",
     "src/zoomPan.ts",
+    "src/zoomPan-hover.ts",
   ],
   format: ["esm"],
   loader: {

@@ -34,8 +34,8 @@ export type ThumbnailLoadingOptions = {
   timing?: LoadingTimingOptions;
 };
 
-export type ThumbnailIntroOptions = {
-  renderIntro?: (
+export type ThumbnailRevealOptions = {
+  renderReveal?: (
     args: { active: boolean; containerProps: React.HTMLAttributes<HTMLDivElement> },
     inner: React.ReactNode
   ) => React.ReactNode;
@@ -110,7 +110,6 @@ export type ThumbnailSelectMeta = {
 
 export type ThumbnailsTransitions = {
   loading?: ThumbnailLoadingOptions;
-  intro?: ThumbnailIntroOptions;
   crossfade?: ThumbnailCrossfadeOptions;
 };
 
@@ -121,6 +120,7 @@ export type ThumbnailsOptions = {
   scroll?: ThumbnailsScroll;
   controls?: ThumbnailsControls;
   motion?: ThumbnailsMotion;
+  reveal?: ThumbnailRevealOptions;
   transitions?: ThumbnailsTransitions;
   breakpointMap?: BreakpointMap;
 };

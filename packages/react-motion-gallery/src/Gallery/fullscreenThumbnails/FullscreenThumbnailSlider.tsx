@@ -244,13 +244,13 @@ export default function FullscreenThumbnailSlider({
           className: rippleClassName,
         },
       },
+      reveal: {
+        staggerMs: 0,
+        durationMs: 0,
+      },
       transitions: {
         loading: {
           enabled: false,
-        },
-        intro: {
-          staggerMs: 0,
-          durationMs: 0,
         },
         crossfade: thumbnailCrossfade,
       },

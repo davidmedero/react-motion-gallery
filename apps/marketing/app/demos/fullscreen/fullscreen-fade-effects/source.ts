@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -49,33 +49,29 @@ const THUMB_URLS = [
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
-  return (
-    <img
-      src={src}
-      alt={\`Slide \${i + 1}\`}
-      className={styles.slide}
-    />
-  );
+  return <img src={src} alt={\`Slide \${i + 1}\`} className={styles.slide} />;
 }
 
 function FullscreenFadeEffectsAddon() {
-  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenCrossfade(), fullscreenZoomPan()],
-    fullscreen: {
-      enabled: true,
-      effects: {
-        introFade: true,
-        introDuration: 700,
-        introEasing: CROSSFADE_EASING,
-        crossfade: {
-          controls: true,
-          drag: true,
-          durationMs: CROSSFADE_DURATION_MS,
-          easing: CROSSFADE_EASING,
+  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController(
+    {
+      plugins: [fullscreenSlider(), fullscreenCrossfade(), fullscreenZoomPan()],
+      fullscreen: {
+        enabled: true,
+        effects: {
+          introFade: true,
+          introDuration: 700,
+          introEasing: CROSSFADE_EASING,
+          crossfade: {
+            controls: true,
+            drag: true,
+            durationMs: CROSSFADE_DURATION_MS,
+            easing: CROSSFADE_EASING,
+          },
         },
       },
     },
-  });
+  );
 
   return (
     <>
@@ -124,58 +120,56 @@ export function FullscreenFadeEffectsDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("fullscreen-fade-effects")}
         layout={{
-              visibleCount: 3,
-              mode: "peek",
+          visibleCount: 3,
+          mode: "peek",
+          style: {
+            overflow: "hidden",
+          },
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+              justify: "center",
+            },
+            item: {
+              kind: "rect",
               style: {
-                overflow: "hidden",
+                width: "100cqw",
+                aspectRatio: "16 / 9",
+                borderRadius: 12,
               },
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                  justify: "center",
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    aspectRatio: "16 / 9",
-                    borderRadius: 12,
-                  },
-                },
-              },
-            }}
+            },
+          },
+        }}
         ready={sliderReady}
       >
-      <Slider
-        ref={sliderRef}
-        scroll={{
-          loop: true,
-        }}
-        align="center"
-
-        plugins={[
-          sliderFullscreen(),
-          sliderArrows(),
-          sliderDots(),
-          sliderCrossfade({
-            controls: true,
-            drag: true,
-            durationMs: CROSSFADE_DURATION_MS,
-            easing: CROSSFADE_EASING,
-          }),
-        ]}
-      >
-        {media.map((item, i) => (
-          <Slide
-            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
-            src={item.kind === "image" ? item.src : ""}
-            i={i}
-          />
-  
-            ))}
-      </Slider>
+        <Slider
+          ref={sliderRef}
+          scroll={{
+            loop: true,
+          }}
+          align="center"
+          plugins={[
+            sliderFullscreen(),
+            sliderArrows(),
+            sliderDots(),
+            sliderCrossfade({
+              controls: true,
+              drag: true,
+              durationMs: CROSSFADE_DURATION_MS,
+              easing: CROSSFADE_EASING,
+            }),
+          ]}
+        >
+          {media.map((item, i) => (
+            <Slide
+              key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+              src={item.kind === "image" ? item.src : ""}
+              i={i}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
       <FullscreenFadeEffectsAddon />
     </GalleryCore>

@@ -26,8 +26,8 @@ export type LoadingOptions = {
   ratios?: number[];
 };
 
-export type IntroOptions = {
-  renderIntro?: (
+export type RevealOptions = {
+  renderReveal?: (
     args: { active: boolean; containerProps: React.HTMLAttributes<HTMLDivElement> },
     content: React.ReactNode
   ) => React.ReactNode;

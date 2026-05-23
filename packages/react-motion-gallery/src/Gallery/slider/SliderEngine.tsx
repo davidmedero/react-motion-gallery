@@ -39,7 +39,7 @@ import { EventStore } from '../shared/motion/eventStore';
 import { Animations, AnimationsType } from '../shared/motion/animations';
 import type { APITypes } from 'plyr-react';
 import { RmgSlideProvider } from '../shared/slideContext';
-import { SliderIntroOptions, SliderLazyLoadOptions, type CrossFadeWheel, type SliderAutoPlayTimer, type SliderCoreHandle, type SliderSkipSnaps } from './types';
+import { SliderRevealOptions, SliderLazyLoadOptions, type CrossFadeWheel, type SliderAutoPlayTimer, type SliderCoreHandle, type SliderSkipSnaps } from './types';
 import type { ArrowRenderArgs, DotsRenderArgs, ProgressRenderArgs, ScrollbarRenderArgs } from '../shared/types/controls';
 import { BreakpointMap } from '../shared/responsive';
 import { IndexMode } from '../api/types';
@@ -47,7 +47,7 @@ import { Counter, CounterType } from '../shared/motion/counter';
 import { useParallaxEffect } from './effects/useParallaxEffect';
 import { useScaleEffect } from './effects/useScaleEffect';
 import { useFadeEffect } from './effects/useFadeEffect';
-import { useSkeletonIntroGate } from '../shared/loading/skeletonIntroGate';
+import { useSkeletonRevealGate } from '../shared/loading/skeletonRevealGate';
 import { BaseLimit, createBaseLimit } from '../shared/motion/baseLimit';
 import { WindowType } from '../shared/input/pointerTypes'
 import { AXSpec } from '../shared/types/axis';
@@ -451,8 +451,8 @@ interface SliderProps {
   initialIndex?: number;
   indexChannel?: ReturnType<typeof createIndexChannel>;
   indexChannelControlled?: boolean;
-  introOptions?: SliderIntroOptions;
-  introUnlocked?: boolean;
+  revealOptions?: SliderRevealOptions;
+  revealUnlocked?: boolean;
   lazyLoad?: SliderLazyLoadOptions;
   rippleEnabled?: boolean;
   rippleClassName?: string;
@@ -771,7 +771,7 @@ function cloneSlide(
       position: 'relative',
       flex: '0 0 auto',
       ...(extraStyle || {}),
-      ['--rmg-intro-index' as any]: normIdx,
+      ['--rmg-reveal-index' as any]: normIdx,
       transform: 'scale(var(--rmg-scale, 1))',
       transformOrigin: 'center',
       userSelect: 'none',
@@ -889,14 +889,14 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     initialIndex,
     indexChannel: externalIndexChannel,
     indexChannelControlled,
-    introOptions,
-    introUnlocked,
+    revealOptions,
+    revealUnlocked,
     lazyLoad,
     sliderImagesReady,
   }: SliderProps,
   ref: Ref<SliderCoreHandle>
 ) {
-  const skeletonIntroGate = useSkeletonIntroGate();
+  const skeletonRevealGate = useSkeletonRevealGate();
   const hasInitialIndexRef = useRef(isValidSliderInitialIndex(initialIndex));
   const initialSelectedIndexRef = useRef(normalizeSliderInitialIndex(initialIndex));
   const hasAppliedInitialIndexRef = useRef(false);
@@ -1322,7 +1322,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
   useEffect(() => {
     // Child mutations still need a fresh measure/build pass, but they should not
-    // replay mount-only loading or intro state after the slider has become ready.
+    // replay mount-only loading or reveal state after the slider has become ready.
     setEngineReady(false);
     setLayoutReady(false);
     if (autoHeight) setAutoHeightReady(false);
@@ -1396,6 +1396,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       /* Only while data-rmg-drag is present on this slider root */
       [data-rmg-slider-core-scope="${scopeId}"][data-rmg-drag]        { cursor: grabbing !important; }
       [data-rmg-slider-core-scope="${scopeId}"][data-rmg-drag] *      { cursor: grabbing !important; }
+      [data-rmg-slider-core-scope="${scopeId}"][data-rmg-fullscreen-enabled="true"] [data-rmg-slide="true"] img,
+      [data-rmg-slider-core-scope="${scopeId}"][data-rmg-fullscreen-enabled="true"] [data-rmg-fullscreen-trigger] {
+        cursor: zoom-in;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -4875,25 +4879,25 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const normalizedIntro = useMemo(() => {
-    const src = introOptions ?? {};
+  const normalizedReveal = useMemo(() => {
+    const src = revealOptions ?? {};
     return {
-      renderIntro: src.renderIntro,
+      renderReveal: src.renderReveal,
       inView: src.inView === true,
       staggerMs: src.staggerMs ?? 60,
       durationMs: src.durationMs ?? 600,
       easing: src.easing ?? 'cubic-bezier(.2,.7,.2,1)',
     };
-  }, [introOptions]);
+  }, [revealOptions]);
 
-  const introEnabled = introOptions != null;
-  const introInView = inView || normalizedIntro.inView;
-  const skeletonIntroUnlocked = skeletonIntroGate ?? true;
-  const introActive =
-    !introEnabled ||
-    (isReady && introInView && (introUnlocked ?? true) && skeletonIntroUnlocked);
+  const revealEnabled = revealOptions != null;
+  const revealInView = inView || normalizedReveal.inView;
+  const skeletonRevealUnlocked = skeletonRevealGate ?? true;
+  const revealActive =
+    !revealEnabled ||
+    (isReady && revealInView && (revealUnlocked ?? true) && skeletonRevealUnlocked);
 
-  const introChildren = useMemo(
+  const revealChildren = useMemo(
     () =>
       clonedChildren.map((child, i) => {
         if (!isValidElement(child)) return child;
@@ -4905,7 +4909,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
           ...el.props,
           style: {
             ...prevStyle,
-            ['--rmg-intro-index' as any]: i,
+            ['--rmg-reveal-index' as any]: i,
           } as React.CSSProperties & Record<string, any>,
         });
       }),
@@ -4949,7 +4953,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
           data-rmg-axis={AX.main}
           style={{ gap: `${gap}px` }}
         >
-          {introChildren}
+          {revealChildren}
         </div>
         <div
           ref={crossfadeLayerRef}
@@ -4994,7 +4998,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     className: [
       styles.fade_container,
       rtlCls,
-      introActive ? styles.fadeInActive : styles.fadeInStart,
+      revealActive ? styles.fadeInActive : styles.fadeInStart,
     ].join(' '),
     style: {
       position: 'relative',
@@ -5002,11 +5006,11 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     'aria-busy': !isReady ? true : undefined,
   };
 
-  const introWrapped = normalizedIntro.renderIntro
+  const revealWrapped = normalizedReveal.renderReveal
     ? (
         <div {...baseContainerProps}>
-          {normalizedIntro.renderIntro(
-            { active: introActive, containerProps: baseContainerProps },
+          {normalizedReveal.renderReveal(
+            { active: revealActive, containerProps: baseContainerProps },
             inner
           )}
         </div>
@@ -5031,14 +5035,14 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         dir={isRtl ? 'rtl' : undefined}
         style={{
           position: 'relative',
-          ['--rmg-intro-stagger' as any]: `${normalizedIntro.staggerMs}ms`,
-          ['--rmg-intro-duration' as any]: `${normalizedIntro.durationMs}ms`,
-          ['--rmg-intro-easing' as any]: normalizedIntro.easing,
+          ['--rmg-reveal-stagger' as any]: `${normalizedReveal.staggerMs}ms`,
+          ['--rmg-reveal-duration' as any]: `${normalizedReveal.durationMs}ms`,
+          ['--rmg-reveal-easing' as any]: normalizedReveal.easing,
           zIndex: 1,
           ...sliderContainerStyles,
         }}
       >
-        {introWrapped}
+        {revealWrapped}
       </div>
     </>
   );

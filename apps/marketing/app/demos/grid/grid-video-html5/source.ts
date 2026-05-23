@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -35,25 +35,29 @@ type GeneratedSkeletonTextEntry = {
 const ITEMS = [
   {
     src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
     title: "Lorem ipsum dolor sit amet",
     body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     src: "https://cdn.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   },
   {
     src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg",
     title: "Duis aute irure dolor",
     body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
   },
   {
     src: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg",
     title: "Excepteur sint occaecat",
     body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   },
@@ -86,8 +90,7 @@ const GRID_VIDEO_HTML5_SKELETON_TEXT: GeneratedSkeletonTextEntry[] =
 
 function createHtml5VideoSkeletonItem(index: number) {
   const skeletonText =
-    GRID_VIDEO_HTML5_SKELETON_TEXT[index] ??
-    GRID_VIDEO_HTML5_SKELETON_TEXT[0]!;
+    GRID_VIDEO_HTML5_SKELETON_TEXT[index] ?? GRID_VIDEO_HTML5_SKELETON_TEXT[0]!;
 
   return {
     kind: "col" as const,
@@ -147,7 +150,7 @@ const HTML5_VIDEO_SKELETON: GridSkeletonSpec = {
       border: "1px solid rgba(11, 18, 32, 0.12)",
       backgroundColor: "rgba(255, 255, 255, 0.82)",
       boxShadow: "0 3px 6px rgba(15, 23, 42, 0.08)",
-      height: "100%"
+      height: "100%",
     },
     item: createHtml5VideoSkeletonItem(0),
     slots: HTML5_VIDEO_SKELETON_SLOTS,
@@ -171,7 +174,7 @@ export function GridVideoHtml5Demo() {
       kind: "video" as const,
       src: item.src,
       poster: item.poster,
-    }))
+    })),
   );
   const { ref: gridRef, ready: gridReady } = useGridReady();
 

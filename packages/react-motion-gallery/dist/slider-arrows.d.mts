@@ -1,4 +1,4 @@
-import { r as SliderArrows, o as SliderPlugin } from './types-CE76Zotl.mjs';
+import { s as SliderArrows, p as SliderPlugin } from './types-D9WBOrx6.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 import 'react';
 import './force-C5m1QpdF.mjs';

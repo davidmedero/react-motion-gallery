@@ -1,7 +1,7 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { R as ResponsiveNumber, B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
-import { j as SliderHandle } from './types-CE76Zotl.mjs';
+import { k as SliderHandle } from './types-D9WBOrx6.mjs';
 import { SkeletonCacheOptions, SkeletonCacheSnapshot } from './skeleton-cache.mjs';
 import { e as SkeletonLength$1, f as SkeletonShimmer$1 } from './layout-BSjd7pwQ.mjs';
 import { R as ResponsiveTextBarHeight, a as ResponsiveTextBarWidth, b as ResponsiveTextLineHeight, c as ResponsiveTextLineCount, d as ResponsiveTextLastBarWidth, T as TextSkeletonResponsiveBy } from './text-BBcRGVzn.mjs';

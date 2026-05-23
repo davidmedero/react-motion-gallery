@@ -17,7 +17,7 @@ const DEFAULT_SLIDER_OBJECT: SliderOptions = {
   scroll: { loop: false, freeScroll: false, groupCells: false, skipSnaps: false },
   motion: { selectDuration: 25, freeScrollDuration: 43, friction: 0.68 },
   elements: { container: {}, viewport: {} },
-  transitions: { intro: { staggerMs: 0, durationMs: 0 } },
+  reveal: { staggerMs: 0, durationMs: 0 },
   plugins: [sliderArrows(), sliderDots()],
 };
 
@@ -53,14 +53,10 @@ function EntriesSliderMediaContainer(props: {
 
     return {
       ...(src ?? DEFAULT_SLIDER_OBJECT),
-      transitions: {
-        ...DEFAULT_SLIDER_OBJECT.transitions,
-        ...(src?.transitions ?? {}),
-        intro: {
-          ...(DEFAULT_SLIDER_OBJECT.transitions?.intro ?? {}),
-          ...(src?.transitions?.intro ?? {}),
-          inView: entryInView,
-        },
+      reveal: {
+        ...(DEFAULT_SLIDER_OBJECT.reveal ?? {}),
+        ...(src?.reveal ?? {}),
+        inView: entryInView,
       },
     } satisfies SliderOptions;
   }, [entryInView, opts?.sliderObject]);

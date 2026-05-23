@@ -319,6 +319,12 @@ const entryPoints: EntryPoint[] = [
     imports: "ZoomPanImage",
     description: "A clipped image zoom surface with drag, wheel, and pinch gestures.",
   },
+  {
+    category: "Media",
+    entry: "react-motion-gallery/zoomPan/hover",
+    imports: "zoomPanHover",
+    description: "Optional mouse hover zoom and cursor pan plugin for base and fullscreen zoomPan surfaces.",
+  },
 ];
 
 const entryPointTabs = [
@@ -541,6 +547,7 @@ const entryPointTabs = [
     code: [
       'import "react-motion-gallery/styles.css";',
       'import ZoomPanImageDefault, { ZoomPanImage } from "react-motion-gallery/zoomPan";',
+      'import { zoomPanHover } from "react-motion-gallery/zoomPan/hover";',
     ].join("\n"),
   },
 ];

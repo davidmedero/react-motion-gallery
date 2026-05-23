@@ -27,8 +27,8 @@
 .fadeInActive {
   opacity: 1;
   transition:
-    opacity var(--rmg-intro-duration, 420ms)
-      var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
+    opacity var(--rmg-reveal-duration, 420ms)
+      var(--rmg-reveal-easing, cubic-bezier(.2,.7,.2,1));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -38,11 +38,11 @@
 .fade_container [data-rmg-thumb-index] > * {
   opacity: 0;
   transition:
-    opacity var(--rmg-intro-duration, 300ms)
-      var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
+    opacity var(--rmg-reveal-duration, 300ms)
+      var(--rmg-reveal-easing, cubic-bezier(.2,.7,.2,1));
 
   transition-delay: calc(
-    var(--rmg-intro-index, 0) * var(--rmg-intro-stagger, 40ms)
+    var(--rmg-reveal-index, 0) * var(--rmg-reveal-stagger, 40ms)
   );
 
   will-change: opacity;

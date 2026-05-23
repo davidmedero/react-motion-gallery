@@ -1,9 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
-import { Masonry, type ResponsiveMasonrySpan } from "react-motion-gallery/masonry";
+import {
+  Masonry,
+  type ResponsiveMasonrySpan,
+} from "react-motion-gallery/masonry";
 import { useMasonryReady } from "react-motion-gallery/masonry/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
@@ -94,7 +97,8 @@ const ITEMS: DemoItem[] = [
     displayIndex: 2,
     kind: "video",
     src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
     label: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -125,7 +129,8 @@ const ITEMS: DemoItem[] = [
     displayIndex: 5,
     kind: "video",
     src: "https://cdn.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
     label: "Elit",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",
@@ -295,8 +300,7 @@ const SPANS_SKELETON: MasonrySkeletonSpec = {
       item: createSpansSkeletonItem({
         item,
         skeletonText:
-          MASONRY_SPANS_SKELETON_TEXT[index] ??
-          MASONRY_SPANS_SKELETON_TEXT[0]!,
+          MASONRY_SPANS_SKELETON_TEXT[index] ?? MASONRY_SPANS_SKELETON_TEXT[0]!,
       }),
     })),
   },
@@ -317,7 +321,15 @@ const SPANS_VIDEO_OPTIONS = {
 };
 
 const SPANS_FULLSCREEN_VIDEO_OPTIONS = {
-  controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "fullscreen"],
+  controls: [
+    "play-large",
+    "play",
+    "progress",
+    "current-time",
+    "mute",
+    "volume",
+    "fullscreen",
+  ],
 };
 
 function MasonrySpansCard(props: {
@@ -346,13 +358,6 @@ function MasonrySpansCard(props: {
           />
         ) : (
           <>
-            <img
-              src="/open-fullscreen.png"
-              alt="Open fullscreen"
-              width="24"
-              height="24"
-              className={styles.open_fullscreen_icon}
-            />
             <Video
               src={item.src}
               poster={item.poster}
@@ -360,6 +365,12 @@ function MasonrySpansCard(props: {
               style={{ height: "100%" }}
               options={SPANS_VIDEO_OPTIONS}
               alt={item.title}
+            />
+            <button
+              type="button"
+              className={styles.fullscreen_trigger}
+              aria-label={`Open ${item.title} fullscreen`}
+              data-rmg-fullscreen-trigger
             />
           </>
         )}
@@ -413,8 +424,8 @@ export function MasonrySpansDemo(props: MasonrySpansDemoProps = {}) {
             kind: "video" as const,
             src: item.src,
             poster: item.poster,
-          }
-    )
+          },
+    ),
   );
 
   const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
@@ -440,18 +451,18 @@ export function MasonrySpansDemo(props: MasonrySpansDemoProps = {}) {
           placement="balanced"
         >
           {ITEMS.map((item) => (
-          <Masonry.Item
-            key={item.kind === "image" ? item.src : item.poster}
-            span={item.span}
-          >
-            <MasonrySpansCard
-              item={item}
-              skeletonTextIds={
-                MASONRY_SPANS_TEXT_IDS[item.displayIndex - 1] ??
-                MASONRY_SPANS_TEXT_IDS[0]!
-              }
-            />
-          </Masonry.Item>
+            <Masonry.Item
+              key={item.kind === "image" ? item.src : item.poster}
+              span={item.span}
+            >
+              <MasonrySpansCard
+                item={item}
+                skeletonTextIds={
+                  MASONRY_SPANS_TEXT_IDS[item.displayIndex - 1] ??
+                  MASONRY_SPANS_TEXT_IDS[0]!
+                }
+              />
+            </Masonry.Item>
           ))}
         </Masonry>
       </MasonrySkeleton>

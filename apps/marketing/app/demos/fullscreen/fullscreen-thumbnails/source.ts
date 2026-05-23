@@ -1,8 +1,7 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
-import {
-  useState } from "react";
+import { useState } from "react";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Slider, createSliderIndexChannel } from "react-motion-gallery/slider";
@@ -73,12 +72,14 @@ function Thumb({ src, i }: { src: string; i: number }) {
 }
 
 function FullscreenThumbnailsAddon() {
-  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
-    fullscreen: {
-      enabled: true,
+  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController(
+    {
+      plugins: [fullscreenSlider(), fullscreenZoomPan()],
+      fullscreen: {
+        enabled: true,
+      },
     },
-  });
+  );
 
   return (
     <>
@@ -114,7 +115,7 @@ function FullscreenThumbnailsAddon() {
 export function FullscreenThumbnailsDemo() {
   const [indexChannel] = useState(() => createSliderIndexChannel());
   const fullscreenMedia = toMediaItems(
-    SLIDES.map((slide) => slide.fullscreenSrc)
+    SLIDES.map((slide) => slide.fullscreenSrc),
   );
 
   const { ref: sliderRef, ready: sliderReady } = useSliderReady();
@@ -181,46 +182,38 @@ export function FullscreenThumbnailsDemo() {
         <div className={styles.sliderColumn}>
           <SliderSkeleton
             cache={demoSkeletonCache("fullscreen-thumbnails")}
-        layout={{
+            layout={{
               visibleCount: 2,
-                  mode: "peek",
-                  layout: {
-                    kind: "slider",
-                    direction: "row",
-                    style: {
-                      gap: 20,
-                    },
-                    item: {
-                      kind: "rect",
-                      style: {
-                        width: "100cqw",
-                        maxWidth: "360px",
-                        aspectRatio: "2 / 3",
-                        borderRadius: 12,
-                      },
-                    },
+              mode: "peek",
+              layout: {
+                kind: "slider",
+                direction: "row",
+                style: {
+                  gap: 20,
+                },
+                item: {
+                  kind: "rect",
+                  style: {
+                    width: "100cqw",
+                    maxWidth: "360px",
+                    aspectRatio: "2 / 3",
+                    borderRadius: 12,
                   },
-                }}
-        ready={sliderReady}
-      >
-      <Slider
-        ref={sliderRef}
-            indexChannel={indexChannel}
-
-        plugins={[
-          sliderFullscreen(),
-        ]}
-      >
-            {SLIDES.map((slide, i) => (
-              <Slide
-                key={\`img-\${slide.slideSrc}-\${i}\`}
-                slide={slide}
-                i={i}
-              />
-          
-        ))}
-          </Slider>
-      </SliderSkeleton>
+                },
+              },
+            }}
+            ready={sliderReady}
+          >
+            <Slider
+              ref={sliderRef}
+              indexChannel={indexChannel}
+              plugins={[sliderFullscreen()]}
+            >
+              {SLIDES.map((slide, i) => (
+                <Slide key={\`img-\${slide.slideSrc}-\${i}\`} slide={slide} i={i} />
+              ))}
+            </Slider>
+          </SliderSkeleton>
         </div>
       </div>
 

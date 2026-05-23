@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   resolveFullscreenReleaseSnapForce,
   resolveFullscreenIntroOpacityTransition,
+  resolveFullscreenVideoClickSnapAction,
   shouldSuppressFullscreenLoopForScroll,
   shouldStartFullscreenCrossfade,
   shouldUseFullscreenZoomedSourceSnapshot,
@@ -360,6 +361,38 @@ describe("fullscreen video play-on-open rules", () => {
         item: { kind: "video", src: "https://example.com/demo.mp4" } as any,
       })
     ).toBe(false);
+  });
+});
+
+describe("fullscreen video click snap rules", () => {
+  test("snaps non-clone video clicks instantly to their canonical slide", () => {
+    expect(
+      resolveFullscreenVideoClickSnapAction({
+        canonicalIndex: 2,
+        isClone: false,
+      })
+    ).toEqual({
+      snapIndex: 2,
+      settle: "instant",
+      playWhenVisible: false,
+    });
+  });
+
+  test("snaps clone video clicks instantly before retrying playback on the original", () => {
+    expect(
+      resolveFullscreenVideoClickSnapAction({
+        canonicalIndex: 3,
+        isClone: true,
+      })
+    ).toEqual({
+      snapIndex: 3,
+      settle: "instant",
+      playWhenVisible: true,
+    });
+  });
+
+  test("ignores non-video clicks", () => {
+    expect(resolveFullscreenVideoClickSnapAction(null)).toBeNull();
   });
 });
 

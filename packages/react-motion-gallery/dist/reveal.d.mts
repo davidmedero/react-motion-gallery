@@ -27,6 +27,7 @@ type RevealOptions = {
     variant?: RevealVariant;
     transform?: RevealTransform;
     once?: boolean;
+    ready?: boolean;
     threshold?: number;
     rootMargin?: string;
     durationMs?: RevealDuration;

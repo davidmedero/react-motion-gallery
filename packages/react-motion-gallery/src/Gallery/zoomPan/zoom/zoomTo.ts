@@ -20,6 +20,24 @@ export type ZoomToArgs = {
 
 type PovLike = { measure(n: number): number };
 type BoundsForCurrentOptions = { ignoreReserved?: boolean };
+const smoothTransformTimers = new WeakMap<
+  HTMLImageElement,
+  ReturnType<typeof window.setTimeout>
+>();
+
+function readRenderedTransform(imgEl: HTMLImageElement) {
+  const computedTransform =
+    typeof window !== "undefined" && typeof window.getComputedStyle === "function"
+      ? window.getComputedStyle(imgEl).transform
+      : "";
+
+  if (computedTransform && computedTransform !== "none") {
+    return computedTransform;
+  }
+
+  const inlineTransform = imgEl.style.transform;
+  return inlineTransform || "translate3d(0px, 0px, 0) scale(1)";
+}
 
 export type ZoomCtx = {
   fs: {
@@ -79,8 +97,24 @@ export function applySmoothTransform(
   const toTransform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
 
   twinImages.forEach((imgEl) => {
+    const previousTimer = smoothTransformTimers.get(imgEl);
+    if (previousTimer != null) window.clearTimeout(previousTimer);
+
+    const fromTransform = readRenderedTransform(imgEl);
+    imgEl.style.transition = "";
+    imgEl.style.transform = fromTransform;
+    void imgEl.offsetWidth;
+
     imgEl.style.transition = transition;
     imgEl.style.transform = toTransform;
+
+    const timer = window.setTimeout(() => {
+      if (smoothTransformTimers.get(imgEl) !== timer) return;
+      imgEl.style.transition = "";
+      smoothTransformTimers.delete(imgEl);
+    }, durationMs + 30);
+
+    smoothTransformTimers.set(imgEl, timer);
   });
 
   ctx.offX.current?.set(x);
@@ -95,11 +129,6 @@ export function applySmoothTransform(
   ctx.scaleRef.current = scale;
   ctx.setScale(scale);
 
-  window.setTimeout(() => {
-    twinImages.forEach((imgEl) => {
-      imgEl.style.transition = "";
-    });
-  }, durationMs + 30);
 }
 
 export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {

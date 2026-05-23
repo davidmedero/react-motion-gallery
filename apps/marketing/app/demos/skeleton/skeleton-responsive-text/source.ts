@@ -1,4 +1,4 @@
-export const source = `'use client';
+export const source = `"use client";
 
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
@@ -45,15 +45,18 @@ type ArticleCard = {
 const VIDEO_ASSETS = [
   {
     src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
   },
   {
     src: "https://cdn.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
   },
   {
     src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg",
   },
 ] as const;
 
@@ -272,20 +275,22 @@ function getVideoMedia(api: unknown): HTMLMediaElement | null {
 function isVideoMediaReady(media: HTMLMediaElement) {
   const video = media as HTMLVideoElement;
 
-  return media.readyState >= 1 || (video.videoWidth > 0 && video.videoHeight > 0);
+  return (
+    media.readyState >= 1 || (video.videoWidth > 0 && video.videoHeight > 0)
+  );
 }
 
 function useVideoReadiness(count: number) {
   const cleanupByIndexRef = React.useRef<Array<(() => void) | null>>([]);
   const [readyVideos, setReadyVideos] = React.useState<boolean[]>(() =>
-    Array.from({ length: count }, () => false)
+    Array.from({ length: count }, () => false),
   );
 
   React.useEffect(() => {
     setReadyVideos((current) =>
       current.length === count
         ? current
-        : Array.from({ length: count }, () => false)
+        : Array.from({ length: count }, () => false),
     );
   }, [count]);
 
@@ -330,7 +335,7 @@ function useVideoReadiness(count: number) {
         media.removeEventListener("canplay", onReady);
       };
     },
-    [markVideoReady]
+    [markVideoReady],
   );
 
   React.useEffect(() => {
@@ -369,7 +374,9 @@ export function SkeletonResponsiveTextDemo() {
           angleDeg: 100,
           opacity: 0.92,
         }}
-        ariaLabel={isLoaded ? undefined : "Loading responsive lorem ipsum cards"}
+        ariaLabel={
+          isLoaded ? undefined : "Loading responsive lorem ipsum cards"
+        }
       >
         <section className={styles.textDemo}>
           <header className={styles.headerRow}>

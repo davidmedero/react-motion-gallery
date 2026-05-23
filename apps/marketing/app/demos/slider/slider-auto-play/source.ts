@@ -1,10 +1,7 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
-import {
-  useEffect,
-  useRef,
-  type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Slider, type SliderHandle } from "react-motion-gallery/slider";
@@ -59,13 +56,7 @@ const SLIDES = [
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
-  return (
-    <img
-      src={src}
-      alt={\`Slide \${i + 1}\`}
-      className={styles.slide}
-    />
-  );
+  return <img src={src} alt={\`Slide \${i + 1}\`} className={styles.slide} />;
 }
 
 function FullscreenAddon() {
@@ -132,7 +123,9 @@ function AutoPlayProgress({
 export function SliderAutoPlayDemo() {
   const sliderRef = useRef<SliderHandle | null>(null);
   const media = toMediaItems(SLIDES.map((slide) => slide.src));
-  const fullscreenMedia = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
+  const fullscreenMedia = toMediaItems(
+    SLIDES.map((slide) => slide.fullscreenSrc),
+  );
 
   const { ref: sliderReadyRef, ready: sliderReady } = useSliderReady();
   const setSliderRef = (handle: SliderHandle | null) => {
@@ -145,97 +138,94 @@ export function SliderAutoPlayDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-auto-play")}
         layout={{
-              visibleCount: 3,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "row",
+          visibleCount: 3,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+              justify: "center",
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100%",
+                height: "100%",
+                borderRadius: 12,
+              },
+            },
+            itemWrapStyle: {
+              width: "100cqw",
+              maxWidth: "550px",
+              aspectRatio: "16 / 9",
+            },
+            children: [
+              {
+                kind: "col",
                 style: {
-                  gap: 20,
-                  justify: "center"
-                },
-                item: {
-                  kind: "rect",
-                  style: {
+                  0: {
                     width: "100%",
-                    height: "100%",
-                    borderRadius: 12,
+                    padding: "18px 0 0",
                   },
-                },
-                itemWrapStyle: {
-                  width: "100cqw",
-                  maxWidth: "550px",
-                  aspectRatio: "16 / 9",
+                  768: {
+                    width: "100%",
+                    padding: "22px 0 0",
+                  },
                 },
                 children: [
                   {
-                    kind: "col",
+                    kind: "rect",
                     style: {
-                      0: {
-                        width: "100%",
-                        padding: "18px 0 0",
-                      },
-                      768: {
-                        width: "100%",
-                        padding: "22px 0 0",
-                      },
+                      width: "min(60%, 28rem)",
+                      height: 6,
+                      borderRadius: 999,
+                      alignSelf: "center",
+                      backgroundColor: "rgba(15, 23, 42, 0.18)",
                     },
-                    children: [
-                      {
-                        kind: "rect",
-                        style: {
-                          width: "min(60%, 28rem)",
-                          height: 6,
-                          borderRadius: 999,
-                          alignSelf: "center",
-                          backgroundColor: "rgba(15, 23, 42, 0.18)",
-                        },
-                      },
-                    ],
                   },
                 ],
               },
-            }}
-        ready={sliderReady}
-      >
-      <Slider
-        ref={setSliderRef}
-        align="center"
-        scroll={{
-          loop: true,
-          groupCells: true
-        }}
-
-        elements={{
-          viewport: {
-            className: styles.sliderViewport,
+            ],
           },
         }}
-
-        plugins={[
-          sliderFullscreen(),
-          sliderRipple(),
-          sliderArrows(),
-          sliderProgress({
-            enabled: true,
-            render: ({ hidden }) =>
-              hidden ? null : <AutoPlayProgress sliderRef={sliderRef} />,
-          }),
-          sliderAutoPlay({
-            enabled: true,
-            speedMs: AUTO_PLAY_SPEED_MS,
-          }),
-        ]}
+        ready={sliderReady}
       >
-        {media.map((item, i) => (
-          <Slide
-            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
-            src={item.kind === "image" ? item.src : ""}
-            i={i}
-          />
-  
-            ))}
-      </Slider>
+        <Slider
+          ref={setSliderRef}
+          align="center"
+          scroll={{
+            loop: true,
+            groupCells: true,
+          }}
+          elements={{
+            viewport: {
+              className: styles.sliderViewport,
+            },
+          }}
+          plugins={[
+            sliderFullscreen(),
+            sliderRipple(),
+            sliderArrows(),
+            sliderProgress({
+              enabled: true,
+              render: ({ hidden }) =>
+                hidden ? null : <AutoPlayProgress sliderRef={sliderRef} />,
+            }),
+            sliderAutoPlay({
+              enabled: true,
+              speedMs: AUTO_PLAY_SPEED_MS,
+            }),
+          ]}
+        >
+          {media.map((item, i) => (
+            <Slide
+              key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+              src={item.kind === "image" ? item.src : ""}
+              i={i}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>

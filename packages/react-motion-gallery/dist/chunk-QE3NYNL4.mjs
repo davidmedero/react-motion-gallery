@@ -1,0 +1,1 @@
+import*as e from'react';import {jsx}from'react/jsx-runtime';var t=e.createContext(null);function n({children:a,value:l}){return jsx(t.Provider,{value:l,children:a})}function r(){return e.useContext(t)}export{n as a,r as b};

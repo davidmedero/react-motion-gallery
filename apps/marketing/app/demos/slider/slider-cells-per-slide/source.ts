@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -54,13 +54,7 @@ const CELLS_PER_SLIDE = {
 };
 
 function Slide({ src, i }: { src: string; i: number }) {
-  return (
-    <img
-      src={src}
-      alt={\`Slide \${i + 1}\`}
-      className={styles.slide}
-    />
-  );
+  return <img src={src} alt={\`Slide \${i + 1}\`} className={styles.slide} />;
 }
 
 function FullscreenAddon() {
@@ -85,55 +79,52 @@ export function SliderCellsPerSlideDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-cells-per-slide")}
         layout={{
-              visibleCount: CELLS_PER_SLIDE,
-              mode: "fit",
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100%",
-                    aspectRatio: "2 / 3",
-                    borderRadius: 12,
-                  },
-                },
+          visibleCount: CELLS_PER_SLIDE,
+          mode: "fit",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100%",
+                aspectRatio: "2 / 3",
+                borderRadius: 12,
               },
-            }}
+            },
+          },
+        }}
         ready={sliderReady}
       >
-      <Slider
-        ref={sliderRef}
-        layout={{
-          cellsPerSlide: CELLS_PER_SLIDE,
-        }}
-        scroll={{
-          groupCells: true,
-        }}
-        transitions={{
-          intro: {
-            staggerMs: 100
-          }
-        }}
-        plugins={[
-          sliderFullscreen(),
-          sliderRipple(),
-          sliderArrows(),
-          sliderDots(),
-        ]}
-      >
-        {media.map((item, i) => (
-          <Slide
-            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
-            src={item.kind === "image" ? item.src : ""}
-            i={i}
-          />
-  
-            ))}
-      </Slider>
+        <Slider
+          ref={sliderRef}
+          layout={{
+            cellsPerSlide: CELLS_PER_SLIDE,
+          }}
+          scroll={{
+            groupCells: true,
+          }}
+          reveal={{
+            staggerMs: 100,
+          }}
+          plugins={[
+            sliderFullscreen(),
+            sliderRipple(),
+            sliderArrows(),
+            sliderDots(),
+          ]}
+        >
+          {media.map((item, i) => (
+            <Slide
+              key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+              src={item.kind === "image" ? item.src : ""}
+              i={i}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>

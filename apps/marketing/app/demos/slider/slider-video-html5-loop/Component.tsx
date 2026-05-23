@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -22,27 +22,33 @@ export function SliderVideoHtml5LoopDemo() {
   const URLS = [
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/12354535_1920_1080_30fps.mp4",
-      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg"
+      poster:
+        "https://cdn.react-motion-gallery.com/slider-html-loop/12354535_1920_1080_30fps-0.jpg",
     },
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/4151824-uhd_3840_2160_25fps.mp4",
-      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg"
+      poster:
+        "https://cdn.react-motion-gallery.com/slider-html-loop/4151824-uhd_3840_2160_25fps-0.jpg",
     },
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
-      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg"
+      poster:
+        "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg",
     },
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
-      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg"
+      poster:
+        "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg",
     },
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/9150545-hd_1920_1080_24fps.mp4",
-      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/9150545-hd_1920_1080_24fps-0.jpg"
+      poster:
+        "https://cdn.react-motion-gallery.com/slider-html-loop/9150545-hd_1920_1080_24fps-0.jpg",
     },
     {
       src: "https://cdn.react-motion-gallery.com/slider-html/9694226-hd_1920_1080_25fps.mp4",
-      poster: "https://cdn.react-motion-gallery.com/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg"
+      poster:
+        "https://cdn.react-motion-gallery.com/slider-html-loop/9694226-hd_1920_1080_25fps-0.jpg",
     },
   ];
 
@@ -76,9 +82,8 @@ export function SliderVideoHtml5LoopDemo() {
   }
 
   function FullscreenAddon() {
-
     const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
+      plugins: [fullscreenSlider(), fullscreenVideo(), fullscreenZoomPan()],
       fullscreen: {
         enabled: true,
       },
@@ -96,114 +101,112 @@ export function SliderVideoHtml5LoopDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-video-html5-loop")}
         layout={{
-              visibleCount: 3,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "row",
+          visibleCount: 3,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+              justify: "center",
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100cqw",
+                maxWidth: "550px",
+                aspectRatio: "16 / 9",
+                borderRadius: 12,
+              },
+            },
+            children: [
+              {
+                kind: "col",
                 style: {
-                  gap: 20,
-                  justify: "center",
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    maxWidth: "550px",
-                    aspectRatio: '16 / 9',
-                    borderRadius: 12,
+                  0: {
+                    width: "100%",
+                    padding: "14px 0 0",
+                  },
+                  768: {
+                    width: "100%",
+                    padding: "20px 0 0",
                   },
                 },
                 children: [
                   {
-                    kind: "col",
+                    kind: "sliderDots",
+                    count: MEDIA.length,
                     style: {
-                      0: {
-                        width: "100%",
-                        padding: "14px 0 0",
-                      },
-                      768: {
-                        width: "100%",
-                        padding: "20px 0 0",
-                      },
+                      width: "max-content",
+                      padding: "4px 8px",
+                      borderRadius: 9999,
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      alignSelf: "center",
                     },
-                    children: [
-                      {
-                        kind: "sliderDots",
-                        count: MEDIA.length,
-                        style: {
-                          width: "max-content",
-                          padding: "4px 8px",
-                          borderRadius: 9999,
-                          backgroundColor: "rgba(0, 0, 0, 0.5)",
-                          alignSelf: "center",
-                        },
-                        dotStyle: {
-                          width: 14,
-                          height: 14,
-                          margin: 5,
-                          borderRadius: 999,
-                        },
-                        activeStyle: {
-                          backgroundColor: "rgb(80, 163, 255)",
-                        },
-                        inactiveStyle: {
-                          backgroundColor: "lightgray",
-                        },
-                        shimmer: {
-                          enabled: false,
-                        },
-                      },
-                    ],
+                    dotStyle: {
+                      width: 14,
+                      height: 14,
+                      margin: 5,
+                      borderRadius: 999,
+                    },
+                    activeStyle: {
+                      backgroundColor: "rgb(80, 163, 255)",
+                    },
+                    inactiveStyle: {
+                      backgroundColor: "lightgray",
+                    },
+                    shimmer: {
+                      enabled: false,
+                    },
                   },
                 ],
               },
-            }}
+            ],
+          },
+        }}
         ready={sliderReady}
       >
-      <Slider
-        ref={sliderRef}
-        scroll={{
-          loop: true
-        }}
-        align="center"
-
-        elements={{
-          viewport: {
-            className: styles.slider_viewport
-          }
-        }}
-        plugins={[
-          sliderFullscreen(),
-          sliderRipple(),
-          sliderArrows({
-            arrow: {
-              style: {
-                top: "43%"
-              }
-            }
-          }),
-          sliderDots({
-            root: {
-              style: {
-                bottom: "0px"
-              }
-            }
-          }),
-        ]}
-      >
-        {MEDIA.map((m, i) => {
-          return (
-            <Slide
-              key={`video-${m.kind === 'video' ? m.src : ''}-${i}`}
-              src={m.kind === 'video' ? m.src : ''}
-              poster={m.kind === 'video' ? m.poster : ''}
-              i={i}
-            />
-          );
-  
-            })}
-      </Slider>
+        <Slider
+          ref={sliderRef}
+          scroll={{
+            loop: true,
+          }}
+          align="center"
+          elements={{
+            viewport: {
+              className: styles.slider_viewport,
+            },
+          }}
+          plugins={[
+            sliderFullscreen(),
+            sliderRipple(),
+            sliderArrows({
+              arrow: {
+                style: {
+                  top: "43%",
+                },
+              },
+            }),
+            sliderDots({
+              root: {
+                style: {
+                  bottom: "0px",
+                },
+              },
+            }),
+          ]}
+        >
+          {MEDIA.map((m, i) => {
+            return (
+              <Slide
+                key={`video-${m.kind === "video" ? m.src : ""}-${i}`}
+                src={m.kind === "video" ? m.src : ""}
+                poster={m.kind === "video" ? m.poster : ""}
+                i={i}
+              />
+            );
+          })}
+        </Slider>
       </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>

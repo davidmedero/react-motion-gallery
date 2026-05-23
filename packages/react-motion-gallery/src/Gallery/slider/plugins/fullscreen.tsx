@@ -92,9 +92,10 @@ function FullscreenRuntime({ host }: SliderPluginRuntimeProps) {
   }, [core, host.handle]);
 
   React.useEffect(() => {
-    if (!core || core.layout !== "slider" || !host.handle) return;
+    if (!core || core.layout !== "slider" || !host.handle || !core.fsEnabled) return;
     const root = host.handle.getRootNode();
     if (!root) return;
+    root.setAttribute("data-rmg-fullscreen-enabled", "true");
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0 && event.pointerType === "mouse") return;
@@ -129,10 +130,11 @@ function FullscreenRuntime({ host }: SliderPluginRuntimeProps) {
     root.addEventListener("pointerdown", onPointerDown, true);
     root.addEventListener("click", onClick, true);
     return () => {
+      root.removeAttribute("data-rmg-fullscreen-enabled");
       root.removeEventListener("pointerdown", onPointerDown, true);
       root.removeEventListener("click", onClick, true);
     };
-  }, [core, host.handle]);
+  }, [core, core?.fsEnabled, host.handle]);
 
   return null;
 }

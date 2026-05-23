@@ -173,6 +173,9 @@ function useNoopZoomPanRuntime() {
       resetAllZoomDom: noop,
       resetForSlideNavigation: noop,
       forceResetZoom: noop,
+      handleHoverPointerEnter: noop,
+      handleHoverPointerMove: noop,
+      handleHoverPointerLeave: noop,
     }),
     [isPinching, isTouchPinching, noop]
   );
@@ -838,6 +841,9 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const resetZoomForSlideNavigation = zoomRuntime.resetForSlideNavigation;
   const resetZoomForSlideChange = zoomRuntime.resetAllZoomDom;
   const onForceResetZoom = zoomRuntime.forceResetZoom ?? zoomRuntime.resetAllZoomDom;
+  const handleHoverPointerEnter = zoomRuntime.handleHoverPointerEnter ?? (() => {});
+  const handleHoverPointerMove = zoomRuntime.handleHoverPointerMove ?? (() => {});
+  const handleHoverPointerLeave = zoomRuntime.handleHoverPointerLeave ?? (() => {});
   const isPinching = zoomRuntime.isPinching;
   const isTouchPinching = zoomRuntime.isTouchPinching;
   const captionZoomMotion = zoomRuntime.captionZoomMotion as any;
@@ -960,6 +966,18 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       e: React.PointerEvent<HTMLDivElement>,
       imageRef: React.RefObject<HTMLDivElement | null>
     ) => handlePanPointerStart(e, imageRef),
+    onHoverPointerEnter: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handleHoverPointerEnter(e, imageRef),
+    onHoverPointerMove: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handleHoverPointerMove(e, imageRef),
+    onHoverPointerLeave: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handleHoverPointerLeave(e, imageRef),
     onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
       if (suppressNextClickRef.current) {
         suppressNextClickRef.current = false;
@@ -1030,6 +1048,18 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       e: React.PointerEvent<HTMLDivElement>,
       imageRef: React.RefObject<HTMLDivElement | null>
     ) => handlePanPointerStart(e, imageRef),
+    onHoverPointerEnter: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handleHoverPointerEnter(e, imageRef),
+    onHoverPointerMove: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handleHoverPointerMove(e, imageRef),
+    onHoverPointerLeave: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handleHoverPointerLeave(e, imageRef),
     onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
       if (suppressNextClickRef.current) {
         suppressNextClickRef.current = false;
@@ -1100,6 +1130,18 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       e: React.PointerEvent<HTMLDivElement>,
       imageRef: React.RefObject<HTMLDivElement | null>
     ) => handlePanPointerStart(e, imageRef),
+    onHoverPointerEnter: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handleHoverPointerEnter(e, imageRef),
+    onHoverPointerMove: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handleHoverPointerMove(e, imageRef),
+    onHoverPointerLeave: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => handleHoverPointerLeave(e, imageRef),
     onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
       if (suppressNextClickRef.current) {
         suppressNextClickRef.current = false;
@@ -1503,6 +1545,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
                 introFade={introFade}
                 controlsFade={!!fs.effects?.crossfade?.controls}
                 dragFade={!!fs.effects?.crossfade?.drag}
+                wheelFade={fs.effects?.crossfade?.wheel}
                 slideFadeDuration={fs.effects?.crossfade?.durationMs}
                 slideFadeEasing={fs.effects?.crossfade?.easing}
                 normalizedItems={normalizedItems}

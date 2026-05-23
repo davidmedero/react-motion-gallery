@@ -34,14 +34,14 @@ export const entriesGridEntry01Title: GeneratedSkeletonTextEntry = {
   "textId": "entriesGridEntry01Title",
   "lines": {
     "0": 2,
-    "323": 1
+    "338": 1
   },
   "barWidth": {
     "0": [
-      "165px",
-      "39px"
+      "100px",
+      "104px"
     ],
-    "323": "208px"
+    "338": "208px"
   },
   "barHeight": 17.28,
   "lineHeight": 1.2
@@ -95,8 +95,17 @@ export const entriesGridEntry02Section: GeneratedSkeletonTextEntry = {
 
 export const entriesGridEntry02Title: GeneratedSkeletonTextEntry = {
   "textId": "entriesGridEntry02Title",
-  "lines": 1,
-  "barWidth": "193px",
+  "lines": {
+    "0": 2,
+    "338": 1
+  },
+  "barWidth": {
+    "0": [
+      "134px",
+      "56px"
+    ],
+    "338": "193px"
+  },
   "barHeight": 17.28,
   "lineHeight": 1.2
 };
@@ -156,8 +165,17 @@ export const entriesGridEntry03Section: GeneratedSkeletonTextEntry = {
 
 export const entriesGridEntry03Title: GeneratedSkeletonTextEntry = {
   "textId": "entriesGridEntry03Title",
-  "lines": 1,
-  "barWidth": "154px",
+  "lines": {
+    "0": 2,
+    "338": 1
+  },
+  "barWidth": {
+    "0": [
+      "111px",
+      "39px"
+    ],
+    "338": "154px"
+  },
   "barHeight": 17.28,
   "lineHeight": 1.2
 };

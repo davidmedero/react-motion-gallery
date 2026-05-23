@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import * as React from "react";
 import {
@@ -232,14 +232,14 @@ function decodeImage(image: HTMLImageElement) {
 
 function useImageReadiness(count: number) {
   const [settledImages, setSettledImages] = React.useState<boolean[]>(() =>
-    Array.from({ length: count }, () => false)
+    Array.from({ length: count }, () => false),
   );
 
   React.useEffect(() => {
     setSettledImages((current) =>
       current.length === count
         ? current
-        : Array.from({ length: count }, () => false)
+        : Array.from({ length: count }, () => false),
     );
   }, [count]);
 
@@ -259,7 +259,7 @@ function useImageReadiness(count: number) {
         markImageSettled(index);
       });
     },
-    [markImageSettled]
+    [markImageSettled],
   );
 
   const registerImage = React.useCallback(
@@ -267,7 +267,7 @@ function useImageReadiness(count: number) {
       if (!node) return;
       if (node.complete) markImageDecoded(index, node);
     },
-    [markImageDecoded]
+    [markImageDecoded],
   );
 
   return {
@@ -280,8 +280,12 @@ function useImageReadiness(count: number) {
 }
 
 export function SkeletonFlexCardsDemo() {
-  const { allImagesSettled, markImageDecoded, markImageSettled, registerImage } =
-    useImageReadiness(PRODUCT_CARDS.length);
+  const {
+    allImagesSettled,
+    markImageDecoded,
+    markImageSettled,
+    registerImage,
+  } = useImageReadiness(PRODUCT_CARDS.length);
 
   return (
     <div className={styles.shell}>
@@ -316,15 +320,21 @@ export function SkeletonFlexCardsDemo() {
                   ref={registerImage(index)}
                   src={item.imageSrc}
                   alt={item.imageAlt}
-                  onLoad={(event) => markImageDecoded(index, event.currentTarget)}
+                  onLoad={(event) =>
+                    markImageDecoded(index, event.currentTarget)
+                  }
                   onError={() => markImageSettled(index)}
                 />
                 <span style={{ width: item.kickerWidth }}>{item.kicker}</span>
               </div>
               <div className={styles.cardCopy}>
                 <h3 className={styles.cardTitle}>
-                  <span className={styles.titleLine}>{item.titleNarrow[0]}</span>
-                  <span className={styles.titleLine}>{item.titleNarrow[1]}</span>
+                  <span className={styles.titleLine}>
+                    {item.titleNarrow[0]}
+                  </span>
+                  <span className={styles.titleLine}>
+                    {item.titleNarrow[1]}
+                  </span>
                   <span className={styles.titleWide}>{item.titleWide}</span>
                 </h3>
                 <div className={styles.cardMetaRow}>

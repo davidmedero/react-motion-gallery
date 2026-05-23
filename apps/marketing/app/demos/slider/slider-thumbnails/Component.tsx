@@ -1,9 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
-import {
-  useState,
-  useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Slider, createSliderIndexChannel } from "react-motion-gallery/slider";
@@ -75,13 +73,7 @@ const SLIDES = [
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
-  return (
-    <img
-      src={src}
-      alt={`Slide ${i + 1}`}
-      className={styles.slide}
-    />
-  );
+  return <img src={src} alt={`Slide ${i + 1}`} className={styles.slide} />;
 }
 
 function Thumb({ src, i }: { src: string; i: number }) {
@@ -106,21 +98,23 @@ function useDocumentClientWidth() {
       };
     },
     () => document.documentElement.clientWidth,
-    () => 0
+    () => 0,
   );
 }
 
 function FullscreenAddon() {
   const viewportWidth = useDocumentClientWidth();
-  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
-    fullscreen: {
-      enabled: true,
-      effects: {
-        introStickyNavSelector: ".rmg-intro-sticky-nav",
+  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController(
+    {
+      plugins: [fullscreenSlider(), fullscreenZoomPan()],
+      fullscreen: {
+        enabled: true,
+        effects: {
+          introStickyNavSelector: ".rmg-intro-sticky-nav",
+        },
       },
     },
-  });
+  );
 
   return (
     <>
@@ -139,7 +133,7 @@ function FullscreenAddon() {
           width: viewportWidth || undefined,
           padding: "8px 12px",
           overflow: "visible",
-          background: "#fff"
+          background: "#fff",
         }}
         thumbnailItemClassName={styles.fullscreenThumbnailThumb}
         gap={12}
@@ -154,7 +148,7 @@ export function SliderThumbnailsDemo() {
   const [indexChannel] = useState(() => createSliderIndexChannel());
   const media = toMediaItems(SLIDES.map((slide) => slide.slideSrc));
   const fullscreenMedia = toMediaItems(
-    SLIDES.map((slide) => slide.fullscreenSrc)
+    SLIDES.map((slide) => slide.fullscreenSrc),
   );
 
   const { ref: sliderRef, ready: sliderReady } = useSliderReady();
@@ -185,30 +179,27 @@ export function SliderThumbnailsDemo() {
         }}
         ready={sliderReady}
       >
-      <Slider
-        ref={sliderRef}
-        indexChannel={indexChannel}
-        transitions={{
-          intro: {
-            staggerMs: 200
-          }
-        }}
-        plugins={[
-          sliderFullscreen(),
-          sliderRipple(),
-          sliderArrows(),
-          sliderDots(),
-        ]}
-      >
-        {media.map((item, i) => (
-          <Slide
-            key={`img-${item.kind === "image" ? item.src : ""}-${i}`}
-            src={SLIDES[i]?.slideSrc ?? ""}
-            i={i}
-          />
-  
-            ))}
-      </Slider>
+        <Slider
+          ref={sliderRef}
+          indexChannel={indexChannel}
+          reveal={{
+            staggerMs: 200,
+          }}
+          plugins={[
+            sliderFullscreen(),
+            sliderRipple(),
+            sliderArrows(),
+            sliderDots(),
+          ]}
+        >
+          {media.map((item, i) => (
+            <Slide
+              key={`img-${item.kind === "image" ? item.src : ""}-${i}`}
+              src={SLIDES[i]?.slideSrc ?? ""}
+              i={i}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
 
       <ThumbnailSlider
@@ -238,6 +229,9 @@ export function SliderThumbnailsDemo() {
               className: styles.thumbnailThumb,
             },
           },
+          reveal: {
+            durationMs: 1000,
+          },
           transitions: {
             loading: {
               skeletonCount: 9,
@@ -250,18 +244,11 @@ export function SliderThumbnailsDemo() {
                 },
               },
             },
-            intro: {
-              durationMs: 1000
-            }
           },
         }}
       >
         {SLIDES.map((slide, i) => (
-          <Thumb
-            key={`thumb-${slide.thumbSrc}`}
-            src={slide.thumbSrc}
-            i={i}
-          />
+          <Thumb key={`thumb-${slide.thumbSrc}`} src={slide.thumbSrc} i={i} />
         ))}
       </ThumbnailSlider>
 

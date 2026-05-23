@@ -16,22 +16,23 @@ export const css = String.raw`.masonryYoutubeCard {
   background: rgba(255, 255, 255, 0.96);
 }
 
-.masonryYoutubeFrame > :not(.open_fullscreen_icon) {
+.masonryYoutubeFrame > :not(.fullscreen_trigger) {
   width: 100%;
   height: 100%;
 }
 
-.masonryYoutubeFrame > .open_fullscreen_icon {
+.masonryYoutubeFrame > .fullscreen_trigger {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 9999;
+  inset: 0;
+  z-index: 10;
   display: block;
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
-  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  background: transparent;
+  cursor: zoom-in;
 }
 
 .masonryYoutubeVideo {

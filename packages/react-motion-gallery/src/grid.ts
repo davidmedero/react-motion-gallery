@@ -8,6 +8,7 @@ export type {
   GridPlugin,
   GridPluginKind,
   GridSpan,
+  RevealOptions,
   ResponsiveGridSpan,
   ResponsiveGridTemplate,
 } from "./Gallery/grid/types";

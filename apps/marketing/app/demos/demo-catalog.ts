@@ -91,15 +91,18 @@ export const DEMO_METADATA = [
   { id: "fullscreen-viewport-overlay-caption", title: "Overlay Caption", eyebrow: "Fullscreen", tags: ["overlay", "captions", "viewport"], categoryId: "fullscreen" },
   { id: "fullscreen-viewport-overlay-caption-sized", title: "Overlay Caption (Sized)", eyebrow: "Fullscreen", tags: ["overlay", "captions", "responsive"], categoryId: "fullscreen" },
   { id: "fullscreen-lazy-load", title: "Lazy Load", eyebrow: "Fullscreen", tags: ["lazy-load", "media"], categoryId: "fullscreen" },
+  { id: "fullscreen-image-hover", title: "Image Hover", eyebrow: "Fullscreen", tags: ["zoom-pan", "hover", "lazy-load", "thumbnails"], categoryId: "fullscreen" },
   { id: "skeleton-flex-cards", title: "Flex Cards", eyebrow: "Skeleton", tags: ["standalone", "flex", "text", "responsive"], categoryId: "skeleton" },
   { id: "skeleton-app-shell", title: "App Shell", eyebrow: "Skeleton", tags: ["standalone", "flex", "dashboard", "nested"], categoryId: "skeleton" },
   { id: "skeleton-responsive-text", title: "Responsive Text", eyebrow: "Skeleton", tags: ["standalone", "text", "container-query", "responsive"], categoryId: "skeleton" },
   { id: "skeleton-force-overlay", title: "Force Overlay", eyebrow: "Skeleton", tags: ["standalone", "force", "compare", "opacity"], categoryId: "skeleton" },
   { id: "reveal-sections", title: "Sections", eyebrow: "Reveal", tags: ["standalone", "fade", "transform", "stagger"], categoryId: "reveal" },
+  { id: "reveal-image-ready", title: "Image Ready", eyebrow: "Reveal", tags: ["useReveal", "image", "decode", "ready"], categoryId: "reveal" },
   { id: "zoom-pan-standalone", title: "Standalone", eyebrow: "Zoom + Pan", tags: ["zoom-pan", "image", "standalone", "crop"], categoryId: "zoom-pan" },
   { id: "zoom-pan-slider", title: "Slider", eyebrow: "Zoom + Pan", tags: ["zoom-pan", "slider", "images"], categoryId: "zoom-pan" },
   { id: "zoom-pan-grid", title: "Grid", eyebrow: "Zoom + Pan", tags: ["zoom-pan", "grid", "images"], categoryId: "zoom-pan" },
   { id: "zoom-pan-masonry", title: "Masonry", eyebrow: "Zoom + Pan", tags: ["zoom-pan", "masonry", "images"], categoryId: "zoom-pan" },
+  { id: "zoom-pan-image-hover", title: "Image Hover", eyebrow: "Zoom + Pan", tags: ["zoom-pan", "hover", "image"], categoryId: "zoom-pan" },
 ] as const satisfies readonly DemoMetadata[];
 
 export type DemoId = (typeof DEMO_METADATA)[number]["id"];
@@ -214,6 +217,7 @@ export const DEMO_CATEGORIES = [
       { type: "demo", demoId: "zoom-pan-slider" },
       { type: "demo", demoId: "zoom-pan-grid" },
       { type: "demo", demoId: "zoom-pan-masonry" },
+      { type: "demo", demoId: "zoom-pan-image-hover" },
     ],
   },
   {
@@ -230,6 +234,7 @@ export const DEMO_CATEGORIES = [
       { type: "demo", demoId: "fullscreen-caption-thumbnails" },
       { type: "demo", demoId: "fullscreen-fade-effects" },
       { type: "demo", demoId: "fullscreen-lazy-load" },
+      { type: "demo", demoId: "fullscreen-image-hover" },
     ],
   },
   {
@@ -249,7 +254,10 @@ export const DEMO_CATEGORIES = [
     label: "Reveal",
     description:
       "Standalone section reveals for app and marketing UI without implying loading state.",
-    items: [{ type: "demo", demoId: "reveal-sections" }],
+    items: [
+      { type: "demo", demoId: "reveal-sections" },
+      { type: "demo", demoId: "reveal-image-ready" },
+    ],
   },
 ] as const satisfies readonly DemoCategory[];
 

@@ -25,6 +25,7 @@ export const css = String.raw`.masonryLazyCard {
   height: 100%;
   display: block;
   object-fit: cover;
+  cursor: zoom-in;
 }
 
 .masonryLazyMeta {

@@ -35,6 +35,7 @@ export type RevealOptions = {
   variant?: RevealVariant;
   transform?: RevealTransform;
   once?: boolean;
+  ready?: boolean;
   threshold?: number;
   rootMargin?: string;
   durationMs?: RevealDuration;
@@ -321,6 +322,7 @@ export function useReveal<T extends HTMLElement = HTMLElement>(
 
   const variant = options.variant ?? "transform";
   const once = options.once ?? true;
+  const ready = options.ready !== false;
   const threshold = clampThreshold(options.threshold);
   const rootMargin = options.rootMargin ?? DEFAULT_ROOT_MARGIN;
   const disabled = options.disabled === true;
@@ -337,9 +339,10 @@ export function useReveal<T extends HTMLElement = HTMLElement>(
     const commitVisibility = (visible: boolean) => {
       if (cancelled) return;
 
-      const nextRevealed = disabled || prefersReducedMotion || once
-        ? revealedRef.current || visible || disabled || prefersReducedMotion
-        : visible;
+      const canReveal = disabled || ((visible || prefersReducedMotion) && ready);
+      const nextRevealed = disabled || once
+        ? revealedRef.current || canReveal
+        : canReveal;
       const shouldReport = !disabled && nextRevealed && !revealedRef.current;
       revealedRef.current = nextRevealed;
 
@@ -351,6 +354,7 @@ export function useReveal<T extends HTMLElement = HTMLElement>(
       });
 
       if (shouldReport) onRevealRef.current?.();
+      return nextRevealed;
     };
 
     const takeOwnershipHidden = (visible: boolean) => {
@@ -383,8 +387,8 @@ export function useReveal<T extends HTMLElement = HTMLElement>(
       takeOwnershipHidden(true);
       cancelScheduledReveal = scheduleAfterPaint(() => {
         pendingInitialReveal = false;
-        commitVisibility(latestVisible);
-        if (once && latestVisible) observer?.disconnect();
+        const didReveal = commitVisibility(latestVisible);
+        if (once && didReveal) observer?.disconnect();
       });
     } else if (!revealedRef.current) {
       takeOwnershipHidden(initiallyVisible);
@@ -414,8 +418,8 @@ export function useReveal<T extends HTMLElement = HTMLElement>(
           return;
         }
 
-        commitVisibility(visible);
-        if (once && visible) observer?.disconnect();
+        const didReveal = commitVisibility(visible);
+        if (once && didReveal) observer?.disconnect();
       },
       { rootMargin, threshold }
     );
@@ -427,7 +431,7 @@ export function useReveal<T extends HTMLElement = HTMLElement>(
       cancelScheduledReveal?.();
       observer?.disconnect();
     };
-  }, [disabled, node, once, prefersReducedMotion, rootMargin, threshold]);
+  }, [disabled, node, once, prefersReducedMotion, ready, rootMargin, threshold]);
 
   return {
     ref,
@@ -480,6 +484,7 @@ const RevealInner = React.forwardRef(function RevealInner<
     staggerIndex,
     staggerMs,
     easing,
+    ready,
     disabled,
     onReveal,
     ...rest
@@ -495,6 +500,7 @@ const RevealInner = React.forwardRef(function RevealInner<
     staggerIndex,
     staggerMs,
     easing,
+    ready,
     disabled,
     onReveal,
   });

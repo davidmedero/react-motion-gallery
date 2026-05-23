@@ -8,6 +8,7 @@ export type {
   MasonryPlugin,
   MasonryPluginKind,
   MasonrySpan,
+  RevealOptions,
   ResponsiveMasonrySpan,
 } from "./Gallery/masonry/types";
 export type { MasonryReadyController } from "./masonry-ready";

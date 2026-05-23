@@ -9,7 +9,7 @@ import type { EntriesMediaContainerRender } from "../index";
 import { BREAKPOINT_MAP } from "../../shared/responsive";
 import { useOptionalGalleryCore } from "../../core";
 import { normalizeMasonryChild } from "../../masonry/item";
-import type { IntroOptions } from "../../masonry/types";
+import type { RevealOptions } from "../../masonry/types";
 import type { MasonrySkeletonSpec } from "../../skeleton/masonry";
 import type {
   SkeletonForceOptions,
@@ -26,9 +26,9 @@ type EntriesMasonryLoadingOptions = {
 export function createEntriesMasonryMedia(args: {
   masonryObject?: any;
   masonryLoading?: EntriesMasonryLoadingOptions;
-  masonryIntro?: IntroOptions;
+  masonryReveal?: RevealOptions;
 }): EntriesMediaContainerRender {
-  const { masonryObject, masonryLoading, masonryIntro } = args;
+  const { masonryObject, masonryLoading, masonryReveal } = args;
   const masonryConfig = masonryObject ?? {};
 
   function normalizeLoading(src?: EntriesMasonryLoadingOptions) {
@@ -42,9 +42,9 @@ export function createEntriesMasonryMedia(args: {
     };
   }
 
-  function normalizeIntro(src?: IntroOptions) {
+  function normalizeReveal(src?: RevealOptions) {
     return {
-      renderIntro: src?.renderIntro,
+      renderReveal: src?.renderReveal,
       staggerMs: src?.staggerMs ?? 40,
       durationMs: src?.durationMs ?? 300,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
@@ -53,7 +53,7 @@ export function createEntriesMasonryMedia(args: {
   }
 
   const normalizedLoading = normalizeLoading(masonryLoading ?? masonryConfig.loading);
-  const normalizedIntro = normalizeIntro(masonryIntro ?? masonryConfig.intro);
+  const normalizedReveal = normalizeReveal(masonryReveal ?? masonryConfig.reveal);
 
   function EntriesMasonryMediaInner(props: {
     entryInView?: boolean;
@@ -116,8 +116,8 @@ export function createEntriesMasonryMedia(args: {
         itemSpans={filtered.map((item) => item.span)}
         masonry={masonryConfig}
         breakpoints={breakpoints}
-        intro={normalizedIntro}
-        introReady={entryInView ?? true}
+        reveal={normalizedReveal}
+        revealReady={entryInView ?? true}
       />
     );
 

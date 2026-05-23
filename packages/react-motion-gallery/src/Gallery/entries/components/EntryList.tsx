@@ -9,7 +9,7 @@ import {
   EntrySkeletonCard,
   EntrySkeletonSpec,
 } from "./EntrySkeleton";
-import { useNormalizedEntriesIntro, useNormalizedEntriesLoading } from "../normalize";
+import { useNormalizedEntriesReveal, useNormalizedEntriesLoading } from "../normalize";
 import { MediaItem } from "../../shared/types/media";
 import { SliderHandle } from "../../slider/types";
 import {
@@ -20,7 +20,7 @@ import {
 import type { SkeletonCacheSnapshot } from "../../skeleton/cache";
 
 const SKELETON_EXIT_MS = 220;
-const INTRO_OVERLAP_MS = 220;
+const REVEAL_OVERLAP_MS = 220;
 
 type Props = {
   enabled: boolean;
@@ -218,7 +218,7 @@ export function EntryList({
   }
 
   const loadingN = useNormalizedEntriesLoading(entries);
-  const introN = useNormalizedEntriesIntro(entries);
+  const revealN = useNormalizedEntriesReveal(entries);
 
   const loadingOpts = (entries as any)?.loading as
     | {
@@ -242,7 +242,7 @@ export function EntryList({
   const shouldStageEntryReveal =
     loadingActive &&
     !prefersReducedMotion &&
-    (introN.durationMs > 0 || introN.staggerMs > 0);
+    (revealN.durationMs > 0 || revealN.staggerMs > 0);
 
   const { nearView, everInView, setEntryRef } = useEntryInView(len, {
     root: null,
@@ -259,8 +259,8 @@ export function EntryList({
   });
 
   const resolvedSkeletonExitMs = prefersReducedMotion ? 0 : SKELETON_EXIT_MS;
-  const introUnlockDelayMs = Math.max(0, resolvedSkeletonExitMs - INTRO_OVERLAP_MS);
-  const [introUnlocked, setIntroUnlocked] = React.useState(
+  const revealUnlockDelayMs = Math.max(0, resolvedSkeletonExitMs - REVEAL_OVERLAP_MS);
+  const [revealUnlocked, setRevealUnlocked] = React.useState(
     () => !(loadingActive && (loadingForce.enabled || len === 0))
   );
   const markEntryShimmerDisabled = React.useCallback((entryKey: string) => {
@@ -350,6 +350,10 @@ export function EntryList({
               const original = rawContent as React.ReactElement<any>;
               const origOnClick = original.props?.onClick;
               const origRef = (original as any).ref as React.Ref<HTMLElement> | undefined;
+              const fullscreenImageStyle =
+                fsEnabled && media.kind === "image"
+                  ? { ...(original.props?.style ?? {}), cursor: "zoom-in" }
+                  : original.props?.style;
 
               const mergedOnClick: React.MouseEventHandler<any> = (e) => {
                 if (typeof origOnClick === "function") origOnClick(e);
@@ -378,6 +382,7 @@ export function EntryList({
                   onPointerMoveCapture,
                   onPointerUpCapture,
                   ref: mergedRef,
+                  style: fullscreenImageStyle,
                 });
               }
 
@@ -408,6 +413,8 @@ export function EntryList({
               <div
                 key={`${entryIndex}-${mediaIndex}`}
                 className={styles.entryMediaButton}
+                data-rmg-fullscreen-enabled={fsEnabled ? "true" : undefined}
+                data-rmg-fullscreen-trigger-mode={fsEnabled ? "media" : undefined}
                 onClick={handleClick}
                 ref={reg as any}
               >
@@ -429,7 +436,7 @@ export function EntryList({
               : mediaContainer;
         }
 
-        const limit = introN.staggerLimit;
+        const limit = revealN.staggerLimit;
         const delayIndex = limit > 0 && entryIndex < limit ? entryIndex : 0;
 
         const skeletonOverride =
@@ -448,7 +455,7 @@ export function EntryList({
         }
 
         const order = revealOrderByEntryRef.current[entryIndex];
-        const introDelayMs = order >= 0 ? order * introN.staggerMs : 0;
+        const revealDelayMs = order >= 0 ? order * revealN.staggerMs : 0;
 
         return (
           <div
@@ -461,8 +468,8 @@ export function EntryList({
             data-rmg-entry-owner={entryIndex}
             style={{
               ["--rmg-entry-min-height" as any]: loadingN.minHeight,
-              ["--rmg-entry-intro-index" as any]: delayIndex,
-              ["--rmg-entry-intro-delay" as any]: `${introDelayMs}ms`,
+              ["--rmg-entry-reveal-index" as any]: delayIndex,
+              ["--rmg-entry-reveal-delay" as any]: `${revealDelayMs}ms`,
               ...entries.entryRow?.style,
             }}
           >
@@ -565,23 +572,23 @@ export function EntryList({
 
   React.useEffect(() => {
     if (showGlobalLoading) {
-      setIntroUnlocked(false);
+      setRevealUnlocked(false);
       return;
     }
 
-    if (!loadingActive || prefersReducedMotion || introUnlockDelayMs === 0) {
-      setIntroUnlocked(loadingActive ? anyReveal : true);
+    if (!loadingActive || prefersReducedMotion || revealUnlockDelayMs === 0) {
+      setRevealUnlocked(loadingActive ? anyReveal : true);
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
-      setIntroUnlocked(anyReveal);
-    }, introUnlockDelayMs);
+      setRevealUnlocked(anyReveal);
+    }, revealUnlockDelayMs);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [anyReveal, introUnlockDelayMs, loadingActive, prefersReducedMotion, showGlobalLoading]);
+  }, [anyReveal, revealUnlockDelayMs, loadingActive, prefersReducedMotion, showGlobalLoading]);
 
   const containerProps: React.HTMLAttributes<HTMLDivElement> &
     React.RefAttributes<HTMLDivElement> &
@@ -590,9 +597,9 @@ export function EntryList({
     "data-rmg-entry-skeleton-cache-scope": scopeId,
     className: [styles.entryList, entries.entryList?.className].filter(Boolean).join(" "),
     style: {
-      ["--rmg-entry-intro-stagger" as any]: `${introN.staggerMs}ms`,
-      ["--rmg-entry-intro-duration" as any]: `${introN.durationMs}ms`,
-      ["--rmg-entry-intro-easing" as any]: introN.easing,
+      ["--rmg-entry-reveal-stagger" as any]: `${revealN.staggerMs}ms`,
+      ["--rmg-entry-reveal-duration" as any]: `${revealN.durationMs}ms`,
+      ["--rmg-entry-reveal-easing" as any]: revealN.easing,
       ...entries.entryList?.style,
     },
     "aria-busy": showGlobalLoading ? true : undefined,
@@ -604,7 +611,7 @@ export function EntryList({
     </div>
   );
 
-  return introN.renderIntro
-    ? introN.renderIntro({ active: !showGlobalLoading && introUnlocked, containerProps }, inner)
+  return revealN.renderReveal
+    ? revealN.renderReveal({ active: !showGlobalLoading && revealUnlocked, containerProps }, inner)
     : inner;
 }

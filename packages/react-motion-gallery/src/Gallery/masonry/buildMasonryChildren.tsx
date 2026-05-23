@@ -5,6 +5,10 @@ import type { FullscreenTrigger } from "./types";
 import type { MasonryCell } from "./item";
 import type { ResponsiveMasonrySpan } from "./types";
 
+const FULLSCREEN_TRIGGER_SELECTOR = "[data-rmg-fullscreen-trigger]";
+const MEDIA_FULLSCREEN_SELECTOR =
+  `${FULLSCREEN_TRIGGER_SELECTOR},img,video,[data-rmg-plyr="true"],.plyr,iframe`;
+
 export type BuiltMasonryChild = {
   id: string;
   node: React.ReactNode;
@@ -25,15 +29,11 @@ export type BuildMasonryChildrenOpts = {
   slideStoreBag?: RmgSlideStoreBag;
 };
 
-function isImgEl(el: unknown): el is HTMLImageElement {
-  return el instanceof HTMLImageElement;
-}
-
-function findImgFromClickTarget(target: EventTarget | null): HTMLImageElement | null {
+function findMediaFromClickTarget(target: EventTarget | null): HTMLElement | null {
   if (!(target instanceof HTMLElement)) return null;
 
-  const el = target.closest("img");
-  return isImgEl(el) ? el : null;
+  const el = target.closest(MEDIA_FULLSCREEN_SELECTOR);
+  return el instanceof HTMLElement ? el : null;
 }
 
 export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMasonryChild[] {
@@ -53,8 +53,8 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMason
 
   return cells.map((cell, index) => {
     const original = cell.node;
-    const introStyle: React.CSSProperties & Record<string, any> = {
-      ["--rmg-intro-index" as any]: index,
+    const revealStyle: React.CSSProperties & Record<string, any> = {
+      ["--rmg-reveal-index" as any]: index,
     };
 
     const className = [
@@ -70,7 +70,7 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMason
     const itemStyle: React.CSSProperties & Record<string, any> = {
       ...(itemWrapStyle || {}),
       ...(cell.layoutMeta?.style || {}),
-      ...introStyle,
+      ...revealStyle,
     };
     const scopedOriginal = (
       <RmgSlideProvider value={{ normIdx: index, isClone: false, storeBag: slideStoreBag }}>
@@ -84,7 +84,7 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMason
 
       const originEl =
         fullscreenTrigger === "media"
-          ? findImgFromClickTarget(e.target)
+          ? findMediaFromClickTarget(e.target)
           : e.currentTarget;
 
       if (!originEl) return;
@@ -105,6 +105,8 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMason
       node: (
         <div
           data-rmg-idx={index}
+          data-rmg-fullscreen-enabled={fsEnabled ? "true" : undefined}
+          data-rmg-fullscreen-trigger-mode={fsEnabled ? fullscreenTrigger : undefined}
           className={className}
           style={itemStyle}
           onClick={onClick}

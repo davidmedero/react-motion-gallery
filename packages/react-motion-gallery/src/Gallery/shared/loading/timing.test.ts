@@ -53,11 +53,11 @@ describe("shared loading timing helpers", () => {
     });
   });
 
-  test("unlocks intro just after exit begins after the minimum visible window", () => {
+  test("unlocks reveal just after exit begins after the minimum visible window", () => {
     vi.useFakeTimers();
     const setLoadingExiting = vi.fn();
     const setShowLoadingLayer = vi.fn();
-    const setIntroUnlocked = vi.fn();
+    const setRevealUnlocked = vi.fn();
 
     scheduleLoadingExit({
       loadingVisibleSinceMs: 1000,
@@ -65,15 +65,15 @@ describe("shared loading timing helpers", () => {
       exitMs: 220,
       setLoadingExiting,
       setShowLoadingLayer,
-      setIntroUnlocked,
+      setRevealUnlocked,
     });
 
     expect(setLoadingExiting).toHaveBeenCalledWith(true);
-    expect(setIntroUnlocked).not.toHaveBeenCalled();
+    expect(setRevealUnlocked).not.toHaveBeenCalled();
     expect(setShowLoadingLayer).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(0);
-    expect(setIntroUnlocked).toHaveBeenCalledWith(true);
+    expect(setRevealUnlocked).toHaveBeenCalledWith(true);
 
     vi.advanceTimersByTime(219);
     expect(setShowLoadingLayer).not.toHaveBeenCalled();
@@ -87,7 +87,7 @@ describe("shared loading timing helpers", () => {
     vi.useFakeTimers();
     const setLoadingExiting = vi.fn();
     const setShowLoadingLayer = vi.fn();
-    const setIntroUnlocked = vi.fn();
+    const setRevealUnlocked = vi.fn();
 
     scheduleLoadingExit({
       loadingVisibleSinceMs: 1000,
@@ -96,15 +96,15 @@ describe("shared loading timing helpers", () => {
       minVisibleMs: 0,
       setLoadingExiting,
       setShowLoadingLayer,
-      setIntroUnlocked,
+      setRevealUnlocked,
     });
 
     expect(setLoadingExiting).toHaveBeenCalledWith(true);
-    expect(setIntroUnlocked).not.toHaveBeenCalled();
+    expect(setRevealUnlocked).not.toHaveBeenCalled();
     expect(setShowLoadingLayer).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(0);
-    expect(setIntroUnlocked).toHaveBeenCalledWith(true);
+    expect(setRevealUnlocked).toHaveBeenCalledWith(true);
 
     vi.advanceTimersByTime(219);
     expect(setShowLoadingLayer).not.toHaveBeenCalled();

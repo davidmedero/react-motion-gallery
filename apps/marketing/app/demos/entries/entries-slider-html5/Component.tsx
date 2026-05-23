@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { useSearchParams } from "next/navigation";
 import { GalleryCore } from "react-motion-gallery/core";
@@ -76,7 +76,7 @@ type ResolvedSkeletonTextState = GeneratedSkeletonTextState & {
 
 function addPxToBarWidth(
   value: GeneratedSkeletonTextState["barWidth"],
-  amount: number
+  amount: number,
 ): GeneratedSkeletonTextState["barWidth"] {
   if (typeof value === "string") {
     const match = value.match(/^(-?\d+(?:\.\d+)?)px$/);
@@ -92,7 +92,7 @@ function addPxToBarWidth(
       Object.entries(value).map(([breakpoint, entry]) => [
         breakpoint,
         addPxToBarWidth(entry, amount),
-      ])
+      ]),
     ) as Record<number, string | string[]>;
   }
 
@@ -101,7 +101,7 @@ function addPxToBarWidth(
 
 function firstBarWidthValue(
   value: GeneratedSkeletonTextState["barWidth"],
-  fallback: string
+  fallback: string,
 ): string {
   if (typeof value === "string") return value;
 
@@ -126,7 +126,7 @@ function firstBarWidthValue(
 function withTextMetrics(
   text: GeneratedSkeletonTextState,
   fallbackBarHeight: number,
-  fallbackLineHeight: number
+  fallbackLineHeight: number,
 ): ResolvedSkeletonTextState {
   return {
     ...text,
@@ -136,7 +136,7 @@ function withTextMetrics(
 }
 
 function createBadgeSkeletonText(
-  text: GeneratedSkeletonTextState
+  text: GeneratedSkeletonTextState,
 ): ResolvedSkeletonTextState {
   return {
     ...text,
@@ -188,7 +188,8 @@ const ENTRIES: DemoEntry[] = [
         kind: "video",
         ...VIDEO_MEDIA.waves,
         alt: "Lorem ipsum video 1",
-        description: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        description:
+          "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
       },
       {
         kind: "image",
@@ -196,7 +197,8 @@ const ENTRIES: DemoEntry[] = [
         alt: "Lorem ipsum image 2",
         width: 1600,
         height: 900,
-        description: "Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+        description:
+          "Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
       },
     ],
   },
@@ -210,7 +212,8 @@ const ENTRIES: DemoEntry[] = [
         kind: "video",
         ...VIDEO_MEDIA.ridge,
         alt: "Lorem ipsum video 2",
-        description: "Duis aute irure dolor in reprehenderit in voluptate velit esse.",
+        description:
+          "Duis aute irure dolor in reprehenderit in voluptate velit esse.",
       },
       {
         kind: "image",
@@ -218,13 +221,15 @@ const ENTRIES: DemoEntry[] = [
         alt: "Lorem ipsum image 3",
         width: 1600,
         height: 900,
-        description: "Cillum dolore eu fugiat nulla pariatur excepteur sint occaecat.",
+        description:
+          "Cillum dolore eu fugiat nulla pariatur excepteur sint occaecat.",
       },
       {
         kind: "video",
         ...VIDEO_MEDIA.forest,
         alt: "Lorem ipsum video 3",
-        description: "Cupidatat non proident sunt in culpa qui officia deserunt.",
+        description:
+          "Cupidatat non proident sunt in culpa qui officia deserunt.",
       },
     ],
   },
@@ -246,7 +251,8 @@ const ENTRIES: DemoEntry[] = [
         kind: "video",
         ...VIDEO_MEDIA.night,
         alt: "Lorem ipsum video 4",
-        description: "Consectetur adipiscing elit sed do eiusmod tempor incididunt.",
+        description:
+          "Consectetur adipiscing elit sed do eiusmod tempor incididunt.",
       },
     ],
   },
@@ -324,7 +330,11 @@ function renderEntryCard({ entry, entryIndex, media }: EntryCardRenderArgs) {
 function renderEntryMedia({ media }: EntryMediaRenderArgs) {
   if (media.kind === "video") {
     return (
-      <div className={[styles.entrySliderMedia, styles.entrySliderVideoFrame].join(" ")}>
+      <div
+        className={[styles.entrySliderMedia, styles.entrySliderVideoFrame].join(
+          " ",
+        )}
+      >
         <div
           className={styles.entrySliderVideoGuard}
           onClick={(event) => {
@@ -357,7 +367,11 @@ function renderEntryMedia({ media }: EntryMediaRenderArgs) {
   return null;
 }
 
-function renderEntryOverlay({ entry, media, mediaIndex }: EntryOverlayRenderArgs) {
+function renderEntryOverlay({
+  entry,
+  media,
+  mediaIndex,
+}: EntryOverlayRenderArgs) {
   const item = entry as DemoEntry;
   const slide = media as DemoMedia | null;
 
@@ -366,7 +380,9 @@ function renderEntryOverlay({ entry, media, mediaIndex }: EntryOverlayRenderArgs
       <span className={styles.entryOverlayKicker}>{item.section}</span>
       <strong className={styles.entryOverlayTitle}>{item.title}</strong>
       <p className={styles.entryOverlayBody}>{item.body}</p>
-      <span className={styles.entryOverlayMeta}>Slide {String((mediaIndex ?? 0) + 1)}</span>
+      <span className={styles.entryOverlayMeta}>
+        Slide {String((mediaIndex ?? 0) + 1)}
+      </span>
       {slide?.description ? (
         <p className={styles.entryOverlayDescription}>{slide.description}</p>
       ) : null}
@@ -435,7 +451,7 @@ function createEntrySliderSkeleton(args: {
                   ...titleSkeletonText,
                   style: {
                     width: "100%",
-                    marginBottom: "6px"
+                    marginBottom: "6px",
                   },
                 },
               ],
@@ -455,7 +471,7 @@ function createEntrySliderSkeleton(args: {
           ...bodySkeletonText,
           style: {
             width: "100%",
-            marginBottom: "3px"
+            marginBottom: "3px",
           },
         },
         {
@@ -518,7 +534,7 @@ export function EntriesSliderHtml5Demo() {
             media: renderEntryMedia,
             overlay: renderEntryOverlay,
           },
-          intro: showMeasuredContent
+          reveal: showMeasuredContent
             ? {
                 durationMs: 0,
                 staggerMs: 0,
@@ -526,9 +542,6 @@ export function EntriesSliderHtml5Demo() {
             : undefined,
           loading: {
             cache: demoSkeletonCache("entries-slider-html5"),
-            // force: {
-            //   showContent: true
-            // },
             waitForDecode: showMeasuredContent ? false : undefined,
             skeletonWrap: {
               style: {

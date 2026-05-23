@@ -22,6 +22,7 @@ export const css = String.raw`.gridTile {
   height: 100%;
   display: block;
   object-fit: cover;
+  cursor: zoom-in;
 }
 
 .gridTileCopy {

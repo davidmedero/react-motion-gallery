@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
@@ -60,7 +60,7 @@ type ResolvedSkeletonTextState = GeneratedSkeletonTextState & {
 
 function addPxToBarWidth(
   value: GeneratedSkeletonTextState["barWidth"],
-  amount: number
+  amount: number,
 ): GeneratedSkeletonTextState["barWidth"] {
   if (typeof value === "string") {
     const match = value.match(/^(-?\\d+(?:\\.\\d+)?)px$/);
@@ -76,7 +76,7 @@ function addPxToBarWidth(
       Object.entries(value).map(([breakpoint, entry]) => [
         breakpoint,
         addPxToBarWidth(entry, amount),
-      ])
+      ]),
     ) as Record<number, string | string[]>;
   }
 
@@ -85,7 +85,7 @@ function addPxToBarWidth(
 
 function firstBarWidthValue(
   value: GeneratedSkeletonTextState["barWidth"],
-  fallback: string
+  fallback: string,
 ): string {
   if (typeof value === "string") return value;
 
@@ -110,7 +110,7 @@ function firstBarWidthValue(
 function withTextMetrics(
   text: GeneratedSkeletonTextState,
   fallbackBarHeight: number,
-  fallbackLineHeight: number
+  fallbackLineHeight: number,
 ): ResolvedSkeletonTextState {
   return {
     ...text,
@@ -120,7 +120,7 @@ function withTextMetrics(
 }
 
 function createBadgeSkeletonText(
-  text: GeneratedSkeletonTextState
+  text: GeneratedSkeletonTextState,
 ): ResolvedSkeletonTextState {
   return {
     ...text,
@@ -141,13 +141,15 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/667/1400/1100",
         alt: "Lorem ipsum image 1",
-        description: "A lone runner follows a hillside road into warm sunset light.",
+        description:
+          "A lone runner follows a hillside road into warm sunset light.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/675/1400/1100",
         alt: "Lorem ipsum image 2",
-        description: "Windblown surf breaks under a dark sky and low coastal sun.",
+        description:
+          "Windblown surf breaks under a dark sky and low coastal sun.",
       },
       {
         kind: "image",
@@ -173,7 +175,8 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/678/1400/1100",
         alt: "Lorem ipsum image 5",
-        description: "Two hikers pause below massive alpine walls and autumn trees.",
+        description:
+          "Two hikers pause below massive alpine walls and autumn trees.",
       },
     ],
   },
@@ -187,7 +190,8 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/681/1400/1100",
         alt: "Lorem ipsum image 6",
-        description: "A dense field of stars hangs above dark tree silhouettes.",
+        description:
+          "A dense field of stars hangs above dark tree silhouettes.",
       },
       {
         kind: "image",
@@ -205,7 +209,8 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/693/1400/1100",
         alt: "Lorem ipsum image 9",
-        description: "The Golden Gate Bridge disappears into rolling fog over the bay.",
+        description:
+          "The Golden Gate Bridge disappears into rolling fog over the bay.",
       },
     ],
   },
@@ -253,8 +258,7 @@ const ENTRY_GRID_SKELETON_TEXT: GeneratedEntryGridSkeletonText[] =
 
 function renderEntryCard({ entry, entryIndex, media }: EntryCardRenderArgs) {
   const item = entry as DemoEntry;
-  const textIds =
-    ENTRY_GRID_TEXT_IDS[entryIndex] ?? ENTRY_GRID_TEXT_IDS[0]!;
+  const textIds = ENTRY_GRID_TEXT_IDS[entryIndex] ?? ENTRY_GRID_TEXT_IDS[0]!;
 
   return (
     <article className={styles.entryCard}>
@@ -300,7 +304,11 @@ function renderEntryMedia({ media }: EntryMediaRenderArgs) {
   );
 }
 
-function renderEntryOverlay({ entry, media, mediaIndex }: EntryOverlayRenderArgs) {
+function renderEntryOverlay({
+  entry,
+  media,
+  mediaIndex,
+}: EntryOverlayRenderArgs) {
   const item = entry as DemoEntry;
   const slide = media as DemoEntry["media"][number] | null;
 
@@ -309,7 +317,9 @@ function renderEntryOverlay({ entry, media, mediaIndex }: EntryOverlayRenderArgs
       <span className={styles.entryOverlayKicker}>{item.section}</span>
       <strong className={styles.entryOverlayTitle}>{item.title}</strong>
       <p className={styles.entryOverlayBody}>{item.body}</p>
-      <span className={styles.entryOverlayMeta}>Tile {String((mediaIndex ?? 0) + 1)}</span>
+      <span className={styles.entryOverlayMeta}>
+        Tile {String((mediaIndex ?? 0) + 1)}
+      </span>
       {slide?.description ? (
         <p className={styles.entryOverlayDescription}>{slide.description}</p>
       ) : null}
@@ -333,8 +343,7 @@ function createEntryGridSkeleton(args: {
   entryIndex: number;
 }) {
   const skeletonText =
-    ENTRY_GRID_SKELETON_TEXT[args.entryIndex] ??
-    ENTRY_GRID_SKELETON_TEXT[0]!;
+    ENTRY_GRID_SKELETON_TEXT[args.entryIndex] ?? ENTRY_GRID_SKELETON_TEXT[0]!;
   const sectionSkeletonText = createBadgeSkeletonText(skeletonText.section);
   const titleSkeletonText = withTextMetrics(skeletonText.title, 17.28, 1.2);
   const countSkeletonText = withTextMetrics(skeletonText.count, 12.48, 1.5);
@@ -447,10 +456,6 @@ export function EntriesGridDemo() {
             },
             loading: {
               cache: demoSkeletonCache("entries-grid"),
-              // force: {
-              //   showContent: true,
-              //   skeletonOpacity: 0.5,
-              // },
               skeletonWrap: {
                 style: {
                   background: "#fff",

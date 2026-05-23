@@ -1,1 +1,1 @@
-export{a as sliderDots}from'./chunk-IER752J5.mjs';import'./chunk-WGVWASZM.mjs';import'./chunk-GH6UONOK.mjs';
+export{a as sliderDots}from'./chunk-M32PXYQO.mjs';import'./chunk-WGVWASZM.mjs';import'./chunk-WS5Y5APY.mjs';

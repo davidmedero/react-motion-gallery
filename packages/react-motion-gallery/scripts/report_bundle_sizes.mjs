@@ -212,9 +212,19 @@ const REPORTED_SURFACES = [
   { label: "Video", exportName: "Video", entry: "dist/video.mjs" },
   { label: "ZoomPanImage", exportName: "ZoomPanImage", entry: "dist/zoomPan.mjs" },
   {
+    label: "zoomPan/hover",
+    exportName: "zoomPanHover",
+    entry: "dist/zoomPan-hover.mjs",
+  },
+  {
     label: "media / toMediaItems",
     exportName: "toMediaItems",
     entry: "dist/media.mjs",
+  },
+  {
+    label: "media/ready",
+    exportName: "useImageDecodeReady",
+    entry: "dist/media-ready.mjs",
   },
   {
     label: "responsive / BREAKPOINT_MAP",

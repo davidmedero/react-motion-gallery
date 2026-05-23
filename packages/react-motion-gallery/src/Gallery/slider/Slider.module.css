@@ -80,8 +80,8 @@
 
 .fade_container {
   transition:
-    opacity var(--rmg-intro-duration, 420ms)
-      var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
+    opacity var(--rmg-reveal-duration, 420ms)
+      var(--rmg-reveal-easing, cubic-bezier(.2,.7,.2,1));
 }
 
 .fadeInStart {
@@ -204,11 +204,11 @@
 .fade_container [data-rmg-idx] > * {
   opacity: 0;
   transition:
-    opacity var(--rmg-intro-duration, 600ms)
-      var(--rmg-intro-easing, cubic-bezier(.2,.7,.2,1));
+    opacity var(--rmg-reveal-duration, 600ms)
+      var(--rmg-reveal-easing, cubic-bezier(.2,.7,.2,1));
 
   transition-delay: calc(
-    var(--rmg-intro-index, 0) * var(--rmg-intro-stagger, 60ms)
+    var(--rmg-reveal-index, 0) * var(--rmg-reveal-stagger, 60ms)
   );
 
   will-change: opacity;

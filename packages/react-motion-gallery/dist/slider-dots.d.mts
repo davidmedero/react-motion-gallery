@@ -1,4 +1,4 @@
-import { u as SliderDots, o as SliderPlugin } from './types-CE76Zotl.mjs';
+import { v as SliderDots, p as SliderPlugin } from './types-D9WBOrx6.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 import 'react';
 import './force-C5m1QpdF.mjs';

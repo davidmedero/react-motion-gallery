@@ -1,15 +1,18 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
-import {
-  useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
-import type { SkeletonNode, SliderSkeletonSlot, SliderSkeletonSpec } from "react-motion-gallery/skeleton/cache/slider";
+import type {
+  SkeletonNode,
+  SliderSkeletonSlot,
+  SliderSkeletonSpec,
+} from "react-motion-gallery/skeleton/cache/slider";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { sliderDots } from "react-motion-gallery/slider/dots";
@@ -268,7 +271,6 @@ const SLIDER_CARDS_SKELETON: SliderSkeletonSpec = {
       border: "1px solid #e2e8f0",
       boxShadow: "0 3px 6px rgba(15, 23, 42, 0.08)",
       backgroundColor: "#fff",
-      // height: "100%",
     },
     rowHeightCompensation: sliderCardsRowHeightCompensation,
   },
@@ -290,16 +292,9 @@ function ProductCard({
   const textIds = SLIDER_CARDS_TEXT_IDS[index];
 
   return (
-    <article
-      className={styles.cardSlide}
-      data-skeleton-item-id={productId}
-    >
+    <article className={styles.cardSlide} data-skeleton-item-id={productId}>
       <div className={styles.cardFirstColumn}>
-        <img
-          src={src}
-          alt={title}
-          className={styles.cardSlideImage}
-        />
+        <img src={src} alt={title} className={styles.cardSlideImage} />
         <div className={styles.cardSlideCopy}>
           <h3
             className={styles.cardSlideTitle}
@@ -336,7 +331,9 @@ export function SliderCardsDemo() {
   const searchParams = useSearchParams();
   const showMeasuredContent = searchParams.get("skeletonMeasure") === "content";
   const media = toMediaItems(PRODUCTS.map((product) => product.imageSrc));
-  const fullscreenMedia = toMediaItems(PRODUCTS.map((product) => product.fullscreenSrc));
+  const fullscreenMedia = toMediaItems(
+    PRODUCTS.map((product) => product.fullscreenSrc),
+  );
 
   const { ref: sliderRef, ready: sliderReady } = useSliderReady();
 
@@ -347,62 +344,58 @@ export function SliderCardsDemo() {
         layout={SLIDER_CARDS_SKELETON}
         ready={sliderReady}
         timing={{
-          exitMs: 800
+          exitMs: 800,
         }}
       >
-      <Slider
-        ref={sliderRef}
-        layout={{
-          cellsPerSlide: CELLS_PER_SLIDE,
-        }}
-        scroll={{
-          groupCells: true,
-          loop: true
-        }}
-        elements={{
-          viewport: {
-            className: styles.slider_viewport
-          }
-        }}
-        transitions={{
-          intro: {
-            staggerMs: 120
-          }
-        }}
+        <Slider
+          ref={sliderRef}
+          layout={{
+            cellsPerSlide: CELLS_PER_SLIDE,
+          }}
+          scroll={{
+            groupCells: true,
+            loop: true,
+          }}
+          elements={{
+            viewport: {
+              className: styles.slider_viewport,
+            },
+          }}
+          reveal={{
+            staggerMs: 120,
+          }}
+          plugins={[
+            sliderFullscreen(),
+            sliderRipple(),
+            sliderArrows({
+              arrow: {
+                style: {
+                  top: "43%",
+                },
+              },
+            }),
+            sliderDots({
+              root: {
+                className: styles.slider_dots_root,
+              },
+            }),
+          ]}
+        >
+          {media.map((item, i) => {
+            const product = PRODUCTS[i];
 
-        plugins={[
-          sliderFullscreen(),
-          sliderRipple(),
-          sliderArrows({
-            arrow: {
-              style: {
-                top: "43%"
-              }
-            }
-          }),
-          sliderDots({
-            root: {
-              className: styles.slider_dots_root
-            }
-          }),
-        ]}
-      >
-        {media.map((item, i) => {
-          const product = PRODUCTS[i];
-
-          return (
-            <ProductCard
-              key={\`product-\${item.kind === "image" ? item.src : ""}-\${i}\`}
-              productId={product.id}
-              index={i}
-              src={item.kind === "image" ? item.src : ""}
-              title={product.title}
-              price={product.price}
-            />
-          );
-  
-            })}
-      </Slider>
+            return (
+              <ProductCard
+                key={\`product-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+                productId={product.id}
+                index={i}
+                src={item.kind === "image" ? item.src : ""}
+                title={product.title}
+                price={product.price}
+              />
+            );
+          })}
+        </Slider>
       </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>

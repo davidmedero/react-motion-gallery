@@ -1,16 +1,18 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import type { CSSProperties } from "react";
-import {
-  useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { SliderSkeleton } from "react-motion-gallery/skeleton/slider/restore";
-import type { SkeletonNode, SliderSkeletonSpec } from "react-motion-gallery/skeleton/slider/restore";
+import type {
+  SkeletonNode,
+  SliderSkeletonSpec,
+} from "react-motion-gallery/skeleton/slider/restore";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { sliderAutoHeight } from "react-motion-gallery/slider/auto-height";
@@ -167,7 +169,7 @@ const AUTO_HEIGHT_SKELETON_TEXT: Record<string, AutoHeightSkeletonTextEntry> = {
 };
 
 function getFooterPillWidth(
-  barWidth: AutoHeightSkeletonTextState["barWidth"]
+  barWidth: AutoHeightSkeletonTextState["barWidth"],
 ): string {
   const width = Array.isArray(barWidth)
     ? barWidth[0]
@@ -194,7 +196,8 @@ const AUTO_HEIGHT_ITEM_WRAP_STYLE = {
 function createAutoHeightSkeletonItem(index: number): SkeletonNode {
   const slide = SLIDES[index] ?? SLIDES[0]!;
   const baseSkeletonText =
-    AUTO_HEIGHT_SKELETON_TEXT[slide.id] ?? AUTO_HEIGHT_SKELETON_TEXT.autoHeightOne;
+    AUTO_HEIGHT_SKELETON_TEXT[slide.id] ??
+    AUTO_HEIGHT_SKELETON_TEXT.autoHeightOne;
   const skeletonText = baseSkeletonText;
 
   return {
@@ -211,7 +214,7 @@ function createAutoHeightSkeletonItem(index: number): SkeletonNode {
           0: {
             width: "100%",
             height: slide.mediaHeight - AUTO_HEIGHT_MOBILE_MEDIA_OFFSET,
-            borderRadius: '12px 12px 0 0'
+            borderRadius: "12px 12px 0 0",
           },
           [AUTO_HEIGHT_DESKTOP_MIN_WIDTH]: {
             width: "100%",
@@ -325,7 +328,7 @@ const AUTO_HEIGHT_SKELETON: SliderSkeletonSpec = {
     itemWrapStyle: AUTO_HEIGHT_ITEM_WRAP_STYLE,
     slots: SLIDES.map((_, index) => ({
       item: createAutoHeightSkeletonItem(
-        (index - 1 + SLIDES.length) % SLIDES.length
+        (index - 1 + SLIDES.length) % SLIDES.length,
       ),
     })),
     rowHeightCompensation: {
@@ -405,9 +408,15 @@ export function SliderAutoHeightDemo() {
   const showMeasuredContent = searchParams.get("skeletonMeasure") === "content";
   const compareSkeleton = searchParams.get("skeletonCompare") === "true";
   const media = toMediaItems(SLIDES.map((slide) => slide.src));
-  const fullscreenMedia = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
+  const fullscreenMedia = toMediaItems(
+    SLIDES.map((slide) => slide.fullscreenSrc),
+  );
 
-  const { ref: sliderRef, ready: sliderReady, handleRef: sliderHandleRef } = useSliderReady();
+  const {
+    ref: sliderRef,
+    ready: sliderReady,
+    handleRef: sliderHandleRef,
+  } = useSliderReady();
 
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
@@ -432,34 +441,32 @@ export function SliderAutoHeightDemo() {
           activeSlotOffset: 1,
         }}
       >
-      <Slider
-        ref={sliderRef}
-        align="center"
-        scroll={{
-          loop: true,
-        }}
-
-        plugins={[
-          sliderFullscreen(),
-          sliderRipple(),
-          sliderArrows(),
-          sliderDots(),
-          sliderAutoHeight({
-          enabled: true,
-          duration: "420ms",
-          easing: "cubic-bezier(.22,1,.36,1)",
-        }),
-        ]}
-      >
-        {media.map((item, i) => (
-          <Slide
-            key={`auto-height-${item.kind === "image" ? item.src : ""}-${i}`}
-            slide={SLIDES[i]!}
-            i={i}
-          />
-  
-            ))}
-      </Slider>
+        <Slider
+          ref={sliderRef}
+          align="center"
+          scroll={{
+            loop: true,
+          }}
+          plugins={[
+            sliderFullscreen(),
+            sliderRipple(),
+            sliderArrows(),
+            sliderDots(),
+            sliderAutoHeight({
+              enabled: true,
+              duration: "420ms",
+              easing: "cubic-bezier(.22,1,.36,1)",
+            }),
+          ]}
+        >
+          {media.map((item, i) => (
+            <Slide
+              key={`auto-height-${item.kind === "image" ? item.src : ""}-${i}`}
+              slide={SLIDES[i]!}
+              i={i}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>

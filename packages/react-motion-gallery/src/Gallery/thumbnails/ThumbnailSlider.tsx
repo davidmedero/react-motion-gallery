@@ -25,7 +25,7 @@ import { ScrollBounds, ScrollBoundsType, PercentOfView, PercentOfViewType } from
 import { BaseTarget, factorAbs, mathSign, ScrollTarget, ScrollTargetType } from '../shared/motion/scrollTarget'
 import { Animations, AnimationsType } from '../shared/motion/animations'
 import { EventStore } from '../shared/motion/eventStore'
-import { ThumbnailCrossfadeOptions, ThumbnailIntroOptions, ThumbnailLoadingOptions, ThumbnailPosition, ThumbnailSelectMeta } from './types'
+import { ThumbnailCrossfadeOptions, ThumbnailRevealOptions, ThumbnailLoadingOptions, ThumbnailPosition, ThumbnailSelectMeta } from './types'
 import { ArrowRenderArgs } from '../shared/types/controls'
 import { BreakpointMap } from '../shared/responsive'
 import { Counter, CounterType } from '../shared/motion/counter'
@@ -116,8 +116,8 @@ interface ThumbnailSliderProps {
   freeScrollDuration?: number;
   sliderFriction?: number;
   loadingOptions?: ThumbnailLoadingOptions;
-  introOptions?: ThumbnailIntroOptions;
-  introUnlocked?: boolean;
+  revealOptions?: ThumbnailRevealOptions;
+  revealUnlocked?: boolean;
   breakpointMap?: BreakpointMap;
   rippleEnabled?: boolean;
   rippleClassName?: string;
@@ -163,8 +163,8 @@ export default function ThumbnailSlider({
   freeScrollDuration = 43,
   sliderFriction = 0.68,
   loadingOptions,
-  introOptions,
-  introUnlocked,
+  revealOptions,
+  revealUnlocked,
   breakpointMap = { xs: 0, sm: 640, md: 768, lg: 1024, xl: 1280 },
   rippleEnabled,
   rippleClassName,
@@ -1940,22 +1940,22 @@ export default function ThumbnailSlider({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentLength, containerLength, thumbLong, thumbSize, count])
 
-  const normalizedIntro = useMemo(() => {
-    const src = introOptions ?? {};
+  const normalizedReveal = useMemo(() => {
+    const src = revealOptions ?? {};
     return {
-      renderIntro: src.renderIntro,
+      renderReveal: src.renderReveal,
       staggerMs: src.staggerMs ?? 40,
       durationMs: src.durationMs ?? 300,
       easing: src.easing ?? 'cubic-bezier(.2,.7,.2,1)',
     };
-  }, [introOptions]);
+  }, [revealOptions]);
 
   const renderedThumbs = (clonedChildren.length
     ? clonedChildren
     : rawKids.map((c, i) => cloneThumb(c, `fallback-${i}`, i, i))
   );
 
-  const introChildren = useMemo(() => {
+  const revealChildren = useMemo(() => {
     return renderedThumbs.map((child: any, i: number) => {
       if (!isValidElement(child)) return child;
 
@@ -1967,13 +1967,13 @@ export default function ThumbnailSlider({
         'data-rmg-index': i,
         style: {
           ...prevStyle,
-          ['--rmg-intro-index' as any]: i,
+          ['--rmg-reveal-index' as any]: i,
         } as React.CSSProperties & Record<string, any>,
       });
     });
   }, [renderedThumbs]);
 
-  const fadeClass = (isReady && inView && (introUnlocked ?? true))
+  const fadeClass = (isReady && inView && (revealUnlocked ?? true))
     ? cls.fadeInActive
     : cls.fadeInStart;
 
@@ -2063,7 +2063,7 @@ export default function ThumbnailSlider({
     <>
       {arrowNodes}
       <div ref={trackRef} style={trackStyle}>
-        {introChildren}
+        {revealChildren}
       </div>
     </>
   );
@@ -2082,14 +2082,14 @@ export default function ThumbnailSlider({
         ...outerStyle,
         ...(thumbnailsContainerStyle || {}),
         ...(baseContainerProps.style || {}),
-        ['--rmg-intro-stagger' as any]: `${normalizedIntro.staggerMs}ms`,
-        ['--rmg-intro-duration' as any]: `${normalizedIntro.durationMs}ms`,
-        ['--rmg-intro-easing' as any]: normalizedIntro.easing,
+        ['--rmg-reveal-stagger' as any]: `${normalizedReveal.staggerMs}ms`,
+        ['--rmg-reveal-duration' as any]: `${normalizedReveal.durationMs}ms`,
+        ['--rmg-reveal-easing' as any]: normalizedReveal.easing,
       }}
     >
-      {normalizedIntro.renderIntro
-        ? normalizedIntro.renderIntro(
-            { active: isReady && inView && (introUnlocked ?? true), containerProps: baseContainerProps },
+      {normalizedReveal.renderReveal
+        ? normalizedReveal.renderReveal(
+            { active: isReady && inView && (revealUnlocked ?? true), containerProps: baseContainerProps },
             inner
           )
         : inner}

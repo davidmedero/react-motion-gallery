@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { type MediaItem, toMediaItems } from "react-motion-gallery/media";
@@ -36,28 +36,32 @@ const ITEMS = [
   {
     kind: "video" as const,
     src: "https://vimeo.com/145140004",
-    poster: "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
     title: "Lorem ipsum dolor sit amet",
     body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
     kind: "video" as const,
     src: "https://vimeo.com/113314928",
-    poster: "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   },
   {
     kind: "video" as const,
     src: "https://vimeo.com/172833424",
-    poster: "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
     title: "Duis aute irure dolor",
     body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
   },
   {
     kind: "video" as const,
     src: "https://vimeo.com/130632032",
-    poster: "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
     title: "Excepteur sint occaecat",
     body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   },
@@ -119,8 +123,7 @@ function buildVimeoFullscreenSource(item: MediaItem) {
 
 function createVimeoVideoSkeletonItem(index: number) {
   const skeletonText =
-    GRID_VIDEO_VIMEO_SKELETON_TEXT[index] ??
-    GRID_VIDEO_VIMEO_SKELETON_TEXT[0]!;
+    GRID_VIDEO_VIMEO_SKELETON_TEXT[index] ?? GRID_VIDEO_VIMEO_SKELETON_TEXT[0]!;
 
   return {
     kind: "col" as const,

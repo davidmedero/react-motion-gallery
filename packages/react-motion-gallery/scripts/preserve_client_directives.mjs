@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const packageDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(packageDir, "dist");
 const clientEntryFiles = [
+  "media-ready.mjs",
   "reveal.mjs",
   "skeleton-cache-provider.mjs",
 ];

@@ -279,7 +279,7 @@ describe("Masonry spans and positioned runtime", () => {
 
     expect(markup).toContain('class="rmg__masonry-item legacy-shell wrap-shell"');
     expect(markup).toContain("padding:6px");
-    expect(markup).toContain("--rmg-intro-index:0");
+    expect(markup).toContain("--rmg-reveal-index:0");
     expect(markup).toContain(">alpha<");
   });
 
@@ -302,7 +302,7 @@ describe("Masonry spans and positioned runtime", () => {
       expect(initialShell.getAttribute("data-rmg-masonry-content-ready")).toBe("false");
       expect(initialShell.style.opacity).toBe("");
       expect(initialShell.getAttribute("aria-hidden")).toBeNull();
-      expect(container.querySelector(`.${styles.introActive}`)).not.toBeNull();
+      expect(container.querySelector(`.${styles.revealActive}`)).not.toBeNull();
 
       allowMasonryMeasurement = true;
       await settleMasonryMeasurements();
@@ -319,7 +319,7 @@ describe("Masonry spans and positioned runtime", () => {
     }
   });
 
-  test("holds the masonry intro until the root enters view", async () => {
+  test("holds the masonry reveal until the root enters view", async () => {
     const observers: Array<{
       callback: IntersectionObserverCallback;
       target: Element | null;
@@ -379,7 +379,7 @@ describe("Masonry spans and positioned runtime", () => {
       );
       await settleMasonryMeasurements();
 
-      expect(container.querySelector(`.${styles.introActive}`)).toBeNull();
+      expect(container.querySelector(`.${styles.revealActive}`)).toBeNull();
 
       const rootObserver = observers.find(
         (observer) =>
@@ -405,7 +405,7 @@ describe("Masonry spans and positioned runtime", () => {
         await Promise.resolve();
       });
 
-      expect(container.querySelector(`.${styles.introActive}`)).not.toBeNull();
+      expect(container.querySelector(`.${styles.revealActive}`)).not.toBeNull();
     } finally {
       await React.act(async () => {
         root.unmount();

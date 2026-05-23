@@ -2047,8 +2047,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         // Suppress reveal transitions so the entry appears instantly before the close
         // animation starts — avoids the skeleton being visible or content still fading
         // in while the FLIP runs.
-        section?.style.setProperty('--rmg-entry-intro-duration', '0ms');
-        section?.style.setProperty('--rmg-entry-intro-delay', '0ms');
+        section?.style.setProperty('--rmg-entry-reveal-duration', '0ms');
+        section?.style.setProperty('--rmg-entry-reveal-delay', '0ms');
         section?.style.setProperty('--rmg-entry-skeleton-exit-duration', '0ms');
 
         if (!isEntryOwnerReady(link.entryIndex)) {

@@ -1,4 +1,4 @@
-export const source = `'use client';
+export const source = `"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { Grid } from "react-motion-gallery/grid";
@@ -75,8 +75,8 @@ export function ZoomPanGridDemo() {
           ref={gridRef}
           columns={12}
           gap={{ 0: 12, 960: 16 }}
-          intro={{
-            staggerMs: 60
+          reveal={{
+            staggerMs: 60,
           }}
         >
           {IMAGES.map((image) => (

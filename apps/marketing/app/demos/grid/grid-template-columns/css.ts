@@ -26,6 +26,7 @@ export const css = String.raw`.tile {
   height: 100%;
   display: block;
   object-fit: cover;
+  cursor: zoom-in;
 }
 
 .tileCopy {

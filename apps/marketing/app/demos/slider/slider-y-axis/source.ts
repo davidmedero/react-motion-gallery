@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -35,13 +35,7 @@ const FS_URLS = [
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
-  return (
-    <img
-      src={src}
-      alt={\`Slide \${i + 1}\`}
-      className={styles.slide}
-    />
-  );
+  return <img src={src} alt={\`Slide \${i + 1}\`} className={styles.slide} />;
 }
 
 function FullscreenAddon() {
@@ -66,64 +60,61 @@ function SliderYAxisGallery() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-y-axis")}
         layout={{
-              visibleCount: 3,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "col",
-                style: {
-                  gap: 20,
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: 12,
-                  },
-                },
-                itemWrapStyle: {
-                  width: "100cqw",
-                  aspectRatio: "16 / 7",
-                },
-              },
-            }}
-        ready={sliderReady}
-      >
-      <Slider
-        ref={sliderRef}
-        direction={{
-          axis: "y",
-        }}
-        elements={{
-          viewport: {
+          visibleCount: 3,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "col",
             style: {
-              height: "100cqh",
-              maxHeight: "530px",
+              gap: 20,
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100%",
+                height: "100%",
+                borderRadius: 12,
+              },
+            },
+            itemWrapStyle: {
+              width: "100cqw",
+              aspectRatio: "16 / 7",
             },
           },
         }}
-        transitions={{
-          intro: {
-            staggerMs: 160
-          }
-        }}
-        plugins={[
-          sliderFullscreen(),
-          sliderRipple(),
-          sliderArrows(),
-          sliderDots(),
-        ]}
+        ready={sliderReady}
       >
-        {media.map((item, i) => (
-          <Slide
-            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
-            src={item.kind === "image" ? item.src : ""}
-            i={i}
-          />
-  
-            ))}
-      </Slider>
+        <Slider
+          ref={sliderRef}
+          direction={{
+            axis: "y",
+          }}
+          elements={{
+            viewport: {
+              style: {
+                height: "100cqh",
+                maxHeight: "530px",
+              },
+            },
+          }}
+          reveal={{
+            staggerMs: 160,
+          }}
+          plugins={[
+            sliderFullscreen(),
+            sliderRipple(),
+            sliderArrows(),
+            sliderDots(),
+          ]}
+        >
+          {media.map((item, i) => (
+            <Slide
+              key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+              src={item.kind === "image" ? item.src : ""}
+              i={i}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>

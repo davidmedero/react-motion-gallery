@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
-import { a as MasonryItemProps, b as MasonryOptions, M as MasonryHandle } from './types-Br27DWP7.mjs';
-export { c as MasonryPlugin, d as MasonryPluginKind, e as MasonrySpan, R as ResponsiveMasonrySpan } from './types-Br27DWP7.mjs';
+import { a as MasonryItemProps, b as MasonryOptions, M as MasonryHandle } from './types-plwyER1z.mjs';
+export { c as MasonryPlugin, d as MasonryPluginKind, e as MasonrySpan, R as ResponsiveMasonrySpan, f as RevealOptions } from './types-plwyER1z.mjs';
 export { MasonryReadyController, useMasonryReady } from './masonry-ready.mjs';
 
 type MasonryItemComponent = React.FC<MasonryItemProps> & {

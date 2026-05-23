@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { type MediaItem, toMediaItems } from "react-motion-gallery/media";
@@ -52,7 +52,8 @@ const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://vimeo.com/145140004",
-    poster: "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/543161898-50fd66e034508b21a3ad7e668577709bb20b0d339e394dff325c24bd6155a37a-d_640?region=us",
     title: "Lorem ipsum dolor sit amet",
     body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     ratio: "16 / 10",
@@ -61,7 +62,8 @@ const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://vimeo.com/113314928",
-    poster: "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/498587339-a98d3fe72280beb7d17e8d2294e78c129ae40003fcf295384731134b214d1503-d_640?region=us",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     ratio: "21 / 10",
@@ -70,7 +72,8 @@ const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://vimeo.com/172833424",
-    poster: "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/578815638-72b8689b81268e096ab8ad7746b90b89beb60a5e86b0664d2a10ce77f7eceb8c-d_640?region=us",
     title: "Duis aute irure dolor",
     body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
     ratio: "16 / 10",
@@ -79,7 +82,8 @@ const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://vimeo.com/130632032",
-    poster: "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/522566445-9f80dcf05e5eef5d6364db7f75ab735eecd3ebbd33eacdd7e1cc0dc0002b9b00-d_640?region=us",
     title: "Excepteur sint occaecat",
     body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     ratio: "16 / 10",
@@ -88,7 +92,8 @@ const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://vimeo.com/29216771",
-    poster: "https://i.vimeocdn.com/video/195526505-0b6e473889f312924ae8715001157ffd464349eb7d4cef78136668cae68a0ce8-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/195526505-0b6e473889f312924ae8715001157ffd464349eb7d4cef78136668cae68a0ce8-d_640?region=us",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
     ratio: "16 / 10",
@@ -97,7 +102,8 @@ const ITEMS: MasonryVideoItem[] = [
   {
     kind: "video" as const,
     src: "https://vimeo.com/127223734",
-    poster: "https://i.vimeocdn.com/video/517933160-cfa1bfb51adafa1ea32b3e1c67b79abcfdfd848f35fff141b41c24860fd1e22c-d_640?region=us",
+    poster:
+      "https://i.vimeocdn.com/video/517933160-cfa1bfb51adafa1ea32b3e1c67b79abcfdfd848f35fff141b41c24860fd1e22c-d_640?region=us",
     title: "Nemo enim ipsam voluptatem",
     body: "Quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores.",
     ratio: "21 / 10",
@@ -222,8 +228,7 @@ const VIMEO_SKELETON: MasonrySkeletonSpec = {
       item: createVideoSkeletonItem({
         item,
         skeletonText:
-          MASONRY_VIDEO_SKELETON_TEXT[index] ??
-          MASONRY_VIDEO_SKELETON_TEXT[0]!,
+          MASONRY_VIDEO_SKELETON_TEXT[index] ?? MASONRY_VIDEO_SKELETON_TEXT[0]!,
       }),
     })),
   },
@@ -270,13 +275,6 @@ function MasonryVimeoCard(props: {
   return (
     <article className={styles.masonryVimeoCard}>
       <div className={styles.masonryVimeoFrame} style={{ aspectRatio: ratio }}>
-        <img
-          src="/open-fullscreen.png"
-          alt="Open fullscreen"
-          width="24"
-          height="24"
-          className={styles.open_fullscreen_icon}
-        />
         <Video
           src={src}
           poster={poster}
@@ -285,6 +283,12 @@ function MasonryVimeoCard(props: {
           className={styles.masonryVimeoVideo}
           style={{ height: "100%" }}
           alt={title}
+        />
+        <button
+          type="button"
+          className={styles.fullscreen_trigger}
+          aria-label="Open fullscreen"
+          data-rmg-fullscreen-trigger
         />
       </div>
       <div className={styles.masonryVimeoMeta}>
@@ -346,18 +350,18 @@ export function MasonryVideoVimeoDemo() {
           placement="balanced"
         >
           {ITEMS.map((item, index) => (
-          <Masonry.Item key={item.src} span={item.span}>
-            <MasonryVimeoCard
-              src={item.src}
-              poster={item.poster}
-              title={item.title}
-              body={item.body}
-              ratio={item.ratio}
-              skeletonTextIds={
-                MASONRY_VIDEO_TEXT_IDS[index] ?? MASONRY_VIDEO_TEXT_IDS[0]!
-              }
-            />
-          </Masonry.Item>
+            <Masonry.Item key={item.src} span={item.span}>
+              <MasonryVimeoCard
+                src={item.src}
+                poster={item.poster}
+                title={item.title}
+                body={item.body}
+                ratio={item.ratio}
+                skeletonTextIds={
+                  MASONRY_VIDEO_TEXT_IDS[index] ?? MASONRY_VIDEO_TEXT_IDS[0]!
+                }
+              />
+            </Masonry.Item>
           ))}
         </Masonry>
       </MasonrySkeleton>

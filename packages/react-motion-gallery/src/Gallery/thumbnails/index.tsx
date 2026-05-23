@@ -456,7 +456,7 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
         }),
       [prefersReducedMotion, thumbsLoading.timing]
     );
-    const { showLoadingLayer, loadingExiting, introUnlocked } = useLoadingLayerState({
+    const { showLoadingLayer, loadingExiting, revealUnlocked } = useLoadingLayerState({
       loadingActive: thumbsSkeleton.showLoading,
       exitMs: loadingTiming.exitMs,
       minVisibleMs: loadingTiming.minVisibleMs,
@@ -599,7 +599,7 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
               freeScrollDuration={thumbsObject.motion?.freeScrollDuration}
               sliderFriction={thumbsObject.motion?.friction}
               loadingOptions={thumbsLoading}
-              introOptions={thumbsObject.transitions?.intro}
+              revealOptions={thumbsObject.reveal}
               breakpointMap={thumbsObject.breakpointMap ?? effectiveBreakpoints}
               rippleEnabled={thumbsObject.controls?.ripple?.enabled}
               rippleClassName={thumbsObject.controls?.ripple?.className}
@@ -616,7 +616,7 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
               crossfade={thumbsObject.transitions?.crossfade}
               onReadyChange={handleThumbReadyChange}
               onSelectThumb={handleThumbSelect}
-              introUnlocked={introUnlocked || loadingVisualState.compareMode}
+              revealUnlocked={revealUnlocked || loadingVisualState.compareMode}
             >
               {thumbChildren}
             </ThumbnailSliderCore>

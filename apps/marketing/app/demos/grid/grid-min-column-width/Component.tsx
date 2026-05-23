@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -166,7 +166,10 @@ function GridCard(props: {
         >
           {title}
         </strong>
-        <p className={styles.gridBody} data-skeleton-text-id={skeletonTextIds.body}>
+        <p
+          className={styles.gridBody}
+          data-skeleton-text-id={skeletonTextIds.body}
+        >
           {body}
         </p>
       </div>

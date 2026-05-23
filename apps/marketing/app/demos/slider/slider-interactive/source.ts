@@ -1,9 +1,18 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import * as React from "react";
-import { GalleryCore, useGalleryCore, type GalleryApi } from "react-motion-gallery/core";
-import { Slider, createSliderIndexChannel, type SliderHandle, type SliderIndexChannel } from "react-motion-gallery/slider";
+import {
+  GalleryCore,
+  useGalleryCore,
+  type GalleryApi,
+} from "react-motion-gallery/core";
+import {
+  Slider,
+  createSliderIndexChannel,
+  type SliderHandle,
+  type SliderIndexChannel,
+} from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
 import { sliderDots } from "react-motion-gallery/slider/dots";
@@ -46,11 +55,7 @@ function InteractiveSlide(props: { imageId: number }) {
 
 function ControlCard(props: { children: React.ReactNode }) {
   const { children } = props;
-  return (
-    <section className={styles.controlCard}>
-      {children}
-    </section>
-  );
+  return <section className={styles.controlCard}>{children}</section>;
 }
 
 function useInteractiveGalleryApi(args: {
@@ -67,7 +72,8 @@ function useInteractiveGalleryApi(args: {
       getViewportNode: () => sliderRef.current?.getViewportNode() ?? null,
       slideNodes: () => sliderRef.current?.getSlideNodes() ?? [],
       onReady: (cb) => sliderRef.current?.onSlidesBuilt(cb) ?? (() => {}),
-      whenReady: () => sliderRef.current?.whenSlidesBuilt() ?? Promise.resolve([]),
+      whenReady: () =>
+        sliderRef.current?.whenSlidesBuilt() ?? Promise.resolve([]),
       isReady: () => sliderRef.current?.isSlidesBuilt() ?? false,
       scrollTo: (index, jump) => {
         sliderRef.current?.setIndex(index, jump ? "instant" : "animated");
@@ -90,7 +96,8 @@ function useInteractiveGalleryApi(args: {
       append: (nodes) => sliderRef.current?.append(nodes) ?? 0,
       prepend: (nodes) => sliderRef.current?.prepend(nodes) ?? 0,
       insert: (index, nodes) => sliderRef.current?.insert(index, nodes) ?? 0,
-      remove: (indexOrPredicate) => sliderRef.current?.remove(indexOrPredicate) ?? 0,
+      remove: (indexOrPredicate) =>
+        sliderRef.current?.remove(indexOrPredicate) ?? 0,
       replace: (index, node) => sliderRef.current?.replace(index, node),
       setItems: (nodes) => sliderRef.current?.setItems(nodes) ?? 0,
       onIndexChange: (cb) =>
@@ -117,7 +124,9 @@ function InteractiveSliderCanvas() {
   const [removeValue, setRemoveValue] = React.useState("0");
   const [replaceIndex, setReplaceIndex] = React.useState("1");
   const [replaceValue, setReplaceValue] = React.useState("1070");
-  const [setItemsValue, setSetItemsValue] = React.useState(INITIAL_IMAGE_IDS.join(", "));
+  const [setItemsValue, setSetItemsValue] = React.useState(
+    INITIAL_IMAGE_IDS.join(", "),
+  );
   const [activeIndex, setActiveIndex] = React.useState(0);
   const [itemCount, setItemCount] = React.useState(INITIAL_IMAGE_IDS.length);
 
@@ -132,10 +141,14 @@ function InteractiveSliderCanvas() {
   }, []);
 
   const initialNodes = React.useMemo(
-    () => INITIAL_IMAGE_IDS.map((imageId, i) => (
-      <InteractiveSlide key={\`interactive-slide-\${i + 1}\`} imageId={imageId} />
-    )),
-    []
+    () =>
+      INITIAL_IMAGE_IDS.map((imageId, i) => (
+        <InteractiveSlide
+          key={\`interactive-slide-\${i + 1}\`}
+          imageId={imageId}
+        />
+      )),
+    [],
   );
 
   const toNodes = React.useCallback(
@@ -143,7 +156,7 @@ function InteractiveSliderCanvas() {
       const nodes = imageIds.map((imageId) => createSlideNode(imageId));
       return nodes.length === 1 ? nodes[0] : nodes;
     },
-    [createSlideNode]
+    [createSlideNode],
   );
 
   React.useEffect(() => {
@@ -178,7 +191,7 @@ function InteractiveSliderCanvas() {
       const total = api.append(toNodes(imageIds));
       setItemCount(total);
     },
-    [api, appendValue, toNodes]
+    [api, appendValue, toNodes],
   );
 
   const handlePrepend = React.useCallback(
@@ -190,7 +203,7 @@ function InteractiveSliderCanvas() {
       const total = api.prepend(toNodes(imageIds));
       setItemCount(total);
     },
-    [api, prependValue, toNodes]
+    [api, prependValue, toNodes],
   );
 
   const handleInsert = React.useCallback(
@@ -203,7 +216,7 @@ function InteractiveSliderCanvas() {
       const total = api.insert(targetIndex, toNodes(imageIds));
       setItemCount(total);
     },
-    [api, insertIndex, insertValue, toNodes]
+    [api, insertIndex, insertValue, toNodes],
   );
 
   const handleRemove = React.useCallback(
@@ -219,13 +232,14 @@ function InteractiveSliderCanvas() {
         return;
       }
 
-      const predicate = removeMode === "even"
-        ? (index: number) => index % 2 === 0
-        : (index: number) => index % 2 === 1;
+      const predicate =
+        removeMode === "even"
+          ? (index: number) => index % 2 === 0
+          : (index: number) => index % 2 === 1;
       const total = api.remove(predicate);
       setItemCount(total);
     },
-    [api, removeMode, removeValue]
+    [api, removeMode, removeValue],
   );
 
   const handleReplace = React.useCallback(
@@ -233,13 +247,17 @@ function InteractiveSliderCanvas() {
       event.preventDefault();
       const targetIndex = Number.parseInt(replaceIndex, 10);
       const nextImageId = Number.parseInt(replaceValue, 10);
-      if (!Number.isFinite(targetIndex) || !Number.isFinite(nextImageId) || nextImageId < 0) {
+      if (
+        !Number.isFinite(targetIndex) ||
+        !Number.isFinite(nextImageId) ||
+        nextImageId < 0
+      ) {
         return;
       }
 
       api.replace(targetIndex, createSlideNode(nextImageId));
     },
-    [api, createSlideNode, replaceIndex, replaceValue]
+    [api, createSlideNode, replaceIndex, replaceValue],
   );
 
   const handleSetItems = React.useCallback(
@@ -248,10 +266,12 @@ function InteractiveSliderCanvas() {
       const imageIds = parseImageIds(setItemsValue);
       if (imageIds.length === 0) return;
 
-      const total = api.setItems(imageIds.map((imageId) => createSlideNode(imageId)));
+      const total = api.setItems(
+        imageIds.map((imageId) => createSlideNode(imageId)),
+      );
       setItemCount(total);
     },
-    [api, createSlideNode, setItemsValue]
+    [api, createSlideNode, setItemsValue],
   );
 
   const { ref: sliderReadyRef, ready: sliderReady } = useSliderReady();
@@ -260,7 +280,7 @@ function InteractiveSliderCanvas() {
       sliderReadyRef(handle);
       sliderRef.current = handle;
     },
-    [sliderReadyRef]
+    [sliderReadyRef],
   );
 
   return (
@@ -268,112 +288,111 @@ function InteractiveSliderCanvas() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-interactive")}
         layout={{
-              visibleCount: { xs: 1, md: 2 },
-              mode: "fit",
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 14,
-                },
-                item: {
-                  kind: "col",
+          visibleCount: { xs: 1, md: 2 },
+          mode: "fit",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 14,
+            },
+            item: {
+              kind: "col",
+              style: {
+                gap: 12,
+              },
+              children: [
+                {
+                  kind: "rect",
                   style: {
-                    gap: 12,
+                    width: "100%",
+                    aspectRatio: "16 / 9",
+                    borderRadius: "12px 12px 0 0",
                   },
-                  children: [
-                    {
-                      kind: "rect",
-                      style: {
-                        width: "100%",
-                        aspectRatio: "16 / 9",
-                        borderRadius: "12px 12px 0 0",
-                      },
-                    },
-                    {
-                      kind: "text",
-                      barHeight: 14,
-                      lineHeight: 1.1,
-                      style: {
-                        width: "30%",
-                        marginTop: '2px',
-                        marginLeft: "12px",
-                        marginBottom: "12px"
-                      },
-                    },
-                  ],
+                },
+                {
+                  kind: "text",
+                  barHeight: 14,
+                  lineHeight: 1.1,
+                  style: {
+                    width: "30%",
+                    marginTop: "2px",
+                    marginLeft: "12px",
+                    marginBottom: "12px",
+                  },
+                },
+              ],
+            },
+            children: [
+              {
+                kind: "col",
+                style: {
+                  width: "100%",
+                  padding: "14px 0 0",
                 },
                 children: [
                   {
-                    kind: "col",
+                    kind: "rect",
                     style: {
-                      width: "100%",
-                      padding: "14px 0 0",
-                    },
-                    children: [
-                      {
-                        kind: "rect",
-                        style: {
-                          xs: {
-                            width: 160,
-                            height: 32,
-                            borderRadius: 999,
-                            alignSelf: "center",
-                            marginBottom: "6px"
-                          },
-                          md: {
-                            width: 138,
-                          }
-                        },
+                      xs: {
+                        width: 160,
+                        height: 32,
+                        borderRadius: 999,
+                        alignSelf: "center",
+                        marginBottom: "6px",
                       },
-                    ],
+                      md: {
+                        width: 138,
+                      },
+                    },
                   },
                 ],
-                itemWrapStyle: {
-                  overflow: "hidden",
-                  border: "1px solid #dbe4f0",
-                  borderRadius: "12px",
-                  backgroundColor: "#fff",
-                }
               },
-            }}
-        ready={sliderReady}
-      >
-      <Slider
-        ref={setSliderRef}
-        indexChannel={indexChannel}
-        layout={{
-          gap: 14,
-          cellsPerSlide: {
-            xs: 1,
-            md: 2,
+            ],
+            itemWrapStyle: {
+              overflow: "hidden",
+              border: "1px solid #dbe4f0",
+              borderRadius: "12px",
+              backgroundColor: "#fff",
+            },
           },
         }}
-
-        elements={{
-          viewport: {
-            style: {
-              paddingBottom: "52px"
-            }
-          }
-        }}
-        plugins={[
-          sliderRipple(),
-          sliderArrows({
-            enabled: true,
-          }),
-          sliderDots({
-            enabled: true,
-            root: {
-              style: {
-                bottom: "5px"
-              }
-            }
-          }),
-        ]}
+        ready={sliderReady}
       >
-        {initialNodes}
-      </Slider>
+        <Slider
+          ref={setSliderRef}
+          indexChannel={indexChannel}
+          layout={{
+            gap: 14,
+            cellsPerSlide: {
+              xs: 1,
+              md: 2,
+            },
+          }}
+          elements={{
+            viewport: {
+              style: {
+                paddingBottom: "52px",
+              },
+            },
+          }}
+          plugins={[
+            sliderRipple(),
+            sliderArrows({
+              enabled: true,
+            }),
+            sliderDots({
+              enabled: true,
+              root: {
+                style: {
+                  bottom: "5px",
+                },
+              },
+            }),
+          ]}
+        >
+          {initialNodes}
+        </Slider>
       </SliderSkeleton>
 
       <div className={styles.metaBar}>
@@ -446,7 +465,9 @@ function InteractiveSliderCanvas() {
             <div className={styles.fieldRow}>
               <select
                 value={removeMode}
-                onChange={(event) => setRemoveMode(event.target.value as RemoveMode)}
+                onChange={(event) =>
+                  setRemoveMode(event.target.value as RemoveMode)
+                }
                 className={styles.selectInput}
                 aria-label="Remove mode"
               >

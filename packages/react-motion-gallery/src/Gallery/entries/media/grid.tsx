@@ -9,7 +9,7 @@ import type { EntriesMediaContainerRender } from "../index";
 import { BREAKPOINT_MAP } from "../../shared/responsive";
 import { useViewportWidth } from "../../shared/hooks/useViewportWidth";
 import { useOptionalGalleryCore } from "../../core";
-import type { IntroOptions } from "../../grid/types";
+import type { RevealOptions } from "../../grid/types";
 import type { GridSkeletonSpec } from "../../skeleton/grid";
 import type {
   SkeletonForceOptions,
@@ -26,9 +26,9 @@ type EntriesGridLoadingOptions = {
 export function createEntriesGridMedia(args: {
   gridObject?: any;
   gridLoading?: EntriesGridLoadingOptions;
-  gridIntro?: IntroOptions;
+  gridReveal?: RevealOptions;
 }): EntriesMediaContainerRender {
-  const { gridObject, gridLoading, gridIntro } = args;
+  const { gridObject, gridLoading, gridReveal } = args;
 
   function normalizeLoading(src?: EntriesGridLoadingOptions) {
     if (!src) return null;
@@ -41,9 +41,9 @@ export function createEntriesGridMedia(args: {
     }
   }
 
-  function normalizeIntro(src?: IntroOptions) {
+  function normalizeReveal(src?: RevealOptions) {
     return {
-      renderIntro: src?.renderIntro,
+      renderReveal: src?.renderReveal,
       staggerMs: src?.staggerMs ?? 40,
       durationMs: src?.durationMs ?? 300,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
@@ -52,7 +52,7 @@ export function createEntriesGridMedia(args: {
   }
 
   const normalizedLoading = normalizeLoading(gridLoading ?? gridObject?.loading);
-  const normalizedIntro = normalizeIntro(gridIntro ?? gridObject?.intro);
+  const normalizedReveal = normalizeReveal(gridReveal ?? gridObject?.reveal);
 
   function EntriesGridMediaInner(props: {
     entryIndex: number;
@@ -86,11 +86,11 @@ export function createEntriesGridMedia(args: {
         gridItemBaseClass=""
         breakpoints={breakpoints}
         viewportWidth={viewportWidth}
-        intro={normalizedIntro}
+        reveal={normalizedReveal}
         enableFullscreen={false}
         onOpen={() => {}}
         registerExpandableImage={() => {}}
-        introReady={entryInView ?? true}
+        revealReady={entryInView ?? true}
       />
     );
 

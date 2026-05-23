@@ -1,4 +1,4 @@
-export const source = `'use client';
+export const source = `"use client";
 
 import { RotateCcw, Sparkles } from "lucide-react";
 import { useState } from "react";
@@ -66,10 +66,13 @@ export function RevealSectionsDemo() {
           easing={REVEAL_EASING}
         >
           <span>Standalone primitive</span>
-          <h2 id="reveal-sections-title">Reveal sections without implying loading.</h2>
+          <h2 id="reveal-sections-title">
+            Reveal sections without implying loading.
+          </h2>
           <p>
-            Fade-only and transform reveals keep ordinary application content visible,
-            accessible, ready for SSR, and tuned with separate opacity and transform timing.
+            Fade-only and transform reveals keep ordinary application content
+            visible, accessible, ready for SSR, and tuned with separate opacity
+            and transform timing.
           </p>
         </Reveal>
 

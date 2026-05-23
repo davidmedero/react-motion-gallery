@@ -1,4 +1,4 @@
-export const source = `'use client';
+export const source = `"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { Masonry } from "react-motion-gallery/masonry";
@@ -85,21 +85,21 @@ export function ZoomPanMasonryDemo() {
           ref={masonryRef}
           columns={{ 0: 1, 700: 2, 1080: 3 }}
           gap={{ 0: 12, 960: 16 }}
-          intro={{ staggerMs: 60 }}
+          reveal={{ staggerMs: 60 }}
         >
           {IMAGES.map((image) => (
-          <ZoomPanImage
-            key={image.src}
-            src={image.src}
-            alt={image.alt}
-            className={styles.frame}
-            imageClassName={styles.image}
-            style={{ aspectRatio: image.ratio }}
-            zoom={{
-              clickZoomLevel: 2.1,
-              maxZoomLevel: 3.25,
-            }}
-          />
+            <ZoomPanImage
+              key={image.src}
+              src={image.src}
+              alt={image.alt}
+              className={styles.frame}
+              imageClassName={styles.image}
+              style={{ aspectRatio: image.ratio }}
+              zoom={{
+                clickZoomLevel: 2.1,
+                maxZoomLevel: 3.25,
+              }}
+            />
           ))}
         </Masonry>
       </MasonrySkeleton>

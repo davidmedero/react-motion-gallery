@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -40,7 +40,8 @@ const ITEMS = [
     displayIndex: 2,
     kind: "video" as const,
     src: "https://cdn.react-motion-gallery.com/slider-html/7677511-hd_1920_1080_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/7677511-hd_1920_1080_25fps-0.jpg",
     label: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -70,7 +71,8 @@ const ITEMS = [
     displayIndex: 5,
     kind: "video" as const,
     src: "https://cdn.react-motion-gallery.com/slider-html/7677513-hd_1920_1080_25fps.mp4",
-    poster: "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg",
+    poster:
+      "https://cdn.react-motion-gallery.com/slider-html-loop/7677513-hd_1920_1080_25fps-0.jpg",
     label: "Elit",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",
@@ -226,7 +228,7 @@ const ROUND_ROBIN_SKELETON: MasonrySkeletonSpec = {
       borderRadius: 22,
       backgroundColor: "rgba(255, 255, 255, 0.96)",
       boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
-      height: "100%"
+      height: "100%",
     },
     item: createRoundRobinSkeletonItem({
       mediaRatio: ITEMS[0]!.ratio,
@@ -251,7 +253,15 @@ const ROUND_ROBIN_VIDEO_OPTIONS = {
 };
 
 const ROUND_ROBIN_FULLSCREEN_VIDEO_OPTIONS = {
-  controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "fullscreen"],
+  controls: [
+    "play-large",
+    "play",
+    "progress",
+    "current-time",
+    "mute",
+    "volume",
+    "fullscreen",
+  ],
 };
 
 function MasonryRoundRobinCard(props: {
@@ -280,13 +290,6 @@ function MasonryRoundRobinCard(props: {
           />
         ) : (
           <>
-            <img
-              src="/open-fullscreen.png"
-              alt="Open fullscreen"
-              width="24"
-              height="24"
-              className={styles.open_fullscreen_icon}
-            />
             <Video
               src={item.src}
               poster={item.poster}
@@ -294,6 +297,12 @@ function MasonryRoundRobinCard(props: {
               style={{ height: "100%" }}
               options={ROUND_ROBIN_VIDEO_OPTIONS}
               alt={item.title}
+            />
+            <button
+              type="button"
+              className={styles.fullscreen_trigger}
+              aria-label={`Open ${item.title} fullscreen`}
+              data-rmg-fullscreen-trigger
             />
           </>
         )}
@@ -346,8 +355,8 @@ export function MasonryRoundRobinDemo() {
             kind: "video" as const,
             src: item.src,
             poster: item.poster,
-          }
-    )
+          },
+    ),
   );
 
   const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
@@ -373,14 +382,14 @@ export function MasonryRoundRobinDemo() {
           placement="roundRobin"
         >
           {ITEMS.map((item, index) => (
-          <MasonryRoundRobinCard
-            key={item.kind === "image" ? item.src : item.poster}
-            item={item}
-            skeletonTextIds={
-              MASONRY_ROUND_ROBIN_TEXT_IDS[index] ??
-              MASONRY_ROUND_ROBIN_TEXT_IDS[0]!
-            }
-          />
+            <MasonryRoundRobinCard
+              key={item.kind === "image" ? item.src : item.poster}
+              item={item}
+              skeletonTextIds={
+                MASONRY_ROUND_ROBIN_TEXT_IDS[index] ??
+                MASONRY_ROUND_ROBIN_TEXT_IDS[0]!
+              }
+            />
           ))}
         </Masonry>
       </MasonrySkeleton>

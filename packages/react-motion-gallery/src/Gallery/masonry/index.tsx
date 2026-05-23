@@ -8,7 +8,7 @@ import { useOptionalGalleryCore } from "../core";
 import { createRmgSlideStoreBag } from "../shared/slideStoreBag";
 import { DEFAULT_MASONRY } from "./defaults";
 import { MasonryItem, normalizeMasonryChild, type MasonryCell } from "./item";
-import type { IntroOptions, MasonryHandle, MasonryOptions } from "./types";
+import type { RevealOptions, MasonryHandle, MasonryOptions } from "./types";
 import { MasonryLayout } from "./MasonryLayout";
 import { buildMasonryChildren } from "./buildMasonryChildren";
 
@@ -34,9 +34,9 @@ function findImgInside(host: HTMLElement | null): HTMLImageElement | null {
   return isImgEl(img) ? img : null;
 }
 
-function normalizeIntro(src?: IntroOptions) {
+function normalizeReveal(src?: RevealOptions) {
   return {
-    renderIntro: src?.renderIntro,
+    renderReveal: src?.renderReveal,
     staggerMs: src?.staggerMs ?? 160,
     durationMs: src?.durationMs ?? 600,
     easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
@@ -69,10 +69,6 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
       layout: {
         ...(DEFAULT_MASONRY as any).layout,
         ...((src as any)?.layout ?? {}),
-      },
-      transitions: {
-        ...(DEFAULT_MASONRY as any).transitions,
-        ...((src as any)?.transitions ?? {}),
       },
     } as MasonryOptions;
   }, [masonryOptions]);
@@ -156,10 +152,8 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
     [core, enableFullscreen, normalizedItems.length, expandableImageRefs]
   );
 
-  const masonryIntro = React.useMemo(() => {
-    return normalizeIntro(
-      (masonryObject as any).intro ?? (masonryObject as any).transitions?.intro
-    );
+  const masonryReveal = React.useMemo(() => {
+    return normalizeReveal((masonryObject as any).reveal);
   }, [masonryObject]);
 
   const itemClassName = (masonryObject as any).classNames?.item ?? "";
@@ -210,7 +204,7 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
       itemSpans={masonryChildren.map((item) => item.span)}
       masonry={masonryObject as any}
       breakpoints={effectiveBreakpoints}
-      intro={masonryIntro as any}
+      reveal={masonryReveal as any}
     />
   );
 });

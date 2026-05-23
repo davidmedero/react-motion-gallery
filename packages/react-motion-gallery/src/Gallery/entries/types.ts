@@ -79,8 +79,8 @@ export type EntriesLoadingOptions = {
   skeletonWrap?: ElementStyle;
 };
 
-export type IntroOptions = {
-  renderIntro?: (
+export type RevealOptions = {
+  renderReveal?: (
     args: { active: boolean; containerProps: React.HTMLAttributes<HTMLDivElement> },
     content: React.ReactNode
   ) => React.ReactNode;
@@ -106,7 +106,7 @@ export type EntriesOptions = {
   };
   overlay?: EntryOverlayStyle;
   loading?: EntriesLoadingOptions;
-  intro?: IntroOptions;
+  reveal?: RevealOptions;
   entryList?: ElementStyle;
   entryRow?: ElementStyle;
 };

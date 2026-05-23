@@ -144,8 +144,8 @@ export type SliderLoadingOptions = {
   renderLoading?: (args: { count: number }) => React.ReactNode;
 };
 
-export type SliderIntroOptions = {
-  renderIntro?: (
+export type SliderRevealOptions = {
+  renderReveal?: (
     args: { active: boolean; containerProps: React.HTMLAttributes<HTMLDivElement> },
     content: React.ReactNode
   ) => React.ReactNode;
@@ -153,10 +153,6 @@ export type SliderIntroOptions = {
   staggerMs?: number;
   durationMs?: number;
   easing?: string;
-};
-
-export type SliderTransitions = {
-  intro?: SliderIntroOptions;
 };
 
 export type SliderParallax = {
@@ -271,7 +267,7 @@ export type SliderOptions = {
   align?: "start" | "center";
   scroll?: SliderScroll;
   elements?: SliderElements;
-  transitions?: SliderTransitions;
+  reveal?: SliderRevealOptions;
   motion?: SliderMotion;
   indexChannel?: SliderIndexChannel;
   plugins?: SliderPlugin[];

@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -65,7 +65,7 @@ const ITEMS: DemoItem[] = [
     title: "Lorem ipsum dolor sit amet",
     body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     ratio: "4 / 1",
-    span: "full"
+    span: "full",
   },
   {
     imageSrc: "https://picsum.photos/id/485/1500/1125",
@@ -73,7 +73,7 @@ const ITEMS: DemoItem[] = [
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     ratio: "2 / 1",
-    span: { 0: "full", 900: 7 }
+    span: { 0: "full", 900: 7 },
   },
   {
     imageSrc: "https://picsum.photos/id/487/1200/1200",
@@ -81,7 +81,7 @@ const ITEMS: DemoItem[] = [
     title: "Duis aute irure dolor",
     body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
     ratio: "2 / 1",
-    span: { 0: "full", 900: 5 }
+    span: { 0: "full", 900: 5 },
   },
   {
     imageSrc: "https://picsum.photos/id/492/1200/1500",
@@ -89,7 +89,7 @@ const ITEMS: DemoItem[] = [
     title: "Excepteur sint occaecat",
     body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     ratio: "4 / 5",
-    span: { 0: "full", 700: 6, 1200: 4 }
+    span: { 0: "full", 700: 6, 1200: 4 },
   },
   {
     imageSrc: "https://picsum.photos/id/496/1200/1500",
@@ -97,7 +97,7 @@ const ITEMS: DemoItem[] = [
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",
     ratio: "4 / 5",
-    span: { 0: "full", 700: 6, 1200: 4 }
+    span: { 0: "full", 700: 6, 1200: 4 },
   },
   {
     imageSrc: "https://picsum.photos/id/498/1200/1500",
@@ -105,7 +105,7 @@ const ITEMS: DemoItem[] = [
     title: "Nemo enim ipsam voluptatem",
     body: "Quia voluptas sit aspernatur aut odit aut fugit sed quia consequuntur magni dolores.",
     ratio: "4 / 5",
-    span: { 0: "full", 700: 6, 1200: 4 }
+    span: { 0: "full", 700: 6, 1200: 4 },
   },
   {
     imageSrc: "https://picsum.photos/id/499/1200/1440",
@@ -113,7 +113,7 @@ const ITEMS: DemoItem[] = [
     title: "Neque porro quisquam est magni",
     body: "Qui dolorem ipsum quia dolor sit amet consectetur adipisci velit sed quia non numquam.",
     ratio: "5 / 6",
-    span: { 0: "full", 700: 6, 1200: 3 }
+    span: { 0: "full", 700: 6, 1200: 3 },
   },
   {
     imageSrc: "https://picsum.photos/id/500/1800/1125",
@@ -121,7 +121,7 @@ const ITEMS: DemoItem[] = [
     title: "Temporibus autem quibusdam",
     body: "Et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae.",
     ratio: "16 / 10",
-    span: { 0: "full", 700: 6, 1200: 9 }
+    span: { 0: "full", 700: 6, 1200: 9 },
   },
 ];
 
@@ -250,7 +250,7 @@ const GRID_SPANS_SKELETON: GridSkeletonSpec = {
       border: "1px solid rgba(15, 23, 42, 0.08)",
       backgroundColor: "rgba(255, 255, 255, 0.96)",
       boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
-      height: "100%"
+      height: "100%",
     },
     item: createSpanSkeletonItem(ITEMS[0]!, 0),
     slots: ITEMS.map((item, index) => ({
@@ -316,10 +316,6 @@ export function GridColumnsDemo() {
           gap: GRID_GAP,
           allowItemSpans: true,
         }}
-        // force={{
-        //   enabled: true,
-        //   showContent: true
-        // }}
       >
         <Grid
           ref={gridRef}

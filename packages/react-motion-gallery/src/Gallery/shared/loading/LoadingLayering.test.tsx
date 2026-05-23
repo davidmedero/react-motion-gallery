@@ -17,7 +17,7 @@ import ThumbnailSlider, {
 import ThumbnailStyles from "../../thumbnails/Thumbnails.module.css";
 import { SkeletonFrame } from "../../skeleton/base";
 import { resolveCompareLoadingLayerStyle } from "./force";
-import { useSkeletonIntroGate } from "./skeletonIntroGate";
+import { useSkeletonRevealGate } from "./skeletonRevealGate";
 
 vi.mock("../../entries/hooks/useEntryInView", () => ({
   useEntryInView: () => ({
@@ -107,10 +107,10 @@ function dispatchOpacityTransitionEnd(node: Element) {
   node.dispatchEvent(event);
 }
 
-function SkeletonIntroGateProbe() {
-  const gate = useSkeletonIntroGate();
+function SkeletonRevealGateProbe() {
+  const gate = useSkeletonRevealGate();
   const label = gate == null ? "none" : gate ? "unlocked" : "locked";
-  return <div data-skeleton-intro-gate={label} />;
+  return <div data-skeleton-reveal-gate={label} />;
 }
 
 describe("loading layer stacking", () => {
@@ -200,21 +200,21 @@ describe("loading layer stacking", () => {
     expect(thumbnailCss).toMatch(/\.thumbLoadingLayerCompare\s*\{[^}]*z-index:\s*3;/s);
   });
 
-  test("keeps intro opacity transitions on the pre-active state for Safari", () => {
+  test("keeps reveal opacity transitions on the pre-active state for Safari", () => {
     const gridCss = readCss("../../grid/Grid.module.css");
     const masonryCss = readCss("../../masonry/Masonry.module.css");
     const sliderCss = readCss("../../slider/Slider.module.css");
 
-    expect(gridCss).toMatch(/\.introContainer\s*\{[^}]*opacity:\s*0;[^}]*transition:/s);
-    expect(masonryCss).toMatch(/\.introContainer\s*\{[^}]*opacity:\s*0;[^}]*transition:/s);
+    expect(gridCss).toMatch(/\.revealContainer\s*\{[^}]*opacity:\s*0;[^}]*transition:/s);
+    expect(masonryCss).toMatch(/\.revealContainer\s*\{[^}]*opacity:\s*0;[^}]*transition:/s);
     expect(sliderCss).toMatch(/\.fade_container\s*\{[^}]*transition:/s);
 
-    expect(gridCss).not.toContain("data-rmg-skeleton-intro-gate");
-    expect(masonryCss).not.toContain("data-rmg-skeleton-intro-gate");
-    expect(sliderCss).not.toContain("data-rmg-skeleton-intro-gate");
+    expect(gridCss).not.toContain("data-rmg-skeleton-reveal-gate");
+    expect(masonryCss).not.toContain("data-rmg-skeleton-reveal-gate");
+    expect(sliderCss).not.toContain("data-rmg-skeleton-reveal-gate");
   });
 
-  test("provides an internal intro gate from skeleton content", async () => {
+  test("provides an internal reveal gate from skeleton content", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const root = createRoot(host);
@@ -227,14 +227,14 @@ describe("loading layer stacking", () => {
             ready={false}
             timing={{ minVisibleMs: 0, exitMs: 0 }}
           >
-            <SkeletonIntroGateProbe />
+            <SkeletonRevealGateProbe />
           </SkeletonFrame>
         );
       });
 
       expect(
-        host.querySelector<HTMLElement>("[data-skeleton-intro-gate]")?.dataset
-          .skeletonIntroGate
+        host.querySelector<HTMLElement>("[data-skeleton-reveal-gate]")?.dataset
+          .skeletonRevealGate
       ).toBe("locked");
 
       await React.act(async () => {
@@ -245,23 +245,23 @@ describe("loading layer stacking", () => {
             force={{ enabled: true, showContent: true }}
             timing={{ minVisibleMs: 0, exitMs: 0 }}
           >
-            <SkeletonIntroGateProbe />
+            <SkeletonRevealGateProbe />
           </SkeletonFrame>
         );
       });
 
       expect(
-        host.querySelector<HTMLElement>("[data-skeleton-intro-gate]")?.dataset
-          .skeletonIntroGate
+        host.querySelector<HTMLElement>("[data-skeleton-reveal-gate]")?.dataset
+          .skeletonRevealGate
       ).toBe("unlocked");
 
       await React.act(async () => {
-        root.render(<SkeletonIntroGateProbe />);
+        root.render(<SkeletonRevealGateProbe />);
       });
 
       expect(
-        host.querySelector<HTMLElement>("[data-skeleton-intro-gate]")?.dataset
-          .skeletonIntroGate
+        host.querySelector<HTMLElement>("[data-skeleton-reveal-gate]")?.dataset
+          .skeletonRevealGate
       ).toBe("none");
     } finally {
       await React.act(async () => {
@@ -422,17 +422,17 @@ describe("loading layer stacking", () => {
     }
   });
 
-  test("stages entry readiness before starting nested media intro", async () => {
+  test("stages entry readiness before starting nested media reveal", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const root = createRoot(host);
-    const mediaIntroStates: Array<boolean | undefined> = [];
+    const mediaRevealStates: Array<boolean | undefined> = [];
 
     try {
       await React.act(async () => {
         root.render(
           entryListElement(undefined, ({ entryInView, mediaNodes }) => {
-            mediaIntroStates.push(entryInView);
+            mediaRevealStates.push(entryInView);
 
             return React.createElement(
               "div",
@@ -466,8 +466,8 @@ describe("loading layer stacking", () => {
           .querySelector("[data-entry-media-in-view]")
           ?.getAttribute("data-entry-media-in-view")
       ).toBe("1");
-      expect(mediaIntroStates).toContain(false);
-      expect(mediaIntroStates[mediaIntroStates.length - 1]).toBe(true);
+      expect(mediaRevealStates).toContain(false);
+      expect(mediaRevealStates[mediaRevealStates.length - 1]).toBe(true);
     } finally {
       await React.act(async () => {
         root.unmount();

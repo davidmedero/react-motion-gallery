@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -36,13 +36,7 @@ const FS_URLS = [
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {
-  return (
-    <img
-      src={src}
-      alt={\`Slide \${i + 1}\`}
-      className={styles.slide}
-    />
-  );
+  return <img src={src} alt={\`Slide \${i + 1}\`} className={styles.slide} />;
 }
 
 function FullscreenAddon() {
@@ -67,57 +61,55 @@ export function SliderFadeDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-fade")}
         layout={{
-              visibleCount: 3,
-              mode: "peek",
+          visibleCount: 3,
+          mode: "peek",
+          style: {
+            overflow: "hidden",
+          },
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+              justify: "center",
+            },
+            item: {
+              kind: "rect",
               style: {
-                overflow: "hidden",
+                width: "100cqw",
+                maxWidth: "550px",
+                aspectRatio: "16 / 9",
+                borderRadius: 12,
               },
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                  justify: "center",
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    maxWidth: "550px",
-                    aspectRatio: "16 / 9",
-                    borderRadius: 12,
-                  },
-                },
-              },
-            }}
+            },
+          },
+        }}
         ready={sliderReady}
       >
-      <Slider
-        ref={sliderRef}
-        scroll={{
-          loop: true,
-        }}
-        align="center"
-
-        plugins={[
-          sliderFullscreen(),
-          sliderRipple(),
-          sliderArrows(),
-          sliderDots(),
-          sliderFade({
-            enabled: true,
-          }),
-        ]}
-      >
-        {media.map((item, i) => (
-          <Slide
-            key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
-            src={item.kind === "image" ? item.src : ""}
-            i={i}
-          />
-  
-            ))}
-      </Slider>
+        <Slider
+          ref={sliderRef}
+          scroll={{
+            loop: true,
+          }}
+          align="center"
+          plugins={[
+            sliderFullscreen(),
+            sliderRipple(),
+            sliderArrows(),
+            sliderDots(),
+            sliderFade({
+              enabled: true,
+            }),
+          ]}
+        >
+          {media.map((item, i) => (
+            <Slide
+              key={\`img-\${item.kind === "image" ? item.src : ""}-\${i}\`}
+              src={item.kind === "image" ? item.src : ""}
+              i={i}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>

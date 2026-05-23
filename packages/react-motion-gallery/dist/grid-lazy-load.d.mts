@@ -1,4 +1,4 @@
-import { c as GridPlugin } from './types-Do4Pq-Td.mjs';
+import { c as GridPlugin } from './types-ap0Mfoo0.mjs';
 import { G as GalleryLazyLoadOptions } from './lazy-dGoYpcRa.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 import 'react';

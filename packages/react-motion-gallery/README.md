@@ -15,10 +15,10 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `entries/cache` | 16.9kB |
 | `FullscreenThumbnailSlider` | 20.3kB |
 | `GalleryCore` | 2.6kB |
-| `Grid` | 6.3kB |
+| `Grid` | 6.4kB |
 | `grid/ready` | 323.0B |
 | `grid/lazy-load` | 3.3kB |
-| `Masonry` | 7.1kB |
+| `Masonry` | 7.2kB |
 | `masonry/ready` | 323.0B |
 | `masonry/lazy-load` | 3.3kB |
 | `Skeleton base` | 8.9kB |
@@ -28,12 +28,12 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `skeleton/slider/restore` | 25.2kB |
 | `skeleton/grid` | 11.2kB |
 | `skeleton/cache/grid` | 16.0kB |
-| `skeleton/masonry` | 20.0kB |
-| `skeleton/cache/masonry` | 25.2kB |
+| `skeleton/masonry` | 20.1kB |
+| `skeleton/cache/masonry` | 25.3kB |
 | `Slider core` | 19.0kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
-| `slider/dots` | 932.0B |
+| `slider/dots` | 933.0B |
 | `slider/progress` | 892.0B |
 | `slider/scrollbar` | 1.2kB |
 | `slider/auto-height` | 1.3kB |
@@ -42,22 +42,24 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `slider/scale` | 1.2kB |
 | `slider/fade` | 1.2kB |
 | `slider/crossfade` | 2.8kB |
-| `slider/fullscreen` | 959.0B |
+| `slider/fullscreen` | 996.0B |
 | `ThumbnailSlider` | 18.9kB |
 | `useFullscreenController` | 5.0kB |
-| `fullscreen/slider` | 38.3kB |
+| `fullscreen/slider` | 39.5kB |
 | `fullscreen/controls` | 173.0B |
-| `fullscreen/captions` | 13.1kB |
-| `fullscreen/zoom-pan` | 9.9kB |
+| `fullscreen/captions` | 13.2kB |
+| `fullscreen/zoom-pan` | 12.0kB |
 | `fullscreen/video` | 16.4kB |
 | `fullscreen/lazy-load` | 13.2kB |
 | `fullscreen/crossfade` | 181.0B |
 | `fullscreen/thumbnails` | 160.0B |
 | `Video` | 12.7kB |
-| `ZoomPanImage` | 8.7kB |
+| `ZoomPanImage` | 10.7kB |
+| `zoomPan/hover` | 124.0B |
 | `media / toMediaItems` | 260.0B |
+| `media/ready` | 656.0B |
 | `responsive / BREAKPOINT_MAP` | 85.0B |
-| `Reveal` | 2.3kB |
+| `Reveal` | 2.4kB |
 <!-- bundle-size:end -->
 
 ## Installation
@@ -134,6 +136,7 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | Entry point | Main surface |
 | --- | --- |
 | `react-motion-gallery/media` | `toMediaItems`, `MediaItem`, `MediaInput` |
+| `react-motion-gallery/media/ready` | `useImageDecodeReady` |
 | `react-motion-gallery/responsive` | `BREAKPOINT_MAP` and responsive value types |
 | `react-motion-gallery/reveal` | `Reveal`, `useReveal`, reveal types |
 | `react-motion-gallery/core` | `GalleryCore`, `GalleryCoreProvider`, `useGalleryCore` |
@@ -186,38 +189,7 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/fullscreenThumbnails` | `FullscreenThumbnailSlider` |
 | `react-motion-gallery/video` | `Video` and optional Plyr-backed video types |
 | `react-motion-gallery/zoomPan` | `ZoomPanImage` and zoom/pan types |
-
-## Reveal
-
-`Reveal` is a standalone entrance primitive for page sections and application UI. It is intentionally separate from skeleton loading and gallery intro timing: content is already rendered, then opacity and optional transform animate when the element enters view.
-
-```tsx
-import { Reveal } from "react-motion-gallery/reveal";
-
-export function SectionIntro() {
-  return (
-    <Reveal
-      as="section"
-      transform={{ y: 18, scale: 0.98 }}
-      durationMs={{ opacity: 220, transform: 680 }}
-      easing={{ opacity: "ease-out", transform: "cubic-bezier(0.2, 0.7, 0.2, 1)" }}
-      staggerIndex={1}
-    >
-      <h2>Fast fade, slower motion.</h2>
-      <p>Pass a number when both transitions should share one duration.</p>
-    </Reveal>
-  );
-}
-```
-
-| Prop | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `variant` | `"fade" \| "transform"` | `"transform"` | `fade` animates opacity only; `transform` also animates from the configured transform. |
-| `transform` | `RevealTransform` | `{ y: 14 }` | Typed transform object or raw CSS transform string. |
-| `durationMs` | `number \| { opacity?: number; transform?: number }` | `520` | Scalar timing applies to both channels. Object timing lets opacity and transform resolve at different speeds. |
-| `easing` | `string \| { opacity?: string; transform?: string }` | `"cubic-bezier(0.2, 0.7, 0.2, 1)"` | Scalar easing applies to both channels. Object easing lets opacity and transform use separate curves. |
-| `delayMs` / `staggerMs` | `number` | `0` / `70` | Shared delay and stagger timing. |
-| `once` | `boolean` | `true` | Set `false` for reversible in-view reveals. |
+| `react-motion-gallery/zoomPan/hover` | `zoomPanHover` |
 
 ## MCP server
 
@@ -392,12 +364,6 @@ Use flat `targets` for ordinary DOM text in any layout: sliders, grids, masonry 
 
 The file-writing tools default to dry runs unless `apply: true` is passed, and they refuse to write outside the provided `projectRoot`.
 
-## Acknowledgements
-
-React Motion Gallery's slider engine includes portions of code derived from [Embla Carousel](https://github.com/davidjerleke/embla-carousel), which is MIT licensed. Those portions have been substantially adapted for React Motion Gallery's React architecture, public API, transition system, fullscreen integration, loading layers, and media workflows.
-
-See [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) for the preserved Embla Carousel copyright and MIT license notice.
-
 ## Core
 
 `GalleryCore` is the shared state boundary for fullscreen-aware galleries. Wrap a layout in it when you need shared breakpoints, a normalized fullscreen media list, fullscreen-open state, or programmatic fullscreen opening. `useGalleryCore()` is the public hook for reading that core state from descendants.
@@ -430,28 +396,6 @@ See [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) for the preserved Embla
 | `notifyBaseVisibleIndex` | `(index: number) => void` | Emits the visible base media index for fullscreen lazy-load/prewarm coordination. |
 | `notifyFsVisibleIndex` | `(index: number) => void` | Emits the active fullscreen index back to base media. |
 | `registerExpandableImage` | `(index: number, node: HTMLElement \| null) => void` | Registers an origin surface for layoutless scale transitions. |
-
-## ZoomPanImage
-
-```typescript
-import { ZoomPanImage } from "react-motion-gallery/zoomPan";
-
-export function ZoomPanCard() {
-  return (
-    <ZoomPanImage
-      src="https://picsum.photos/id/1035/1600/1200"
-      alt="A hiker looking over a canyon at dusk"
-      className="zoomCard"
-      zoom={{
-        clickZoomLevel: 2.35,
-        maxZoomLevel: 3.5,
-      }}
-    />
-  );
-}
-```
-
-`ZoomPanImage` is the lightweight standalone zoom surface. The component root is the clipping container, so border radius, aspect ratio, and overflow all live on the same element.
 
 ## Skeleton
 
@@ -678,9 +622,121 @@ import { CachedGridSkeleton as GridSkeleton } from "react-motion-gallery/skeleto
 />
 ```
 
+## Reveal
+
+`Reveal` is a standalone entrance primitive for page sections and application UI. It is intentionally separate from skeleton loading and gallery reveal timing: content is already rendered, then opacity and optional transform animate when the element enters view.
+
+Use `<Reveal>` by default. Use `useReveal` when you need to own the element, avoid an extra wrapper, merge refs, read `revealed` or `inView`, or build a higher-level abstraction. `Reveal` does not automatically wait for wrapped images to load or decode; pass `ready` when media readiness should gate the entrance.
+
+```tsx
+import { useImageDecodeReady } from "react-motion-gallery/media/ready";
+import { Reveal } from "react-motion-gallery/reveal";
+
+export function ImageSectionReveal({ src, alt }: { src: string; alt: string }) {
+  const image = useImageDecodeReady({ src });
+
+  return (
+    <Reveal
+      as="figure"
+      ready={image.ready}
+      transform={{ y: 18, scale: 0.98 }}
+      durationMs={{ opacity: 220, transform: 680 }}
+      easing={{ opacity: "ease-out", transform: "cubic-bezier(0.2, 0.7, 0.2, 1)" }}
+      staggerIndex={1}
+    >
+      <img src={src} alt={alt} loading="eager" decoding="async" />
+      <figcaption>Fast fade, slower motion.</figcaption>
+    </Reveal>
+  );
+}
+```
+
+When you need to own the element directly, use `useReveal` with the same readiness gate:
+
+```tsx
+import { useImageDecodeReady } from "react-motion-gallery/media/ready";
+import { useReveal } from "react-motion-gallery/reveal";
+
+export function DecodedImageReveal({ src, alt }: { src: string; alt: string }) {
+  const image = useImageDecodeReady({ src });
+  const reveal = useReveal<HTMLElement>({
+    ready: image.ready,
+    transform: { y: 18, scale: 0.98 },
+  });
+
+  return (
+    <figure
+      {...reveal.revealProps}
+      ref={reveal.ref}
+      className={reveal.revealProps.className}
+      style={reveal.revealProps.style}
+    >
+      <img src={src} alt={alt} loading="eager" decoding="async" />
+    </figure>
+  );
+}
+```
+
+### Reveal props and options
+
+`Reveal` is polymorphic through `as`; element-specific props are forwarded to the rendered element after the reveal options are removed. `useReveal(options)` accepts the same `RevealOptions` behavior props and returns props you can spread onto an element you own.
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `as` | `React.ElementType` | `"div"` | Render as another element or component, such as `"section"`, `"figure"`, or a custom component. |
+| `children` | `React.ReactNode` | `—` | Content rendered inside the revealed element. |
+| `className` | `string` | `—` | Merged with the internal reveal class. |
+| `style` | `React.CSSProperties` | `—` | Merged onto the rendered element. A string `style.transform` becomes the final resting transform for transform reveals. |
+| `ref` | `React.Ref<HTMLElement>` | `—` | Forwarded to the rendered element. |
+| `variant` | `"fade" \| "transform"` | `"transform"` | `fade` animates opacity only; `transform` also animates from the configured transform. |
+| `transform` | `RevealTransform` | `{ y: 14 }` | Typed transform object or raw CSS transform string used as the hidden/from transform. |
+| `once` | `boolean` | `true` | Keeps the element revealed after the first reveal. Set `false` for reversible in-view reveals. |
+| `ready` | `boolean` | `true` | Gates the reveal until external readiness, such as image decode, has completed. With `once: false`, dropping `ready` back to `false` can hide the element again. |
+| `threshold` | `number` | `0.12` | Intersection ratio required before reveal. Values are clamped between `0` and `1`. |
+| `rootMargin` | `string` | `"0px 0px -8% 0px"` | IntersectionObserver root margin used to tune when the element enters view. |
+| `durationMs` | `RevealDuration` | `520` | Scalar timing applies to opacity and transform. Object timing can set `{ opacity, transform }` separately. |
+| `delayMs` | `number` | `0` | Base delay before the reveal animation starts. Negative values are clamped to `0`. |
+| `staggerIndex` | `number` | `0` | Multiplies `staggerMs` and adds to `delayMs`; useful for repeated items. Negative values are clamped to `0`. |
+| `staggerMs` | `number` | `70` | Delay step used with `staggerIndex`. Negative values are clamped to `0`. |
+| `easing` | `RevealEasing` | `"cubic-bezier(0.2, 0.7, 0.2, 1)"` | Scalar easing applies to both channels. Object easing can set `{ opacity, transform }` separately. |
+| `disabled` | `boolean` | `false` | Bypasses observer gating and renders as revealed. |
+| `onReveal` | `() => void` | `—` | Called when the element transitions from hidden to revealed. Not called for disabled reveals. |
+| Other element props | `Omit<React.ComponentPropsWithoutRef<E>, reveal-owned keys>` | `—` | Forwarded to the rendered element, including ARIA attributes and event handlers, after reveal-owned props are removed. |
+
+### Reveal transform fields
+
+Numbers in length fields become `px`; numbers in angle fields become `deg`. Pass a raw string as `transform` when you need complete CSS control.
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `x`, `y`, `z` | `RevealLength` | `0px` when any translate field is set | Builds `translate3d(x, y, z)`. |
+| `scale` | `number` | `1` | Uniform scale used by both axes unless `scaleX` or `scaleY` is provided. |
+| `scaleX`, `scaleY` | `number` | `scale ?? 1` | Axis-specific scale values. |
+| `rotate`, `rotateX`, `rotateY` | `RevealAngle` | `—` | Rotation transforms. |
+| `skewX`, `skewY` | `RevealAngle` | `—` | Skew transforms. |
+| `perspective` | `RevealLength` | `—` | Prepended as `perspective(...)` when provided. |
+| `raw` | `string` | `—` | Appended to the generated transform string. |
+
+### Reveal exported types
+
+| Type | Definition | Notes |
+| --- | --- | --- |
+| `RevealVariant` | `"fade" \| "transform"` | Reveal animation mode. |
+| `RevealLength` | `number \| string` | Numeric values resolve to pixel lengths. |
+| `RevealAngle` | `number \| string` | Numeric values resolve to degree angles. |
+| `RevealMotionChannel` | `"opacity" \| "transform"` | Channels used by duration and easing objects. |
+| `RevealChannelOptions<T>` | `Partial<Record<RevealMotionChannel, T>>` | Per-channel option helper. |
+| `RevealDuration` | `number \| RevealChannelOptions<number>` | Shared or per-channel duration. |
+| `RevealEasing` | `string \| RevealChannelOptions<string>` | Shared or per-channel easing. |
+| `RevealTransformObject` | transform fields table above | Object form for generated from-transforms. |
+| `RevealTransform` | `RevealTransformObject \| string` | Object or raw CSS transform string. |
+| `RevealOptions` | behavior options above | Options accepted by `useReveal`. |
+| `RevealProps<E>` | `RevealOptions` plus polymorphic element props | Props accepted by `<Reveal>`. |
+| `UseRevealResult<T>` | `{ ref, revealed, inView, revealProps }` | Return value from `useReveal`; spread `revealProps` and attach `ref` to your element. |
+
 ## Slider
 
-The default `Slider` is the small synchronous core: children, drag, wheel navigation, snapping, grouping, looping, index channels, intro, and the imperative ref API. Heavier behavior is opt-in through first-party plugins, so importing one feature, such as arrows or parallax, does not pull in the rest of the slider feature set. Structured slider skeletons are owned by `SliderSkeleton`; reload and back/forward restore lives in the opt-in `RestoredSliderSkeleton`, composed with `useSliderReady()`.
+The default `Slider` is the small synchronous core: children, drag, wheel navigation, snapping, grouping, looping, index channels, reveal, and the imperative ref API. Heavier behavior is opt-in through first-party plugins, so importing one feature, such as arrows or parallax, does not pull in the rest of the slider feature set. Structured slider skeletons are owned by `SliderSkeleton`; reload and back/forward restore lives in the opt-in `RestoredSliderSkeleton`, composed with `useSliderReady()`.
 
 ```typescript
 import { Slider } from "react-motion-gallery/slider";
@@ -708,7 +764,7 @@ export function BasicSlider() {
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `children` | `React.ReactNode` | `—` | Slide content rendered in order. |
-| `initialIndex` | `number` | `0` | Selects the slide index used for the first layout and intro fade-in. |
+| `initialIndex` | `number` | `0` | Selects the slide index used for the first layout and reveal fade-in. |
 | `breakpoints` | `Record<string, number>` | `xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536` | Merged with the internal breakpoint map for responsive values. |
 | `indexChannel` | `SliderIndexChannel` | internal channel | Share index state with thumbnails or sibling sliders. |
 | `plugins` | `SliderPlugin[]` | `[]` | Explicit first-party slider features such as arrows, dots, auto-height, effects, fullscreen, or lazy-load. |
@@ -748,16 +804,16 @@ Numeric values are truncated and clamped to the available slide count. `1`, `0`,
 
 ### Slider element and plugin options
 
-`elements`, `motion`, and `transitions.intro` stay in the core slider. Controls, autoplay, lazy media, effects, auto-height, fullscreen, and loading overlays are explicit plugin imports.
+`elements`, `motion`, and `reveal` stay in the core slider. Controls, autoplay, lazy media, effects, auto-height, fullscreen, and loading overlays are explicit plugin imports.
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `elements.viewport` | `ElementStyle` | `—` | Class and inline style for the viewport element. |
 | `elements.container` | `ElementStyle` | `—` | Class and inline style for the moving slider container. |
-| `transitions.intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `transitions.intro.staggerMs` | `number` | `—` | Delay between item fade-ins. |
-| `transitions.intro.durationMs` | `number` | `—` | Intro fade duration. |
-| `transitions.intro.easing` | `string` | `—` | Intro fade easing. |
+| `reveal.renderReveal` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom reveal wrapper. |
+| `reveal.staggerMs` | `number` | `—` | Delay between item reveal fades. |
+| `reveal.durationMs` | `number` | `—` | Reveal fade duration. |
+| `reveal.easing` | `string` | `—` | Reveal fade easing. |
 
 ### Slider plugins
 
@@ -1173,16 +1229,16 @@ The component forwards a ref to its outer thumbnail shell.
 | `transitions.loading.renderLoading` | `({ count }) => ReactNode` | `—` | Replaces the built-in thumbnail loading skeleton and receives the resolved responsive count. |
 | `transitions.loading.timing.exitMs` | `number` | `600` | Keeps the thumbnail loading layer mounted for this long after exit starts. |
 | `transitions.loading.timing.minVisibleMs` | `number` | `220` | Minimum time the loading layer stays visible before exit can begin. |
-| `transitions.intro.renderIntro` | `({ active, containerProps }, inner) => ReactNode` | `—` | Custom intro wrapper for the thumbnail rail. |
-| `transitions.intro.staggerMs` | `number` | `40` | Delay between thumbnail fade-ins. |
-| `transitions.intro.durationMs` | `number` | `300` | Intro fade duration. |
-| `transitions.intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
+| `reveal.renderReveal` | `({ active, containerProps }, inner) => ReactNode` | `—` | Custom reveal wrapper for the thumbnail rail. |
+| `reveal.staggerMs` | `number` | `40` | Delay between thumbnail reveal fades. |
+| `reveal.durationMs` | `number` | `300` | Reveal fade duration. |
+| `reveal.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Reveal fade easing. |
 
 `transitions.loading.elements.*` only applies to the built-in thumbnail skeleton. If you provide `transitions.loading.renderLoading`, you fully own the loading markup instead.
 
 The built-in thumbnail placeholders use the same shimmer variable family as slider skeletons: `--rmg-skel-bg`, `--rmg-skel-shimmer-enabled`, `--rmg-skel-shimmer-opacity`, `--rmg-skel-shimmer-filter`, `--rmg-skel-shimmer-angle`, `--rmg-skel-shimmer-c1`, `--rmg-skel-shimmer-c2`, `--rmg-skel-shimmer-c3`, `--rmg-skel-shimmer-duration`, and `--rmg-skel-shimmer-timing`.
 
-For thumbnails, `transitions.loading.timing.exitMs` controls both the mounted exit lifetime and the loading-layer opacity fade. The thumbnail intro can begin as soon as the loading exit starts.
+For thumbnails, `transitions.loading.timing.exitMs` controls both the mounted exit lifetime and the loading-layer opacity fade. The thumbnail reveal can begin as soon as the loading exit starts.
 
 ### `createThumbnailSyncBridge`
 
@@ -1248,11 +1304,11 @@ export function BasicGrid() {
 | `itemClassName` | `string` | `—` | Class name added to each wrapped grid item. |
 | `fullscreenTrigger` | `"item" \| "media"` | `"media"` | Opens fullscreen from the clicked media node or the entire item shell. |
 | `plugins` | `GridPlugin[]` | `[]` | Explicit first-party Grid features such as lazy-load. |
-| `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `intro.staggerMs` | `number` | `60` | Reveal stagger for the fade-in. |
-| `intro.durationMs` | `number` | `600` | Intro fade duration. |
-| `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
-| `intro.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
+| `reveal.renderReveal` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom reveal wrapper. |
+| `reveal.staggerMs` | `number` | `60` | Reveal stagger for the fade-in. |
+| `reveal.durationMs` | `number` | `600` | Reveal fade duration. |
+| `reveal.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Reveal fade easing. |
+| `reveal.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
 
 ### Grid plugins
 
@@ -1314,7 +1370,7 @@ Grid skeletons live in `react-motion-gallery/skeleton/grid`. Their `text` nodes 
 
 Grid skeletons inherit real item spans by default. Slot overrides in the Skeleton layout can change individual placeholder nodes or wrapper styles without losing the span applied by `Grid.Item`.
 
-When Grid is wrapped in `GridSkeleton`, `GridSkeleton.timing.exitMs` controls both how long the loading layer stays mounted after exit starts and its opacity transition, and the real grid intro begins as soon as exit starts.
+When Grid is wrapped in `GridSkeleton`, `GridSkeleton.timing.exitMs` controls both how long the loading layer stays mounted after exit starts and its opacity transition, and the real grid reveal begins as soon as exit starts.
 
 ```typescript
 import { Grid, useGridReady } from "react-motion-gallery";
@@ -1415,11 +1471,11 @@ export function BasicMasonry() {
 | `classNames.column` | `string` | `—` | Retained for backwards compatibility with the legacy column-wrapper renderer. |
 | `classNames.item` | `string` | `—` | Item class name. |
 | `plugins` | `MasonryPlugin[]` | `[]` | Explicit first-party Masonry features such as lazy-load. |
-| `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `intro.staggerMs` | `number` | `160` | Reveal stagger for the fade-in. |
-| `intro.durationMs` | `number` | `600` | Intro fade duration. |
-| `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Intro fade easing. |
-| `intro.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
+| `reveal.renderReveal` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom reveal wrapper. |
+| `reveal.staggerMs` | `number` | `160` | Reveal stagger for the fade-in. |
+| `reveal.durationMs` | `number` | `600` | Reveal fade duration. |
+| `reveal.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Reveal fade easing. |
+| `reveal.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
 
 ### Masonry plugins
 
@@ -1668,11 +1724,11 @@ Fullscreen close has a matching entry-aware path. If the user closes fullscreen 
 | `loading.waitForDecode` | `boolean` | `true` | Waits for image decode before revealing an entry. |
 | `loading.decodeTimeoutMs` | `number` | `8000` | Decode timeout fallback. |
 | `loading.skeletonWrap` | `ElementStyle` | `—` | Styles the skeleton wrapper. |
-| `intro.renderIntro` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom intro wrapper. |
-| `intro.staggerMs` | `number` | `200` | Delay between entry fade-ins. |
-| `intro.durationMs` | `number` | `700` | Entry intro fade duration. |
-| `intro.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Entry intro fade easing. |
-| `intro.staggerLimit` | `number` | `6` | Maximum number of entries that receive staggered delays. |
+| `reveal.renderReveal` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom reveal wrapper. |
+| `reveal.staggerMs` | `number` | `200` | Delay between entry reveal fades. |
+| `reveal.durationMs` | `number` | `700` | Entry reveal fade duration. |
+| `reveal.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Entry reveal fade easing. |
+| `reveal.staggerLimit` | `number` | `6` | Maximum number of entries that receive staggered delays. |
 | `entryList` | `ElementStyle` | `—` | Styles the entry list container. |
 | `entryRow` | `ElementStyle` | `—` | Styles each entry row container. |
 
@@ -2258,6 +2314,67 @@ For overlay captions, style the rendered caption content to fill the reserved ca
 | `fadeDurationMs` | `number \| undefined` | Slot fade duration. |
 | `fadeEasing` | `string \| undefined` | Slot fade easing. |
 
+## ZoomPanImage
+
+```typescript
+import { ZoomPanImage } from "react-motion-gallery/zoomPan";
+import { zoomPanHover } from "react-motion-gallery/zoomPan/hover";
+
+export function ZoomPanCard() {
+  return (
+    <ZoomPanImage
+      src="https://picsum.photos/id/1035/1600/1200"
+      alt="A hiker looking over a canyon at dusk"
+      className="zoomCard"
+      zoom={{
+        clickZoomLevel: 2.35,
+        maxZoomLevel: 3.5,
+        plugins: [zoomPanHover()],
+      }}
+    />
+  );
+}
+```
+
+`ZoomPanImage` is the lightweight standalone zoom surface. The component root is the clipping container, so border radius, aspect ratio, and overflow all live on the same element. Add `zoomPanHover()` to opt into smooth mouse hover zoom with cursor-driven pan; the same plugin can be passed through `fullscreenZoomPan({ plugins: [zoomPanHover()] })`.
+
+### ZoomPanImage props
+
+`ZoomPanImage` forwards its ref to the root `HTMLDivElement`. Standard image attributes are passed to the inner `<img>` except `children`, `className`, and `style`; use `className` / `style` for the root and `imageClassName` / `imageStyle` for the rendered image.
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `ref` | `React.Ref<HTMLDivElement>` | `—` | Forwarded to the root clipping container. |
+| `src` | `string \| undefined` | `—` | Forwarded to the inner image. |
+| `alt` | `string \| undefined` | `—` | Forwarded to the inner image. |
+| `className` | `string` | `—` | Class name for the root clipping container. |
+| `style` | `React.CSSProperties` | built-in root styles | Merged onto the root clipping container after the built-in `position`, `overflow`, sizing, and touch-action styles. |
+| `imageClassName` | `string` | `—` | Class name for the inner image element. |
+| `imageStyle` | `React.CSSProperties` | built-in image styles | Merged onto the inner image after the built-in `display`, `objectFit`, transform, selection, and cursor styles. |
+| `zoom` | `ZoomPanOptions` | default zoom options | Configures click zoom, wheel/pinch zoom limits, pan motion, and optional plugins. |
+| `disabled` | `boolean` | `false` | Disables zoom, pan, pinch, wheel, and hover behavior and resets the image to identity while disabled. |
+| `onDragStart` | `React.DragEventHandler<HTMLImageElement>` | `—` | Called after native image dragging is prevented. |
+| Other image attributes | `Omit<React.ImgHTMLAttributes<HTMLImageElement>, "children" \| "className" \| "style">` | `—` | Forwarded to the inner image, including `loading`, `decoding`, `srcSet`, `sizes`, ARIA attributes, and image event handlers. |
+
+### Zoom options
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `clickZoomLevel` | `number` | `2.5` | Target scale for click/tap zoom and the default hover zoom level. |
+| `maxZoomLevel` | `number` | `3` | Upper scale limit for click, wheel, pinch, and hover zoom. |
+| `panDuration` | `number` | `43` | Motion duration used by pan and zoom settling. |
+| `panFriction` | `number` | `0.68` | Friction used by drag-pan momentum. |
+| `plugins` | `ZoomPanPlugin[]` | `—` | First-party feature plugins for the zoom surface. Currently includes `zoomPanHover()`. |
+
+### `zoomPanHover()` options
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | `true` | Set `false` to keep the plugin in the list while disabling hover behavior. |
+| `zoomLevel` | `number` | `zoom.clickZoomLevel` | Target hover scale, clamped by `zoom.maxZoomLevel`. |
+| `zoomInDurationMs` | `number` | `zoomOutDurationMs` | Duration for the hover-in zoom animation. |
+| `zoomOutDurationMs` | `number` | `260` | Duration for the hover-out reset animation. |
+
 ## Video
 
 `Video` is the gallery-aware video primitive. It mounts Plyr lazily, syncs with gallery visibility, and can be used inside `Slider`, `Grid`, `Masonry`, `Entries`, and fullscreen flows.
@@ -2311,3 +2428,9 @@ These helper type names are available from both the package root and `react-moti
 | `RmgVideoLazyLoadOptions` | `{ enabled?, spinner?, spinnerClassName?, spinnerStyle? }` | Used by `lazyLoad`. |
 
 If you do not use `Video`, you do not need `plyr` or `plyr-react`. Install those optional peer dependencies only for video playback.
+
+## Acknowledgements
+
+React Motion Gallery's slider engine includes portions of code derived from [Embla Carousel](https://github.com/davidjerleke/embla-carousel), which is MIT licensed. Those portions have been substantially adapted for React Motion Gallery's React architecture, public API, transition system, fullscreen integration, loading layers, and media workflows.
+
+See [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) for the preserved Embla Carousel copyright and MIT license notice.

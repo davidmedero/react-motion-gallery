@@ -191,7 +191,7 @@ function cloneCoreSlide(
         position: "relative",
         flex: "0 0 auto",
         ...(extraStyle || {}),
-        ["--rmg-intro-index" as any]: normIdx,
+        ["--rmg-reveal-index" as any]: normIdx,
         transform: "scale(var(--rmg-scale, 1))",
         transformOrigin: "center",
         userSelect: "none",
@@ -553,7 +553,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
   useEffect(() => {
     // Child mutations still need a fresh measure/build pass, but they should not
-    // replay mount-only loading or intro state after the slider has become ready.
+    // replay mount-only loading or reveal state after the slider has become ready.
     setEngineReady(false);
     setLayoutReady(false);
     hasPositioned.current = false;
@@ -626,6 +626,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       /* Only while data-rmg-drag is present on this slider root */
       [data-rmg-slider-core-scope="${scopeId}"][data-rmg-drag]        { cursor: grabbing !important; }
       [data-rmg-slider-core-scope="${scopeId}"][data-rmg-drag] *      { cursor: grabbing !important; }
+      [data-rmg-slider-core-scope="${scopeId}"][data-rmg-fullscreen-enabled="true"] [data-rmg-slide="true"] img,
+      [data-rmg-slider-core-scope="${scopeId}"][data-rmg-fullscreen-enabled="true"] [data-rmg-fullscreen-trigger] {
+        cursor: zoom-in;
+      }
     `;
     document.head.appendChild(style);
   }

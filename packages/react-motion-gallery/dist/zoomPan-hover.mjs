@@ -1,0 +1,1 @@
+function n(o,r){return {__rmgZoomPanPlugin:true,kind:o,options:r}}function t(o={}){return n("hover",o)}export{t as zoomPanHover};

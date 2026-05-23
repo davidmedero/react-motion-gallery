@@ -27,7 +27,7 @@ export type {
   EntrySkeletonResolverArgs,
   EntriesLoadingOptions,
   EntriesOptions,
-  IntroOptions,
+  RevealOptions,
   MediaEntryLink,
   SlideOwner,
 } from "./Gallery/entries";

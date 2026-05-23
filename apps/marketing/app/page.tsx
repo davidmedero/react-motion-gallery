@@ -1,10 +1,10 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import { Reveal } from "react-motion-gallery/reveal";
 import { JsonLd, buildHomeJsonLd } from "@/lib/seo/structured-data";
 // import { HomeShowcase } from "./HomeShowcase";
 // import { SafariReloadScrollRestorationGuard } from "./components/SafariReloadScrollRestorationGuard";
+import { HomeIntroVisual } from "./HomeIntroVisual";
 import { HOME_SURFACE_LINKS } from "./home-surface-links";
 // import { readSkeletonCacheSnapshots } from "./skeleton-cache-server";
 import packageJson from "../../../packages/react-motion-gallery/package.json";
@@ -77,26 +77,7 @@ export default async function Home() {
               </Reveal>
             </div>
 
-            <Reveal
-              as="div"
-              className="home-intro__visual"
-              aria-hidden
-              transform={{ y: 18, scale: 0.96, rotate: 1.2 }}
-              delayMs={120}
-              durationMs={{
-                opacity: 1000,
-                transform: 660
-              }}
-            >
-              <Image
-                className="home-intro__visualImage"
-                src="https://cdn.react-motion-gallery.com/nav/rmg-icon-v5.png"
-                alt=""
-                fill
-                priority
-                sizes="(max-width: 640px) 70vw, (max-width: 920px) 34vw, 360px"
-              />
-            </Reveal>
+            <HomeIntroVisual />
           </div>
 
           <div className="home-intro__cards" role="list">

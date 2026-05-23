@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -89,7 +89,7 @@ function FullscreenAddon() {
 export function FullscreenViewportOverlayCaptionDemo() {
   const media = toMediaItems(SLIDES.map((slide) => slide.src));
   const fullscreenMedia = toMediaItems(
-    SLIDES.map((slide) => slide.fullscreenSrc)
+    SLIDES.map((slide) => slide.fullscreenSrc),
   );
 
   const { ref: sliderRef, ready: sliderReady } = useSliderReady();
@@ -99,43 +99,37 @@ export function FullscreenViewportOverlayCaptionDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("fullscreen-viewport-overlay-caption")}
         layout={{
-              visibleCount: 2,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    maxWidth: "550px",
-                    aspectRatio: "16 / 9",
-                    borderRadius: 12,
-                  },
-                },
+          visibleCount: 2,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100cqw",
+                maxWidth: "550px",
+                aspectRatio: "16 / 9",
+                borderRadius: 12,
               },
-            }}
+            },
+          },
+        }}
         ready={sliderReady}
       >
-      <Slider
-        ref={sliderRef}
-        plugins={[
-          sliderFullscreen(),
-        ]}
-      >
-        {media.map((slide, index) => (
-          <img
-            key={slide.kind === "image" ? slide.src : index}
-            src={SLIDES[index]?.src ?? ""}
-            alt={SLIDES[index]?.title ?? ""}
-            className={styles.slide}
-          />
-  
-            ))}
-      </Slider>
+        <Slider ref={sliderRef} plugins={[sliderFullscreen()]}>
+          {media.map((slide, index) => (
+            <img
+              key={slide.kind === "image" ? slide.src : index}
+              src={SLIDES[index]?.src ?? ""}
+              alt={SLIDES[index]?.title ?? ""}
+              className={styles.slide}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>

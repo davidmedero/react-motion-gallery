@@ -482,7 +482,7 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
       top: `${top}px`,
       left,
       width,
-      ['--rmg-intro-index' as any]: index,
+      ['--rmg-reveal-index' as any]: index,
     },
   } as React.HTMLAttributes<HTMLDivElement>;
 

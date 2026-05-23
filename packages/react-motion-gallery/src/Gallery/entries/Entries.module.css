@@ -42,8 +42,8 @@
   opacity: 0;
   pointer-events: none;
   transition:
-    opacity var(--rmg-entry-intro-duration, 700ms)
-      var(--rmg-entry-intro-easing, cubic-bezier(.4,0,.22,1));
+    opacity var(--rmg-entry-reveal-duration, 700ms)
+      var(--rmg-entry-reveal-easing, cubic-bezier(.4,0,.22,1));
   transition-delay: 0ms;
   z-index: 1;
 }
@@ -54,13 +54,13 @@
 
 .entryRow[data-rmg-entry-ready="1"]:not([data-rmg-entry-compare="1"]) .entrySkeletonWrap {
   opacity: 0;
-  transition-delay: var(--rmg-entry-intro-delay, 0ms);
+  transition-delay: var(--rmg-entry-reveal-delay, 0ms);
 }
 
 .entryRow[data-rmg-entry-ready="1"] .entryInner {
   opacity: 1;
   pointer-events: auto;
-  transition-delay: var(--rmg-entry-intro-delay, 0ms);
+  transition-delay: var(--rmg-entry-reveal-delay, 0ms);
 }
 
 .entryRow[data-rmg-entry-compare="1"] .entrySkeletonWrap {
@@ -81,6 +81,10 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.entryMediaButton[data-rmg-fullscreen-enabled="true"][data-rmg-fullscreen-trigger-mode="media"] img {
+  cursor: zoom-in;
 }
 
 .entrySkelRoot {

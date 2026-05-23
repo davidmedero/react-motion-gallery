@@ -7,13 +7,13 @@ import {
 } from '../shared/responsive';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
-import { useSkeletonIntroGate } from '../shared/loading/skeletonIntroGate';
+import { useSkeletonRevealGate } from '../shared/loading/skeletonRevealGate';
 import { useOptionalGalleryCore } from '../core';
 import { MasonryCore } from './Masonry';
 import { useMasonryLayoutSeed } from './MasonryLayoutSeedContext';
 import type {
   FullscreenTrigger,
-  IntroOptions,
+  RevealOptions,
   MasonryHandle,
   MasonryPlugin,
 } from './types';
@@ -41,8 +41,8 @@ export type MasonryLayoutProps = {
   itemSpans?: ReadonlyArray<ResponsiveMasonrySpan | undefined>;
   masonry: MasonryOptions;
   breakpoints?: BreakpointMap;
-  intro: IntroOptions;
-  introReady?: boolean;
+  reveal: RevealOptions;
+  revealReady?: boolean;
 };
 
 function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
@@ -75,13 +75,13 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
       itemSpans,
       masonry,
       breakpoints,
-      intro,
-      introReady = true,
+      reveal,
+      revealReady = true,
     },
     forwardedRef
   ) {
     const core = useOptionalGalleryCore();
-    const skeletonIntroGate = useSkeletonIntroGate();
+    const skeletonRevealGate = useSkeletonRevealGate();
     const layoutSeed = useMasonryLayoutSeed();
     const localRootRef = React.useRef<HTMLElement | null>(null);
     const shellRef = React.useRef<HTMLDivElement | null>(null);
@@ -237,11 +237,11 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
       }
     }, [items.length, measurementKey]);
 
-    const introActive = clientReady && inView && introReady && (skeletonIntroGate ?? true);
+    const revealActive = clientReady && inView && revealReady && (skeletonRevealGate ?? true);
     const masonryRootClassName = [
       styles.masonryRoot,
-      styles.introContainer,
-      introActive ? styles.introActive : '',
+      styles.revealContainer,
+      revealActive ? styles.revealActive : '',
       masonry.classNames?.root || '',
     ]
       .filter(Boolean)
@@ -276,9 +276,9 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
               item: [styles.masonryItem, masonry.classNames?.item].filter(Boolean).join(' '),
             }}
             masonryStyle={{
-              ['--rmg-intro-stagger' as any]: `${intro.staggerMs}ms`,
-              ['--rmg-intro-duration' as any]: `${intro.durationMs}ms`,
-              ['--rmg-intro-easing' as any]: intro.easing,
+              ['--rmg-reveal-stagger' as any]: `${reveal.staggerMs}ms`,
+              ['--rmg-reveal-duration' as any]: `${reveal.durationMs}ms`,
+              ['--rmg-reveal-easing' as any]: reveal.easing,
             }}
             masonryAs={masonry.as ?? 'div'}
             masonryRootRef={mergedRootRef}

@@ -15,7 +15,7 @@ type LoadingExitSchedulerArgs = {
   minVisibleMs?: number;
   setLoadingExiting: (value: boolean) => void;
   setShowLoadingLayer: (value: boolean) => void;
-  setIntroUnlocked: (value: boolean) => void;
+  setRevealUnlocked: (value: boolean) => void;
 };
 
 type ResolveLoadingTimingArgs = {
@@ -67,12 +67,12 @@ export function scheduleLoadingExit(args: LoadingExitSchedulerArgs) {
   });
 
   let minVisibleTimeoutId: ReturnType<typeof setTimeout> | null = null;
-  let introTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  let revealTimeoutId: ReturnType<typeof setTimeout> | null = null;
   let exitTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   const beginExit = () => {
     if (args.exitMs === 0) {
-      args.setIntroUnlocked(true);
+      args.setRevealUnlocked(true);
       args.setLoadingExiting(false);
       args.setShowLoadingLayer(false);
       return;
@@ -80,8 +80,8 @@ export function scheduleLoadingExit(args: LoadingExitSchedulerArgs) {
 
     args.setLoadingExiting(true);
 
-    introTimeoutId = setTimeout(() => {
-      args.setIntroUnlocked(true);
+    revealTimeoutId = setTimeout(() => {
+      args.setRevealUnlocked(true);
     }, 0);
 
     exitTimeoutId = setTimeout(() => {
@@ -107,8 +107,8 @@ export function scheduleLoadingExit(args: LoadingExitSchedulerArgs) {
       clearTimeout(exitTimeoutId);
     }
 
-    if (introTimeoutId !== null) {
-      clearTimeout(introTimeoutId);
+    if (revealTimeoutId !== null) {
+      clearTimeout(revealTimeoutId);
     }
   };
 }

@@ -9,6 +9,7 @@ export const css = String.raw`.gridCard {
   aspect-ratio: 4 / 5;
   object-fit: cover;
   border-radius: 12px;
+  cursor: zoom-in;
 }
 
 .gridCopy {

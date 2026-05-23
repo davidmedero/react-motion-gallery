@@ -10,7 +10,7 @@ import {
 } from '../shared/responsive';
 import { useInViewOnce } from '../shared/hooks/useInViewOnce';
 import { useMediaReady } from '../shared/hooks/useMediaReady';
-import { useSkeletonIntroGate } from '../shared/loading/skeletonIntroGate';
+import { useSkeletonRevealGate } from '../shared/loading/skeletonRevealGate';
 import { RmgSlideProvider } from '../shared/slideContext';
 import { createRmgSlideStoreBag } from '../shared/slideStoreBag';
 import { buildStableScopeId } from '../shared/stableScope';
@@ -23,7 +23,7 @@ import {
   type GridCell,
   type GridItemLayoutMeta,
 } from './item';
-import { IntroOptions, ResponsiveGridTemplate, type GridHandle, type GridPlugin } from './types';
+import { RevealOptions, ResponsiveGridTemplate, type GridHandle, type GridPlugin } from './types';
 
 type FullscreenTrigger = 'item' | 'media';
 
@@ -43,12 +43,12 @@ export type GridLayoutProps = {
   grid: GridOptions;
   breakpoints?: BreakpointMap;
   viewportWidth: number;
-  intro: IntroOptions;
+  reveal: RevealOptions;
   enableFullscreen: boolean;
   onOpen: (index: number, originEl?: HTMLElement | null) => void;
   registerExpandableImage: (index: number, node: HTMLImageElement | HTMLVideoElement | null) => void;
   gridItemBaseClass?: string;
-  introReady?: boolean;
+  revealReady?: boolean;
   renderMode?: 'wrap' | 'passthrough';
 };
 
@@ -266,9 +266,9 @@ function buildGridItemHostStyle(args: {
   originalStyle?: React.CSSProperties;
   layoutMeta?: GridItemLayoutMeta;
   allowSpan: boolean;
-  introStyle: React.CSSProperties & Record<string, any>;
+  revealStyle: React.CSSProperties & Record<string, any>;
 }) {
-  const { originalStyle, layoutMeta, allowSpan, introStyle } = args;
+  const { originalStyle, layoutMeta, allowSpan, revealStyle } = args;
 
   return {
     ...(originalStyle || {}),
@@ -277,7 +277,7 @@ function buildGridItemHostStyle(args: {
       allowSpan,
     }) || {}),
     ...(layoutMeta?.style || {}),
-    ...introStyle,
+    ...revealStyle,
   };
 }
 export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function GridLayout(
@@ -286,12 +286,12 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     grid,
     breakpoints,
     viewportWidth,
-    intro,
+    reveal,
     enableFullscreen,
     onOpen,
     registerExpandableImage,
     gridItemBaseClass = 'rmg__grid-item',
-    introReady = true,
+    revealReady = true,
     renderMode,
   },
   forwardedRef
@@ -299,7 +299,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   const core = useOptionalGalleryCore();
   const breakpointMap = breakpoints ?? BREAKPOINT_MAP;
   const gridRootRef = React.useRef<HTMLDivElement | null>(null);
-  const skeletonIntroGate = useSkeletonIntroGate();
+  const skeletonRevealGate = useSkeletonRevealGate();
   const layoutStoreBag = React.useMemo(() => createRmgSlideStoreBag(), []);
   const [inView, setInView] = React.useState(false);
   const [mediaReady, setMediaReady] = React.useState(false);
@@ -335,8 +335,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   }, []);
 
   const contentReady = pluginBlocksMediaReady ? clientReady : mediaReady;
-  const introActive =
-    contentReady && inView && introReady && (skeletonIntroGate ?? true);
+  const revealActive =
+    contentReady && inView && revealReady && (skeletonRevealGate ?? true);
 
   const getItemNodes = React.useCallback(() => {
     const root = gridRootRef.current;
@@ -608,7 +608,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   }, [minWidth, gapVal, resolvedGridTemplateColumns, resolvedGridColumnCount]);
 
   const baseItemClassName = React.useMemo(
-    () => cx(gridItemBaseClass, styles.gridItem, styles.introItem, grid.itemClassName),
+    () => cx(gridItemBaseClass, styles.gridItem, styles.revealItem, grid.itemClassName),
     [gridItemBaseClass, grid.itemClassName]
   );
 
@@ -624,15 +624,15 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
         </RmgSlideProvider>
       );
 
-      const introStyle: React.CSSProperties & Record<string, any> = {
-        ['--rmg-intro-index' as any]: index,
+      const revealStyle: React.CSSProperties & Record<string, any> = {
+        ['--rmg-reveal-index' as any]: index,
       };
 
       const itemClassName = cx(baseItemClassName, layoutMeta?.className);
       const itemStyle = buildGridItemHostStyle({
         layoutMeta,
         allowSpan: hasExplicitTracks,
-        introStyle,
+        revealStyle,
       });
 
       if (pluginItemEntry?.renderItem) {
@@ -664,6 +664,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
         const itemProps = {
           'data-rmg-idx': index,
           'data-rmg-grid-item-key': cell.id,
+          'data-rmg-fullscreen-enabled': enableFullscreen ? 'true' : undefined,
+          'data-rmg-fullscreen-trigger-mode': enableFullscreen ? fullscreenTrigger : undefined,
           className: itemClassName,
           style: itemStyle,
           onClick: mergedOnClick,
@@ -708,6 +710,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
             key={cell.id}
             data-rmg-idx={index}
             data-rmg-grid-item-key={cell.id}
+            data-rmg-fullscreen-enabled={enableFullscreen ? 'true' : undefined}
+            data-rmg-fullscreen-trigger-mode={enableFullscreen ? fullscreenTrigger : undefined}
             className={itemClassName}
             style={itemStyle}
             onClick={onItemClick(index)}
@@ -751,12 +755,14 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
         ref: mergedRef,
         'data-rmg-idx': index,
         'data-rmg-grid-item-key': cell.id,
+        'data-rmg-fullscreen-enabled': enableFullscreen ? 'true' : undefined,
+        'data-rmg-fullscreen-trigger-mode': enableFullscreen ? fullscreenTrigger : undefined,
         className: cx(itemClassName, origProps.className),
         style: buildGridItemHostStyle({
           originalStyle: origProps.style,
           layoutMeta,
           allowSpan: hasExplicitTracks,
-          introStyle,
+          revealStyle,
         }),
         onClick: mergedOnClick,
         onKeyDown: mergedOnKeyDown,
@@ -806,28 +812,28 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     () => ({
       className: cx(
         styles.gridRoot,
-        styles.introContainer,
-        introActive && styles.introActive,
+        styles.revealContainer,
+        revealActive && styles.revealActive,
         grid.rootClassName
       ),
       'data-rmg-grid-node': 'true',
       style: {
         ...gridStyle,
-        ['--rmg-intro-stagger' as any]: `${intro.staggerMs}ms`,
-        ['--rmg-intro-duration' as any]: `${intro.durationMs}ms`,
-        ['--rmg-intro-easing' as any]: intro.easing,
+        ['--rmg-reveal-stagger' as any]: `${reveal.staggerMs}ms`,
+        ['--rmg-reveal-duration' as any]: `${reveal.durationMs}ms`,
+        ['--rmg-reveal-easing' as any]: reveal.easing,
       },
       'aria-busy': contentReady ? undefined : true,
     }),
     [
       grid.rootClassName,
       gridStyle,
-      intro.staggerMs,
-      intro.durationMs,
-      intro.easing,
-      introActive,
+      reveal.staggerMs,
+      reveal.durationMs,
+      reveal.easing,
+      revealActive,
       contentReady,
-      introReady,
+      revealReady,
     ]
   );
 
@@ -837,8 +843,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     </div>
   );
 
-  const introWrapped = intro.renderIntro
-    ? intro.renderIntro({ active: introActive, containerProps }, inner)
+  const revealWrapped = reveal.renderReveal
+    ? reveal.renderReveal({ active: revealActive, containerProps }, inner)
     : inner;
 
   return (
@@ -849,7 +855,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       {responsiveCssText ? (
         <style dangerouslySetInnerHTML={{ __html: responsiveCssText }} />
       ) : null}
-      {introWrapped}
+      {revealWrapped}
     </div>
   );
 });

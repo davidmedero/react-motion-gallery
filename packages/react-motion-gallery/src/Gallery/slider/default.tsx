@@ -11,7 +11,7 @@ import {
   resolveNumberFromResponsive,
 } from "../shared/responsiveNumber";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
-import { useSkeletonIntroGate } from "../shared/loading/skeletonIntroGate";
+import { useSkeletonRevealGate } from "../shared/loading/skeletonRevealGate";
 import { resolveResponsiveSliderGroupCells } from "./groupCells";
 import type { BreakpointMap } from "../shared/responsiveNumber";
 import type {
@@ -80,10 +80,10 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
   const readySubsRef = React.useRef(new Set<(nodes: HTMLElement[]) => void>());
   const readyResolversRef = React.useRef<Array<(nodes: HTMLElement[]) => void>>([]);
   const autoPlayTimerRef = React.useRef<SliderAutoPlayTimer | null>(null);
-  const intro = sliderOptions.transitions?.intro;
-  const introRef = React.useRef<HTMLDivElement | null>(null);
-  const skeletonIntroGate = useSkeletonIntroGate();
-  const [introInView, setIntroInView] = React.useState(false);
+  const reveal = sliderOptions.reveal;
+  const revealRef = React.useRef<HTMLDivElement | null>(null);
+  const skeletonRevealGate = useSkeletonRevealGate();
+  const [revealInView, setRevealInView] = React.useState(false);
   const [index, setIndex] = React.useState(
     normalizeSliderInitialIndex(props.initialIndex)
   );
@@ -442,22 +442,22 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
   );
 
   React.useEffect(() => {
-    if (!intro) return;
-    if (intro.inView === true) {
-      setIntroInView(true);
+    if (!reveal) return;
+    if (reveal.inView === true) {
+      setRevealInView(true);
       return;
     }
 
-    const node = introRef.current;
+    const node = revealRef.current;
     if (!node || typeof IntersectionObserver === "undefined") {
-      setIntroInView(true);
+      setRevealInView(true);
       return;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          setIntroInView(true);
+          setRevealInView(true);
           observer.disconnect();
         }
       },
@@ -465,7 +465,7 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [intro]);
+  }, [reveal]);
 
   const hostBase = React.useMemo<Omit<SliderPluginHost, "setPluginReady">>(
     () => {
@@ -557,28 +557,28 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
       coreNode
     );
 
-  if (!intro) return withPlugins;
+  if (!reveal) return withPlugins;
 
-  const introActive = introInView && (skeletonIntroGate ?? true);
+  const revealActive = revealInView && (skeletonRevealGate ?? true);
   const baseContainerProps: React.HTMLAttributes<HTMLDivElement> = {
     className: [
       styles.fade_container,
-      introActive ? styles.fadeInActive : styles.fadeInStart,
+      revealActive ? styles.fadeInActive : styles.fadeInStart,
     ].join(" "),
     style: {
       position: "relative",
-      ["--rmg-intro-stagger" as any]: `${intro.staggerMs ?? 60}ms`,
-      ["--rmg-intro-duration" as any]: `${intro.durationMs ?? 420}ms`,
-      ["--rmg-intro-easing" as any]:
-        intro.easing ?? "cubic-bezier(.2,.7,.2,1)",
+      ["--rmg-reveal-stagger" as any]: `${reveal.staggerMs ?? 60}ms`,
+      ["--rmg-reveal-duration" as any]: `${reveal.durationMs ?? 420}ms`,
+      ["--rmg-reveal-easing" as any]:
+        reveal.easing ?? "cubic-bezier(.2,.7,.2,1)",
     },
   };
 
   return (
-    <div ref={introRef} {...baseContainerProps}>
-      {intro.renderIntro
-        ? intro.renderIntro(
-            { active: introActive, containerProps: baseContainerProps },
+    <div ref={revealRef} {...baseContainerProps}>
+      {reveal.renderReveal
+        ? reveal.renderReveal(
+            { active: revealActive, containerProps: baseContainerProps },
             withPlugins
           )
         : withPlugins}

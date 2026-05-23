@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { G as GridHandle } from './types-Do4Pq-Td.mjs';
+import { G as GridHandle } from './types-ap0Mfoo0.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 
 type GridReadyController = {

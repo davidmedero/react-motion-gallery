@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -73,52 +73,52 @@ const SLIDES = [
 ];
 
 function FullscreenCaptionThumbnailsAddon() {
-  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenCaptions(), fullscreenZoomPan()],
-    fullscreen: {
-      enabled: true,
-      caption: {
-        layout: "overlay",
-        overlayCrossfadeTarget: "content",
-        // overlayCrossfadeDurationMs: 520,
-        // overlayCrossfadeEasing: "cubic-bezier(.2,.7,.2,1)",
-        className: styles.fullscreenCaptionRoot,
-        placement: {
-          xs: "bottom",
-          lg: "right",
-        },
-        width: {
-          lg: "32%",
-          xl: "28%",
-        },
-        height: {
-          xs: 176,
-          md: 188,
-        },
-        style: {
-          padding: 0,
-        },
-        render: ({ index }) => {
-          const slide = SLIDES[index];
-          if (!slide) return null;
+  const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController(
+    {
+      plugins: [fullscreenSlider(), fullscreenCaptions(), fullscreenZoomPan()],
+      fullscreen: {
+        enabled: true,
+        caption: {
+          layout: "overlay",
+          overlayCrossfadeTarget: "content",
+          className: styles.fullscreenCaptionRoot,
+          placement: {
+            xs: "bottom",
+            lg: "right",
+          },
+          width: {
+            lg: "32%",
+            xl: "28%",
+          },
+          height: {
+            xs: 176,
+            md: 188,
+          },
+          style: {
+            padding: 0,
+          },
+          render: ({ index }) => {
+            const slide = SLIDES[index];
+            if (!slide) return null;
 
-          return (
-            <div className={styles.fullscreenCaption}>
-              <span className={styles.fullscreenCaptionEyebrow}>
-                {slide.location}
-              </span>
-              <strong className={styles.fullscreenCaptionTitle}>
-                {slide.title}
-              </strong>
-              <p className={styles.fullscreenCaptionCopy}>
-                {slide.description}
-              </p>
-            </div>
-          );
+            return (
+              <div className={styles.fullscreenCaption}>
+                <span className={styles.fullscreenCaptionEyebrow}>
+                  {slide.location}
+                </span>
+                <strong className={styles.fullscreenCaptionTitle}>
+                  {slide.title}
+                </strong>
+                <p className={styles.fullscreenCaptionCopy}>
+                  {slide.description}
+                </p>
+              </div>
+            );
+          },
         },
       },
     },
-  });
+  );
 
   return (
     <>
@@ -155,7 +155,7 @@ function FullscreenCaptionThumbnailsAddon() {
 export function FullscreenCaptionThumbnailsDemo() {
   const media = toMediaItems(SLIDES.map((slide) => slide.src));
   const fullscreenMedia = toMediaItems(
-    SLIDES.map((slide) => slide.fullscreenSrc)
+    SLIDES.map((slide) => slide.fullscreenSrc),
   );
 
   const { ref: sliderRef, ready: sliderReady } = useSliderReady();
@@ -165,43 +165,37 @@ export function FullscreenCaptionThumbnailsDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("fullscreen-caption-thumbnails")}
         layout={{
-              visibleCount: 2,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    maxWidth: "550px",
-                    aspectRatio: "16 / 9",
-                    borderRadius: 12,
-                  },
-                },
+          visibleCount: 2,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100cqw",
+                maxWidth: "550px",
+                aspectRatio: "16 / 9",
+                borderRadius: 12,
               },
-            }}
+            },
+          },
+        }}
         ready={sliderReady}
       >
-      <Slider
-        ref={sliderRef}
-        plugins={[
-          sliderFullscreen(),
-        ]}
-      >
-        {media.map((slide, index) => (
-          <img
-            key={slide.kind === "image" ? slide.src : index}
-            src={SLIDES[index]?.src ?? ""}
-            alt={SLIDES[index]?.title ?? ""}
-            className={styles.slide}
-          />
-  
-            ))}
-      </Slider>
+        <Slider ref={sliderRef} plugins={[sliderFullscreen()]}>
+          {media.map((slide, index) => (
+            <img
+              key={slide.kind === "image" ? slide.src : index}
+              src={SLIDES[index]?.src ?? ""}
+              alt={SLIDES[index]?.title ?? ""}
+              className={styles.slide}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
       <FullscreenCaptionThumbnailsAddon />
     </GalleryCore>

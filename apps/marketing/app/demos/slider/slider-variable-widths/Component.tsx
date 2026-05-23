@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -67,7 +67,12 @@ const SLIDES = [
   },
 ];
 
-function Slide(props: { src: string; width: number; height: number; i: number }) {
+function Slide(props: {
+  src: string;
+  width: number;
+  height: number;
+  i: number;
+}) {
   const { src, width, height, i } = props;
 
   return (
@@ -81,7 +86,6 @@ function Slide(props: { src: string; width: number; height: number; i: number })
 }
 
 function FullscreenAddon() {
-
   const { fullscreenNode } = useFullscreenController({
     plugins: [fullscreenSlider(), fullscreenZoomPan()],
     fullscreen: {
@@ -94,7 +98,9 @@ function FullscreenAddon() {
 
 export function SliderVariableWidthsDemo() {
   const media = toMediaItems(SLIDES.map((slide) => slide.src));
-  const fullscreenMedia = toMediaItems(SLIDES.map((slide) => slide.fullscreenSrc));
+  const fullscreenMedia = toMediaItems(
+    SLIDES.map((slide) => slide.fullscreenSrc),
+  );
 
   const { ref: sliderRef, ready: sliderReady } = useSliderReady();
 
@@ -103,63 +109,60 @@ export function SliderVariableWidthsDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("slider-variable-widths")}
         layout={{
-              visibleCount: 4,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: 12,
-                  },
-                },
-                slots: SLIDES.map((slide) => ({
-                  itemWrapStyle: {
-                    width: slide.width,
-                    height: slide.height,
-                  },
-                })),
+          visibleCount: 4,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100%",
+                height: "100%",
+                borderRadius: 12,
               },
-            }}
+            },
+            slots: SLIDES.map((slide) => ({
+              itemWrapStyle: {
+                width: slide.width,
+                height: slide.height,
+              },
+            })),
+          },
+        }}
         ready={sliderReady}
       >
-      <Slider
-        ref={sliderRef}
-        align="center"
-        scroll={{ containScroll: true }}
-        transitions={{
-          intro: {
-            staggerMs: 120
-          }
-        }}
-        plugins={[
-          sliderFullscreen(),
-          sliderRipple(),
-          sliderArrows(),
-          sliderDots(),
-        ]}
-      >
-        {media.map((item, i) => {
-          const slide = SLIDES[i];
+        <Slider
+          ref={sliderRef}
+          align="center"
+          scroll={{ containScroll: true }}
+          reveal={{
+            staggerMs: 120,
+          }}
+          plugins={[
+            sliderFullscreen(),
+            sliderRipple(),
+            sliderArrows(),
+            sliderDots(),
+          ]}
+        >
+          {media.map((item, i) => {
+            const slide = SLIDES[i];
 
-          return (
-            <Slide
-              key={`img-${item.kind === "image" ? item.src : ""}-${i}`}
-              src={item.kind === "image" ? item.src : ""}
-              width={slide.width}
-              height={slide.height}
-              i={i}
-            />
-          );
-  
-            })}
-      </Slider>
+            return (
+              <Slide
+                key={`img-${item.kind === "image" ? item.src : ""}-${i}`}
+                src={item.kind === "image" ? item.src : ""}
+                width={slide.width}
+                height={slide.height}
+                i={i}
+              />
+            );
+          })}
+        </Slider>
       </SliderSkeleton>
       <FullscreenAddon />
     </GalleryCore>

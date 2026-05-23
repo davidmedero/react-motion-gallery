@@ -56,6 +56,18 @@ type RenderFullscreenSlidesArgs = {
     e: React.PointerEvent<HTMLDivElement>,
     imageRef: React.RefObject<HTMLDivElement | null>
   ) => void;
+  onHoverPointerEnter?: (
+    e: React.PointerEvent<HTMLDivElement>,
+    imageRef: React.RefObject<HTMLDivElement | null>
+  ) => void;
+  onHoverPointerMove?: (
+    e: React.PointerEvent<HTMLDivElement>,
+    imageRef: React.RefObject<HTMLDivElement | null>
+  ) => void;
+  onHoverPointerLeave?: (
+    e: React.PointerEvent<HTMLDivElement>,
+    imageRef: React.RefObject<HTMLDivElement | null>
+  ) => void;
   onSuppressNextClickCapture: (e: React.SyntheticEvent) => void;
   renderCaption?: (args: FsCaptionRenderArgs) => React.ReactNode;
   captionClassName?: string;
@@ -1570,6 +1582,9 @@ function FsSlide(props: {
     fsVideoStyle,
     fsVideoClassName,
     onPanPointerDown,
+    onHoverPointerEnter,
+    onHoverPointerMove,
+    onHoverPointerLeave,
     onSuppressNextClickCapture,
     captionNode,
     captionFirst,
@@ -1636,7 +1651,6 @@ function FsSlide(props: {
     objectFit: "contain",
     touchAction: "manipulation",
     transformOrigin: "0 0",
-    transform: "translate(0, 0) scale(1)",
     cursor: interactive ? (isZoomed ? "grab" : "zoom-in") : "default",
     userSelect: "none",
     WebkitUserSelect: "none",
@@ -1810,6 +1824,21 @@ function FsSlide(props: {
             isNode || !interactive
               ? undefined
               : (e) => onPanPointerDown(e, imageRef)
+          }
+          onPointerEnter={
+            isNode || !interactive || !onHoverPointerEnter
+              ? undefined
+              : (e) => onHoverPointerEnter(e, imageRef)
+          }
+          onPointerMove={
+            isNode || !interactive || !onHoverPointerMove
+              ? undefined
+              : (e) => onHoverPointerMove(e, imageRef)
+          }
+          onPointerLeave={
+            isNode || !interactive || !onHoverPointerLeave
+              ? undefined
+              : (e) => onHoverPointerLeave(e, imageRef)
           }
           onClickCapture={onSuppressNextClickCapture as any}
           style={{

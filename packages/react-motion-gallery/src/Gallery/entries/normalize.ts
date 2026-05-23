@@ -42,15 +42,15 @@ export function useNormalizedEntriesLoading(entries: EntriesOptions) {
   }, [entries.loading]);
 }
 
-export function useNormalizedEntriesIntro(entries: EntriesOptions) {
+export function useNormalizedEntriesReveal(entries: EntriesOptions) {
   return React.useMemo(() => {
-    const src = entries.intro ?? {};
+    const src = entries.reveal ?? {};
     return {
-      renderIntro: src.renderIntro,
+      renderReveal: src.renderReveal,
       staggerMs: src.staggerMs ?? 200,
       durationMs: src.durationMs ?? 700,
       easing: src.easing ?? "cubic-bezier(.2,.7,.2,1)",
       staggerLimit: Math.max(0, (src.staggerLimit ?? 6) | 0),
     };
-  }, [entries.intro]);
+  }, [entries.reveal]);
 }

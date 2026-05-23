@@ -53,6 +53,18 @@ function BaseSlide(props: {
     e: React.PointerEvent<HTMLDivElement>,
     imageRef: React.RefObject<HTMLDivElement | null>
   ) => void;
+  onHoverPointerEnter?: (
+    e: React.PointerEvent<HTMLDivElement>,
+    imageRef: React.RefObject<HTMLDivElement | null>
+  ) => void;
+  onHoverPointerMove?: (
+    e: React.PointerEvent<HTMLDivElement>,
+    imageRef: React.RefObject<HTMLDivElement | null>
+  ) => void;
+  onHoverPointerLeave?: (
+    e: React.PointerEvent<HTMLDivElement>,
+    imageRef: React.RefObject<HTMLDivElement | null>
+  ) => void;
   onSuppressNextClickCapture: (e: React.SyntheticEvent) => void;
   styles: { imgMargin: string; fullscreenImages: string };
   renderImage?: (args: {
@@ -77,6 +89,9 @@ function BaseSlide(props: {
     showFullscreenSlider,
     getTransform,
     onPanPointerDown,
+    onHoverPointerEnter,
+    onHoverPointerMove,
+    onHoverPointerLeave,
     onSuppressNextClickCapture,
     styles,
     renderImage,
@@ -92,7 +107,6 @@ function BaseSlide(props: {
     objectFit: "contain",
     touchAction: "manipulation",
     transformOrigin: "0 0",
-    transform: "translate(0, 0) scale(1)",
     cursor: interactive ? (isZoomed ? "grab" : "zoom-in") : "default",
     userSelect: "none",
     WebkitUserSelect: "none",
@@ -222,6 +236,21 @@ function BaseSlide(props: {
             ? undefined
             : (e) => onPanPointerDown(e, imageRef)
         }
+        onPointerEnter={
+          isNode || !interactive || !onHoverPointerEnter
+            ? undefined
+            : (e) => onHoverPointerEnter(e, imageRef)
+        }
+        onPointerMove={
+          isNode || !interactive || !onHoverPointerMove
+            ? undefined
+            : (e) => onHoverPointerMove(e, imageRef)
+        }
+        onPointerLeave={
+          isNode || !interactive || !onHoverPointerLeave
+            ? undefined
+            : (e) => onHoverPointerLeave(e, imageRef)
+        }
         onClickCapture={onSuppressNextClickCapture as any}
         style={{
           overflow: "visible",
@@ -253,6 +282,9 @@ export function renderFullscreenBaseSlides(opts: any) {
     isZoomed,
     showFullscreenSlider,
     onPanPointerDown,
+    onHoverPointerEnter,
+    onHoverPointerMove,
+    onHoverPointerLeave,
     onSuppressNextClickCapture,
     styles,
     renderImage,
@@ -279,6 +311,9 @@ export function renderFullscreenBaseSlides(opts: any) {
         showFullscreenSlider={showFullscreenSlider}
         getTransform={getTransform}
         onPanPointerDown={onPanPointerDown}
+        onHoverPointerEnter={onHoverPointerEnter}
+        onHoverPointerMove={onHoverPointerMove}
+        onHoverPointerLeave={onHoverPointerLeave}
         onSuppressNextClickCapture={onSuppressNextClickCapture}
         styles={styles}
         renderImage={renderImage}

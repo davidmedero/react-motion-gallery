@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
@@ -236,8 +236,7 @@ const LAZY_SKELETON: MasonrySkeletonSpec = {
       item: createLazySkeletonItem({
         item,
         skeletonText:
-          MASONRY_LAZY_SKELETON_TEXT[index] ??
-          MASONRY_LAZY_SKELETON_TEXT[0]!,
+          MASONRY_LAZY_SKELETON_TEXT[index] ?? MASONRY_LAZY_SKELETON_TEXT[0]!,
       }),
     })),
   },
@@ -331,13 +330,13 @@ export function MasonryLazyLoadDemo() {
           ]}
         >
           {ITEMS.map((item, index) => (
-          <MasonryLazyCard
-            key={item.src}
-            item={item}
-            skeletonTextIds={
-              MASONRY_LAZY_TEXT_IDS[index] ?? MASONRY_LAZY_TEXT_IDS[0]!
-            }
-          />
+            <MasonryLazyCard
+              key={item.src}
+              item={item}
+              skeletonTextIds={
+                MASONRY_LAZY_TEXT_IDS[index] ?? MASONRY_LAZY_TEXT_IDS[0]!
+              }
+            />
           ))}
         </Masonry>
       </MasonrySkeleton>

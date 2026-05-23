@@ -1,4 +1,4 @@
-export const source = `'use client';
+export const source = `"use client";
 
 import * as React from "react";
 import { GalleryCore, useGalleryCore } from "react-motion-gallery/core";
@@ -65,15 +65,11 @@ function OpenFullscreenButton() {
         event: event.nativeEvent,
       });
     },
-    [core]
+    [core],
   );
 
   return (
-    <button
-      type="button"
-      className={styles.button}
-      onClick={openFullscreen}
-    >
+    <button type="button" className={styles.button} onClick={openFullscreen}>
       Open Fullscreen
     </button>
   );
@@ -87,10 +83,10 @@ export function FullscreenLazyLoadDemo() {
           <span className={styles.kicker}>Fullscreen lazy load</span>
           <p className={styles.explainer}>
             Our IO system watches each base image or video from slider, grid,
-            masonry, entries, or standalone surfaces. When that media comes
-            into view, React Motion Gallery preloads the corresponding
-            fullscreen image or video, improving the user experience without
-            loading every fullscreen asset up front.
+            masonry, entries, or standalone surfaces. When that media comes into
+            view, React Motion Gallery preloads the corresponding fullscreen
+            image or video, improving the user experience without loading every
+            fullscreen asset up front.
           </p>
         </div>
         <OpenFullscreenButton />

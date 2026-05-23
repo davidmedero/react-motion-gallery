@@ -16,7 +16,7 @@ export function useLoadingLayerState(args: UseLoadingLayerStateArgs) {
   const { loadingActive, exitMs, minVisibleMs } = args;
   const [showLoadingLayer, setShowLoadingLayer] = React.useState(() => loadingActive);
   const [loadingExiting, setLoadingExiting] = React.useState(false);
-  const [introUnlocked, setIntroUnlocked] = React.useState(() => !loadingActive);
+  const [revealUnlocked, setRevealUnlocked] = React.useState(() => !loadingActive);
   const loadingVisibleSinceRef = React.useRef<number | null>(null);
   const wasLoadingActiveRef = React.useRef(loadingActive);
 
@@ -43,12 +43,12 @@ export function useLoadingLayerState(args: UseLoadingLayerStateArgs) {
     if (loadingActive) {
       setShowLoadingLayer(true);
       setLoadingExiting(false);
-      setIntroUnlocked(false);
+      setRevealUnlocked(false);
       return;
     }
 
     if (!showLoadingLayer) {
-      setIntroUnlocked(true);
+      setRevealUnlocked(true);
       return;
     }
 
@@ -59,13 +59,13 @@ export function useLoadingLayerState(args: UseLoadingLayerStateArgs) {
       minVisibleMs,
       setLoadingExiting,
       setShowLoadingLayer,
-      setIntroUnlocked,
+      setRevealUnlocked,
     });
   }, [exitMs, loadingActive, minVisibleMs, showLoadingLayer]);
 
   return {
     showLoadingLayer,
     loadingExiting,
-    introUnlocked,
+    revealUnlocked,
   };
 }

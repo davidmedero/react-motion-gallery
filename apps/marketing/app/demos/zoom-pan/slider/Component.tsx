@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { Slider } from "react-motion-gallery/slider";
@@ -35,46 +35,42 @@ export function ZoomPanSliderDemo() {
       <SliderSkeleton
         cache={demoSkeletonCache("zoom-pan-slider")}
         layout={{
-              visibleCount: 2,
-              mode: "peek",
-              layout: {
-                kind: "slider",
-                direction: "row",
-                style: {
-                  gap: 20,
-                },
-                item: {
-                  kind: "rect",
-                  style: {
-                    width: "100cqw",
-                    maxWidth: "550px",
-                    aspectRatio: "16 / 9",
-                    borderRadius: 12,
-                  },
-                },
+          visibleCount: 2,
+          mode: "peek",
+          layout: {
+            kind: "slider",
+            direction: "row",
+            style: {
+              gap: 20,
+            },
+            item: {
+              kind: "rect",
+              style: {
+                width: "100cqw",
+                maxWidth: "550px",
+                aspectRatio: "16 / 9",
+                borderRadius: 12,
               },
-            }}
+            },
+          },
+        }}
         ready={sliderReady}
       >
-      <Slider
-        ref={sliderRef}
-
-      >
-        {IMAGES.map((image) => (
-          <ZoomPanImage
-            key={image.src}
-            src={image.src}
-            alt={image.alt}
-            className={styles.slide}
-            imageClassName={styles.image}
-            zoom={{
-              clickZoomLevel: 2.2,
-              maxZoomLevel: 3.4,
-            }}
-          />
-  
-            ))}
-      </Slider>
+        <Slider ref={sliderRef}>
+          {IMAGES.map((image) => (
+            <ZoomPanImage
+              key={image.src}
+              src={image.src}
+              alt={image.alt}
+              className={styles.slide}
+              imageClassName={styles.image}
+              zoom={{
+                clickZoomLevel: 2.2,
+                maxZoomLevel: 3.4,
+              }}
+            />
+          ))}
+        </Slider>
       </SliderSkeleton>
     </GalleryCore>
   );

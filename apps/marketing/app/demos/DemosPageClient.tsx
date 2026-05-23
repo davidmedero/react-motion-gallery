@@ -190,6 +190,9 @@ import { css as fullscreenViewportOverlayCaptionSizedCss } from "./fullscreen/fu
 import { FullscreenLazyLoadDemo } from "./fullscreen/fullscreen-lazy-load/Component";
 import { source as fullscreenLazyLoadSource } from "./fullscreen/fullscreen-lazy-load/source";
 import { css as fullscreenLazyLoadCss } from "./fullscreen/fullscreen-lazy-load/css";
+import { FullscreenImageHoverDemo } from "./fullscreen/fullscreen-image-hover/Component";
+import { source as fullscreenImageHoverSource } from "./fullscreen/fullscreen-image-hover/source";
+import { css as fullscreenImageHoverCss } from "./fullscreen/fullscreen-image-hover/css";
 import { FullscreenLayoutAgnosticDemo } from "./fullscreen/fullscreen-layout-agnostic/Component";
 import { source as fullscreenLayoutAgnosticSource } from "./fullscreen/fullscreen-layout-agnostic/source";
 import { css as fullscreenLayoutAgnosticCss } from "./fullscreen/fullscreen-layout-agnostic/css";
@@ -208,6 +211,9 @@ import { css as skeletonForceOverlayCss } from "./skeleton/skeleton-force-overla
 import { RevealSectionsDemo } from "./reveal/reveal-sections/Component";
 import { source as revealSectionsSource } from "./reveal/reveal-sections/source";
 import { css as revealSectionsCss } from "./reveal/reveal-sections/css";
+import { RevealImageReadyDemo } from "./reveal/reveal-image-ready/Component";
+import { source as revealImageReadySource } from "./reveal/reveal-image-ready/source";
+import { css as revealImageReadyCss } from "./reveal/reveal-image-ready/css";
 import { ZoomPanStandaloneDemo } from "./zoom-pan/standalone/Component";
 import { source as zoomPanStandaloneSource } from "./zoom-pan/standalone/source";
 import { css as zoomPanStandaloneCss } from "./zoom-pan/standalone/css";
@@ -220,6 +226,9 @@ import { css as zoomPanGridCss } from "./zoom-pan/grid/css";
 import { ZoomPanMasonryDemo } from "./zoom-pan/masonry/Component";
 import { source as zoomPanMasonrySource } from "./zoom-pan/masonry/source";
 import { css as zoomPanMasonryCss } from "./zoom-pan/masonry/css";
+import { ZoomPanImageHoverDemo } from "./zoom-pan/image-hover/Component";
+import { source as zoomPanImageHoverSource } from "./zoom-pan/image-hover/source";
+import { css as zoomPanImageHoverCss } from "./zoom-pan/image-hover/css";
 
 type DemoRuntimeProps = Record<string, never>;
 
@@ -1227,6 +1236,18 @@ const DEMOS: DemoDefinition[] = [
     css: fullscreenLazyLoadCss,
   },
   {
+    id: "fullscreen-image-hover",
+    title: "Image Hover",
+    eyebrow: "Fullscreen",
+    tags: ["zoom-pan","hover","lazy-load","thumbnails"],
+    categoryId: "fullscreen",
+    Component: FullscreenImageHoverDemo,
+    source: fullscreenImageHoverSource,
+    css: fullscreenImageHoverCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "fullscreen-image-hover-demo.module.css",
+  },
+  {
     id: "skeleton-flex-cards",
     title: "Flex Cards",
     eyebrow: "Skeleton",
@@ -1287,6 +1308,18 @@ const DEMOS: DemoDefinition[] = [
     cssFilename: "reveal-sections-demo.module.css",
   },
   {
+    id: "reveal-image-ready",
+    title: "Image Ready",
+    eyebrow: "Reveal",
+    tags: ["useReveal","image","decode","ready"],
+    categoryId: "reveal",
+    Component: RevealImageReadyDemo,
+    source: revealImageReadySource,
+    css: revealImageReadyCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "reveal-image-ready-demo.module.css",
+  },
+  {
     id: "zoom-pan-standalone",
     title: "Standalone",
     eyebrow: "Zoom + Pan",
@@ -1325,6 +1358,18 @@ const DEMOS: DemoDefinition[] = [
     Component: ZoomPanMasonryDemo,
     source: zoomPanMasonrySource,
     css: zoomPanMasonryCss,
+  },
+  {
+    id: "zoom-pan-image-hover",
+    title: "Image Hover",
+    eyebrow: "Zoom + Pan",
+    tags: ["zoom-pan","hover","image"],
+    categoryId: "zoom-pan",
+    Component: ZoomPanImageHoverDemo,
+    source: zoomPanImageHoverSource,
+    css: zoomPanImageHoverCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "image-hover-demo.module.css",
   },
 ];
 
@@ -1552,6 +1597,10 @@ const DEMO_CATEGORIES: DemoCategory[] = [
       {
         "type": "demo",
         "demoId": "zoom-pan-masonry"
+      },
+      {
+        "type": "demo",
+        "demoId": "zoom-pan-image-hover"
       }
     ]
   },
@@ -1591,6 +1640,10 @@ const DEMO_CATEGORIES: DemoCategory[] = [
       {
         "type": "demo",
         "demoId": "fullscreen-lazy-load"
+      },
+      {
+        "type": "demo",
+        "demoId": "fullscreen-image-hover"
       }
     ]
   },
@@ -1625,6 +1678,10 @@ const DEMO_CATEGORIES: DemoCategory[] = [
       {
         "type": "demo",
         "demoId": "reveal-sections"
+      },
+      {
+        "type": "demo",
+        "demoId": "reveal-image-ready"
       }
     ]
   }

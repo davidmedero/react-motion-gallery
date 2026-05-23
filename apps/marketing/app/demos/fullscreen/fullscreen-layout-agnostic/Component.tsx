@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import * as React from "react";
 import { GalleryCore, useGalleryCore } from "react-motion-gallery/core";
@@ -44,7 +44,15 @@ const INLINE_VIDEO: VideoAsset = {
 
 const INLINE_VIDEO_OPTIONS = {
   ratio: "16:9",
-  controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "fullscreen"],
+  controls: [
+    "play-large",
+    "play",
+    "progress",
+    "current-time",
+    "mute",
+    "volume",
+    "fullscreen",
+  ],
 };
 
 const SCENARIOS: Scenario[] = [
@@ -118,7 +126,7 @@ function useApiOpen(index: number) {
         event: event.nativeEvent as Event,
       });
     },
-    [core, index]
+    [core, index],
   );
 }
 
@@ -154,10 +162,7 @@ function MediaFullscreenTrigger(props: {
   );
 }
 
-function ScenarioTile(props: {
-  scenario: Scenario;
-  index: number;
-}) {
+function ScenarioTile(props: { scenario: Scenario; index: number }) {
   const { scenario, index } = props;
   const open = useApiOpen(index);
   const onKeyDown = createKeyHandler(open);
@@ -166,7 +171,11 @@ function ScenarioTile(props: {
     return (
       <button type="button" className={styles.posterVideoTile} onClick={open}>
         <span className={styles.mediaFrame}>
-          <img src={scenario.previewSrc} alt={scenario.title} className={styles.media} />
+          <img
+            src={scenario.previewSrc}
+            alt={scenario.title}
+            className={styles.media}
+          />
           <span className={styles.playButton} aria-hidden="true">
             <span className={styles.playGlyph} />
           </span>
@@ -214,7 +223,12 @@ function ScenarioTile(props: {
     return (
       <figure className={styles.figureTile}>
         <div className={styles.mediaFrame}>
-          <img src={scenario.previewSrc} alt={scenario.title} className={styles.media} onClick={open} />
+          <img
+            src={scenario.previewSrc}
+            alt={scenario.title}
+            className={styles.media}
+            onClick={open}
+          />
         </div>
         <figcaption className={styles.surfaceCopy}>
           <div className={styles.copyContainer}>
@@ -240,7 +254,11 @@ function ScenarioTile(props: {
       aria-label={`Open ${scenario.title} in fullscreen`}
     >
       <div className={styles.mediaWrapper}>
-        <img src={scenario.previewSrc} alt={scenario.title} className={styles.media} />
+        <img
+          src={scenario.previewSrc}
+          alt={scenario.title}
+          className={styles.media}
+        />
       </div>
       <div className={styles.copy}>
         <span className={styles.eyebrow}>{scenario.eyebrow}</span>
@@ -257,7 +275,11 @@ export function FullscreenLayoutAgnosticDemo() {
       <GalleryCore fullscreenItems={FULLSCREEN_MEDIA}>
         <div className={styles.grid}>
           {SCENARIOS.map((scenario, index) => (
-            <ScenarioTile key={scenario.title} scenario={scenario} index={index} />
+            <ScenarioTile
+              key={scenario.title}
+              scenario={scenario}
+              index={index}
+            />
           ))}
         </div>
         <FullscreenAddon />

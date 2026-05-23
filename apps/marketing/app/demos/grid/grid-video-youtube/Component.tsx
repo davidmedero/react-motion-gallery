@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { type MediaItem, toMediaItems } from "react-motion-gallery/media";
@@ -175,7 +175,7 @@ const YOUTUBE_VIDEO_SKELETON: GridSkeletonSpec = {
       border: "1px solid rgba(11, 18, 32, 0.12)",
       backgroundColor: "rgba(255, 255, 255, 0.82)",
       boxShadow: "0 3px 6px rgba(15, 23, 42, 0.08)",
-      height: "100%"
+      height: "100%",
     },
     item: createYoutubeVideoSkeletonItem(0),
     slots: YOUTUBE_VIDEO_SKELETON_SLOTS,

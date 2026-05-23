@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
@@ -60,7 +60,7 @@ type ResolvedSkeletonTextState = GeneratedSkeletonTextState & {
 
 function addPxToBarWidth(
   value: GeneratedSkeletonTextState["barWidth"],
-  amount: number
+  amount: number,
 ): GeneratedSkeletonTextState["barWidth"] {
   if (typeof value === "string") {
     const match = value.match(/^(-?\d+(?:\.\d+)?)px$/);
@@ -76,7 +76,7 @@ function addPxToBarWidth(
       Object.entries(value).map(([breakpoint, entry]) => [
         breakpoint,
         addPxToBarWidth(entry, amount),
-      ])
+      ]),
     ) as Record<number, string | string[]>;
   }
 
@@ -85,7 +85,7 @@ function addPxToBarWidth(
 
 function firstBarWidthValue(
   value: GeneratedSkeletonTextState["barWidth"],
-  fallback: string
+  fallback: string,
 ): string {
   if (typeof value === "string") return value;
 
@@ -110,7 +110,7 @@ function firstBarWidthValue(
 function withTextMetrics(
   text: GeneratedSkeletonTextState,
   fallbackBarHeight: number,
-  fallbackLineHeight: number
+  fallbackLineHeight: number,
 ): ResolvedSkeletonTextState {
   return {
     ...text,
@@ -120,7 +120,7 @@ function withTextMetrics(
 }
 
 function createBadgeSkeletonText(
-  text: GeneratedSkeletonTextState
+  text: GeneratedSkeletonTextState,
 ): ResolvedSkeletonTextState {
   return {
     ...text,
@@ -141,25 +141,29 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/701/1400/900",
         alt: "Lorem ipsum image 1",
-        description: "Blue wildflowers fill the foreground beneath a soft cloudy sky.",
+        description:
+          "Blue wildflowers fill the foreground beneath a soft cloudy sky.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/702/1200/1200",
         alt: "Lorem ipsum image 2",
-        description: "Steep green cliffs drop into a pale beach and turquoise surf.",
+        description:
+          "Steep green cliffs drop into a pale beach and turquoise surf.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/704/1300/1600",
         alt: "Lorem ipsum image 3",
-        description: "Bamboo trunks rise in tight verticals toward a leafy canopy.",
+        description:
+          "Bamboo trunks rise in tight verticals toward a leafy canopy.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/715/1000/1350",
         alt: "Lorem ipsum image 4",
-        description: "Pink and orange sunset clouds spread over a calm ocean horizon.",
+        description:
+          "Pink and orange sunset clouds spread over a calm ocean horizon.",
       },
     ],
   },
@@ -173,7 +177,8 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/717/1100/800",
         alt: "Lorem ipsum image 5",
-        description: "Wild coastal grasses and yellow flowers overlook deep blue water.",
+        description:
+          "Wild coastal grasses and yellow flowers overlook deep blue water.",
       },
       {
         kind: "image",
@@ -185,7 +190,8 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/732/900/1300",
         alt: "Lorem ipsum image 7",
-        description: "Dark coastal rocks sit below a misty horizon and pale open sky.",
+        description:
+          "Dark coastal rocks sit below a misty horizon and pale open sky.",
       },
       {
         kind: "image",
@@ -205,25 +211,29 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/741/1000/1500",
         alt: "Lorem ipsum image 9",
-        description: "Towering cumulus clouds glow warmly against a deep blue sky.",
+        description:
+          "Towering cumulus clouds glow warmly against a deep blue sky.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/744/1400/1100",
         alt: "Lorem ipsum image 10",
-        description: "The Golden Gate spans fog and blue water with a sailboat below.",
+        description:
+          "The Golden Gate spans fog and blue water with a sailboat below.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/756/1100/900",
         alt: "Lorem ipsum image 11",
-        description: "Foamy surf reaches the beach below the Golden Gate Bridge.",
+        description:
+          "Foamy surf reaches the beach below the Golden Gate Bridge.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/767/1500/1300",
         alt: "Lorem ipsum image 12",
-        description: "A straight road runs between tall pine rows toward a distant vanishing point.",
+        description:
+          "A straight road runs between tall pine rows toward a distant vanishing point.",
       },
     ],
   },
@@ -277,15 +287,24 @@ const ENTRY_MASONRY_MEDIA_ASPECT_RATIOS = [
 
 const ENTRY_MASONRY_MEDIA_COLUMN_ORDERS = [
   {
-    two: [[0, 2], [1, 3]],
+    two: [
+      [0, 2],
+      [1, 3],
+    ],
     three: [[0, 3], [1], [2]],
   },
   {
-    two: [[0, 2], [1, 3]],
+    two: [
+      [0, 2],
+      [1, 3],
+    ],
     three: [[0, 3], [1], [2]],
   },
   {
-    two: [[0, 3], [1, 2]],
+    two: [
+      [0, 3],
+      [1, 2],
+    ],
     three: [[0], [1, 3], [2]],
   },
 ];
@@ -339,7 +358,11 @@ function renderEntryMedia({ media }: EntryMediaRenderArgs) {
   );
 }
 
-function renderEntryOverlay({ entry, media, mediaIndex }: EntryOverlayRenderArgs) {
+function renderEntryOverlay({
+  entry,
+  media,
+  mediaIndex,
+}: EntryOverlayRenderArgs) {
   const item = entry as DemoEntry;
   const slide = media as DemoEntry["media"][number] | null;
 
@@ -348,7 +371,9 @@ function renderEntryOverlay({ entry, media, mediaIndex }: EntryOverlayRenderArgs
       <span className={styles.entryOverlayKicker}>{item.section}</span>
       <strong className={styles.entryOverlayTitle}>{item.title}</strong>
       <p className={styles.entryOverlayBody}>{item.body}</p>
-      <span className={styles.entryOverlayMeta}>Tile {String((mediaIndex ?? 0) + 1)}</span>
+      <span className={styles.entryOverlayMeta}>
+        Tile {String((mediaIndex ?? 0) + 1)}
+      </span>
       {slide?.description ? (
         <p className={styles.entryOverlayDescription}>{slide.description}</p>
       ) : null}
@@ -520,10 +545,6 @@ export function EntriesMasonryDemo() {
             },
             loading: {
               cache: demoSkeletonCache("entries-masonry"),
-              // force: {
-              //   showContent: true,
-              //   skeletonOpacity: 0.5,
-              // },
               skeletonWrap: {
                 style: {
                   background: "#fff",

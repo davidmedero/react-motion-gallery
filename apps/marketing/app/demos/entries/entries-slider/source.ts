@@ -1,5 +1,5 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
-'use client';
+"use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
@@ -60,7 +60,7 @@ type ResolvedSkeletonTextState = GeneratedSkeletonTextState & {
 
 function addPxToBarWidth(
   value: GeneratedSkeletonTextState["barWidth"],
-  amount: number
+  amount: number,
 ): GeneratedSkeletonTextState["barWidth"] {
   if (typeof value === "string") {
     const match = value.match(/^(-?\\d+(?:\\.\\d+)?)px$/);
@@ -76,7 +76,7 @@ function addPxToBarWidth(
       Object.entries(value).map(([breakpoint, entry]) => [
         breakpoint,
         addPxToBarWidth(entry, amount),
-      ])
+      ]),
     ) as Record<number, string | string[]>;
   }
 
@@ -85,7 +85,7 @@ function addPxToBarWidth(
 
 function firstBarWidthValue(
   value: GeneratedSkeletonTextState["barWidth"],
-  fallback: string
+  fallback: string,
 ): string {
   if (typeof value === "string") return value;
 
@@ -110,7 +110,7 @@ function firstBarWidthValue(
 function withTextMetrics(
   text: GeneratedSkeletonTextState,
   fallbackBarHeight: number,
-  fallbackLineHeight: number
+  fallbackLineHeight: number,
 ): ResolvedSkeletonTextState {
   return {
     ...text,
@@ -120,7 +120,7 @@ function withTextMetrics(
 }
 
 function createBadgeSkeletonText(
-  text: GeneratedSkeletonTextState
+  text: GeneratedSkeletonTextState,
 ): ResolvedSkeletonTextState {
   return {
     ...text,
@@ -141,19 +141,22 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/640/1400/1100",
         alt: "Lorem ipsum image 1",
-        description: "Foamy turquoise waves roll diagonally across a wide sandy beach.",
+        description:
+          "Foamy turquoise waves roll diagonally across a wide sandy beach.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/643/1400/1100",
         alt: "Lorem ipsum image 2",
-        description: "A surfboard rests on wet sand as sunset flares over the shoreline.",
+        description:
+          "A surfboard rests on wet sand as sunset flares over the shoreline.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/645/1400/1100",
         alt: "Lorem ipsum image 3",
-        description: "Palm crowns lean into a soft tropical sky lit by late-day sun.",
+        description:
+          "Palm crowns lean into a soft tropical sky lit by late-day sun.",
       },
     ],
   },
@@ -167,13 +170,15 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/649/1400/1100",
         alt: "Lorem ipsum image 4",
-        description: "Dry golden grass catches light in a shallow-focus woodland clearing.",
+        description:
+          "Dry golden grass catches light in a shallow-focus woodland clearing.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/651/1400/1100",
         alt: "Lorem ipsum image 5",
-        description: "Waterfalls cut through rocky highlands beneath a low bank of cloud.",
+        description:
+          "Waterfalls cut through rocky highlands beneath a low bank of cloud.",
       },
     ],
   },
@@ -187,19 +192,22 @@ const ENTRIES: DemoEntry[] = [
         kind: "image",
         src: "https://picsum.photos/id/653/1400/1100",
         alt: "Lorem ipsum image 6",
-        description: "Silhouettes sit on a glowing beach as surf wraps around distant headlands.",
+        description:
+          "Silhouettes sit on a glowing beach as surf wraps around distant headlands.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/658/1400/1100",
         alt: "Lorem ipsum image 7",
-        description: "Storm clouds gather over pale cliffs and dark, sheltered water.",
+        description:
+          "Storm clouds gather over pale cliffs and dark, sheltered water.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/664/1400/1100",
         alt: "Lorem ipsum image 8",
-        description: "Snowy alpine peaks rise above a shadowed valley at blue hour.",
+        description:
+          "Snowy alpine peaks rise above a shadowed valley at blue hour.",
       },
       {
         kind: "image",
@@ -292,7 +300,11 @@ function renderEntryMedia({ media }: EntryMediaRenderArgs) {
   );
 }
 
-function renderEntryOverlay({ entry, media, mediaIndex }: EntryOverlayRenderArgs) {
+function renderEntryOverlay({
+  entry,
+  media,
+  mediaIndex,
+}: EntryOverlayRenderArgs) {
   const item = entry as DemoEntry;
   const slide = media as DemoEntry["media"][number] | null;
 
@@ -301,7 +313,9 @@ function renderEntryOverlay({ entry, media, mediaIndex }: EntryOverlayRenderArgs
       <span className={styles.entryOverlayKicker}>{item.section}</span>
       <strong className={styles.entryOverlayTitle}>{item.title}</strong>
       <p className={styles.entryOverlayBody}>{item.body}</p>
-      <span className={styles.entryOverlayMeta}>Slide {String((mediaIndex ?? 0) + 1)}</span>
+      <span className={styles.entryOverlayMeta}>
+        Slide {String((mediaIndex ?? 0) + 1)}
+      </span>
       {slide?.description ? (
         <p className={styles.entryOverlayDescription}>{slide.description}</p>
       ) : null}
@@ -367,7 +381,7 @@ function createEntrySliderSkeleton(args: {
                   ...titleSkeletonText,
                   style: {
                     width: "100%",
-                    marginBottom: "6px"
+                    marginBottom: "6px",
                   },
                 },
               ],
@@ -387,7 +401,7 @@ function createEntrySliderSkeleton(args: {
           ...bodySkeletonText,
           style: {
             width: "100%",
-            marginBottom: "3px"
+            marginBottom: "3px",
           },
         },
         {
@@ -430,8 +444,6 @@ export function EntriesSliderDemo() {
           mediaLayout: "slider",
           overlay: {
             overlayCrossfadeTarget: "content",
-            // overlayCrossfadeDurationMs: 560,
-            // overlayCrossfadeEasing: "cubic-bezier(.2,.7,.2,1)",
             placement: {
               xs: "bottom",
               lg: "right",
@@ -440,10 +452,6 @@ export function EntriesSliderDemo() {
               lg: "32%",
               xl: "28%",
             },
-            // height: {
-            //   xs: 176,
-            //   md: 188,
-            // },
             style: {
               padding: "0",
             },
@@ -455,10 +463,6 @@ export function EntriesSliderDemo() {
           },
           loading: {
             cache: demoSkeletonCache("entries-slider"),
-            // force: {
-            //   showContent: true,
-            //   skeletonOpacity: 0.5,
-            // },
             skeletonWrap: {
               style: {
                 background: "#fff",

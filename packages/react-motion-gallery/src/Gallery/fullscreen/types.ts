@@ -231,6 +231,18 @@ export type FullscreenRuntimeFeatures = {
     resetAllZoomDom: (args?: { disableImageTransition?: boolean }) => void;
     resetForSlideNavigation: () => void;
     forceResetZoom?: () => void;
+    handleHoverPointerEnter?: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => void;
+    handleHoverPointerMove?: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => void;
+    handleHoverPointerLeave?: (
+      e: React.PointerEvent<HTMLDivElement>,
+      imageRef: React.RefObject<HTMLDivElement | null>
+    ) => void;
   };
   usePlyrProps?: (args: {
     items: MediaItem[];

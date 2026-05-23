@@ -1,5 +1,5 @@
-import { a as ZoomPanOptions } from './types-Dhh8xfHo.mjs';
-export { Z as ZoomPanImageProps } from './types-Dhh8xfHo.mjs';
+import { b as ZoomPanOptions } from './types-CLMzNXt4.mjs';
+export { Z as ZoomPanHoverOptions, a as ZoomPanImageProps, c as ZoomPanPlugin, d as ZoomPanPluginKind } from './types-CLMzNXt4.mjs';
 import * as React from 'react';
 
 declare const ZoomPanImage: React.ForwardRefExoticComponent<Omit<React.ImgHTMLAttributes<HTMLImageElement>, "style" | "children" | "className"> & {

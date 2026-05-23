@@ -9,7 +9,7 @@ export type {
   ThumbnailLoadingRenderArgs,
   ThumbnailLoadingOptions,
   ThumbnailSkeletonMode,
-  ThumbnailIntroOptions,
+  ThumbnailRevealOptions,
   ThumbnailLayout,
   ThumbnailContainerLayout,
   ThumbnailsLayout,

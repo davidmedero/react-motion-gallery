@@ -11,6 +11,13 @@ import { useRmgSlide } from "../shared/slideContext";
 import { boundsForCurrent as boundsForCurrentFn } from "./core/boundsForCurrent";
 import { getPrimaryImgEl } from "./core/dom";
 import { baseFitSize, distance, midpoint } from "./core/utils";
+import {
+  isZoomPanHoverPointer,
+  resolveZoomPanHoverOptions,
+  zoomPanHoverEnter,
+  zoomPanHoverLeave,
+  zoomPanHoverMove,
+} from "./hover/runtime";
 import { rebuildPanBodiesFn } from "./core/rebuildPanBodies";
 import { DEFAULT_ZOOM_PAN } from "./defaults";
 import { usePanRuntime } from "./pan";
@@ -80,6 +87,10 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
       () => ({ ...DEFAULT_ZOOM_PAN, ...(zoom ?? {}) }),
       [zoom]
     );
+    const hoverOptions = React.useMemo(
+      () => resolveZoomPanHoverOptions(resolvedZoom),
+      [resolvedZoom]
+    );
 
     const fs = React.useMemo(() => ({ zoom: resolvedZoom }), [resolvedZoom]);
     const slideCtx = useRmgSlide();
@@ -115,6 +126,8 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
     const startTouchDistanceRef = React.useRef(0);
     const startTouchScaleRef = React.useRef(1);
     const isInsideSliderRef = React.useRef(false);
+    const hoverActiveRef = React.useRef(false);
+    const hoverPointerIdRef = React.useRef<number | null>(null);
     const preZoomPointerIntentRef = React.useRef<PreZoomPointerIntent>({
       active: false,
       pointerId: null,
@@ -347,6 +360,93 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
       };
     }, []);
 
+    const resetHoverState = React.useCallback(() => {
+      hoverActiveRef.current = false;
+      hoverPointerIdRef.current = null;
+    }, []);
+
+    const handleHoverPointerEnter = React.useCallback(
+      (event: React.PointerEvent<HTMLDivElement>) => {
+        if (disabled || !hoverOptions || !isZoomPanHoverPointer(event)) return;
+        if (readScaleValue(scaleRef.current)) return;
+        if (!containerRef.current) return;
+
+        const activated = zoomPanHoverEnter(zoomCtx as any, {
+          imageRef: containerRef as React.RefObject<HTMLElement | null>,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          hover: hoverOptions,
+        });
+
+        if (!activated) return;
+
+        hoverActiveRef.current = true;
+        hoverPointerIdRef.current = event.pointerId ?? null;
+        resetPreZoomPointerIntent();
+      },
+      [disabled, hoverOptions, resetPreZoomPointerIntent, zoomCtx]
+    );
+
+    const handleHoverPointerMove = React.useCallback(
+      (event: React.PointerEvent<HTMLDivElement>) => {
+        if (disabled || !hoverOptions) return;
+        if (!isZoomPanHoverPointer(event)) return;
+
+        if (!hoverActiveRef.current) {
+          if (readScaleValue(scaleRef.current)) return;
+          if (!containerRef.current) return;
+
+          const activated = zoomPanHoverEnter(zoomCtx as any, {
+            imageRef: containerRef as React.RefObject<HTMLElement | null>,
+            clientX: event.clientX,
+            clientY: event.clientY,
+            hover: hoverOptions,
+          });
+
+          if (!activated) return;
+
+          hoverActiveRef.current = true;
+          hoverPointerIdRef.current = event.pointerId ?? null;
+          resetPreZoomPointerIntent();
+          return;
+        }
+
+        if (
+          hoverPointerIdRef.current != null &&
+          event.pointerId !== hoverPointerIdRef.current
+        ) {
+          return;
+        }
+
+        zoomPanHoverMove(zoomCtx as any, {
+          imageRef: containerRef as React.RefObject<HTMLElement | null>,
+          clientX: event.clientX,
+          clientY: event.clientY,
+        });
+      },
+      [disabled, hoverOptions, resetPreZoomPointerIntent, zoomCtx]
+    );
+
+    const handleHoverPointerLeave = React.useCallback(
+      (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!hoverOptions || !hoverActiveRef.current) return;
+        if (!isZoomPanHoverPointer(event)) return;
+        if (
+          hoverPointerIdRef.current != null &&
+          event.pointerId !== hoverPointerIdRef.current
+        ) {
+          return;
+        }
+
+        resetHoverState();
+        zoomPanHoverLeave(zoomCtx as any, {
+          imageRef: containerRef as React.RefObject<HTMLElement | null>,
+          durationMs: hoverOptions.zoomOutDurationMs,
+        });
+      },
+      [hoverOptions, resetHoverState, zoomCtx]
+    );
+
     const handlePreZoomPointerStart = React.useCallback(
       (event: React.PointerEvent<HTMLDivElement>) => {
         if (disabled || readScaleValue(scaleRef.current)) return;
@@ -404,6 +504,12 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
 
     const handleRootClickCapture = React.useCallback(
       (event: React.MouseEvent<HTMLDivElement>) => {
+        if (hoverActiveRef.current) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+
         if (suppressNextClickRef.current || suppressPreZoomClickRef.current) {
           suppressNextClickRef.current = false;
           suppressPreZoomClickRef.current = false;
@@ -417,6 +523,11 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
     const handleRootClick = React.useCallback(
       (event: React.MouseEvent<HTMLDivElement>) => {
         if (event.defaultPrevented) return;
+        if (hoverActiveRef.current) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
         if (disabled || isZoomed || touchPinchingRef.current) return;
 
         currentImage.current = containerRef.current;
@@ -588,8 +699,9 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
       if (!disabled) return;
       if (!readScaleValue(scaleRef.current)) return;
 
+      resetHoverState();
       resetZoomToIdentity();
-    }, [disabled, resetZoomToIdentity]);
+    }, [disabled, resetHoverState, resetZoomToIdentity]);
 
     React.useEffect(() => {
       if (!sliderIndexChannel) return;
@@ -632,8 +744,9 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
     React.useEffect(() => {
       if (previousSrcRef.current === src) return;
       previousSrcRef.current = src;
+      resetHoverState();
       resetZoomToIdentity("none");
-    }, [resetZoomToIdentity, src]);
+    }, [resetHoverState, resetZoomToIdentity, src]);
 
     React.useEffect(() => {
       return () => {
@@ -644,8 +757,9 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
           img.style.transform = "translate(0, 0) scale(1)";
         }
         scaleRef.current = 1;
+        resetHoverState();
       };
-    }, []);
+    }, [resetHoverState]);
 
     const handleImageDragStart = React.useCallback(
       (event: React.DragEvent<HTMLImageElement>) => {
@@ -664,14 +778,33 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
         data-rmg-fs-media-viewport="true"
         onClickCapture={handleRootClickCapture}
         onClick={handleRootClick}
+        onPointerEnter={handleHoverPointerEnter}
         onPointerDown={(event) => {
+          if (hoverActiveRef.current && isZoomPanHoverPointer(event)) {
+            suppressNextClickRef.current = true;
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+
           handlePreZoomPointerStart(event);
           if (disabled) return;
           pan.handlePanPointerStart(event, containerRef);
         }}
-        onPointerMove={handlePreZoomPointerMove}
+        onPointerMove={(event) => {
+          handleHoverPointerMove(event);
+          if (hoverActiveRef.current) return;
+          handlePreZoomPointerMove(event);
+        }}
+        onPointerLeave={(event) => {
+          handleHoverPointerLeave(event);
+          handlePreZoomPointerEnd(event);
+        }}
         onPointerUp={handlePreZoomPointerEnd}
-        onPointerCancel={handlePreZoomPointerEnd}
+        onPointerCancel={(event) => {
+          handleHoverPointerLeave(event);
+          handlePreZoomPointerEnd(event);
+        }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={endTouchPinch}
@@ -715,7 +848,6 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
               maxHeight: "100%",
               objectFit: "contain",
               transformOrigin: "0 0",
-              transform: "translate(0, 0) scale(1)",
               touchAction: "manipulation",
               userSelect: "none",
               cursor: disabled ? "default" : isZoomed ? "grab" : "zoom-in",

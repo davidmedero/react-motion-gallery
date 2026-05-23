@@ -13,6 +13,7 @@ export { Video } from "./Gallery/video";
 export { ZoomPanImage } from "./Gallery/zoomPan";
 export { Skeleton } from "./Gallery/skeleton/base";
 export { Reveal, useReveal } from "./Gallery/reveal/Reveal";
+export { useImageDecodeReady } from "./media-ready";
 export { createSliderIndexChannel } from "./Gallery/slider/sliderSub";
 export { createThumbnailSyncBridge } from "./Gallery/thumbnails/syncBridge";
 
@@ -33,6 +34,7 @@ export type {
   CrossFadeWheelOptions,
   SliderAutoHeight,
   SliderAutoPlayTimer,
+  SliderRevealOptions,
   SliderSkipSnaps,
   SliderSkipSnapsOptions,
   SliderOptions,
@@ -103,7 +105,7 @@ export type {
   ThumbnailLoadingRenderArgs,
   ThumbnailLoadingOptions,
   ThumbnailSkeletonMode,
-  ThumbnailIntroOptions,
+  ThumbnailRevealOptions,
   ThumbnailsOptions,
 } from "./Gallery/thumbnails/types";
 export type { ThumbnailSyncBridge } from "./Gallery/thumbnails/syncBridge";
@@ -113,7 +115,17 @@ export type {
   RmgVideoLazyLoadOptions,
   VideoProps,
 } from "./Gallery/video";
-export type { ZoomPanImageProps, ZoomPanOptions } from "./Gallery/zoomPan/types";
+export type {
+  ZoomPanHoverOptions,
+  ZoomPanImageProps,
+  ZoomPanOptions,
+  ZoomPanPlugin,
+  ZoomPanPluginKind,
+} from "./Gallery/zoomPan/types";
+export type {
+  ImageDecodeReadyOptions,
+  ImageDecodeReadyResult,
+} from "./media-ready";
 export type {
   BreakpointMap,
   ResponsiveCaptionPlacement,

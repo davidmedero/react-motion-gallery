@@ -1,7 +1,7 @@
 import type { ResponsiveNumber } from "../shared/responsive";
 
-export type IntroOptions = {
-  renderIntro?: (
+export type RevealOptions = {
+  renderReveal?: (
     args: { active: boolean; containerProps: React.HTMLAttributes<HTMLDivElement> },
     content: React.ReactNode
   ) => React.ReactNode;
@@ -62,5 +62,5 @@ export type GridOptions = {
   itemClassName?: string;
   fullscreenTrigger?: FullscreenTrigger;
   plugins?: GridPlugin[];
-  intro?: IntroOptions;
+  reveal?: RevealOptions;
 };
