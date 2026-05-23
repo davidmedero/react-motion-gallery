@@ -17,10 +17,12 @@ import {
   zoomPanHoverEnter,
   zoomPanHoverLeave,
   zoomPanHoverMove,
+  zoomPanHoverSyncPanTarget,
 } from "./hover/runtime";
 import { rebuildPanBodiesFn } from "./core/rebuildPanBodies";
 import { DEFAULT_ZOOM_PAN } from "./defaults";
 import { usePanRuntime } from "./pan";
+import { syncPanTarget } from "./pan/syncPanTarget";
 import { resetPanForScale1 as resetPanForScale1Fn } from "./pan/resetPanForScale1";
 import type { ZoomPanImageProps } from "./types";
 import { forceResetZoom } from "./zoom/forceResetZoom";
@@ -596,15 +598,27 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
           resolvedZoom.panDuration
         );
 
-        const nextX = limX.constrain((offX.current?.get() ?? 0) - event.deltaX);
-        const nextY = limY.constrain((offY.current?.get() ?? 0) - event.deltaY);
+        const target = {
+          x: limX.constrain((offX.current?.get() ?? 0) - event.deltaX),
+          y: limY.constrain((offY.current?.get() ?? 0) - event.deltaY),
+        };
 
-        tgtX.current?.set(nextX);
-        tgtY.current?.set(nextY);
+        const hoverAnimationActive = hoverActiveRef.current
+          ? zoomPanHoverSyncPanTarget(zoomCtx as any, {
+              imageRef: containerRef as React.RefObject<HTMLElement | null>,
+              target,
+              syncMode: "target",
+            })
+          : false;
+
+        if (!hoverActiveRef.current) {
+          syncPanTarget(zoomCtx as any, target, "target");
+        }
 
         bodyX.current?.useDuration(0).useFriction(1);
         bodyY.current?.useDuration(0).useFriction(1);
-        animRef.current?.start();
+
+        if (!hoverAnimationActive) animRef.current?.start();
       },
       [boundsForCurrent, disabled, rebuildPanBodies, resolvedZoom.panDuration, zoomCtx]
     );
@@ -754,7 +768,7 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
         const img = getPrimaryImgEl(container);
         if (img) {
           img.style.transition = "";
-          img.style.transform = "translate(0, 0) scale(1)";
+          img.style.transform = "translate3d(0px, 0px, 0) scale(1)";
         }
         scaleRef.current = 1;
         resetHoverState();
@@ -834,7 +848,7 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
             {...imgProps}
             ref={(node) => {
               if (node && !node.style.transform) {
-                node.style.transform = "translate(0, 0) scale(1)";
+                node.style.transform = "translate3d(0px, 0px, 0) scale(1)";
               }
             }}
             src={src}
@@ -848,6 +862,8 @@ export const ZoomPanImage = React.forwardRef<HTMLDivElement, ZoomPanImageProps>(
               maxHeight: "100%",
               objectFit: "contain",
               transformOrigin: "0 0",
+              willChange: "transform",
+              backfaceVisibility: "hidden",
               touchAction: "manipulation",
               userSelect: "none",
               cursor: disabled ? "default" : isZoomed ? "grab" : "zoom-in",

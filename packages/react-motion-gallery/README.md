@@ -48,13 +48,13 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `fullscreen/slider` | 39.5kB |
 | `fullscreen/controls` | 173.0B |
 | `fullscreen/captions` | 13.2kB |
-| `fullscreen/zoom-pan` | 12.0kB |
+| `fullscreen/zoom-pan` | 12.4kB |
 | `fullscreen/video` | 16.4kB |
 | `fullscreen/lazy-load` | 13.2kB |
 | `fullscreen/crossfade` | 181.0B |
 | `fullscreen/thumbnails` | 160.0B |
 | `Video` | 12.7kB |
-| `ZoomPanImage` | 10.7kB |
+| `ZoomPanImage` | 11.0kB |
 | `zoomPan/hover` | 124.0B |
 | `media / toMediaItems` | 260.0B |
 | `media/ready` | 656.0B |

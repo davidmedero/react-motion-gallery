@@ -12,6 +12,11 @@ import type {
   ZoomPanHoverOptions,
   ZoomPanPlugin,
 } from "../types";
+import {
+  syncPanTarget,
+  type PanTarget,
+  type PanTargetSyncMode,
+} from "../pan/syncPanTarget";
 import { applySmoothTransform, type ZoomCtx } from "../zoom/zoomTo";
 
 export type ResolvedZoomPanHoverOptions = {
@@ -30,11 +35,17 @@ type PointerLike = {
 };
 
 type HoverLayout = {
+  imgEl: HTMLImageElement;
   rect: DOMRect;
   bounds: ReturnType<ZoomPanHoverCtx["boundsForCurrent"]>;
 };
 
-type HoverTransformTarget = { x: number; y: number };
+type HoverTransformTarget = PanTarget;
+type HoverPanAnchor = {
+  clientX: number;
+  clientY: number;
+  target: HoverTransformTarget;
+};
 
 type HoverZoomAnimation = {
   ctx: ZoomPanHoverCtx;
@@ -42,7 +53,6 @@ type HoverZoomAnimation = {
   imgEl: HTMLImageElement;
   rafId: number;
   startMs: number;
-  lastFrameMs: number;
   durationMs: number;
   fromX: number;
   fromY: number;
@@ -54,9 +64,24 @@ type HoverZoomAnimation = {
 };
 
 const DEFAULT_HOVER_ZOOM_OUT_DURATION_MS = 260;
-const HOVER_ZOOM_PAN_FOLLOW_MS = 32;
 const ZOOM_EPS = 1.01;
 const hoverZoomAnimations = new WeakMap<HTMLImageElement, HoverZoomAnimation>();
+const hoverPanAnchors = new WeakMap<HTMLImageElement, HoverPanAnchor>();
+
+function ensureTransformLayer(imgEl: HTMLImageElement) {
+  const willChange = imgEl.style.willChange;
+  const hasTransformWillChange = willChange
+    .split(",")
+    .some((part) => part.trim() === "transform");
+
+  if (!hasTransformWillChange) {
+    imgEl.style.willChange = willChange && willChange !== "auto"
+      ? `${willChange}, transform`
+      : "transform";
+  }
+
+  imgEl.style.backfaceVisibility = "hidden";
+}
 
 function isZoomPanPlugin(value: unknown): value is ZoomPanPlugin {
   return (
@@ -226,14 +251,34 @@ function readHoverLayout(
     rect.height
   );
 
-  return { rect, bounds };
+  return { imgEl, rect, bounds };
 }
 
 function resolveTargetFromPointer(
   layout: HoverLayout,
   clientX: number,
-  clientY: number
+  clientY: number,
+  anchor?: HoverPanAnchor | null
 ) {
+  const xSpan = layout.bounds.x.max - layout.bounds.x.min;
+  const ySpan = layout.bounds.y.max - layout.bounds.y.min;
+
+  if (anchor) {
+    const dxRatio =
+      layout.rect.width > 0
+        ? (clientX - anchor.clientX) / layout.rect.width
+        : 0;
+    const dyRatio =
+      layout.rect.height > 0
+        ? (clientY - anchor.clientY) / layout.rect.height
+        : 0;
+
+    return {
+      x: layout.bounds.x.constrain(anchor.target.x - xSpan * dxRatio),
+      y: layout.bounds.y.constrain(anchor.target.y - ySpan * dyRatio),
+    };
+  }
+
   const ratioX = clampNum(
     layout.rect.width > 0 ? (clientX - layout.rect.left) / layout.rect.width : 0.5,
     0,
@@ -245,13 +290,23 @@ function resolveTargetFromPointer(
     1
   );
 
-  const xSpan = layout.bounds.x.max - layout.bounds.x.min;
-  const ySpan = layout.bounds.y.max - layout.bounds.y.min;
-
   return {
     x: layout.bounds.x.constrain(layout.bounds.x.max - xSpan * ratioX),
     y: layout.bounds.y.constrain(layout.bounds.y.max - ySpan * ratioY),
   };
+}
+
+function setHoverPanAnchor(
+  imgEl: HTMLImageElement,
+  clientX: number,
+  clientY: number,
+  target: HoverTransformTarget
+) {
+  hoverPanAnchors.set(imgEl, {
+    clientX,
+    clientY,
+    target: { x: target.x, y: target.y },
+  });
 }
 
 function syncHoverBounds(ctx: ZoomPanHoverCtx, layout: HoverLayout) {
@@ -276,17 +331,10 @@ function syncHoverBounds(ctx: ZoomPanHoverCtx, layout: HoverLayout) {
 
 function syncHoverPanTarget(
   ctx: ZoomPanHoverCtx,
-  target: HoverTransformTarget
+  target: HoverTransformTarget,
+  mode: PanTargetSyncMode = "instant"
 ) {
-  ctx.panRef && (ctx.panRef.current = target);
-  ctx.offX.current?.set(target.x);
-  ctx.offY.current?.set(target.y);
-  ctx.locX.current?.set(target.x);
-  ctx.locY.current?.set(target.y);
-  ctx.prevX.current?.set(target.x);
-  ctx.prevY.current?.set(target.y);
-  ctx.tgtX.current?.set(target.x);
-  ctx.tgtY.current?.set(target.y);
+  syncPanTarget(ctx, target, mode);
 }
 
 function renderHoverTransform(
@@ -300,6 +348,7 @@ function renderHoverTransform(
 
   const transform = `translate3d(${target.x}px, ${target.y}px, 0) scale(${scale})`;
   twinImages.forEach((imgEl) => {
+    ensureTransformLayer(imgEl);
     if (imgEl.style.transition) imgEl.style.transition = "";
     imgEl.style.transform = transform;
   });
@@ -336,7 +385,6 @@ function renderHoverZoomAnimationFrame(
   animation: HoverZoomAnimation,
   timestampMs: number
 ) {
-  const dtMs = Math.max(0, timestampMs - animation.lastFrameMs);
   const elapsedMs = timestampMs - animation.startMs;
   const progress =
     animation.durationMs <= 0
@@ -354,13 +402,9 @@ function renderHoverZoomAnimationFrame(
   const currentScale =
     animation.fromScale +
     (animation.targetScale - animation.fromScale) * easedProgress;
-  const panFollow = progress >= 1
-    ? 1
-    : clampNum(dtMs / HOVER_ZOOM_PAN_FOLLOW_MS, 0, 1);
 
-  animation.currentX += (currentTarget.x - animation.currentX) * panFollow;
-  animation.currentY += (currentTarget.y - animation.currentY) * panFollow;
-  animation.lastFrameMs = timestampMs;
+  animation.currentX = currentTarget.x;
+  animation.currentY = currentTarget.y;
 
   renderHoverTransform(
     animation.ctx,
@@ -393,7 +437,6 @@ function startHoverZoomAnimation(
     imgEl,
     rafId: 0,
     startMs: nowMs(),
-    lastFrameMs: 0,
     durationMs: args.durationMs,
     fromX: args.fromX,
     fromY: args.fromY,
@@ -403,7 +446,6 @@ function startHoverZoomAnimation(
     target: args.target,
     targetScale: args.targetScale,
   };
-  animation.lastFrameMs = animation.startMs;
 
   function tick(timestampMs: number) {
     if (hoverZoomAnimations.get(imgEl) !== animation) return;
@@ -442,12 +484,13 @@ export function zoomPanHoverEnter(
 
   const target = resolveTargetFromPointer(layout, args.clientX, args.clientY);
   syncHoverBounds(ctx, layout);
+  setHoverPanAnchor(layout.imgEl, args.clientX, args.clientY, target);
 
   ctx.animRef.current?.stop();
   ctx.suppressLoopRef.current = true;
   ctx.previousZoom.current.x = args.clientX - layout.rect.left;
   ctx.previousZoom.current.y = args.clientY - layout.rect.top;
-  ctx.panRef && (ctx.panRef.current = target);
+  syncHoverPanTarget(ctx, target, "target");
   ctx.scaleRef.current = scale;
   ctx.setScale(scale);
 
@@ -477,13 +520,17 @@ export function zoomPanHoverMove(
   const layout = readHoverLayout(ctx, args.imageRef, scale);
   if (!layout) return false;
 
-  const target = resolveTargetFromPointer(layout, args.clientX, args.clientY);
+  const target = resolveTargetFromPointer(
+    layout,
+    args.clientX,
+    args.clientY,
+    hoverPanAnchors.get(layout.imgEl)
+  );
   syncHoverBounds(ctx, layout);
+  setHoverPanAnchor(layout.imgEl, args.clientX, args.clientY, target);
 
   ctx.suppressLoopRef.current = true;
-  ctx.panRef && (ctx.panRef.current = target);
-  ctx.tgtX.current!.set(target.x);
-  ctx.tgtY.current!.set(target.y);
+  syncHoverPanTarget(ctx, target, "target");
 
   const animation = getHoverZoomAnimation(args.imageRef);
   if (animation) {
@@ -506,6 +553,8 @@ export function zoomPanHoverLeave(
   ctx.currentImage.current = args.imageRef.current;
   ensurePanBodies(ctx, ctx.offX.current?.get() ?? 0, ctx.offY.current?.get() ?? 0);
   cancelHoverZoomAnimation(args.imageRef);
+  const imgEl = getPrimaryImgEl(args.imageRef.current);
+  if (imgEl) hoverPanAnchors.delete(imgEl);
 
   ctx.animRef.current?.stop();
   ctx.suppressLoopRef.current = false;
@@ -523,5 +572,30 @@ export function zoomPanHoverLeave(
 
   applySmoothTransform(ctx, 0, 0, 1, args.durationMs);
 
+  return true;
+}
+
+export function zoomPanHoverSyncPanTarget(
+  ctx: ZoomPanHoverCtx,
+  args: {
+    imageRef: React.RefObject<HTMLElement | null>;
+    target: HoverTransformTarget;
+    syncMode?: PanTargetSyncMode;
+  }
+) {
+  const imgEl = getPrimaryImgEl(args.imageRef.current);
+  if (!imgEl) return false;
+
+  const anchor = hoverPanAnchors.get(imgEl);
+  if (anchor) {
+    setHoverPanAnchor(imgEl, anchor.clientX, anchor.clientY, args.target);
+  }
+
+  syncHoverPanTarget(ctx, args.target, args.syncMode ?? "target");
+
+  const animation = hoverZoomAnimations.get(imgEl);
+  if (!animation) return false;
+
+  animation.target = args.target;
   return true;
 }

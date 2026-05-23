@@ -22,6 +22,7 @@ import {
   zoomPanHoverEnter,
   zoomPanHoverLeave,
   zoomPanHoverMove,
+  zoomPanHoverSyncPanTarget,
 } from "../zoomPan/hover/runtime";
 import {
   findImgAtPoint,
@@ -471,6 +472,22 @@ export function useFullscreenZoomPanRuntime(args: any) {
     } as any);
   }, [boundsForCurrent, bodyX, bodyY, boundsX, boundsY, currentImage, fs, locX, locY, offX, offY, prevX, prevY, scaleRef, tgtX, tgtY]);
 
+  const syncHoverWheelPanTarget = React.useCallback(
+    (target: { x: number; y: number }) => {
+      if (!hoverActiveRef.current) return false;
+
+      const imageRef = hoverImageRef.current;
+      if (!imageRef?.current) return false;
+
+      return zoomPanHoverSyncPanTarget(zoomCtx as any, {
+        imageRef: imageRef as React.RefObject<HTMLElement | null>,
+        target,
+        syncMode: "target",
+      });
+    },
+    [zoomCtx]
+  );
+
   const { isPinching, isTouchPinching } = useGlobalPinchZoom({
     scaleRef,
     zoomCtx,
@@ -493,6 +510,7 @@ export function useFullscreenZoomPanRuntime(args: any) {
     bodyY,
     animRef,
     panDuration: fs.zoom?.panDuration,
+    syncWheelPanTarget: syncHoverWheelPanTarget,
     findImgAtPoint,
     readDataIndex,
     distance,

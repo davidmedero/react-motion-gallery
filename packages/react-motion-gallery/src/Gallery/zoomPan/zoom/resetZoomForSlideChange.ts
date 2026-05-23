@@ -44,7 +44,7 @@ export function resetZoomForSlideChange(args: ResetAllArgs) {
 
   const transition =
     args.transition ?? "transform 0.2s cubic-bezier(.4,0,.22,1)";
-  const transform = "translate3d(0, 0, 0) scale(1)";
+  const transform = "translate3d(0px, 0px, 0) scale(1)";
   const disableTransition = transition.trim() === "none";
   const match = disableTransition ? null : transition.match(/([\d.]+)s/);
   const durationMs = match ? parseFloat(match[1]) * 1000 : 300;

@@ -7,6 +7,7 @@ import { getFsMediaViewportEl, getPrimaryImgEl } from '../core/dom';
 type Point = { x: number; y: number };
 
 type RefDiv = React.RefObject<HTMLDivElement | null>;
+type PanTarget = { x: number; y: number };
 
 export type UseGlobalPinchZoomArgs = {
   scaleRef: React.RefObject<number>;
@@ -59,6 +60,7 @@ export type UseGlobalPinchZoomArgs = {
   bodyY: React.RefObject<any>;
   animRef: React.RefObject<{ start: () => void } | null>;
   panDuration: number;
+  syncWheelPanTarget?: (target: PanTarget) => boolean;
   findImgAtPoint: (doc: Document, x: number, y: number) => HTMLImageElement | null;
   readDataIndex: (el: HTMLElement | null) => number | null;
   distance: (t0: Touch, t1: Touch) => number;
@@ -99,6 +101,7 @@ export function useGlobalPinchZoom(args: UseGlobalPinchZoomArgs) {
     bodyY,
     animRef,
     panDuration,
+    syncWheelPanTarget,
     findImgAtPoint,
     readDataIndex,
     distance,
@@ -191,19 +194,22 @@ export function useGlobalPinchZoom(args: UseGlobalPinchZoomArgs) {
         panDuration
       );
 
-      let tx = (offX.current?.get() ?? 0) - e.deltaX;
-      let ty = (offY.current?.get() ?? 0) - e.deltaY;
+      const target = {
+        x: limX.constrain((offX.current?.get() ?? 0) - e.deltaX),
+        y: limY.constrain((offY.current?.get() ?? 0) - e.deltaY),
+      };
 
-      tx = limX.constrain(tx);
-      ty = limY.constrain(ty);
+      const hoverAnimationActive = syncWheelPanTarget?.(target) ?? false;
 
-      tgtX.current?.set(tx);
-      tgtY.current?.set(ty);
+      if (!hoverAnimationActive) {
+        tgtX.current?.set(target.x);
+        tgtY.current?.set(target.y);
+      }
 
       bodyX.current?.useDuration(0).useFriction(1);
       bodyY.current?.useDuration(0).useFriction(1);
 
-      animRef.current?.start();
+      if (!hoverAnimationActive) animRef.current?.start();
     },
     [
       isZoomed,
@@ -223,6 +229,7 @@ export function useGlobalPinchZoom(args: UseGlobalPinchZoomArgs) {
       bodyY,
       animRef,
       panDuration,
+      syncWheelPanTarget,
     ]
   );
 

@@ -1,14 +1,41 @@
 export function getCurrentTransform(slide: HTMLElement | null) {
   if (!slide) return { x: 0, y: 0 };
   const computedStyle = window.getComputedStyle(slide);
-  const transform = computedStyle.transform;
+  const transform =
+    computedStyle.transform && computedStyle.transform !== "none"
+      ? computedStyle.transform
+      : slide.style.transform;
   if (!transform || transform === "none") return { x: 0, y: 0 };
+
+  const matrix3dMatch = transform.match(/matrix3d\(([^)]+)\)/);
+  if (matrix3dMatch) {
+    const matrixValues = matrix3dMatch[1].split(",").map(parseFloat);
+    return {
+      x: matrixValues[12] || 0,
+      y: matrixValues[13] || 0,
+    };
+  }
+
   const matrixMatch = transform.match(/matrix\(([^)]+)\)/);
-  if (!matrixMatch) return { x: 0, y: 0 };
-  const matrixValues = matrixMatch[1].split(",").map(parseFloat);
-  const tx = matrixValues[4] || 0;
-  const ty = matrixValues[5] || 0;
-  return { x: tx, y: ty };
+  if (matrixMatch) {
+    const matrixValues = matrixMatch[1].split(",").map(parseFloat);
+    return {
+      x: matrixValues[4] || 0,
+      y: matrixValues[5] || 0,
+    };
+  }
+
+  const translateMatch = transform.match(
+    /translate(?:3d)?\(\s*([-\d.]+)px(?:,\s*([-\d.]+)px)?/
+  );
+  if (translateMatch) {
+    return {
+      x: Number.parseFloat(translateMatch[1]) || 0,
+      y: Number.parseFloat(translateMatch[2] ?? "0") || 0,
+    };
+  }
+
+  return { x: 0, y: 0 };
 }
 
 export function baseFitSize(

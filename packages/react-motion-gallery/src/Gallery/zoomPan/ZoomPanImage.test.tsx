@@ -725,6 +725,105 @@ describe("ZoomPanImage", () => {
     await view.cleanup();
   });
 
+  test("keeps hover zoom-in anchored to the cursor while scale animates", async () => {
+    const view = await setup(
+      <ZoomPanImage
+        src="/alpha.jpg"
+        alt="Alpha"
+        zoom={{
+          plugins: [
+            zoomPanHover({
+              zoomLevel: 2.5,
+              zoomInDurationMs: 180,
+            }),
+          ],
+        }}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    await dispatchPointer(root, "pointerover", {
+      clientX: 320,
+      clientY: 60,
+      pointerType: "mouse",
+    });
+
+    await advanceMotion(80);
+
+    const scaleDuringZoom = parseScale(img.style.transform);
+    const translateDuringZoom = parseTranslate(img.style.transform);
+
+    expect(scaleDuringZoom).toBeGreaterThan(1);
+    expect(scaleDuringZoom).toBeLessThan(2.5);
+    expect(translateDuringZoom.x).toBeCloseTo((1 - scaleDuringZoom) * 320, 5);
+    expect(translateDuringZoom.y).toBeCloseTo((1 - scaleDuringZoom) * 60, 5);
+
+    await view.cleanup();
+  });
+
+  test("keeps hover pan anchored after wheel panning", async () => {
+    const view = await setup(
+      <ZoomPanImage
+        src="/alpha.jpg"
+        alt="Alpha"
+        zoom={{
+          plugins: [
+            zoomPanHover({
+              zoomLevel: 2.5,
+              zoomInDurationMs: 20,
+            }),
+          ],
+        }}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    await dispatchPointer(root, "pointerover", {
+      clientX: 200,
+      clientY: 150,
+      pointerType: "mouse",
+    });
+    await advanceMotion(80);
+
+    expect(parseTranslate(img.style.transform).x).toBeCloseTo(-300, 5);
+
+    await React.act(async () => {
+      root.dispatchEvent(
+        new WheelEvent("wheel", {
+          bubbles: true,
+          cancelable: true,
+          deltaX: -120,
+          deltaY: 0,
+        })
+      );
+    });
+    await advanceMotion();
+
+    expect(parseTranslate(img.style.transform).x).toBeCloseTo(-180, 5);
+
+    await dispatchPointer(root, "pointermove", {
+      clientX: 200,
+      clientY: 150,
+      pointerType: "mouse",
+    });
+
+    expect(parseTranslate(img.style.transform).x).toBeCloseTo(-180, 5);
+
+    await dispatchPointer(root, "pointermove", {
+      clientX: 240,
+      clientY: 150,
+      pointerType: "mouse",
+    });
+
+    expect(parseTranslate(img.style.transform).x).toBeCloseTo(-240, 5);
+
+    await view.cleanup();
+  });
+
   test("does not activate hover zoom when disabled or for touch pointers", async () => {
     const view = await setup(
       <ZoomPanImage
@@ -1413,6 +1512,102 @@ describe("ZoomPanImage", () => {
     expect(parseScale(img.style.transform)).toBe(1);
     expect(parseTranslate(img.style.transform)).toEqual({ x: 0, y: 0 });
     expect(img.style.transition).toContain("90ms");
+
+    if (previousElementFromPoint) {
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: previousElementFromPoint,
+      });
+    } else {
+      Reflect.deleteProperty(document, "elementFromPoint");
+    }
+    await view.cleanup();
+  });
+
+  test("fullscreen hover pan stays anchored after wheel panning", async () => {
+    const hoverPlugin = zoomPanHover({
+      zoomLevel: 2.5,
+      zoomInDurationMs: 20,
+      zoomOutDurationMs: 90,
+    });
+    const fullscreenPlugin = fullscreenZoomPan({
+      ...zoomPanDefaults,
+      plugins: [hoverPlugin],
+    });
+    const view = await setup(
+      <FullscreenHoverRuntimeHarness
+        zoom={(fullscreenPlugin.options as any).zoom}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    const previousElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: vi.fn(() => img as Element),
+    });
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 200,
+          clientY: 150,
+          pointerId: 1,
+          pointerType: "mouse",
+        })
+      );
+    });
+    await advanceMotion(80);
+
+    expect(parseTranslate(img.style.transform).x).toBeCloseTo(-300, 5);
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new WheelEvent("wheel", {
+          bubbles: true,
+          cancelable: true,
+          deltaX: -120,
+          deltaY: 0,
+        })
+      );
+    });
+    await advanceMotion();
+
+    expect(parseTranslate(img.style.transform).x).toBeCloseTo(-180, 5);
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 200,
+          clientY: 150,
+          pointerId: 1,
+          pointerType: "mouse",
+        })
+      );
+    });
+
+    expect(parseTranslate(img.style.transform).x).toBeCloseTo(-180, 5);
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 240,
+          clientY: 150,
+          pointerId: 1,
+          pointerType: "mouse",
+        })
+      );
+    });
+
+    expect(parseTranslate(img.style.transform).x).toBeCloseTo(-240, 5);
 
     if (previousElementFromPoint) {
       Object.defineProperty(document, "elementFromPoint", {
