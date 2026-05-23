@@ -92,6 +92,14 @@ export default function RootLayout({
         <link rel="preconnect" href="https://use.typekit.net" />
         <link rel="preconnect" href="https://p.typekit.net" />
         <link rel="stylesheet" href="https://use.typekit.net/awj1fnk.css" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `!function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);
+},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='https://static.ads-twitter.com/uwt.js',
+a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+twq('config','rckrr');`,
+          }}
+        />
       </head>
       <body
         className={`${fontBody.variable} ${tasaOrbiter.variable} ${fontMono.variable}`}
