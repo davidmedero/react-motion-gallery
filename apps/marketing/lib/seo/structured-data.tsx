@@ -21,7 +21,7 @@ export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL || "https://react-motion-gallery.com"
 ).replace(/\/$/, "");
 export const SITE_DESCRIPTION =
-  "Composable React media gallery primitives for sliders, grids, masonry, fullscreen, video, zoom/pan, and stable skeleton loading.";
+  "Gallery + lightbox React library with carousels, grid, masonry, fullscreen, video, zoom/pan/pinch, skeletons, and reveal animations.";
 export const LOGO_URL = "https://cdn.react-motion-gallery.com/nav/rmg-logo-v6.png";
 export const ICON_URL = "https://cdn.react-motion-gallery.com/nav/rmg-tab-icon.png";
 export const OG_IMAGE_URL =
