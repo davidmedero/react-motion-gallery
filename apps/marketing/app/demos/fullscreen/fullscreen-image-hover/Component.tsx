@@ -11,6 +11,7 @@ import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
 import { zoomPanHover } from "react-motion-gallery/zoomPan/hover";
 import styles from "./fullscreen-image-hover-demo.module.css";
+import { useSyncExternalStore } from "react";
 
 const SLIDES = [
   {
@@ -40,7 +41,24 @@ const FULLSCREEN_ITEMS = toMediaItems(
   })),
 );
 
+function useDocumentClientWidth() {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      window.addEventListener("resize", onStoreChange);
+      window.visualViewport?.addEventListener("resize", onStoreChange);
+
+      return () => {
+        window.removeEventListener("resize", onStoreChange);
+        window.visualViewport?.removeEventListener("resize", onStoreChange);
+      };
+    },
+    () => document.documentElement.clientWidth,
+    () => 0,
+  );
+}
+
 function FullscreenImageHoverAddon() {
+  const viewportWidth = useDocumentClientWidth();
   const { fullscreenNode, fullscreenThumbnailBridge } = useFullscreenController({
     plugins: [
       fullscreenSlider(),
@@ -80,6 +98,7 @@ function FullscreenImageHoverAddon() {
         thumbnailWidth={96}
         thumbnailHeight={62}
         containerStyle={{
+          width: viewportWidth || undefined,
           height: 104,
           padding: "18px 20px",
           overflow: "visible",
