@@ -1,5 +1,5 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { E as EntriesOptions, M as MediaEntryLink, S as SlideOwner, v as EntryItem } from './responsive-NJSTYIeP.mjs';
+import { E as EntriesOptions, M as MediaEntryLink, S as SlideOwner, v as EntryItem } from './responsive-DTXfqDUt.mjs';
 import * as React from 'react';
 import { MediaItem } from './media.mjs';
 import { k as SliderHandle } from './types-D9WBOrx6.mjs';

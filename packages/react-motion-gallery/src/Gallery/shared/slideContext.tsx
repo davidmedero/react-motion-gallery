@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { APITypes } from 'plyr-react';
 import type { SliderIndexChannel } from '../slider/sliderSub';
+import type { APITypes } from '../video/plyrTypes';
 import type { RmgSlideStoreBag } from './slideStoreBag';
 
 export type RmgSlideContextValue = {

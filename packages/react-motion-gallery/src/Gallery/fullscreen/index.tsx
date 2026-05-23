@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { Root } from "react-dom/client";
-import type { APITypes } from "plyr-react";
+import type { APITypes } from "../video/plyrTypes";
 import { DEFAULT_FULLSCREEN } from "./defaults";
 import { createFullscreenSliderSub } from "./fullscreenSliderSub";
 import { createGestureShield } from "./gestureShield";

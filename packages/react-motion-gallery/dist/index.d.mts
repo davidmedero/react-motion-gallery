@@ -1,5 +1,5 @@
 export { CoreLayout, GalleryCore, GalleryCoreProps, useGalleryCore } from './core.mjs';
-export { E as Entries, f as flattenEntries } from './index-BnQMZBQd.mjs';
+export { E as Entries, f as flattenEntries } from './index-C-bgM_aR.mjs';
 export { useFullscreenController } from './fullscreen.mjs';
 export { FullscreenThumbnailSlider } from './fullscreenThumbnails.mjs';
 export { F as FSItem, a as FullscreenThumbnailBridge, b as FullscreenThumbnailSliderProps, c as FullscreenThumbnailSlotLayout } from './types-Skhqh1RQ.mjs';
@@ -18,7 +18,7 @@ export { Reveal, RevealAngle, RevealChannelOptions, RevealDuration, RevealEasing
 export { ImageDecodeReadyOptions, ImageDecodeReadyResult, useImageDecodeReady } from './media-ready.mjs';
 export { C as CrossFade, d as CrossFadeWheel, e as CrossFadeWheelOptions, E as ElementStyle, G as GalleryApi, a as GalleryCoreApi, b as GalleryLayoutApi, I as IndexMode, R as ResponsiveHeightRule, l as SliderApi, S as SliderAutoHeight, f as SliderAutoPlayTimer, k as SliderHandle, r as SliderIndexChannel, m as SliderItemsApi, n as SliderNodeInput, j as SliderOptions, p as SliderPlugin, q as SliderPluginKind, o as SliderRemoveTarget, g as SliderRevealOptions, h as SliderSkipSnaps, i as SliderSkipSnapsOptions, c as createSliderIndexChannel } from './types-D9WBOrx6.mjs';
 export { MediaItem, toMediaItems } from './media.mjs';
-export { E as EntriesOptions, q as FsCaptionPlacement, r as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenCloseScrollContext, b as FullscreenCloseScrollEnabled, c as FullscreenCloseScrollOptions, d as FullscreenCloseScrollTiming, e as FullscreenControlsOptions, f as FullscreenCrossfadeOptions, g as FullscreenEffectsOptions, h as FullscreenIntroPathTiming, i as FullscreenLazyLoadOptions, j as FullscreenMobileDetectionContext, k as FullscreenOptions, l as FullscreenPlugin, m as FullscreenPluginKind, n as FullscreenSliderOptions, o as FullscreenVideoOptions, p as FullscreenZoomPanOptions, M as MediaEntryLink, P as PanAxisType, R as ResponsiveCaptionPlacement, s as ResponsiveLength, t as ResponsiveLengthValue, S as SlideOwner } from './responsive-NJSTYIeP.mjs';
+export { E as EntriesOptions, q as FsCaptionPlacement, r as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenCloseScrollContext, b as FullscreenCloseScrollEnabled, c as FullscreenCloseScrollOptions, d as FullscreenCloseScrollTiming, e as FullscreenControlsOptions, f as FullscreenCrossfadeOptions, g as FullscreenEffectsOptions, h as FullscreenIntroPathTiming, i as FullscreenLazyLoadOptions, j as FullscreenMobileDetectionContext, k as FullscreenOptions, l as FullscreenPlugin, m as FullscreenPluginKind, n as FullscreenSliderOptions, o as FullscreenVideoOptions, p as FullscreenZoomPanOptions, M as MediaEntryLink, P as PanAxisType, R as ResponsiveCaptionPlacement, s as ResponsiveLength, t as ResponsiveLengthValue, S as SlideOwner } from './responsive-DTXfqDUt.mjs';
 export { G as GridHandle, a as GridItemProps, b as GridOptions, c as GridPlugin, d as GridPluginKind, e as GridSpan, f as ResponsiveGridSpan, g as ResponsiveGridTemplate } from './types-ap0Mfoo0.mjs';
 export { M as MasonryHandle, a as MasonryItemProps, b as MasonryOptions, c as MasonryPlugin, d as MasonryPluginKind, e as MasonrySpan, R as ResponsiveMasonrySpan } from './types-plwyER1z.mjs';
 export { R as ResponsivePosition, a as ThumbnailLoadingElements, c as ThumbnailLoadingOptions, b as ThumbnailLoadingRenderArgs, T as ThumbnailPosition, e as ThumbnailRevealOptions, d as ThumbnailSkeletonMode, f as ThumbnailsOptions } from './types-CYTSYIwL.mjs';
@@ -27,9 +27,7 @@ export { S as SkeletonNode } from './layout-BSjd7pwQ.mjs';
 import 'react/jsx-runtime';
 import 'react';
 import './skeleton-cache.mjs';
-import 'plyr-react';
-import './plyrTypes-DhzgHNfX.mjs';
-import 'plyr';
+import './plyrTypes-B3vioQaS.mjs';
 import './force-C5m1QpdF.mjs';
 import './transitions-DU3ftmIq.mjs';
 import './text-BBcRGVzn.mjs';

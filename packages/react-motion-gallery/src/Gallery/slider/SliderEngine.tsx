@@ -37,7 +37,7 @@ import { ScrollBounds, ScrollBoundsType, PercentOfView, PercentOfViewType } from
 import { BaseTarget, factorAbs, ScrollTarget, ScrollTargetType } from '../shared/motion/scrollTarget';
 import { EventStore } from '../shared/motion/eventStore';
 import { Animations, AnimationsType } from '../shared/motion/animations';
-import type { APITypes } from 'plyr-react';
+import type { APITypes } from '../video/plyrTypes';
 import { RmgSlideProvider } from '../shared/slideContext';
 import { SliderRevealOptions, SliderLazyLoadOptions, type CrossFadeWheel, type SliderAutoPlayTimer, type SliderCoreHandle, type SliderSkipSnaps } from './types';
 import type { ArrowRenderArgs, DotsRenderArgs, ProgressRenderArgs, ScrollbarRenderArgs } from '../shared/types/controls';

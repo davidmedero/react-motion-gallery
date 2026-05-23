@@ -6,7 +6,7 @@ import { FullscreenSlider } from './FullscreenSlider';
 import { FsEntryOverlay } from '../entries/overlay/useFsEntryOverlay';
 import type { FullscreenSliderHandle } from './FullscreenSlider';
 import type { EntriesOptions, MediaEntryLink } from '../entries/types';
-import type { APITypes } from 'plyr-react';
+import type { APITypes } from '../video/plyrTypes';
 import type { FullscreenThumbnailSlotLayout } from '../fullscreenThumbnails/types';
 import { MediaItem } from '../shared/types/media';
 import { runFullscreenIntro } from './fullscreenIntro';

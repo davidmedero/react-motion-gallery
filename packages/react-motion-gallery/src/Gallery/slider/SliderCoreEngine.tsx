@@ -20,7 +20,7 @@ import {
   useImperativeHandle,
   forwardRef,
 } from 'react'
-import type { APITypes } from 'plyr-react';
+import type { APITypes } from '../video/plyrTypes';
 import styles from './Slider.module.css'
 import createIndexChannel, {
   isValidSliderInitialIndex,

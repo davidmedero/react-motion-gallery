@@ -1,12 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import type { APITypes } from 'plyr-react';
 import { Plyr } from './LazyPlyr';
 import { VideoCloneSnapshot } from './VideoCloneSnapshot';
 import { useRmgSlide } from '../shared/slideContext';
 import { bindEmbedReady, detectProvider } from './plyr';
-import type { PlyrOptions, PlyrSource } from './plyrTypes';
+import type { APITypes, PlyrOptions, PlyrSource } from './plyrTypes';
 import { createVideoSnapshotStore } from './videoSnapshotStore';
 import { installDragClickSwallower } from './plyrGuards';
 import styles from './index.module.css';

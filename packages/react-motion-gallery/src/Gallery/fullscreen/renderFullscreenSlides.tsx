@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { APITypes } from "plyr-react";
+import type { APITypes } from "../video/plyrTypes";
 import { bindEmbedReady, detectProvider, PlyrProp } from "../video/plyr";
 import { VideoCloneSnapshot } from "../video/VideoCloneSnapshot";
 import { Plyr } from "../video/LazyPlyr";

@@ -1,6 +1,6 @@
 'use client'
 
-import type { APITypes } from 'plyr-react'
+import type { APITypes } from './plyrTypes'
 
 import { objectFitContentRect } from '../shared/transitions/objectFitTransform'
 import { parseObjectPosition } from '../shared/transitions/objectPosition'

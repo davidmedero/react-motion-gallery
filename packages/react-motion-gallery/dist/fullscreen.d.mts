@@ -1,6 +1,6 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { k as FullscreenOptions, l as FullscreenPlugin, h as FullscreenIntroPathTiming, G as FullscreenClose, H as FullscreenArrows, I as FullscreenCounter, s as ResponsiveLength, R as ResponsiveCaptionPlacement, J as FsCaptionRenderArgs, K as FSImageRender, o as FullscreenVideoOptions, i as FullscreenLazyLoadOptions, c as FullscreenCloseScrollOptions } from './responsive-NJSTYIeP.mjs';
-export { q as FsCaptionPlacement, r as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenCloseScrollContext, b as FullscreenCloseScrollEnabled, d as FullscreenCloseScrollTiming, e as FullscreenControlsOptions, f as FullscreenCrossfadeOptions, g as FullscreenEffectsOptions, j as FullscreenMobileDetectionContext, m as FullscreenPluginKind, n as FullscreenSliderOptions, p as FullscreenZoomPanOptions } from './responsive-NJSTYIeP.mjs';
+import { k as FullscreenOptions, l as FullscreenPlugin, h as FullscreenIntroPathTiming, G as FullscreenClose, H as FullscreenArrows, I as FullscreenCounter, s as ResponsiveLength, R as ResponsiveCaptionPlacement, J as FsCaptionRenderArgs, K as FSImageRender, o as FullscreenVideoOptions, i as FullscreenLazyLoadOptions, c as FullscreenCloseScrollOptions } from './responsive-DTXfqDUt.mjs';
+export { q as FsCaptionPlacement, r as FsIntroRequest, F as FullscreenCaptionOptions, a as FullscreenCloseScrollContext, b as FullscreenCloseScrollEnabled, d as FullscreenCloseScrollTiming, e as FullscreenControlsOptions, f as FullscreenCrossfadeOptions, g as FullscreenEffectsOptions, j as FullscreenMobileDetectionContext, m as FullscreenPluginKind, n as FullscreenSliderOptions, p as FullscreenZoomPanOptions } from './responsive-DTXfqDUt.mjs';
 import { c as ZoomPanPlugin } from './types-CLMzNXt4.mjs';
 import React__default from 'react';
 import { MediaItem } from './media.mjs';
@@ -11,10 +11,8 @@ import { R as ResponsiveNumber } from './responsiveNumber-CouEMJ9O.mjs';
 import './types-CYTSYIwL.mjs';
 import './force-C5m1QpdF.mjs';
 import './transitions-DU3ftmIq.mjs';
-import './plyrTypes-DhzgHNfX.mjs';
-import 'plyr';
+import './plyrTypes-B3vioQaS.mjs';
 import './text-BBcRGVzn.mjs';
-import 'plyr-react';
 import 'react-dom/client';
 
 type FullscreenOpenMethod = "fade" | "scale";

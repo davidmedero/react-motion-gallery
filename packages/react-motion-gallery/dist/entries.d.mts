@@ -1,7 +1,7 @@
-export { E as Entries, d as EntriesCore, c as EntriesCoreProps, b as EntriesMediaContainerRender, a as EntriesProps, E as default, f as flattenEntries, n as nodeFromMediaDefault } from './index-BnQMZBQd.mjs';
-export { a as createEntriesGridMedia, b as createEntriesMasonryMedia, c as createEntriesSliderMedia } from './masonry-BUD8hj68.mjs';
-import { E as EntriesOptions } from './responsive-NJSTYIeP.mjs';
-export { C as EntriesLoadingOptions, u as EntryCardRenderArgs, v as EntryItem, w as EntryMediaLayout, x as EntryMediaRenderArgs, y as EntryOverlayRenderArgs, z as EntryOverlayStyle, A as EntrySkeletonRenderArgs, B as EntrySkeletonResolverArgs, M as MediaEntryLink, D as RevealOptions, S as SlideOwner } from './responsive-NJSTYIeP.mjs';
+export { E as Entries, d as EntriesCore, c as EntriesCoreProps, b as EntriesMediaContainerRender, a as EntriesProps, E as default, f as flattenEntries, n as nodeFromMediaDefault } from './index-C-bgM_aR.mjs';
+export { a as createEntriesGridMedia, b as createEntriesMasonryMedia, c as createEntriesSliderMedia } from './masonry-Bapgkuum.mjs';
+import { E as EntriesOptions } from './responsive-DTXfqDUt.mjs';
+export { C as EntriesLoadingOptions, u as EntryCardRenderArgs, v as EntryItem, w as EntryMediaLayout, x as EntryMediaRenderArgs, y as EntryOverlayRenderArgs, z as EntryOverlayStyle, A as EntrySkeletonRenderArgs, B as EntrySkeletonResolverArgs, M as MediaEntryLink, D as RevealOptions, S as SlideOwner } from './responsive-DTXfqDUt.mjs';
 import * as React from 'react';
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
@@ -18,10 +18,8 @@ import './transitions-DU3ftmIq.mjs';
 import './types-plwyER1z.mjs';
 import './MasonrySkeleton-Dju7PDw7.mjs';
 import './types-CYTSYIwL.mjs';
-import './plyrTypes-DhzgHNfX.mjs';
-import 'plyr';
+import './plyrTypes-B3vioQaS.mjs';
 import './types-CLMzNXt4.mjs';
-import 'plyr-react';
 import './types-Skhqh1RQ.mjs';
 import 'react-dom/client';
 

@@ -14,7 +14,7 @@ import {
   forwardRef
 } from 'react'
 import { flushSync } from 'react-dom'
-import type { APITypes } from 'plyr-react'
+import type { APITypes } from '../video/plyrTypes'
 import styles from './Fullscreen.module.css'
 import type { FullscreenSliderSub, FSRequest } from './fullscreenSliderSub'
 import { createDragTracker } from '../shared/input/dragTracker'

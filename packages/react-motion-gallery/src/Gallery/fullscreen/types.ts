@@ -9,7 +9,7 @@ import {
 } from "../shared/responsive";
 import type { SliderHandle, SliderSkipSnaps } from "../slider/types";
 import { EntriesOptions, MediaEntryLink, SlideOwner } from "../entries";
-import { PlyrOptionsBuilder, PlyrSourceBuilder } from "../video/plyrTypes";
+import type { PlyrOptionsBuilder, PlyrSourceBuilder } from "../video/plyrTypes";
 import type { ZoomPanOptions } from "../zoomPan/types";
 import { FullscreenOpenMethod } from "../api/types";
 import type { CrossFade } from "../slider/types";

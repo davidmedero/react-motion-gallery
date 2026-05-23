@@ -1,4 +1,4 @@
-export { R as ResponsiveCaptionPlacement, s as ResponsiveLength, t as ResponsiveLengthValue, L as ResponsivePosition } from './responsive-NJSTYIeP.mjs';
+export { R as ResponsiveCaptionPlacement, s as ResponsiveLength, t as ResponsiveLengthValue, L as ResponsivePosition } from './responsive-DTXfqDUt.mjs';
 export { a as BREAKPOINT_MAP, B as BreakpointMap, R as ResponsiveNumber } from './responsiveNumber-CouEMJ9O.mjs';
 import './types-CYTSYIwL.mjs';
 import 'react';
@@ -6,10 +6,8 @@ import './force-C5m1QpdF.mjs';
 import './types-D9WBOrx6.mjs';
 import './media.mjs';
 import './transitions-DU3ftmIq.mjs';
-import './plyrTypes-DhzgHNfX.mjs';
-import 'plyr';
+import './plyrTypes-B3vioQaS.mjs';
 import './types-CLMzNXt4.mjs';
 import './text-BBcRGVzn.mjs';
-import 'plyr-react';
 import './types-Skhqh1RQ.mjs';
 import 'react-dom/client';
