@@ -64,10 +64,15 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 
 ## Installation
 
-Install the package, then add the optional video peers only if you use `Video`.
+Install the package:
 
 ```bash
 npm install react-motion-gallery
+```
+
+If you use `Video` or fullscreen video playback, also install the optional Plyr peers:
+
+```bash
 npm install plyr plyr-react
 ```
 
@@ -76,6 +81,12 @@ Import the stylesheet. The package uses CSS Modules internally, but consumers on
 ```typescript
 import "react-motion-gallery/styles.css";
 ```
+
+Most examples in this README use hooks, event handlers, or browser-only behavior. In Next.js App Router, put those components in a client file with `"use client";`; server components can still prepare media data and pass it down.
+
+## License
+
+React Motion Gallery is licensed under `PolyForm-Noncommercial-1.0.0`. Non-commercial use is free. Commercial use requires a paid license; see [react-motion-gallery.com/license](https://react-motion-gallery.com/license).
 
 ## Overview
 
@@ -784,6 +795,7 @@ export function BasicSlider() {
 | `scroll.strictSnaps` | `boolean` | `false` | Prevents one drag release from settling more than one snap away from where the drag started. Overrides `scroll.skipSnaps`. |
 | `scroll.freeScroll` | `boolean` | `false` | Enables free dragging instead of strict snapping. |
 | `scroll.loop` | `boolean` | `false` | Wraps around at the ends. |
+| `scroll.containScroll` | `boolean` | `false` | Clamps start/end snaps so non-looping variable-width or centered sliders do not leave excess empty space at the track edges. |
 
 `scroll.groupCells` affects the snap pages used by drag, wheel, arrows, dots, and imperative navigation. Use `true` for automatic fit-to-viewport grouping, or a count for explicit snap pages:
 
@@ -1675,6 +1687,37 @@ export function EntryGallery() {
 }
 ```
 
+For common entry media layouts, the exported helper factories can own `renderMediaContainer` for you. Use the slider, grid, or masonry helper that matches `entries.mediaLayout`, then keep custom card and media rendering focused on your data shape.
+
+```typescript
+import {
+  Entries,
+  createEntriesGridMedia,
+  type EntriesOptions,
+} from "react-motion-gallery/entries";
+
+const renderEntryGridMedia = createEntriesGridMedia({
+  gridObject: {
+    columns: { 0: 1, 760: 2 },
+    gap: { 0: 10, 760: 14 },
+  },
+});
+
+export function EntryGrid({ entries }: { entries: EntriesOptions["items"] }) {
+  return (
+    <Entries
+      entries={{
+        items: entries,
+        mediaLayout: "grid",
+      }}
+      renderMediaContainer={renderEntryGridMedia}
+    />
+  );
+}
+```
+
+The same pattern works with `createEntriesSliderMedia()` and `createEntriesMasonryMedia()`. Import from `react-motion-gallery/entries/cache` instead when the entry loading skeleton also uses `loading.cache`.
+
 ### Entry loading, decode, and reveal flow
 
 When `loading.enabled` is true, entries use two viewport gates instead of one generic fade-in. `loading.nearMargin` marks a row as near the viewport, mounts the real entry content, and starts the entry media work early. `loading.viewMargin` and `loading.threshold` record when the row has actually entered view.
@@ -1888,6 +1931,7 @@ export function StandaloneFullscreen() {
 import * as React from "react";
 import { GalleryCore, Slider, useFullscreenController } from "react-motion-gallery";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 
 const slides = [
   "https://picsum.photos/id/1015/1600/900",
@@ -1907,7 +1951,7 @@ function FullscreenAddon() {
 export function SliderWithFullscreen() {
   return (
     <GalleryCore layout="slider" fullscreenItems={slides}>
-      <Slider>
+      <Slider plugins={[sliderFullscreen()]}>
         {slides.map((src, index) => (
           <img key={src} src={src} alt={`Slide ${index + 1}`} style={{ width: "100%" }} />
         ))}
@@ -2088,6 +2132,8 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `slider.friction` | `number` | `0.68` | Fullscreen slider friction. |
 | `slider.direction` | `"ltr" \| "rtl"` | `"ltr"` | Fullscreen slider interaction direction. |
 | `slider.gap` | `number \| Record<string, number>` | `0` | Responsive pixel gap between fullscreen slides. Named keys resolve from `GalleryCore.breakpoints`. |
+| `slider.skipSnaps` | `boolean \| { enabled?: boolean; threshold?: number }` | `false` | Allows fullscreen drag momentum to skip snap points. Object form matches the base slider `scroll.skipSnaps` behavior. |
+| `slider.strictSnaps` | `boolean` | `false` | Prevents one fullscreen drag release from settling more than one snap away from where the drag started. Overrides `slider.skipSnaps`. |
 | `zoom.clickZoomLevel` | `number` | `2.5` | Zoom level used for click-to-zoom. |
 | `zoom.maxZoomLevel` | `number` | `3` | Maximum allowed zoom level. |
 | `zoom.panDuration` | `number` | `43` | Pan settling duration. |
@@ -2095,6 +2141,7 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `effects.introDuration` | `number \| { transform?: number; fade?: number }` | `{ transform: 300, fade: 500 }` | Open and close intro timing. A scalar applies to both paths. Use `transform` for scale/FLIP handoffs and `fade` for opacity-only paths. |
 | `effects.introEasing` | `string \| { transform?: string; fade?: string }` | `"cubic-bezier(.4,0,.22,1)"` | Open and close intro easing. A scalar applies to both paths. Object keys mirror `introDuration`. |
 | `effects.introFade` | `boolean` | `false` | Forces fade intro behavior. |
+| `effects.introStickyNavSelector` | `string` | `—` | Selector for a sticky navigation element that may cover the source image during scale intro or close path calculations. |
 | `effects.crossfade.controls` | `boolean` | `false` | Uses crossfade transitions for fullscreen arrow navigation and animated slide requests. Also enables wheel crossfade unless `effects.crossfade.wheel` is provided. |
 | `effects.crossfade.drag` | `boolean` | `false` | Scrubs adjacent fullscreen slides with crossfade during drag instead of moving the track. |
 | `effects.crossfade.wheel` | `boolean \| CrossFadeWheelOptions` | `effects.crossfade.controls` | Uses wheel or touchpad travel as a one-slide-at-a-time fullscreen crossfade gesture. Set `false` to keep arrow crossfades while using normal wheel scrolling. |
