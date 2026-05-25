@@ -254,7 +254,7 @@ Skip: generated sidecar
 ```text
 User goal: "Build a masonry layout where skeleton text matches real responsive copy."
 Workflow: layoutWithBrowserMeasuredTextSkeleton
-Use: stable selectors -> scaffold_skeleton_text -> generate:skeleton-text-module --analysis-output -> import sidecar
+Use: stable selectors -> probe_render_context -> scaffold_skeleton_text with renderReceiptId -> generate:skeleton-text-module --analysis-output -> import sidecar
 ```
 
 When a connected agent needs context, it should read `rmg://context/agent-brief`, then use targeted resources such as `rmg://guides/layout-selection`, `rmg://guides/loading-fidelity`, `rmg://guides/browser-measured-skeletons`, `rmg://docs`, `rmg://catalog/demos`, and `rmg://examples/{demoId}`.
@@ -339,7 +339,7 @@ Call `write_gallery_files` after reviewing generated output. Pass `apply: true` 
 }
 ```
 
-Call `scaffold_skeleton_text` to create a browser-measurement manifest for the skeleton text workflow.
+Call `scaffold_skeleton_text` as a dry run to get the exact `probe_render_context` call. Apply the browser-measurement manifest only after passing the returned `receiptId` as `renderReceiptId`.
 
 ```json
 {
@@ -350,6 +350,7 @@ Call `scaffold_skeleton_text` to create a browser-measurement manifest for the s
   "moduleExportName": "pricingSkeletonText",
   "barWidthUnit": "px",
   "includeTextMetrics": true,
+  "renderReceiptId": "rmg-render-...",
   "targets": [
     {
       "exportName": "pricingCardTitle",

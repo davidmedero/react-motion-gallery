@@ -12,3 +12,10 @@ export function textContent(text: string) {
 export function jsonContent(value: unknown) {
   return textContent(JSON.stringify(value, null, 2));
 }
+
+export function jsonErrorContent(value: unknown) {
+  return {
+    ...jsonContent(value),
+    isError: true,
+  };
+}

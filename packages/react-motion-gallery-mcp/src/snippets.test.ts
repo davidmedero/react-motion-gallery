@@ -25,7 +25,7 @@ describe("snippet normalization", () => {
 
     expect(demo.tsx).toContain("GridSkeletonSpec");
     expect(demo.tsx).toContain("SkeletonNode");
-    expect(demo.tsx).toContain('from "react-motion-gallery/skeleton/grid";');
+    expect(demo.tsx).toContain('from "react-motion-gallery/skeleton/cache/grid";');
     expect(demo.tsx).not.toContain("Gallery/grid/GridSkeleton");
   });
 

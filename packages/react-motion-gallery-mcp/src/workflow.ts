@@ -132,7 +132,7 @@ function resourcesForMode(mode: GalleryWorkflowMode) {
 function toolsForMode(mode: GalleryWorkflowMode) {
   const base = ["recommend_pattern", "search_demos", "get_demo", "generate_gallery_component"];
   if (mode === "layoutWithBrowserMeasuredTextSkeleton" || mode === "skeletonRetrofit") {
-    return [...base, "scaffold_skeleton_text", "audit_project"];
+    return [...base, "probe_render_context", "scaffold_skeleton_text", "audit_project"];
   }
   return base;
 }
@@ -161,6 +161,7 @@ function nextStepsForMode(mode: GalleryWorkflowMode) {
       return [
         "Add stable selectors to the real rendered text.",
         "Use flat targets by default; add slider, masonry, or entries metadata only when that layout needs it.",
+        "Dry-run scaffold_skeleton_text to get the exact probe_render_context call, then probe the live page and pass renderReceiptId when applying.",
         "Run generate:skeleton-text-module with --analysis-output, then import the generated sidecar values.",
         "For SSR reload performance, wire the skeleton cookie snapshot cache with a stable cache key and route key.",
       ];
@@ -169,6 +170,7 @@ function nextStepsForMode(mode: GalleryWorkflowMode) {
         "Inspect the existing layout and current loading behavior before changing code.",
         "Choose non-text, hand-authored text, or browser-measured text fidelity based on the user goal.",
         "Preserve existing layout behavior and add the smallest skeleton layer that satisfies the request.",
+        "For browser-measured text, apply scaffolds only after probe_render_context returns a fresh matching renderReceiptId.",
         "If the skeleton has responsive text or expensive geometry CSS, add the cookie snapshot cache instead of client-only storage.",
       ];
   }
@@ -180,7 +182,7 @@ function warningsForMode(mode: GalleryWorkflowMode, framework: ProjectKind | und
     warnings.push('Interactive gallery components should live in a "use client" component.');
   }
   if (mode === "layoutWithBrowserMeasuredTextSkeleton" || mode === "skeletonRetrofit") {
-    warnings.push("Browser-measured text needs a live page URL and stable selectors before generation.");
+    warnings.push("Browser-measured text needs a live page URL, stable selectors, and a fresh probe_render_context receipt before apply.");
   }
   return warnings;
 }

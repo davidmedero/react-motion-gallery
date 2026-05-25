@@ -72,6 +72,8 @@ Requirements:
 - add masonry readiness metadata only when target text is inside positioned masonry items
 - add entries readiness metadata only when target text is inside Entries rows that expose mount/ready state
 - create or update a browser manifest for the file
+- dry-run `scaffold_skeleton_text` first, then call the suggested `probe_render_context` with the live URL, viewport, and selectors
+- pass the returned `receiptId` as `renderReceiptId` when applying browser-measured skeleton scaffolds
 - use npm run --silent generate:skeleton-text-module with --analysis-output to inspect browser-measured results and regenerate the sidecar module in one scan
 - prefer px barWidth values from browser measurement unless the file already relies on percentage caps
 - keep runtime code readable and do not change unrelated rendering behavior
@@ -121,6 +123,7 @@ Scaffold flat-target measured text for any DOM layout:
   "moduleExportName": "pricingSkeletonText",
   "barWidthUnit": "px",
   "includeTextMetrics": true,
+  "renderReceiptId": "rmg-render-...",
   "targets": [
     {
       "exportName": "pricingCardTitle",

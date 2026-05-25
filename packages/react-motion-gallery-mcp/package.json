@@ -20,10 +20,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "ws": "^8.21.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/node": "^20.19.25",
+    "@types/ws": "^8.18.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16"

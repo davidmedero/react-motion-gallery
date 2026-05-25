@@ -7,7 +7,7 @@ import {
   getDemoCatalog,
   serializeDemoMetadata,
 } from "./catalog.js";
-import { jsonContent } from "./content.js";
+import { jsonContent, jsonErrorContent } from "./content.js";
 import {
   agentBriefGuide,
   browserMeasuredSkeletonGuide,
@@ -21,6 +21,15 @@ import {
 import { cssModuleNameForComponent, generateGalleryComponent } from "./generate.js";
 import { auditProject, writeGalleryFiles } from "./project.js";
 import { recommendPattern, searchDemos } from "./recommend.js";
+import {
+  buildRenderReceiptValidationError,
+  buildSkeletonRenderProbeRequest,
+  buildSkeletonRenderReceiptRequirement,
+  probeRenderContext,
+  RenderReceiptStore,
+  renderReceiptErrorPayload,
+  type RenderReceiptProbe,
+} from "./renderReceipt.js";
 import { scaffoldSkeletonText } from "./skeleton.js";
 import { getDemoCode } from "./snippets.js";
 import type { DemoCategoryId } from "./types.js";
@@ -94,14 +103,24 @@ const skeletonEntriesSchema = z.object({
   timeoutMs: z.number().min(0).optional(),
 });
 
-export function createRmgMcpServer() {
+export type RmgMcpServerOptions = {
+  renderReceiptStore?: RenderReceiptStore;
+  probeRenderContext?: RenderReceiptProbe;
+  now?: () => number;
+};
+
+export function createRmgMcpServer(options: RmgMcpServerOptions = {}) {
   const server = new McpServer({
     name: "react-motion-gallery-mcp",
     version: "0.1.0",
   });
 
   registerResources(server);
-  registerTools(server);
+  registerTools(server, {
+    now: options.now ?? Date.now,
+    probeRenderContext: options.probeRenderContext ?? probeRenderContext,
+    renderReceiptStore: options.renderReceiptStore ?? new RenderReceiptStore(),
+  });
   registerPrompts(server);
 
   return server;
@@ -213,7 +232,7 @@ function registerResources(server: McpServer) {
           "",
           "Use flat `targets` for ordinary DOM text. Add `slider`, `masonry`, or `entries` manifest metadata only when those specialized layouts need readiness or compensation behavior.",
           "",
-          "Use `scaffold_skeleton_text` to create a manifest, then run:",
+          "Dry-run `scaffold_skeleton_text` to get the exact `probe_render_context` call. Apply the manifest only after passing the returned `receiptId` as `renderReceiptId`, then run:",
           "",
           "```bash",
           "npm run --silent generate:skeleton-text-module -- --input ./path/to/example.skeleton-text.browser.manifest.json --analysis-output ./path/to/example.measurements.json",
@@ -296,7 +315,14 @@ function registerResources(server: McpServer) {
   );
 }
 
-function registerTools(server: McpServer) {
+function registerTools(
+  server: McpServer,
+  options: {
+    renderReceiptStore: RenderReceiptStore;
+    probeRenderContext: RenderReceiptProbe;
+    now: () => number;
+  }
+) {
   server.tool(
     "search_demos",
     "Filter React Motion Gallery demos by category, tags, component, media kind, or query.",
@@ -340,6 +366,36 @@ function registerTools(server: McpServer) {
       limit: z.number().int().min(1).max(10).optional(),
     },
     async (args) => jsonContent(recommendPattern(args))
+  );
+
+  server.tool(
+    "probe_render_context",
+    "Launch a fresh headless Chrome tab and return a stable render receipt for a live page URL, viewport, selectors, and rendered state.",
+    {
+      url: z.string(),
+      viewport: z.object({
+        width: z.number().int().min(1),
+        height: z.number().int().min(1),
+        deviceScaleFactor: z.number().min(0).optional(),
+        mobile: z.boolean().optional(),
+      }),
+      selectors: z.array(z.string()).optional(),
+      readyExpression: z.string().optional(),
+      settleMs: z.number().min(0).optional(),
+      stableGeometryFrames: z.number().int().min(1).optional(),
+      timeoutMs: z.number().int().min(1).optional(),
+      ttlMs: z.number().int().min(1).optional(),
+      chromePath: z.string().optional(),
+    },
+    async (args) => {
+      try {
+        const receipt = await options.probeRenderContext(args);
+        options.renderReceiptStore.put(receipt);
+        return jsonContent(receipt);
+      } catch (error) {
+        return jsonErrorContent(renderReceiptErrorPayload(error));
+      }
+    }
   );
 
   server.tool(
@@ -450,9 +506,42 @@ function registerTools(server: McpServer) {
       slider: skeletonSliderSchema.optional(),
       masonry: skeletonMasonrySchema.optional(),
       entries: skeletonEntriesSchema.optional(),
+      renderReceiptId: z.string().optional(),
       apply: z.boolean().optional(),
     },
-    async (args) => jsonContent(scaffoldSkeletonText(args))
+    async (args) => {
+      const required = buildSkeletonRenderReceiptRequirement(args);
+      const receiptValidation = options.renderReceiptStore.validate({
+        receiptId: args.renderReceiptId,
+        required,
+        now: options.now(),
+      });
+      const suggestedProbeRenderContextCall = {
+        name: "probe_render_context",
+        arguments: buildSkeletonRenderProbeRequest(args),
+      };
+
+      if (args.apply && receiptValidation.status !== "valid") {
+        return jsonErrorContent(
+          renderReceiptErrorPayload(buildRenderReceiptValidationError(receiptValidation))
+        );
+      }
+
+      const result = scaffoldSkeletonText(args);
+      return jsonContent({
+        ...result,
+        renderReceiptId: args.renderReceiptId ?? null,
+        receiptStatus: receiptValidation.status,
+        receiptIssues: receiptValidation.issues,
+        ...(receiptValidation.status === "valid"
+          ? {
+              renderStateHash: receiptValidation.receipt.stateHash,
+            }
+          : {
+              suggestedProbeRenderContextCall,
+            }),
+      });
+    }
   );
 }
 
@@ -514,7 +603,7 @@ function registerPrompts(server: McpServer) {
         `Live page URL: ${livePageUrl}`,
         `Framework: ${framework ?? "unknown"}`,
         "",
-        "Inspect real rendered text, add stable selectors, scaffold or update a browser manifest, run generate:skeleton-text-module with --analysis-output, import the generated sidecar values, and wire them into skeleton text nodes. Use flat targets by default; add slider, masonry, or entries manifest metadata only when that layout needs it.",
+        "Inspect real rendered text, add stable selectors, dry-run scaffold_skeleton_text for the suggested probe_render_context call, probe the live page, apply the scaffold with renderReceiptId, run generate:skeleton-text-module with --analysis-output, import the generated sidecar values, and wire them into skeleton text nodes. Use flat targets by default; add slider, masonry, or entries manifest metadata only when that layout needs it.",
       ])
   );
 
@@ -533,7 +622,7 @@ function registerPrompts(server: McpServer) {
         `Desired loading experience: ${desiredLoadingExperience}`,
         `Framework: ${framework ?? "unknown"}`,
         "",
-        "Preserve existing layout behavior. Choose non-text, hand-authored text, or browser-measured text fidelity based on the request. If browser-measured text is needed, add selectors, create/update the manifest, run the generator with --analysis-output, and import the generated sidecar values.",
+        "Preserve existing layout behavior. Choose non-text, hand-authored text, or browser-measured text fidelity based on the request. If browser-measured text is needed, add selectors, dry-run scaffold_skeleton_text for the suggested probe_render_context call, apply with renderReceiptId, run the generator with --analysis-output, and import the generated sidecar values.",
       ])
   );
 

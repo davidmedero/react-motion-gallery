@@ -195,6 +195,20 @@ var componentCatalog = [
     relatedTags: ["skeleton", "text", "responsive", "container-query", "force"]
   },
   {
+    id: "reveal",
+    name: "Reveal",
+    importPath: "react-motion-gallery/reveal",
+    exports: ["Reveal", "useReveal"],
+    categoryIds: ["reveal"],
+    description: "Standalone fade and transform reveal primitive for page sections and application UI.",
+    whenToUse: [
+      "Use for entrance animations on already-rendered content.",
+      "Use opacityDurationMs and transformDurationMs when fade and motion should resolve at different speeds.",
+      "Use Skeleton instead when content is loading or readiness needs to gate layout handoff."
+    ],
+    relatedTags: ["reveal", "fade", "transform", "stagger", "intersection-observer"]
+  },
+  {
     id: "core",
     name: "GalleryCore",
     importPath: "react-motion-gallery/core",
@@ -227,7 +241,8 @@ var categoryDescriptions = {
   entries: "Structured entry demos that combine copy, metadata, media, and slider/grid/masonry renderers.",
   "zoom-pan": "Standalone and embedded zoom/pan image demos for cropped inspection surfaces.",
   fullscreen: "Fullscreen controller demos for custom triggers, captions, overlays, thumbnails, effects, and lazy media.",
-  skeleton: "Standalone skeleton demos for app shells, cards, responsive text, and forced overlays."
+  skeleton: "Standalone skeleton demos for app shells, cards, responsive text, and forced overlays.",
+  reveal: "Standalone reveal demos for fade, transform, stagger, and section entrance motion."
 };
 var memoizedDemos = null;
 function getCategoryDescriptions() {
@@ -359,6 +374,12 @@ function textContent(text) {
 function jsonContent(value) {
   return textContent(JSON.stringify(value, null, 2));
 }
+function jsonErrorContent(value) {
+  return {
+    ...jsonContent(value),
+    isError: true
+  };
+}
 
 // src/docs.ts
 import fs2 from "fs";
@@ -434,8 +455,9 @@ function agentBriefGuide() {
     "2. Read the recommended guide resources returned by the classifier.",
     "3. Use `recommend_pattern`, `search_demos`, and `get_demo` to choose examples.",
     "4. Only use `scaffold_skeleton_text` when the workflow calls for browser-measured skeleton text.",
-    "5. For file writing, keep dry-run output until generated files have been reviewed; pass `apply: true` only when writing is intended.",
-    "6. For production skeletons with responsive or browser-measured text, read `rmg://guides/skeleton-cache` and consider the cookie snapshot cache so SSR can reuse active text/geometry values on reload.",
+    "5. Before applying browser-measured skeleton scaffolds, call `probe_render_context` for the live URL, viewport, and required selectors, then pass the returned `receiptId` as `renderReceiptId`.",
+    "6. For file writing, keep dry-run output until generated files have been reviewed; pass `apply: true` only when writing is intended.",
+    "7. For production skeletons with responsive or browser-measured text, read `rmg://guides/skeleton-cache` and consider the cookie snapshot cache so SSR can reuse active text/geometry values on reload.",
     "",
     "Browser-measured skeleton text applies to any real rendered DOM text: sliders, grids, masonry, entries, thumbnails, flex layouts, app shells, cards, and custom UI. Use flat `targets` by default. Add specialized `slider`, `masonry`, or `entries` manifest metadata only when those layout modes need readiness or compensation behavior.",
     "",
@@ -488,7 +510,7 @@ function loadingFidelityGuide() {
     "```text",
     'User goal: "Build a masonry layout where skeleton text matches real responsive copy."',
     "Workflow: layoutWithBrowserMeasuredTextSkeleton",
-    "Use: stable selectors -> scaffold_skeleton_text -> generate:skeleton-text-module --analysis-output -> import sidecar",
+    "Use: stable selectors -> probe_render_context -> scaffold_skeleton_text with renderReceiptId -> generate:skeleton-text-module --analysis-output -> import sidecar",
     "```",
     "",
     "If the user has an existing layout and asks to add or improve skeletons, classify it as `skeletonRetrofit` and preserve existing rendering behavior while choosing the smallest skeleton layer that meets the requested fidelity."
@@ -505,10 +527,11 @@ function browserMeasuredSkeletonGuide() {
     "Default workflow:",
     "",
     "1. Add stable selectors to the real rendered text, such as `data-skeleton-text-id`.",
-    "2. Create or update a browser manifest with flat `targets`.",
-    "3. Run `npm run --silent generate:skeleton-text-module -- --input ./path/to/manifest.json --analysis-output ./path/to/measurements.json`.",
-    "4. Import the generated sidecar exports into the component.",
-    "5. Wire generated values into skeleton `text` nodes.",
+    "2. Dry-run `scaffold_skeleton_text` to get the exact `probe_render_context` call for the live URL, viewport, and selectors.",
+    "3. Call `probe_render_context`; use the returned `receiptId` as `renderReceiptId` when applying the scaffold.",
+    "4. Run `npm run --silent generate:skeleton-text-module -- --input ./path/to/manifest.json --analysis-output ./path/to/measurements.json`.",
+    "5. Import the generated sidecar exports into the component.",
+    "6. Wire generated values into skeleton `text` nodes.",
     "",
     "Manifest modes:",
     "",
@@ -529,6 +552,7 @@ function browserMeasuredSkeletonGuide() {
     '  "moduleExportName": "pricingSkeletonText",',
     '  "barWidthUnit": "px",',
     '  "includeTextMetrics": true,',
+    '  "renderReceiptId": "rmg-render-...",',
     '  "targets": [',
     "    {",
     '      "exportName": "pricingCardTitle",',
@@ -1201,7 +1225,7 @@ function resourcesForMode(mode) {
 function toolsForMode(mode) {
   const base = ["recommend_pattern", "search_demos", "get_demo", "generate_gallery_component"];
   if (mode === "layoutWithBrowserMeasuredTextSkeleton" || mode === "skeletonRetrofit") {
-    return [...base, "scaffold_skeleton_text", "audit_project"];
+    return [...base, "probe_render_context", "scaffold_skeleton_text", "audit_project"];
   }
   return base;
 }
@@ -1229,6 +1253,7 @@ function nextStepsForMode(mode) {
       return [
         "Add stable selectors to the real rendered text.",
         "Use flat targets by default; add slider, masonry, or entries metadata only when that layout needs it.",
+        "Dry-run scaffold_skeleton_text to get the exact probe_render_context call, then probe the live page and pass renderReceiptId when applying.",
         "Run generate:skeleton-text-module with --analysis-output, then import the generated sidecar values.",
         "For SSR reload performance, wire the skeleton cookie snapshot cache with a stable cache key and route key."
       ];
@@ -1237,6 +1262,7 @@ function nextStepsForMode(mode) {
         "Inspect the existing layout and current loading behavior before changing code.",
         "Choose non-text, hand-authored text, or browser-measured text fidelity based on the user goal.",
         "Preserve existing layout behavior and add the smallest skeleton layer that satisfies the request.",
+        "For browser-measured text, apply scaffolds only after probe_render_context returns a fresh matching renderReceiptId.",
         "If the skeleton has responsive text or expensive geometry CSS, add the cookie snapshot cache instead of client-only storage."
       ];
   }
@@ -1247,7 +1273,7 @@ function warningsForMode(mode, framework) {
     warnings.push('Interactive gallery components should live in a "use client" component.');
   }
   if (mode === "layoutWithBrowserMeasuredTextSkeleton" || mode === "skeletonRetrofit") {
-    warnings.push("Browser-measured text needs a live page URL and stable selectors before generation.");
+    warnings.push("Browser-measured text needs a live page URL, stable selectors, and a fresh probe_render_context receipt before apply.");
   }
   return warnings;
 }
@@ -1414,6 +1440,917 @@ function tokens(value) {
   return value.toLowerCase().split(/[^a-z0-9]+/g).filter((token) => token.length >= 3);
 }
 
+// src/renderReceipt.ts
+import { spawn } from "child_process";
+import { createHash, randomUUID } from "crypto";
+import { mkdtemp, rm } from "fs/promises";
+import { tmpdir } from "os";
+import { join } from "path";
+import WebSocket from "ws";
+var DEFAULT_CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+var DEFAULT_TTL_MS = 5 * 60 * 1e3;
+var DEFAULT_TIMEOUT_MS = 1e4;
+var DEFAULT_SETTLE_MS = 120;
+var DEFAULT_STABLE_GEOMETRY_FRAMES = 3;
+var RMG_MARKER_SELECTORS = {
+  skeletonText: "[data-skeleton-text-id]",
+  sliderScope: "[data-rmg-slider-core-scope]",
+  galleryIndex: "[data-rmg-idx]",
+  entryOwner: "[data-rmg-entry-owner]",
+  fullscreenTrigger: "[data-rmg-fullscreen-trigger]",
+  zoomPanRoot: "[data-rmg-zoom-pan-root]"
+};
+var RenderReceiptError = class extends Error {
+  code;
+  detail;
+  constructor(code, message, detail = {}) {
+    super(message);
+    this.name = "RenderReceiptError";
+    this.code = code;
+    this.detail = detail;
+  }
+  toJSON() {
+    return {
+      code: this.code,
+      message: this.message,
+      detail: this.detail
+    };
+  }
+};
+var RenderReceiptValidationError = class extends Error {
+  code;
+  issues;
+  constructor(code, issues) {
+    super(`${code}: ${issues.map((issue) => `${issue.code}: ${issue.message}`).join("; ")}`);
+    this.name = "RenderReceiptValidationError";
+    this.code = code;
+    this.issues = issues;
+  }
+  toJSON() {
+    return {
+      code: this.code,
+      message: this.message,
+      issues: this.issues
+    };
+  }
+};
+var RenderReceiptStore = class {
+  receipts = /* @__PURE__ */ new Map();
+  put(receipt) {
+    this.receipts.set(receipt.receiptId, receipt);
+    return receipt;
+  }
+  get(receiptId) {
+    return receiptId ? this.receipts.get(receiptId) ?? null : null;
+  }
+  validate(args) {
+    const receipt = this.get(args.receiptId);
+    return validateRenderReceipt({
+      receipt,
+      receiptId: args.receiptId,
+      required: args.required,
+      now: args.now
+    });
+  }
+};
+var ChromeCdpClient = class _ChromeCdpClient {
+  ws;
+  pending = /* @__PURE__ */ new Map();
+  listeners = /* @__PURE__ */ new Map();
+  nextId = 1;
+  constructor(ws) {
+    this.ws = ws;
+    this.ws.on("message", (data) => {
+      const message = JSON.parse(String(data));
+      if (message.id != null) {
+        const pending = this.pending.get(message.id);
+        if (!pending) return;
+        this.pending.delete(message.id);
+        if (message.error) {
+          pending.reject(
+            new RenderReceiptError(
+              "BROWSER_PROTOCOL_ERROR",
+              message.error.message || "Chrome DevTools Protocol error.",
+              { message }
+            )
+          );
+          return;
+        }
+        pending.resolve(message.result);
+        return;
+      }
+      if (message.method) {
+        const handlers = this.listeners.get(message.method) ?? [];
+        for (const handler of handlers) {
+          handler(message.params, message.sessionId);
+        }
+      }
+    });
+  }
+  static async connect(wsUrl) {
+    const ws = new WebSocket(wsUrl);
+    await new Promise((resolve, reject) => {
+      ws.once("open", () => resolve());
+      ws.once("error", reject);
+    });
+    return new _ChromeCdpClient(ws);
+  }
+  async close() {
+    if (this.ws.readyState === WebSocket.CLOSED) return;
+    await new Promise((resolve) => {
+      const done = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+      const timeout = setTimeout(done, 500);
+      this.ws.once("close", done);
+      this.ws.once("error", done);
+      if (this.ws.readyState === WebSocket.CLOSING) return;
+      try {
+        this.ws.close();
+      } catch {
+        done();
+      }
+    });
+  }
+  on(method, handler) {
+    const handlers = this.listeners.get(method) ?? [];
+    handlers.push(handler);
+    this.listeners.set(method, handlers);
+    return () => {
+      this.listeners.set(
+        method,
+        (this.listeners.get(method) ?? []).filter((entry) => entry !== handler)
+      );
+    };
+  }
+  waitFor(method, sessionId) {
+    return new Promise((resolve) => {
+      const dispose = this.on(method, (params, incomingSessionId) => {
+        if (sessionId && incomingSessionId !== sessionId) return;
+        dispose();
+        resolve(params);
+      });
+    });
+  }
+  send(method, params = {}, sessionId) {
+    const id = this.nextId++;
+    const payload = sessionId ? { id, method, params, sessionId } : { id, method, params };
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      this.ws.send(JSON.stringify(payload));
+    });
+  }
+};
+function normalizeRenderProbeRequest(args) {
+  return {
+    url: canonicalizeUrl(args.url),
+    viewport: {
+      width: positiveInteger(args.viewport.width, "viewport.width"),
+      height: positiveInteger(args.viewport.height, "viewport.height"),
+      deviceScaleFactor: args.viewport.deviceScaleFactor != null ? positiveNumber(args.viewport.deviceScaleFactor, "viewport.deviceScaleFactor") : 1,
+      mobile: args.viewport.mobile === true
+    },
+    selectors: uniqueStrings(args.selectors ?? []),
+    readyExpression: cleanOptionalString(args.readyExpression),
+    settleMs: nonNegativeNumber(args.settleMs ?? DEFAULT_SETTLE_MS, "settleMs"),
+    stableGeometryFrames: positiveInteger(
+      args.stableGeometryFrames ?? DEFAULT_STABLE_GEOMETRY_FRAMES,
+      "stableGeometryFrames"
+    ),
+    timeoutMs: positiveInteger(args.timeoutMs ?? DEFAULT_TIMEOUT_MS, "timeoutMs")
+  };
+}
+async function probeRenderContext(args) {
+  const request = normalizeRenderProbeRequest(args);
+  const chromePath = args.chromePath ?? process.env.RMG_CHROME_PATH ?? DEFAULT_CHROME_PATH;
+  const ttlMs = positiveInteger(args.ttlMs ?? DEFAULT_TTL_MS, "ttlMs");
+  const launched = await launchChrome(chromePath);
+  let client = null;
+  let targetId = null;
+  try {
+    client = await ChromeCdpClient.connect(launched.wsUrl);
+    const target = await createPageTarget({ client, request });
+    targetId = target.targetId;
+    const readiness = await waitForReadyExpression({
+      client,
+      sessionId: target.sessionId,
+      expression: request.readyExpression,
+      timeoutMs: request.timeoutMs
+    });
+    await wait(request.settleMs);
+    const stability = await waitForStableGeometry({
+      client,
+      sessionId: target.sessionId,
+      request
+    });
+    const observed = await collectObservedState({
+      client,
+      sessionId: target.sessionId,
+      request,
+      stability
+    });
+    const warnings = buildWarnings({ request, observed, readiness });
+    await client.send("Target.closeTarget", { targetId: target.targetId }).catch(() => void 0);
+    targetId = null;
+    return buildRenderReceipt({
+      request,
+      observed,
+      targetId: target.targetId,
+      ttlMs,
+      warnings
+    });
+  } finally {
+    if (client && targetId) {
+      await client.send("Target.closeTarget", { targetId }).catch(() => void 0);
+    }
+    await client?.close().catch(() => void 0);
+    await stopChrome(launched);
+  }
+}
+function buildRenderReceipt(args) {
+  const receipt = {
+    receiptId: args.receiptId ?? `rmg-render-${randomUUID()}`,
+    stateHash: "",
+    createdAt: args.createdAt ?? (/* @__PURE__ */ new Date()).toISOString(),
+    ttlMs: args.ttlMs ?? DEFAULT_TTL_MS,
+    request: args.request,
+    tab: {
+      targetId: args.targetId,
+      type: "page",
+      lifecycle: "created-and-closed"
+    },
+    observed: args.observed,
+    warnings: args.warnings ?? []
+  };
+  return {
+    ...receipt,
+    stateHash: hashRenderReceiptState(receipt)
+  };
+}
+function hashRenderReceiptState(value) {
+  return sha256(
+    stableJson({
+      finalUrl: canonicalizeUrl(value.observed.finalUrl),
+      viewport: value.observed.viewport,
+      selectorSummaries: value.observed.selectorSummaries,
+      rmgMarkerCounts: value.observed.rmgMarkerCounts
+    })
+  );
+}
+function validateRenderReceipt(args) {
+  if (!args.receipt) {
+    return {
+      status: "missing",
+      issues: [
+        {
+          code: "RENDER_RECEIPT_MISSING",
+          message: "A fresh render receipt is required before applying browser-measured skeleton scaffolding.",
+          detail: { receiptId: args.receiptId }
+        }
+      ]
+    };
+  }
+  const receipt = args.receipt;
+  const issues = [];
+  const now = args.now ?? Date.now();
+  const createdAtMs = Date.parse(receipt.createdAt);
+  if (!Number.isFinite(createdAtMs) || now - createdAtMs > receipt.ttlMs) {
+    issues.push({
+      code: "RENDER_RECEIPT_EXPIRED",
+      message: "The render receipt is stale. Probe the page again before applying.",
+      detail: { createdAt: receipt.createdAt, ttlMs: receipt.ttlMs }
+    });
+  }
+  const requiredUrl = canonicalizeUrl(args.required.url);
+  if (receipt.request.url !== requiredUrl || canonicalizeUrl(receipt.observed.finalUrl) !== requiredUrl) {
+    issues.push({
+      code: "RENDER_RECEIPT_URL_MISMATCH",
+      message: "The render receipt URL does not match the skeleton manifest URL.",
+      detail: {
+        expected: requiredUrl,
+        requested: receipt.request.url,
+        observed: receipt.observed.finalUrl
+      }
+    });
+  }
+  const width = receipt.observed.viewport.innerWidth;
+  if (width < args.required.viewportMin || width > args.required.viewportMax) {
+    issues.push({
+      code: "RENDER_RECEIPT_VIEWPORT_WIDTH_MISMATCH",
+      message: "The render receipt viewport width is outside the skeleton manifest range.",
+      detail: {
+        expectedMin: args.required.viewportMin,
+        expectedMax: args.required.viewportMax,
+        observed: width
+      }
+    });
+  }
+  const height = receipt.observed.viewport.innerHeight;
+  if (height !== args.required.viewportHeight) {
+    issues.push({
+      code: "RENDER_RECEIPT_VIEWPORT_HEIGHT_MISMATCH",
+      message: "The render receipt viewport height does not match the skeleton manifest height.",
+      detail: { expected: args.required.viewportHeight, observed: height }
+    });
+  }
+  if (!receipt.observed.stability.stable) {
+    issues.push({
+      code: "RENDER_RECEIPT_UNSTABLE",
+      message: "The render receipt did not observe stable rendered geometry.",
+      detail: receipt.observed.stability
+    });
+  }
+  const missingSelectors = uniqueStrings(args.required.selectors).filter((selector) => {
+    const summary = receipt.observed.selectorSummaries[selector];
+    return !summary || summary.count < 1;
+  });
+  if (missingSelectors.length > 0) {
+    issues.push({
+      code: "RENDER_RECEIPT_MISSING_SELECTORS",
+      message: "The render receipt did not observe every skeleton measurement selector.",
+      detail: { selectors: missingSelectors }
+    });
+  }
+  if (issues.length > 0) {
+    return {
+      status: issues.some((issue) => issue.code === "RENDER_RECEIPT_EXPIRED") ? "expired" : "mismatch",
+      receipt,
+      issues
+    };
+  }
+  return {
+    status: "valid",
+    receipt,
+    issues: []
+  };
+}
+function buildRenderReceiptValidationError(result) {
+  if (result.status === "valid") {
+    throw new Error("Cannot build a render receipt validation error for a valid receipt.");
+  }
+  return new RenderReceiptValidationError(
+    result.status === "missing" ? "RENDER_RECEIPT_MISSING" : "RENDER_RECEIPT_INVALID",
+    result.issues
+  );
+}
+function renderReceiptErrorPayload(error) {
+  if (error instanceof RenderReceiptValidationError || error instanceof RenderReceiptError) {
+    return error.toJSON();
+  }
+  if (error instanceof Error) {
+    return {
+      code: "UNEXPECTED_RENDER_RECEIPT_ERROR",
+      message: error.message,
+      detail: {}
+    };
+  }
+  return {
+    code: "UNEXPECTED_RENDER_RECEIPT_ERROR",
+    message: "An unexpected non-Error value was thrown.",
+    detail: { error }
+  };
+}
+function buildSkeletonRenderProbeRequest(args) {
+  const viewportMin = args.viewportMin ?? 320;
+  const viewportMax = args.viewportMax ?? 1600;
+  const width = Math.min(viewportMax, Math.max(viewportMin, 1024));
+  return {
+    url: args.url,
+    viewport: {
+      width,
+      height: args.viewportHeight ?? 1800
+    },
+    selectors: collectSkeletonRenderSelectors(args),
+    ...args.readyExpression ? { readyExpression: args.readyExpression } : null,
+    settleMs: args.settleMs ?? DEFAULT_SETTLE_MS,
+    stableGeometryFrames: args.stableGeometryFrames ?? DEFAULT_STABLE_GEOMETRY_FRAMES
+  };
+}
+function buildSkeletonRenderReceiptRequirement(args) {
+  return {
+    url: args.url,
+    viewportMin: args.viewportMin ?? 320,
+    viewportMax: args.viewportMax ?? 1600,
+    viewportHeight: args.viewportHeight ?? 1800,
+    selectors: collectSkeletonRenderSelectors(args)
+  };
+}
+function collectSkeletonRenderSelectors(args) {
+  return uniqueStrings([
+    ...(args.targets ?? []).map((target) => target.selector),
+    ...args.slider ? [args.slider.itemSelector, ...args.slider.roles.map((role) => role.selector)] : [],
+    ...args.masonry ? [args.masonry.rootSelector, args.masonry.anchorSelector, args.masonry.itemSelector] : [],
+    ...args.entries ? [args.entries.rootSelector, args.entries.anchorSelector, args.entries.entrySelector] : []
+  ]);
+}
+function buildWarnings(args) {
+  const warnings = [];
+  if (canonicalizeUrl(args.observed.finalUrl) !== args.request.url) {
+    warnings.push({
+      code: "url-mismatch",
+      message: "The probed page ended on a different URL than requested.",
+      detail: { requested: args.request.url, observed: args.observed.finalUrl }
+    });
+  }
+  if (args.readiness.timedOut) {
+    warnings.push({
+      code: "ready-expression-timeout",
+      message: "The readyExpression did not become truthy before timeout.",
+      detail: { readyExpression: args.request.readyExpression, error: args.readiness.error }
+    });
+  }
+  if (!args.observed.stability.stable) {
+    warnings.push({
+      code: "unstable-render-state",
+      message: "The probed page did not reach stable geometry before timeout.",
+      detail: args.observed.stability
+    });
+  }
+  const missingSelectors = Object.values(args.observed.selectorSummaries).filter((summary) => summary.count === 0).map((summary) => summary.selector);
+  if (missingSelectors.length > 0) {
+    warnings.push({
+      code: "missing-selectors",
+      message: "One or more requested selectors did not match the rendered page.",
+      detail: { selectors: missingSelectors }
+    });
+  }
+  return warnings;
+}
+async function createPageTarget(args) {
+  const target = await args.client.send("Target.createTarget", {
+    url: "about:blank"
+  });
+  const attached = await args.client.send("Target.attachToTarget", {
+    targetId: target.targetId,
+    flatten: true
+  });
+  const sessionId = attached.sessionId;
+  await args.client.send("Page.enable", {}, sessionId);
+  await args.client.send("Runtime.enable", {}, sessionId);
+  await args.client.send(
+    "Emulation.setDeviceMetricsOverride",
+    {
+      width: args.request.viewport.width,
+      height: args.request.viewport.height,
+      deviceScaleFactor: args.request.viewport.deviceScaleFactor,
+      mobile: args.request.viewport.mobile
+    },
+    sessionId
+  );
+  const documentReady = withTimeout(
+    args.client.waitFor("Page.domContentEventFired", sessionId),
+    args.request.timeoutMs,
+    () => new RenderReceiptError("BROWSER_NAVIGATION_TIMEOUT", "Timed out waiting for page DOMContentLoaded.", {
+      url: args.request.url,
+      timeoutMs: args.request.timeoutMs
+    })
+  );
+  const navigation = await args.client.send(
+    "Page.navigate",
+    { url: args.request.url },
+    sessionId
+  );
+  if (navigation.errorText) {
+    throw new RenderReceiptError("BROWSER_NAVIGATION_FAILED", navigation.errorText, {
+      url: args.request.url
+    });
+  }
+  await documentReady;
+  return { sessionId, targetId: target.targetId };
+}
+async function waitForReadyExpression(args) {
+  if (!args.expression) {
+    return { satisfied: true, timedOut: false };
+  }
+  const evaluation = await args.client.send(
+    "Runtime.evaluate",
+    {
+      expression: `new Promise((resolve) => {
+        const readyExpression = ${JSON.stringify(args.expression)};
+        const timeoutMs = ${Math.max(0, args.timeoutMs)};
+        const startedAt = performance.now();
+        const evaluateReady = () => {
+          try {
+            return { value: Boolean(Function('"use strict"; return (' + readyExpression + ');')()) };
+          } catch (error) {
+            return { value: false, error: error instanceof Error ? error.message : String(error) };
+          }
+        };
+
+        const tick = () => {
+          const result = evaluateReady();
+          if (result.value) {
+            resolve({ satisfied: true, timedOut: false });
+            return;
+          }
+
+          if (performance.now() - startedAt >= timeoutMs) {
+            resolve({ satisfied: false, timedOut: true, error: result.error });
+            return;
+          }
+
+          window.setTimeout(tick, 25);
+        };
+
+        tick();
+      })`,
+      returnByValue: true,
+      awaitPromise: true
+    },
+    args.sessionId
+  );
+  return evaluation.result?.value ?? { satisfied: false, timedOut: true };
+}
+async function waitForStableGeometry(args) {
+  const evaluation = await args.client.send(
+    "Runtime.evaluate",
+    {
+      expression: createStableGeometryExpression(args.request),
+      returnByValue: true,
+      awaitPromise: true
+    },
+    args.sessionId
+  );
+  return evaluation.result?.value ?? {
+    stable: false,
+    stableFrames: 0,
+    requiredFrames: args.request.stableGeometryFrames,
+    framesObserved: 0,
+    timedOut: true,
+    timeoutMs: args.request.timeoutMs
+  };
+}
+async function collectObservedState(args) {
+  const evaluation = await args.client.send(
+    "Runtime.evaluate",
+    {
+      expression: createObservedStateExpression(args.request.selectors),
+      returnByValue: true,
+      awaitPromise: true
+    },
+    args.sessionId
+  );
+  const observed = evaluation.result?.value;
+  if (!observed) {
+    throw new RenderReceiptError(
+      "BROWSER_RECEIPT_FAILED",
+      "Browser probing did not return rendered page state."
+    );
+  }
+  return {
+    ...observed,
+    stability: args.stability
+  };
+}
+function createStableGeometryExpression(request) {
+  return `new Promise((resolve) => {
+    const selectors = ${JSON.stringify(request.selectors)};
+    const markerSelectors = ${JSON.stringify(RMG_MARKER_SELECTORS)};
+    const requiredFrames = ${Math.max(1, request.stableGeometryFrames)};
+    const timeoutMs = ${Math.max(1, request.timeoutMs)};
+    const startedAt = performance.now();
+    let lastSignature = "";
+    let stableFrames = 0;
+    let framesObserved = 0;
+
+    ${browserDomSummaryHelpers()}
+
+    function collectSignature() {
+      return JSON.stringify({
+        url: location.href,
+        readyState: document.readyState,
+        viewport: readViewportMetrics(),
+        selectors: selectors.map((selector) => summarizeSelector(selector)),
+        rmgMarkerCounts: summarizeMarkerCounts(markerSelectors),
+        documentSize: {
+          width: document.documentElement.scrollWidth,
+          height: document.documentElement.scrollHeight
+        }
+      });
+    }
+
+    function tick() {
+      const signature = collectSignature();
+      framesObserved += 1;
+
+      if (document.readyState !== "loading" && signature === lastSignature) {
+        stableFrames += 1;
+      } else {
+        stableFrames = 0;
+        lastSignature = signature;
+      }
+
+      if (stableFrames >= requiredFrames) {
+        resolve({
+          stable: true,
+          stableFrames,
+          requiredFrames,
+          framesObserved,
+          timedOut: false,
+          timeoutMs
+        });
+        return;
+      }
+
+      if (performance.now() - startedAt >= timeoutMs) {
+        resolve({
+          stable: false,
+          stableFrames,
+          requiredFrames,
+          framesObserved,
+          timedOut: true,
+          timeoutMs
+        });
+        return;
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+  })`;
+}
+function createObservedStateExpression(selectors) {
+  return `(() => {
+    const selectors = ${JSON.stringify(selectors)};
+    const markerSelectors = ${JSON.stringify(RMG_MARKER_SELECTORS)};
+
+    ${browserDomSummaryHelpers()}
+
+    const selectorSummaries = {};
+    for (const selector of selectors) {
+      selectorSummaries[selector] = summarizeSelector(selector);
+    }
+
+    return {
+      finalUrl: location.href,
+      title: document.title,
+      readyState: document.readyState,
+      viewport: readViewportMetrics(),
+      selectorSummaries,
+      rmgMarkerCounts: summarizeMarkerCounts(markerSelectors)
+    };
+  })()`;
+}
+function browserDomSummaryHelpers() {
+  return `
+    function round(value) {
+      return Math.round(Number(value || 0) * 100) / 100;
+    }
+
+    function hashString(value) {
+      let hash = 2166136261;
+      for (let index = 0; index < value.length; index += 1) {
+        hash ^= value.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+      }
+      return (hash >>> 0).toString(16).padStart(8, "0");
+    }
+
+    function readViewportMetrics() {
+      return {
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        documentElementClientWidth: document.documentElement.clientWidth,
+        documentElementClientHeight: document.documentElement.clientHeight,
+        visualViewportWidth: window.visualViewport ? window.visualViewport.width : null,
+        visualViewportHeight: window.visualViewport ? window.visualViewport.height : null,
+        devicePixelRatio: window.devicePixelRatio
+      };
+    }
+
+    function summarizeDataAttributes(elements) {
+      const valuesByName = new Map();
+      for (const element of elements) {
+        for (const attr of Array.from(element.attributes || [])) {
+          if (!/^data-(rmg|skeleton)/.test(attr.name)) continue;
+          const values = valuesByName.get(attr.name) || [];
+          values.push(String(attr.value || ""));
+          valuesByName.set(attr.name, values);
+        }
+      }
+
+      const out = {};
+      for (const [name, values] of valuesByName.entries()) {
+        const uniqueValues = Array.from(new Set(values)).sort();
+        out[name] = {
+          count: values.length,
+          valueCount: uniqueValues.length,
+          valuesHash: uniqueValues.length > 0 ? hashString(uniqueValues.join("\\u001f")) : null
+        };
+      }
+      return out;
+    }
+
+    function summarizeSelector(selector) {
+      let elements = [];
+      try {
+        elements = Array.from(document.querySelectorAll(selector));
+      } catch {
+        elements = [];
+      }
+
+      const rects = [];
+      let visibleCount = 0;
+      for (const element of elements) {
+        const rect = element.getBoundingClientRect();
+        const visible = rect.width > 0 && rect.height > 0;
+        if (visible) {
+          visibleCount += 1;
+          if (rects.length < 20) {
+            rects.push({
+              top: round(rect.top),
+              left: round(rect.left),
+              width: round(rect.width),
+              height: round(rect.height)
+            });
+          }
+        }
+      }
+
+      return {
+        selector,
+        count: elements.length,
+        visibleCount,
+        rects,
+        dataAttributes: summarizeDataAttributes(elements)
+      };
+    }
+
+    function summarizeMarkerCounts(markerSelectors) {
+      const out = {};
+      for (const [name, selector] of Object.entries(markerSelectors)) {
+        try {
+          out[name] = document.querySelectorAll(selector).length;
+        } catch {
+          out[name] = 0;
+        }
+      }
+      return out;
+    }
+  `;
+}
+async function launchChrome(chromePath) {
+  const userDataDir = await mkdtemp(join(tmpdir(), "rmg-mcp-render-"));
+  const args = [
+    "--headless=new",
+    "--disable-gpu",
+    "--no-sandbox",
+    "--disable-background-timer-throttling",
+    "--disable-backgrounding-occluded-windows",
+    "--disable-renderer-backgrounding",
+    "--disable-features=CalculateNativeWinOcclusion,PaintHolding",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--remote-debugging-port=0",
+    `--user-data-dir=${userDataDir}`,
+    "about:blank"
+  ];
+  const child = spawn(chromePath, args, {
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  try {
+    const wsUrl = await withTimeout(
+      new Promise((resolve, reject) => {
+        let launchOutput = "";
+        const onData = (chunk) => {
+          const value = chunk.toString("utf8");
+          launchOutput = `${launchOutput}${value}`.slice(-4e3);
+          const match = value.match(/DevTools listening on (ws:\/\/[^\s]+)/);
+          if (match?.[1]) {
+            cleanup();
+            resolve(match[1]);
+          }
+        };
+        const onError = (error) => {
+          cleanup();
+          reject(error);
+        };
+        const onExit = (code, signal) => {
+          cleanup();
+          reject(
+            new RenderReceiptError(
+              "BROWSER_LAUNCH_FAILED",
+              "Chrome exited before exposing a DevTools websocket endpoint.",
+              { code, signal, output: launchOutput.trim() || void 0, userDataDir }
+            )
+          );
+        };
+        const cleanup = () => {
+          child.stdout.off("data", onData);
+          child.stderr.off("data", onData);
+          child.off("error", onError);
+          child.off("exit", onExit);
+        };
+        child.stdout.on("data", onData);
+        child.stderr.on("data", onData);
+        child.once("error", onError);
+        child.once("exit", onExit);
+      }),
+      DEFAULT_TIMEOUT_MS,
+      () => new RenderReceiptError(
+        "BROWSER_LAUNCH_TIMEOUT",
+        "Timed out waiting for Chrome to expose a DevTools websocket endpoint.",
+        { chromePath, userDataDir }
+      )
+    );
+    return { child, userDataDir, wsUrl };
+  } catch (error) {
+    await stopChrome({ child, userDataDir, wsUrl: "" }).catch(() => void 0);
+    throw error;
+  }
+}
+async function stopChrome(launched) {
+  const isExited = () => launched.child.exitCode != null || launched.child.signalCode != null;
+  if (!isExited()) {
+    launched.child.kill("SIGTERM");
+    const exited = await Promise.race([
+      new Promise((resolve) => launched.child.once("exit", () => resolve(true))),
+      wait(500).then(() => false)
+    ]);
+    if (!exited && !isExited()) {
+      launched.child.kill("SIGKILL");
+      await Promise.race([
+        new Promise((resolve) => launched.child.once("exit", () => resolve())),
+        wait(500)
+      ]);
+    }
+  }
+  await rm(launched.userDataDir, { recursive: true, force: true }).catch(() => void 0);
+}
+function withTimeout(promise, timeoutMs, createError) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(createError()), Math.max(1, timeoutMs));
+    promise.then(
+      (value) => {
+        clearTimeout(timeout);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      }
+    );
+  });
+}
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, Math.max(0, ms));
+  });
+}
+function canonicalizeUrl(value) {
+  try {
+    return new URL(value).href;
+  } catch {
+    return value.trim();
+  }
+}
+function positiveInteger(value, name) {
+  if (!Number.isFinite(value) || value < 1) {
+    throw new RenderReceiptError("INVALID_RENDER_RECEIPT_INPUT", `${name} must be a positive integer.`, {
+      [name]: value
+    });
+  }
+  return Math.trunc(value);
+}
+function positiveNumber(value, name) {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new RenderReceiptError("INVALID_RENDER_RECEIPT_INPUT", `${name} must be a positive number.`, {
+      [name]: value
+    });
+  }
+  return value;
+}
+function nonNegativeNumber(value, name) {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new RenderReceiptError("INVALID_RENDER_RECEIPT_INPUT", `${name} must be a non-negative number.`, {
+      [name]: value
+    });
+  }
+  return value;
+}
+function cleanOptionalString(value) {
+  return value && value.trim() ? value.trim() : void 0;
+}
+function uniqueStrings(values) {
+  return Array.from(
+    new Set(values.map((value) => value?.trim()).filter((value) => Boolean(value)))
+  );
+}
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+function stableJson(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map((entry) => stableJson(entry)).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, entryValue]) => `${JSON.stringify(key)}:${stableJson(entryValue)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
 // src/skeleton.ts
 import fs5 from "fs";
 import path7 from "path";
@@ -1562,13 +2499,17 @@ var skeletonEntriesSchema = z.object({
   readyValue: z.string().optional(),
   timeoutMs: z.number().min(0).optional()
 });
-function createRmgMcpServer() {
+function createRmgMcpServer(options = {}) {
   const server2 = new McpServer({
     name: "react-motion-gallery-mcp",
     version: "0.1.0"
   });
   registerResources(server2);
-  registerTools(server2);
+  registerTools(server2, {
+    now: options.now ?? Date.now,
+    probeRenderContext: options.probeRenderContext ?? probeRenderContext,
+    renderReceiptStore: options.renderReceiptStore ?? new RenderReceiptStore()
+  });
   registerPrompts(server2);
   return server2;
 }
@@ -1672,7 +2613,7 @@ function registerResources(server2) {
           "",
           "Use flat `targets` for ordinary DOM text. Add `slider`, `masonry`, or `entries` manifest metadata only when those specialized layouts need readiness or compensation behavior.",
           "",
-          "Use `scaffold_skeleton_text` to create a manifest, then run:",
+          "Dry-run `scaffold_skeleton_text` to get the exact `probe_render_context` call. Apply the manifest only after passing the returned `receiptId` as `renderReceiptId`, then run:",
           "",
           "```bash",
           "npm run --silent generate:skeleton-text-module -- --input ./path/to/example.skeleton-text.browser.manifest.json --analysis-output ./path/to/example.measurements.json",
@@ -1749,7 +2690,7 @@ function registerResources(server2) {
     }
   );
 }
-function registerTools(server2) {
+function registerTools(server2, options) {
   server2.tool(
     "search_demos",
     "Filter React Motion Gallery demos by category, tags, component, media kind, or query.",
@@ -1791,6 +2732,35 @@ function registerTools(server2) {
       limit: z.number().int().min(1).max(10).optional()
     },
     async (args) => jsonContent(recommendPattern(args))
+  );
+  server2.tool(
+    "probe_render_context",
+    "Launch a fresh headless Chrome tab and return a stable render receipt for a live page URL, viewport, selectors, and rendered state.",
+    {
+      url: z.string(),
+      viewport: z.object({
+        width: z.number().int().min(1),
+        height: z.number().int().min(1),
+        deviceScaleFactor: z.number().min(0).optional(),
+        mobile: z.boolean().optional()
+      }),
+      selectors: z.array(z.string()).optional(),
+      readyExpression: z.string().optional(),
+      settleMs: z.number().min(0).optional(),
+      stableGeometryFrames: z.number().int().min(1).optional(),
+      timeoutMs: z.number().int().min(1).optional(),
+      ttlMs: z.number().int().min(1).optional(),
+      chromePath: z.string().optional()
+    },
+    async (args) => {
+      try {
+        const receipt = await options.probeRenderContext(args);
+        options.renderReceiptStore.put(receipt);
+        return jsonContent(receipt);
+      } catch (error) {
+        return jsonErrorContent(renderReceiptErrorPayload(error));
+      }
+    }
   );
   server2.tool(
     "classify_gallery_workflow",
@@ -1891,9 +2861,38 @@ function registerTools(server2) {
       slider: skeletonSliderSchema.optional(),
       masonry: skeletonMasonrySchema.optional(),
       entries: skeletonEntriesSchema.optional(),
+      renderReceiptId: z.string().optional(),
       apply: z.boolean().optional()
     },
-    async (args) => jsonContent(scaffoldSkeletonText(args))
+    async (args) => {
+      const required = buildSkeletonRenderReceiptRequirement(args);
+      const receiptValidation = options.renderReceiptStore.validate({
+        receiptId: args.renderReceiptId,
+        required,
+        now: options.now()
+      });
+      const suggestedProbeRenderContextCall = {
+        name: "probe_render_context",
+        arguments: buildSkeletonRenderProbeRequest(args)
+      };
+      if (args.apply && receiptValidation.status !== "valid") {
+        return jsonErrorContent(
+          renderReceiptErrorPayload(buildRenderReceiptValidationError(receiptValidation))
+        );
+      }
+      const result = scaffoldSkeletonText(args);
+      return jsonContent({
+        ...result,
+        renderReceiptId: args.renderReceiptId ?? null,
+        receiptStatus: receiptValidation.status,
+        receiptIssues: receiptValidation.issues,
+        ...receiptValidation.status === "valid" ? {
+          renderStateHash: receiptValidation.receipt.stateHash
+        } : {
+          suggestedProbeRenderContextCall
+        }
+      });
+    }
   );
 }
 function registerPrompts(server2) {
@@ -1949,7 +2948,7 @@ function registerPrompts(server2) {
       `Live page URL: ${livePageUrl}`,
       `Framework: ${framework ?? "unknown"}`,
       "",
-      "Inspect real rendered text, add stable selectors, scaffold or update a browser manifest, run generate:skeleton-text-module with --analysis-output, import the generated sidecar values, and wire them into skeleton text nodes. Use flat targets by default; add slider, masonry, or entries manifest metadata only when that layout needs it."
+      "Inspect real rendered text, add stable selectors, dry-run scaffold_skeleton_text for the suggested probe_render_context call, probe the live page, apply the scaffold with renderReceiptId, run generate:skeleton-text-module with --analysis-output, import the generated sidecar values, and wire them into skeleton text nodes. Use flat targets by default; add slider, masonry, or entries manifest metadata only when that layout needs it."
     ])
   );
   server2.prompt(
@@ -1966,7 +2965,7 @@ function registerPrompts(server2) {
       `Desired loading experience: ${desiredLoadingExperience}`,
       `Framework: ${framework ?? "unknown"}`,
       "",
-      "Preserve existing layout behavior. Choose non-text, hand-authored text, or browser-measured text fidelity based on the request. If browser-measured text is needed, add selectors, create/update the manifest, run the generator with --analysis-output, and import the generated sidecar values."
+      "Preserve existing layout behavior. Choose non-text, hand-authored text, or browser-measured text fidelity based on the request. If browser-measured text is needed, add selectors, dry-run scaffold_skeleton_text for the suggested probe_render_context call, apply with renderReceiptId, run the generator with --analysis-output, and import the generated sidecar values."
     ])
   );
   server2.prompt(

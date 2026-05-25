@@ -30,7 +30,7 @@ Skip: generated sidecar
 ```text
 User goal: "Build a masonry layout where skeleton text matches real responsive copy."
 Workflow: layoutWithBrowserMeasuredTextSkeleton
-Use: stable selectors -> scaffold_skeleton_text -> generate:skeleton-text-module --analysis-output -> import sidecar
+Use: stable selectors -> probe_render_context -> scaffold_skeleton_text with renderReceiptId -> generate:skeleton-text-module --analysis-output -> import sidecar
 ```
 
 ## Runtime scope
@@ -51,6 +51,8 @@ The browser analyzer:
 4. optionally measures the text metrics needed for skeleton bar height and line box height
 5. records breakpoints according to the chosen strategy
 6. emits plain JS/TS object literals for skeleton authoring
+
+When using the MCP server to scaffold browser-measured skeleton text, start with a dry run of `scaffold_skeleton_text`. The dry run returns the exact `probe_render_context` call for the live URL, viewport, and selectors. Pass the probe's `receiptId` as `renderReceiptId` when applying the scaffold so agents do not trust stale page context.
 
 ## Browser manifest
 
