@@ -280,11 +280,14 @@ function splitMasonryItemWrapStyles(itemWrapStyle: MasonrySkeletonWrapStyle | un
   const outerStyle: React.CSSProperties = {};
 
   if (innerStyle.boxShadow != null) {
+    outerStyle.boxShadow = innerStyle.boxShadow;
     (outerStyle as any)["--rmg-masonry-skel-wrap-shadow"] = innerStyle.boxShadow;
+    (outerStyle as any)["--rmg-masonry-skel-wrap-shadow-opacity"] = 0;
     delete innerStyle.boxShadow;
   }
 
   if (innerStyle.borderRadius != null) {
+    outerStyle.borderRadius = innerStyle.borderRadius;
     (outerStyle as any)["--rmg-masonry-skel-wrap-shadow-radius"] = innerStyle.borderRadius;
   }
 

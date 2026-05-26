@@ -7,7 +7,6 @@ import { BREAKPOINT_MAP } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import type { BreakpointMap } from "../shared/responsive";
 import type { GridHandle, GridOptions, RevealOptions } from "./types";
-import { useOptionalGalleryCore } from "../core";
 import { GridItem, normalizeGridChild, type GridCell } from "./item";
 
 type Props = GridOptions & {
@@ -29,12 +28,11 @@ export const GridLayoutRuntime = React.forwardRef<GridHandle, Props>(function Gr
 ) {
   const { children, breakpoints, gridItemBaseClass, renderMode, ...gridOptions } = props;
 
-  const core = useOptionalGalleryCore();
   const vw = useViewportWidth();
 
   const effectiveBreakpoints = React.useMemo(
-    () => core?.effectiveBreakpoints ?? ({ ...BREAKPOINT_MAP, ...(breakpoints || {}) }),
-    [core?.effectiveBreakpoints, breakpoints]
+    () => ({ ...BREAKPOINT_MAP, ...(breakpoints || {}) }),
+    [breakpoints]
   );
 
   const gridObject: GridOptions = React.useMemo(() => ({ ...gridOptions }), [gridOptions]);
@@ -77,58 +75,6 @@ export const GridLayoutRuntime = React.forwardRef<GridHandle, Props>(function Gr
     [gridObject.reveal]
   );
 
-  const expandableImageRefs =
-    core?.expandableImageRefs ??
-    (React.useRef<Array<HTMLImageElement | null>>([]) as React.RefObject<
-      Array<HTMLImageElement | null>
-    >);
-
-  const registerExpandableImage =
-    core?.registerExpandableImage ??
-    React.useCallback((index: number, node: HTMLElement | null) => {
-      if (!node) {
-        expandableImageRefs.current[index] = null;
-        return;
-      }
-
-      if (node.tagName === "IMG") {
-        expandableImageRefs.current[index] = node as HTMLImageElement;
-        return;
-      }
-
-      const img = node.querySelector("img") as HTMLImageElement | null;
-      expandableImageRefs.current[index] = img;
-    }, []);
-
-  const getOriginImage = (el: HTMLElement | null): HTMLImageElement | null => {
-    if (!el) return null;
-    if (el instanceof HTMLImageElement) return el;
-
-    const img = el.querySelector("img") as HTMLImageElement | null;
-    return img;
-  };
-
-  const onOpen = React.useCallback(
-    (gridIndex: number, originEl?: HTMLElement | null) => {
-      if (!core?.requestFullscreenOpen) return;
-
-      const img =
-        getOriginImage(originEl ?? null) ??
-        (expandableImageRefs.current[gridIndex] as HTMLImageElement | null) ??
-        null;
-
-      if (!img) return;
-
-      core.requestFullscreenOpen({
-        source: "grid",
-        index: gridIndex,
-        image: img,
-        event: undefined,
-      });
-    },
-    [core, expandableImageRefs]
-  );
-
   return (
     <GridLayout
       ref={forwardedRef}
@@ -137,9 +83,6 @@ export const GridLayoutRuntime = React.forwardRef<GridHandle, Props>(function Gr
       breakpoints={effectiveBreakpoints}
       viewportWidth={vw}
       reveal={gridReveal}
-      enableFullscreen={!!core?.fsEnabled}
-      onOpen={onOpen}
-      registerExpandableImage={registerExpandableImage}
       gridItemBaseClass={gridItemBaseClass}
       renderMode={renderMode}
     />

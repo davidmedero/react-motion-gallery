@@ -3,10 +3,17 @@
 import * as React from "react";
 import { LazyItemHost } from "../../shared/lazy/LazyItemHost";
 import type { GalleryLazyLoadOptions } from "../../shared/types/lazy";
-import type { MasonryPluginItemRenderArgs } from "../types";
-import { createMasonryPlugin } from "./create";
+import type {
+  MasonryPlugin,
+  MasonryPluginItemRenderArgs,
+} from "../types";
+import type {
+  MasonryPlugin as LightMasonryPlugin,
+  MasonryPluginItemRenderArgs as LightMasonryPluginItemRenderArgs,
+} from "../light/types";
 
 export type MasonryLazyLoadOptions = GalleryLazyLoadOptions;
+export type MasonryLazyLoadPlugin = MasonryPlugin & LightMasonryPlugin;
 
 function normalizeMasonryLazyLoadOptions(options: MasonryLazyLoadOptions) {
   return {
@@ -16,7 +23,7 @@ function normalizeMasonryLazyLoadOptions(options: MasonryLazyLoadOptions) {
 }
 
 function renderLazyMasonryItem(
-  args: MasonryPluginItemRenderArgs,
+  args: MasonryPluginItemRenderArgs | LightMasonryPluginItemRenderArgs,
   options?: unknown
 ) {
   const lazyLoad = normalizeMasonryLazyLoadOptions(
@@ -36,12 +43,17 @@ function renderLazyMasonryItem(
   );
 }
 
-export function masonryLazyLoad(options: MasonryLazyLoadOptions = {}) {
+export function masonryLazyLoad(
+  options: MasonryLazyLoadOptions = {}
+): MasonryLazyLoadPlugin {
   const enabled = options.enabled !== false;
 
-  return createMasonryPlugin("lazy-load", {
+  return {
+    __rmgMasonryPlugin: true,
+    __rmgLightMasonryPlugin: true,
+    kind: "lazy-load",
     options,
     blocksReady: enabled,
     renderItem: enabled ? renderLazyMasonryItem : undefined,
-  });
+  };
 }

@@ -3,8 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import Grid from "./index";
-import { Skeleton } from "../skeleton";
-import type { GridSkeletonSpec } from "../skeleton";
+import { GridSkeleton as Skeleton } from "../skeleton/grid";
+import type { GridSkeletonSpec } from "../skeleton/grid";
 
 function FancyCard(props: { label: string }) {
   return <article>{props.label}</article>;

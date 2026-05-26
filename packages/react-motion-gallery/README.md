@@ -11,15 +11,19 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 <!-- bundle-size:start -->
 | Surface | JS gzip |
 | --- | --- |
-| `Entries` | 12.2kB |
-| `entries/cache` | 16.9kB |
+| `Entries` | 12.3kB |
+| `entries/cache` | 17.0kB |
 | `FullscreenThumbnailSlider` | 20.3kB |
 | `GalleryCore` | 2.6kB |
-| `Grid` | 6.4kB |
+| `Grid` | 5.4kB |
 | `grid/ready` | 323.0B |
 | `grid/lazy-load` | 3.3kB |
-| `Masonry` | 7.2kB |
+| `grid/fullscreen` | 1.6kB |
+| `Masonry` | 4.2kB |
 | `masonry/ready` | 323.0B |
+| `masonry/fullscreen` | 1.1kB |
+| `masonry/measured` | 7.2kB |
+| `masonry/measured/ready` | 323.0B |
 | `masonry/lazy-load` | 3.3kB |
 | `Skeleton base` | 8.9kB |
 | `skeleton/cache/base` | 13.6kB |
@@ -28,8 +32,10 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `skeleton/slider/restore` | 25.2kB |
 | `skeleton/grid` | 11.2kB |
 | `skeleton/cache/grid` | 16.0kB |
-| `skeleton/masonry` | 20.1kB |
-| `skeleton/cache/masonry` | 25.3kB |
+| `skeleton/masonry` | 4.4kB |
+| `skeleton/cache/masonry` | 4.4kB |
+| `skeleton/masonry/structured` | 20.2kB |
+| `skeleton/cache/masonry/structured` | 25.3kB |
 | `Slider core` | 19.0kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
@@ -49,11 +55,11 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `fullscreen/controls` | 173.0B |
 | `fullscreen/captions` | 13.2kB |
 | `fullscreen/zoom-pan` | 12.4kB |
-| `fullscreen/video` | 16.4kB |
+| `fullscreen/video` | 16.5kB |
 | `fullscreen/lazy-load` | 13.2kB |
 | `fullscreen/crossfade` | 181.0B |
 | `fullscreen/thumbnails` | 160.0B |
-| `Video` | 12.7kB |
+| `Video` | 12.8kB |
 | `ZoomPanImage` | 11.0kB |
 | `zoomPan/hover` | 124.0B |
 | `media / toMediaItems` | 260.0B |
@@ -171,21 +177,27 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/grid` | `Grid`, `Grid.Item`, grid types |
 | `react-motion-gallery/grid/ready` | `useGridReady` |
 | `react-motion-gallery/grid/lazy-load` | `gridLazyLoad` |
+| `react-motion-gallery/grid/fullscreen` | `gridFullscreen` for Grid + `GalleryCore` |
 | `react-motion-gallery/masonry` | `Masonry`, `Masonry.Item`, masonry types |
 | `react-motion-gallery/masonry/ready` | `useMasonryReady` |
+| `react-motion-gallery/masonry/fullscreen` | `masonryFullscreen` for light Masonry + `GalleryCore` |
+| `react-motion-gallery/masonry/measured` | Measured `Masonry`, `Masonry.Item`, plugins/reveal/fullscreen types |
+| `react-motion-gallery/masonry/measured/ready` | `useMasonryReady` for measured masonry |
 | `react-motion-gallery/masonry/lazy-load` | `masonryLazyLoad` |
 | `react-motion-gallery/entries` | `Entries`, `flattenEntries`, entry media container helpers |
 | `react-motion-gallery/entries/cache` | `CachedEntries` with `entries.loading.cache` |
 | `react-motion-gallery/skeleton/base` | Standalone `Skeleton` and generic skeleton authoring types |
 | `react-motion-gallery/skeleton/slider` | `SliderSkeleton` and slider skeleton authoring types |
 | `react-motion-gallery/skeleton/grid` | `GridSkeleton` and grid skeleton authoring types |
-| `react-motion-gallery/skeleton/masonry` | `MasonrySkeleton` and masonry skeleton authoring types |
+| `react-motion-gallery/skeleton/masonry` | Lightweight `MasonrySkeleton` for dimensioned placeholders |
+| `react-motion-gallery/skeleton/masonry/structured` | Structured `MasonrySkeleton` and masonry skeleton authoring types |
 | `react-motion-gallery/skeleton/cache` | Server-safe skeleton cookie cache helpers and types |
 | `react-motion-gallery/skeleton/cache/provider` | Client `SkeletonCacheProvider` for SSR snapshots and client cookie refresh |
 | `react-motion-gallery/skeleton/cache/base` | `CachedSkeleton` with `cache` |
 | `react-motion-gallery/skeleton/cache/slider` | `CachedSliderSkeleton` with `cache` |
 | `react-motion-gallery/skeleton/cache/grid` | `CachedGridSkeleton` with `cache` |
-| `react-motion-gallery/skeleton/cache/masonry` | `CachedMasonrySkeleton` with `cache` |
+| `react-motion-gallery/skeleton/cache/masonry` | Lightweight `CachedMasonrySkeleton` |
+| `react-motion-gallery/skeleton/cache/masonry/structured` | Structured `CachedMasonrySkeleton` with `cache` |
 | `react-motion-gallery/skeleton/slider/restore` | `RestoredSliderSkeleton` with `restore` and optional `cache` |
 | `react-motion-gallery/fullscreen` | `useFullscreenController` and fullscreen types |
 | `react-motion-gallery/fullscreen/slider` | `fullscreenSlider` |
@@ -555,9 +567,9 @@ Wrap the client tree in `SkeletonCacheProvider`, then opt individual skeletons i
 
 import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
 import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";
-import { CachedMasonrySkeleton as MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry";
-import { Masonry } from "react-motion-gallery/masonry";
-import { useMasonryReady } from "react-motion-gallery/masonry/ready";
+import { CachedMasonrySkeleton as MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
+import { Masonry } from "react-motion-gallery/masonry/measured";
+import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 
 export function GalleryPageClient({
   skeletonCacheSnapshots,
@@ -1315,8 +1327,8 @@ export function BasicGrid() {
 | `gap` | `number \| Record<string, number>` | `8` | Responsive grid gap. |
 | `rootClassName` | `string` | `—` | Class name for the grid root. |
 | `itemClassName` | `string` | `—` | Class name added to each wrapped grid item. |
-| `fullscreenTrigger` | `"item" \| "media"` | `"media"` | Opens fullscreen from the clicked media node or the entire item shell. |
-| `plugins` | `GridPlugin[]` | `[]` | Explicit first-party Grid features such as lazy-load. |
+| `fullscreenTrigger` | `"item" \| "media"` | `"media"` | When `gridFullscreen()` is active, opens fullscreen from the clicked media node or the entire item shell. |
+| `plugins` | `GridPlugin[]` | `[]` | Explicit first-party Grid features such as lazy-load and fullscreen. |
 | `reveal.renderReveal` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom reveal wrapper. |
 | `reveal.staggerMs` | `number` | `60` | Reveal stagger for the fade-in. |
 | `reveal.durationMs` | `number` | `600` | Reveal fade duration. |
@@ -1330,17 +1342,19 @@ Import Grid plugins from their own subpaths and pass them to `plugins`.
 ```typescript
 import { Grid } from "react-motion-gallery/grid";
 import { gridLazyLoad } from "react-motion-gallery/grid/lazy-load";
+import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 
-<Grid plugins={[gridLazyLoad({ spinner: true })]}>{items}</Grid>;
+<Grid plugins={[gridLazyLoad({ spinner: true }), gridFullscreen()]}>{items}</Grid>;
 ```
 
 | Import | Factory | Notes |
 | --- | --- | --- |
 | `react-motion-gallery/grid/lazy-load` | `gridLazyLoad(options)` | Rewrites trackable image `src` values into `data-rmg-lazy-src`, reveals them on viewport intersection, then fades them in after decode and spinner exit. |
+| `react-motion-gallery/grid/fullscreen` | `gridFullscreen()` | Opens `GalleryCore` fullscreen from Grid items without adding fullscreen code to the default grid import. |
 
 `gridLazyLoad()` enables lazy loading by default. Pass `{ enabled: false }` to make the plugin inert.
 
-Grid fullscreen behavior is provided by `GalleryCore` and `useFullscreenController`; Grid itself does not expose a ref-based imperative API.
+Grid fullscreen behavior is provided by `GalleryCore`, `useFullscreenController`, and the opt-in `gridFullscreen()` plugin. Grid itself does not expose a ref-based imperative API.
 
 Wrap a card in `Grid.Item` when it should span tracks or needs wrapper styling:
 
@@ -1434,18 +1448,29 @@ function GridWithSkeleton({ images }: { images: { src: string; alt: string }[] }
 ```typescript
 import { Masonry } from "react-motion-gallery";
 
-const cards = [280, 360, 220, 420, 300, 340];
+const images = [
+  { src: "https://picsum.photos/id/1018/1200/1600", width: 1200, height: 1600 },
+  { src: "https://picsum.photos/id/1025/1200/900", width: 1200, height: 900 },
+  { src: "https://picsum.photos/id/1036/1200/1500", width: 1200, height: 1500, span: { 0: 1, 1100: 2 } },
+  { src: "https://picsum.photos/id/1041/1200/800", width: 1200, height: 800 },
+];
 
 export function BasicMasonry() {
   return (
     <Masonry columns={{ 0: 1, 700: 2, 1100: 3 }} gap={{ 0: 12, 1100: 20 }}>
-      {cards.map((height, index) => (
-        <img
-          key={index}
-          src={`https://picsum.photos/seed/masonry-${index}/1000/${height * 3}`}
-          alt={`Masonry item ${index + 1}`}
-          style={{ width: "100%", height, objectFit: "cover", borderRadius: 12 }}
-        />
+      {images.map((image, index) => (
+        <Masonry.Item
+          key={image.src}
+          width={image.width}
+          height={image.height}
+          span={image.span}
+        >
+          <img
+            src={image.src}
+            alt={`Masonry item ${index + 1}`}
+            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }}
+          />
+        </Masonry.Item>
       ))}
     </Masonry>
   );
@@ -1456,7 +1481,7 @@ export function BasicMasonry() {
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `children` | `React.ReactNode` | `—` | Masonry items rendered in order. Wrap individual cards in `Masonry.Item` when they need custom spans or wrapper props. |
+| `children` | `React.ReactNode` | `—` | Dimensioned masonry items. Each item should be wrapped in `Masonry.Item`. |
 | `breakpoints` | `Record<string, number>` | `xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536` | Used to resolve responsive columns and gaps. |
 
 ### Masonry.Item props
@@ -1464,6 +1489,8 @@ export function BasicMasonry() {
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `children` | `React.ReactNode` | `—` | The masonry card content. |
+| `width` | `number` | `—` | Intrinsic item width used for aspect-ratio layout. |
+| `height` | `number` | `—` | Intrinsic item height used for aspect-ratio layout. |
 | `span` | `number \| "full" \| Record<string, number \| "full">` | `1` | Per-item track span. `"full"` resolves to the active column count and numeric values clamp to the current track count. |
 | `className` | `string` | `—` | Extra class name merged onto the masonry item wrapper. |
 | `style` | `React.CSSProperties` | `—` | Inline styles merged onto the masonry item wrapper. |
@@ -1475,41 +1502,41 @@ export function BasicMasonry() {
 | `columns` | `number \| Record<string, number>` | `—` | Responsive column count. |
 | `gap` | `number \| Record<string, number>` | `—` | Responsive gap between columns and items. |
 | `placement` | `"balanced" \| "roundRobin" \| "horizontalOrder"` | `"balanced"` | `balanced` packs into the shortest fitting column group, `roundRobin` cycles start columns deterministically, and `horizontalOrder` preserves a stronger left-to-right scan when spans are involved. |
-| `fullscreenTrigger` | `"item" \| "media"` | `"media"` | Opens fullscreen from the clicked media node or the entire masonry item shell. |
-| `itemWrapClassName` | `string` | `—` | Class name added to the masonry item wrapper. |
-| `itemWrapStyle` | `React.CSSProperties` | `—` | Inline styles applied to the masonry item wrapper. |
 | `as` | `React.ElementType` | `"div"` | Root HTML element or custom component. |
 | `rootRef` | `React.Ref<HTMLDivElement>` | `—` | Ref to the masonry root. |
 | `classNames.root` | `string` | `—` | Root class name. |
-| `classNames.column` | `string` | `—` | Retained for backwards compatibility with the legacy column-wrapper renderer. |
 | `classNames.item` | `string` | `—` | Item class name. |
-| `plugins` | `MasonryPlugin[]` | `[]` | Explicit first-party Masonry features such as lazy-load. |
-| `reveal.renderReveal` | `({ active, containerProps }, content) => ReactNode` | `—` | Custom reveal wrapper. |
+| `plugins` | `MasonryPlugin[]` | `[]` | Opt-in light Masonry plugins, currently `masonryFullscreen()` from `react-motion-gallery/masonry/fullscreen`. |
 | `reveal.staggerMs` | `number` | `160` | Reveal stagger for the fade-in. |
 | `reveal.durationMs` | `number` | `600` | Reveal fade duration. |
 | `reveal.easing` | `string` | `"cubic-bezier(.2,.7,.2,1)"` | Reveal fade easing. |
-| `reveal.staggerLimit` | `number` | `—` | Optional cap on how many items stagger. |
+| `reveal.disabled` | `boolean` | `false` | Disables the built-in reveal classes. |
+| `revealReady` | `boolean` | `true` | Holds the reveal until external loading or viewport orchestration is ready. |
 
 ### Masonry plugins
 
-Import Masonry plugins from their own subpaths and pass them to `plugins`.
+Import Masonry plugins from their own subpaths and pass them to `plugins`. The default dimensioned core supports the fullscreen bridge through an opt-in subpath.
 
 ```typescript
+import { GalleryCore } from "react-motion-gallery/core";
 import { Masonry } from "react-motion-gallery/masonry";
-import { masonryLazyLoad } from "react-motion-gallery/masonry/lazy-load";
+import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 
-<Masonry plugins={[masonryLazyLoad({ spinner: true })]}>{items}</Masonry>;
+<GalleryCore layout="masonry" fullscreenItems={items}>
+  <Masonry plugins={[masonryFullscreen()]}>{children}</Masonry>
+</GalleryCore>;
 ```
 
 | Import | Factory | Notes |
 | --- | --- | --- |
+| `react-motion-gallery/masonry/fullscreen` | `masonryFullscreen()` | Opens `GalleryCore` fullscreen from light dimensioned Masonry items without adding fullscreen code to the default masonry import. |
 | `react-motion-gallery/masonry/lazy-load` | `masonryLazyLoad(options)` | Uses the same image shell behavior as Slider: trackable image `src` values move into `data-rmg-lazy-src`, real images load on intersection, and items fade in after decode and spinner exit. |
 
-`masonryLazyLoad()` enables lazy loading by default. Pass `{ enabled: false }` to make the plugin inert.
+`masonryLazyLoad()` is for measured Masonry and enables lazy loading by default. Pass `{ enabled: false }` to make the plugin inert.
 
-Masonry already accepts arbitrary React children, including text-containing JSX. The wrapper props are only for styling the built-in masonry item shell.
+Measured Masonry accepts arbitrary React children, including text-containing JSX. The wrapper props are only for styling the built-in masonry item shell.
 
-Wrap a card in `Masonry.Item` when it needs its own span, wrapper `className`, or wrapper `style`:
+In the measured subpath, wrap a card in `Masonry.Item` when it needs its own span, wrapper `className`, or wrapper `style`:
 
 ```typescript
 <Masonry
@@ -1534,18 +1561,23 @@ Choose a placement based on what should feel stable:
 
 Masonry no longer owns loading UI. Use `useMasonryReady` and wrap Masonry with `MasonrySkeleton`, the same composition pattern used by Slider and Grid.
 
-Masonry skeletons live in `react-motion-gallery/skeleton/masonry` and can use a structured `layout` spec with the same inner node vocabulary as Grid skeletons, including `text` nodes and `itemWrapStyle`.
+The default Masonry import is dimensioned and lightweight, with built-in reveal timing and opt-in fullscreen through `react-motion-gallery/masonry/fullscreen`. For arbitrary measured card heights, measured lazy-load plugins, and structured skeleton text, import from `react-motion-gallery/masonry/measured` and `react-motion-gallery/skeleton/masonry/structured`.
+
+Lightweight Masonry skeletons live in `react-motion-gallery/skeleton/masonry` and mirror dimensioned `Masonry.Item` data with `items`, `ratios`, or `heightsPx`.
+
+Structured Masonry skeletons live in `react-motion-gallery/skeleton/masonry/structured` and can use a `layout` spec with the same inner node vocabulary as Grid skeletons, including `text` nodes and `itemWrapStyle`.
 
 Live Masonry content mounts invisibly until the current item set has completed an initial measurement pass. The Skeleton wrapper stays visible during that handoff, so the first revealed layout is based on measured DOM geometry rather than approximate height hints.
 
 `layout.slots` gives Masonry the same per-card override escape hatch that slider skeletons have. Use a slot when one card needs a different placeholder tree, wrapper styling, span, or outer height. `slot.span` can override the corresponding `Masonry.Item` span for the placeholder, `slot.ratio` maps to Masonry's card-height rhythm, and `slot.heightPx` lets you pin a specific shell height when you need an exact placeholder.
 
 ```typescript
-import { Masonry, useMasonryReady } from "react-motion-gallery";
+import { Masonry } from "react-motion-gallery/masonry/measured";
+import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 import {
   MasonrySkeleton,
   type MasonrySkeletonSpec,
-} from "react-motion-gallery/skeleton/masonry";
+} from "react-motion-gallery/skeleton/masonry/structured";
 
 const masonrySkeleton: MasonrySkeletonSpec = {
   ratios: [118, 126, 102, 146],

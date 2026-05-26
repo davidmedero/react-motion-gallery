@@ -1,0 +1,1 @@
+function n(i,r={}){return {__rmgGridPlugin:true,kind:i,...r}}export{n as a};

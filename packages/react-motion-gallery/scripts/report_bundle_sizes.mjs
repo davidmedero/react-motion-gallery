@@ -38,11 +38,31 @@ const REPORTED_SURFACES = [
     exportName: "gridLazyLoad",
     entry: "dist/grid-lazy-load.mjs",
   },
+  {
+    label: "grid/fullscreen",
+    exportName: "gridFullscreen",
+    entry: "dist/grid-fullscreen.mjs",
+  },
   { label: "Masonry", exportName: "Masonry", entry: "dist/masonry.mjs" },
   {
     label: "masonry/ready",
     exportName: "useMasonryReady",
     entry: "dist/masonry-ready.mjs",
+  },
+  {
+    label: "masonry/fullscreen",
+    exportName: "masonryFullscreen",
+    entry: "dist/masonry-fullscreen.mjs",
+  },
+  {
+    label: "masonry/measured",
+    exportName: "Masonry",
+    entry: "dist/masonry-measured.mjs",
+  },
+  {
+    label: "masonry/measured/ready",
+    exportName: "useMasonryReady",
+    entry: "dist/masonry-measured-ready.mjs",
   },
   {
     label: "masonry/lazy-load",
@@ -93,6 +113,16 @@ const REPORTED_SURFACES = [
     label: "skeleton/cache/masonry",
     exportName: "CachedMasonrySkeleton",
     entry: "dist/skeleton-cache-masonry.mjs",
+  },
+  {
+    label: "skeleton/masonry/structured",
+    exportName: "MasonrySkeleton",
+    entry: "dist/skeleton-masonry-structured.mjs",
+  },
+  {
+    label: "skeleton/cache/masonry/structured",
+    exportName: "CachedMasonrySkeleton",
+    entry: "dist/skeleton-cache-masonry-structured.mjs",
   },
   {
     label: "Slider core",

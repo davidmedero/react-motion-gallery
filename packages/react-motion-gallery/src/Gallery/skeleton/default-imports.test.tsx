@@ -69,13 +69,7 @@ describe("default skeleton import surface", () => {
     const masonry = renderToStaticMarkup(
       <MasonrySkeleton
         {...({ cache: ignoredCache } as any)}
-        layout={{
-          kind: "masonry",
-          item: {
-            kind: "rect",
-            style: { width: "100%", height: 160 },
-          },
-        }}
+        items={[{ width: 100, height: 160 }]}
       />
     );
 

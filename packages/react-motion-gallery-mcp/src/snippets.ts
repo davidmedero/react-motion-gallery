@@ -23,13 +23,13 @@ const internalTypeImportReplacements: Array<{
     pattern:
       /import type \{[\s\S]*?\} from ["'][^"']*packages\/react-motion-gallery\/src\/Gallery\/masonry\/MasonrySkeleton["'];?/g,
     replacement:
-      'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry";',
+      'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry/structured";',
   },
   {
     pattern:
       /import \{[\s\S]*?\} from ["'][^"']*packages\/react-motion-gallery\/src\/Gallery\/masonry\/MasonrySkeleton["'];?/g,
     replacement:
-      'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry";',
+      'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry/structured";',
   },
   {
     pattern:
@@ -47,7 +47,7 @@ const internalTypeImportReplacements: Array<{
     pattern:
       /import type \{[\s\S]*?MasonrySkeletonSpec[\s\S]*?\} from ["'][^"']*packages\/react-motion-gallery\/src\/skeleton["'];?/g,
     replacement:
-      'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry";',
+      'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry/structured";',
   },
   {
     pattern:
@@ -65,6 +65,7 @@ const publicImportByExport = new Map<string, string>([
   ["createSliderIndexChannel", "react-motion-gallery/slider"],
   ["Grid", "react-motion-gallery/grid"],
   ["Masonry", "react-motion-gallery/masonry"],
+  ["masonryFullscreen", "react-motion-gallery/masonry/fullscreen"],
   ["Entries", "react-motion-gallery/entries"],
   ["flattenEntries", "react-motion-gallery/entries"],
   ["useFullscreenController", "react-motion-gallery/fullscreen"],
@@ -152,6 +153,7 @@ function publicPathForLocalSourceEntry(entry: string) {
 
   if (entry === "grid-ready") return "react-motion-gallery/grid/ready";
   if (entry === "masonry-ready") return "react-motion-gallery/masonry/ready";
+  if (entry === "masonry-fullscreen") return "react-motion-gallery/masonry/fullscreen";
 
   return `react-motion-gallery/${entry}`;
 }
@@ -188,7 +190,7 @@ export function inferPrimaryDemoForPrompt(goal: string) {
 
   if (text.includes("zoom") || text.includes("pan")) return "zoom-pan-standalone";
   if (text.includes("entry") || text.includes("editorial")) return "entries-grid";
-  if (text.includes("masonry") || text.includes("pinterest")) return "masonry-balanced";
+  if (text.includes("masonry") || text.includes("pinterest")) return "masonry-core-balanced";
   if (text.includes("grid")) return "grid-template-columns";
   if (text.includes("thumbnail")) return "fullscreen-thumbnails";
   if (text.includes("fullscreen")) return "fullscreen-layout-agnostic";

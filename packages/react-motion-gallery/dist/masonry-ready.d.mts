@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { M as MasonryHandle } from './types-plwyER1z.mjs';
+import { c as MasonryHandle } from './types-Cc37Drgz.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 
 type MasonryReadyController = {

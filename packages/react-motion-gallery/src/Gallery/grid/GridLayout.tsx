@@ -14,7 +14,6 @@ import { useSkeletonRevealGate } from '../shared/loading/skeletonRevealGate';
 import { RmgSlideProvider } from '../shared/slideContext';
 import { createRmgSlideStoreBag } from '../shared/slideStoreBag';
 import { buildStableScopeId } from '../shared/stableScope';
-import { useOptionalGalleryCore } from '../core';
 import {
   isResponsiveGridSpanMap,
   normalizeResponsiveGridSpanRules,
@@ -23,9 +22,13 @@ import {
   type GridCell,
   type GridItemLayoutMeta,
 } from './item';
-import { RevealOptions, ResponsiveGridTemplate, type GridHandle, type GridPlugin } from './types';
-
-type FullscreenTrigger = 'item' | 'media';
+import {
+  RevealOptions,
+  ResponsiveGridTemplate,
+  type GridFullscreenTrigger,
+  type GridHandle,
+  type GridPlugin,
+} from './types';
 
 type GridOptions = {
   columns?: ResponsiveNumber;
@@ -34,7 +37,7 @@ type GridOptions = {
   gap?: ResponsiveNumber;
   rootClassName?: string;
   itemClassName?: string;
-  fullscreenTrigger?: FullscreenTrigger;
+  fullscreenTrigger?: GridFullscreenTrigger;
   plugins?: GridPlugin[];
 };
 
@@ -44,42 +47,10 @@ export type GridLayoutProps = {
   breakpoints?: BreakpointMap;
   viewportWidth: number;
   reveal: RevealOptions;
-  enableFullscreen: boolean;
-  onOpen: (index: number, originEl?: HTMLElement | null) => void;
-  registerExpandableImage: (index: number, node: HTMLImageElement | HTMLVideoElement | null) => void;
   gridItemBaseClass?: string;
   revealReady?: boolean;
   renderMode?: 'wrap' | 'passthrough';
 };
-
-function isImgEl(el: unknown): el is HTMLImageElement {
-  return el instanceof HTMLImageElement;
-}
-
-function findImgInside(host: HTMLElement | null): HTMLImageElement | null {
-  if (!host) return null;
-  if (isImgEl(host)) return host;
-
-  const el = host.querySelector('img');
-  return isImgEl(el) ? el : null;
-}
-
-function findImgFromClickTarget(target: EventTarget | null): HTMLImageElement | null {
-  if (!(target instanceof HTMLElement)) return null;
-
-  const el = target.closest('img');
-  return isImgEl(el) ? el : null;
-}
-
-function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined>): React.RefCallback<T> {
-  return (node) => {
-    for (const ref of refs) {
-      if (!ref) continue;
-      if (typeof ref === 'function') ref(node);
-      else if (typeof ref === 'object') (ref as any).current = node;
-    }
-  };
-}
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ');
@@ -287,23 +258,18 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     breakpoints,
     viewportWidth,
     reveal,
-    enableFullscreen,
-    onOpen,
-    registerExpandableImage,
     gridItemBaseClass = 'rmg__grid-item',
     revealReady = true,
     renderMode,
   },
   forwardedRef
 ) {
-  const core = useOptionalGalleryCore();
   const breakpointMap = breakpoints ?? BREAKPOINT_MAP;
   const gridRootRef = React.useRef<HTMLDivElement | null>(null);
   const skeletonRevealGate = useSkeletonRevealGate();
   const layoutStoreBag = React.useMemo(() => createRmgSlideStoreBag(), []);
   const [inView, setInView] = React.useState(false);
   const [mediaReady, setMediaReady] = React.useState(false);
-  const visibleSeenRef = React.useRef(new Set<number>());
   const revealedIndicesRef = React.useRef(new Set<number>());
   const readySubsRef = React.useRef(new Set<(nodes: HTMLElement[]) => void>());
   const readyRef = React.useRef(false);
@@ -320,13 +286,17 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     () => pluginEntries.some((plugin) => plugin.blocksReady),
     [pluginEntries]
   );
+  const noopRegisterExpandableImage = React.useCallback(
+    (_index: number, _node: HTMLImageElement | null) => {},
+    []
+  );
 
   useInViewOnce(true, gridRootRef as any, () => setInView(true));
   useMediaReady(!pluginBlocksMediaReady, gridRootRef as any, setMediaReady);
 
   const renderModeProp = renderMode ?? 'wrap';
 
-  const fullscreenTrigger: FullscreenTrigger = grid.fullscreenTrigger ?? 'media';
+  const fullscreenTrigger: GridFullscreenTrigger = grid.fullscreenTrigger ?? 'media';
 
   const [clientReady, setClientReady] = React.useState(false);
 
@@ -335,8 +305,10 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   }, []);
 
   const contentReady = pluginBlocksMediaReady ? clientReady : mediaReady;
+  const revealDisabled = reveal.disabled === true;
   const revealActive =
-    contentReady && inView && revealReady && (skeletonRevealGate ?? true);
+    revealDisabled ||
+    (contentReady && inView && revealReady && (skeletonRevealGate ?? true));
 
   const getItemNodes = React.useCallback(() => {
     const root = gridRootRef.current;
@@ -347,8 +319,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     );
   }, []);
 
-  React.useImperativeHandle(
-    forwardedRef,
+  const handle = React.useMemo<GridHandle>(
     () => ({
       getRootNode: () => gridRootRef.current,
       getItemNodes,
@@ -363,6 +334,12 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     [getItemNodes]
   );
 
+  React.useImperativeHandle(
+    forwardedRef,
+    () => handle,
+    [handle]
+  );
+
   React.useEffect(() => {
     readyRef.current = contentReady;
     if (!contentReady) return;
@@ -372,103 +349,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   }, [contentReady, getItemNodes]);
 
   React.useEffect(() => {
-    visibleSeenRef.current.clear();
-  }, [cells.length]);
-
-  React.useEffect(() => {
     revealedIndicesRef.current.clear();
   }, [cells.length]);
-
-  React.useEffect(() => {
-    const root = gridRootRef.current;
-    if (!root || !core) return;
-
-    const viewportRoot = root.closest('[data-rmg-viewport="true"]') as Element | null;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-
-          const host = entry.target;
-          if (!(host instanceof HTMLElement)) {
-            io.unobserve(entry.target);
-            continue;
-          }
-
-          const idxAttr = host.getAttribute('data-rmg-idx');
-          const index = idxAttr != null ? parseInt(idxAttr, 10) : NaN;
-          if (!Number.isFinite(index)) {
-            io.unobserve(host);
-            continue;
-          }
-
-          if (!visibleSeenRef.current.has(index)) {
-            visibleSeenRef.current.add(index);
-            core.notifyBaseVisibleIndex(index);
-          }
-
-          io.unobserve(host);
-        }
-      },
-      { root: viewportRoot, rootMargin: '200px', threshold: 0.15 }
-    );
-
-    const hosts = Array.from(root.children).filter(
-      (child): child is HTMLElement => child instanceof HTMLElement && child.hasAttribute('data-rmg-idx')
-    );
-
-    hosts.forEach((host) => {
-      const idxAttr = host.getAttribute('data-rmg-idx');
-      const index = idxAttr != null ? parseInt(idxAttr, 10) : NaN;
-      if (!Number.isFinite(index) || visibleSeenRef.current.has(index)) return;
-      io.observe(host);
-    });
-
-    return () => io.disconnect();
-  }, [cells, core, renderModeProp]);
-
-  const openFromEvent = React.useCallback(
-    (index: number, host: HTMLElement, e: React.SyntheticEvent) => {
-      if (!enableFullscreen) return;
-
-      const img =
-        fullscreenTrigger === 'media'
-          ? findImgFromClickTarget(e.target)
-          : findImgInside(host);
-
-      if (!img) return;
-
-      onOpen(index, img);
-    },
-    [enableFullscreen, fullscreenTrigger, onOpen]
-  );
-
-  const onItemClick = React.useCallback(
-    (index: number) =>
-      (e: React.MouseEvent<HTMLElement>) => {
-        e.preventDefault();
-        openFromEvent(index, e.currentTarget, e);
-      },
-    [openFromEvent]
-  );
-
-  const onItemKeyDown = React.useCallback(
-    (index: number) =>
-      (e: React.KeyboardEvent<HTMLElement>) => {
-        if (e.key !== 'Enter' && e.key !== ' ') return;
-        e.preventDefault();
-        openFromEvent(index, e.currentTarget, e);
-      },
-    [openFromEvent]
-  );
-
-  const registerFromHostRef = React.useCallback(
-    (index: number) =>
-      (node: HTMLElement | null) => {
-        registerExpandableImage(index, findImgInside(node));
-      },
-    [registerExpandableImage]
-  );
 
   React.useEffect(() => {
     return () => {
@@ -636,44 +518,11 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       });
 
       if (pluginItemEntry?.renderItem) {
-        const originalEl = React.isValidElement(original)
-          ? (original as React.ReactElement<any>)
-          : null;
-
-        const origProps = (originalEl?.props ?? {}) as {
-          onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
-          tabIndex?: number;
-          ['aria-label']?: string;
-        };
-
-        const mergedOnClick: React.MouseEventHandler<HTMLElement> | undefined = enableFullscreen
-          ? (e) => {
-              if (e.defaultPrevented) return;
-              onItemClick(index)(e);
-            }
-          : undefined;
-
-        const mergedOnKeyDown: React.KeyboardEventHandler<HTMLElement> | undefined = enableFullscreen
-          ? (e) => {
-              origProps.onKeyDown?.(e);
-              if ((e as any).defaultPrevented) return;
-              onItemKeyDown(index)(e);
-            }
-          : undefined;
-
         const itemProps = {
           'data-rmg-idx': index,
           'data-rmg-grid-item-key': cell.id,
-          'data-rmg-fullscreen-enabled': enableFullscreen ? 'true' : undefined,
-          'data-rmg-fullscreen-trigger-mode': enableFullscreen ? fullscreenTrigger : undefined,
           className: itemClassName,
           style: itemStyle,
-          onClick: mergedOnClick,
-          onKeyDown: mergedOnKeyDown,
-          tabIndex: enableFullscreen ? (origProps.tabIndex ?? 0) : undefined,
-          'aria-label': enableFullscreen
-            ? (origProps['aria-label'] ?? `View image ${index + 1}`)
-            : undefined,
         } as React.HTMLAttributes<HTMLDivElement>;
 
         return pluginItemEntry.renderItem(
@@ -682,8 +531,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
             key: cell.id,
             itemProps,
             children: scopedOriginal,
-            registerExpandableImage: (itemIndex, node) =>
-              registerExpandableImage(itemIndex, node),
+            registerExpandableImage: noopRegisterExpandableImage,
             revealedIndicesRef,
           },
           pluginItemEntry.options
@@ -710,15 +558,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
             key={cell.id}
             data-rmg-idx={index}
             data-rmg-grid-item-key={cell.id}
-            data-rmg-fullscreen-enabled={enableFullscreen ? 'true' : undefined}
-            data-rmg-fullscreen-trigger-mode={enableFullscreen ? fullscreenTrigger : undefined}
             className={itemClassName}
             style={itemStyle}
-            onClick={onItemClick(index)}
-            onKeyDown={onItemKeyDown(index)}
-            tabIndex={0}
-            aria-label={`View image ${index + 1}`}
-            ref={registerFromHostRef(index) as any}
           >
             {scopedOriginal}
           </div>
@@ -734,29 +575,10 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
         style?: React.CSSProperties;
       };
 
-      const origRef = (originalEl as any).ref as React.Ref<HTMLElement> | undefined;
-
-      const mergedOnClick: React.MouseEventHandler<HTMLElement> = (e) => {
-        origProps.onClick?.(e);
-        if (e.defaultPrevented) return;
-        onItemClick(index)(e);
-      };
-
-      const mergedOnKeyDown: React.KeyboardEventHandler<HTMLElement> = (e) => {
-        origProps.onKeyDown?.(e);
-        if ((e as any).defaultPrevented) return;
-        onItemKeyDown(index)(e);
-      };
-
-      const mergedRef = mergeRefs<HTMLElement>(origRef, registerFromHostRef(index));
-
       return React.cloneElement(originalEl, {
         key: cell.id,
-        ref: mergedRef,
         'data-rmg-idx': index,
         'data-rmg-grid-item-key': cell.id,
-        'data-rmg-fullscreen-enabled': enableFullscreen ? 'true' : undefined,
-        'data-rmg-fullscreen-trigger-mode': enableFullscreen ? fullscreenTrigger : undefined,
         className: cx(itemClassName, origProps.className),
         style: buildGridItemHostStyle({
           originalStyle: origProps.style,
@@ -764,10 +586,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
           allowSpan: hasExplicitTracks,
           revealStyle,
         }),
-        onClick: mergedOnClick,
-        onKeyDown: mergedOnKeyDown,
-        tabIndex: originalEl.props?.tabIndex ?? 0,
-        'aria-label': originalEl.props?.['aria-label'] ?? `View image ${index + 1}`,
+        onClick: origProps.onClick,
+        onKeyDown: origProps.onKeyDown,
         children:
           originalEl.props?.children === undefined ? undefined : (
             <RmgSlideProvider
@@ -784,36 +604,16 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     renderModeProp,
     baseItemClassName,
     hasExplicitTracks,
-    enableFullscreen,
-    onItemClick,
-    onItemKeyDown,
-    registerExpandableImage,
-    registerFromHostRef,
+    noopRegisterExpandableImage,
     layoutStoreBag,
   ]);
-
-  React.useLayoutEffect(() => {
-    if (renderModeProp !== 'passthrough' || pluginItemEntry?.renderItem) return;
-
-    const root = gridRootRef.current;
-    if (!root) return;
-
-    for (let i = 0; i < cells.length; i++) {
-      const host = root.querySelector(`[data-rmg-idx="${i}"]`) as HTMLElement | null;
-      registerExpandableImage(i, findImgInside(host));
-    }
-
-    return () => {
-      for (let i = 0; i < cells.length; i++) registerExpandableImage(i, null);
-    };
-  }, [renderModeProp, pluginItemEntry, cells.length, registerExpandableImage]);
 
   const containerProps: React.HTMLAttributes<HTMLDivElement> = React.useMemo(
     () => ({
       className: cx(
         styles.gridRoot,
-        styles.revealContainer,
-        revealActive && styles.revealActive,
+        !revealDisabled && styles.revealContainer,
+        !revealDisabled && revealActive && styles.revealActive,
         grid.rootClassName
       ),
       'data-rmg-grid-node': 'true',
@@ -831,6 +631,7 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       reveal.staggerMs,
       reveal.durationMs,
       reveal.easing,
+      revealDisabled,
       revealActive,
       contentReady,
       revealReady,
@@ -847,6 +648,16 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     ? reveal.renderReveal({ active: revealActive, containerProps }, inner)
     : inner;
 
+  const pluginHost = React.useMemo(
+    () => ({
+      handle,
+      itemCount: cells.length,
+      ready: contentReady,
+      fullscreenTrigger,
+    }),
+    [cells.length, contentReady, fullscreenTrigger, handle]
+  );
+
   return (
     <div
       className={styles.gridShell}
@@ -856,6 +667,16 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
         <style dangerouslySetInnerHTML={{ __html: responsiveCssText }} />
       ) : null}
       {revealWrapped}
+      {pluginEntries.map((plugin, index) => {
+        const Runtime = plugin.Runtime;
+        return Runtime ? (
+          <Runtime
+            key={`${plugin.kind}-${index}`}
+            host={pluginHost}
+            options={plugin.options}
+          />
+        ) : null;
+      })}
     </div>
   );
 });

@@ -5,8 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { Masonry as RootMasonry } from "../../index";
-import MasonrySubpath from "../../masonry";
+import MasonrySubpath from "../../masonry-measured";
 import {
   buildMasonryColumnLayout,
   MasonryCore,
@@ -200,7 +199,7 @@ describe("Masonry spans and positioned runtime", () => {
     ).toEqual([0, 1, 2, 0, 1, 2]);
   });
 
-  test("exposes Masonry.Item from the root entry and the masonry subpath", () => {
+  test("exposes measured Masonry.Item from the measured masonry subpath", () => {
     const markup = renderToStaticMarkup(
       <Masonry columns={3} gap={12}>
         <Masonry.Item span={2} className="feature-shell" style={{ padding: "8px" }}>
@@ -213,7 +212,6 @@ describe("Masonry spans and positioned runtime", () => {
     );
 
     expect(Masonry.Item).toBeDefined();
-    expect(RootMasonry.Item).toBe(Masonry.Item);
     expect(MasonrySubpath.Item).toBe(Masonry.Item);
     expect(markup).toContain("feature-shell");
     expect(markup).toContain("card-shell");

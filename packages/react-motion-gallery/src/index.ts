@@ -6,7 +6,7 @@ export { Slider } from "./Gallery/slider/default";
 export { useSliderReady } from "./slider-ready";
 export { default as Grid } from "./Gallery/grid";
 export { useGridReady } from "./grid-ready";
-export { default as Masonry } from "./Gallery/masonry";
+export { Masonry } from "./Gallery/masonry/light";
 export { useMasonryReady } from "./masonry-ready";
 export { ThumbnailSlider } from "./Gallery/thumbnails";
 export { Video } from "./Gallery/video";
@@ -50,11 +50,14 @@ export type {
 export type { SliderReadyController } from "./slider-ready";
 export type { SliderIndexChannel } from "./Gallery/slider/sliderSub";
 export type {
+  GridFullscreenTrigger,
   GridHandle,
   GridItemProps,
   GridOptions,
   GridPlugin,
+  GridPluginHost,
   GridPluginKind,
+  GridPluginRuntimeProps,
   GridSpan,
   ResponsiveGridSpan,
   ResponsiveGridTemplate,
@@ -64,11 +67,15 @@ export type {
   MasonryHandle,
   MasonryItemProps,
   MasonryOptions,
+  MasonryPlacement,
   MasonryPlugin,
+  MasonryPluginHost,
   MasonryPluginKind,
+  MasonryPluginRuntimeProps,
+  MasonryRevealOptions,
   MasonrySpan,
   ResponsiveMasonrySpan,
-} from "./Gallery/masonry/types";
+} from "./Gallery/masonry/light";
 export type { MasonryReadyController } from "./masonry-ready";
 export type { EntriesOptions, MediaEntryLink, SlideOwner } from "./Gallery/entries";
 export type {

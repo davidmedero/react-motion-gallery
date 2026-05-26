@@ -8,16 +8,17 @@ export type RevealOptions = {
   staggerMs?: number;
   durationMs?: number;
   easing?: string;
+  disabled?: boolean;
   staggerLimit?: number;
 };
 
-type FullscreenTrigger = 'item' | 'media';
+export type GridFullscreenTrigger = 'item' | 'media';
 
 export type GridSpan = number | "full";
 export type ResponsiveGridSpan = GridSpan | Record<string, GridSpan>;
 export type ResponsiveGridTemplate = string | Record<string, string>;
 
-export type GridPluginKind = "lazy-load";
+export type GridPluginKind = "lazy-load" | "fullscreen";
 
 export type GridPluginItemRenderArgs = {
   index: number;
@@ -28,11 +29,24 @@ export type GridPluginItemRenderArgs = {
   revealedIndicesRef: React.RefObject<Set<number>>;
 };
 
+export type GridPluginHost = {
+  handle: GridHandle | null;
+  itemCount: number;
+  ready: boolean;
+  fullscreenTrigger: GridFullscreenTrigger;
+};
+
+export type GridPluginRuntimeProps = {
+  host: GridPluginHost;
+  options?: unknown;
+};
+
 export type GridPlugin = {
   readonly __rmgGridPlugin: true;
   readonly kind: GridPluginKind;
   readonly options?: unknown;
   readonly blocksReady?: boolean;
+  readonly Runtime?: React.ComponentType<GridPluginRuntimeProps>;
   renderItem?: (
     args: GridPluginItemRenderArgs,
     options?: unknown
@@ -60,7 +74,7 @@ export type GridOptions = {
   gap?: ResponsiveNumber;
   rootClassName?: string;
   itemClassName?: string;
-  fullscreenTrigger?: FullscreenTrigger;
+  fullscreenTrigger?: GridFullscreenTrigger;
   plugins?: GridPlugin[];
   reveal?: RevealOptions;
 };

@@ -2,11 +2,14 @@ export { default, default as Grid } from "./Gallery/grid";
 export { useGridReady } from "./grid-ready";
 
 export type {
+  GridFullscreenTrigger,
   GridHandle,
   GridItemProps,
   GridOptions,
   GridPlugin,
+  GridPluginHost,
   GridPluginKind,
+  GridPluginRuntimeProps,
   GridSpan,
   RevealOptions,
   ResponsiveGridSpan,

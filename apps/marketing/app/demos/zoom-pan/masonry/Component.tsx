@@ -1,11 +1,11 @@
 "use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
-import { Masonry } from "react-motion-gallery/masonry";
-import { useMasonryReady } from "react-motion-gallery/masonry/ready";
+import { Masonry } from "react-motion-gallery/masonry/measured";
+import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 import { ZoomPanImage } from "react-motion-gallery/zoomPan";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry";
-import type { MasonrySkeletonSpec } from "react-motion-gallery/skeleton/cache/masonry";
+import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
+import type { MasonrySkeletonSpec } from "react-motion-gallery/skeleton/cache/masonry/structured";
 import styles from "./masonry-demo.module.css";
 import { demoSkeletonCache } from "../../skeleton-cache";
 

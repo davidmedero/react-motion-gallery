@@ -36,11 +36,12 @@ export const componentCatalog: ComponentSurface[] = [
     exports: ["Grid"],
     categoryIds: ["grid"],
     description:
-      "Responsive media grid with spans, template columns, skeletons, and fullscreen item handoffs.",
+      "Responsive media grid with spans, template columns, skeletons, and optional fullscreen item handoffs.",
     whenToUse: [
       "Use for predictable editorial or product grids.",
       "Use templateColumns when track proportions matter more than a plain column count.",
       "Add gridLazyLoad from react-motion-gallery/grid/lazy-load only when the route needs lazy media.",
+      "Add gridFullscreen from react-motion-gallery/grid/fullscreen when Grid should open GalleryCore fullscreen.",
     ],
     relatedTags: ["grid", "span", "template-columns", "responsive", "plugins"],
   },
@@ -51,11 +52,13 @@ export const componentCatalog: ComponentSurface[] = [
     exports: ["Masonry"],
     categoryIds: ["masonry"],
     description:
-      "Server-predicted masonry layout that keeps placement stable through hydration, then refines from live measurements.",
+      "Lightweight dimensioned masonry layout for image-first grids, with opt-in fullscreen and measured subpaths for arbitrary card heights.",
     whenToUse: [
-      "Use for mixed aspect ratios or cards with uneven text/media heights.",
+      "Use the default import for image grids where every item has width and height.",
+      "Add masonryFullscreen from react-motion-gallery/masonry/fullscreen when light masonry should open GalleryCore fullscreen.",
+      "Use react-motion-gallery/masonry/measured for mixed text/media cards with arbitrary heights.",
       "Choose placement mode based on whether balance, round-robin order, or horizontal visual order matters most.",
-      "Add masonryLazyLoad from react-motion-gallery/masonry/lazy-load only when the route needs lazy media.",
+      "Add masonryLazyLoad from react-motion-gallery/masonry/lazy-load only with measured masonry routes that need lazy media.",
     ],
     relatedTags: ["masonry", "balanced", "round-robin", "horizontal-order", "span", "plugins"],
   },
@@ -233,7 +236,7 @@ const categoryDescriptions: Record<DemoCategoryId, string> = {
   grid:
     "Responsive grid demos for spans, template tracks, min column width, lazy-load plugins, video, fullscreen, and skeletons.",
   masonry:
-    "Masonry demos for balanced, round-robin, horizontal order, spans, lazy-load plugins, video, fullscreen, and stable skeleton loading.",
+    "Masonry demos for the fullscreen-enabled light image core plus measured text-wrap, video, fullscreen, and stable skeleton loading.",
   entries:
     "Structured entry demos that combine copy, metadata, media, and slider/grid/masonry renderers.",
   "zoom-pan":

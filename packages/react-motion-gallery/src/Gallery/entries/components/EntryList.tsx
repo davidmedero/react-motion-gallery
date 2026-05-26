@@ -92,6 +92,11 @@ function getEntryKey(entry: any, entryIndex: number) {
   return String((entry as any).key ?? (entry as any).id ?? entryIndex);
 }
 
+function isTransparentMasonryItemElement(node: React.ReactElement<any>) {
+  const type = node.type as any;
+  return Boolean(type?.__rmgLightMasonryItem || type?.__rmgMasonryItem);
+}
+
 function splitEntryKeySignature(signature: string) {
   return signature ? signature.split("\u0000") : [];
 }
@@ -383,6 +388,31 @@ export function EntryList({
                   onPointerUpCapture,
                   ref: mergedRef,
                   style: fullscreenImageStyle,
+                });
+              }
+
+              if (isTransparentMasonryItemElement(original)) {
+                return React.cloneElement(original, {
+                  key: `${entryIndex}-${mediaIndex}`,
+                  children: (
+                    <span
+                      ref={reg as any}
+                      style={{ display: "contents" }}
+                      onClick={(e: any) => {
+                        if (shouldBlockClick()) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          return;
+                        }
+                        mergedOnClick(e);
+                      }}
+                      onPointerDownCapture={onPointerDownCapture as any}
+                      onPointerMoveCapture={onPointerMoveCapture as any}
+                      onPointerUpCapture={onPointerUpCapture as any}
+                    >
+                      {original.props.children}
+                    </span>
+                  ),
                 });
               }
 

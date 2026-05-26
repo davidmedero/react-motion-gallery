@@ -5,6 +5,7 @@ import { GalleryCore } from "react-motion-gallery/core";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
+import { Masonry } from "react-motion-gallery/masonry";
 import {
   Entries,
   createEntriesMasonryMedia,
@@ -25,6 +26,8 @@ type DemoEntry = {
   media: Array<{
     kind: "image";
     src: string;
+    width: number;
+    height: number;
     alt: string;
     description: string;
   }>;
@@ -140,6 +143,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/701/1400/900",
+        width: 1400,
+        height: 900,
         alt: "Lorem ipsum image 1",
         description:
           "Blue wildflowers fill the foreground beneath a soft cloudy sky.",
@@ -147,6 +152,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/702/1200/1200",
+        width: 1200,
+        height: 1200,
         alt: "Lorem ipsum image 2",
         description:
           "Steep green cliffs drop into a pale beach and turquoise surf.",
@@ -154,6 +161,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/704/1300/1600",
+        width: 1300,
+        height: 1600,
         alt: "Lorem ipsum image 3",
         description:
           "Bamboo trunks rise in tight verticals toward a leafy canopy.",
@@ -161,6 +170,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/715/1000/1350",
+        width: 1000,
+        height: 1350,
         alt: "Lorem ipsum image 4",
         description:
           "Pink and orange sunset clouds spread over a calm ocean horizon.",
@@ -176,6 +187,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/717/1100/800",
+        width: 1100,
+        height: 800,
         alt: "Lorem ipsum image 5",
         description:
           "Wild coastal grasses and yellow flowers overlook deep blue water.",
@@ -183,12 +196,16 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/723/1200/1000",
+        width: 1200,
+        height: 1000,
         alt: "Lorem ipsum image 6",
         description: "Soft clouds drift across a starry night sky.",
       },
       {
         kind: "image",
         src: "https://picsum.photos/id/732/900/1300",
+        width: 900,
+        height: 1300,
         alt: "Lorem ipsum image 7",
         description:
           "Dark coastal rocks sit below a misty horizon and pale open sky.",
@@ -196,6 +213,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/733/1400/850",
+        width: 1400,
+        height: 850,
         alt: "Lorem ipsum image 8",
         description: "Snowy peaks break through a bright layer of clouds.",
       },
@@ -210,6 +229,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/741/1000/1500",
+        width: 1000,
+        height: 1500,
         alt: "Lorem ipsum image 9",
         description:
           "Towering cumulus clouds glow warmly against a deep blue sky.",
@@ -217,6 +238,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/744/1400/1100",
+        width: 1400,
+        height: 1100,
         alt: "Lorem ipsum image 10",
         description:
           "The Golden Gate spans fog and blue water with a sailboat below.",
@@ -224,6 +247,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/756/1100/900",
+        width: 1100,
+        height: 900,
         alt: "Lorem ipsum image 11",
         description:
           "Foamy surf reaches the beach below the Golden Gate Bridge.",
@@ -231,6 +256,8 @@ const ENTRIES: DemoEntry[] = [
       {
         kind: "image",
         src: "https://picsum.photos/id/767/1500/1300",
+        width: 1500,
+        height: 1300,
         alt: "Lorem ipsum image 12",
         description:
           "A straight road runs between tall pine rows toward a distant vanishing point.",
@@ -348,13 +375,16 @@ function renderEntryCard({ entry, entryIndex, media }: EntryCardRenderArgs) {
 
 function renderEntryMedia({ media }: EntryMediaRenderArgs) {
   if (media.kind !== "image") return null;
+  const item = media as DemoEntry["media"][number];
 
   return (
-    <img
-      src={media.src}
-      alt={media.alt ?? ""}
-      className={styles.entryMasonryImage}
-    />
+    <Masonry.Item width={item.width} height={item.height}>
+      <img
+        src={item.src}
+        alt={item.alt ?? ""}
+        className={styles.entryMasonryImage}
+      />
+    </Masonry.Item>
   );
 }
 

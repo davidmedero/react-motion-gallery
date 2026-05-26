@@ -6,6 +6,7 @@ import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Grid, type ResponsiveGridSpan } from "react-motion-gallery/grid";
 import { useGridReady } from "react-motion-gallery/grid/ready";
+import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
@@ -297,6 +298,7 @@ export function GridTemplateColumnsDemo() {
           templateColumns={TEMPLATE_COLUMNS}
           gap={{ 0: 12, 820: 16, 1200: 18 }}
           fullscreenTrigger="item"
+          plugins={[gridFullscreen()]}
         >
           {ITEMS.map((item, index) => (
             <Grid.Item key={item.imageSrc} span={item.span}>

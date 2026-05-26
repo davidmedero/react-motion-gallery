@@ -8,6 +8,7 @@ export type RevealOptions = {
   staggerMs?: number;
   durationMs?: number;
   easing?: string;
+  disabled?: boolean;
   staggerLimit?: number;
 };
 

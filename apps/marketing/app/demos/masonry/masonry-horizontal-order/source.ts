@@ -7,18 +7,18 @@ import { toMediaItems } from "react-motion-gallery/media";
 import {
   Masonry,
   type ResponsiveMasonrySpan,
-} from "react-motion-gallery/masonry";
-import { useMasonryReady } from "react-motion-gallery/masonry/ready";
+} from "react-motion-gallery/masonry/measured";
+import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry";
+import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
 import type {
   MasonrySkeletonSpec,
   SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/masonry";
+} from "react-motion-gallery/skeleton/cache/masonry/structured";
 import styles from "./masonry-horizontal-order-demo.module.css";
 import { masonryHorizontalOrderSkeletonText } from "./masonry-horizontal-order.skeleton-text.generated";
 import {

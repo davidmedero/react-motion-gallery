@@ -36,8 +36,8 @@ export const HOME_SURFACE_LINKS = [
   },
   {
     title: "Masonry",
-    description: "Balanced, round-robin, and horizontal-order placement options with responsive spans, lazy load, SSR support, breakpoint options and fullscreen sync.",
-    href: "/demos?demo=masonry-spans",
+    description: "Lightweight image-first masonry with dimensioned items, plus measured subpaths for spans, lazy load, video, and fullscreen sync.",
+    href: "/demos?demo=masonry-core-balanced",
     Icon: LayoutDashboard,
     tone: "magenta",
   },

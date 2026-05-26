@@ -363,13 +363,27 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       .join(" ");
 
     const spinnerStyle = React.useMemo(
-      () =>
-        resolveLazySpinnerStyle({
+      () => {
+        const baseStyle = resolveLazySpinnerStyle({
           isCustom: spinnerResolved.isCustom,
           anchor: spinnerAnchor,
           spinnerStyle: normalizedLazy.spinnerStyle,
-        }),
-      [normalizedLazy.spinnerStyle, spinnerAnchor, spinnerResolved.isCustom]
+        });
+
+        if (!showSpinner) return baseStyle;
+
+        return {
+          ...baseStyle,
+          opacity: 1,
+          visibility: "visible",
+        };
+      },
+      [
+        normalizedLazy.spinnerStyle,
+        showSpinner,
+        spinnerAnchor,
+        spinnerResolved.isCustom,
+      ]
     );
 
     const spinnerNode = shouldRenderSpinner ? (

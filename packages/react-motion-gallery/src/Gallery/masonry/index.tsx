@@ -40,6 +40,7 @@ function normalizeReveal(src?: RevealOptions) {
     staggerMs: src?.staggerMs ?? 160,
     durationMs: src?.durationMs ?? 600,
     easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
+    disabled: src?.disabled === true,
   };
 }
 

@@ -6,8 +6,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
-import { CachedMasonrySkeleton } from "../skeleton/cache-masonry";
-import { MasonrySkeleton } from "../skeleton/masonry";
+import { CachedMasonrySkeleton } from "../skeleton/cache-masonry-structured";
+import { MasonrySkeleton } from "../skeleton/masonry-structured";
 import {
   MasonrySkeletonCard,
   resolveActiveFlexStateKey,
@@ -156,7 +156,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).toContain("padding:12px");
     expect(markup).toContain("border-radius:18px");
     expect(markup).toContain("--rmg-masonry-skel-wrap-shadow:0 8px 24px");
-    expect(markup).not.toContain("box-shadow:0 8px 24px");
+    expect(markup).toContain("box-shadow:0 8px 24px");
     expect(markup).toContain(sharedSkeletonStyles.skelCardShimmer);
   });
 

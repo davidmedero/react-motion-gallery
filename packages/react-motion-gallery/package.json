@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.76",
+  "version": "2.0.77",
   "description": "React gallery primitives for sliders, carousels, grid, masonry, fullscreen lightbox, entries, video, zoom/pan/pinch, skeleton loading and reveal animations",
   "keywords": [
     "react",
@@ -153,6 +153,10 @@
       "types": "./dist/grid-lazy-load.d.mts",
       "import": "./dist/grid-lazy-load.mjs"
     },
+    "./grid/fullscreen": {
+      "types": "./dist/grid-fullscreen.d.mts",
+      "import": "./dist/grid-fullscreen.mjs"
+    },
     "./masonry": {
       "types": "./dist/masonry.d.mts",
       "import": "./dist/masonry.mjs"
@@ -160,6 +164,18 @@
     "./masonry/ready": {
       "types": "./dist/masonry-ready.d.mts",
       "import": "./dist/masonry-ready.mjs"
+    },
+    "./masonry/fullscreen": {
+      "types": "./dist/masonry-fullscreen.d.mts",
+      "import": "./dist/masonry-fullscreen.mjs"
+    },
+    "./masonry/measured": {
+      "types": "./dist/masonry-measured.d.mts",
+      "import": "./dist/masonry-measured.mjs"
+    },
+    "./masonry/measured/ready": {
+      "types": "./dist/masonry-measured-ready.d.mts",
+      "import": "./dist/masonry-measured-ready.mjs"
     },
     "./masonry/lazy-load": {
       "types": "./dist/masonry-lazy-load.d.mts",
@@ -200,6 +216,14 @@
     "./skeleton/cache/masonry": {
       "types": "./dist/skeleton-cache-masonry.d.mts",
       "import": "./dist/skeleton-cache-masonry.mjs"
+    },
+    "./skeleton/masonry/structured": {
+      "types": "./dist/skeleton-masonry-structured.d.mts",
+      "import": "./dist/skeleton-masonry-structured.mjs"
+    },
+    "./skeleton/cache/masonry/structured": {
+      "types": "./dist/skeleton-cache-masonry-structured.d.mts",
+      "import": "./dist/skeleton-cache-masonry-structured.mjs"
     },
     "./skeleton/slider": {
       "types": "./dist/skeleton-slider.d.mts",

@@ -5,6 +5,7 @@ import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Grid } from "react-motion-gallery/grid";
 import { useGridReady } from "react-motion-gallery/grid/ready";
+import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
@@ -270,6 +271,7 @@ export function GridMinColumnWidthDemo() {
           minColumnWidth={220}
           gap={{ 0: 12, 900: 18 }}
           fullscreenTrigger="item"
+          plugins={[gridFullscreen()]}
         >
           {ITEMS.map((item, index) => (
             <GridCard

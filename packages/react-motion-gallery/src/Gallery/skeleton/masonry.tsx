@@ -8,39 +8,49 @@ import {
   type BreakpointMap,
   type ResponsiveNumber,
 } from "../shared/responsive";
+import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import {
-  applySkeletonTextSnapshot,
-  cssLen,
-  shimmerStyleVars,
-  type SkeletonLength,
-  type SkeletonNode,
-  type SkeletonShimmer,
-} from "../shared/skeleton/layout";
-import { buildStableScopeId } from "../shared/stableScope";
-import { MasonryLayoutSeedProvider } from "../masonry/MasonryLayoutSeedContext";
-import {
-  buildMasonryFirstPaintLayoutCss,
-  buildMasonryShellReserveCss,
-  buildMasonrySkeletonPrediction,
-  resolveActiveMasonryPredictionVariant,
-} from "../masonry/prediction";
-import type { ResponsiveMasonrySpan } from "../masonry/types";
-import {
-  MasonrySkeletonCard,
-  type MasonryPlacement,
-  type MasonrySkeletonCardProps,
-  type MasonrySkeletonLayoutNode,
-  type MasonrySkeletonSpec,
-} from "./MasonrySkeleton";
-import {
-  SkeletonFrame,
-  type SkeletonForceOptions,
-  type SkeletonTimingOptions,
-} from "./base";
-import type { SkeletonCacheSnapshot } from "./cache";
+  buildDimensionedMasonryLayout,
+  buildDimensionedMasonryFluidLayout,
+  collectMasonryResponsiveMinWidths,
+  resolveMasonryColumns,
+  resolveMasonryGap,
+  type MasonryDimensionItem,
+} from "../masonry/light/placement";
+import type {
+  MasonryPlacement,
+  ResponsiveMasonrySpan,
+} from "../masonry/light/placement";
+import { SkeletonRevealGateProvider } from "../shared/loading/skeletonRevealGate";
+import styles from "./MasonryLightSkeleton.module.css";
+
+export type {
+  MasonryPlacement,
+  ResponsiveMasonrySpan,
+} from "../masonry/light/placement";
+
+export type SkeletonLength = number | string;
+
+export type SkeletonShimmer = {
+  durationMs?: number;
+  angleDeg?: number;
+  opacity?: number;
+  blurPx?: number;
+  timing?: string;
+  c1?: string;
+  c2?: string;
+  c3?: string;
+};
+
+export type MasonrySkeletonItem = {
+  width: number;
+  height: number;
+  span?: ResponsiveMasonrySpan;
+};
 
 export type SkeletonMasonryOptions = {
   count?: number;
+  items?: ReadonlyArray<MasonrySkeletonItem>;
   columns?: ResponsiveNumber;
   gap?: ResponsiveNumber;
   ratios?: number[];
@@ -51,23 +61,8 @@ export type SkeletonMasonryOptions = {
   layoutWidthPx?: number;
 };
 
-export type SkeletonMasonryLayout = MasonrySkeletonLayoutNode & {
-  className?: string;
-  backgroundColor?: string;
-  radius?: SkeletonLength;
-  shimmer?: SkeletonShimmer;
-  columns?: ResponsiveNumber;
-  gap?: ResponsiveNumber;
-  ratios?: number[];
-  heightsPx?: number[];
-  spans?: ReadonlyArray<ResponsiveMasonrySpan | undefined>;
-  placement?: MasonryPlacement;
-  viewportWidth?: number;
-  layoutWidthPx?: number;
-};
-
-export type MasonrySkeletonProps = {
-  layout: SkeletonMasonryLayout | MasonrySkeletonSpec;
+export type MasonrySkeletonProps = SkeletonMasonryOptions & {
+  masonry?: SkeletonMasonryOptions;
   children?: React.ReactNode;
   breakpoints?: BreakpointMap;
   className?: string;
@@ -83,110 +78,438 @@ export type MasonrySkeletonProps = {
   ariaLabel?: string;
   ready?: boolean;
   enabled?: boolean;
-  force?: SkeletonForceOptions;
-  timing?: SkeletonTimingOptions;
-  masonry?: SkeletonMasonryOptions;
+  timing?: MasonrySkeletonTimingOptions;
 };
 
-export type MasonrySkeletonGeometrySnapshot = {
-  widthBucketMin: number;
+export type SkeletonMasonryLayout = {
+  kind: "masonry";
+  count?: number;
+  items?: ReadonlyArray<MasonrySkeletonItem>;
+  columns?: ResponsiveNumber;
+  gap?: ResponsiveNumber;
+  ratios?: number[];
+  heightsPx?: number[];
+  spans?: ReadonlyArray<ResponsiveMasonrySpan | undefined>;
+  placement?: MasonryPlacement;
   viewportWidth?: number;
   layoutWidthPx?: number;
-  masonry?: {
-    variantKey: string;
-    shellHeightPx?: number;
-    itemHeightsPx?: number[];
+};
+
+export type MasonrySkeletonSlot = MasonrySkeletonItem;
+export type MasonrySkeletonNode = SkeletonMasonryLayout;
+export type MasonrySkeletonSpec = SkeletonMasonryOptions;
+export type SkeletonNode = MasonrySkeletonItem;
+
+const DEFAULT_RATIOS = [55, 90, 130, 75];
+const DEFAULT_EXIT_MS = 600;
+const DEFAULT_MIN_VISIBLE_MS = 220;
+
+export type MasonrySkeletonTimingOptions = {
+  exitMs?: number;
+  minVisibleMs?: number;
+};
+
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
+
+function cssLen(value: SkeletonLength | undefined) {
+  return value == null ? undefined : typeof value === "number" ? `${value}px` : value;
+}
+
+function stablePart(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value !== "object") return String(value);
+  if (Array.isArray(value)) return value.map(stablePart).join(",");
+
+  return Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map((key) => `${key}:${stablePart((value as Record<string, unknown>)[key])}`)
+    .join("|");
+}
+
+function stableScope(value: unknown) {
+  const seed = stablePart(value);
+  let hash = 0;
+  for (let index = 0; index < seed.length; index++) {
+    hash = (hash * 31 + seed.charCodeAt(index)) | 0;
+  }
+  return `lmskel_${(hash >>> 0).toString(36)}`;
+}
+
+function useTimedLoadingLayer(
+  loadingActive: boolean,
+  timing: MasonrySkeletonTimingOptions | undefined
+) {
+  const exitMs = Math.max(0, timing?.exitMs ?? DEFAULT_EXIT_MS);
+  const minVisibleMs = Math.max(
+    0,
+    timing?.minVisibleMs ?? DEFAULT_MIN_VISIBLE_MS
+  );
+  const [showLoadingLayer, setShowLoadingLayer] = React.useState(() => loadingActive);
+  const [loadingExiting, setLoadingExiting] = React.useState(false);
+  const [revealUnlocked, setRevealUnlocked] = React.useState(() => !loadingActive);
+  const loadingVisibleSinceRef = React.useRef<number | null>(null);
+  const wasLoadingActiveRef = React.useRef(loadingActive);
+
+  React.useEffect(() => {
+    if (showLoadingLayer && loadingVisibleSinceRef.current == null) {
+      loadingVisibleSinceRef.current = Date.now();
+      return;
+    }
+
+    if (!showLoadingLayer) {
+      loadingVisibleSinceRef.current = null;
+    }
+  }, [showLoadingLayer]);
+
+  React.useEffect(() => {
+    if (loadingActive && !wasLoadingActiveRef.current) {
+      loadingVisibleSinceRef.current = Date.now();
+    }
+
+    wasLoadingActiveRef.current = loadingActive;
+  }, [loadingActive]);
+
+  React.useEffect(() => {
+    if (loadingActive) {
+      setShowLoadingLayer(true);
+      setLoadingExiting(false);
+      setRevealUnlocked(false);
+      return;
+    }
+
+    if (!showLoadingLayer) {
+      setRevealUnlocked(true);
+      return;
+    }
+
+    const visibleForMs =
+      loadingVisibleSinceRef.current == null
+        ? minVisibleMs
+        : Math.max(0, Date.now() - loadingVisibleSinceRef.current);
+    const remainingVisibleMs = Math.max(0, minVisibleMs - visibleForMs);
+    let minVisibleTimer: ReturnType<typeof setTimeout> | null = null;
+    let revealTimer: ReturnType<typeof setTimeout> | null = null;
+    let exitTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const beginExit = () => {
+      if (exitMs === 0) {
+        setRevealUnlocked(true);
+        setShowLoadingLayer(false);
+        setLoadingExiting(false);
+        return;
+      }
+
+      setLoadingExiting(true);
+      revealTimer = setTimeout(() => {
+        setRevealUnlocked(true);
+      }, 0);
+      exitTimer = setTimeout(() => {
+        setShowLoadingLayer(false);
+        setLoadingExiting(false);
+      }, exitMs);
+    };
+
+    if (remainingVisibleMs > 0) {
+      minVisibleTimer = setTimeout(beginExit, remainingVisibleMs);
+    } else {
+      beginExit();
+    }
+
+    return () => {
+      if (minVisibleTimer) clearTimeout(minVisibleTimer);
+      if (revealTimer) clearTimeout(revealTimer);
+      if (exitTimer) clearTimeout(exitTimer);
+    };
+  }, [exitMs, loadingActive, minVisibleMs, showLoadingLayer]);
+
+  return { exitMs, showLoadingLayer, loadingExiting, revealUnlocked };
+}
+
+function shimmerVars(shimmer: SkeletonShimmer | undefined): React.CSSProperties {
+  return {
+    ...(shimmer?.durationMs != null
+      ? ({ ["--rmg-skel-shimmer-duration" as any]: `${shimmer.durationMs}ms` } as any)
+      : null),
+    ...(shimmer?.angleDeg != null
+      ? ({ ["--rmg-skel-shimmer-angle" as any]: `${shimmer.angleDeg}deg` } as any)
+      : null),
+    ...(shimmer?.opacity != null
+      ? ({ ["--rmg-skel-shimmer-opacity" as any]: shimmer.opacity } as any)
+      : null),
+    ...(shimmer?.blurPx != null
+      ? ({ ["--rmg-skel-shimmer-filter" as any]: `blur(${shimmer.blurPx}px)` } as any)
+      : null),
+    ...(shimmer?.timing
+      ? ({ ["--rmg-skel-shimmer-timing" as any]: shimmer.timing } as any)
+      : null),
+    ...(shimmer?.c1 ? ({ ["--rmg-skel-shimmer-c1" as any]: shimmer.c1 } as any) : null),
+    ...(shimmer?.c2 ? ({ ["--rmg-skel-shimmer-c2" as any]: shimmer.c2 } as any) : null),
+    ...(shimmer?.c3 ? ({ ["--rmg-skel-shimmer-c3" as any]: shimmer.c3 } as any) : null),
   };
-};
+}
 
-export type MasonrySkeletonCoreProps = MasonrySkeletonProps & {
-  cacheSnapshot?: SkeletonCacheSnapshot | null;
-  scopeId?: string;
-  skeletonRootRef?: React.RefObject<HTMLDivElement | null>;
-  shellRef?: React.RefObject<HTMLDivElement | null>;
-  geometrySnapshotRef?: React.MutableRefObject<
-    (() => MasonrySkeletonGeometrySnapshot | null) | null
-  >;
-};
+function useElementWidth(ref: React.RefObject<HTMLElement | null>) {
+  const [width, setWidth] = React.useState(0);
 
-function isMasonryLayoutSpec(
-  layout: MasonrySkeletonProps["layout"]
-): layout is MasonrySkeletonSpec {
+  React.useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+
+    const commit = (nextWidth: number | undefined) => {
+      const next = Number(nextWidth);
+      if (!Number.isFinite(next) || next <= 0) return;
+      setWidth((prev) => (Math.abs(prev - next) < 0.5 ? prev : next));
+    };
+    const read = () => commit(node.getBoundingClientRect().width);
+
+    read();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", read);
+      return () => window.removeEventListener("resize", read);
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      commit(entries[0]?.contentRect.width);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return width;
+}
+
+function resolveItems(options: SkeletonMasonryOptions): MasonryDimensionItem[] {
+  if (options.items?.length) {
+    return options.items.map((item) => ({
+      width: item.width,
+      height: item.height,
+      span: item.span,
+    }));
+  }
+
+  const count = Math.max(0, options.count ?? options.ratios?.length ?? options.heightsPx?.length ?? 1);
+  const ratios = options.ratios?.length ? options.ratios : DEFAULT_RATIOS;
+
+  return Array.from({ length: count }, (_, index) => {
+    const height = options.heightsPx?.[index] ?? ratios[index % ratios.length] ?? 100;
+    return {
+      width: 100,
+      height,
+      span: options.spans?.[index],
+    };
+  });
+}
+
+function MasonrySkeletonNode({
+  options,
+  breakpoints,
+  className,
+  style,
+  backgroundColor,
+  radius,
+  shimmer,
+  disableShimmer,
+  ariaLabel,
+}: {
+  options: SkeletonMasonryOptions;
+  breakpoints: BreakpointMap;
+  className?: string;
+  style?: React.CSSProperties;
+  backgroundColor?: string;
+  radius?: SkeletonLength;
+  shimmer?: SkeletonShimmer;
+  disableShimmer?: boolean;
+  ariaLabel?: string;
+}) {
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const measuredWidth = useElementWidth(rootRef);
+  const observedViewportWidth = useViewportWidth();
+  const viewportReady = observedViewportWidth > 0;
+  const liveViewportWidth = observedViewportWidth || DEFAULT_SERVER_VIEWPORT_WIDTH;
+  const viewportWidth = options.viewportWidth ?? liveViewportWidth;
+  const resolvedLayoutWidth = options.layoutWidthPx ?? measuredWidth;
+  const hasResolvedLayoutWidth = resolvedLayoutWidth > 0;
+  const layoutWidth = hasResolvedLayoutWidth ? resolvedLayoutWidth : viewportWidth;
+  const items = React.useMemo(() => resolveItems(options), [options]);
+  const responsiveScope = React.useMemo(
+    () =>
+      stableScope({
+        columns: options.columns,
+        gap: options.gap,
+        placement: options.placement,
+        items,
+        breakpoints,
+      }),
+    [options.columns, options.gap, options.placement, items, breakpoints]
+  );
+  const columnCount = resolveMasonryColumns({
+    columns: options.columns,
+    viewportWidth,
+    breakpointMap: breakpoints,
+  });
+  const gapPx = resolveMasonryGap({
+    gap: options.gap,
+    viewportWidth,
+    breakpointMap: breakpoints,
+  });
+  const layout = React.useMemo(
+    () =>
+      buildDimensionedMasonryLayout({
+        items,
+        columnCount,
+        gapPx,
+        containerWidth: layoutWidth,
+        placement: options.placement,
+        viewportWidth,
+        breakpointMap: breakpoints,
+      }),
+    [
+      items,
+      columnCount,
+      gapPx,
+      layoutWidth,
+      options.placement,
+      viewportWidth,
+      breakpoints,
+    ]
+  );
+  const fluidLayout = React.useMemo(
+    () =>
+      hasResolvedLayoutWidth
+        ? null
+        : buildDimensionedMasonryFluidLayout({
+            items,
+            columnCount,
+            gapPx,
+            placement: options.placement,
+            viewportWidth,
+            breakpointMap: breakpoints,
+          }),
+    [
+      items,
+      columnCount,
+      gapPx,
+      hasResolvedLayoutWidth,
+      options.placement,
+      viewportWidth,
+      breakpoints,
+    ]
+  );
+  let fluidVariants:
+    | Array<{
+        minWidth: number;
+        layout: ReturnType<typeof buildDimensionedMasonryFluidLayout>;
+      }>
+    | null = null;
+  if ((!hasResolvedLayoutWidth || !viewportReady) && options.viewportWidth == null) {
+    const minWidths = collectMasonryResponsiveMinWidths({
+      columns: options.columns,
+      gap: options.gap,
+      items,
+      breakpointMap: breakpoints,
+    });
+
+    if (minWidths.length > 1) {
+      fluidVariants = minWidths.map((minWidth) => {
+        const variantResponsiveWidth = Math.max(1, minWidth);
+        const variantColumnCount = resolveMasonryColumns({
+          columns: options.columns,
+          viewportWidth: variantResponsiveWidth,
+          breakpointMap: breakpoints,
+        });
+        const variantGapPx = resolveMasonryGap({
+          gap: options.gap,
+          viewportWidth: variantResponsiveWidth,
+          breakpointMap: breakpoints,
+        });
+
+        return {
+          minWidth,
+          layout: buildDimensionedMasonryFluidLayout({
+            items,
+            columnCount: variantColumnCount,
+            gapPx: variantGapPx,
+            placement: options.placement,
+            viewportWidth: variantResponsiveWidth,
+            breakpointMap: breakpoints,
+          }),
+        };
+      });
+    }
+  }
+
+  let responsiveCss: string | null = null;
+  if (fluidVariants?.length) {
+    const selector = `[data-rmg-mskel-scope="${responsiveScope}"]`;
+    const rulesFor = (variant: (typeof fluidVariants)[number]) =>
+      `${selector}{height:${variant.layout.height};}` +
+      variant.layout.items
+        .map(
+          (item) =>
+            `${selector}>div:nth-of-type(${item.index + 1}){top:${item.top};left:${item.left};width:${item.width};height:${item.height};}`
+        )
+        .join("");
+    const css = [rulesFor(fluidVariants[0]!)];
+
+    for (const variant of fluidVariants.slice(1)) {
+      css.push(`@media (min-width:${variant.minWidth}px){${rulesFor(variant)}}`);
+    }
+
+    responsiveCss = css.join("");
+  }
+  const renderItems = () => {
+    return layout.items.map((item) => {
+      const fluidItem = fluidLayout?.items[item.index];
+      return (
+        <div
+          key={item.index}
+          data-rmg-mskel-index={item.index}
+          className={cx(styles.item, !disableShimmer && styles.shimmer)}
+          style={
+            responsiveCss
+              ? undefined
+              : {
+                  top: fluidItem?.top ?? item.top,
+                  left: fluidItem?.left ?? item.left,
+                  width: fluidItem?.width ?? item.width,
+                  height: fluidItem?.height ?? item.height,
+                }
+          }
+        />
+      );
+    });
+  };
+
   return (
-    !!layout &&
-    typeof layout === "object" &&
-    !("kind" in layout) &&
-    "layout" in layout &&
-    (layout as MasonrySkeletonSpec).layout?.kind === "masonry"
+    <div className={styles.rootFrame}>
+      <div
+        ref={rootRef}
+        className={cx(styles.root, className)}
+        data-rmg-mskel-scope={responsiveCss ? responsiveScope : undefined}
+        style={{
+          height: responsiveCss ? undefined : fluidLayout?.height ?? layout.height,
+          ["--rmg-skel-bg" as any]: backgroundColor,
+          ["--rmg-skel-radius" as any]: cssLen(radius),
+          ...(!disableShimmer ? shimmerVars(shimmer) : null),
+          ...style,
+        }}
+        aria-hidden={ariaLabel ? undefined : true}
+        aria-label={ariaLabel}
+        role={ariaLabel ? "status" : undefined}
+        aria-live={ariaLabel ? "polite" : undefined}
+      >
+        {responsiveCss ? <style dangerouslySetInnerHTML={{ __html: responsiveCss }} /> : null}
+        {renderItems()}
+      </div>
+    </div>
   );
 }
 
-function isMasonryLayout(
-  layout: MasonrySkeletonProps["layout"]
-): layout is SkeletonMasonryLayout {
-  return !!layout && typeof layout === "object" && "kind" in layout && layout.kind === "masonry";
-}
-
-function toMasonrySkeletonSpec(
-  layout: SkeletonMasonryLayout | MasonrySkeletonSpec
-): MasonrySkeletonSpec {
-  if (isMasonryLayoutSpec(layout)) return layout;
-
-  const {
-    className,
-    backgroundColor,
-    radius,
-    shimmer,
-    columns: _columns,
-    gap: _gap,
-    ratios: _ratios,
-    heightsPx: _heightsPx,
-    spans: _spans,
-    placement: _placement,
-    viewportWidth: _viewportWidth,
-    layoutWidthPx: _layoutWidthPx,
-    ...masonryLayout
-  } = layout;
-
-  return {
-    className,
-    backgroundColor,
-    radius,
-    shimmer,
-    layout: masonryLayout as MasonrySkeletonLayoutNode,
-  };
-}
-
-function roundPx(value: number) {
-  return Math.round(value * 1000) / 1000;
-}
-
-function getVisibleElement<T extends HTMLElement>(
-  nodes: NodeListOf<T> | T[]
-) {
-  for (const node of Array.from(nodes)) {
-    const style = window.getComputedStyle(node);
-    if (style.display !== "none" && style.visibility !== "hidden") {
-      return node;
-    }
-  }
-  return null;
-}
-
-function readIndexedHeights(root: ParentNode, selector: string) {
-  const byIndex = new Map<number, number>();
-  root.querySelectorAll<HTMLElement>(selector).forEach((node) => {
-    const index = Number(node.getAttribute("data-rmg-mskel-index") ?? node.getAttribute("data-rmg-idx"));
-    if (!Number.isInteger(index) || index < 0) return;
-    byIndex.set(index, roundPx(node.getBoundingClientRect().height));
-  });
-  return Array.from(byIndex.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([, height]) => height);
-}
-
-export function MasonrySkeletonCore({
-  layout,
+export function MasonrySkeleton({
+  masonry,
   children,
   breakpoints,
   className,
@@ -201,377 +524,81 @@ export function MasonrySkeletonCore({
   disableShimmer,
   ariaLabel,
   ready,
-  enabled,
-  force,
+  enabled = true,
   timing,
-  masonry,
-  cacheSnapshot,
-  scopeId: providedScopeId,
-  skeletonRootRef: providedSkeletonRootRef,
-  shellRef: providedShellRef,
-  geometrySnapshotRef,
-}: MasonrySkeletonCoreProps) {
+  ...options
+}: MasonrySkeletonProps) {
+  const effectiveOptions = masonry ? { ...options, ...masonry } : options;
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
     [breakpoints]
   );
-  const generatedScopeId = React.useMemo(
-    () =>
-      buildStableScopeId("skel_", {
-        layout,
-        breakpoints: effectiveBreakpoints,
-        backgroundColor,
-        radius,
-        shimmer,
-        disableShimmer,
-        masonry,
-      }),
-    [
-      layout,
-      effectiveBreakpoints,
-      backgroundColor,
-      radius,
-      shimmer,
-      disableShimmer,
-      masonry,
-    ]
-  );
-  const scopeId = providedScopeId ?? generatedScopeId;
-  const masonrySpec = React.useMemo(() => {
-    if (isMasonryLayout(layout) || isMasonryLayoutSpec(layout)) {
-      return toMasonrySkeletonSpec(layout);
-    }
-    return null;
-  }, [layout]);
-  const masonryLayout = masonrySpec?.layout?.kind === "masonry"
-    ? (masonrySpec.layout as MasonrySkeletonLayoutNode)
-    : null;
-  const masonrySourceLayout = isMasonryLayout(layout) ? layout : null;
-  const localSkeletonRootRef = React.useRef<HTMLDivElement | null>(null);
-  const localShellRef = React.useRef<HTMLDivElement | null>(null);
-  const skeletonRootRef = providedSkeletonRootRef ?? localSkeletonRootRef;
-  const shellRef = providedShellRef ?? localShellRef;
-  const explicitLayoutWidthPx =
-    masonry?.layoutWidthPx ?? masonrySourceLayout?.layoutWidthPx;
-  const [measuredLayoutWidthPx, setMeasuredLayoutWidthPx] = React.useState<
-    number | undefined
-  >(undefined);
-  const effectiveLayoutWidthPx = explicitLayoutWidthPx ?? measuredLayoutWidthPx;
-
-  React.useLayoutEffect(() => {
-    if (explicitLayoutWidthPx !== undefined) {
-      setMeasuredLayoutWidthPx((prev) => (prev === undefined ? prev : undefined));
-      return;
-    }
-
-    const node = skeletonRootRef.current;
-    if (!node) return;
-
-    const commitWidth = (rawWidth: number | undefined) => {
-      const width = Number(rawWidth);
-      if (!Number.isFinite(width) || width <= 0) return;
-
-      setMeasuredLayoutWidthPx((prev) =>
-        prev != null && Math.abs(prev - width) < 0.5 ? prev : width
-      );
-    };
-
-    const readWidth = () => {
-      commitWidth(node.getBoundingClientRect().width);
-    };
-
-    readWidth();
-
-    if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver((entries) => {
-        const entry = entries[0];
-        commitWidth(entry?.contentRect.width);
-      });
-      observer.observe(node);
-      return () => observer.disconnect();
-    }
-
-    window.addEventListener("resize", readWidth);
-    return () => window.removeEventListener("resize", readWidth);
-  }, [explicitLayoutWidthPx]);
-
-  const masonryRenderOptions: Omit<
-    MasonrySkeletonCardProps,
-    "breakpoints" | "spec"
-  > | null =
-    masonrySpec
-      ? {
-          count:
-            masonry?.count ??
-            (typeof masonryLayout?.count === "number"
-              ? Math.max(0, masonryLayout.count | 0)
-              : 1),
-          columns: masonry?.columns ?? masonrySourceLayout?.columns,
-          gap: masonry?.gap ?? masonrySourceLayout?.gap,
-          ratios: masonry?.ratios ?? masonrySourceLayout?.ratios,
-          heightsPx: masonry?.heightsPx ?? masonrySourceLayout?.heightsPx,
-          spans: masonry?.spans ?? masonrySourceLayout?.spans,
-          placement: masonry?.placement ?? masonrySourceLayout?.placement,
-          viewportWidth: masonry?.viewportWidth ?? masonrySourceLayout?.viewportWidth,
-          layoutWidthPx: effectiveLayoutWidthPx,
-          disableShimmer,
-        }
-      : null;
-  const validCacheSnapshot = cacheSnapshot ?? null;
-  const effectiveMasonrySpec = React.useMemo(() => {
-    if (!validCacheSnapshot?.text || !masonrySpec) return masonrySpec;
-
-    return {
-      ...masonrySpec,
-      layout: masonrySpec.layout
-        ? applySkeletonTextSnapshot(
-            masonrySpec.layout,
-            validCacheSnapshot.text,
-            "masonry",
-            effectiveBreakpoints
-          )
-        : masonrySpec.layout,
-    } as MasonrySkeletonSpec;
-  }, [effectiveBreakpoints, masonrySpec, validCacheSnapshot]);
-  const effectiveMasonryRenderOptions = React.useMemo(() => {
-    if (!masonryRenderOptions) return null;
-    if (!validCacheSnapshot) return masonryRenderOptions;
-
-    return {
-      ...masonryRenderOptions,
-      viewportWidth: validCacheSnapshot.viewportWidth,
-      layoutWidthPx:
-        validCacheSnapshot.layoutWidthPx ?? masonryRenderOptions.layoutWidthPx,
-    };
-  }, [masonryRenderOptions, validCacheSnapshot]);
-  const masonryLayoutSeed = React.useMemo(() => {
-    if (!effectiveMasonrySpec || !effectiveMasonryRenderOptions) return null;
-
-    const seedScopeId = buildStableScopeId("mseed_", {
-      scopeId,
-      breakpoints: effectiveBreakpoints,
-      masonry: effectiveMasonryRenderOptions,
-      spec: effectiveMasonrySpec,
-    });
-    const prediction = buildMasonrySkeletonPrediction({
-      count: effectiveMasonryRenderOptions.count,
-      columns: effectiveMasonryRenderOptions.columns,
-      gap: effectiveMasonryRenderOptions.gap,
-      breakpoints: effectiveBreakpoints,
-      ratios: effectiveMasonryRenderOptions.ratios,
-      heightsPx: effectiveMasonryRenderOptions.heightsPx,
-      spans: effectiveMasonryRenderOptions.spans,
-      placement: effectiveMasonryRenderOptions.placement,
-      spec: effectiveMasonrySpec,
-      scopeId: seedScopeId,
-      respectLayoutCount: false,
-      viewportWidth: effectiveMasonryRenderOptions.viewportWidth,
-      layoutWidthPx: effectiveMasonryRenderOptions.layoutWidthPx,
-    });
-    const activeVariant = resolveActiveMasonryPredictionVariant(
-      prediction.variants,
-      effectiveMasonryRenderOptions.viewportWidth ?? DEFAULT_SERVER_VIEWPORT_WIDTH
-    );
-    const compactPrediction =
-      validCacheSnapshot && activeVariant
-        ? {
-            ...prediction,
-            states: [activeVariant.state],
-            variants: [activeVariant],
-          }
-        : prediction;
-
-    return {
-      scopeId: seedScopeId,
-      prediction,
-      initialHeights: activeVariant?.items.map((item) => item.height),
-      activeVariantKey: activeVariant?.state.key,
-      activeWidthBucketMin: activeVariant?.state.minWidth,
-      responsiveCss: buildMasonryFirstPaintLayoutCss({
-        scopeId: seedScopeId,
-        prediction: compactPrediction,
-      }),
-      shellReserveCss: buildMasonryShellReserveCss({
-        scopeId: seedScopeId,
-        prediction: compactPrediction,
-      }),
-    };
-  }, [
-    effectiveBreakpoints,
-    effectiveMasonryRenderOptions?.columns,
-    effectiveMasonryRenderOptions?.count,
-    effectiveMasonryRenderOptions?.disableShimmer,
-    effectiveMasonryRenderOptions?.gap,
-    effectiveMasonryRenderOptions?.heightsPx,
-    effectiveMasonryRenderOptions?.layoutWidthPx,
-    effectiveMasonryRenderOptions?.placement,
-    effectiveMasonryRenderOptions?.ratios,
-    effectiveMasonryRenderOptions?.spans,
-    effectiveMasonryRenderOptions?.viewportWidth,
-    effectiveMasonrySpec,
-    scopeId,
-    validCacheSnapshot,
-  ]);
-  const getCacheGeometrySnapshot = React.useCallback(() => {
-    const viewportWidth =
-      window.innerWidth ||
-      document.documentElement.clientWidth ||
-      DEFAULT_SERVER_VIEWPORT_WIDTH;
-    const prediction = masonryLayoutSeed?.prediction;
-    const activeVariant = prediction
-      ? resolveActiveMasonryPredictionVariant(prediction.variants, viewportWidth)
-      : null;
-    const skeletonRoot = skeletonRootRef.current;
-    const shell = shellRef.current;
-    const visibleVariant = skeletonRoot
-      ? getVisibleElement(
-          skeletonRoot.querySelectorAll<HTMLElement>("[data-rmg-mskel-variant]")
-        )
-      : null;
-    const contentMasonryRoot =
-      shell?.querySelector<HTMLElement>("[data-rmg-masonry-layout-seed]") ??
-      null;
-    const layoutRect =
-      contentMasonryRoot?.getBoundingClientRect() ??
-      skeletonRoot?.getBoundingClientRect() ??
-      null;
-    const shellHeightPx =
-      visibleVariant?.getBoundingClientRect().height ??
-      contentMasonryRoot?.getBoundingClientRect().height ??
-      (activeVariant
-        ? Math.max(0, ...activeVariant.items.map((item) => item.top + item.height))
-        : undefined);
-    const itemHeightsPx = visibleVariant
-      ? readIndexedHeights(visibleVariant, "[data-rmg-mskel-index]")
-      : contentMasonryRoot
-      ? readIndexedHeights(contentMasonryRoot, "[data-rmg-idx]")
-      : activeVariant?.items.map((item) => roundPx(item.height));
-    const variantKey =
-      visibleVariant?.getAttribute("data-rmg-mskel-variant") ??
-      activeVariant?.state.key;
-
-    if (!variantKey || !activeVariant) return null;
-
-    return {
-      widthBucketMin: activeVariant.state.minWidth,
-      viewportWidth,
-      ...(layoutRect?.width ? { layoutWidthPx: roundPx(layoutRect.width) } : null),
-      masonry: {
-        variantKey,
-        ...(shellHeightPx != null && Number.isFinite(shellHeightPx)
-          ? { shellHeightPx: roundPx(shellHeightPx) }
-          : null),
-        ...(itemHeightsPx?.length ? { itemHeightsPx } : null),
-      },
-    };
-  }, [masonryLayoutSeed]);
-  if (geometrySnapshotRef) {
-    geometrySnapshotRef.current = getCacheGeometrySnapshot;
-  }
-  const rootStyle: React.CSSProperties = {
-    ...style,
-    ...(backgroundColor
-      ? ({ ["--rmg-skel-bg" as any]: backgroundColor } as React.CSSProperties)
-      : null),
-    ...(radius != null
-      ? ({ ["--rmg-skel-radius" as any]: cssLen(radius) } as React.CSSProperties)
-      : null),
-    ...(disableShimmer ? null : (shimmerStyleVars(shimmer) as React.CSSProperties)),
-  };
-  const masonrySkeletonNode =
-    effectiveMasonrySpec && effectiveMasonryRenderOptions ? (
-      <div
-        data-rmg-skeleton-scope={scopeId}
-        ref={skeletonRootRef}
-        className={className}
-        style={rootStyle}
-        aria-hidden={ariaLabel ? undefined : true}
-        aria-label={ariaLabel}
-        role={ariaLabel ? "status" : undefined}
-        aria-live={ariaLabel ? "polite" : undefined}
-      >
-        <MasonrySkeletonCard
-          {...effectiveMasonryRenderOptions}
-          spec={effectiveMasonrySpec}
-          breakpoints={effectiveBreakpoints}
-          cacheSnapshot={validCacheSnapshot}
-        />
-      </div>
-    ) : null;
-  const contentWrapper = React.useCallback(
-    (content: React.ReactNode) =>
-      masonryLayoutSeed ? (
-        <MasonryLayoutSeedProvider value={masonryLayoutSeed}>
-          {content}
-        </MasonryLayoutSeedProvider>
-      ) : (
-        content
-      ),
-    [masonryLayoutSeed]
+  const skeleton = (
+    <MasonrySkeletonNode
+      options={effectiveOptions}
+      breakpoints={effectiveBreakpoints}
+      className={className}
+      style={style}
+      backgroundColor={backgroundColor}
+      radius={radius}
+      shimmer={shimmer}
+      disableShimmer={disableShimmer}
+      ariaLabel={ariaLabel}
+    />
   );
 
-  if (!masonrySkeletonNode) return null;
-
-  const reserveContainer = children !== undefined && !!masonryLayoutSeed?.scopeId;
-  const reserveShell =
-    reserveContainer &&
-    enabled !== false &&
-    ready !== true &&
-    !!masonryLayoutSeed?.shellReserveCss;
-  const framedSkeleton = (
-    <SkeletonFrame
-      skeletonNode={masonrySkeletonNode}
-      ready={ready}
-      enabled={enabled}
-      force={force}
-      timing={timing}
-      shellClassName={shellClassName}
-      shellStyle={shellStyle}
-      contentClassName={contentClassName}
-      contentStyle={contentStyle}
-      contentOwnsWrapperLayout={children !== undefined}
-      loadingLayerFirst={children !== undefined}
-      contentWrapper={contentWrapper}
-      shellDataAttributes={
-        reserveShell
-          ? {
-              "data-rmg-masonry-skeleton-shell": masonryLayoutSeed.scopeId,
-            }
-          : undefined
-      }
-      shellRef={shellRef}
-    >
-      {children}
-    </SkeletonFrame>
+  const wrapperMode = children !== undefined;
+  const loadingActive = wrapperMode && enabled !== false && ready !== true;
+  const { exitMs, showLoadingLayer, loadingExiting, revealUnlocked } = useTimedLoadingLayer(
+    loadingActive,
+    timing
   );
 
-  if (!reserveContainer) return framedSkeleton;
+  if (!wrapperMode) return skeleton;
+
+  const shouldShowSkeleton = enabled !== false && showLoadingLayer;
+  const contentVisible = enabled === false || loadingExiting || !shouldShowSkeleton;
+  const contentBlocked = enabled !== false && shouldShowSkeleton && !loadingExiting;
+  const transitionStyle = {
+    ["--rmg-light-mskel-exit-ms" as any]: `${exitMs}ms`,
+  } as React.CSSProperties;
 
   return (
-    <div style={{ containerType: "inline-size", width: "100%" }}>
-      {reserveShell ? (
-        <style
-          dangerouslySetInnerHTML={{
-            __html: masonryLayoutSeed.shellReserveCss!,
-          }}
-        />
+    <div className={cx(styles.shell, shellClassName)} style={shellStyle}>
+      {shouldShowSkeleton ? (
+        <div
+          className={cx(
+            styles.layer,
+            styles.loadingLayer,
+            loadingExiting && styles.loadingLayerExit
+          )}
+          style={transitionStyle}
+          data-rmg-light-mskel-loading-layer="true"
+        >
+          {skeleton}
+        </div>
       ) : null}
-      {framedSkeleton}
+      <div
+        className={cx(
+          styles.layer,
+          styles.content,
+          contentVisible && styles.contentVisible,
+          contentBlocked && styles.contentBlocked,
+          contentClassName
+        )}
+        style={{
+          ...transitionStyle,
+          ...contentStyle,
+        }}
+        aria-hidden={contentVisible ? undefined : true}
+        data-rmg-light-mskel-content-layer="true"
+      >
+        <SkeletonRevealGateProvider value={revealUnlocked}>
+          {children}
+        </SkeletonRevealGateProvider>
+      </div>
     </div>
   );
 }
 
-export function MasonrySkeleton(props: MasonrySkeletonProps) {
-  return <MasonrySkeletonCore {...props} />;
-}
-
-export default MasonrySkeleton;
-
-export type {
-  MasonryPlacement,
-  MasonrySkeletonNode,
-  MasonrySkeletonSlot,
-  MasonrySkeletonSpec,
-} from "./MasonrySkeleton";
-
-export type { SkeletonNode };
+export { MasonrySkeleton as Skeleton, MasonrySkeleton as default };

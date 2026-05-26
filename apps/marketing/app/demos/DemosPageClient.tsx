@@ -131,6 +131,21 @@ import { css as gridVideoYoutubeCss } from "./grid/grid-video-youtube/css";
 import { GridVideoVimeoDemo } from "./grid/grid-video-vimeo/Component";
 import { source as gridVideoVimeoSource } from "./grid/grid-video-vimeo/source";
 import { css as gridVideoVimeoCss } from "./grid/grid-video-vimeo/css";
+import { MasonryCoreBalancedDemo } from "./masonry/masonry-core-balanced/Component";
+import { source as masonryCoreBalancedSource } from "./masonry/masonry-core-balanced/source";
+import { css as masonryCoreBalancedCss } from "./masonry/masonry-core-balanced/css";
+import { MasonryCoreSpansDemo } from "./masonry/masonry-core-spans/Component";
+import { source as masonryCoreSpansSource } from "./masonry/masonry-core-spans/source";
+import { css as masonryCoreSpansCss } from "./masonry/masonry-core-spans/css";
+import { MasonryCoreHorizontalOrderDemo } from "./masonry/masonry-core-horizontal-order/Component";
+import { source as masonryCoreHorizontalOrderSource } from "./masonry/masonry-core-horizontal-order/source";
+import { css as masonryCoreHorizontalOrderCss } from "./masonry/masonry-core-horizontal-order/css";
+import { MasonryCoreRoundRobinDemo } from "./masonry/masonry-core-round-robin/Component";
+import { source as masonryCoreRoundRobinSource } from "./masonry/masonry-core-round-robin/source";
+import { css as masonryCoreRoundRobinCss } from "./masonry/masonry-core-round-robin/css";
+import { MasonryCoreLazyLoadDemo } from "./masonry/masonry-core-lazy-load/Component";
+import { source as masonryCoreLazyLoadSource } from "./masonry/masonry-core-lazy-load/source";
+import { css as masonryCoreLazyLoadCss } from "./masonry/masonry-core-lazy-load/css";
 import { MasonryBalancedDemo } from "./masonry/masonry-balanced/Component";
 import { source as masonryBalancedSource } from "./masonry/masonry-balanced/source";
 import { css as masonryBalancedCss } from "./masonry/masonry-balanced/css";
@@ -1026,6 +1041,66 @@ const DEMOS: DemoDefinition[] = [
     css: gridVideoVimeoCss,
   },
   {
+    id: "masonry-core-balanced",
+    title: "Balanced",
+    eyebrow: "Masonry Core",
+    tags: ["images","balanced","fullscreen","skeleton","core"],
+    categoryId: "masonry",
+    Component: MasonryCoreBalancedDemo,
+    source: masonryCoreBalancedSource,
+    css: masonryCoreBalancedCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-core-balanced-demo.module.css",
+  },
+  {
+    id: "masonry-core-spans",
+    title: "Spans",
+    eyebrow: "Masonry Core",
+    tags: ["images","balanced","span","fullscreen","skeleton","core"],
+    categoryId: "masonry",
+    Component: MasonryCoreSpansDemo,
+    source: masonryCoreSpansSource,
+    css: masonryCoreSpansCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-core-spans-demo.module.css",
+  },
+  {
+    id: "masonry-core-horizontal-order",
+    title: "Horizontal Order",
+    eyebrow: "Masonry Core",
+    tags: ["images","horizontal-order","span","fullscreen","skeleton","core"],
+    categoryId: "masonry",
+    Component: MasonryCoreHorizontalOrderDemo,
+    source: masonryCoreHorizontalOrderSource,
+    css: masonryCoreHorizontalOrderCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-core-horizontal-order-demo.module.css",
+  },
+  {
+    id: "masonry-core-round-robin",
+    title: "Round Robin",
+    eyebrow: "Masonry Core",
+    tags: ["images","round-robin","fullscreen","skeleton","core"],
+    categoryId: "masonry",
+    Component: MasonryCoreRoundRobinDemo,
+    source: masonryCoreRoundRobinSource,
+    css: masonryCoreRoundRobinCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-core-round-robin-demo.module.css",
+  },
+  {
+    id: "masonry-core-lazy-load",
+    title: "Lazy Load",
+    eyebrow: "Masonry Core",
+    tags: ["images","lazy-load","fullscreen","skeleton","core"],
+    categoryId: "masonry",
+    Component: MasonryCoreLazyLoadDemo,
+    source: masonryCoreLazyLoadSource,
+    css: masonryCoreLazyLoadCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-core-lazy-load-demo.module.css",
+  },
+  {
     id: "masonry-balanced",
     title: "Balanced",
     eyebrow: "Masonry",
@@ -1520,27 +1595,39 @@ const DEMO_CATEGORIES: DemoCategory[] = [
   {
     "id": "masonry",
     "label": "Masonry",
-    "description": "Server-predicted masonry layouts that keep height and placement stable through hydration, then refine with live measurements.",
+    "description": "Dimensioned core masonry for small image grids, plus measured masonry demos for richer cards, video, fullscreen, and structured skeleton loading.",
     "items": [
       {
         "type": "demo",
-        "demoId": "masonry-balanced"
+        "demoId": "masonry-core-balanced"
       },
       {
         "type": "demo",
-        "demoId": "masonry-spans"
+        "demoId": "masonry-core-spans"
       },
       {
         "type": "demo",
-        "demoId": "masonry-horizontal-order"
+        "demoId": "masonry-core-horizontal-order"
       },
       {
         "type": "demo",
-        "demoId": "masonry-round-robin"
+        "demoId": "masonry-core-round-robin"
       },
       {
         "type": "demo",
-        "demoId": "masonry-lazy-load"
+        "demoId": "masonry-core-lazy-load"
+      },
+      {
+        "type": "group",
+        "id": "masonry-with-text-wrap",
+        "label": "WITH TEXT WRAP",
+        "demoIds": [
+          "masonry-balanced",
+          "masonry-spans",
+          "masonry-horizontal-order",
+          "masonry-round-robin",
+          "masonry-lazy-load"
+        ]
       },
       {
         "type": "group",

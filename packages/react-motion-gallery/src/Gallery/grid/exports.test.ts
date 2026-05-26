@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 import * as gridEntry from "../../grid";
 import * as gridReadyEntry from "../../grid-ready";
 import * as gridLazyLoadEntry from "../../grid-lazy-load";
+import * as gridFullscreenEntry from "../../grid-fullscreen";
 
 const packageJson = JSON.parse(
   readFileSync(new URL("../../../package.json", import.meta.url), "utf8")
@@ -30,6 +31,16 @@ describe("grid public entries", () => {
       __rmgGridPlugin: true,
       kind: "lazy-load",
       blocksReady: false,
+    });
+  });
+
+  test("exports grid fullscreen as a dedicated plugin subpath", () => {
+    expect(packageJson.exports["./grid/fullscreen"]).toBeDefined();
+    expect(gridFullscreenEntry.gridFullscreen).toBeTypeOf("function");
+    expect(gridFullscreenEntry.resolveGridFullscreenClick).toBeTypeOf("function");
+    expect(gridFullscreenEntry.gridFullscreen()).toMatchObject({
+      __rmgGridPlugin: true,
+      kind: "fullscreen",
     });
   });
 });

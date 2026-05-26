@@ -1,0 +1,107 @@
+.shell {
+  display: grid;
+  position: relative;
+  width: 100%;
+}
+
+.layer {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--rmg-light-mskel-exit-ms, 600ms) ease;
+  will-change: opacity;
+}
+
+.contentVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.contentBlocked {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.loadingLayer {
+  position: relative;
+  z-index: 1;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity var(--rmg-light-mskel-exit-ms, 600ms) ease;
+  will-change: opacity;
+  overflow: hidden;
+}
+
+.loadingLayerExit {
+  opacity: 0;
+}
+
+.rootFrame {
+  width: 100%;
+  container-type: inline-size;
+}
+
+.root {
+  position: relative;
+  width: 100%;
+  container-type: inline-size;
+}
+
+.item {
+  position: absolute;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--rmg-skel-bg, #e5e5e5);
+  border-radius: var(--rmg-skel-radius, 12px);
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: var(--rmg-skel-shimmer-opacity, 1);
+  filter: var(--rmg-skel-shimmer-filter, none);
+  background-image: linear-gradient(
+    var(--rmg-skel-shimmer-angle, 90deg),
+    transparent 0%,
+    var(--rmg-skel-shimmer-c1, rgba(255, 255, 255, 0.25)) 22%,
+    var(--rmg-skel-shimmer-c2, rgba(255, 255, 255, 0.45)) 50%,
+    var(--rmg-skel-shimmer-c3, rgba(255, 255, 255, 0.25)) 78%,
+    transparent 100%
+  );
+  animation: rmgMasonryLightSkeletonShimmer
+    var(--rmg-skel-shimmer-duration, 1200ms)
+    var(--rmg-skel-shimmer-timing, linear) infinite;
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+@keyframes rmgMasonryLightSkeletonShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content {
+    transition: none;
+  }
+
+  .shimmer::after {
+    animation: none;
+  }
+}

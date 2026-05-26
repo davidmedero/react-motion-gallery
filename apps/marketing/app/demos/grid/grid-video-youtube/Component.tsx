@@ -5,6 +5,7 @@ import { GalleryCore } from "react-motion-gallery/core";
 import { type MediaItem, toMediaItems } from "react-motion-gallery/media";
 import { Grid } from "react-motion-gallery/grid";
 import { useGridReady } from "react-motion-gallery/grid/ready";
+import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
 import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
@@ -218,6 +219,7 @@ export function GridVideoYoutubeDemo() {
           columns={{ 0: 1, 900: 2 }}
           gap={{ 0: 12, 900: 18 }}
           fullscreenTrigger="item"
+          plugins={[gridFullscreen()]}
         >
           {ITEMS.map((item, index) => {
             const textIds = GRID_VIDEO_YOUTUBE_TEXT_IDS[index]!;
@@ -231,6 +233,7 @@ export function GridVideoYoutubeDemo() {
                     width="24"
                     height="24"
                     className={styles.open_fullscreen_icon}
+                    data-rmg-fullscreen-trigger
                   />
                   <Video
                     src={item.src}

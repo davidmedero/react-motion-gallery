@@ -47,6 +47,7 @@ export function createEntriesGridMedia(args: {
       staggerMs: src?.staggerMs ?? 40,
       durationMs: src?.durationMs ?? 300,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
+      disabled: src?.disabled ?? true,
       staggerLimit: src?.staggerLimit,
     }
   }
@@ -87,9 +88,6 @@ export function createEntriesGridMedia(args: {
         breakpoints={breakpoints}
         viewportWidth={viewportWidth}
         reveal={normalizedReveal}
-        enableFullscreen={false}
-        onOpen={() => {}}
-        registerExpandableImage={() => {}}
         revealReady={entryInView ?? true}
       />
     );

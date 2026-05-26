@@ -3,18 +3,18 @@ export const source = `/* eslint-disable @next/next/no-img-element */
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
-import { Masonry } from "react-motion-gallery/masonry";
-import { useMasonryReady } from "react-motion-gallery/masonry/ready";
+import { Masonry } from "react-motion-gallery/masonry/measured";
+import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry";
+import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
 import type {
   MasonrySkeletonSpec,
   SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/masonry";
+} from "react-motion-gallery/skeleton/cache/masonry/structured";
 import styles from "./masonry-round-robin-demo.module.css";
 import { masonryRoundRobinSkeletonText } from "./masonry-round-robin.skeleton-text.generated";
 import { demoSkeletonCache } from "../../skeleton-cache";

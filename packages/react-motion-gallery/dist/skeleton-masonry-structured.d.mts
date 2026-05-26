@@ -1,0 +1,62 @@
+import * as react_jsx_runtime from 'react/jsx-runtime';
+import * as React from 'react';
+import { R as ResponsiveNumber, B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
+import { e as SkeletonLength, f as SkeletonShimmer } from './layout-BSjd7pwQ.mjs';
+export { S as SkeletonNode } from './layout-BSjd7pwQ.mjs';
+import { R as ResponsiveMasonrySpan } from './types-Cc37Drgz.mjs';
+import { d as MasonrySkeletonLayoutNode, M as MasonryPlacement, c as MasonrySkeletonSpec } from './MasonrySkeleton-C7WkAbFh.mjs';
+export { a as MasonrySkeletonNode, b as MasonrySkeletonSlot } from './MasonrySkeleton-C7WkAbFh.mjs';
+import { SkeletonForceOptions, SkeletonTimingOptions } from './skeleton-base.mjs';
+import './text-BBcRGVzn.mjs';
+import './force-C5m1QpdF.mjs';
+import './transitions-DU3ftmIq.mjs';
+
+type SkeletonMasonryOptions = {
+    count?: number;
+    columns?: ResponsiveNumber;
+    gap?: ResponsiveNumber;
+    ratios?: number[];
+    heightsPx?: number[];
+    spans?: ReadonlyArray<ResponsiveMasonrySpan | undefined>;
+    placement?: MasonryPlacement;
+    viewportWidth?: number;
+    layoutWidthPx?: number;
+};
+type SkeletonMasonryLayout = MasonrySkeletonLayoutNode & {
+    className?: string;
+    backgroundColor?: string;
+    radius?: SkeletonLength;
+    shimmer?: SkeletonShimmer;
+    columns?: ResponsiveNumber;
+    gap?: ResponsiveNumber;
+    ratios?: number[];
+    heightsPx?: number[];
+    spans?: ReadonlyArray<ResponsiveMasonrySpan | undefined>;
+    placement?: MasonryPlacement;
+    viewportWidth?: number;
+    layoutWidthPx?: number;
+};
+type MasonrySkeletonProps = {
+    layout: SkeletonMasonryLayout | MasonrySkeletonSpec;
+    children?: React.ReactNode;
+    breakpoints?: BreakpointMap;
+    className?: string;
+    style?: React.CSSProperties;
+    shellClassName?: string;
+    shellStyle?: React.CSSProperties;
+    contentClassName?: string;
+    contentStyle?: React.CSSProperties;
+    backgroundColor?: string;
+    radius?: SkeletonLength;
+    shimmer?: SkeletonShimmer;
+    disableShimmer?: boolean;
+    ariaLabel?: string;
+    ready?: boolean;
+    enabled?: boolean;
+    force?: SkeletonForceOptions;
+    timing?: SkeletonTimingOptions;
+    masonry?: SkeletonMasonryOptions;
+};
+declare function MasonrySkeleton(props: MasonrySkeletonProps): react_jsx_runtime.JSX.Element;
+
+export { MasonryPlacement, MasonrySkeleton, type MasonrySkeletonProps, MasonrySkeletonSpec, MasonrySkeleton as Skeleton, SkeletonForceOptions, type SkeletonMasonryLayout, type SkeletonMasonryOptions, SkeletonTimingOptions, MasonrySkeleton as default };

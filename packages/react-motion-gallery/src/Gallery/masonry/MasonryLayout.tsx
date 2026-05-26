@@ -237,11 +237,14 @@ export const MasonryLayout = React.forwardRef<MasonryHandle, MasonryLayoutProps>
       }
     }, [items.length, measurementKey]);
 
-    const revealActive = clientReady && inView && revealReady && (skeletonRevealGate ?? true);
+    const revealDisabled = reveal.disabled === true;
+    const revealActive =
+      revealDisabled ||
+      (clientReady && inView && revealReady && (skeletonRevealGate ?? true));
     const masonryRootClassName = [
       styles.masonryRoot,
-      styles.revealContainer,
-      revealActive ? styles.revealActive : '',
+      !revealDisabled ? styles.revealContainer : '',
+      !revealDisabled && revealActive ? styles.revealActive : '',
       masonry.classNames?.root || '',
     ]
       .filter(Boolean)
