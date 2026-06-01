@@ -11,7 +11,7 @@ import {
   EntriesCore,
   type EntriesProps,
 } from "./index";
-import type { EntriesOptions } from "./types";
+import type { EntriesHandle, EntriesOptions } from "./types";
 import {
   collectEntrySkeletonTextIds,
   type EntrySkeletonSpec,
@@ -61,7 +61,8 @@ function resolveEntrySkeletonSpec(
   };
 }
 
-export function CachedEntries(props: CachedEntriesProps) {
+export const CachedEntries = React.forwardRef<EntriesHandle, CachedEntriesProps>(
+function CachedEntries(props, forwardedRef) {
   const core = useOptionalGalleryCore();
   const effectiveBreakpoints = React.useMemo(
     () => core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP },
@@ -133,13 +134,13 @@ export function CachedEntries(props: CachedEntriesProps) {
   return (
     <EntriesCore
       {...props}
+      ref={forwardedRef}
       entries={entriesObject}
       entryListCacheSnapshot={validCacheSnapshot}
       entryListCacheScopeId={scopeId}
       entryListRef={listRef}
     />
   );
-}
+});
 
 export default CachedEntries;
-

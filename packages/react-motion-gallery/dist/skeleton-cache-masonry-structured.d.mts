@@ -3,13 +3,12 @@ import { MasonrySkeletonProps } from './skeleton-masonry-structured.mjs';
 export { SkeletonMasonryLayout, SkeletonMasonryOptions } from './skeleton-masonry-structured.mjs';
 import { SkeletonCacheOptions } from './skeleton-cache.mjs';
 export { SkeletonForceOptions, SkeletonTimingOptions } from './skeleton-base.mjs';
-export { M as MasonryPlacement, a as MasonrySkeletonNode, b as MasonrySkeletonSlot, c as MasonrySkeletonSpec } from './MasonrySkeleton-C7WkAbFh.mjs';
+export { a as MasonryPlacement, b as MasonrySkeletonNode, c as MasonrySkeletonSlot, d as MasonrySkeletonSpec } from './types-L2pRy8k4.mjs';
 export { S as SkeletonNode } from './layout-BSjd7pwQ.mjs';
 import 'react';
 import './responsiveNumber-CouEMJ9O.mjs';
-import './types-Cc37Drgz.mjs';
 import './force-C5m1QpdF.mjs';
-import './transitions-DU3ftmIq.mjs';
+import './transitions-ChhEdSB6.mjs';
 import './text-BBcRGVzn.mjs';
 
 type CachedMasonrySkeletonProps = MasonrySkeletonProps & {

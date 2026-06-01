@@ -1,0 +1,1 @@
+import {a as a$1}from'./chunk-QUY5FE75.mjs';import {d}from'./chunk-L4NJDMCU.mjs';import*as a from'react';function e(i={}){return a$1("virtualization",{options:d(i)})}function o(i={}){return a.useMemo(()=>e(i),[i.enabled,i.estimateSize,i.gap,i.overscan])}export{e as gridVirtualization,o as useGridVirtualizer};

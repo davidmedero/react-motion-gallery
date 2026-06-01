@@ -1,6 +1,7 @@
 import { ResponsiveNumber } from "../responsive";
 
 export type LoadingTimingOptions = {
+  enterMs?: number;
   exitMs?: number;
   minVisibleMs?: number;
 };

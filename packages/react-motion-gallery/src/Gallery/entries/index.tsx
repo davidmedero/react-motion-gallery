@@ -4,13 +4,24 @@
 export * from "./types";
 export * from "./hooks/useEntryInView";
 export * from "./hooks/useEntryDecodeReady";
+export * from "./plugins/pagination";
+export * from "./plugins/loadMore";
+export * from "./plugins/infiniteScroll";
+export * from "./plugins/virtualization";
+export * from "./useEntriesReady";
 export * from "./normalize";
 export * from "./components/EntryList";
 
 import * as React from "react";
 import { EntryList } from "./components/EntryList";
 import { DEFAULT_ENTRIES } from "./defaults";
-import type { EntriesOptions, SlideOwner, MediaEntryLink, EntryItem } from "./types";
+import type {
+  EntriesHandle,
+  EntriesOptions,
+  SlideOwner,
+  MediaEntryLink,
+  EntryItem,
+} from "./types";
 import { BREAKPOINT_MAP } from "../shared/responsive";
 import { toMediaItems, type MediaItem } from "../shared/types/media";
 import { useOptionalGalleryCore } from "../core";
@@ -100,7 +111,8 @@ export type EntriesCoreProps = EntriesProps & {
   entryListRef?: React.RefObject<HTMLDivElement | null>;
 };
 
-export function EntriesCore(props: EntriesCoreProps) {
+export const EntriesCore = React.forwardRef<EntriesHandle, EntriesCoreProps>(
+function EntriesCore(props, forwardedRef) {
   const {
     enabled = true,
     entries,
@@ -112,6 +124,7 @@ export function EntriesCore(props: EntriesCoreProps) {
   const entriesObject = React.useMemo<EntriesOptions>(() => {
     return {
       ...entries,
+      layout: entries?.layout ?? DEFAULT_ENTRIES.layout,
       mediaLayout: entries?.mediaLayout ?? DEFAULT_ENTRIES.mediaLayout,
     };
   }, [entries]);
@@ -151,6 +164,10 @@ export function EntriesCore(props: EntriesCoreProps) {
   const { flattenedMedia, flattenedMap, entryFlatIndex, owners } = React.useMemo(() => {
     return flattenEntries(entriesObject.items as any);
   }, [entriesObject.items]);
+
+  entryFlatIndexRef.current = entryFlatIndex;
+  fsOwnersRef.current = owners;
+  entryMapRef.current = flattenedMap;
 
   React.useEffect(() => {
     entryFlatIndexRef.current = entryFlatIndex;
@@ -221,10 +238,12 @@ export function EntriesCore(props: EntriesCoreProps) {
 
   return (
     <EntryList
+      ref={forwardedRef}
       enabled={!!enabled}
       entries={entriesObject}
       fsEnabled={!!fsEnabled}
       openFullscreenAt={openFullscreenAt}
+      entryFlatIndex={entryFlatIndex}
       entryFlatIndexRef={entryFlatIndexRef}
       nodeFromMedia={nodeFromMedia}
       registerExpandableImage={registerExpandableImage}
@@ -236,10 +255,12 @@ export function EntriesCore(props: EntriesCoreProps) {
       skeletonCacheScopeId={props.entryListCacheScopeId}
     />
   );
-}
+});
 
-export function Entries(props: EntriesProps) {
-  return <EntriesCore {...props} />;
-}
+export const Entries = React.forwardRef<EntriesHandle, EntriesProps>(
+  function Entries(props, forwardedRef) {
+    return <EntriesCore {...props} ref={forwardedRef} />;
+  }
+);
 
 export default Entries;

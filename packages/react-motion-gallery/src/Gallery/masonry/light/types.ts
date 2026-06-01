@@ -1,6 +1,12 @@
 import type * as React from "react";
 
-export type MasonryPluginKind = "fullscreen" | "lazy-load";
+export type MasonryPluginKind =
+  | "fullscreen"
+  | "lazy-load"
+  | "pagination"
+  | "load-more"
+  | "infinite-scroll"
+  | "virtualization";
 
 export type MasonryPluginHandle = {
   getRootNode: () => HTMLElement | null;
@@ -22,6 +28,7 @@ export type MasonryPluginRuntimeProps = {
 
 export type MasonryPluginItemRenderArgs = {
   index: number;
+  itemIndex?: number;
   itemRef: React.Ref<HTMLDivElement>;
   itemProps: React.HTMLAttributes<HTMLDivElement>;
   children: React.ReactNode;

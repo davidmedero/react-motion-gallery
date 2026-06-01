@@ -27,6 +27,7 @@ export type CompareLoadingLayerVisualState = {
 };
 
 export type CompareLoadingLayerStyleArgs = {
+  enterMs?: number;
   exitMs: number;
   compareMode: boolean;
   loadingLayerOpacity: number;
@@ -87,8 +88,12 @@ export function resolveCompareLoadingLayerVisualState(
 export function resolveCompareLoadingLayerStyle(
   args: CompareLoadingLayerStyleArgs
 ): CSSProperties & Record<string, any> {
+  const exitMs = Math.max(0, args.exitMs);
+  const enterMs = Math.max(0, args.enterMs ?? exitMs);
   const style: CSSProperties & Record<string, any> = {
-    ["--rmg-loading-fade-duration" as any]: `${Math.max(0, args.exitMs)}ms`,
+    ["--rmg-loading-fade-duration" as any]: `${exitMs}ms`,
+    ["--rmg-loading-fade-enter-duration" as any]: `${enterMs}ms`,
+    ["--rmg-loading-fade-exit-duration" as any]: `${exitMs}ms`,
   };
 
   if (args.hidden) {

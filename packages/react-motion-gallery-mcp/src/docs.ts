@@ -27,6 +27,20 @@ const packageDocs: PackageDoc[] = [
     whenToRead: "Use for the browser-based measured skeleton text manifest and generator workflow.",
   },
   {
+    id: "entries-data-plugins",
+    title: "Entries Data Plugins",
+    uri: "rmg://docs/entries-data-plugins",
+    path: repoPath("packages", "react-motion-gallery", "docs", "entries-data-plugins.md"),
+    whenToRead: "Use for Entries pagination, items-per-page controls, session storage, load-more, infinite scroll, virtualization, URL sync, and data-window behavior.",
+  },
+  {
+    id: "grid-masonry-data-plugins",
+    title: "Grid And Masonry Data Plugins",
+    uri: "rmg://docs/grid-masonry-data-plugins",
+    path: repoPath("packages", "react-motion-gallery", "docs", "grid-masonry-data-plugins.md"),
+    whenToRead: "Use for Grid and Masonry pagination, items-per-page controls, session storage, load-more, infinite scroll, virtualization, and child-window behavior.",
+  },
+  {
     id: "skeleton-text-codex-prompt",
     title: "Skeleton Text AI Agent Prompt",
     uri: "rmg://docs/skeleton-text-codex-prompt",
@@ -92,7 +106,7 @@ export function agentBriefGuide() {
     "",
     "Browser-measured skeleton text applies to any real rendered DOM text: sliders, grids, masonry, entries, thumbnails, flex layouts, app shells, cards, and custom UI. Use flat `targets` by default. Add specialized `slider`, `masonry`, or `entries` manifest metadata only when those layout modes need readiness or compensation behavior.",
     "",
-    "The skeleton cookie snapshot cache is opt-in. Use `cache={{ key, routeKey }}` on `Skeleton`, `SliderSkeleton`, `GridSkeleton`, or `MasonrySkeleton`, and use `entries.loading.cache` for `Entries`. In SSR apps, parse cookies with `react-motion-gallery/skeleton/cache` on the server, then pass snapshots through `SkeletonCacheProvider` from `react-motion-gallery/skeleton/cache/provider`.",
+    "The skeleton cookie snapshot cache is opt-in. Use `cache={{ key, routeKey }}` on `Skeleton`, `SliderSkeleton`, or `MasonrySkeleton`, use `Grid.loading.cache` for Grid, and use `entries.loading.cache` for Entries. In SSR apps, parse cookies with `react-motion-gallery/skeleton/cache` on the server, then pass snapshots through `SkeletonCacheProvider` from `react-motion-gallery/skeleton/cache/provider`.",
   ].join("\n");
 }
 
@@ -103,7 +117,7 @@ export function layoutSelectionGuide() {
     "- Use `Slider` for one active position, carousel navigation, grouped cells, loop, wheel, thumbnails, and slide plugins.",
     "- Use `Grid` for predictable responsive tracks, product/editorial grids, spans, and template columns.",
     "- Use default `Masonry` for dimensioned image grids; add `react-motion-gallery/masonry/fullscreen` for GalleryCore fullscreen; use `react-motion-gallery/masonry/measured` for arbitrary uneven text/card heights and structured skeleton text.",
-    "- Use `Entries` when the content model is rows of text, metadata, and coordinated media.",
+    "- Use `Entries` when the content model is rows or cards of text, metadata, and coordinated media. Set `entries.layout` to `\"list\"` for stacked rows or `\"grid\"` for entry cards.",
     "- Use `ThumbnailSlider` or `FullscreenThumbnailSlider` when navigation should be visual.",
     "- Use `GalleryCore` and `useFullscreenController` when media should expand into fullscreen.",
     "- Use `ZoomPanImage` for inspectable cropped images without a fullscreen overlay.",
@@ -216,8 +230,8 @@ export function skeletonCacheGuide() {
     "",
     "- Import server-safe helpers from `react-motion-gallery/skeleton/cache`.",
     "- Import the client provider from `react-motion-gallery/skeleton/cache/provider`.",
-    "- Pass `cache={{ key, routeKey, ttlMs?, debounceMs?, cookie? }}` to `Skeleton`, `SliderSkeleton`, `GridSkeleton`, and structured `MasonrySkeleton` from `react-motion-gallery/skeleton/cache/masonry/structured`.",
-    "- For `Entries`, pass `entries.loading.cache`.",
+    "- Pass `cache={{ key, routeKey, ttlMs?, debounceMs?, cookie? }}` to `Skeleton`, `SliderSkeleton`, and structured `MasonrySkeleton` from `react-motion-gallery/skeleton/cache/masonry/structured`.",
+    "- For Grid, pass `loading.cache`; for Entries, pass `entries.loading.cache`.",
     "- Generated skeleton text sidecars emit `textId`; for hand-authored skeleton text, add `textId` to the skeleton `text` node and add matching `data-skeleton-text-id` to the real DOM text.",
     "",
     "Next.js pattern:",

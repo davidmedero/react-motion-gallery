@@ -22,6 +22,24 @@ type GridComponent = React.ForwardRefExoticComponent<
   Item: typeof GridItem;
 };
 
+function getStableGridCellId(child: React.ReactNode, sourceIndex: number) {
+  if (!React.isValidElement(child) || child.key == null) {
+    return `rmg-${sourceIndex + 1}`;
+  }
+
+  const rawKey = String(child.key);
+  if (!rawKey.startsWith(".$")) {
+    return `rmg-${sourceIndex + 1}`;
+  }
+
+  let hash = 0;
+  for (let index = 0; index < rawKey.length; index += 1) {
+    hash = (hash * 31 + rawKey.charCodeAt(index)) | 0;
+  }
+
+  return `rmg-k-${Math.abs(hash).toString(36)}`;
+}
+
 export const GridLayoutRuntime = React.forwardRef<GridHandle, Props>(function GridLayoutRuntime(
   props,
   forwardedRef
@@ -37,36 +55,32 @@ export const GridLayoutRuntime = React.forwardRef<GridHandle, Props>(function Gr
 
   const gridObject: GridOptions = React.useMemo(() => ({ ...gridOptions }), [gridOptions]);
 
-  const idSeqRef = React.useRef(0);
-  const newId = React.useCallback(() => `rmg-${++idSeqRef.current}`, []);
-
-  const initialCells = React.useMemo<GridCell[]>(() => {
+  const cellsState = React.useMemo<GridCell[]>(() => {
     const kids = React.Children.toArray(children);
     const next: GridCell[] = [];
 
-    for (const child of kids) {
+    for (const [sourceIndex, child] of kids.entries()) {
       const normalized = normalizeGridChild(child);
       if (normalized.node == null) continue;
 
       next.push({
-        id: newId(),
+        id: getStableGridCellId(child, sourceIndex),
         node: normalized.node,
         layoutMeta: normalized.layoutMeta,
+        sourceIndex,
       });
     }
 
     return next;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const [cellsState] = React.useState<GridCell[]>(initialCells);
+  }, [children]);
 
   function normalizeReveal(src?: RevealOptions) {
     return {
-      renderReveal: src?.renderReveal,
       staggerMs: src?.staggerMs ?? 60,
       durationMs: src?.durationMs ?? 600,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
+      disabled: src?.disabled ?? false,
+      staggerLimit: src?.staggerLimit,
     };
   }
 

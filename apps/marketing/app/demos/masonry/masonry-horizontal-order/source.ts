@@ -8,10 +8,8 @@ import {
   Masonry,
   type ResponsiveMasonrySpan,
 } from "react-motion-gallery/masonry/measured";
-import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
@@ -399,47 +397,38 @@ export function MasonryHorizontalOrderDemo() {
     ),
   );
 
-  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
-
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
-      <MasonrySkeleton
-        layout={horizontalOrderSkeleton}
-        ready={masonryReady}
-        timing={{ exitMs: 1200 }}
-        cache={{
-          key: MASONRY_HORIZONTAL_ORDER_SKELETON_CACHE_KEY,
-          routeKey: MASONRY_HORIZONTAL_ORDER_SKELETON_ROUTE_KEY,
-        }}
-        masonry={{
+      <Masonry
+        columns={{ 0: 1, 720: 2, 1140: 4 }}
+        gap={{ 0: 12, 1140: 18 }}
+        placement="horizontalOrder"
+        loading={{
+          cache: {
+            key: MASONRY_HORIZONTAL_ORDER_SKELETON_CACHE_KEY,
+            routeKey: MASONRY_HORIZONTAL_ORDER_SKELETON_ROUTE_KEY,
+          },
           count: ITEMS.length,
-          columns: { 0: 1, 720: 2, 1140: 4 },
-          gap: { 0: 12, 1140: 18 },
-          placement: "horizontalOrder",
+          skeleton: horizontalOrderSkeleton,
+          timing: { exitMs: 1200 },
         }}
       >
-        <Masonry
-          ref={masonryRef}
-          columns={{ 0: 1, 720: 2, 1140: 4 }}
-          gap={{ 0: 12, 1140: 18 }}
-          placement="horizontalOrder"
-        >
-          {ITEMS.map((item, index) => (
-            <Masonry.Item
-              key={item.kind === "image" ? item.src : item.poster}
-              span={item.span}
-            >
-              <MasonryHorizontalOrderCard
-                item={item}
-                skeletonTextIds={
-                  MASONRY_HORIZONTAL_ORDER_TEXT_IDS[index] ??
-                  MASONRY_HORIZONTAL_ORDER_TEXT_IDS[0]!
-                }
-              />
-            </Masonry.Item>
-          ))}
-        </Masonry>
-      </MasonrySkeleton>
+        {ITEMS.map((item, index) => (
+          <Masonry.Item
+            key={item.kind === "image" ? item.src : item.poster}
+            span={item.span}
+            revealKey={item.kind === "image" ? item.src : item.poster}
+          >
+            <MasonryHorizontalOrderCard
+              item={item}
+              skeletonTextIds={
+                MASONRY_HORIZONTAL_ORDER_TEXT_IDS[index] ??
+                MASONRY_HORIZONTAL_ORDER_TEXT_IDS[0]!
+              }
+            />
+          </Masonry.Item>
+        ))}
+      </Masonry>
       <MasonryHorizontalOrderFullscreenAddon />
     </GalleryCore>
   );

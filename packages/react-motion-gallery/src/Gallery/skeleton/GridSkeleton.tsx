@@ -88,6 +88,15 @@ export type GridSkeletonCardProps = {
   cacheSnapshot?: SkeletonCacheSnapshot | null;
 };
 
+export type GridSkeletonSlotContentProps = {
+  index: number;
+  count: number;
+  spec?: GridSkeletonSpec;
+  breakpoints?: BreakpointMap;
+  disableShimmer?: boolean;
+  cacheSnapshot?: SkeletonCacheSnapshot | null;
+};
+
 function isResponsiveMap(
   value: ResponsiveNumber | undefined
 ): value is Record<string, number> {
@@ -547,6 +556,99 @@ export function GridSkeletonCard({
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+export function GridSkeletonSlotContent({
+  index,
+  count,
+  spec,
+  breakpoints,
+  disableShimmer,
+  cacheSnapshot,
+}: GridSkeletonSlotContentProps) {
+  const s = spec ?? defaultGridSpec();
+  const effectiveBreakpoints = React.useMemo(
+    () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
+    [breakpoints]
+  );
+  const layoutSource: GridSkeletonNode = React.useMemo(() => {
+    const source = s.layout ?? (defaultGridSpec().layout as GridSkeletonNode);
+    return cacheSnapshot?.text
+      ? (applySkeletonTextSnapshot(
+          source,
+          cacheSnapshot.text,
+          "grid",
+          effectiveBreakpoints
+        ) as GridSkeletonNode)
+      : source;
+  }, [cacheSnapshot, effectiveBreakpoints, s.layout]);
+  const scopeId = React.useMemo(() => {
+    return buildStableScopeId("gskel_slot_", {
+      index,
+      count,
+      breakpoints: effectiveBreakpoints,
+      spec,
+      disableShimmer,
+    });
+  }, [count, disableShimmer, effectiveBreakpoints, index, spec]);
+  const { layout, responsiveCss } = React.useMemo(() => {
+    let n = 0;
+    const allocId = () => `n${++n}`;
+    const collected: SkeletonResponsiveCssEntry[] = [];
+    const withIds = collectResponsiveCss(
+      layoutSource,
+      allocId,
+      collected,
+      "grid",
+      effectiveBreakpoints
+    );
+    const cssText = buildResponsiveCssText({
+      scopeAttr: "data-rmg-grid-skel-scope",
+      scopeId,
+      rules: collected,
+    });
+
+    return { layout: withIds, responsiveCss: cssText };
+  }, [effectiveBreakpoints, layoutSource, scopeId]);
+  const gridNode = layout as GridSkeletonLayoutNode;
+  const { item, itemWrapStyle } = resolveGridSlot(gridNode, index);
+  const { outerStyle, innerStyle } = splitGridItemWrapStyles(itemWrapStyle);
+  const rootStyle: React.CSSProperties = {
+    ...(s.backgroundColor ? { ["--rmg-skel-bg" as any]: s.backgroundColor } : null),
+    ...(s.radius != null ? { ["--rmg-skel-radius" as any]: cssLen(s.radius) } : null),
+    ...(disableShimmer
+      ? null
+      : shimmerStyleVars(s.shimmer, {
+          enabledVarName: "--rmg-skel-card-shimmer-enabled",
+        })),
+    ...(itemWrapStyle ? applyBoxMargins(itemWrapStyle) : null),
+    ...(outerStyle || null),
+  };
+
+  return (
+    <div
+      data-rmg-grid-skel-scope={scopeId}
+      className={styles.gridSkeletonItem}
+      style={rootStyle}
+    >
+      {responsiveCss ? <style dangerouslySetInnerHTML={{ __html: responsiveCss }} /> : null}
+      <div
+        className={[
+          styles.gridSkeletonItemInner,
+          disableShimmer ? null : sharedSkeletonStyles.skelCardShimmer,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={innerStyle}
+      >
+        <SkeletonLayoutNode
+          node={item}
+          disableShimmer
+          breakpointMap={effectiveBreakpoints}
+        />
       </div>
     </div>
   );

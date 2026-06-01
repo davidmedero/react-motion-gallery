@@ -60,14 +60,42 @@ const internalTypeImportReplacements: Array<{
 const publicImportByExport = new Map<string, string>([
   ["GalleryCore", "react-motion-gallery/core"],
   ["useGalleryCore", "react-motion-gallery/core"],
+  ["RatingStars", "react-motion-gallery/rating-stars"],
   ["Slider", "react-motion-gallery/slider"],
   ["useSliderReady", "react-motion-gallery/slider"],
   ["createSliderIndexChannel", "react-motion-gallery/slider"],
   ["Grid", "react-motion-gallery/grid"],
+  ["gridPagination", "react-motion-gallery/grid/pagination"],
+  ["useGridPagination", "react-motion-gallery/grid/pagination"],
+  ["GridPaginationControls", "react-motion-gallery/grid/pagination"],
+  ["gridLoadMore", "react-motion-gallery/grid/load-more"],
+  ["useGridLoadMore", "react-motion-gallery/grid/load-more"],
+  ["gridInfiniteScroll", "react-motion-gallery/grid/infinite-scroll"],
+  ["useGridInfiniteScroll", "react-motion-gallery/grid/infinite-scroll"],
+  ["gridVirtualization", "react-motion-gallery/grid/virtualization"],
+  ["useGridVirtualizer", "react-motion-gallery/grid/virtualization"],
   ["Masonry", "react-motion-gallery/masonry"],
   ["masonryFullscreen", "react-motion-gallery/masonry/fullscreen"],
+  ["masonryPagination", "react-motion-gallery/masonry/pagination"],
+  ["useMasonryPagination", "react-motion-gallery/masonry/pagination"],
+  ["MasonryPaginationControls", "react-motion-gallery/masonry/pagination"],
+  ["masonryLoadMore", "react-motion-gallery/masonry/load-more"],
+  ["useMasonryLoadMore", "react-motion-gallery/masonry/load-more"],
+  ["masonryInfiniteScroll", "react-motion-gallery/masonry/infinite-scroll"],
+  ["useMasonryInfiniteScroll", "react-motion-gallery/masonry/infinite-scroll"],
+  ["masonryVirtualization", "react-motion-gallery/masonry/virtualization"],
+  ["useMasonryVirtualizer", "react-motion-gallery/masonry/virtualization"],
   ["Entries", "react-motion-gallery/entries"],
   ["flattenEntries", "react-motion-gallery/entries"],
+  ["useEntriesReady", "react-motion-gallery/entries/ready"],
+  ["entriesPagination", "react-motion-gallery/entries/pagination"],
+  ["useEntriesPagination", "react-motion-gallery/entries/pagination"],
+  ["entriesLoadMore", "react-motion-gallery/entries/load-more"],
+  ["useEntriesLoadMore", "react-motion-gallery/entries/load-more"],
+  ["entriesInfiniteScroll", "react-motion-gallery/entries/infinite-scroll"],
+  ["useEntriesInfiniteScroll", "react-motion-gallery/entries/infinite-scroll"],
+  ["entriesVirtualization", "react-motion-gallery/entries/virtualization"],
+  ["useEntriesVirtualizer", "react-motion-gallery/entries/virtualization"],
   ["useFullscreenController", "react-motion-gallery/fullscreen"],
   ["ThumbnailSlider", "react-motion-gallery/thumbnails"],
   ["createThumbnailSyncBridge", "react-motion-gallery/thumbnails"],
@@ -152,8 +180,16 @@ function publicPathForLocalSourceEntry(entry: string) {
   }
 
   if (entry === "grid-ready") return "react-motion-gallery/grid/ready";
+  if (entry === "grid-pagination") return "react-motion-gallery/grid/pagination";
+  if (entry === "grid-load-more") return "react-motion-gallery/grid/load-more";
+  if (entry === "grid-infinite-scroll") return "react-motion-gallery/grid/infinite-scroll";
+  if (entry === "grid-virtualization") return "react-motion-gallery/grid/virtualization";
   if (entry === "masonry-ready") return "react-motion-gallery/masonry/ready";
   if (entry === "masonry-fullscreen") return "react-motion-gallery/masonry/fullscreen";
+  if (entry === "masonry-pagination") return "react-motion-gallery/masonry/pagination";
+  if (entry === "masonry-load-more") return "react-motion-gallery/masonry/load-more";
+  if (entry === "masonry-infinite-scroll") return "react-motion-gallery/masonry/infinite-scroll";
+  if (entry === "masonry-virtualization") return "react-motion-gallery/masonry/virtualization";
 
   return `react-motion-gallery/${entry}`;
 }

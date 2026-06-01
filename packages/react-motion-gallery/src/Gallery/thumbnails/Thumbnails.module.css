@@ -18,7 +18,13 @@
   opacity: var(--rmg-thumb-loading-opacity, 1);
   --rmg-thumb-skel-shadow-opacity: 1;
   pointer-events: none;
-  transition: opacity var(--rmg-loading-fade-duration, 600ms) ease;
+  transition:
+    opacity
+      var(
+        --rmg-loading-fade-enter-duration,
+        var(--rmg-loading-fade-duration, 600ms)
+      )
+      ease;
   will-change: opacity;
   overflow: hidden;
 }
@@ -28,8 +34,16 @@
 }
 
 .thumbLoadingLayerExit {
+  --rmg-loading-fade-shadow-duration: var(
+    --rmg-loading-fade-exit-duration,
+    var(--rmg-loading-fade-duration, 600ms)
+  );
   --rmg-thumb-loading-opacity: 0;
   --rmg-thumb-skel-shadow-opacity: 0;
+  transition-duration: var(
+    --rmg-loading-fade-exit-duration,
+    var(--rmg-loading-fade-duration, 600ms)
+  );
 }
 
 .thumbSkeletonOverlay {
@@ -49,7 +63,18 @@
   border-radius: var(--rmg-thumb-skel-shadow-radius, 6px);
   box-shadow: var(--rmg-thumb-skel-shadow, none);
   opacity: var(--rmg-thumb-skel-shadow-opacity, 1);
-  transition: opacity calc(var(--rmg-loading-fade-duration, 600ms) * 0.45) ease-out;
+  transition:
+    opacity
+      calc(
+        var(
+          --rmg-loading-fade-shadow-duration,
+          var(
+            --rmg-loading-fade-enter-duration,
+            var(--rmg-loading-fade-duration, 600ms)
+          )
+        ) * 0.45
+      )
+      ease-out;
   pointer-events: none;
 }
 
@@ -76,7 +101,18 @@
   border-radius: var(--rmg-thumb-skel-shadow-radius, var(--rmg-skel-radius, 6px));
   box-shadow: var(--rmg-thumb-skel-shadow, none);
   opacity: var(--rmg-thumb-skel-shadow-opacity, 1);
-  transition: opacity calc(var(--rmg-loading-fade-duration, 600ms) * 0.45) ease-out;
+  transition:
+    opacity
+      calc(
+        var(
+          --rmg-loading-fade-shadow-duration,
+          var(
+            --rmg-loading-fade-enter-duration,
+            var(--rmg-loading-fade-duration, 600ms)
+          )
+        ) * 0.45
+      )
+      ease-out;
   pointer-events: none;
 }
 
@@ -97,17 +133,19 @@
   );
   animation: rmgThumbShimmer var(--rmg-skel-shimmer-duration, 1200ms)
     var(--rmg-skel-shimmer-timing, linear) infinite;
-  transform: translateX(-100%);
+  transform: translate3d(-100%, 0, 0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
   pointer-events: none;
 }
 
 @keyframes rmgThumbShimmer {
   0% {
-    transform: translateX(-100%);
+    transform: translate3d(-100%, 0, 0);
   }
 
   100% {
-    transform: translateX(100%);
+    transform: translate3d(100%, 0, 0);
   }
 }
 

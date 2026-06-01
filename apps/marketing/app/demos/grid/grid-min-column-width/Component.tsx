@@ -4,10 +4,8 @@
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Grid } from "react-motion-gallery/grid";
-import { useGridReady } from "react-motion-gallery/grid/ready";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/cache/grid";
@@ -251,43 +249,34 @@ function FullscreenAddon() {
 
 export function GridMinColumnWidthDemo() {
   const fullscreenMedia = toMediaItems(ITEMS.map((item) => item.fullscreenSrc));
-  const { ref: gridRef, ready: gridReady } = useGridReady();
 
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
-      <GridSkeleton
-        cache={demoSkeletonCache("grid-min-column-width")}
-        layout={CARD_SKELETON}
-        ready={gridReady}
-        timing={{ exitMs: 1600 }}
-        grid={{
-          count: ITEMS.length,
-          minColumnWidth: 220,
-          gap: { 0: 12, 900: 18 },
+      <Grid
+        minColumnWidth={220}
+        gap={{ 0: 12, 900: 18 }}
+        fullscreenTrigger="item"
+        loading={{
+          skeleton: CARD_SKELETON,
+          cache: demoSkeletonCache("grid-min-column-width"),
+          timing: { exitMs: 1600 },
         }}
+        plugins={[gridFullscreen()]}
       >
-        <Grid
-          ref={gridRef}
-          minColumnWidth={220}
-          gap={{ 0: 12, 900: 18 }}
-          fullscreenTrigger="item"
-          plugins={[gridFullscreen()]}
-        >
-          {ITEMS.map((item, index) => (
-            <GridCard
-              key={item.imageSrc}
-              imageSrc={item.imageSrc}
-              badge={item.badge}
-              title={item.title}
-              body={item.body}
-              skeletonTextIds={
-                GRID_MIN_COLUMN_WIDTH_TEXT_IDS[index] ??
-                GRID_MIN_COLUMN_WIDTH_TEXT_IDS[0]!
-              }
-            />
-          ))}
-        </Grid>
-      </GridSkeleton>
+        {ITEMS.map((item, index) => (
+          <GridCard
+            key={item.imageSrc}
+            imageSrc={item.imageSrc}
+            badge={item.badge}
+            title={item.title}
+            body={item.body}
+            skeletonTextIds={
+              GRID_MIN_COLUMN_WIDTH_TEXT_IDS[index] ??
+              GRID_MIN_COLUMN_WIDTH_TEXT_IDS[0]!
+            }
+          />
+        ))}
+      </Grid>
       <FullscreenAddon />
     </GalleryCore>
   );

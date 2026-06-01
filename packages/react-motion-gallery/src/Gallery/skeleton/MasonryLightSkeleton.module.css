@@ -36,13 +36,21 @@
   z-index: 1;
   opacity: 1;
   pointer-events: none;
-  transition: opacity var(--rmg-light-mskel-exit-ms, 600ms) ease;
+  transition:
+    opacity
+      var(
+        --rmg-light-mskel-enter-ms,
+        var(--rmg-light-mskel-exit-ms, 600ms)
+      )
+      ease;
   will-change: opacity;
   overflow: hidden;
 }
 
 .loadingLayerExit {
+  --rmg-light-mskel-enter-ms: var(--rmg-light-mskel-exit-ms, 600ms);
   opacity: 0;
+  transition-duration: var(--rmg-light-mskel-exit-ms, 600ms);
 }
 
 .rootFrame {
@@ -82,17 +90,19 @@
   animation: rmgMasonryLightSkeletonShimmer
     var(--rmg-skel-shimmer-duration, 1200ms)
     var(--rmg-skel-shimmer-timing, linear) infinite;
-  transform: translateX(-100%);
+  transform: translate3d(-100%, 0, 0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
   pointer-events: none;
 }
 
 @keyframes rmgMasonryLightSkeletonShimmer {
   0% {
-    transform: translateX(-100%);
+    transform: translate3d(-100%, 0, 0);
   }
 
   100% {
-    transform: translateX(100%);
+    transform: translate3d(100%, 0, 0);
   }
 }
 

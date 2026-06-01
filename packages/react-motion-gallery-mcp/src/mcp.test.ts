@@ -167,7 +167,25 @@ describe("mcp server", () => {
       const docsContent = docsIndex.contents[0];
       expect(docsContent?.mimeType).toBe("application/json");
       expect(JSON.parse(resourceText(docsContent) || "{}").docs.map((doc: { id: string }) => doc.id)).toEqual(
-        expect.arrayContaining(["readme", "skeleton-text-authoring", "skeleton-text-codex-prompt"])
+        expect.arrayContaining([
+          "readme",
+          "skeleton-text-authoring",
+          "entries-data-plugins",
+          "grid-masonry-data-plugins",
+          "skeleton-text-codex-prompt",
+        ])
+      );
+
+      const entriesDataDoc = await client.readResource({
+        uri: "rmg://docs/entries-data-plugins",
+      });
+      expect(resourceText(entriesDataDoc.contents[0])).toContain("Entries Data Plugins");
+
+      const gridMasonryDataDoc = await client.readResource({
+        uri: "rmg://docs/grid-masonry-data-plugins",
+      });
+      expect(resourceText(gridMasonryDataDoc.contents[0])).toContain(
+        "Grid And Masonry Data Plugins"
       );
 
       const skeletonDoc = await client.readResource({

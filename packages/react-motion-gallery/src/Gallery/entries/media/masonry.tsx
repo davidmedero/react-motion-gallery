@@ -4,8 +4,6 @@
 import * as React from "react";
 import { Masonry as CoreMasonry } from "../../masonry/light";
 import { MasonryLayout } from "../../masonry/MasonryLayout";
-import { useMasonryReady } from "../../masonry/useMasonryReady";
-import { MasonrySkeleton as Skeleton } from "../../skeleton/masonry-structured";
 import type { EntriesMediaContainerRender } from "../index";
 import { BREAKPOINT_MAP } from "../../shared/responsive";
 import { useOptionalGalleryCore } from "../../core";
@@ -20,9 +18,18 @@ import type {
 
 type EntriesMasonryLoadingOptions = {
   enabled?: boolean;
+  active?: boolean;
+  count?: number;
   force?: SkeletonForceOptions;
   skeleton?: MasonrySkeletonSpec;
   timing?: SkeletonTimingOptions;
+  animate?: boolean;
+  waitForMedia?: boolean;
+  decodeTimeoutMs?: number;
+  rootMargin?: string;
+  threshold?: number;
+  keepSkeletonMounted?: boolean;
+  rememberRevealed?: boolean;
 };
 
 function isCoreMasonryItemElement(
@@ -47,9 +54,18 @@ export function createEntriesMasonryMedia(args: {
 
     return {
       enabled: src?.enabled,
+      active: src?.active,
+      count: src?.count,
       force: src?.force,
       skeleton: src?.skeleton,
       timing: src?.timing,
+      animate: src?.animate,
+      waitForMedia: src?.waitForMedia,
+      decodeTimeoutMs: src?.decodeTimeoutMs,
+      rootMargin: src?.rootMargin,
+      threshold: src?.threshold,
+      keepSkeletonMounted: src?.keepSkeletonMounted,
+      rememberRevealed: src?.rememberRevealed,
     };
   }
 
@@ -74,7 +90,6 @@ export function createEntriesMasonryMedia(args: {
     const { entryInView, mediaNodes } = props;
     const core = useOptionalGalleryCore();
     const breakpoints = core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP };
-    const masonryReady = useMasonryReady();
     const coreMasonryItems = React.useMemo(() => {
       if (!Array.isArray(mediaNodes) || mediaNodes.length === 0) return [];
       return mediaNodes.filter(isCoreMasonryItemElement);
@@ -93,6 +108,7 @@ export function createEntriesMasonryMedia(args: {
             key: `entries-masonry-${index}`,
             node: null,
             span: normalizedChild.layoutMeta?.span,
+            revealKey: normalizedChild.layoutMeta?.revealKey,
           };
         }
 
@@ -103,6 +119,7 @@ export function createEntriesMasonryMedia(args: {
           return {
             key: `entries-masonry-${index}`,
             span: normalizedChild.layoutMeta?.span,
+            revealKey: normalizedChild.layoutMeta?.revealKey,
             node: (
               <div
                 className={normalizedChild.layoutMeta?.className}
@@ -118,6 +135,7 @@ export function createEntriesMasonryMedia(args: {
           key: `entries-masonry-${index}`,
           node: content,
           span: normalizedChild.layoutMeta?.span,
+          revealKey: normalizedChild.layoutMeta?.revealKey,
         };
       });
     }, [mediaNodes]);
@@ -126,10 +144,17 @@ export function createEntriesMasonryMedia(args: {
     if (filtered.length === 0) return null;
 
     if (useCoreMasonry) {
-      const masonryNode = (
+      const coreLoading = normalizedLoading
+        ? {
+            ...normalizedLoading,
+            count: normalizedLoading.count ?? coreMasonryItems.length,
+          }
+        : masonryConfig.loading;
+
+      return (
         <CoreMasonry
           {...masonryConfig}
-          ref={masonryReady.ref}
+          loading={coreLoading as any}
           breakpoints={breakpoints}
           reveal={normalizedReveal}
           revealReady={entryInView ?? true}
@@ -137,62 +162,27 @@ export function createEntriesMasonryMedia(args: {
           {coreMasonryItems}
         </CoreMasonry>
       );
-
-      if (!normalizedLoading?.skeleton) return masonryNode;
-
-      return (
-        <Skeleton
-          layout={normalizedLoading.skeleton}
-          ready={masonryReady.ready}
-          enabled={normalizedLoading.enabled}
-          force={normalizedLoading.force}
-          timing={normalizedLoading.timing}
-          masonry={{
-            count: coreMasonryItems.length,
-            columns: masonryConfig.columns,
-            gap: masonryConfig.gap,
-            placement: masonryConfig.placement,
-            spans: coreMasonryItems.map((item) => item.props.span),
-          }}
-        >
-          {masonryNode}
-        </Skeleton>
-      );
     }
 
-    const masonryNode = (
+    const layoutLoading = normalizedLoading
+      ? {
+          ...normalizedLoading,
+          count: normalizedLoading.count ?? filtered.length,
+        }
+      : masonryConfig.loading;
+
+    return (
       <MasonryLayout
-        ref={masonryReady.ref}
         items={filtered.map((item) => (
           <React.Fragment key={item.key}>{item.node}</React.Fragment>
         ))}
         itemSpans={filtered.map((item) => item.span)}
-        masonry={masonryConfig}
+        itemRevealKeys={filtered.map((item) => item.revealKey ?? item.key)}
+        masonry={{ ...masonryConfig, loading: layoutLoading } as any}
         breakpoints={breakpoints}
         reveal={normalizedReveal}
         revealReady={entryInView ?? true}
       />
-    );
-
-    if (!normalizedLoading?.skeleton) return masonryNode;
-
-    return (
-      <Skeleton
-        layout={normalizedLoading.skeleton}
-        ready={masonryReady.ready}
-        enabled={normalizedLoading.enabled}
-        force={normalizedLoading.force}
-        timing={normalizedLoading.timing}
-        masonry={{
-          count: filtered.length,
-          columns: masonryConfig.columns,
-          gap: masonryConfig.gap,
-          placement: masonryConfig.placement,
-          spans: filtered.map((item) => item.span),
-        }}
-      >
-        {masonryNode}
-      </Skeleton>
     );
   }
 

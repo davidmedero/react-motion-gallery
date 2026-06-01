@@ -1,4 +1,4 @@
-import { M as MasonryPlugin } from './types-0ntfoMKP.mjs';
+import { M as MasonryPlugin } from './types-qMg7LB37.mjs';
 import 'react';
 
 declare function resolveMasonryFullscreenClick(target: EventTarget | null): {

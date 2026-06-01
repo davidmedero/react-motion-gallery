@@ -693,7 +693,7 @@ export function EntrySkeletonCard({
   if (s.variant === "solid" && !s.layout) {
     return (
       <div
-        className={[styles.entrySkelTile, className]
+        className={[styles.entrySkelRoot, styles.entrySkelTile, className]
           .filter(Boolean)
           .join(" ")}
         style={rootStyle}

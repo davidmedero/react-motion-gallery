@@ -4,10 +4,8 @@ export const source = `/* eslint-disable @next/next/no-img-element */
 import { GalleryCore } from "react-motion-gallery/core";
 import { type MediaItem, toMediaItems } from "react-motion-gallery/media";
 import { Masonry } from "react-motion-gallery/masonry/measured";
-import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
@@ -319,44 +317,34 @@ function MasonryYoutubeFullscreenAddon() {
 export function MasonryVideoYoutubeDemo() {
   const media = toMediaItems(ITEMS);
 
-  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
-
   return (
     <GalleryCore layout="masonry" fullscreenItems={media}>
-      <MasonrySkeleton
-        cache={demoSkeletonCache("masonry-video-youtube")}
-        layout={YOUTUBE_SKELETON}
-        ready={masonryReady}
-        timing={{ exitMs: 1200 }}
-        masonry={{
+      <Masonry
+        columns={{ 0: 1, 820: 2, 1280: 4 }}
+        gap={{ 0: 14, 820: 18, 1280: 20 }}
+        placement="balanced"
+        loading={{
+          cache: demoSkeletonCache("masonry-video-youtube"),
           count: ITEMS.length,
-          columns: { 0: 1, 820: 2, 1280: 4 },
-          gap: { 0: 14, 820: 18, 1280: 20 },
-          placement: "balanced",
+          skeleton: YOUTUBE_SKELETON,
+          timing: { exitMs: 1200 },
         }}
       >
-        <Masonry
-          ref={masonryRef}
-          columns={{ 0: 1, 820: 2, 1280: 4 }}
-          gap={{ 0: 14, 820: 18, 1280: 20 }}
-          placement="balanced"
-        >
-          {ITEMS.map((item, index) => (
-            <Masonry.Item key={item.src} span={item.span}>
-              <MasonryYoutubeCard
-                src={item.src}
-                poster={item.poster}
-                title={item.title}
-                body={item.body}
-                ratio={item.ratio}
-                skeletonTextIds={
-                  MASONRY_VIDEO_TEXT_IDS[index] ?? MASONRY_VIDEO_TEXT_IDS[0]!
-                }
-              />
-            </Masonry.Item>
-          ))}
-        </Masonry>
-      </MasonrySkeleton>
+        {ITEMS.map((item, index) => (
+          <Masonry.Item key={item.src} span={item.span} revealKey={item.src}>
+            <MasonryYoutubeCard
+              src={item.src}
+              poster={item.poster}
+              title={item.title}
+              body={item.body}
+              ratio={item.ratio}
+              skeletonTextIds={
+                MASONRY_VIDEO_TEXT_IDS[index] ?? MASONRY_VIDEO_TEXT_IDS[0]!
+              }
+            />
+          </Masonry.Item>
+        ))}
+      </Masonry>
       <MasonryYoutubeFullscreenAddon />
     </GalleryCore>
   );

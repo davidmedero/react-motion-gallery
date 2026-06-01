@@ -18,8 +18,10 @@ import { buildStableScopeId } from "../shared/stableScope";
 import type { ResponsiveGridSpan, ResponsiveGridTemplate } from "../grid/types";
 import {
   GridSkeletonCard,
+  GridSkeletonSlotContent,
   type GridSkeletonCardProps,
   type GridSkeletonLayoutNode,
+  type GridSkeletonSlotContentProps,
   type GridSkeletonSpec,
 } from "./GridSkeleton";
 import {
@@ -275,7 +277,9 @@ export default GridSkeleton;
 export type {
   GridSkeletonNode,
   GridSkeletonSlot,
+  GridSkeletonSlotContentProps,
   GridSkeletonSpec,
 } from "./GridSkeleton";
 
+export { GridSkeletonSlotContent };
 export type { SkeletonNode };

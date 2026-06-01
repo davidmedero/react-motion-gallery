@@ -1,15 +1,45 @@
+import type { LoadingForceOptions } from "../shared/loading/force";
 import type { ResponsiveNumber } from "../shared/responsive";
+import type { SkeletonCacheOptions } from "../skeleton/cache";
+import type { GridSkeletonSpec } from "../skeleton/grid";
 
 export type RevealOptions = {
-  renderReveal?: (
-    args: { active: boolean; containerProps: React.HTMLAttributes<HTMLDivElement> },
-    content: React.ReactNode
-  ) => React.ReactNode;
   staggerMs?: number;
   durationMs?: number;
   easing?: string;
   disabled?: boolean;
   staggerLimit?: number;
+};
+
+export type GridLoadingSkeletonArgs = {
+  index: number;
+  key: React.Key;
+  revealKey?: React.Key;
+  placeholder: boolean;
+  ready: boolean;
+};
+
+export type GridLoadingOptions = {
+  enabled?: boolean;
+  active?: boolean;
+  count?: number;
+  skeleton?:
+    | GridSkeletonSpec
+    | ((args: GridLoadingSkeletonArgs) => React.ReactNode);
+  cache?: SkeletonCacheOptions;
+  force?: LoadingForceOptions;
+  timing?: {
+    enterMs?: number;
+    minVisibleMs?: number;
+    exitMs?: number;
+  };
+  animate?: boolean;
+  waitForMedia?: boolean;
+  decodeTimeoutMs?: number;
+  rootMargin?: string;
+  threshold?: number;
+  keepSkeletonMounted?: boolean;
+  rememberRevealed?: boolean;
 };
 
 export type GridFullscreenTrigger = 'item' | 'media';
@@ -18,7 +48,13 @@ export type GridSpan = number | "full";
 export type ResponsiveGridSpan = GridSpan | Record<string, GridSpan>;
 export type ResponsiveGridTemplate = string | Record<string, string>;
 
-export type GridPluginKind = "lazy-load" | "fullscreen";
+export type GridPluginKind =
+  | "lazy-load"
+  | "fullscreen"
+  | "pagination"
+  | "load-more"
+  | "infinite-scroll"
+  | "virtualization";
 
 export type GridPluginItemRenderArgs = {
   index: number;
@@ -32,6 +68,7 @@ export type GridPluginItemRenderArgs = {
 export type GridPluginHost = {
   handle: GridHandle | null;
   itemCount: number;
+  visibleItemCount: number;
   ready: boolean;
   fullscreenTrigger: GridFullscreenTrigger;
 };
@@ -55,6 +92,7 @@ export type GridPlugin = {
 
 export type GridItemProps = {
   span?: ResponsiveGridSpan;
+  revealKey?: React.Key;
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
@@ -77,4 +115,5 @@ export type GridOptions = {
   fullscreenTrigger?: GridFullscreenTrigger;
   plugins?: GridPlugin[];
   reveal?: RevealOptions;
+  loading?: GridLoadingOptions;
 };

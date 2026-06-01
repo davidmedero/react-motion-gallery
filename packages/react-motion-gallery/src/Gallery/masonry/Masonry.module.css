@@ -14,6 +14,7 @@
   position: absolute;
   display: block;
   min-width: 0;
+  isolation: isolate;
 }
 
 .masonryItem img,
@@ -23,7 +24,8 @@
   object-fit: cover;
 }
 
-.masonryItem[data-rmg-fullscreen-enabled="true"][data-rmg-fullscreen-trigger-mode="media"] img,
+.masonryItem[data-rmg-fullscreen-enabled="true"][data-rmg-fullscreen-trigger-mode="media"]
+  img,
 .masonryItem[data-rmg-fullscreen-enabled="true"] [data-rmg-fullscreen-trigger] {
   cursor: zoom-in;
 }
@@ -35,9 +37,8 @@
 
 .revealContainer {
   opacity: 0;
-  transition:
-    opacity var(--rmg-reveal-duration, 420ms)
-      var(--rmg-reveal-easing, cubic-bezier(.2,.7,.2,1));
+  transition: opacity var(--rmg-reveal-duration, 420ms)
+    var(--rmg-reveal-easing, cubic-bezier(0.2, 0.7, 0.2, 1));
 }
 
 .revealActive {
@@ -46,8 +47,7 @@
 
 .revealContainer > [data-rmg-idx] {
   opacity: 0;
-  transition:
-    opacity 600ms cubic-bezier(.4, 0, .22, 1);
+  transition: opacity 600ms cubic-bezier(0.4, 0, 0.22, 1);
   transition-delay: calc(
     var(--rmg-reveal-index, 0) * var(--rmg-reveal-stagger, 160ms)
   );
@@ -56,4 +56,70 @@
 
 .revealContainer.revealActive > [data-rmg-idx] {
   opacity: 1;
+}
+
+.masonryItem[data-rmg-masonry-item-stage="1"]
+  > :not([data-rmg-masonry-item-skeleton]) {
+  opacity: 0;
+  transition: opacity var(--rmg-reveal-duration, 600ms)
+    var(--rmg-reveal-easing, cubic-bezier(0.2, 0.7, 0.2, 1));
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+.masonryItem[data-rmg-masonry-item-stage="1"][data-rmg-masonry-item-reveal="1"]
+  > :not([data-rmg-masonry-item-skeleton]) {
+  opacity: 1;
+}
+
+.masonryItem[data-rmg-masonry-item-compare="1"]
+  > :not([data-rmg-masonry-item-skeleton]) {
+  opacity: 1;
+}
+
+.itemSkeleton {
+  --rmg-masonry-item-skeleton-transition-duration: var(
+    --rmg-masonry-item-skeleton-enter-duration,
+    var(--rmg-masonry-item-skeleton-exit-duration, 220ms)
+  );
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  opacity: var(--rmg-masonry-item-skeleton-opacity, 1);
+  pointer-events: none;
+  transition: opacity var(--rmg-masonry-item-skeleton-transition-duration) ease;
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+.itemSkeleton > * {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.masonryItem[data-rmg-masonry-item-reveal="1"] > .itemSkeleton {
+  --rmg-masonry-item-skeleton-transition-duration: var(
+    --rmg-masonry-item-skeleton-exit-duration,
+    220ms
+  );
+  opacity: 0;
+}
+
+.masonryItem[data-rmg-masonry-item-compare="1"] > .itemSkeleton {
+  opacity: var(--rmg-masonry-item-skeleton-opacity, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revealContainer,
+  .revealContainer > [data-rmg-idx],
+  .masonryItem[data-rmg-masonry-item-stage="1"]
+    > :not([data-rmg-masonry-item-skeleton]),
+  .itemSkeleton {
+    transition: none;
+  }
+
 }

@@ -2,13 +2,13 @@
 
 import * as React from "react";
 
-import {
-  BREAKPOINT_MAP,
-  type BreakpointMap,
-} from "../shared/responsive";
+import { BREAKPOINT_MAP, type BreakpointMap } from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { buildStableScopeId } from "../shared/stableScope";
-import { collectSkeletonTextIds, type SkeletonNode } from "../shared/skeleton/layout";
+import {
+  collectSkeletonTextIds,
+  type SkeletonNode,
+} from "../shared/skeleton/layout";
 import { buildMasonrySkeletonPrediction } from "../masonry/prediction";
 import {
   MasonrySkeletonCore,
@@ -31,7 +31,7 @@ export type CachedMasonrySkeletonProps = MasonrySkeletonProps & {
 };
 
 function isMasonryLayoutSpec(
-  layout: MasonrySkeletonProps["layout"]
+  layout: MasonrySkeletonProps["layout"],
 ): layout is MasonrySkeletonSpec {
   return (
     !!layout &&
@@ -43,13 +43,18 @@ function isMasonryLayoutSpec(
 }
 
 function isMasonryLayout(
-  layout: MasonrySkeletonProps["layout"]
+  layout: MasonrySkeletonProps["layout"],
 ): layout is SkeletonMasonryLayout {
-  return !!layout && typeof layout === "object" && "kind" in layout && layout.kind === "masonry";
+  return (
+    !!layout &&
+    typeof layout === "object" &&
+    "kind" in layout &&
+    layout.kind === "masonry"
+  );
 }
 
 function toMasonrySkeletonSpec(
-  layout: SkeletonMasonryLayout | MasonrySkeletonSpec
+  layout: SkeletonMasonryLayout | MasonrySkeletonSpec,
 ): MasonrySkeletonSpec {
   if (isMasonryLayoutSpec(layout)) return layout;
 
@@ -79,7 +84,7 @@ function toMasonrySkeletonSpec(
 }
 
 function getMasonrySkeletonTextRoot(
-  layout: MasonrySkeletonProps["layout"]
+  layout: MasonrySkeletonProps["layout"],
 ): SkeletonNode | undefined {
   const spec =
     isMasonryLayout(layout) || isMasonryLayoutSpec(layout)
@@ -94,7 +99,7 @@ export function CachedMasonrySkeleton({
 }: CachedMasonrySkeletonProps) {
   const effectiveBreakpoints = React.useMemo<BreakpointMap>(
     () => ({ ...BREAKPOINT_MAP, ...(props.breakpoints ?? {}) }),
-    [props.breakpoints]
+    [props.breakpoints],
   );
   const scopeId = React.useMemo(
     () =>
@@ -115,7 +120,7 @@ export function CachedMasonrySkeleton({
       props.shimmer,
       props.disableShimmer,
       props.masonry,
-    ]
+    ],
   );
   const masonrySpec = React.useMemo(() => {
     if (isMasonryLayout(props.layout) || isMasonryLayoutSpec(props.layout)) {
@@ -123,10 +128,11 @@ export function CachedMasonrySkeleton({
     }
     return null;
   }, [props.layout]);
-  const masonryLayout = masonrySpec?.layout?.kind === "masonry"
-    ? masonrySpec.layout
+  const masonryLayout =
+    masonrySpec?.layout?.kind === "masonry" ? masonrySpec.layout : null;
+  const masonrySourceLayout = isMasonryLayout(props.layout)
+    ? props.layout
     : null;
-  const masonrySourceLayout = isMasonryLayout(props.layout) ? props.layout : null;
   const masonryRenderOptions = masonrySpec
     ? {
         count:
@@ -152,20 +158,30 @@ export function CachedMasonrySkeleton({
   const clientViewportWidth = useViewportWidth();
   const textRoot = React.useMemo(
     () => getMasonrySkeletonTextRoot(props.layout),
-    [props.layout]
+    [props.layout],
   );
   const textIds = React.useMemo(
-    () => textRoot ? Array.from(collectSkeletonTextIds(textRoot, "masonry")) : [],
-    [textRoot]
+    () =>
+      textRoot ? Array.from(collectSkeletonTextIds(textRoot, "masonry")) : [],
+    [textRoot],
   );
   const validCacheSnapshot = React.useMemo(() => {
+    const validationViewportWidth =
+      typeof masonryRenderOptions?.viewportWidth === "number" &&
+      Number.isFinite(masonryRenderOptions.viewportWidth) &&
+      masonryRenderOptions.viewportWidth > 0
+        ? masonryRenderOptions.viewportWidth
+        : clientViewportWidth;
+
+    if (validationViewportWidth <= 0) return null;
+
     const basic = validateSkeletonCacheSnapshot(renderCacheSnapshot, {
       key: effectiveCache?.key,
       scopeId,
       kind: "masonry",
       routeKey: effectiveCache?.routeKey,
       ttlMs: effectiveCache?.ttlMs,
-      viewportWidth: clientViewportWidth || undefined,
+      viewportWidth: validationViewportWidth,
       textIds,
       itemCount: masonryRenderOptions?.count,
     });
@@ -189,7 +205,7 @@ export function CachedMasonrySkeleton({
     return validationPrediction.variants.some(
       (variant) =>
         variant.state.key === basic.masonry?.variantKey &&
-        variant.state.minWidth === basic.widthBucketMin
+        variant.state.minWidth === basic.widthBucketMin,
     )
       ? basic
       : null;
@@ -212,7 +228,7 @@ export function CachedMasonrySkeleton({
   >(null);
   const getGeometrySnapshot = React.useCallback(
     () => geometrySnapshotRef.current?.() ?? null,
-    []
+    [],
   );
 
   useSkeletonCacheWriter({

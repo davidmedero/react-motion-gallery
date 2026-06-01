@@ -3,6 +3,7 @@ import * as React from "react";
 export type UseEntryInViewOpts = IntersectionObserverInit & {
   nearMargin?: string;
   viewMargin?: string;
+  keys?: readonly string[];
 };
 
 function getViewportRect() {
@@ -86,63 +87,176 @@ export function useEntryInView(len: number, opts?: UseEntryInViewOpts) {
   const nearThreshold = normalizeThreshold(opts?.threshold, 0.01);
   const everThreshold = 0;
   const root = opts?.root ?? null;
+  const keys = opts?.keys;
+  const entryKeys = React.useMemo(
+    () => Array.from({ length: len }, (_, index) => keys?.[index] ?? String(index)),
+    [keys, len]
+  );
+  const entryKeySignature = entryKeys.join("\u0000");
 
-  const [nearView, setNearView] = React.useState<boolean[]>(
-    () => Array.from({ length: len }, () => false)
-  );
-  const [everInView, setEverInView] = React.useState<boolean[]>(
-    () => Array.from({ length: len }, () => false)
-  );
+  const [nearViewByKey, setNearViewByKey] = React.useState<Record<string, boolean>>({});
+  const [everInViewByKey, setEverInViewByKey] = React.useState<Record<string, boolean>>({});
 
   const nearIORef = React.useRef<IntersectionObserver | null>(null);
   const viewIORef = React.useRef<IntersectionObserver | null>(null);
   const nodeToIndexRef = React.useRef(new Map<Element, number>());
   const indexToNodeRef = React.useRef<(Element | null)[]>([]);
+  const entryKeysRef = React.useRef(entryKeys);
+  const previousEntryKeysRef = React.useRef(entryKeys);
+  const nearViewByKeyRef = React.useRef(nearViewByKey);
+  entryKeysRef.current = entryKeys;
+  nearViewByKeyRef.current = nearViewByKey;
+
+  const nearView = React.useMemo(
+    () =>
+      entryKeys.map((key, index) => {
+        const current = nearViewByKey[key];
+        if (current != null) return current;
+
+        const previousKey = previousEntryKeysRef.current[index];
+        return previousKey ? nearViewByKey[previousKey] ?? false : false;
+      }),
+    [entryKeys, nearViewByKey]
+  );
+  const everInView = React.useMemo(
+    () =>
+      entryKeys.map((key, index) => {
+        if (everInViewByKey[key]) return true;
+
+        const previousKey = previousEntryKeysRef.current[index];
+        return previousKey
+          ? everInViewByKey[previousKey] === true &&
+              nearViewByKey[previousKey] === true
+          : false;
+      }),
+    [entryKeys, everInViewByKey, nearViewByKey]
+  );
+
+  const setNearViewForIndex = React.useCallback((index: number, value: boolean) => {
+    const key = entryKeysRef.current[index] ?? String(index);
+    setNearViewByKey((prev) => {
+      if ((prev[key] ?? false) === value) return prev;
+      return { ...prev, [key]: value };
+    });
+  }, []);
+
+  const setEverInViewForIndex = React.useCallback((index: number) => {
+    const key = entryKeysRef.current[index] ?? String(index);
+    setEverInViewByKey((prev) => {
+      if (prev[key]) return prev;
+      return { ...prev, [key]: true };
+    });
+  }, []);
 
   const syncNodeVisibility = React.useCallback(
     (node: Element | null, index: number) => {
       if (typeof window === "undefined" || !node) return;
 
       const nearRatio = approximateIntersectionRatio(node, root, nearMargin);
-      if (passesThreshold(nearRatio, nearThreshold)) {
-        setNearView((prev) => {
-          if (prev[index]) return prev;
-          const next = prev.slice();
-          next[index] = true;
-          return next;
-        });
-      }
+      setNearViewForIndex(index, passesThreshold(nearRatio, nearThreshold));
 
       const viewRatio = approximateIntersectionRatio(node, root, viewMargin);
       if (passesThreshold(viewRatio, everThreshold)) {
-        setEverInView((prev) => {
-          if (prev[index]) return prev;
-          const next = prev.slice();
-          next[index] = true;
-          return next;
-        });
+        setEverInViewForIndex(index);
       }
     },
-    [everThreshold, nearMargin, nearThreshold, root, viewMargin]
+    [
+      everThreshold,
+      nearMargin,
+      nearThreshold,
+      root,
+      setEverInViewForIndex,
+      setNearViewForIndex,
+      viewMargin,
+    ]
   );
 
   React.useEffect(() => {
-    indexToNodeRef.current = Array.from({ length: len }, () => null);
-    setNearView(Array.from({ length: len }, () => false));
-    setEverInView(Array.from({ length: len }, () => false));
-    nodeToIndexRef.current.clear();
+    indexToNodeRef.current = Array.from(
+      { length: len },
+      (_, index) => indexToNodeRef.current[index] ?? null
+    );
 
-    nearIORef.current?.disconnect();
-    viewIORef.current?.disconnect();
-    nearIORef.current = null;
-    viewIORef.current = null;
+    for (const [node, index] of nodeToIndexRef.current.entries()) {
+      if (index >= len) {
+        nodeToIndexRef.current.delete(node);
+        nearIORef.current?.unobserve(node);
+        viewIORef.current?.unobserve(node);
+      }
+    }
   }, [len]);
+
+  React.useEffect(() => {
+    const previousKeys = previousEntryKeysRef.current;
+    const currentKeys = new Set(entryKeys);
+
+    setNearViewByKey((prev) => {
+      let changed = false;
+      const next: Record<string, boolean> = {};
+
+      entryKeys.forEach((key, index) => {
+        const currentValue = prev[key];
+        if (currentValue != null) {
+          next[key] = currentValue;
+          return;
+        }
+
+        const previousKey = previousKeys[index];
+        const previousWasNear =
+          previousKey != null ? prev[previousKey] === true : false;
+        if (previousWasNear) {
+          next[key] = true;
+          changed = true;
+        }
+      });
+
+      Object.keys(prev).forEach((key) => {
+        if (!currentKeys.has(key)) changed = true;
+      });
+
+      return changed ? next : prev;
+    });
+
+    setEverInViewByKey((prev) => {
+      let changed = false;
+      const next: Record<string, boolean> = {};
+
+      entryKeys.forEach((key, index) => {
+        if (prev[key]) {
+          next[key] = true;
+          return;
+        }
+
+        const previousKey = previousKeys[index];
+        const previousWasEver =
+          previousKey != null ? prev[previousKey] === true : false;
+        const previousWasNear =
+          previousKey != null ? nearViewByKeyRef.current[previousKey] === true : false;
+        if (previousWasEver && previousWasNear) {
+          next[key] = true;
+          changed = true;
+        }
+      });
+
+      Object.keys(prev).forEach((key) => {
+        if (!currentKeys.has(key)) {
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+
+    previousEntryKeysRef.current = entryKeys;
+  }, [entryKeySignature, entryKeys]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
 
     nearIORef.current?.disconnect();
     viewIORef.current?.disconnect();
+    nearIORef.current = null;
+    viewIORef.current = null;
 
     if (typeof IntersectionObserver === "undefined") {
       for (const [node, index] of nodeToIndexRef.current.entries()) {
@@ -153,49 +267,22 @@ export function useEntryInView(len: number, opts?: UseEntryInViewOpts) {
 
     nearIORef.current = new IntersectionObserver(
       (entries) => {
-        setNearView((prev) => {
-          let next = prev;
-          let changed = false;
-
-          for (const e of entries) {
-            const idx = nodeToIndexRef.current.get(e.target);
-            if (idx == null || idx < 0 || idx >= len) continue;
-
-            const isNow = !!e.isIntersecting;
-            if (isNow !== prev[idx]) {
-              if (!changed) {
-                next = prev.slice();
-                changed = true;
-              }
-              next[idx] = isNow;
-            }
-          }
-          return changed ? next : prev;
-        });
+        for (const e of entries) {
+          const idx = nodeToIndexRef.current.get(e.target);
+          if (idx == null || idx < 0 || idx >= len) continue;
+          setNearViewForIndex(idx, !!e.isIntersecting);
+        }
       },
       { root, rootMargin: nearMargin, threshold: nearThreshold }
     );
 
     viewIORef.current = new IntersectionObserver(
       (entries) => {
-        setEverInView((prev) => {
-          let next = prev;
-          let changed = false;
-
-          for (const e of entries) {
-            const idx = nodeToIndexRef.current.get(e.target);
-            if (idx == null || idx < 0 || idx >= len) continue;
-
-            if (e.isIntersecting && !prev[idx]) {
-              if (!changed) {
-                next = prev.slice();
-                changed = true;
-              }
-              next[idx] = true;
-            }
-          }
-          return changed ? next : prev;
-        });
+        for (const e of entries) {
+          const idx = nodeToIndexRef.current.get(e.target);
+          if (idx == null || idx < 0 || idx >= len) continue;
+          if (e.isIntersecting) setEverInViewForIndex(idx);
+        }
       },
       { root, rootMargin: viewMargin, threshold: everThreshold }
     );
@@ -205,17 +292,23 @@ export function useEntryInView(len: number, opts?: UseEntryInViewOpts) {
       viewIORef.current.observe(node);
     }
 
-    for (const [node, index] of nodeToIndexRef.current.entries()) {
-      syncNodeVisibility(node, index);
-    }
-
     return () => {
       nearIORef.current?.disconnect();
       viewIORef.current?.disconnect();
       nearIORef.current = null;
       viewIORef.current = null;
     };
-  }, [everThreshold, len, nearMargin, nearThreshold, root, syncNodeVisibility, viewMargin]);
+  }, [
+    everThreshold,
+    len,
+    nearMargin,
+    nearThreshold,
+    root,
+    setEverInViewForIndex,
+    setNearViewForIndex,
+    syncNodeVisibility,
+    viewMargin,
+  ]);
 
   const setEntryRef = React.useCallback(
     (index: number) => (node: HTMLElement | null) => {
@@ -232,7 +325,12 @@ export function useEntryInView(len: number, opts?: UseEntryInViewOpts) {
       if (!node) return;
 
       nodeToIndexRef.current.set(node, index);
-      syncNodeVisibility(node, index);
+
+      if (typeof IntersectionObserver === "undefined") {
+        syncNodeVisibility(node, index);
+        return;
+      }
+
       nearIORef.current?.observe(node);
       viewIORef.current?.observe(node);
     },

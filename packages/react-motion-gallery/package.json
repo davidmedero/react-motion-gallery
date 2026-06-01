@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.77",
+  "version": "2.0.78",
   "description": "React gallery primitives for sliders, carousels, grid, masonry, fullscreen lightbox, entries, video, zoom/pan/pinch, skeleton loading and reveal animations",
   "keywords": [
     "react",
@@ -68,6 +68,10 @@
     "./reveal": {
       "types": "./dist/reveal.d.mts",
       "import": "./dist/reveal.mjs"
+    },
+    "./rating-stars": {
+      "types": "./dist/rating-stars.d.mts",
+      "import": "./dist/rating-stars.mjs"
     },
     "./core": {
       "types": "./dist/core.d.mts",
@@ -157,6 +161,22 @@
       "types": "./dist/grid-fullscreen.d.mts",
       "import": "./dist/grid-fullscreen.mjs"
     },
+    "./grid/pagination": {
+      "types": "./dist/grid-pagination.d.mts",
+      "import": "./dist/grid-pagination.mjs"
+    },
+    "./grid/load-more": {
+      "types": "./dist/grid-load-more.d.mts",
+      "import": "./dist/grid-load-more.mjs"
+    },
+    "./grid/infinite-scroll": {
+      "types": "./dist/grid-infinite-scroll.d.mts",
+      "import": "./dist/grid-infinite-scroll.mjs"
+    },
+    "./grid/virtualization": {
+      "types": "./dist/grid-virtualization.d.mts",
+      "import": "./dist/grid-virtualization.mjs"
+    },
     "./masonry": {
       "types": "./dist/masonry.d.mts",
       "import": "./dist/masonry.mjs"
@@ -181,6 +201,22 @@
       "types": "./dist/masonry-lazy-load.d.mts",
       "import": "./dist/masonry-lazy-load.mjs"
     },
+    "./masonry/pagination": {
+      "types": "./dist/masonry-pagination.d.mts",
+      "import": "./dist/masonry-pagination.mjs"
+    },
+    "./masonry/load-more": {
+      "types": "./dist/masonry-load-more.d.mts",
+      "import": "./dist/masonry-load-more.mjs"
+    },
+    "./masonry/infinite-scroll": {
+      "types": "./dist/masonry-infinite-scroll.d.mts",
+      "import": "./dist/masonry-infinite-scroll.mjs"
+    },
+    "./masonry/virtualization": {
+      "types": "./dist/masonry-virtualization.d.mts",
+      "import": "./dist/masonry-virtualization.mjs"
+    },
     "./entries": {
       "types": "./dist/entries.d.mts",
       "import": "./dist/entries.mjs"
@@ -188,6 +224,26 @@
     "./entries/cache": {
       "types": "./dist/entries-cache.d.mts",
       "import": "./dist/entries-cache.mjs"
+    },
+    "./entries/ready": {
+      "types": "./dist/entries-ready.d.mts",
+      "import": "./dist/entries-ready.mjs"
+    },
+    "./entries/pagination": {
+      "types": "./dist/entries-pagination.d.mts",
+      "import": "./dist/entries-pagination.mjs"
+    },
+    "./entries/load-more": {
+      "types": "./dist/entries-load-more.d.mts",
+      "import": "./dist/entries-load-more.mjs"
+    },
+    "./entries/infinite-scroll": {
+      "types": "./dist/entries-infinite-scroll.d.mts",
+      "import": "./dist/entries-infinite-scroll.mjs"
+    },
+    "./entries/virtualization": {
+      "types": "./dist/entries-virtualization.d.mts",
+      "import": "./dist/entries-virtualization.mjs"
     },
     "./skeleton/base": {
       "types": "./dist/skeleton-base.d.mts",

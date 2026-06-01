@@ -4,11 +4,9 @@
 import { GalleryCore } from "react-motion-gallery/core";
 import { type MediaItem, toMediaItems } from "react-motion-gallery/media";
 import { Grid } from "react-motion-gallery/grid";
-import { useGridReady } from "react-motion-gallery/grid/ready";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
-import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
@@ -207,68 +205,59 @@ function FullscreenAddon() {
 
 export function GridVideoVimeoDemo() {
   const media = toMediaItems(ITEMS);
-  const { ref: gridRef, ready: gridReady } = useGridReady();
 
   return (
     <GalleryCore layout="grid" fullscreenItems={media}>
-      <GridSkeleton
-        cache={demoSkeletonCache("grid-video-vimeo")}
-        layout={VIMEO_VIDEO_SKELETON}
-        ready={gridReady}
-        grid={{
-          count: ITEMS.length,
-          columns: { 0: 1, 900: 2 },
-          gap: { 0: 12, 900: 18 },
+      <Grid
+        columns={{ 0: 1, 900: 2 }}
+        gap={{ 0: 12, 900: 18 }}
+        fullscreenTrigger="item"
+        loading={{
+          skeleton: VIMEO_VIDEO_SKELETON,
+          cache: demoSkeletonCache("grid-video-vimeo"),
         }}
+        plugins={[gridFullscreen()]}
       >
-        <Grid
-          ref={gridRef}
-          columns={{ 0: 1, 900: 2 }}
-          gap={{ 0: 12, 900: 18 }}
-          fullscreenTrigger="item"
-          plugins={[gridFullscreen()]}
-        >
-          {ITEMS.map((item, index) => {
-            const textIds = GRID_VIDEO_VIMEO_TEXT_IDS[index]!;
+        {ITEMS.map((item, index) => {
+          const textIds = GRID_VIDEO_VIMEO_TEXT_IDS[index]!;
 
-            return (
-              <article key={item.src} className={styles.videoSlide}>
-                <div className={styles.videoFrame}>
-                  <img
-                    src="/open-fullscreen.png"
-                    alt="Open fullscreen"
-                    width="24"
-                    height="24"
-                    className={styles.open_fullscreen_icon}
-                    data-rmg-fullscreen-trigger
-                  />
-                  <Video
-                    src={item.src}
-                    poster={item.poster}
-                    source={buildVimeoSource(item.src, item.poster)}
-                    options={VIMEO_OPTIONS}
-                    alt={item.title}
-                  />
-                </div>
-                <div className={styles.videoMeta}>
-                  <strong
-                    className={styles.videoMetaTitle}
-                    data-skeleton-text-id={textIds.title}
-                  >
-                    {item.title}
-                  </strong>
-                  <p
-                    className={styles.videoMetaBody}
-                    data-skeleton-text-id={textIds.body}
-                  >
-                    {item.body}
-                  </p>
-                </div>
-              </article>
-            );
-          })}
-        </Grid>
-      </GridSkeleton>
+          return (
+            <article key={item.src} className={styles.videoSlide}>
+              <div className={styles.videoFrame}>
+                <img
+                  src="/open-fullscreen.png"
+                  alt="Open fullscreen"
+                  width="24"
+                  height="24"
+                  className={styles.open_fullscreen_icon}
+                  data-rmg-fullscreen-trigger
+                />
+                <Video
+                  src={item.src}
+                  poster={item.poster}
+                  source={buildVimeoSource(item.src, item.poster)}
+                  options={VIMEO_OPTIONS}
+                  alt={item.title}
+                />
+              </div>
+              <div className={styles.videoMeta}>
+                <strong
+                  className={styles.videoMetaTitle}
+                  data-skeleton-text-id={textIds.title}
+                >
+                  {item.title}
+                </strong>
+                <p
+                  className={styles.videoMetaBody}
+                  data-skeleton-text-id={textIds.body}
+                >
+                  {item.body}
+                </p>
+              </div>
+            </article>
+          );
+        })}
+      </Grid>
       <FullscreenAddon />
     </GalleryCore>
   );

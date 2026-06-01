@@ -659,6 +659,35 @@ describe("fullscreen close sequencing", () => {
     unmount(root, container);
   });
 
+  test("uses fade timing when the slider thumbnail is offscreen", async () => {
+    const { closeButton, container, events, root } = setupGridCloseScenario(
+      undefined,
+      { transform: 500, fade: 180 },
+      "linear",
+      { destDocumentTop: 900, layout: "slider" }
+    );
+
+    await clickClose(closeButton);
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(219);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true"]);
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(1);
+      await Promise.resolve();
+    });
+
+    expect(events).toEqual(["closing:true", "closing:false"]);
+
+    unmount(root, container);
+  });
+
   test("uses fade timing for the invisible-thumb close fallback", async () => {
     const { closeButton, container, events, root } = setupGridCloseScenario(
       undefined,
@@ -797,6 +826,131 @@ describe("fullscreen close sequencing", () => {
     await flushAnimationFrame();
 
     expect(events).toEqual(["closing:true", "closing:false", "scrollTo"]);
+
+    unmount(root, container);
+  });
+
+  test("restores forced entry source styles after entries close", async () => {
+    vi.useFakeTimers();
+
+    let rafNow = 0;
+    Object.defineProperty(window, "requestAnimationFrame", {
+      configurable: true,
+      value: (callback: FrameRequestCallback) =>
+        window.setTimeout(() => {
+          rafNow += 16;
+          callback(rafNow);
+        }, 16),
+    });
+    Object.defineProperty(window, "cancelAnimationFrame", {
+      configurable: true,
+      value: (id: number) => window.clearTimeout(id),
+    });
+
+    const section = document.createElement("section");
+    section.setAttribute("data-rmg-entry-owner", "0");
+    section.setAttribute("data-rmg-entry-mounted", "1");
+    section.setAttribute("data-rmg-entry-ready", "1");
+    section.style.setProperty("--rmg-entry-reveal-duration", "320ms");
+
+    const skeleton = document.createElement("div");
+    skeleton.setAttribute("data-rmg-entry-skeleton", "");
+    skeleton.style.opacity = "0.25";
+
+    const content = document.createElement("div");
+    content.style.transition = "opacity 120ms linear";
+
+    section.append(skeleton, content);
+    document.body.appendChild(section);
+
+    const closeButtonRef = React.createRef<HTMLElement>();
+    const counterRef = React.createRef<HTMLElement>();
+    const leftChevronRef = React.createRef<HTMLElement>();
+    const rightChevronRef = React.createRef<HTMLElement>();
+    const requestFsCloseRef = { current: null };
+    const cancelFsCloseRef = { current: null };
+
+    const { container, root } = mount(
+      React.createElement(
+        FullscreenModal,
+        {
+          fsSub: { get: () => 0 },
+          open: true,
+          onClose: vi.fn(),
+          isClick: { current: true },
+          isAnimating: { current: false },
+          overlayDivRef: { current: null },
+          closeButtonRef,
+          counterRef,
+          leftChevronRef,
+          rightChevronRef,
+          cells: { current: [] },
+          setShowFullscreenSlider: vi.fn(),
+          cellCount: 1,
+          setClosingModal: vi.fn(),
+          slides: { current: [] },
+          slider: { current: null },
+          wrappedItems: [{ src: "/prev.jpg" }, { src: "/entry.jpg" }, { src: "/next.jpg" }],
+          setSliderIndex: vi.fn(),
+          onForceResetZoom: vi.fn(),
+          layout: "entries",
+          entryMapRef: { current: [{ entryIndex: 0, mediaIndex: 0 }] },
+          entryMediaLayout: "slider",
+          expandableImageRefs: { current: [] },
+          resolveLayoutlessTarget: () => ({
+            host: null,
+            image: null,
+            media: null,
+          }),
+          introFade: false,
+          introDuration: { fade: 80, transform: 80 },
+          introEasing: "linear",
+          requestFsCloseRef,
+          cancelFsCloseRef,
+          fs: {
+            closeScroll: false,
+            controls: {
+              close: {
+                render: () => React.createElement("span", null, "close"),
+              },
+              counter: { enabled: false },
+            },
+            effects: {},
+          },
+          styles: { open: "open", closeBtn: "closeBtn", spinner: "spinner" },
+          syncFullscreenSourceFromIndex: vi.fn(),
+          introMethod: "scale",
+          setLatchedIntroMethod: vi.fn(),
+          latchedIntroIndex: 0,
+        } as any,
+        React.createElement("div", { className: "fullscreen_slider" })
+      )
+    );
+
+    const closeButton = container.querySelector(
+      "button[aria-label='Close']"
+    ) as HTMLButtonElement | null;
+
+    await clickClose(closeButton);
+    expect(section.style.getPropertyValue("--rmg-entry-reveal-duration")).toBe("0ms");
+    expect(skeleton.style.transition).toBe("none");
+    expect(skeleton.style.opacity).toBe("0");
+    expect(content.style.opacity).toBe("1");
+
+    await flushAnimationFrame();
+
+    await React.act(async () => {
+      vi.advanceTimersByTime(500);
+      await Promise.resolve();
+    });
+
+    expect(section.style.getPropertyValue("--rmg-entry-reveal-duration")).toBe("320ms");
+    expect(section.style.getPropertyValue("--rmg-entry-reveal-delay")).toBe("");
+    expect(section.style.getPropertyValue("--rmg-entry-skeleton-exit-duration")).toBe("");
+    expect(skeleton.style.transition).toBe("");
+    expect(skeleton.style.opacity).toBe("0.25");
+    expect(content.style.transition).toBe("opacity 120ms linear");
+    expect(content.style.opacity).toBe("");
 
     unmount(root, container);
   });

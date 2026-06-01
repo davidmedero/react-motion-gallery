@@ -40,7 +40,18 @@
   border-radius: var(--rmg-masonry-skel-wrap-shadow-radius, var(--rmg-skel-radius, 12px));
   box-shadow: var(--rmg-masonry-skel-wrap-shadow, none);
   opacity: var(--rmg-masonry-skel-wrap-shadow-opacity, 1);
-  transition: opacity calc(var(--rmg-loading-fade-duration, 600ms) * 0.45) ease-out;
+  transition:
+    opacity
+      calc(
+        var(
+          --rmg-loading-fade-shadow-duration,
+          var(
+            --rmg-loading-fade-enter-duration,
+            var(--rmg-loading-fade-duration, 600ms)
+          )
+        ) * 0.45
+      )
+      ease-out;
   pointer-events: none;
 }
 

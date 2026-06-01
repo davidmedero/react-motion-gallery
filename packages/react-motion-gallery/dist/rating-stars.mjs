@@ -1,0 +1,1 @@
+export{a as RatingStars}from'./chunk-C2BBODLN.mjs';

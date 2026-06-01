@@ -1,0 +1,1 @@
+import {b,j}from'./chunk-L4NJDMCU.mjs';function e(o){return {__rmgMasonryPlugin:true,__rmgLightMasonryPlugin:true,kind:"load-more",options:b(o)}}function n(o){return j(o,e)}export{e as masonryLoadMore,n as useMasonryLoadMore};

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import type * as React from "react";
 import { describe, expect, test } from "vitest";
 
 import * as masonryEntry from "../../masonry";
@@ -7,6 +8,58 @@ import * as masonryMeasuredEntry from "../../masonry-measured";
 import * as masonryMeasuredReadyEntry from "../../masonry-measured-ready";
 import * as masonryFullscreenEntry from "../../masonry-fullscreen";
 import * as masonryLazyLoadEntry from "../../masonry-lazy-load";
+import * as masonryPaginationEntry from "../../masonry-pagination";
+import * as masonryLoadMoreEntry from "../../masonry-load-more";
+import * as masonryInfiniteScrollEntry from "../../masonry-infinite-scroll";
+import * as masonryVirtualizationEntry from "../../masonry-virtualization";
+import type {
+  MasonryItemProps,
+  MasonryLoadingOptions,
+  MasonryLoadingSkeletonArgs,
+  MasonryRevealOptions,
+} from "../../masonry";
+import type {
+  MasonryItemProps as MeasuredMasonryItemProps,
+  MasonryLoadingOptions as MeasuredMasonryLoadingOptions,
+  MasonryLoadingSkeletonArgs as MeasuredMasonryLoadingSkeletonArgs,
+  RevealOptions as MeasuredMasonryRevealOptions,
+} from "../../masonry-measured";
+
+type Expect<T extends true> = T;
+type MasonryLoadingOptionsExported = Expect<
+  MasonryLoadingOptions extends { skeleton?: unknown } ? true : false
+>;
+type MasonryLoadingSkeletonArgsExported = Expect<
+  MasonryLoadingSkeletonArgs extends { ready: boolean; revealKey?: React.Key }
+    ? true
+    : false
+>;
+type MasonryRevealStaggerLimitExported = Expect<
+  MasonryRevealOptions extends { staggerLimit?: number } ? true : false
+>;
+type MasonryItemRevealKeyExported = Expect<
+  MasonryItemProps extends { revealKey?: React.Key } ? true : false
+>;
+type MasonryItemPlaceholderExported = Expect<
+  MasonryItemProps extends { placeholder?: boolean } ? true : false
+>;
+type MeasuredMasonryLoadingOptionsExported = Expect<
+  MeasuredMasonryLoadingOptions extends { skeleton?: unknown } ? true : false
+>;
+type MeasuredMasonryLoadingSkeletonArgsExported = Expect<
+  MeasuredMasonryLoadingSkeletonArgs extends { ready: boolean; revealKey?: React.Key }
+    ? true
+    : false
+>;
+type MeasuredMasonryRevealStaggerLimitExported = Expect<
+  MeasuredMasonryRevealOptions extends { staggerLimit?: number } ? true : false
+>;
+type MeasuredMasonryItemRevealKeyExported = Expect<
+  MeasuredMasonryItemProps extends { revealKey?: React.Key } ? true : false
+>;
+type MeasuredMasonryItemPlaceholderExported = Expect<
+  MeasuredMasonryItemProps extends { placeholder?: boolean } ? true : false
+>;
 
 const packageJson = JSON.parse(
   readFileSync(new URL("../../../package.json", import.meta.url), "utf8")
@@ -50,5 +103,37 @@ describe("masonry public entries", () => {
       __rmgLightMasonryPlugin: true,
       kind: "fullscreen",
     });
+  });
+
+  test("exports masonry data plugins as dedicated cross-surface subpaths", () => {
+    expect(packageJson.exports["./masonry/pagination"]).toBeDefined();
+    expect(packageJson.exports["./masonry/load-more"]).toBeDefined();
+    expect(packageJson.exports["./masonry/infinite-scroll"]).toBeDefined();
+    expect(packageJson.exports["./masonry/virtualization"]).toBeDefined();
+    expect(masonryPaginationEntry.masonryPagination({ pageIndex: 0, pageSize: 2 })).toMatchObject({
+      __rmgMasonryPlugin: true,
+      __rmgLightMasonryPlugin: true,
+      kind: "pagination",
+    });
+    expect(masonryPaginationEntry.useMasonryPagination).toBeTypeOf("function");
+    expect(masonryPaginationEntry.MasonryPaginationControls).toBeTypeOf("function");
+    expect(masonryLoadMoreEntry.masonryLoadMore({ visibleCount: 2 })).toMatchObject({
+      __rmgMasonryPlugin: true,
+      __rmgLightMasonryPlugin: true,
+      kind: "load-more",
+    });
+    expect(masonryLoadMoreEntry.useMasonryLoadMore).toBeTypeOf("function");
+    expect(masonryInfiniteScrollEntry.masonryInfiniteScroll()).toMatchObject({
+      __rmgMasonryPlugin: true,
+      __rmgLightMasonryPlugin: true,
+      kind: "infinite-scroll",
+    });
+    expect(masonryInfiniteScrollEntry.useMasonryInfiniteScroll).toBeTypeOf("function");
+    expect(masonryVirtualizationEntry.masonryVirtualization()).toMatchObject({
+      __rmgMasonryPlugin: true,
+      __rmgLightMasonryPlugin: true,
+      kind: "virtualization",
+    });
+    expect(masonryVirtualizationEntry.useMasonryVirtualizer).toBeTypeOf("function");
   });
 });

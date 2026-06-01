@@ -2,7 +2,7 @@ import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
 import { L as LoadingForceOptions } from './force-C5m1QpdF.mjs';
-import { L as LoadingTimingOptions } from './transitions-DU3ftmIq.mjs';
+import { L as LoadingTimingOptions } from './transitions-ChhEdSB6.mjs';
 import { S as SkeletonNode, e as SkeletonLength, f as SkeletonShimmer } from './layout-BSjd7pwQ.mjs';
 export { a as SkeletonBaseStyle, b as SkeletonBaseStyleResponsive, c as SkeletonContainerStyle, d as SkeletonContainerStyleResponsive } from './layout-BSjd7pwQ.mjs';
 export { R as ResponsiveTextBarHeight, a as ResponsiveTextBarWidth, d as ResponsiveTextLastBarWidth, c as ResponsiveTextLineCount, b as ResponsiveTextLineHeight, T as TextSkeletonResponsiveBy } from './text-BBcRGVzn.mjs';
@@ -22,9 +22,11 @@ type SkeletonFrameProps = {
     contentClassName?: string;
     contentStyle?: React.CSSProperties;
     contentOwnsWrapperLayout?: boolean;
+    lockContentLayoutWhileLoading?: boolean;
     loadingLayerFirst?: boolean;
     contentWrapper?: (children: React.ReactNode) => React.ReactNode;
     shellDataAttributes?: Record<string, string | boolean | undefined>;
+    loadingShellDataAttributes?: Record<string, string | boolean | undefined>;
     shellRef?: React.Ref<HTMLDivElement>;
 };
 type SkeletonProps = {
@@ -47,7 +49,7 @@ type SkeletonProps = {
     force?: SkeletonForceOptions;
     timing?: SkeletonTimingOptions;
 };
-declare function SkeletonFrame({ skeletonNode, children, ready, enabled, force, timing, shellClassName, shellStyle, loadingShellStyle, contentClassName, contentStyle, contentOwnsWrapperLayout, loadingLayerFirst, contentWrapper, shellDataAttributes, shellRef, }: SkeletonFrameProps): react_jsx_runtime.JSX.Element;
+declare function SkeletonFrame({ skeletonNode, children, ready, enabled, force, timing, shellClassName, shellStyle, loadingShellStyle, contentClassName, contentStyle, contentOwnsWrapperLayout, lockContentLayoutWhileLoading, loadingLayerFirst, contentWrapper, shellDataAttributes, loadingShellDataAttributes, shellRef, }: SkeletonFrameProps): react_jsx_runtime.JSX.Element;
 declare function Skeleton(props: SkeletonProps): react_jsx_runtime.JSX.Element;
 
 export { Skeleton, type SkeletonForceOptions, SkeletonFrame, type SkeletonFrameProps, SkeletonLength, SkeletonNode, type SkeletonProps, SkeletonShimmer, type SkeletonTimingOptions, Skeleton as default };

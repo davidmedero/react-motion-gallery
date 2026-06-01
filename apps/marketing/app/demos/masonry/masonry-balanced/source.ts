@@ -4,10 +4,8 @@ export const source = `/* eslint-disable @next/next/no-img-element */
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Masonry } from "react-motion-gallery/masonry/measured";
-import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
@@ -388,38 +386,29 @@ export function MasonryBalancedDemo() {
     ),
   );
 
-  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
-
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
-      <MasonrySkeleton
-        cache={demoSkeletonCache("masonry-balanced")}
-        layout={BALANCED_SKELETON}
-        ready={masonryReady}
-        timing={{ exitMs: 1200 }}
-        masonry={{
+      <Masonry
+        columns={{ 0: 1, 720: 2, 1140: 3 }}
+        gap={{ 0: 12, 1140: 18 }}
+        loading={{
+          cache: demoSkeletonCache("masonry-balanced"),
           count: ITEMS.length,
-          columns: { 0: 1, 720: 2, 1140: 3 },
-          gap: { 0: 12, 1140: 18 },
+          skeleton: BALANCED_SKELETON,
+          timing: { exitMs: 1200 },
         }}
       >
-        <Masonry
-          ref={masonryRef}
-          columns={{ 0: 1, 720: 2, 1140: 3 }}
-          gap={{ 0: 12, 1140: 18 }}
-        >
-          {ITEMS.map((item, index) => (
-            <MasonryBalancedCard
-              key={item.kind === "image" ? item.src : item.poster}
-              item={item}
-              skeletonTextIds={
-                MASONRY_BALANCED_TEXT_IDS[index] ??
-                MASONRY_BALANCED_TEXT_IDS[0]!
-              }
-            />
-          ))}
-        </Masonry>
-      </MasonrySkeleton>
+        {ITEMS.map((item, index) => (
+          <MasonryBalancedCard
+            key={item.kind === "image" ? item.src : item.poster}
+            item={item}
+            skeletonTextIds={
+              MASONRY_BALANCED_TEXT_IDS[index] ??
+              MASONRY_BALANCED_TEXT_IDS[0]!
+            }
+          />
+        ))}
+      </Masonry>
       <MasonryBalancedFullscreenAddon />
     </GalleryCore>
   );

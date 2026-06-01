@@ -18,23 +18,41 @@ describe("shared loading timing helpers", () => {
         prefersReducedMotion: false,
       })
     ).toEqual({
+      enterMs: DEFAULT_SKELETON_EXIT_MS,
       exitMs: DEFAULT_SKELETON_EXIT_MS,
       minVisibleMs: DEFAULT_SKELETON_MIN_VISIBLE_MS,
     });
   });
 
-  test("allows overriding exit and minimum visible timing", () => {
+  test("allows overriding enter, exit, and minimum visible timing", () => {
     expect(
       resolveLoadingTiming({
         prefersReducedMotion: false,
         timing: {
+          enterMs: 180,
           exitMs: 360,
           minVisibleMs: 45,
         },
       })
     ).toEqual({
+      enterMs: 180,
       exitMs: 360,
       minVisibleMs: 45,
+    });
+  });
+
+  test("defaults enter timing to the resolved exit timing", () => {
+    expect(
+      resolveLoadingTiming({
+        prefersReducedMotion: false,
+        timing: {
+          exitMs: 360,
+        },
+      })
+    ).toEqual({
+      enterMs: 360,
+      exitMs: 360,
+      minVisibleMs: DEFAULT_SKELETON_MIN_VISIBLE_MS,
     });
   });
 
@@ -43,11 +61,13 @@ describe("shared loading timing helpers", () => {
       resolveLoadingTiming({
         prefersReducedMotion: true,
         timing: {
+          enterMs: 180,
           exitMs: 360,
           minVisibleMs: 45,
         },
       })
     ).toEqual({
+      enterMs: 0,
       exitMs: 0,
       minVisibleMs: 45,
     });

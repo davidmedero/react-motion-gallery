@@ -1345,6 +1345,67 @@ describe("ZoomPanImage", () => {
     host.remove();
   });
 
+  test("keeps fullscreen ctrl-wheel zoom-out centered when scale clamps to 1", async () => {
+    const fullscreenPlugin = fullscreenZoomPan(zoomPanDefaults);
+    const view = await setup(
+      <FullscreenHoverRuntimeHarness
+        zoom={(fullscreenPlugin.options as any).zoom}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, { width: 400, height: 300 });
+
+    const previousElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: vi.fn(() => img as Element),
+    });
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new WheelEvent("wheel", {
+          bubbles: true,
+          cancelable: true,
+          ctrlKey: true,
+          clientX: 200,
+          clientY: 150,
+          deltaY: -120,
+        })
+      );
+    });
+
+    expect(parseScale(img.style.transform)).toBeGreaterThan(1);
+    expect(parseTranslate(img.style.transform).x).toBeLessThan(0);
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new WheelEvent("wheel", {
+          bubbles: true,
+          cancelable: true,
+          ctrlKey: true,
+          clientX: 200,
+          clientY: 150,
+          deltaY: 80,
+        })
+      );
+    });
+    await advanceMotion(16);
+
+    expect(parseScale(img.style.transform)).toBe(1);
+    expect(parseTranslate(img.style.transform)).toEqual({ x: 0, y: 0 });
+
+    if (previousElementFromPoint) {
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: previousElementFromPoint,
+      });
+    } else {
+      Reflect.deleteProperty(document, "elementFromPoint");
+    }
+    await view.cleanup();
+  });
+
   test("resets zoom when src changes and when disabled becomes true", async () => {
     const view = await setup(<ZoomPanImage src="/alpha.jpg" alt="Alpha" />);
     let root = view.getRoot();

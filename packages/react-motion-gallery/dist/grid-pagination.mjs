@@ -1,0 +1,1 @@
+import {a}from'./chunk-QUY5FE75.mjs';import {k,g as g$1,h,a as a$1,i}from'./chunk-L4NJDMCU.mjs';function g(t){return g$1(t)}function P(t){return h(t)}function r(t){return a("pagination",{options:a$1(t)})}function s(t){return i(t,r)}var d=k;export{d as GridPaginationControls,P as getGridPageItems,g as getGridPageRange,r as gridPagination,s as useGridPagination};

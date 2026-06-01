@@ -8,6 +8,7 @@
   position: absolute;
   display: block;
   min-width: 0;
+  isolation: isolate;
 }
 
 .item img,
@@ -49,9 +50,61 @@
   opacity: 1;
 }
 
+.item[data-rmg-masonry-item-stage="1"] > :not([data-rmg-masonry-item-skeleton]) {
+  opacity: 0;
+  transition:
+    opacity var(--rmg-reveal-duration, 600ms)
+      var(--rmg-reveal-easing, cubic-bezier(.2,.7,.2,1));
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+.item[data-rmg-masonry-item-stage="1"][data-rmg-masonry-item-reveal="1"] > :not([data-rmg-masonry-item-skeleton]) {
+  opacity: 1;
+}
+
+.itemSkeleton {
+  --rmg-masonry-item-skeleton-transition-duration: var(
+    --rmg-masonry-item-skeleton-enter-duration,
+    var(--rmg-masonry-item-skeleton-exit-duration, 220ms)
+  );
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  opacity: var(--rmg-masonry-item-skeleton-opacity, 1);
+  pointer-events: none;
+  transition:
+    opacity var(--rmg-masonry-item-skeleton-transition-duration) ease;
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+.itemSkeleton > * {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.item[data-rmg-masonry-item-reveal="1"] > .itemSkeleton {
+  --rmg-masonry-item-skeleton-transition-duration: var(
+    --rmg-masonry-item-skeleton-exit-duration,
+    220ms
+  );
+  opacity: 0;
+}
+
+.item[data-rmg-masonry-item-compare="1"] > .itemSkeleton {
+  opacity: var(--rmg-masonry-item-skeleton-opacity, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .revealContainer,
-  .revealContainer > [data-rmg-idx] {
+  .revealContainer > [data-rmg-idx],
+  .item[data-rmg-masonry-item-stage="1"] > :not([data-rmg-masonry-item-skeleton]),
+  .itemSkeleton {
     transition: none;
   }
 }

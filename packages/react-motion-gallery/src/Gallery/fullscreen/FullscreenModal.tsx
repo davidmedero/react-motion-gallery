@@ -604,6 +604,7 @@ async function findThumbInfoEnsuringVisible(
 
   return {
     cropRect,
+    cellEl: targetCell,
     imgEl,
     objPos,
     renderedW,
@@ -614,6 +615,7 @@ async function findThumbInfoEnsuringVisible(
 
 type ThumbInfo = {
   cropRect: DOMRect
+  cellEl: HTMLElement
   imgEl: HTMLImageElement | null
   objPos: { x: number; y: number }
   renderedW: number
@@ -1171,6 +1173,13 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const trackedCloseMutationsRef = React.useRef<
     Array<
       | { kind: 'style'; el: HTMLElement; prop: TrackedStyleProp; prevValue: string }
+      | {
+          kind: 'style-property';
+          el: HTMLElement;
+          prop: string;
+          prevValue: string;
+          prevPriority: string;
+        }
       | { kind: 'muted'; el: HTMLMediaElement; prevValue: boolean }
     >
   >([]);
@@ -1184,6 +1193,18 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       const mutation = trackedCloseMutationsRef.current[i];
       if (mutation.kind === 'style') {
         (mutation.el.style as any)[mutation.prop] = mutation.prevValue;
+        continue;
+      }
+      if (mutation.kind === 'style-property') {
+        if (mutation.prevValue) {
+          mutation.el.style.setProperty(
+            mutation.prop,
+            mutation.prevValue,
+            mutation.prevPriority
+          );
+        } else {
+          mutation.el.style.removeProperty(mutation.prop);
+        }
         continue;
       }
       mutation.el.muted = mutation.prevValue;
@@ -1256,13 +1277,14 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
   useEffect(() => {
     return () => {
+      restoreTrackedCloseMutations();
       if (cancelFsCloseRef.current) cancelFsCloseRef.current = null;
       closeInProgressRef.current = false;
       closeAnimationStartedRef.current = false;
       postCloseScrollActionRef.current = null;
       unmountShield();
     };
-  }, [cancelFsCloseRef]);
+  }, [cancelFsCloseRef, restoreTrackedCloseMutations]);
 
   type ElementStyleLike = { className?: string; style?: React.CSSProperties } | null | undefined;
 
@@ -1316,6 +1338,42 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     if (((el.style as any)[prop] ?? '') === value) return;
     (el.style as any)[prop] = value;
+  }
+
+  function trackStylePropertyMutation(
+    el: HTMLElement | null,
+    prop: string,
+    value: string,
+    priority = ''
+  ) {
+    if (!el) return;
+
+    let keys = trackedCloseKeysRef.current.get(el);
+    if (!keys) {
+      keys = new Set<string>();
+      trackedCloseKeysRef.current.set(el, keys);
+    }
+
+    const key = `style-property:${prop}`;
+    if (!keys.has(key)) {
+      keys.add(key);
+      trackedCloseMutationsRef.current.push({
+        kind: 'style-property',
+        el,
+        prop,
+        prevValue: el.style.getPropertyValue(prop),
+        prevPriority: el.style.getPropertyPriority(prop),
+      });
+    }
+
+    if (
+      el.style.getPropertyValue(prop) === value &&
+      el.style.getPropertyPriority(prop) === priority
+    ) {
+      return;
+    }
+
+    el.style.setProperty(prop, value, priority);
   }
 
   function trackMutedMutation(el: HTMLMediaElement | null, value: boolean) {
@@ -2024,12 +2082,11 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       if (revealSection) {
         for (const child of Array.from(revealSection.children)) {
           const el = child as HTMLElement;
+          trackStyleMutation(el, 'transition', 'none');
           if (el.hasAttribute('data-rmg-entry-skeleton')) {
-            el.style.setProperty('transition', 'none');
-            el.style.setProperty('opacity', '0');
+            trackStyleMutation(el, 'opacity', '0');
           } else {
-            el.style.setProperty('transition', 'none');
-            el.style.setProperty('opacity', '1');
+            trackStyleMutation(el, 'opacity', '1');
           }
         }
         // One RAF so the browser paints the forced state before the FLIP animation starts.
@@ -2047,9 +2104,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         // Suppress reveal transitions so the entry appears instantly before the close
         // animation starts — avoids the skeleton being visible or content still fading
         // in while the FLIP runs.
-        section?.style.setProperty('--rmg-entry-reveal-duration', '0ms');
-        section?.style.setProperty('--rmg-entry-reveal-delay', '0ms');
-        section?.style.setProperty('--rmg-entry-skeleton-exit-duration', '0ms');
+        trackStylePropertyMutation(section, '--rmg-entry-reveal-duration', '0ms');
+        trackStylePropertyMutation(section, '--rmg-entry-reveal-delay', '0ms');
+        trackStylePropertyMutation(section, '--rmg-entry-skeleton-exit-duration', '0ms');
 
         if (!isEntryOwnerReady(link.entryIndex)) {
           const el = document.createElement('div');
@@ -2063,6 +2120,16 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         }
       }
     }
+
+    const url = originals[canonicalIdx];
+    const isVideoSlide = isVideoItem(url);
+    const normalizedLatchedIntroIndex = normalizeFsIndex(
+      latchedIntroIndex,
+      originals.length
+    );
+    const isLatchedIntroIndex = normalizedLatchedIntroIndex === canonicalIdx;
+    let nonGridishThumbInfo: ThumbInfo | null = null;
+    let nonGridishHasTransformTarget = false;
 
     if (!isGridish) {
       let entryCloseScrollPolicy: ResolvedCloseScrollPolicy | null = null;
@@ -2093,9 +2160,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       }
 
       const shouldScrollEntryBeforeClose =
-        !entryCloseScrollPolicy ||
-        (entryCloseScrollPolicy.enabled &&
-          entryCloseScrollPolicy.timing === "before-close");
+        !!entryCloseScrollPolicy?.enabled &&
+        entryCloseScrollPolicy.timing === "before-close";
 
       await waitForEntriesOwnerReady({ scrollPage: shouldScrollEntryBeforeClose });
 
@@ -2106,9 +2172,27 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         closeSpinnerEl = null;
       }
 
-      if (!slider.current || !slides.current?.length) {
-        safeTeardown();
-        return;
+      if (!isVideoSlide && slider.current && slides.current?.length) {
+        nonGridishThumbInfo = await findThumbInfoEnsuringVisible(
+          localSlideIdx,
+          slider,
+          slides,
+          centerSlider,
+          setSliderIndex
+        );
+
+        const visibilityTarget =
+          nonGridishThumbInfo?.imgEl ?? nonGridishThumbInfo?.cellEl ?? null;
+        nonGridishHasTransformTarget = !!(
+          visibilityTarget &&
+          isElementVisiblyOnScreen(visibilityTarget, 0.05, {
+            ignoredElements: [
+              modalRef.current,
+              overlayDivRef.current,
+              shieldRef.current,
+            ],
+          })
+        );
       }
     } else {
       const layoutlessTarget = resolveLayoutlessTarget(canonicalIdx);
@@ -2157,14 +2241,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       }
     }
 
-    const url = originals[canonicalIdx];
-    const isVideoSlide = isVideoItem(url);
-    const normalizedLatchedIntroIndex = normalizeFsIndex(
-      latchedIntroIndex,
-      originals.length
-    );
-    const isLatchedIntroIndex = normalizedLatchedIntroIndex === canonicalIdx;
-    const hasTransformTarget = !isVideoSlide && (!isGridish || !!gridishTransformDestImg);
+    const hasTransformTarget =
+      !isVideoSlide &&
+      (isGridish ? !!gridishTransformDestImg : nonGridishHasTransformTarget);
 
     if (
       shouldUseFadeClose({
@@ -2187,13 +2266,15 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       }
 
       const measureAndAnimate = async () => {
-        const thumbInfo = await findThumbInfoEnsuringVisible(
-          localSlideIdx,
-          slider,
-          slides,
-          centerSlider,
-          setSliderIndex
-        );
+        const thumbInfo =
+          nonGridishThumbInfo ??
+          (await findThumbInfoEnsuringVisible(
+            localSlideIdx,
+            slider,
+            slides,
+            centerSlider,
+            setSliderIndex
+          ));
 
         if (!thumbInfo) {
           safeTeardown();
@@ -2285,6 +2366,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     overlayDivRef.current?.remove()
     overlayDivRef.current = null
 
+    restoreTrackedCloseMutations()
     onForceResetZoom()
     onClose()
     setShowFullscreenSlider(false)

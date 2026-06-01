@@ -10,7 +10,7 @@ import { BREAKPOINT_MAP } from "../../shared/responsive";
 import { useViewportWidth } from "../../shared/hooks/useViewportWidth";
 import { useOptionalGalleryCore } from "../../core";
 import type { RevealOptions } from "../../grid/types";
-import type { GridSkeletonSpec } from "../../skeleton/grid";
+import type { GridSkeletonSpec } from "../../skeleton/GridSkeleton";
 import type {
   SkeletonForceOptions,
   SkeletonTimingOptions,
@@ -43,7 +43,6 @@ export function createEntriesGridMedia(args: {
 
   function normalizeReveal(src?: RevealOptions) {
     return {
-      renderReveal: src?.renderReveal,
       staggerMs: src?.staggerMs ?? 40,
       durationMs: src?.durationMs ?? 300,
       easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",

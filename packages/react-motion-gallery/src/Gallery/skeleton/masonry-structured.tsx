@@ -110,7 +110,7 @@ export type MasonrySkeletonCoreProps = MasonrySkeletonProps & {
 };
 
 function isMasonryLayoutSpec(
-  layout: MasonrySkeletonProps["layout"]
+  layout: MasonrySkeletonProps["layout"],
 ): layout is MasonrySkeletonSpec {
   return (
     !!layout &&
@@ -122,13 +122,18 @@ function isMasonryLayoutSpec(
 }
 
 function isMasonryLayout(
-  layout: MasonrySkeletonProps["layout"]
+  layout: MasonrySkeletonProps["layout"],
 ): layout is SkeletonMasonryLayout {
-  return !!layout && typeof layout === "object" && "kind" in layout && layout.kind === "masonry";
+  return (
+    !!layout &&
+    typeof layout === "object" &&
+    "kind" in layout &&
+    layout.kind === "masonry"
+  );
 }
 
 function toMasonrySkeletonSpec(
-  layout: SkeletonMasonryLayout | MasonrySkeletonSpec
+  layout: SkeletonMasonryLayout | MasonrySkeletonSpec,
 ): MasonrySkeletonSpec {
   if (isMasonryLayoutSpec(layout)) return layout;
 
@@ -161,9 +166,7 @@ function roundPx(value: number) {
   return Math.round(value * 1000) / 1000;
 }
 
-function getVisibleElement<T extends HTMLElement>(
-  nodes: NodeListOf<T> | T[]
-) {
+function getVisibleElement<T extends HTMLElement>(nodes: NodeListOf<T> | T[]) {
   for (const node of Array.from(nodes)) {
     const style = window.getComputedStyle(node);
     if (style.display !== "none" && style.visibility !== "hidden") {
@@ -176,7 +179,10 @@ function getVisibleElement<T extends HTMLElement>(
 function readIndexedHeights(root: ParentNode, selector: string) {
   const byIndex = new Map<number, number>();
   root.querySelectorAll<HTMLElement>(selector).forEach((node) => {
-    const index = Number(node.getAttribute("data-rmg-mskel-index") ?? node.getAttribute("data-rmg-idx"));
+    const index = Number(
+      node.getAttribute("data-rmg-mskel-index") ??
+        node.getAttribute("data-rmg-idx"),
+    );
     if (!Number.isInteger(index) || index < 0) return;
     byIndex.set(index, roundPx(node.getBoundingClientRect().height));
   });
@@ -213,7 +219,7 @@ export function MasonrySkeletonCore({
 }: MasonrySkeletonCoreProps) {
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
-    [breakpoints]
+    [breakpoints],
   );
   const generatedScopeId = React.useMemo(
     () =>
@@ -234,7 +240,7 @@ export function MasonrySkeletonCore({
       shimmer,
       disableShimmer,
       masonry,
-    ]
+    ],
   );
   const scopeId = providedScopeId ?? generatedScopeId;
   const masonrySpec = React.useMemo(() => {
@@ -243,9 +249,10 @@ export function MasonrySkeletonCore({
     }
     return null;
   }, [layout]);
-  const masonryLayout = masonrySpec?.layout?.kind === "masonry"
-    ? (masonrySpec.layout as MasonrySkeletonLayoutNode)
-    : null;
+  const masonryLayout =
+    masonrySpec?.layout?.kind === "masonry"
+      ? (masonrySpec.layout as MasonrySkeletonLayoutNode)
+      : null;
   const masonrySourceLayout = isMasonryLayout(layout) ? layout : null;
   const localSkeletonRootRef = React.useRef<HTMLDivElement | null>(null);
   const localShellRef = React.useRef<HTMLDivElement | null>(null);
@@ -257,10 +264,35 @@ export function MasonrySkeletonCore({
     number | undefined
   >(undefined);
   const effectiveLayoutWidthPx = explicitLayoutWidthPx ?? measuredLayoutWidthPx;
+  const wrappedLoading = children !== undefined;
+  const visualStabilityRef = React.useRef<{
+    key: string;
+    layoutWidthPx?: number;
+    cacheSnapshot: SkeletonCacheSnapshot | null;
+  } | null>(null);
+  if (wrappedLoading) {
+    if (visualStabilityRef.current?.key !== scopeId) {
+      visualStabilityRef.current = {
+        key: scopeId,
+        layoutWidthPx: effectiveLayoutWidthPx,
+        cacheSnapshot: cacheSnapshot ?? null,
+      };
+    }
+  } else if (visualStabilityRef.current !== null) {
+    visualStabilityRef.current = null;
+  }
+  const stableLayoutWidthPx = wrappedLoading
+    ? visualStabilityRef.current?.layoutWidthPx
+    : effectiveLayoutWidthPx;
+  const stableCacheSnapshot = wrappedLoading
+    ? (visualStabilityRef.current?.cacheSnapshot ?? null)
+    : (cacheSnapshot ?? null);
 
   React.useLayoutEffect(() => {
     if (explicitLayoutWidthPx !== undefined) {
-      setMeasuredLayoutWidthPx((prev) => (prev === undefined ? prev : undefined));
+      setMeasuredLayoutWidthPx((prev) =>
+        prev === undefined ? prev : undefined,
+      );
       return;
     }
 
@@ -272,7 +304,7 @@ export function MasonrySkeletonCore({
       if (!Number.isFinite(width) || width <= 0) return;
 
       setMeasuredLayoutWidthPx((prev) =>
-        prev != null && Math.abs(prev - width) < 0.5 ? prev : width
+        prev != null && Math.abs(prev - width) < 0.5 ? prev : width,
       );
     };
 
@@ -298,26 +330,26 @@ export function MasonrySkeletonCore({
   const masonryRenderOptions: Omit<
     MasonrySkeletonCardProps,
     "breakpoints" | "spec"
-  > | null =
-    masonrySpec
-      ? {
-          count:
-            masonry?.count ??
-            (typeof masonryLayout?.count === "number"
-              ? Math.max(0, masonryLayout.count | 0)
-              : 1),
-          columns: masonry?.columns ?? masonrySourceLayout?.columns,
-          gap: masonry?.gap ?? masonrySourceLayout?.gap,
-          ratios: masonry?.ratios ?? masonrySourceLayout?.ratios,
-          heightsPx: masonry?.heightsPx ?? masonrySourceLayout?.heightsPx,
-          spans: masonry?.spans ?? masonrySourceLayout?.spans,
-          placement: masonry?.placement ?? masonrySourceLayout?.placement,
-          viewportWidth: masonry?.viewportWidth ?? masonrySourceLayout?.viewportWidth,
-          layoutWidthPx: effectiveLayoutWidthPx,
-          disableShimmer,
-        }
-      : null;
-  const validCacheSnapshot = cacheSnapshot ?? null;
+  > | null = masonrySpec
+    ? {
+        count:
+          masonry?.count ??
+          (typeof masonryLayout?.count === "number"
+            ? Math.max(0, masonryLayout.count | 0)
+            : 1),
+        columns: masonry?.columns ?? masonrySourceLayout?.columns,
+        gap: masonry?.gap ?? masonrySourceLayout?.gap,
+        ratios: masonry?.ratios ?? masonrySourceLayout?.ratios,
+        heightsPx: masonry?.heightsPx ?? masonrySourceLayout?.heightsPx,
+        spans: masonry?.spans ?? masonrySourceLayout?.spans,
+        placement: masonry?.placement ?? masonrySourceLayout?.placement,
+        viewportWidth:
+          masonry?.viewportWidth ?? masonrySourceLayout?.viewportWidth,
+        layoutWidthPx: stableLayoutWidthPx,
+        disableShimmer,
+      }
+    : null;
+  const validCacheSnapshot = stableCacheSnapshot;
   const effectiveMasonrySpec = React.useMemo(() => {
     if (!validCacheSnapshot?.text || !masonrySpec) return masonrySpec;
 
@@ -328,7 +360,7 @@ export function MasonrySkeletonCore({
             masonrySpec.layout,
             validCacheSnapshot.text,
             "masonry",
-            effectiveBreakpoints
+            effectiveBreakpoints,
           )
         : masonrySpec.layout,
     } as MasonrySkeletonSpec;
@@ -370,7 +402,8 @@ export function MasonrySkeletonCore({
     });
     const activeVariant = resolveActiveMasonryPredictionVariant(
       prediction.variants,
-      effectiveMasonryRenderOptions.viewportWidth ?? DEFAULT_SERVER_VIEWPORT_WIDTH
+      effectiveMasonryRenderOptions.viewportWidth ??
+        DEFAULT_SERVER_VIEWPORT_WIDTH,
     );
     const compactPrediction =
       validCacheSnapshot && activeVariant
@@ -419,13 +452,18 @@ export function MasonrySkeletonCore({
       DEFAULT_SERVER_VIEWPORT_WIDTH;
     const prediction = masonryLayoutSeed?.prediction;
     const activeVariant = prediction
-      ? resolveActiveMasonryPredictionVariant(prediction.variants, viewportWidth)
+      ? resolveActiveMasonryPredictionVariant(
+          prediction.variants,
+          viewportWidth,
+        )
       : null;
     const skeletonRoot = skeletonRootRef.current;
     const shell = shellRef.current;
     const visibleVariant = skeletonRoot
       ? getVisibleElement(
-          skeletonRoot.querySelectorAll<HTMLElement>("[data-rmg-mskel-variant]")
+          skeletonRoot.querySelectorAll<HTMLElement>(
+            "[data-rmg-mskel-variant]",
+          ),
         )
       : null;
     const contentMasonryRoot =
@@ -439,13 +477,16 @@ export function MasonrySkeletonCore({
       visibleVariant?.getBoundingClientRect().height ??
       contentMasonryRoot?.getBoundingClientRect().height ??
       (activeVariant
-        ? Math.max(0, ...activeVariant.items.map((item) => item.top + item.height))
+        ? Math.max(
+            0,
+            ...activeVariant.items.map((item) => item.top + item.height),
+          )
         : undefined);
     const itemHeightsPx = visibleVariant
       ? readIndexedHeights(visibleVariant, "[data-rmg-mskel-index]")
       : contentMasonryRoot
-      ? readIndexedHeights(contentMasonryRoot, "[data-rmg-idx]")
-      : activeVariant?.items.map((item) => roundPx(item.height));
+        ? readIndexedHeights(contentMasonryRoot, "[data-rmg-idx]")
+        : activeVariant?.items.map((item) => roundPx(item.height));
     const variantKey =
       visibleVariant?.getAttribute("data-rmg-mskel-variant") ??
       activeVariant?.state.key;
@@ -455,7 +496,9 @@ export function MasonrySkeletonCore({
     return {
       widthBucketMin: activeVariant.state.minWidth,
       viewportWidth,
-      ...(layoutRect?.width ? { layoutWidthPx: roundPx(layoutRect.width) } : null),
+      ...(layoutRect?.width
+        ? { layoutWidthPx: roundPx(layoutRect.width) }
+        : null),
       masonry: {
         variantKey,
         ...(shellHeightPx != null && Number.isFinite(shellHeightPx)
@@ -474,9 +517,13 @@ export function MasonrySkeletonCore({
       ? ({ ["--rmg-skel-bg" as any]: backgroundColor } as React.CSSProperties)
       : null),
     ...(radius != null
-      ? ({ ["--rmg-skel-radius" as any]: cssLen(radius) } as React.CSSProperties)
+      ? ({
+          ["--rmg-skel-radius" as any]: cssLen(radius),
+        } as React.CSSProperties)
       : null),
-    ...(disableShimmer ? null : (shimmerStyleVars(shimmer) as React.CSSProperties)),
+    ...(disableShimmer
+      ? null
+      : (shimmerStyleVars(shimmer) as React.CSSProperties)),
   };
   const masonrySkeletonNode =
     effectiveMasonrySpec && effectiveMasonryRenderOptions ? (
@@ -507,7 +554,7 @@ export function MasonrySkeletonCore({
       ) : (
         content
       ),
-    [masonryLayoutSeed]
+    [masonryLayoutSeed],
   );
 
   if (!masonrySkeletonNode) return null;
@@ -516,7 +563,6 @@ export function MasonrySkeletonCore({
   const reserveShell =
     reserveContainer &&
     enabled !== false &&
-    ready !== true &&
     !!masonryLayoutSeed?.shellReserveCss;
   const framedSkeleton = (
     <SkeletonFrame
@@ -530,9 +576,10 @@ export function MasonrySkeletonCore({
       contentClassName={contentClassName}
       contentStyle={contentStyle}
       contentOwnsWrapperLayout={children !== undefined}
+      lockContentLayoutWhileLoading={children !== undefined}
       loadingLayerFirst={children !== undefined}
       contentWrapper={contentWrapper}
-      shellDataAttributes={
+      loadingShellDataAttributes={
         reserveShell
           ? {
               "data-rmg-masonry-skeleton-shell": masonryLayoutSeed.scopeId,
@@ -549,6 +596,7 @@ export function MasonrySkeletonCore({
 
   return (
     <div style={{ containerType: "inline-size", width: "100%" }}>
+      {framedSkeleton}
       {reserveShell ? (
         <style
           dangerouslySetInnerHTML={{
@@ -556,7 +604,6 @@ export function MasonrySkeletonCore({
           }}
         />
       ) : null}
-      {framedSkeleton}
     </div>
   );
 }

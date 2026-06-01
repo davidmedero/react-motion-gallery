@@ -1,4 +1,7 @@
 import { type ResponsiveNumber } from "../shared/responsive";
+import type { LoadingForceOptions } from "../shared/loading/force";
+import type { SkeletonCacheOptions } from "../skeleton/cache";
+import type { MasonrySkeletonSpec } from "../skeleton/MasonrySkeleton";
 
 export type RevealOptions = {
   renderReveal?: (
@@ -17,10 +20,51 @@ export type FullscreenTrigger = "item" | "media";
 export type MasonrySpan = number | "full";
 export type ResponsiveMasonrySpan = MasonrySpan | Record<string, MasonrySpan>;
 
-export type MasonryPluginKind = "lazy-load";
+export type MasonryLoadingSkeletonArgs = {
+  index: number;
+  itemIndex?: number;
+  key: React.Key;
+  revealKey?: React.Key;
+  placeholder: boolean;
+  ready: boolean;
+  span?: ResponsiveMasonrySpan;
+  width?: number;
+  height?: number;
+};
+
+export type MasonryLoadingOptions = {
+  enabled?: boolean;
+  active?: boolean;
+  count?: number;
+  skeleton?:
+    | MasonrySkeletonSpec
+    | ((args: MasonryLoadingSkeletonArgs) => React.ReactNode);
+  cache?: SkeletonCacheOptions;
+  force?: LoadingForceOptions;
+  timing?: {
+    enterMs?: number;
+    minVisibleMs?: number;
+    exitMs?: number;
+  };
+  animate?: boolean;
+  waitForMedia?: boolean;
+  decodeTimeoutMs?: number;
+  rootMargin?: string;
+  threshold?: number;
+  keepSkeletonMounted?: boolean;
+  rememberRevealed?: boolean;
+};
+
+export type MasonryPluginKind =
+  | "lazy-load"
+  | "pagination"
+  | "load-more"
+  | "infinite-scroll"
+  | "virtualization";
 
 export type MasonryPluginItemRenderArgs = {
   index: number;
+  itemIndex?: number;
   itemRef: React.Ref<HTMLDivElement>;
   itemProps: React.HTMLAttributes<HTMLDivElement>;
   children: React.ReactNode;
@@ -32,14 +76,28 @@ export type MasonryPlugin = {
   readonly kind: MasonryPluginKind;
   readonly options?: unknown;
   readonly blocksReady?: boolean;
+  readonly Runtime?: React.ComponentType<MasonryPluginRuntimeProps>;
   renderItem?: (
     args: MasonryPluginItemRenderArgs,
     options?: unknown
   ) => React.ReactNode;
 };
 
+export type MasonryPluginHost = {
+  handle: MasonryHandle | null;
+  itemCount: number;
+  ready: boolean;
+};
+
+export type MasonryPluginRuntimeProps = {
+  host: MasonryPluginHost;
+  options?: unknown;
+};
+
 export type MasonryItemProps = {
   span?: ResponsiveMasonrySpan;
+  revealKey?: React.Key;
+  placeholder?: boolean;
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
@@ -55,6 +113,7 @@ export type MasonryHandle = {
 export type MasonryOptions = {
   columns?: ResponsiveNumber;
   gap?: ResponsiveNumber;
+  initialHeights?: ReadonlyArray<number | undefined>;
   placement?: "balanced" | "roundRobin" | "horizontalOrder";
   fullscreenTrigger?: FullscreenTrigger;
   itemWrapClassName?: string;
@@ -68,4 +127,5 @@ export type MasonryOptions = {
   };
   plugins?: MasonryPlugin[];
   reveal?: RevealOptions;
+  loading?: MasonryLoadingOptions;
 };

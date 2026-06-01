@@ -5,6 +5,7 @@ import type { GridItemProps, GridSpan, ResponsiveGridSpan } from "./types";
 
 export type GridItemLayoutMeta = {
   span?: ResponsiveGridSpan;
+  revealKey?: React.Key;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -13,6 +14,7 @@ export type GridCell = {
   id: string;
   node: React.ReactNode;
   layoutMeta?: GridItemLayoutMeta;
+  sourceIndex?: number;
 };
 
 type GridItemComponent = React.FC<GridItemProps> & {
@@ -66,6 +68,7 @@ export function normalizeGridChild(node: React.ReactNode): {
 
   const layoutMeta: GridItemLayoutMeta = {
     span: node.props.span,
+    revealKey: node.props.revealKey,
     className: node.props.className,
     style: node.props.style,
   };

@@ -1,0 +1,1 @@
+import {d}from'./chunk-L4NJDMCU.mjs';import*as r from'react';function a(i={}){return {__rmgMasonryPlugin:true,__rmgLightMasonryPlugin:true,kind:"virtualization",options:d(i)}}function n(i={}){return r.useMemo(()=>a(i),[i.enabled,i.estimateSize,i.gap,i.overscan])}export{a as masonryVirtualization,n as useMasonryVirtualizer};

@@ -105,6 +105,7 @@ const DEFAULT_EXIT_MS = 600;
 const DEFAULT_MIN_VISIBLE_MS = 220;
 
 export type MasonrySkeletonTimingOptions = {
+  enterMs?: number;
   exitMs?: number;
   minVisibleMs?: number;
 };
@@ -142,6 +143,7 @@ function useTimedLoadingLayer(
   timing: MasonrySkeletonTimingOptions | undefined
 ) {
   const exitMs = Math.max(0, timing?.exitMs ?? DEFAULT_EXIT_MS);
+  const enterMs = Math.max(0, timing?.enterMs ?? exitMs);
   const minVisibleMs = Math.max(
     0,
     timing?.minVisibleMs ?? DEFAULT_MIN_VISIBLE_MS
@@ -224,7 +226,7 @@ function useTimedLoadingLayer(
     };
   }, [exitMs, loadingActive, minVisibleMs, showLoadingLayer]);
 
-  return { exitMs, showLoadingLayer, loadingExiting, revealUnlocked };
+  return { enterMs, exitMs, showLoadingLayer, loadingExiting, revealUnlocked };
 }
 
 function shimmerVars(shimmer: SkeletonShimmer | undefined): React.CSSProperties {
@@ -549,7 +551,7 @@ export function MasonrySkeleton({
 
   const wrapperMode = children !== undefined;
   const loadingActive = wrapperMode && enabled !== false && ready !== true;
-  const { exitMs, showLoadingLayer, loadingExiting, revealUnlocked } = useTimedLoadingLayer(
+  const { enterMs, exitMs, showLoadingLayer, loadingExiting, revealUnlocked } = useTimedLoadingLayer(
     loadingActive,
     timing
   );
@@ -560,6 +562,7 @@ export function MasonrySkeleton({
   const contentVisible = enabled === false || loadingExiting || !shouldShowSkeleton;
   const contentBlocked = enabled !== false && shouldShowSkeleton && !loadingExiting;
   const transitionStyle = {
+    ["--rmg-light-mskel-enter-ms" as any]: `${enterMs}ms`,
     ["--rmg-light-mskel-exit-ms" as any]: `${exitMs}ms`,
   } as React.CSSProperties;
 

@@ -2,10 +2,7 @@
 
 import * as React from "react";
 
-import {
-  BREAKPOINT_MAP,
-  type BreakpointMap,
-} from "../shared/responsive";
+import { BREAKPOINT_MAP, type BreakpointMap } from "../shared/responsive";
 import { useLoadingLayerState } from "../shared/hooks/useLoadingLayerState";
 import { usePrefersReducedMotion } from "../shared/hooks/usePrefersReducedMotion";
 import {
@@ -49,9 +46,11 @@ export type SkeletonFrameProps = {
   contentClassName?: string;
   contentStyle?: React.CSSProperties;
   contentOwnsWrapperLayout?: boolean;
+  lockContentLayoutWhileLoading?: boolean;
   loadingLayerFirst?: boolean;
   contentWrapper?: (children: React.ReactNode) => React.ReactNode;
   shellDataAttributes?: Record<string, string | boolean | undefined>;
+  loadingShellDataAttributes?: Record<string, string | boolean | undefined>;
   shellRef?: React.Ref<HTMLDivElement>;
 };
 
@@ -100,29 +99,33 @@ export function SkeletonFrame({
   contentClassName,
   contentStyle,
   contentOwnsWrapperLayout,
+  lockContentLayoutWhileLoading,
   loadingLayerFirst,
   contentWrapper,
   shellDataAttributes,
+  loadingShellDataAttributes,
   shellRef,
 }: SkeletonFrameProps) {
   const wrapperMode = children !== undefined;
   const prefersReducedMotion = usePrefersReducedMotion();
   const contentReady = ready === true;
   const loadingForce = resolveLoadingForceOptions(force);
-  const loadingActive = wrapperMode && enabled && (loadingForce.enabled || !contentReady);
+  const loadingActive =
+    wrapperMode && enabled && (loadingForce.enabled || !contentReady);
   const loadingTiming = React.useMemo(
     () =>
       resolveLoadingTiming({
         prefersReducedMotion,
         timing,
       }),
-    [prefersReducedMotion, timing]
+    [prefersReducedMotion, timing],
   );
-  const { showLoadingLayer, loadingExiting, revealUnlocked } = useLoadingLayerState({
-    loadingActive,
-    exitMs: loadingTiming.exitMs,
-    minVisibleMs: loadingTiming.minVisibleMs,
-  });
+  const { showLoadingLayer, loadingExiting, revealUnlocked } =
+    useLoadingLayerState({
+      loadingActive,
+      exitMs: loadingTiming.exitMs,
+      minVisibleMs: loadingTiming.minVisibleMs,
+    });
   const loadingVisualState = React.useMemo(
     () =>
       resolveCompareLoadingLayerVisualState({
@@ -130,26 +133,33 @@ export function SkeletonFrame({
         loadingForced: force,
         contentReady,
       }),
-    [contentReady, force, loadingActive]
+    [contentReady, force, loadingActive],
   );
   const loadingLayerStyle = React.useMemo(
     () =>
       resolveCompareLoadingLayerStyle({
+        enterMs: loadingTiming.enterMs,
         exitMs: loadingTiming.exitMs,
         compareMode: loadingVisualState.compareMode,
         loadingLayerOpacity: loadingVisualState.loadingLayerOpacity,
         opacityVarName: "--rmg-standalone-skeleton-opacity",
       }),
     [
+      loadingTiming.enterMs,
       loadingTiming.exitMs,
       loadingVisualState.compareMode,
       loadingVisualState.loadingLayerOpacity,
-    ]
+    ],
   );
 
   if (!wrapperMode) return <>{skeletonNode}</>;
 
   const shouldShowLoadingLayer = enabled && showLoadingLayer;
+  const contentLayoutLocked =
+    enabled &&
+    !!lockContentLayoutWhileLoading &&
+    shouldShowLoadingLayer &&
+    !loadingVisualState.compareMode;
   const contentVisible =
     !enabled ||
     loadingVisualState.compareMode ||
@@ -165,9 +175,12 @@ export function SkeletonFrame({
     <div
       className={cx(
         styles.loadingLayer,
-        contentOwnsWrapperLayout && styles.loadingLayerOverlay,
+        contentLayoutLocked && styles.loadingLayerLayoutOwner,
+        contentOwnsWrapperLayout &&
+          !contentLayoutLocked &&
+          styles.loadingLayerOverlay,
         loadingVisualState.compareMode && styles.loadingLayerCompare,
-        loadingExiting && styles.loadingLayerExit
+        loadingExiting && styles.loadingLayerExit,
       )}
       style={loadingLayerStyle}
       data-rmg-skeleton-loading-layer="true"
@@ -188,11 +201,16 @@ export function SkeletonFrame({
       aria-busy={loadingActive ? true : undefined}
       data-rmg-skeleton-wrapper="true"
       data-rmg-skeleton-ready={contentReady ? "true" : "false"}
-      data-rmg-skeleton-compare={loadingVisualState.compareMode ? "true" : "false"}
+      data-rmg-skeleton-compare={
+        loadingVisualState.compareMode ? "true" : "false"
+      }
       data-rmg-skeleton-layout-owner={
-        contentOwnsWrapperLayout ? "content" : "skeleton"
+        contentLayoutLocked || !contentOwnsWrapperLayout
+          ? "skeleton"
+          : "content"
       }
       {...shellDataAttributes}
+      {...(shouldShowLoadingLayer ? loadingShellDataAttributes : undefined)}
     >
       {loadingLayerFirst ? loadingLayerNode : null}
       <div
@@ -200,10 +218,13 @@ export function SkeletonFrame({
           styles.contentLayer,
           contentVisible && styles.contentLayerVisible,
           contentBlocked && styles.contentLayerBlocked,
-          contentClassName
+          contentLayoutLocked && styles.contentLayerLayoutLocked,
+          contentClassName,
         )}
         style={{
           ["--rmg-loading-fade-duration" as any]: `${loadingTiming.exitMs}ms`,
+          ["--rmg-loading-fade-enter-duration" as any]: `${loadingTiming.enterMs}ms`,
+          ["--rmg-loading-fade-exit-duration" as any]: `${loadingTiming.exitMs}ms`,
           ...contentStyle,
         }}
         aria-hidden={contentVisible ? undefined : true}
@@ -244,7 +265,7 @@ export function SkeletonCore({
 }: SkeletonCoreProps) {
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
-    [breakpoints]
+    [breakpoints],
   );
   const generatedScopeId = React.useMemo(
     () =>
@@ -263,7 +284,7 @@ export function SkeletonCore({
       radius,
       shimmer,
       disableShimmer,
-    ]
+    ],
   );
   const scopeId = providedScopeId ?? generatedScopeId;
   const localSkeletonRootRef = React.useRef<HTMLDivElement | null>(null);
@@ -277,7 +298,7 @@ export function SkeletonCore({
           layout,
           cacheSnapshot.text,
           "__standalone__",
-          effectiveBreakpoints
+          effectiveBreakpoints,
         ) as SkeletonNode)
       : layout;
     const withIds = collectResponsiveCss(
@@ -285,7 +306,7 @@ export function SkeletonCore({
       allocId,
       collected,
       "__standalone__",
-      effectiveBreakpoints
+      effectiveBreakpoints,
     ) as SkeletonNode;
 
     return {
@@ -303,9 +324,13 @@ export function SkeletonCore({
       ? ({ ["--rmg-skel-bg" as any]: backgroundColor } as React.CSSProperties)
       : null),
     ...(radius != null
-      ? ({ ["--rmg-skel-radius" as any]: cssLen(radius) } as React.CSSProperties)
+      ? ({
+          ["--rmg-skel-radius" as any]: cssLen(radius),
+        } as React.CSSProperties)
       : null),
-    ...(disableShimmer ? null : (shimmerStyleVars(shimmer) as React.CSSProperties)),
+    ...(disableShimmer
+      ? null
+      : (shimmerStyleVars(shimmer) as React.CSSProperties)),
   };
   const skeletonNode = (
     <div

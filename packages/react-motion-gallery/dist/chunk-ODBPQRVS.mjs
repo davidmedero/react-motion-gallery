@@ -1,0 +1,1 @@
+function t(n,i){return {__rmgEntriesPlugin:true,kind:n,options:i}}function e(n){return typeof n=="object"&&n!=null&&n.__rmgEntriesPlugin===true}export{t as a,e as b};

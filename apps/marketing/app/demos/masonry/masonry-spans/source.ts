@@ -7,10 +7,8 @@ import {
   Masonry,
   type ResponsiveMasonrySpan,
 } from "react-motion-gallery/masonry/measured";
-import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
@@ -428,44 +426,35 @@ export function MasonrySpansDemo(props: MasonrySpansDemoProps = {}) {
     ),
   );
 
-  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
-
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
-      <MasonrySkeleton
-        cache={skeletonCache}
-        layout={SPANS_SKELETON}
-        ready={masonryReady}
-        timing={{ exitMs: 1200 }}
-        masonry={{
+      <Masonry
+        columns={MASONRY_SPANS_COLUMNS}
+        gap={MASONRY_SPANS_GAP}
+        placement="balanced"
+        loading={{
+          cache: skeletonCache,
           count: ITEMS.length,
-          columns: MASONRY_SPANS_COLUMNS,
-          gap: MASONRY_SPANS_GAP,
-          placement: "balanced",
+          skeleton: SPANS_SKELETON,
+          timing: { exitMs: 1200 },
         }}
       >
-        <Masonry
-          ref={masonryRef}
-          columns={MASONRY_SPANS_COLUMNS}
-          gap={MASONRY_SPANS_GAP}
-          placement="balanced"
-        >
-          {ITEMS.map((item) => (
-            <Masonry.Item
-              key={item.kind === "image" ? item.src : item.poster}
-              span={item.span}
-            >
-              <MasonrySpansCard
-                item={item}
-                skeletonTextIds={
-                  MASONRY_SPANS_TEXT_IDS[item.displayIndex - 1] ??
-                  MASONRY_SPANS_TEXT_IDS[0]!
-                }
-              />
-            </Masonry.Item>
-          ))}
-        </Masonry>
-      </MasonrySkeleton>
+        {ITEMS.map((item) => (
+          <Masonry.Item
+            key={item.kind === "image" ? item.src : item.poster}
+            span={item.span}
+            revealKey={item.kind === "image" ? item.src : item.poster}
+          >
+            <MasonrySpansCard
+              item={item}
+              skeletonTextIds={
+                MASONRY_SPANS_TEXT_IDS[item.displayIndex - 1] ??
+                MASONRY_SPANS_TEXT_IDS[0]!
+              }
+            />
+          </Masonry.Item>
+        ))}
+      </Masonry>
       <MasonrySpansFullscreenAddon />
     </GalleryCore>
   );

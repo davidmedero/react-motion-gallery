@@ -15,10 +15,12 @@ import {
 import {
   LAZY_LOADED_ATTR,
   LAZY_LOADING_ATTR,
+  LAZY_ATTR,
   hydrateLazyImageShell,
   markLazyImageShell,
   restoreLazyImageShell,
   revealLazyImageShell,
+  RMG_BLANK,
 } from "./lazyShell";
 
 function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined>): React.RefCallback<T> {
@@ -71,6 +73,66 @@ function sameLazySpinnerAnchor(
   b: LazySpinnerAnchor | null
 ) {
   return a?.top === b?.top && a?.left === b?.left;
+}
+
+function isLazyBlockedElement(type: unknown, props: Record<string, unknown>) {
+  if (typeof type !== "string") return false;
+  if (type === "video" || type === "iframe") return true;
+  if (props["data-rmg-plyr"] === true || props["data-rmg-plyr"] === "true") return true;
+
+  const className = props.className;
+  return typeof className === "string" && className.split(/\s+/).includes("plyr");
+}
+
+function prepareLazyImageElement(
+  child: React.ReactElement<any>
+): React.ReactElement<any> {
+  const props = child.props ?? {};
+  const src = typeof props.src === "string" ? props.src : undefined;
+  const lazySrc =
+    typeof props[LAZY_ATTR] === "string"
+      ? props[LAZY_ATTR]
+      : src && src !== RMG_BLANK
+        ? src
+        : undefined;
+
+  if (!lazySrc) return child;
+
+  return React.cloneElement(child, {
+    [LAZY_ATTR]: lazySrc,
+    src: RMG_BLANK,
+    loading: props.loading ?? "lazy",
+    decoding: props.decoding ?? "async",
+    fetchPriority: props.fetchPriority ?? "low",
+    style: {
+      ...(props.style ?? {}),
+      opacity: "0",
+      transition: props.style?.transition ?? "opacity 280ms ease",
+    },
+  });
+}
+
+function prepareLazyChildren(
+  children: React.ReactNode,
+  blocked = false
+): React.ReactNode {
+  return React.Children.map(children, (child) => {
+    if (!React.isValidElement(child)) return child;
+
+    const type = child.type;
+    const props = (child.props ?? {}) as Record<string, unknown>;
+
+    if (!blocked && type === "img") {
+      return prepareLazyImageElement(child as React.ReactElement<any>);
+    }
+
+    const nextBlocked = blocked || isLazyBlockedElement(type, props);
+    if (!props.children) return child;
+
+    return React.cloneElement(child as React.ReactElement<any>, {
+      children: prepareLazyChildren(props.children as React.ReactNode, nextBlocked),
+    });
+  });
 }
 
 export function resolveLazySpinnerAnchor(args: {
@@ -136,6 +198,10 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
     const [spinnerAnchor, setSpinnerAnchor] = React.useState<LazySpinnerAnchor | null>(null);
     const normalizedLazy = React.useMemo(() => normalizeLazyLoad(lazyLoad), [lazyLoad]);
     const visibleSentRef = React.useRef(false);
+    const preparedChildren = React.useMemo(
+      () => normalizedLazy.enabled ? prepareLazyChildren(children) : children,
+      [children, normalizedLazy.enabled]
+    );
 
     const spinnerResolved = React.useMemo(
       () => resolveLazySpinnerNode({ lazy: normalizedLazy, kind: "image", isClone: false }),
@@ -151,7 +217,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       visibleSentRef.current = false;
       primaryImageRef.current = null;
       setSpinnerAnchor(null);
-    }, [index, children]);
+    }, [index, preparedChildren]);
 
     React.useEffect(() => {
       if (!onVisibleIndex) return;
@@ -174,7 +240,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
 
       io.observe(host);
       return () => io.disconnect();
-    }, [children, index, onVisibleIndex]);
+    }, [preparedChildren, index, onVisibleIndex]);
 
     React.useLayoutEffect(() => {
       const host = hostRef.current;
@@ -189,6 +255,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       setHasTrackableImages(images.length > 0);
 
       if (!normalizedLazy.enabled || images.length === 0) {
+        if (!normalizedLazy.enabled) restoreLazyImageShell(host);
         setSpinnerAnchor(null);
         setReady(true);
         return () => {
@@ -271,12 +338,9 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
         cancelled = true;
         observer?.disconnect();
         primaryImageRef.current = null;
-        if (host.getAttribute(LAZY_LOADED_ATTR) !== "true") {
-          restoreLazyImageShell(host);
-        }
         registerExpandableImage?.(index, null);
       };
-    }, [children, index, normalizedLazy.enabled, registerExpandableImage, revealedIndicesRef]);
+    }, [preparedChildren, index, normalizedLazy.enabled, registerExpandableImage, revealedIndicesRef]);
 
     React.useLayoutEffect(() => {
       if (!normalizedLazy.enabled || spinnerResolved.isCustom) {
@@ -344,7 +408,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
         window.removeEventListener("resize", scheduleMeasure);
         window.visualViewport?.removeEventListener("resize", scheduleMeasure);
       };
-    }, [children, index, normalizedLazy.enabled, spinnerResolved.isCustom]);
+    }, [preparedChildren, index, normalizedLazy.enabled, spinnerResolved.isCustom]);
 
     const shouldRenderSpinner =
       normalizedLazy.enabled &&
@@ -421,7 +485,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
         style={style}
         aria-busy={ariaBusy}
       >
-        {children}
+        {preparedChildren}
         {spinnerNode}
       </div>
     );

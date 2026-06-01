@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { Grid, useGridReady } from "../../grid";
@@ -41,6 +42,26 @@ async function settle() {
     await Promise.resolve();
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
+}
+
+function nextFrame() {
+  return new Promise<void>((resolve) => {
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => resolve());
+      return;
+    }
+
+    window.setTimeout(resolve, 0);
+  });
+}
+
+async function flushGridReveal() {
+  await settle();
+  for (let index = 0; index < 4; index += 1) {
+    await React.act(async () => {
+      await nextFrame();
+    });
+  }
 }
 
 beforeAll(() => {
@@ -90,7 +111,7 @@ describe("useGridReady", () => {
     unmount(root, container);
   });
 
-  test("waits for grid media before becoming ready", async () => {
+  test("waits for grid media before revealing loaded items", async () => {
     vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockImplementation(function (
       this: HTMLImageElement
     ) {
@@ -107,7 +128,15 @@ describe("useGridReady", () => {
       return (
         <>
           <span data-ready={grid.ready ? "true" : "false"} />
-          <Grid ref={grid.ref} columns={1}>
+          <Grid
+            ref={grid.ref}
+            columns={1}
+            loading={{
+              waitForMedia: true,
+              timing: { minVisibleMs: 0 },
+              skeleton: () => <span>loading image</span>,
+            }}
+          >
             <img src="/image-a.jpg" alt="Image A" data-loaded="false" />
           </Grid>
         </>
@@ -115,9 +144,10 @@ describe("useGridReady", () => {
     }
 
     const { root, container } = mount(<ReadyProbe />);
-    await settle();
+    await flushGridReveal();
 
-    expect(container.querySelector("[data-ready='false']")).not.toBeNull();
+    expect(container.querySelector("[data-ready='true']")).not.toBeNull();
+    expect(container.querySelector("[data-rmg-grid-item-reveal='0']")).not.toBeNull();
 
     const image = container.querySelector("img[alt='Image A']") as HTMLImageElement;
     await React.act(async () => {
@@ -125,8 +155,10 @@ describe("useGridReady", () => {
       image.dispatchEvent(new Event("load"));
       await Promise.resolve();
     });
+    await flushGridReveal();
 
     expect(container.querySelector("[data-ready='true']")).not.toBeNull();
+    expect(container.querySelector("[data-rmg-grid-item-reveal='1']")).not.toBeNull();
 
     unmount(root, container);
   });
@@ -175,8 +207,24 @@ describe("useGridReady", () => {
     expect(container.querySelector("[data-rmg-lazyload]")).not.toBeNull();
     expect(image.getAttribute("data-rmg-lazy-src")).toBe("/image-a.jpg");
     expect(image.getAttribute("src")).toContain("data:image/gif");
+    expect(container.querySelector<HTMLElement>("[data-rmg-spinner]")?.style.opacity).toBe("1");
+    expect(container.querySelector<HTMLElement>("[data-rmg-spinner]")?.style.visibility).toBe("visible");
 
     unmount(root, container);
+  });
+
+  test("strips direct image sources during lazy-load SSR markup", () => {
+    const markup = renderToStaticMarkup(
+      <Grid columns={1} plugins={[gridLazyLoad()]}>
+        <article>
+          <img src="/image-a.jpg" alt="Image A" />
+        </article>
+      </Grid>
+    );
+
+    expect(markup).toContain('data-rmg-lazy-src="/image-a.jpg"');
+    expect(markup).toContain("data:image/gif");
+    expect(markup).not.toContain('<img src="/image-a.jpg"');
   });
 
   test("exposes root and item nodes on the grid handle", async () => {

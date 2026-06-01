@@ -87,12 +87,16 @@ function MasonryFullscreenRuntime({ host }: MasonryPluginRuntimeProps) {
     if (!root) return;
 
     root.setAttribute("data-rmg-fullscreen-enabled", "true");
+    const registeredIndices = new Set<number>();
     core.registerFullscreenAdapter("masonry", {
       closestSelector: ".rmg__masonry-item",
     });
 
     const registerNodes = () => {
-      host.handle?.getItemNodes().forEach((node, index) => {
+      host.handle?.getItemNodes().forEach((node) => {
+        const index = Number.parseInt(node.getAttribute("data-rmg-idx") ?? "", 10);
+        if (!Number.isFinite(index)) return;
+        registeredIndices.add(index);
         core.registerExpandableImage(index, node);
       });
     };
@@ -137,9 +141,10 @@ function MasonryFullscreenRuntime({ host }: MasonryPluginRuntimeProps) {
       root.removeEventListener("pointerdown", onPointerDown, true);
       root.removeEventListener("click", onClick, true);
       unsubscribeReady();
-      for (let index = 0; index < host.itemCount; index++) {
+      registeredIndices.forEach((index) => {
         core.registerExpandableImage(index, null);
-      }
+      });
+      registeredIndices.clear();
     };
   }, [core, core?.fsEnabled, host.handle, host.itemCount, host.ready]);
 

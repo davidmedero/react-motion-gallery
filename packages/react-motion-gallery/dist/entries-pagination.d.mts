@@ -1,0 +1,34 @@
+import { e as EntriesPaginationOptions, f as EntriesPlugin } from './responsive-Bw0ub6Hv.mjs';
+import * as React from 'react';
+import { U as UseDataPaginationOptions, D as DataPaginationController, a as DataItemsPerPageOption, b as DataPageControlItem, c as DataPageItemsOptions, d as DataPageRangeItem, e as DataPageRangeOptions, f as DataPaginationControlsProps, g as DataPaginationRippleOptions, h as DataPaginationRippleProp, i as DataPaginationSessionStorageOptions, j as DataPaginationUrlSyncOptions } from './dataPlugins-DzaWlM6f.mjs';
+import './types-uhDRb0mo.mjs';
+import './responsiveNumber-CouEMJ9O.mjs';
+import './force-C5m1QpdF.mjs';
+import './types-D9WBOrx6.mjs';
+import './media.mjs';
+import './transitions-ChhEdSB6.mjs';
+import './plyrTypes-B3vioQaS.mjs';
+import './types-CLMzNXt4.mjs';
+import './text-BBcRGVzn.mjs';
+import './types-bZ-lDlKM.mjs';
+import 'react-dom/client';
+
+type UseEntriesPaginationOptions = UseDataPaginationOptions;
+type EntriesPaginationController = DataPaginationController<ReturnType<typeof entriesPagination>>;
+type EntriesPaginationUrlSyncOptions = DataPaginationUrlSyncOptions;
+type EntriesPaginationSessionStorageOptions = DataPaginationSessionStorageOptions;
+type EntriesItemsPerPageOption = DataItemsPerPageOption;
+type EntriesPageRangeItem = DataPageRangeItem;
+type EntriesPageControlItem = DataPageControlItem;
+type EntriesPageRangeOptions = DataPageRangeOptions;
+type EntriesPageItemsOptions = DataPageItemsOptions;
+type EntriesPaginationControlsProps = DataPaginationControlsProps;
+type EntriesPaginationRippleOptions = DataPaginationRippleOptions;
+type EntriesPaginationRippleProp = DataPaginationRippleProp;
+declare function getEntriesPageRange(options: EntriesPageRangeOptions): DataPageRangeItem[];
+declare function getEntriesPageItems(options: EntriesPageItemsOptions): DataPageControlItem[];
+declare function entriesPagination(options: EntriesPaginationOptions): EntriesPlugin<"pagination">;
+declare function useEntriesPagination(options: UseEntriesPaginationOptions): EntriesPaginationController;
+declare const EntriesPaginationControls: React.FC<EntriesPaginationControlsProps>;
+
+export { type EntriesItemsPerPageOption, type EntriesPageControlItem, type EntriesPageItemsOptions, type EntriesPageRangeItem, type EntriesPageRangeOptions, type EntriesPaginationController, EntriesPaginationControls, type EntriesPaginationControlsProps, EntriesPaginationOptions, type EntriesPaginationRippleOptions, type EntriesPaginationRippleProp, type EntriesPaginationSessionStorageOptions, type EntriesPaginationUrlSyncOptions, type UseEntriesPaginationOptions, entriesPagination, getEntriesPageItems, getEntriesPageRange, useEntriesPagination };

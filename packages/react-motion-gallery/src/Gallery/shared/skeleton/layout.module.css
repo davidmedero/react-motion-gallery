@@ -90,7 +90,9 @@
   );
   animation: rmgSharedSkeletonShimmer var(--rmg-skel-shimmer-duration, 1200ms)
     var(--rmg-skel-shimmer-timing, linear) infinite;
-  transform: translateX(-100%);
+  transform: translate3d(-100%, 0, 0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
   pointer-events: none;
 }
 
@@ -110,17 +112,19 @@
   );
   animation: rmgSharedSkeletonShimmer var(--rmg-skel-shimmer-duration, 1200ms)
     var(--rmg-skel-shimmer-timing, linear) infinite;
-  transform: translateX(-100%);
+  transform: translate3d(-100%, 0, 0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
   pointer-events: none;
 }
 
 @keyframes rmgSharedSkeletonShimmer {
   0% {
-    transform: translateX(-100%);
+    transform: translate3d(-100%, 0, 0);
   }
 
   100% {
-    transform: translateX(100%);
+    transform: translate3d(100%, 0, 0);
   }
 }
 

@@ -9,13 +9,11 @@ import {
   type MasonryPlacement,
   type ResponsiveMasonrySpan,
 } from "react-motion-gallery/masonry";
-import { useMasonryReady } from "react-motion-gallery/masonry/ready";
 import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import { masonryLazyLoad } from "react-motion-gallery/masonry/lazy-load";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";
 import styles from "./CoreMasonryDemo.module.css";
 
 export type CoreMasonryVariant =
@@ -359,50 +357,50 @@ export function CoreMasonryDemo({ variant }: { variant: CoreMasonryVariant }) {
       ),
     [items]
   );
-  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
   const lazy = variant === "lazyLoad";
 
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
-      <MasonrySkeleton
+      <Masonry
         columns={config.columns}
         gap={config.gap}
         placement={config.placement}
-        items={items.map((image) => ({
-          width: image.width,
-          height: image.height,
-          span: image.span,
-        }))}
-        ready={masonryReady}
-        radius={18}
-        timing={{ minVisibleMs: 500, exitMs: 1200 }}
+        plugins={lazy ? MASONRY_LAZY_LOAD_PLUGINS : MASONRY_FULLSCREEN_PLUGINS}
+        loading={{
+          count: items.length,
+          skeleton: {
+            columns: config.columns,
+            gap: config.gap,
+            placement: config.placement,
+            items: items.map((image) => ({
+              width: image.width,
+              height: image.height,
+              span: image.span,
+            })),
+            radius: 18,
+          },
+          timing: { minVisibleMs: 500, exitMs: 1200 },
+        }}
       >
-        <Masonry
-          ref={masonryRef}
-          columns={config.columns}
-          gap={config.gap}
-          placement={config.placement}
-          plugins={lazy ? MASONRY_LAZY_LOAD_PLUGINS : MASONRY_FULLSCREEN_PLUGINS}
-        >
-          {items.map((image, index) => (
-            <Masonry.Item
-              key={image.src}
-              width={image.width}
-              height={image.height}
-              span={image.span}
-              className={styles.frame}
-            >
-              <img
-                src={image.src}
-                alt={image.alt}
-                className={styles.image}
-                loading={lazy || index > 2 ? "lazy" : "eager"}
-                decoding="async"
-              />
-            </Masonry.Item>
-          ))}
-        </Masonry>
-      </MasonrySkeleton>
+        {items.map((image, index) => (
+          <Masonry.Item
+            key={image.src}
+            revealKey={image.src}
+            width={image.width}
+            height={image.height}
+            span={image.span}
+            className={styles.frame}
+          >
+            <img
+              src={image.src}
+              alt={image.alt}
+              className={styles.image}
+              loading={lazy || index > 2 ? "lazy" : "eager"}
+              decoding="async"
+            />
+          </Masonry.Item>
+        ))}
+      </Masonry>
       <CoreMasonryFullscreenAddon />
     </GalleryCore>
   );

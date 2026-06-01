@@ -15,6 +15,9 @@
 .gridSkeletonItem {
   position: relative;
   width: 100%;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .gridSkeletonItem::before {
@@ -24,7 +27,18 @@
   border-radius: var(--rmg-grid-skel-wrap-shadow-radius, var(--rmg-skel-radius, 12px));
   box-shadow: var(--rmg-grid-skel-wrap-shadow, none);
   opacity: var(--rmg-grid-skel-wrap-shadow-opacity, 1);
-  transition: opacity calc(var(--rmg-loading-fade-duration, 600ms) * 0.45) ease-out;
+  transition:
+    opacity
+      calc(
+        var(
+          --rmg-loading-fade-shadow-duration,
+          var(
+            --rmg-loading-fade-enter-duration,
+            var(--rmg-loading-fade-duration, 600ms)
+          )
+        ) * 0.45
+      )
+      ease-out;
   pointer-events: none;
 }
 
@@ -33,4 +47,7 @@
   z-index: 1;
   width: 100%;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
 }

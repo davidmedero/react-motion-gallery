@@ -5,6 +5,8 @@ export type {
   GridFullscreenTrigger,
   GridHandle,
   GridItemProps,
+  GridLoadingOptions,
+  GridLoadingSkeletonArgs,
   GridOptions,
   GridPlugin,
   GridPluginHost,
@@ -22,3 +24,24 @@ export type {
   GridSkeletonSlot,
   GridSkeletonSpec,
 } from "./Gallery/skeleton/GridSkeleton";
+export type {
+  GridItemsPerPageOption,
+  GridPaginationOptions,
+  GridPaginationControlsProps,
+  GridPaginationRippleOptions,
+  GridPaginationRippleProp,
+  GridPaginationSessionStorageOptions,
+  UseGridPaginationOptions,
+} from "./Gallery/grid/plugins/pagination";
+export type {
+  GridLoadMoreOptions,
+  UseGridLoadMoreOptions,
+} from "./Gallery/grid/plugins/loadMore";
+export type {
+  GridInfiniteScrollOptions,
+  UseGridInfiniteScrollOptions,
+} from "./Gallery/grid/plugins/infiniteScroll";
+export type {
+  GridVirtualizationOptions,
+  UseGridVirtualizerOptions,
+} from "./Gallery/grid/plugins/virtualization";

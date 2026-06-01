@@ -189,7 +189,10 @@ export type SkeletonTextSnapshotRecord = {
   containerWidthPx?: number;
 };
 
-export type SkeletonTextSnapshotMap = Record<string, SkeletonTextSnapshotRecord>;
+export type SkeletonTextSnapshotMap = Record<
+  string,
+  SkeletonTextSnapshotRecord
+>;
 
 type ResponsiveStyleValue<T extends object> = T | Record<string, T>;
 
@@ -204,7 +207,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 export function parseResponsiveStyleMinWidth(
   key: string,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): number | null {
   const named = breakpointMap[key];
   if (Number.isFinite(named)) return Math.max(0, named);
@@ -216,7 +219,7 @@ export function parseResponsiveStyleMinWidth(
 
 function splitResponsiveStyle<T extends object>(
   value: ResponsiveStyleValue<T> | undefined,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): {
   baseStyle: T | undefined;
   rules: ResponsiveStyleRule<T>[];
@@ -258,7 +261,7 @@ function splitResponsiveStyle<T extends object>(
 function mergeResolvedStyle<T extends object>(
   value: ResponsiveStyleValue<T> | undefined,
   minWidth: number,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): T | undefined {
   const { baseStyle, rules } = splitResponsiveStyle(value, breakpointMap);
   const resolved: Record<string, unknown> = {
@@ -275,7 +278,7 @@ function mergeResolvedStyle<T extends object>(
 
 function extractInlineStyle<T extends object>(
   value: ResponsiveStyleValue<T> | undefined,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): T | undefined {
   const { baseStyle, rules } = splitResponsiveStyle(value, breakpointMap);
   if (!baseStyle) return undefined;
@@ -301,7 +304,7 @@ function extractInlineStyle<T extends object>(
 function collectStyleBreakpoints<T extends object>(
   value: ResponsiveStyleValue<T> | undefined,
   out: Set<number>,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ) {
   const { rules } = splitResponsiveStyle(value, breakpointMap);
   for (const rule of rules) {
@@ -316,8 +319,7 @@ function buildResponsiveStyleRules<T extends object>(args: {
   selector?: string;
 }): ResponsiveCssRule[] {
   const breakpointMap = args.breakpointMap ?? BREAKPOINT_MAP;
-  const selector =
-    args.selector ?? TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER;
+  const selector = args.selector ?? TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER;
   const out: ResponsiveCssRule[] = [];
   const { rules } = splitResponsiveStyle(args.value, breakpointMap);
   if (!rules.length) return [];
@@ -349,7 +351,7 @@ export function cssLen(v: SkeletonLength | undefined): string | undefined {
 }
 
 export function applyBoxMargins(
-  style: SkeletonBaseStyle | undefined
+  style: SkeletonBaseStyle | undefined,
 ): React.CSSProperties {
   if (!style) return {};
 
@@ -370,10 +372,18 @@ export function applyBoxMargins(
 
 function applyFlexItemStyleVars(
   out: React.CSSProperties,
-  style: Pick<
-    SkeletonBaseStyle,
-    "flex" | "flexGrow" | "flexShrink" | "flexBasis" | "order" | "alignSelf" | "boxSizing"
-  > | undefined
+  style:
+    | Pick<
+        SkeletonBaseStyle,
+        | "flex"
+        | "flexGrow"
+        | "flexShrink"
+        | "flexBasis"
+        | "order"
+        | "alignSelf"
+        | "boxSizing"
+      >
+    | undefined,
 ) {
   if (!style) return;
 
@@ -388,17 +398,26 @@ function applyFlexItemStyleVars(
 
 function appendFlexItemDecls(
   decls: string[],
-  style: Pick<
-    SkeletonBaseStyle,
-    "flex" | "flexGrow" | "flexShrink" | "flexBasis" | "order" | "alignSelf" | "boxSizing"
-  > | undefined
+  style:
+    | Pick<
+        SkeletonBaseStyle,
+        | "flex"
+        | "flexGrow"
+        | "flexShrink"
+        | "flexBasis"
+        | "order"
+        | "alignSelf"
+        | "boxSizing"
+      >
+    | undefined,
 ) {
   if (!style) return;
 
   if (style.flex != null) decls.push(`flex:${style.flex};`);
   if (style.flexGrow != null) decls.push(`flex-grow:${style.flexGrow};`);
   if (style.flexShrink != null) decls.push(`flex-shrink:${style.flexShrink};`);
-  if (style.flexBasis != null) decls.push(`flex-basis:${cssLen(style.flexBasis)};`);
+  if (style.flexBasis != null)
+    decls.push(`flex-basis:${cssLen(style.flexBasis)};`);
   if (style.order != null) decls.push(`order:${style.order};`);
   if (style.alignSelf) decls.push(`align-self:${style.alignSelf};`);
   if (style.boxSizing != null) decls.push(`box-sizing:${style.boxSizing};`);
@@ -406,11 +425,12 @@ function appendFlexItemDecls(
 
 export function nodeStyleVars(
   base: SkeletonBaseStyle | undefined,
-  shimmer: SkeletonShimmer | undefined
+  shimmer: SkeletonShimmer | undefined,
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
 
-  if (base?.aspectRatio != null) (s as any).aspectRatio = base.aspectRatio as any;
+  if (base?.aspectRatio != null)
+    (s as any).aspectRatio = base.aspectRatio as any;
 
   const w = cssLen(base?.width);
   const minW = cssLen(base?.minWidth);
@@ -442,14 +462,19 @@ export function nodeStyleVars(
     (s as any).height = "auto";
   }
 
-  if (base?.aspectRatio != null && base?.width == null && base?.height == null) {
+  if (
+    base?.aspectRatio != null &&
+    base?.width == null &&
+    base?.height == null
+  ) {
     (s as any).inlineSize = "100%";
     (s as any).width = "100%";
     (s as any).height = "auto";
   }
 
   if (base?.backgroundColor) (s as any)["--rmg-skel-bg"] = base.backgroundColor;
-  if (base?.borderRadius != null) (s as any)["--rmg-skel-radius"] = cssLen(base.borderRadius);
+  if (base?.borderRadius != null)
+    (s as any)["--rmg-skel-radius"] = cssLen(base.borderRadius);
   if (base?.overflow != null) s.overflow = base.overflow;
   applyFlexItemStyleVars(s, base);
   if (base?.scale != null) s.transform = `scale(${base.scale})`;
@@ -461,7 +486,7 @@ export function nodeStyleVars(
 
 function appendBoxMarginDecls(
   decls: string[],
-  style: SkeletonBaseStyle | undefined
+  style: SkeletonBaseStyle | undefined,
 ) {
   const margin = cssLen(style?.margin);
   const mt = cssLen(style?.marginTop);
@@ -524,7 +549,8 @@ function baseStyleToCssDecls(style: SkeletonBaseStyle | undefined): string {
     decls.push("height:auto;");
   }
 
-  if (style.backgroundColor) decls.push(`--rmg-skel-bg:${style.backgroundColor};`);
+  if (style.backgroundColor)
+    decls.push(`--rmg-skel-bg:${style.backgroundColor};`);
   if (style.borderRadius != null) {
     decls.push(`--rmg-skel-radius:${cssLen(style.borderRadius)};`);
   }
@@ -537,7 +563,7 @@ function baseStyleToCssDecls(style: SkeletonBaseStyle | undefined): string {
 }
 
 function textWrapperStyleToCssDecls(
-  style: SkeletonBaseStyle | undefined
+  style: SkeletonBaseStyle | undefined,
 ): string {
   if (!style) return "";
 
@@ -572,7 +598,8 @@ function textLineStyleToCssDecls(style: SkeletonBaseStyle | undefined): string {
   if (!style) return "";
 
   const decls: string[] = [];
-  if (style.backgroundColor) decls.push(`--rmg-skel-bg:${style.backgroundColor};`);
+  if (style.backgroundColor)
+    decls.push(`--rmg-skel-bg:${style.backgroundColor};`);
   if (style.borderRadius != null) {
     decls.push(`--rmg-skel-radius:${cssLen(style.borderRadius)};`);
   }
@@ -583,10 +610,11 @@ export function shimmerStyleVars(
   shimmer: SkeletonShimmer | undefined,
   options?: {
     enabledVarName?: string;
-  }
+  },
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
-  const enabledVarName = options?.enabledVarName ?? "--rmg-skel-shimmer-enabled";
+  const enabledVarName =
+    options?.enabledVarName ?? "--rmg-skel-shimmer-enabled";
 
   if (shimmer?.enabled === false) {
     (s as any)[enabledVarName] = "0";
@@ -631,7 +659,7 @@ export function shimmerStyleVars(
 
 function textWrapperStyleVars(
   base: SkeletonBaseStyle | undefined,
-  height?: number
+  height?: number,
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
   if (height != null) {
@@ -679,12 +707,12 @@ function styleUsesMaxContentWidth(style: unknown): boolean {
     (value) =>
       !!value &&
       typeof value === "object" &&
-      isMaxContentWidth((value as { width?: unknown }).width)
+      isMaxContentWidth((value as { width?: unknown }).width),
   );
 }
 
 export function wrapStyleVars(
-  base: SkeletonWrapStyle | undefined
+  base: SkeletonWrapStyle | undefined,
 ): React.CSSProperties {
   const s = nodeStyleVars(base, undefined);
   delete (s as any)["--rmg-skel-bg"];
@@ -703,15 +731,17 @@ export function wrapStyleVars(
 }
 
 export function containerStylesPlain(
-  style?: SkeletonContainerStyle
+  style?: SkeletonContainerStyle,
 ): React.CSSProperties {
   const s: React.CSSProperties = {};
   if (!style) return s;
 
   if (style.position != null) s.position = style.position;
   if (style.inset != null) (s as any).inset = cssLen(style.inset);
-  if (style.insetBlock != null) (s as any).insetBlock = cssLen(style.insetBlock);
-  if (style.insetInline != null) (s as any).insetInline = cssLen(style.insetInline);
+  if (style.insetBlock != null)
+    (s as any).insetBlock = cssLen(style.insetBlock);
+  if (style.insetInline != null)
+    (s as any).insetInline = cssLen(style.insetInline);
   if (style.top != null) s.top = cssLen(style.top);
   if (style.right != null) s.right = cssLen(style.right);
   if (style.bottom != null) s.bottom = cssLen(style.bottom);
@@ -723,12 +753,14 @@ export function containerStylesPlain(
   if (style.rowGap != null) (s as any).rowGap = cssLen(style.rowGap);
   if (style.columnGap != null) (s as any).columnGap = cssLen(style.columnGap);
   if (style.padding != null) (s as any).padding = cssLen(style.padding);
-  if (style.align ?? style.alignItems) s.alignItems = style.alignItems ?? style.align;
+  if (style.align ?? style.alignItems)
+    s.alignItems = style.alignItems ?? style.align;
   if (style.alignContent != null) s.alignContent = style.alignContent;
   if (style.justify ?? style.justifyContent) {
     s.justifyContent = style.justifyContent ?? style.justify;
   }
-  if (style.aspectRatio != null) (s as any).aspectRatio = style.aspectRatio as any;
+  if (style.aspectRatio != null)
+    (s as any).aspectRatio = style.aspectRatio as any;
   if (style.flexWrap != null) {
     s.flexWrap = style.flexWrap;
   } else if (style.wrap) {
@@ -762,14 +794,14 @@ export function containerStylesPlain(
 
 export function isResponsiveContainerStyle(
   style: SkeletonContainerStyleResponsive | undefined,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): style is Record<string, SkeletonContainerStyle> {
   return splitResponsiveStyle(style, breakpointMap).rules.length > 0;
 }
 
 export function isResponsiveBaseStyle(
   style: SkeletonBaseStyleResponsive | undefined,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): style is Record<string, SkeletonBaseStyle> {
   return splitResponsiveStyle(style, breakpointMap).rules.length > 0;
 }
@@ -777,7 +809,7 @@ export function isResponsiveBaseStyle(
 export function resolveResponsiveBaseStyleAtMinWidth(
   style: SkeletonBaseStyleResponsive | undefined,
   minWidth = 0,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): SkeletonBaseStyle | undefined {
   return mergeResolvedStyle(style, minWidth, breakpointMap);
 }
@@ -785,21 +817,21 @@ export function resolveResponsiveBaseStyleAtMinWidth(
 export function resolveResponsiveContainerStyleAtMinWidth(
   style: SkeletonContainerStyleResponsive | undefined,
   minWidth = 0,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): SkeletonContainerStyle | undefined {
   return mergeResolvedStyle(style, minWidth, breakpointMap);
 }
 
 export function resolveInlineResponsiveBaseStyle(
   style: SkeletonBaseStyleResponsive | undefined,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): SkeletonBaseStyle | undefined {
   return extractInlineStyle(style, breakpointMap);
 }
 
 export function resolveInlineResponsiveContainerStyle(
   style: SkeletonContainerStyleResponsive | undefined,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): SkeletonContainerStyle | undefined {
   return extractInlineStyle(style, breakpointMap);
 }
@@ -810,9 +842,13 @@ export function collectResponsiveStyleBreakpoints(
     | SkeletonContainerStyleResponsive
     | undefined,
   out: Set<number>,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ) {
-  collectStyleBreakpoints(style as ResponsiveStyleValue<Record<string, unknown>> | undefined, out, breakpointMap);
+  collectStyleBreakpoints(
+    style as ResponsiveStyleValue<Record<string, unknown>> | undefined,
+    out,
+    breakpointMap,
+  );
 }
 
 export function escapeAttrValue(v: string) {
@@ -827,23 +863,28 @@ function containerStyleToCssDecls(style: SkeletonContainerStyle): string {
   const decls: string[] = [];
   if (style.position != null) decls.push(`position:${style.position};`);
   if (style.inset != null) decls.push(`inset:${cssLen(style.inset)};`);
-  if (style.insetBlock != null) decls.push(`inset-block:${cssLen(style.insetBlock)};`);
-  if (style.insetInline != null) decls.push(`inset-inline:${cssLen(style.insetInline)};`);
+  if (style.insetBlock != null)
+    decls.push(`inset-block:${cssLen(style.insetBlock)};`);
+  if (style.insetInline != null)
+    decls.push(`inset-inline:${cssLen(style.insetInline)};`);
   if (style.top != null) decls.push(`top:${cssLen(style.top)};`);
   if (style.right != null) decls.push(`right:${cssLen(style.right)};`);
   if (style.bottom != null) decls.push(`bottom:${cssLen(style.bottom)};`);
   if (style.left != null) decls.push(`left:${cssLen(style.left)};`);
   if (style.zIndex != null) decls.push(`z-index:${style.zIndex};`);
   if (style.display != null) decls.push(`display:${style.display};`);
-  if (style.flexDirection != null) decls.push(`flex-direction:${style.flexDirection};`);
+  if (style.flexDirection != null)
+    decls.push(`flex-direction:${style.flexDirection};`);
   if (style.gap != null) decls.push(`gap:${cssLen(style.gap)};`);
   if (style.rowGap != null) decls.push(`row-gap:${cssLen(style.rowGap)};`);
-  if (style.columnGap != null) decls.push(`column-gap:${cssLen(style.columnGap)};`);
+  if (style.columnGap != null)
+    decls.push(`column-gap:${cssLen(style.columnGap)};`);
   if (style.padding != null) decls.push(`padding:${cssLen(style.padding)};`);
   if (style.align ?? style.alignItems) {
     decls.push(`align-items:${style.alignItems ?? style.align};`);
   }
-  if (style.alignContent != null) decls.push(`align-content:${style.alignContent};`);
+  if (style.alignContent != null)
+    decls.push(`align-content:${style.alignContent};`);
   if (style.justify ?? style.justifyContent) {
     decls.push(`justify-content:${style.justifyContent ?? style.justify};`);
   }
@@ -856,21 +897,29 @@ function containerStyleToCssDecls(style: SkeletonContainerStyle): string {
     decls.push(`flex-wrap:wrap;`);
   }
   if (style.width != null) decls.push(`width:${cssLen(style.width)};`);
-  if (style.minWidth != null) decls.push(`min-width:${cssLen(style.minWidth)};`);
-  if (style.maxWidth != null) decls.push(`max-width:${cssLen(style.maxWidth)};`);
+  if (style.minWidth != null)
+    decls.push(`min-width:${cssLen(style.minWidth)};`);
+  if (style.maxWidth != null)
+    decls.push(`max-width:${cssLen(style.maxWidth)};`);
   if (style.height != null) decls.push(`height:${cssLen(style.height)};`);
-  if (style.minHeight != null) decls.push(`min-height:${cssLen(style.minHeight)};`);
-  if (style.maxHeight != null) decls.push(`max-height:${cssLen(style.maxHeight)};`);
-  if (style.aspectRatio != null && style.height == null) decls.push("height:auto;");
-  if (style.backgroundColor != null) decls.push(`background-color:${style.backgroundColor};`);
-  if (style.borderRadius != null) decls.push(`border-radius:${cssLen(style.borderRadius)};`);
+  if (style.minHeight != null)
+    decls.push(`min-height:${cssLen(style.minHeight)};`);
+  if (style.maxHeight != null)
+    decls.push(`max-height:${cssLen(style.maxHeight)};`);
+  if (style.aspectRatio != null && style.height == null)
+    decls.push("height:auto;");
+  if (style.backgroundColor != null)
+    decls.push(`background-color:${style.backgroundColor};`);
+  if (style.borderRadius != null)
+    decls.push(`border-radius:${cssLen(style.borderRadius)};`);
   if (style.border != null) decls.push(`border:${style.border};`);
   if (style.boxShadow != null) decls.push(`box-shadow:${style.boxShadow};`);
   appendBoxMarginDecls(decls, style as SkeletonBaseStyle);
   appendFlexItemDecls(decls, style as SkeletonBaseStyle);
   if (style.overflow != null) decls.push(`overflow:${style.overflow};`);
   if (style.transform != null) decls.push(`transform:${style.transform};`);
-  if (style.pointerEvents != null) decls.push(`pointer-events:${style.pointerEvents};`);
+  if (style.pointerEvents != null)
+    decls.push(`pointer-events:${style.pointerEvents};`);
   if (style.opacity != null) decls.push(`opacity:${style.opacity};`);
   return decls.join("");
 }
@@ -909,8 +958,7 @@ export function buildResponsiveTextStyleCssRules(args: {
   const breakpointMap = args.breakpointMap ?? BREAKPOINT_MAP;
   if (!isResponsiveBaseStyle(args.style, breakpointMap)) return [];
 
-  const selector =
-    args.selector ?? TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER;
+  const selector = args.selector ?? TEXT_SKELETON_NODE_SELECTOR_PLACEHOLDER;
   const out: ResponsiveCssRule[] = [];
   const breakpoints = new Set<number>([0]);
 
@@ -920,15 +968,13 @@ export function buildResponsiveTextStyleCssRules(args: {
     const resolved = resolveResponsiveBaseStyleAtMinWidth(
       args.style,
       minWidth,
-      breakpointMap
+      breakpointMap,
     );
     const wrapperCss = textWrapperStyleToCssDecls(resolved);
     const lineCss = textLineStyleToCssDecls(resolved);
     const css = [
       wrapperCss ? `${selector}{${wrapperCss}}` : "",
-      lineCss
-        ? `${selector} [data-rmg-skel-text-line="true"]{${lineCss}}`
-        : "",
+      lineCss ? `${selector} [data-rmg-skel-text-line="true"]{${lineCss}}` : "",
     ]
       .filter(Boolean)
       .join("");
@@ -959,7 +1005,7 @@ function normalizeSnapshotLines(value: number) {
 function applyTextSnapshotToNode(
   node: Extract<SkeletonNode, { kind: "text" }>,
   snapshot: SkeletonTextSnapshotMap | undefined,
-  breakpointMap: BreakpointMap
+  breakpointMap: BreakpointMap,
 ): Extract<SkeletonNode, { kind: "text" }> {
   const textId = node.textId;
   const record = textId ? snapshot?.[textId] : undefined;
@@ -976,26 +1022,27 @@ function applyTextSnapshotToNode(
     typeof record.barHeight === "number" && Number.isFinite(record.barHeight)
       ? record.barHeight
       : typeof node.barHeight === "number"
-      ? node.barHeight
-      : resolveResponsiveTextBarHeight(
-          node.barHeight,
-          0,
-          snapshotMinWidth,
-          breakpointMap
-        );
+        ? node.barHeight
+        : resolveResponsiveTextBarHeight(
+            node.barHeight,
+            0,
+            snapshotMinWidth,
+            breakpointMap,
+          );
   const lineHeight =
     typeof node.lineHeight === "number"
       ? node.lineHeight
       : node.lineHeight != null
-      ? resolveResponsiveTextLineHeight(
-          node.lineHeight,
-          1,
-          snapshotMinWidth,
-          breakpointMap
-        )
-      : typeof record.lineHeight === "number" && Number.isFinite(record.lineHeight)
-      ? record.lineHeight
-      : 1;
+        ? resolveResponsiveTextLineHeight(
+            node.lineHeight,
+            1,
+            snapshotMinWidth,
+            breakpointMap,
+          )
+        : typeof record.lineHeight === "number" &&
+            Number.isFinite(record.lineHeight)
+          ? record.lineHeight
+          : 1;
 
   return {
     ...node,
@@ -1003,7 +1050,8 @@ function applyTextSnapshotToNode(
     lineHeight,
     lines,
     ...(barWidth?.length ? { barWidth } : null),
-    lastBarWidth: barWidth?.[Math.min(lines, barWidth.length) - 1] ?? node.lastBarWidth,
+    lastBarWidth:
+      barWidth?.[Math.min(lines, barWidth.length) - 1] ?? node.lastBarWidth,
     responsiveBy: undefined,
   };
 }
@@ -1012,7 +1060,7 @@ export function applySkeletonTextSnapshot<TKind extends string>(
   node: SkeletonLayoutRoot<TKind> | SkeletonNode,
   snapshot: SkeletonTextSnapshotMap | undefined,
   rootKind: TKind,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): SkeletonLayoutRoot<TKind> | SkeletonNode {
   if (!snapshot) return node;
 
@@ -1026,7 +1074,7 @@ export function applySkeletonTextSnapshot<TKind extends string>(
                 slot.item,
                 snapshot,
                 rootKind,
-                breakpointMap
+                breakpointMap,
               ) as SkeletonNode)
             : slot?.item,
         }))
@@ -1038,7 +1086,7 @@ export function applySkeletonTextSnapshot<TKind extends string>(
         rootNode.item,
         snapshot,
         rootKind,
-        breakpointMap
+        breakpointMap,
       ) as SkeletonNode,
       ...(slots ? { slots } : null),
     };
@@ -1062,7 +1110,7 @@ export function applySkeletonTextSnapshot<TKind extends string>(
     return {
       ...(skeletonNode as any),
       children: skeletonNode.children.map((child: SkeletonNode) =>
-        applySkeletonTextSnapshot(child, snapshot, rootKind, breakpointMap)
+        applySkeletonTextSnapshot(child, snapshot, rootKind, breakpointMap),
       ) as SkeletonNode[],
     };
   }
@@ -1073,14 +1121,16 @@ export function applySkeletonTextSnapshot<TKind extends string>(
 export function collectSkeletonTextIds<TKind extends string>(
   node: SkeletonLayoutRoot<TKind> | SkeletonNode | undefined,
   rootKind: TKind,
-  out: Set<string> = new Set()
+  out: Set<string> = new Set(),
 ) {
   if (!node) return out;
 
   if ((node as any).kind === rootKind) {
     const rootNode = node as SkeletonLayoutRoot<TKind>;
     collectSkeletonTextIds(rootNode.item, rootKind, out);
-    for (const slot of ((rootNode as any).slots ?? []) as Array<{ item?: SkeletonNode }>) {
+    for (const slot of ((rootNode as any).slots ?? []) as Array<{
+      item?: SkeletonNode;
+    }>) {
       collectSkeletonTextIds(slot.item, rootKind, out);
     }
     return out;
@@ -1111,7 +1161,7 @@ export function collectResponsiveCss<TKind extends string>(
   allocId: () => string,
   out: SkeletonResponsiveCssEntry[],
   rootKind: TKind,
-  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP,
 ): SkeletonLayoutRoot<TKind> | SkeletonNode {
   if ((node as any).kind === rootKind) {
     const rootNode = node as SkeletonLayoutRoot<TKind>;
@@ -1128,7 +1178,7 @@ export function collectResponsiveCss<TKind extends string>(
       allocId,
       out,
       rootKind,
-      breakpointMap
+      breakpointMap,
     ) as SkeletonNode;
     const slots = Array.isArray((rootNode as any).slots)
       ? (rootNode as any).slots.map((slot: any) => ({
@@ -1139,7 +1189,7 @@ export function collectResponsiveCss<TKind extends string>(
                 allocId,
                 out,
                 rootKind,
-                breakpointMap
+                breakpointMap,
               ) as SkeletonNode)
             : slot?.item,
         }))
@@ -1234,7 +1284,10 @@ export function collectResponsiveCss<TKind extends string>(
     case "stack":
     case "row":
     case "col": {
-      const groupNode = node as Extract<SkeletonNode, { kind: "stack" | "row" | "col" }>;
+      const groupNode = node as Extract<
+        SkeletonNode,
+        { kind: "stack" | "row" | "col" }
+      >;
       const rules = buildResponsiveContainerStyleCssRules({
         style: groupNode.style,
         breakpointMap,
@@ -1244,7 +1297,7 @@ export function collectResponsiveCss<TKind extends string>(
       if (id && rules.length) out.push({ nodeId: id, rules });
 
       const children = groupNode.children.map((child: SkeletonNode) =>
-        collectResponsiveCss(child, allocId, out, rootKind, breakpointMap)
+        collectResponsiveCss(child, allocId, out, rootKind, breakpointMap),
       ) as SkeletonNode[];
 
       return {
@@ -1292,12 +1345,9 @@ export function buildResponsiveCssText(args: {
 function renderNodeStyleVars(
   base: SkeletonBaseStyle | undefined,
   shimmer: SkeletonShimmer | undefined,
-  disableShimmer?: boolean
+  disableShimmer?: boolean,
 ): React.CSSProperties {
-  return nodeStyleVars(
-    base,
-    disableShimmer ? undefined : shimmer
-  );
+  return nodeStyleVars(base, disableShimmer ? undefined : shimmer);
 }
 
 type SkeletonRenderOptions = {
@@ -1309,15 +1359,16 @@ function ShapeNode(
     SkeletonRenderOptions & {
       breakpointMap: BreakpointMap;
       mediaTile?: boolean;
-    }
+    },
 ) {
-  const { kind, style, shimmer, disableShimmer, breakpointMap, mediaTile } = props;
+  const { kind, style, shimmer, disableShimmer, breakpointMap, mediaTile } =
+    props;
   const shapeCls =
     kind === "circle"
       ? styles.skelCircle
       : kind === "square"
-      ? styles.skelSquare
-      : styles.skelRect;
+        ? styles.skelSquare
+        : styles.skelRect;
   const inlineStyle = resolveInlineResponsiveBaseStyle(style, breakpointMap);
   const nodeId = (props as any).__rmgNodeId as string | undefined;
 
@@ -1325,10 +1376,19 @@ function ShapeNode(
     <div
       data-rmg-skel-node={nodeId}
       data-rmg-skel-media-tile={mediaTile ? "true" : undefined}
-      className={[styles.skelTile, shapeCls, disableShimmer ? null : styles.skelShimmer]
+      className={[
+        styles.skelTile,
+        shapeCls,
+        disableShimmer ? null : styles.skelShimmer,
+      ]
         .filter(Boolean)
         .join(" ")}
       style={{
+        ...(kind === "circle"
+          ? { aspectRatio: "1 / 1", borderRadius: 999 }
+          : kind === "square"
+            ? { aspectRatio: "1 / 1" }
+            : null),
         ...renderNodeStyleVars(inlineStyle, shimmer, disableShimmer),
         ...applyBoxMargins(inlineStyle),
       }}
@@ -1357,17 +1417,18 @@ function TextNode({
     });
   const inlineStyle = resolveInlineResponsiveBaseStyle(
     node.style,
-    breakpointMap
+    breakpointMap,
   );
   const nodeId = (node as any).__rmgNodeId as string | undefined;
   const usesContainerQueries =
-    renderState.responsiveBy === "container" && renderState.usesResponsiveBarCss;
+    renderState.responsiveBy === "container" &&
+    renderState.usesResponsiveBarCss;
   const safariMetrics = getSafariTextSkeletonMetricsFromMetrics(
-    renderState.baseState.metrics
+    renderState.baseState.metrics,
   );
   const wrapperStyle = textWrapperStyleVars(
     usesContainerQueries ? undefined : inlineStyle,
-    renderState.baseState.metrics.totalHeight
+    renderState.baseState.metrics.totalHeight,
   );
   const marginStyle = applyBoxMargins(inlineStyle);
 
@@ -1389,10 +1450,8 @@ function TextNode({
         ...(usesContainerQueries ? null : marginStyle),
         paddingBlock: `${renderState.baseState.metrics.paddingBlock}px`,
         rowGap: `${renderState.baseState.metrics.rowGap}px`,
-        ["--rmg-skel-text-safari-height" as any]:
-          `${safariMetrics.totalHeight}px`,
-        ["--rmg-skel-text-safari-padding-block" as any]:
-          `${safariMetrics.paddingBlock}px`,
+        ["--rmg-skel-text-safari-height" as any]: `${safariMetrics.totalHeight}px`,
+        ["--rmg-skel-text-safari-padding-block" as any]: `${safariMetrics.paddingBlock}px`,
         ["--rmg-skel-text-safari-row-gap" as any]: `${safariMetrics.rowGap}px`,
       }}
     >
@@ -1412,7 +1471,7 @@ function TextNode({
             display:
               index >= renderState.baseState.lineCount ? "none" : undefined,
             width: fitContent
-              ? renderState.baseState.barWidths[index] ?? "100%"
+              ? (renderState.baseState.barWidths[index] ?? "100%")
               : "100%",
             maxWidth: renderState.baseState.barWidths[index] ?? "100%",
           }}
@@ -1465,10 +1524,7 @@ export function SkeletonLayoutNode({
       const tileShape = node.tile?.shape ?? "rect";
       const nodeId = (node as any).__rmgNodeId as string | undefined;
       const plainStyle = containerStylesPlain(
-        resolveInlineResponsiveContainerStyle(
-          node.style,
-          effectiveBreakpoints
-        )
+        resolveInlineResponsiveContainerStyle(node.style, effectiveBreakpoints),
       );
 
       return (
@@ -1478,7 +1534,9 @@ export function SkeletonLayoutNode({
             styles.skelGroup,
             direction === "row" ? styles.skelRow : styles.skelCol,
           ].join(" ")}
-          style={plainStyle}
+          style={{
+            ...plainStyle,
+          }}
         >
           {Array.from({ length: count }).map((_, index) => (
             <ShapeNode
@@ -1502,15 +1560,12 @@ export function SkeletonLayoutNode({
         node.kind === "row"
           ? styles.skelRow
           : node.kind === "col"
-          ? styles.skelCol
-          : styles.skelStack;
+            ? styles.skelCol
+            : styles.skelStack;
 
       const nodeId = (node as any).__rmgNodeId as string | undefined;
       const plainStyle = containerStylesPlain(
-        resolveInlineResponsiveContainerStyle(
-          node.style,
-          effectiveBreakpoints
-        )
+        resolveInlineResponsiveContainerStyle(node.style, effectiveBreakpoints),
       );
 
       return (

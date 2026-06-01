@@ -271,9 +271,9 @@ const ENTRY_MASONRY_MEDIA = createEntriesMasonryMedia({
   masonryObject: {
     columns: { 0: 2, 920: 3 },
     gap: 12,
-  },
-  masonryLoading: {
-    enabled: false,
+    loading: {
+      enabled: false,
+    },
   },
 });
 
@@ -378,7 +378,7 @@ function renderEntryMedia({ media }: EntryMediaRenderArgs) {
   const item = media as DemoEntry["media"][number];
 
   return (
-    <Masonry.Item width={item.width} height={item.height}>
+    <Masonry.Item width={item.width} height={item.height} revealKey={item.src}>
       <img
         src={item.src}
         alt={item.alt ?? ""}

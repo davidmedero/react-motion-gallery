@@ -4,10 +4,8 @@ export const source = `/* eslint-disable @next/next/no-img-element */
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Masonry } from "react-motion-gallery/masonry/measured";
-import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
 import { masonryLazyLoad } from "react-motion-gallery/masonry/lazy-load";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
@@ -303,43 +301,34 @@ function MasonryLazyFullscreenAddon() {
 export function MasonryLazyLoadDemo() {
   const fullscreenMedia = toMediaItems(ITEMS.map((item) => item.fullscreenSrc));
 
-  const { ref: masonryRef, ready: masonryReady } = useMasonryReady();
-
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
-      <MasonrySkeleton
-        cache={demoSkeletonCache("masonry-lazy-load")}
-        layout={LAZY_SKELETON}
-        ready={masonryReady}
-        timing={{ exitMs: 1200 }}
-        masonry={{
+      <Masonry
+        columns={{ 0: 1, 720: 2, 1140: 3 }}
+        gap={{ 0: 12, 1140: 18 }}
+        plugins={[
+          masonryLazyLoad({
+            spinner: true,
+            spinnerClassName: styles.masonryLazySpinner,
+          }),
+        ]}
+        loading={{
+          cache: demoSkeletonCache("masonry-lazy-load"),
           count: ITEMS.length,
-          columns: { 0: 1, 720: 2, 1140: 3 },
-          gap: { 0: 12, 1140: 18 },
+          skeleton: LAZY_SKELETON,
+          timing: { exitMs: 1200 },
         }}
       >
-        <Masonry
-          ref={masonryRef}
-          columns={{ 0: 1, 720: 2, 1140: 3 }}
-          gap={{ 0: 12, 1140: 18 }}
-          plugins={[
-            masonryLazyLoad({
-              spinner: true,
-              spinnerClassName: styles.masonryLazySpinner,
-            }),
-          ]}
-        >
-          {ITEMS.map((item, index) => (
-            <MasonryLazyCard
-              key={item.src}
-              item={item}
-              skeletonTextIds={
-                MASONRY_LAZY_TEXT_IDS[index] ?? MASONRY_LAZY_TEXT_IDS[0]!
-              }
-            />
-          ))}
-        </Masonry>
-      </MasonrySkeleton>
+        {ITEMS.map((item, index) => (
+          <MasonryLazyCard
+            key={item.src}
+            item={item}
+            skeletonTextIds={
+              MASONRY_LAZY_TEXT_IDS[index] ?? MASONRY_LAZY_TEXT_IDS[0]!
+            }
+          />
+        ))}
+      </Masonry>
       <MasonryLazyFullscreenAddon />
     </GalleryCore>
   );

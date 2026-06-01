@@ -2,9 +2,7 @@
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { Grid } from "react-motion-gallery/grid";
-import { useGridReady } from "react-motion-gallery/grid/ready";
 import { ZoomPanImage } from "react-motion-gallery/zoomPan";
-import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
 import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/cache/grid";
 import styles from "./grid-demo.module.css";
 import { demoSkeletonCache } from "../../skeleton-cache";
@@ -56,45 +54,34 @@ const ZOOM_PAN_GRID_SKELETON = {
 } satisfies GridSkeletonSpec;
 
 export function ZoomPanGridDemo() {
-  const { ref: gridRef, ready: gridReady } = useGridReady();
-
   return (
     <GalleryCore layout="grid">
-      <GridSkeleton
-        cache={demoSkeletonCache("zoom-pan-grid")}
-        layout={ZOOM_PAN_GRID_SKELETON}
-        ready={gridReady}
-        grid={{
-          count: IMAGES.length,
-          columns: 12,
-          gap: { 0: 12, 960: 16 },
-          allowItemSpans: true,
+      <Grid
+        columns={12}
+        gap={{ 0: 12, 960: 16 }}
+        loading={{
+          skeleton: ZOOM_PAN_GRID_SKELETON,
+          cache: demoSkeletonCache("zoom-pan-grid"),
+        }}
+        reveal={{
+          staggerMs: 60,
         }}
       >
-        <Grid
-          ref={gridRef}
-          columns={12}
-          gap={{ 0: 12, 960: 16 }}
-          reveal={{
-            staggerMs: 60,
-          }}
-        >
-          {IMAGES.map((image) => (
-            <Grid.Item key={image.src} span={{ 0: "full", 700: 6, 1080: 4 }}>
-              <ZoomPanImage
-                src={image.src}
-                alt={image.alt}
-                className={styles.frame}
-                imageClassName={styles.image}
-                zoom={{
-                  clickZoomLevel: 2.1,
-                  maxZoomLevel: 3.25,
-                }}
-              />
-            </Grid.Item>
-          ))}
-        </Grid>
-      </GridSkeleton>
+        {IMAGES.map((image) => (
+          <Grid.Item key={image.src} span={{ 0: "full", 700: 6, 1080: 4 }}>
+            <ZoomPanImage
+              src={image.src}
+              alt={image.alt}
+              className={styles.frame}
+              imageClassName={styles.image}
+              zoom={{
+                clickZoomLevel: 2.1,
+                maxZoomLevel: 3.25,
+              }}
+            />
+          </Grid.Item>
+        ))}
+      </Grid>
     </GalleryCore>
   );
 }

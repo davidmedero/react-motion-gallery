@@ -6,11 +6,18 @@ import type { BreakpointMap } from "../shared/responsive";
 import { BREAKPOINT_MAP } from "../shared/responsive";
 import { useOptionalGalleryCore } from "../core";
 import { createRmgSlideStoreBag } from "../shared/slideStoreBag";
+import { resolveDataWindow } from "../shared/dataPlugins";
 import { DEFAULT_MASONRY } from "./defaults";
 import { MasonryItem, normalizeMasonryChild, type MasonryCell } from "./item";
-import type { RevealOptions, MasonryHandle, MasonryOptions } from "./types";
+import type {
+  RevealOptions,
+  MasonryHandle,
+  MasonryOptions,
+  MasonryPlugin,
+} from "./types";
 import { MasonryLayout } from "./MasonryLayout";
 import { buildMasonryChildren } from "./buildMasonryChildren";
+import CachedMasonrySkeleton from "../skeleton/cache-masonry-structured";
 
 type Props = MasonryOptions & {
   children?: React.ReactNode;
@@ -41,7 +48,34 @@ function normalizeReveal(src?: RevealOptions) {
     durationMs: src?.durationMs ?? 600,
     easing: src?.easing ?? "cubic-bezier(.2,.7,.2,1)",
     disabled: src?.disabled === true,
+    staggerLimit: src?.staggerLimit,
   };
+}
+
+function isMasonryPlugin(value: unknown): value is MasonryPlugin {
+  return (
+    typeof value === "object" &&
+    value != null &&
+    (value as MasonryPlugin).__rmgMasonryPlugin === true
+  );
+}
+
+function getStableMasonryCellId(child: React.ReactNode, sourceIndex: number) {
+  if (!React.isValidElement(child) || child.key == null) {
+    return `rmg-${sourceIndex + 1}`;
+  }
+
+  const rawKey = String(child.key);
+  if (!rawKey.startsWith(".$")) {
+    return `rmg-${sourceIndex + 1}`;
+  }
+
+  let hash = 0;
+  for (let index = 0; index < rawKey.length; index += 1) {
+    hash = (hash * 31 + rawKey.charCodeAt(index)) | 0;
+  }
+
+  return `rmg-k-${Math.abs(hash).toString(36)}`;
 }
 
 const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
@@ -74,33 +108,40 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
     } as MasonryOptions;
   }, [masonryOptions]);
 
-  const idSeqRef = React.useRef(0);
-  const newId = React.useCallback(() => `rmg-${++idSeqRef.current}`, []);
-
-  const initialCells = React.useMemo<MasonryCell[]>(() => {
+  const localCellsState = React.useMemo<MasonryCell[]>(() => {
     const kids = React.Children.toArray(children);
     const next: MasonryCell[] = [];
 
-    for (const child of kids) {
+    for (const [sourceIndex, child] of kids.entries()) {
       const normalized = normalizeMasonryChild(child);
       if (normalized.node == null) continue;
 
       next.push({
-        id: newId(),
+        id: getStableMasonryCellId(child, sourceIndex),
         node: normalized.node,
         layoutMeta: normalized.layoutMeta,
+        sourceIndex,
       });
     }
 
     return next;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const [localCellsState] = React.useState<MasonryCell[]>(initialCells);
+  }, [children]);
 
   const coreCells = (core?.cellsState as any as MasonryCell[] | undefined) ?? undefined;
   const cellsState: MasonryCell[] =
     coreCells && coreCells.length > 0 ? coreCells : localCellsState;
+  const pluginEntries = React.useMemo(
+    () => ((masonryObject as any).plugins ?? []).filter(isMasonryPlugin),
+    [masonryObject]
+  );
+  const dataWindowCells = React.useMemo(
+    () =>
+      resolveDataWindow(cellsState, pluginEntries).map(({ item, index }) => ({
+        ...item,
+        sourceIndex: item.sourceIndex ?? index,
+      })),
+    [cellsState, pluginEntries]
+  );
 
   const expandableImageRefs =
     core?.expandableImageRefs ??
@@ -162,6 +203,8 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
   const itemWrapStyle = (masonryObject as any).itemWrapStyle;
   const fullscreenTrigger = (masonryObject as any).fullscreenTrigger ?? DEFAULT_MASONRY.fullscreenTrigger;
   const layoutStoreBag = React.useMemo(() => createRmgSlideStoreBag(), []);
+  const [structuredLoadingReady, setStructuredLoadingReady] =
+    React.useState(false);
 
   React.useEffect(() => {
     return () => {
@@ -171,7 +214,7 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
 
   const masonryChildren = React.useMemo(() => {
     return buildMasonryChildren({
-      cells: cellsState,
+      cells: dataWindowCells,
       fsEnabled: enableFullscreen,
       fullscreenTrigger,
       openFullscreenAt: (i: number, originEl?: HTMLElement | null) => openFullscreenAt(i, originEl),
@@ -187,7 +230,7 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
       slideStoreBag: layoutStoreBag,
     });
   }, [
-    cellsState,
+    dataWindowCells,
     enableFullscreen,
     fullscreenTrigger,
     openFullscreenAt,
@@ -198,15 +241,55 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
     layoutStoreBag,
   ]);
 
-  return (
+  const loading = (masonryObject as any).loading;
+  const useStructuredLoading =
+    loading != null &&
+    loading.enabled !== false &&
+    loading.skeleton &&
+    typeof loading.skeleton !== "function";
+  const handleStructuredLoadingReady = React.useCallback((ready: boolean) => {
+    setStructuredLoadingReady((previous) =>
+      previous === ready ? previous : ready,
+    );
+  }, []);
+  const layoutNode = (
     <MasonryLayout
       ref={forwardedRef}
       items={masonryChildren.map((item) => item.node)}
+      itemIndices={masonryChildren.map((item) => item.index)}
+      itemRevealKeys={masonryChildren.map((item) => item.revealKey)}
+      itemPlaceholders={masonryChildren.map((item) => item.placeholder)}
       itemSpans={masonryChildren.map((item) => item.span)}
       masonry={masonryObject as any}
       breakpoints={effectiveBreakpoints}
       reveal={masonryReveal as any}
+      onLoadingReadyChange={
+        useStructuredLoading ? handleStructuredLoadingReady : undefined
+      }
     />
+  );
+
+  if (!useStructuredLoading) return layoutNode;
+
+  return (
+    <CachedMasonrySkeleton
+      layout={loading.skeleton}
+      ready={structuredLoadingReady}
+      enabled={loading.enabled}
+      force={loading.force}
+      timing={loading.timing}
+      cache={loading.cache}
+      breakpoints={effectiveBreakpoints}
+      masonry={{
+        count: loading.count ?? masonryChildren.length,
+        columns: masonryObject.columns,
+        gap: masonryObject.gap,
+        placement: masonryObject.placement,
+        spans: masonryChildren.map((item) => item.span),
+      }}
+    >
+      {layoutNode}
+    </CachedMasonrySkeleton>
   );
 });
 

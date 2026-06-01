@@ -11,6 +11,9 @@ const MEDIA_FULLSCREEN_SELECTOR =
 
 export type BuiltMasonryChild = {
   id: string;
+  index: number;
+  revealKey?: React.Key;
+  placeholder?: boolean;
   node: React.ReactNode;
   span?: ResponsiveMasonrySpan;
 };
@@ -52,9 +55,10 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMason
   } = opts;
 
   return cells.map((cell, index) => {
+    const sourceIndex = cell.sourceIndex ?? index;
     const original = cell.node;
     const revealStyle: React.CSSProperties & Record<string, any> = {
-      ["--rmg-reveal-index" as any]: index,
+      ["--rmg-reveal-index" as any]: sourceIndex,
     };
 
     const className = [
@@ -73,7 +77,7 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMason
       ...revealStyle,
     };
     const scopedOriginal = (
-      <RmgSlideProvider value={{ normIdx: index, isClone: false, storeBag: slideStoreBag }}>
+      <RmgSlideProvider value={{ normIdx: sourceIndex, isClone: false, storeBag: slideStoreBag }}>
         {original as any}
       </RmgSlideProvider>
     );
@@ -88,7 +92,7 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMason
           : e.currentTarget;
 
       if (!originEl) return;
-      openFullscreenAt(index, originEl);
+      openFullscreenAt(sourceIndex, originEl);
     };
 
     const onKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
@@ -96,15 +100,18 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMason
       e.preventDefault();
       if (!fsEnabled) return;
       if (fullscreenTrigger !== "item") return;
-      openFullscreenAt(index, e.currentTarget);
+      openFullscreenAt(sourceIndex, e.currentTarget);
     };
 
     return {
       id: cell.id,
+      index: sourceIndex,
+      revealKey: cell.layoutMeta?.revealKey ?? cell.id,
+      placeholder: cell.layoutMeta?.placeholder === true,
       span: cell.layoutMeta?.span,
       node: (
         <div
-          data-rmg-idx={index}
+          data-rmg-idx={sourceIndex}
           data-rmg-fullscreen-enabled={fsEnabled ? "true" : undefined}
           data-rmg-fullscreen-trigger-mode={fsEnabled ? fullscreenTrigger : undefined}
           className={className}
@@ -112,7 +119,7 @@ export function buildMasonryChildren(opts: BuildMasonryChildrenOpts): BuiltMason
           onClick={onClick}
           onKeyDown={onKeyDown}
           ref={(node) => {
-            registerExpandableImage(index, node);
+            registerExpandableImage(sourceIndex, node);
           }}
           role={fsEnabled && fullscreenTrigger === "item" ? "button" : undefined}
           tabIndex={fsEnabled && fullscreenTrigger === "item" ? 0 : undefined}

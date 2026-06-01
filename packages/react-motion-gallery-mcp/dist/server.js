@@ -54,42 +54,112 @@ var componentCatalog = [
     id: "grid",
     name: "Grid",
     importPath: "react-motion-gallery/grid",
-    exports: ["Grid"],
+    exports: [
+      "Grid",
+      "gridPagination",
+      "gridLoadMore",
+      "gridInfiniteScroll",
+      "gridVirtualization"
+    ],
     categoryIds: ["grid"],
-    description: "Responsive media grid with spans, template columns, skeletons, and fullscreen item handoffs.",
+    description: "Responsive media grid with spans, template columns, skeletons, fullscreen item handoffs, and child-list data plugins.",
     whenToUse: [
       "Use for predictable editorial or product grids.",
       "Use templateColumns when track proportions matter more than a plain column count.",
-      "Add gridLazyLoad from react-motion-gallery/grid/lazy-load only when the route needs lazy media."
+      "Add gridLazyLoad from react-motion-gallery/grid/lazy-load only when the route needs lazy media.",
+      "Add gridFullscreen from react-motion-gallery/grid/fullscreen when Grid should open GalleryCore fullscreen.",
+      "Add gridPagination, gridLoadMore, gridInfiniteScroll, or gridVirtualization from granular grid subpaths when child items come from dynamic data."
     ],
-    relatedTags: ["grid", "span", "template-columns", "responsive", "plugins"]
+    relatedTags: [
+      "grid",
+      "span",
+      "template-columns",
+      "responsive",
+      "plugins",
+      "pagination",
+      "load-more",
+      "infinite-scroll",
+      "virtualization"
+    ]
   },
   {
     id: "masonry",
     name: "Masonry",
     importPath: "react-motion-gallery/masonry",
-    exports: ["Masonry"],
-    categoryIds: ["masonry"],
-    description: "Server-predicted masonry layout that keeps placement stable through hydration, then refines from live measurements.",
-    whenToUse: [
-      "Use for mixed aspect ratios or cards with uneven text/media heights.",
-      "Choose placement mode based on whether balance, round-robin order, or horizontal visual order matters most.",
-      "Add masonryLazyLoad from react-motion-gallery/masonry/lazy-load only when the route needs lazy media."
+    exports: [
+      "Masonry",
+      "masonryPagination",
+      "masonryLoadMore",
+      "masonryInfiniteScroll",
+      "masonryVirtualization"
     ],
-    relatedTags: ["masonry", "balanced", "round-robin", "horizontal-order", "span", "plugins"]
+    categoryIds: ["masonry"],
+    description: "Lightweight dimensioned masonry layout for image-first grids, with opt-in fullscreen, data plugins, and measured subpaths for arbitrary card heights.",
+    whenToUse: [
+      "Use the default import for image grids where every item has width and height.",
+      "Add masonryFullscreen from react-motion-gallery/masonry/fullscreen when light masonry should open GalleryCore fullscreen.",
+      "Use react-motion-gallery/masonry/measured for mixed text/media cards with arbitrary heights.",
+      "Choose placement mode based on whether balance, round-robin order, or horizontal visual order matters most.",
+      "Add masonryLazyLoad from react-motion-gallery/masonry/lazy-load only with measured masonry routes that need lazy media.",
+      "Add masonryPagination, masonryLoadMore, masonryInfiniteScroll, or masonryVirtualization from granular masonry subpaths for dynamic child data; the same plugins work with measured masonry."
+    ],
+    relatedTags: [
+      "masonry",
+      "balanced",
+      "round-robin",
+      "horizontal-order",
+      "span",
+      "plugins",
+      "pagination",
+      "load-more",
+      "infinite-scroll",
+      "virtualization"
+    ]
   },
   {
     id: "entries",
     name: "Entries",
     importPath: "react-motion-gallery/entries",
-    exports: ["Entries", "flattenEntries"],
+    exports: [
+      "Entries",
+      "flattenEntries",
+      "useEntriesReady",
+      "entriesPagination",
+      "entriesLoadMore",
+      "entriesInfiniteScroll",
+      "entriesVirtualization"
+    ],
     categoryIds: ["entries"],
-    description: "Structured content renderer for rows with section text, body copy, media, metadata, and slider/grid/masonry media layouts.",
+    description: "Structured content renderer for rows with section text, body copy, media, metadata, slider/grid/masonry media layouts, data-window plugins, and readiness.",
     whenToUse: [
       "Use when the data model is an editorial entry rather than loose child nodes.",
-      "Use when text and media need coordinated fullscreen overlays."
+      "Use when text and media need coordinated fullscreen overlays.",
+      "Use entries data plugins when users own dynamic fetching but need pagination, load-more, infinite scroll, or row virtualization."
     ],
-    relatedTags: ["entries", "slider", "grid", "masonry", "fullscreen"]
+    relatedTags: [
+      "entries",
+      "slider",
+      "grid",
+      "masonry",
+      "fullscreen",
+      "pagination",
+      "load-more",
+      "infinite-scroll",
+      "virtualization"
+    ]
+  },
+  {
+    id: "rating-stars",
+    name: "RatingStars",
+    importPath: "react-motion-gallery/rating-stars",
+    exports: ["RatingStars"],
+    categoryIds: ["grid", "masonry", "entries"],
+    description: "Small accessible rating display primitive for product cards, reviews, and commerce metadata.",
+    whenToUse: [
+      "Use when Grid, Masonry, or Entries cards need a consistent visual rating with optional review count.",
+      "Use formatValue or formatReviewCount when the app has its own localization or compact count formatting."
+    ],
+    relatedTags: ["rating", "stars", "reviews", "products", "commerce"]
   },
   {
     id: "fullscreen",
@@ -236,9 +306,9 @@ var componentCatalog = [
 ];
 var categoryDescriptions = {
   slider: "Motion-first slider demos covering loop, axis, granular plugins, effects, thumbnails, video, API mutation, and Skeleton-owned loading.",
-  grid: "Responsive grid demos for spans, template tracks, min column width, lazy-load plugins, video, fullscreen, and skeletons.",
-  masonry: "Masonry demos for balanced, round-robin, horizontal order, spans, lazy-load plugins, video, fullscreen, and stable skeleton loading.",
-  entries: "Structured entry demos that combine copy, metadata, media, and slider/grid/masonry renderers.",
+  grid: "Responsive grid demos for spans, template tracks, min column width, lazy-load plugins, data plugins, video, fullscreen, and skeletons.",
+  masonry: "Masonry demos for the fullscreen-enabled light image core plus measured text-wrap, data plugins, video, fullscreen, and stable skeleton loading.",
+  entries: "Structured entry demos that combine copy, metadata, media, slider/grid/masonry renderers, API-backed data controls, and readiness.",
   "zoom-pan": "Standalone and embedded zoom/pan image demos for cropped inspection surfaces.",
   fullscreen: "Fullscreen controller demos for custom triggers, captions, overlays, thumbnails, effects, and lazy media.",
   skeleton: "Standalone skeleton demos for app shells, cards, responsive text, and forced overlays.",
@@ -400,6 +470,20 @@ var packageDocs = [
     whenToRead: "Use for the browser-based measured skeleton text manifest and generator workflow."
   },
   {
+    id: "entries-data-plugins",
+    title: "Entries Data Plugins",
+    uri: "rmg://docs/entries-data-plugins",
+    path: repoPath("packages", "react-motion-gallery", "docs", "entries-data-plugins.md"),
+    whenToRead: "Use for Entries pagination, load-more, infinite scroll, virtualization, URL sync, and data-window behavior."
+  },
+  {
+    id: "grid-masonry-data-plugins",
+    title: "Grid And Masonry Data Plugins",
+    uri: "rmg://docs/grid-masonry-data-plugins",
+    path: repoPath("packages", "react-motion-gallery", "docs", "grid-masonry-data-plugins.md"),
+    whenToRead: "Use for Grid and Masonry pagination, load-more, infinite scroll, virtualization, and child-window behavior."
+  },
+  {
     id: "skeleton-text-codex-prompt",
     title: "Skeleton Text AI Agent Prompt",
     uri: "rmg://docs/skeleton-text-codex-prompt",
@@ -461,7 +545,7 @@ function agentBriefGuide() {
     "",
     "Browser-measured skeleton text applies to any real rendered DOM text: sliders, grids, masonry, entries, thumbnails, flex layouts, app shells, cards, and custom UI. Use flat `targets` by default. Add specialized `slider`, `masonry`, or `entries` manifest metadata only when those layout modes need readiness or compensation behavior.",
     "",
-    "The skeleton cookie snapshot cache is opt-in. Use `cache={{ key, routeKey }}` on `Skeleton`, `SliderSkeleton`, `GridSkeleton`, or `MasonrySkeleton`, and use `entries.loading.cache` for `Entries`. In SSR apps, parse cookies with `react-motion-gallery/skeleton/cache` on the server, then pass snapshots through `SkeletonCacheProvider` from `react-motion-gallery/skeleton/cache/provider`."
+    "The skeleton cookie snapshot cache is opt-in. Use `cache={{ key, routeKey }}` on `Skeleton`, `SliderSkeleton`, or `MasonrySkeleton`, use `Grid.loading.cache` for Grid, and use `entries.loading.cache` for Entries. In SSR apps, parse cookies with `react-motion-gallery/skeleton/cache` on the server, then pass snapshots through `SkeletonCacheProvider` from `react-motion-gallery/skeleton/cache/provider`."
   ].join("\n");
 }
 function layoutSelectionGuide() {
@@ -470,8 +554,8 @@ function layoutSelectionGuide() {
     "",
     "- Use `Slider` for one active position, carousel navigation, grouped cells, loop, wheel, thumbnails, and slide plugins.",
     "- Use `Grid` for predictable responsive tracks, product/editorial grids, spans, and template columns.",
-    "- Use `Masonry` for uneven cards or mixed aspect ratios where balanced or source-order placement matters.",
-    "- Use `Entries` when the content model is rows of text, metadata, and coordinated media.",
+    "- Use default `Masonry` for dimensioned image grids; add `react-motion-gallery/masonry/fullscreen` for GalleryCore fullscreen; use `react-motion-gallery/masonry/measured` for arbitrary uneven text/card heights and structured skeleton text.",
+    '- Use `Entries` when the content model is rows or cards of text, metadata, and coordinated media. Set `entries.layout` to `"list"` for stacked rows or `"grid"` for entry cards.',
     "- Use `ThumbnailSlider` or `FullscreenThumbnailSlider` when navigation should be visual.",
     "- Use `GalleryCore` and `useFullscreenController` when media should expand into fullscreen.",
     "- Use `ZoomPanImage` for inspectable cropped images without a fullscreen overlay.",
@@ -581,8 +665,8 @@ function skeletonCacheGuide() {
     "",
     "- Import server-safe helpers from `react-motion-gallery/skeleton/cache`.",
     "- Import the client provider from `react-motion-gallery/skeleton/cache/provider`.",
-    "- Pass `cache={{ key, routeKey, ttlMs?, debounceMs?, cookie? }}` to `Skeleton`, `SliderSkeleton`, `GridSkeleton`, and `MasonrySkeleton`.",
-    "- For `Entries`, pass `entries.loading.cache`.",
+    "- Pass `cache={{ key, routeKey, ttlMs?, debounceMs?, cookie? }}` to `Skeleton`, `SliderSkeleton`, and structured `MasonrySkeleton` from `react-motion-gallery/skeleton/cache/masonry/structured`.",
+    "- For Grid, pass `loading.cache`; for Entries, pass `entries.loading.cache`.",
     "- Generated skeleton text sidecars emit `textId`; for hand-authored skeleton text, add `textId` to the skeleton `text` node and add matching `data-skeleton-text-id` to the real DOM text.",
     "",
     "Next.js pattern:",
@@ -640,11 +724,11 @@ var internalTypeImportReplacements = [
   },
   {
     pattern: /import type \{[\s\S]*?\} from ["'][^"']*packages\/react-motion-gallery\/src\/Gallery\/masonry\/MasonrySkeleton["'];?/g,
-    replacement: 'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry";'
+    replacement: 'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry/structured";'
   },
   {
     pattern: /import \{[\s\S]*?\} from ["'][^"']*packages\/react-motion-gallery\/src\/Gallery\/masonry\/MasonrySkeleton["'];?/g,
-    replacement: 'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry";'
+    replacement: 'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry/structured";'
   },
   {
     pattern: /import type \{[\s\S]*?\} from ["'][^"']*packages\/react-motion-gallery\/src\/Gallery\/slider\/SliderSkeleton["'];?/g,
@@ -656,7 +740,7 @@ var internalTypeImportReplacements = [
   },
   {
     pattern: /import type \{[\s\S]*?MasonrySkeletonSpec[\s\S]*?\} from ["'][^"']*packages\/react-motion-gallery\/src\/skeleton["'];?/g,
-    replacement: 'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry";'
+    replacement: 'import type { MasonrySkeletonSpec, SkeletonNode } from "react-motion-gallery/skeleton/masonry/structured";'
   },
   {
     pattern: /import type \{[\s\S]*?SliderSkeletonSpec[\s\S]*?\} from ["'][^"']*packages\/react-motion-gallery\/src\/skeleton["'];?/g,
@@ -666,13 +750,42 @@ var internalTypeImportReplacements = [
 var publicImportByExport = /* @__PURE__ */ new Map([
   ["GalleryCore", "react-motion-gallery/core"],
   ["useGalleryCore", "react-motion-gallery/core"],
+  ["RatingStars", "react-motion-gallery/rating-stars"],
   ["Slider", "react-motion-gallery/slider"],
   ["useSliderReady", "react-motion-gallery/slider"],
   ["createSliderIndexChannel", "react-motion-gallery/slider"],
   ["Grid", "react-motion-gallery/grid"],
+  ["gridPagination", "react-motion-gallery/grid/pagination"],
+  ["useGridPagination", "react-motion-gallery/grid/pagination"],
+  ["GridPaginationControls", "react-motion-gallery/grid/pagination"],
+  ["gridLoadMore", "react-motion-gallery/grid/load-more"],
+  ["useGridLoadMore", "react-motion-gallery/grid/load-more"],
+  ["gridInfiniteScroll", "react-motion-gallery/grid/infinite-scroll"],
+  ["useGridInfiniteScroll", "react-motion-gallery/grid/infinite-scroll"],
+  ["gridVirtualization", "react-motion-gallery/grid/virtualization"],
+  ["useGridVirtualizer", "react-motion-gallery/grid/virtualization"],
   ["Masonry", "react-motion-gallery/masonry"],
+  ["masonryFullscreen", "react-motion-gallery/masonry/fullscreen"],
+  ["masonryPagination", "react-motion-gallery/masonry/pagination"],
+  ["useMasonryPagination", "react-motion-gallery/masonry/pagination"],
+  ["MasonryPaginationControls", "react-motion-gallery/masonry/pagination"],
+  ["masonryLoadMore", "react-motion-gallery/masonry/load-more"],
+  ["useMasonryLoadMore", "react-motion-gallery/masonry/load-more"],
+  ["masonryInfiniteScroll", "react-motion-gallery/masonry/infinite-scroll"],
+  ["useMasonryInfiniteScroll", "react-motion-gallery/masonry/infinite-scroll"],
+  ["masonryVirtualization", "react-motion-gallery/masonry/virtualization"],
+  ["useMasonryVirtualizer", "react-motion-gallery/masonry/virtualization"],
   ["Entries", "react-motion-gallery/entries"],
   ["flattenEntries", "react-motion-gallery/entries"],
+  ["useEntriesReady", "react-motion-gallery/entries/ready"],
+  ["entriesPagination", "react-motion-gallery/entries/pagination"],
+  ["useEntriesPagination", "react-motion-gallery/entries/pagination"],
+  ["entriesLoadMore", "react-motion-gallery/entries/load-more"],
+  ["useEntriesLoadMore", "react-motion-gallery/entries/load-more"],
+  ["entriesInfiniteScroll", "react-motion-gallery/entries/infinite-scroll"],
+  ["useEntriesInfiniteScroll", "react-motion-gallery/entries/infinite-scroll"],
+  ["entriesVirtualization", "react-motion-gallery/entries/virtualization"],
+  ["useEntriesVirtualizer", "react-motion-gallery/entries/virtualization"],
   ["useFullscreenController", "react-motion-gallery/fullscreen"],
   ["ThumbnailSlider", "react-motion-gallery/thumbnails"],
   ["createThumbnailSyncBridge", "react-motion-gallery/thumbnails"],
@@ -745,7 +858,16 @@ function publicPathForLocalSourceEntry(entry) {
     return `react-motion-gallery/fullscreen/${entry.slice("fullscreen-".length)}`;
   }
   if (entry === "grid-ready") return "react-motion-gallery/grid/ready";
+  if (entry === "grid-pagination") return "react-motion-gallery/grid/pagination";
+  if (entry === "grid-load-more") return "react-motion-gallery/grid/load-more";
+  if (entry === "grid-infinite-scroll") return "react-motion-gallery/grid/infinite-scroll";
+  if (entry === "grid-virtualization") return "react-motion-gallery/grid/virtualization";
   if (entry === "masonry-ready") return "react-motion-gallery/masonry/ready";
+  if (entry === "masonry-fullscreen") return "react-motion-gallery/masonry/fullscreen";
+  if (entry === "masonry-pagination") return "react-motion-gallery/masonry/pagination";
+  if (entry === "masonry-load-more") return "react-motion-gallery/masonry/load-more";
+  if (entry === "masonry-infinite-scroll") return "react-motion-gallery/masonry/infinite-scroll";
+  if (entry === "masonry-virtualization") return "react-motion-gallery/masonry/virtualization";
   return `react-motion-gallery/${entry}`;
 }
 function normalizeDemoCss(source) {
@@ -771,7 +893,7 @@ function inferPrimaryDemoForPrompt(goal) {
   const text = goal.toLowerCase();
   if (text.includes("zoom") || text.includes("pan")) return "zoom-pan-standalone";
   if (text.includes("entry") || text.includes("editorial")) return "entries-grid";
-  if (text.includes("masonry") || text.includes("pinterest")) return "masonry-balanced";
+  if (text.includes("masonry") || text.includes("pinterest")) return "masonry-core-balanced";
   if (text.includes("grid")) return "grid-template-columns";
   if (text.includes("thumbnail")) return "fullscreen-thumbnails";
   if (text.includes("fullscreen")) return "fullscreen-layout-agnostic";

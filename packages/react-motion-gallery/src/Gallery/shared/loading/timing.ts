@@ -4,6 +4,7 @@ export const DEFAULT_SKELETON_EXIT_MS = 600;
 export const DEFAULT_SKELETON_MIN_VISIBLE_MS = 220;
 
 export type ResolvedLoadingTiming = {
+  enterMs: number;
   exitMs: number;
   minVisibleMs: number;
 };
@@ -29,6 +30,10 @@ export function resolveLoadingTiming(args: ResolveLoadingTimingArgs): ResolvedLo
     0,
     args.timing?.exitMs ?? args.defaults?.exitMs ?? DEFAULT_SKELETON_EXIT_MS
   );
+  const enterMsBase = Math.max(
+    0,
+    args.timing?.enterMs ?? args.defaults?.enterMs ?? exitMsBase
+  );
   const minVisibleMs = Math.max(
     0,
     args.timing?.minVisibleMs ??
@@ -37,6 +42,7 @@ export function resolveLoadingTiming(args: ResolveLoadingTimingArgs): ResolvedLo
   );
 
   return {
+    enterMs: args.prefersReducedMotion ? 0 : enterMsBase,
     exitMs: args.prefersReducedMotion ? 0 : exitMsBase,
     minVisibleMs,
   };

@@ -10,7 +10,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type SimpleBarCore from "simplebar-core";
 import SimpleBar from "simplebar-react";
-import { getDemoPath, getDemoTitle } from "./demo-catalog";
+import {
+  DEMO_CATEGORIES as DEMO_NAV_CATEGORIES,
+  getDemoPath,
+  getDemoTitle,
+} from "./demo-catalog";
 import {
   memo,
   startTransition,
@@ -122,6 +126,21 @@ import { css as gridMinColumnWidthCss } from "./grid/grid-min-column-width/css";
 import { GridLazyLoadDemo } from "./grid/grid-lazy-load/Component";
 import { source as gridLazyLoadSource } from "./grid/grid-lazy-load/source";
 import { css as gridLazyLoadCss } from "./grid/grid-lazy-load/css";
+import { GridPaginationDemo } from "./grid/grid-pagination/Component";
+import { source as gridPaginationSource } from "./grid/grid-pagination/source";
+import { css as gridPaginationCss } from "./grid/grid-pagination/css";
+import { GridPaginationClientDemo } from "./grid/grid-pagination-client/Component";
+import { source as gridPaginationClientSource } from "./grid/grid-pagination-client/source";
+import { css as gridPaginationClientCss } from "./grid/grid-pagination-client/css";
+import { GridLoadMoreDemo } from "./grid/grid-load-more/Component";
+import { source as gridLoadMoreSource } from "./grid/grid-load-more/source";
+import { css as gridLoadMoreCss } from "./grid/grid-load-more/css";
+import { GridInfiniteScrollDemo } from "./grid/grid-infinite-scroll/Component";
+import { source as gridInfiniteScrollSource } from "./grid/grid-infinite-scroll/source";
+import { css as gridInfiniteScrollCss } from "./grid/grid-infinite-scroll/css";
+import { GridVirtualizationDemo } from "./grid/grid-virtualization/Component";
+import { source as gridVirtualizationSource } from "./grid/grid-virtualization/source";
+import { css as gridVirtualizationCss } from "./grid/grid-virtualization/css";
 import { GridVideoHtml5Demo } from "./grid/grid-video-html5/Component";
 import { source as gridVideoHtml5Source } from "./grid/grid-video-html5/source";
 import { css as gridVideoHtml5Css } from "./grid/grid-video-html5/css";
@@ -146,6 +165,21 @@ import { css as masonryCoreRoundRobinCss } from "./masonry/masonry-core-round-ro
 import { MasonryCoreLazyLoadDemo } from "./masonry/masonry-core-lazy-load/Component";
 import { source as masonryCoreLazyLoadSource } from "./masonry/masonry-core-lazy-load/source";
 import { css as masonryCoreLazyLoadCss } from "./masonry/masonry-core-lazy-load/css";
+import { MasonryPaginationDemo } from "./masonry/masonry-pagination/Component";
+import { source as masonryPaginationSource } from "./masonry/masonry-pagination/source";
+import { css as masonryPaginationCss } from "./masonry/masonry-pagination/css";
+import { MasonryPaginationClientDemo } from "./masonry/masonry-pagination-client/Component";
+import { source as masonryPaginationClientSource } from "./masonry/masonry-pagination-client/source";
+import { css as masonryPaginationClientCss } from "./masonry/masonry-pagination-client/css";
+import { MasonryLoadMoreDemo } from "./masonry/masonry-load-more/Component";
+import { source as masonryLoadMoreSource } from "./masonry/masonry-load-more/source";
+import { css as masonryLoadMoreCss } from "./masonry/masonry-load-more/css";
+import { MasonryInfiniteScrollDemo } from "./masonry/masonry-infinite-scroll/Component";
+import { source as masonryInfiniteScrollSource } from "./masonry/masonry-infinite-scroll/source";
+import { css as masonryInfiniteScrollCss } from "./masonry/masonry-infinite-scroll/css";
+import { MasonryVirtualizationDemo } from "./masonry/masonry-virtualization/Component";
+import { source as masonryVirtualizationSource } from "./masonry/masonry-virtualization/source";
+import { css as masonryVirtualizationCss } from "./masonry/masonry-virtualization/css";
 import { MasonryBalancedDemo } from "./masonry/masonry-balanced/Component";
 import { source as masonryBalancedSource } from "./masonry/masonry-balanced/source";
 import { css as masonryBalancedCss } from "./masonry/masonry-balanced/css";
@@ -184,6 +218,36 @@ import { css as entriesGridCss } from "./entries/entries-grid/css";
 import { EntriesMasonryDemo } from "./entries/entries-masonry/Component";
 import { source as entriesMasonrySource } from "./entries/entries-masonry/source";
 import { css as entriesMasonryCss } from "./entries/entries-masonry/css";
+import { EntriesPaginationDemo } from "./entries/entries-pagination/Component";
+import { source as entriesPaginationSource } from "./entries/entries-pagination/source";
+import { css as entriesPaginationCss } from "./entries/entries-pagination/css";
+import { EntriesPaginationClientDemo } from "./entries/entries-pagination-client/Component";
+import { source as entriesPaginationClientSource } from "./entries/entries-pagination-client/source";
+import { css as entriesPaginationClientCss } from "./entries/entries-pagination-client/css";
+import { EntriesLoadMoreDemo } from "./entries/entries-load-more/Component";
+import { source as entriesLoadMoreSource } from "./entries/entries-load-more/source";
+import { css as entriesLoadMoreCss } from "./entries/entries-load-more/css";
+import { EntriesInfiniteScrollDemo } from "./entries/entries-infinite-scroll/Component";
+import { source as entriesInfiniteScrollSource } from "./entries/entries-infinite-scroll/source";
+import { css as entriesInfiniteScrollCss } from "./entries/entries-infinite-scroll/css";
+import { EntriesVirtualizationDemo } from "./entries/entries-virtualization/Component";
+import { source as entriesVirtualizationSource } from "./entries/entries-virtualization/source";
+import { css as entriesVirtualizationCss } from "./entries/entries-virtualization/css";
+import { EntriesPaginationGridDemo } from "./entries/entries-pagination-grid/Component";
+import { source as entriesPaginationGridSource } from "./entries/entries-pagination-grid/source";
+import { css as entriesPaginationGridCss } from "./entries/entries-pagination-grid/css";
+import { EntriesPaginationGridClientDemo } from "./entries/entries-pagination-grid-client/Component";
+import { source as entriesPaginationGridClientSource } from "./entries/entries-pagination-grid-client/source";
+import { css as entriesPaginationGridClientCss } from "./entries/entries-pagination-grid-client/css";
+import { EntriesLoadMoreGridDemo } from "./entries/entries-load-more-grid/Component";
+import { source as entriesLoadMoreGridSource } from "./entries/entries-load-more-grid/source";
+import { css as entriesLoadMoreGridCss } from "./entries/entries-load-more-grid/css";
+import { EntriesInfiniteScrollGridDemo } from "./entries/entries-infinite-scroll-grid/Component";
+import { source as entriesInfiniteScrollGridSource } from "./entries/entries-infinite-scroll-grid/source";
+import { css as entriesInfiniteScrollGridCss } from "./entries/entries-infinite-scroll-grid/css";
+import { EntriesVirtualizationGridDemo } from "./entries/entries-virtualization-grid/Component";
+import { source as entriesVirtualizationGridSource } from "./entries/entries-virtualization-grid/source";
+import { css as entriesVirtualizationGridCss } from "./entries/entries-virtualization-grid/css";
 import { FullscreenSlideBoundCaptionDemo } from "./fullscreen/fullscreen-slide-bound-caption/Component";
 import { source as fullscreenSlideBoundCaptionSource } from "./fullscreen/fullscreen-slide-bound-caption/source";
 import { css as fullscreenSlideBoundCaptionCss } from "./fullscreen/fullscreen-slide-bound-caption/css";
@@ -260,21 +324,21 @@ type DemoCategoryId =
 
 type DemoNavItem =
   | {
-      type: "demo";
-      demoId: string;
+      readonly type: "demo";
+      readonly demoId: string;
     }
   | {
-      type: "group";
-      id: string;
-      label: string;
-      demoIds: string[];
+      readonly type: "group";
+      readonly id: string;
+      readonly label: string;
+      readonly demoIds: readonly string[];
     };
 
 type DemoCategory = {
-  id: DemoCategoryId;
-  label: string;
-  description: string;
-  items: DemoNavItem[];
+  readonly id: DemoCategoryId;
+  readonly label: string;
+  readonly description: string;
+  readonly items: readonly DemoNavItem[];
 };
 
 type DemoDefinition = {
@@ -291,13 +355,23 @@ type DemoDefinition = {
   extraCodeTabs?: DemoCodeFileTab[];
 };
 
-type DemoCodeFileTab = {
+export type DemoCodeFileTab = {
   id: string;
   label: string;
   code: string;
   filename?: string;
   language?: string;
 };
+
+export type DemoCodeBlockOverride = {
+  source?: string;
+  css?: string;
+  sourceFilename?: string;
+  cssFilename?: string;
+  extraCodeTabs?: DemoCodeFileTab[];
+};
+
+export type DemoCodeBlockOverrides = Record<string, DemoCodeBlockOverride>;
 
 type SidebarExpansionState = {
   expandedCategories: DemoCategoryId[];
@@ -343,6 +417,36 @@ function normalizeDemoSource(code: string) {
 function basename(path: string) {
   const parts = path.split("/");
   return parts[parts.length - 1] ?? path;
+}
+
+function applyDemoCodeOverride(
+  demo: DemoDefinition,
+  override: DemoCodeBlockOverride | undefined
+): DemoDefinition {
+  if (!override) return demo;
+
+  return {
+    ...demo,
+    source: override.source ?? demo.source,
+    css: override.css ?? demo.css,
+    sourceFilename: override.sourceFilename ?? demo.sourceFilename,
+    cssFilename: override.cssFilename ?? demo.cssFilename,
+    extraCodeTabs: [
+      ...(demo.extraCodeTabs ?? []),
+      ...(override.extraCodeTabs ?? []),
+    ],
+  };
+}
+
+function getSidebarDemoLinkTitle(
+  item: Extract<DemoNavItem, { type: "group" }>,
+  demo: DemoDefinition
+) {
+  if (item.id === "entries-data-grid") {
+    return demo.title.replace(/ Grid$/, "");
+  }
+
+  return demo.title;
 }
 
 const DemoCodeBlock = memo(function DemoCodeBlock(props: {
@@ -1009,6 +1113,66 @@ const DEMOS: DemoDefinition[] = [
     css: gridLazyLoadCss,
   },
   {
+    id: "grid-pagination",
+    title: "Server Pagination",
+    eyebrow: "Grid Data",
+    tags: ["api","pagination","server","dummyjson"],
+    categoryId: "grid",
+    Component: GridPaginationDemo,
+    source: gridPaginationSource,
+    css: gridPaginationCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "grid-pagination-demo.module.css",
+  },
+  {
+    id: "grid-pagination-client",
+    title: "Client Pagination",
+    eyebrow: "Grid Data",
+    tags: ["api","pagination","client","dummyjson"],
+    categoryId: "grid",
+    Component: GridPaginationClientDemo,
+    source: gridPaginationClientSource,
+    css: gridPaginationClientCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "grid-pagination-demo.module.css",
+  },
+  {
+    id: "grid-load-more",
+    title: "Load More",
+    eyebrow: "Grid Data",
+    tags: ["api","load-more","dummyjson"],
+    categoryId: "grid",
+    Component: GridLoadMoreDemo,
+    source: gridLoadMoreSource,
+    css: gridLoadMoreCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "grid-load-more-demo.module.css",
+  },
+  {
+    id: "grid-infinite-scroll",
+    title: "Infinite Scroll",
+    eyebrow: "Grid Data",
+    tags: ["api","infinite-scroll","dummyjson"],
+    categoryId: "grid",
+    Component: GridInfiniteScrollDemo,
+    source: gridInfiniteScrollSource,
+    css: gridInfiniteScrollCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "grid-infinite-scroll-demo.module.css",
+  },
+  {
+    id: "grid-virtualization",
+    title: "Virtualization",
+    eyebrow: "Grid Data",
+    tags: ["api","virtualization","dummyjson"],
+    categoryId: "grid",
+    Component: GridVirtualizationDemo,
+    source: gridVirtualizationSource,
+    css: gridVirtualizationCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "grid-virtualization-demo.module.css",
+  },
+  {
     id: "grid-video-html5",
     title: "HTML5",
     eyebrow: "Grid Video",
@@ -1099,6 +1263,66 @@ const DEMOS: DemoDefinition[] = [
     css: masonryCoreLazyLoadCss,
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-core-lazy-load-demo.module.css",
+  },
+  {
+    id: "masonry-pagination",
+    title: "Server Pagination",
+    eyebrow: "Masonry Data",
+    tags: ["api","pagination","server","dummyjson"],
+    categoryId: "masonry",
+    Component: MasonryPaginationDemo,
+    source: masonryPaginationSource,
+    css: masonryPaginationCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-pagination-demo.module.css",
+  },
+  {
+    id: "masonry-pagination-client",
+    title: "Client Pagination",
+    eyebrow: "Masonry Data",
+    tags: ["api","pagination","client","dummyjson"],
+    categoryId: "masonry",
+    Component: MasonryPaginationClientDemo,
+    source: masonryPaginationClientSource,
+    css: masonryPaginationClientCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-pagination-demo.module.css",
+  },
+  {
+    id: "masonry-load-more",
+    title: "Load More",
+    eyebrow: "Masonry Data",
+    tags: ["api","load-more","dummyjson"],
+    categoryId: "masonry",
+    Component: MasonryLoadMoreDemo,
+    source: masonryLoadMoreSource,
+    css: masonryLoadMoreCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-load-more-demo.module.css",
+  },
+  {
+    id: "masonry-infinite-scroll",
+    title: "Infinite Scroll",
+    eyebrow: "Masonry Data",
+    tags: ["api","infinite-scroll","dummyjson"],
+    categoryId: "masonry",
+    Component: MasonryInfiniteScrollDemo,
+    source: masonryInfiniteScrollSource,
+    css: masonryInfiniteScrollCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-infinite-scroll-demo.module.css",
+  },
+  {
+    id: "masonry-virtualization",
+    title: "Virtualization",
+    eyebrow: "Masonry Data",
+    tags: ["api","virtualization","dummyjson"],
+    categoryId: "masonry",
+    Component: MasonryVirtualizationDemo,
+    source: masonryVirtualizationSource,
+    css: masonryVirtualizationCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "masonry-virtualization-demo.module.css",
   },
   {
     id: "masonry-balanced",
@@ -1227,6 +1451,126 @@ const DEMOS: DemoDefinition[] = [
     Component: EntriesMasonryDemo,
     source: entriesMasonrySource,
     css: entriesMasonryCss,
+  },
+  {
+    id: "entries-pagination",
+    title: "Server Pagination",
+    eyebrow: "Entries Data",
+    tags: ["api","pagination","server","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesPaginationDemo,
+    source: entriesPaginationSource,
+    css: entriesPaginationCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-pagination-demo.module.css",
+  },
+  {
+    id: "entries-pagination-client",
+    title: "Client Pagination",
+    eyebrow: "Entries Data",
+    tags: ["api","pagination","client","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesPaginationClientDemo,
+    source: entriesPaginationClientSource,
+    css: entriesPaginationClientCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-pagination-demo.module.css",
+  },
+  {
+    id: "entries-load-more",
+    title: "Load More",
+    eyebrow: "Entries Data",
+    tags: ["api","load-more","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesLoadMoreDemo,
+    source: entriesLoadMoreSource,
+    css: entriesLoadMoreCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-load-more-demo.module.css",
+  },
+  {
+    id: "entries-infinite-scroll",
+    title: "Infinite Scroll",
+    eyebrow: "Entries Data",
+    tags: ["api","infinite-scroll","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesInfiniteScrollDemo,
+    source: entriesInfiniteScrollSource,
+    css: entriesInfiniteScrollCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-infinite-scroll-demo.module.css",
+  },
+  {
+    id: "entries-virtualization",
+    title: "Virtualization",
+    eyebrow: "Entries Data",
+    tags: ["api","virtualization","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesVirtualizationDemo,
+    source: entriesVirtualizationSource,
+    css: entriesVirtualizationCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-virtualization-demo.module.css",
+  },
+  {
+    id: "entries-pagination-grid",
+    title: "Server Pagination Grid",
+    eyebrow: "Entries Data",
+    tags: ["api","pagination","server","grid","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesPaginationGridDemo,
+    source: entriesPaginationGridSource,
+    css: entriesPaginationGridCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-pagination-grid-demo.module.css",
+  },
+  {
+    id: "entries-pagination-grid-client",
+    title: "Client Pagination Grid",
+    eyebrow: "Entries Data",
+    tags: ["api","pagination","client","grid","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesPaginationGridClientDemo,
+    source: entriesPaginationGridClientSource,
+    css: entriesPaginationGridClientCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-pagination-grid-demo.module.css",
+  },
+  {
+    id: "entries-load-more-grid",
+    title: "Load More Grid",
+    eyebrow: "Entries Data",
+    tags: ["api","load-more","grid","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesLoadMoreGridDemo,
+    source: entriesLoadMoreGridSource,
+    css: entriesLoadMoreGridCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-load-more-grid-demo.module.css",
+  },
+  {
+    id: "entries-infinite-scroll-grid",
+    title: "Infinite Scroll Grid",
+    eyebrow: "Entries Data",
+    tags: ["api","infinite-scroll","grid","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesInfiniteScrollGridDemo,
+    source: entriesInfiniteScrollGridSource,
+    css: entriesInfiniteScrollGridCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-infinite-scroll-grid-demo.module.css",
+  },
+  {
+    id: "entries-virtualization-grid",
+    title: "Virtualization Grid",
+    eyebrow: "Entries Data",
+    tags: ["api","virtualization","grid","ready","dummyjson"],
+    categoryId: "entries",
+    Component: EntriesVirtualizationGridDemo,
+    source: entriesVirtualizationGridSource,
+    css: entriesVirtualizationGridCss,
+    sourceFilename: "Component.tsx",
+    cssFilename: "entries-virtualization-grid-demo.module.css",
   },
   {
     id: "fullscreen-layout-agnostic",
@@ -1450,329 +1794,8 @@ const DEMOS: DemoDefinition[] = [
 
 const DEMO_BY_ID = new Map(DEMOS.map((demo) => [demo.id, demo]));
 
-const DEMO_CATEGORIES: DemoCategory[] = [
-  {
-    "id": "slider",
-    "label": "Slider",
-    "description": "A motion-first slider primitive where drag, wheel, and fullscreen handoffs feel continuous.",
-    "items": [
-      {
-        "type": "demo",
-        "demoId": "slider-default"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-loop"
-      },
-      {
-        "type": "group",
-        "id": "slider-video",
-        "label": "Video",
-        "demoIds": [
-          "slider-video-html5",
-          "slider-video-html5-loop",
-          "slider-video-youtube",
-          "slider-video-youtube-loop",
-          "slider-video-vimeo",
-          "slider-video-vimeo-loop"
-        ]
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-right-to-left"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-group-cells"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-free-scroll"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-skip-snaps"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-strict-snaps"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-center-align"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-variable-widths"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-y-axis"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-cells-per-slide"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-thumbnails"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-lazy-load"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-auto-scroll"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-auto-play"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-auto-height"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-parallax"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-scale"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-fade"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-crossfade"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-cards"
-      },
-      {
-        "type": "demo",
-        "demoId": "slider-interactive"
-      }
-    ]
-  },
-  {
-    "id": "grid",
-    "label": "Grid",
-    "description": "Predictable media grids with responsive spans and fullscreen handoffs built into the layout.",
-    "items": [
-      {
-        "type": "demo",
-        "demoId": "grid-columns"
-      },
-      {
-        "type": "demo",
-        "demoId": "grid-template-columns"
-      },
-      {
-        "type": "demo",
-        "demoId": "grid-min-column-width"
-      },
-      {
-        "type": "demo",
-        "demoId": "grid-lazy-load"
-      },
-      {
-        "type": "group",
-        "id": "grid-video",
-        "label": "Video",
-        "demoIds": [
-          "grid-video-html5",
-          "grid-video-youtube",
-          "grid-video-vimeo"
-        ]
-      }
-    ]
-  },
-  {
-    "id": "masonry",
-    "label": "Masonry",
-    "description": "Dimensioned core masonry for small image grids, plus measured masonry demos for richer cards, video, fullscreen, and structured skeleton loading.",
-    "items": [
-      {
-        "type": "demo",
-        "demoId": "masonry-core-balanced"
-      },
-      {
-        "type": "demo",
-        "demoId": "masonry-core-spans"
-      },
-      {
-        "type": "demo",
-        "demoId": "masonry-core-horizontal-order"
-      },
-      {
-        "type": "demo",
-        "demoId": "masonry-core-round-robin"
-      },
-      {
-        "type": "demo",
-        "demoId": "masonry-core-lazy-load"
-      },
-      {
-        "type": "group",
-        "id": "masonry-with-text-wrap",
-        "label": "WITH TEXT WRAP",
-        "demoIds": [
-          "masonry-balanced",
-          "masonry-spans",
-          "masonry-horizontal-order",
-          "masonry-round-robin",
-          "masonry-lazy-load"
-        ]
-      },
-      {
-        "type": "group",
-        "id": "masonry-video",
-        "label": "Video",
-        "demoIds": [
-          "masonry-video-html5",
-          "masonry-video-youtube",
-          "masonry-video-vimeo"
-        ]
-      }
-    ]
-  },
-  {
-    "id": "entries",
-    "label": "Entries",
-    "description": "Structured editorial rows whose text, metadata, and media blocks can render as sliders, grids, or masonry galleries.",
-    "items": [
-      {
-        "type": "demo",
-        "demoId": "entries-slider"
-      },
-      {
-        "type": "demo",
-        "demoId": "entries-slider-html5"
-      },
-      {
-        "type": "demo",
-        "demoId": "entries-grid"
-      },
-      {
-        "type": "demo",
-        "demoId": "entries-masonry"
-      }
-    ]
-  },
-  {
-    "id": "zoom-pan",
-    "label": "Zoom + Pan",
-    "description": "Standalone zoomable image primitives for cropped cards, heroes, and editorial media without any fullscreen controller.",
-    "items": [
-      {
-        "type": "demo",
-        "demoId": "zoom-pan-standalone"
-      },
-      {
-        "type": "demo",
-        "demoId": "zoom-pan-slider"
-      },
-      {
-        "type": "demo",
-        "demoId": "zoom-pan-grid"
-      },
-      {
-        "type": "demo",
-        "demoId": "zoom-pan-masonry"
-      },
-      {
-        "type": "demo",
-        "demoId": "zoom-pan-image-hover"
-      }
-    ]
-  },
-  {
-    "id": "fullscreen",
-    "label": "Fullscreen",
-    "description": "Fullscreen controller demos for standalone triggers, slide-bound captions, viewport overlays, thumbnail rails, and lazy media loading.",
-    "items": [
-      {
-        "type": "demo",
-        "demoId": "fullscreen-layout-agnostic"
-      },
-      {
-        "type": "demo",
-        "demoId": "fullscreen-slide-bound-caption"
-      },
-      {
-        "type": "demo",
-        "demoId": "fullscreen-viewport-overlay-caption"
-      },
-      {
-        "type": "demo",
-        "demoId": "fullscreen-viewport-overlay-caption-sized"
-      },
-      {
-        "type": "demo",
-        "demoId": "fullscreen-thumbnails"
-      },
-      {
-        "type": "demo",
-        "demoId": "fullscreen-caption-thumbnails"
-      },
-      {
-        "type": "demo",
-        "demoId": "fullscreen-fade-effects"
-      },
-      {
-        "type": "demo",
-        "demoId": "fullscreen-lazy-load"
-      },
-      {
-        "type": "demo",
-        "demoId": "fullscreen-image-hover"
-      }
-    ]
-  },
-  {
-    "id": "skeleton",
-    "label": "Skeleton",
-    "description": "Standalone skeleton primitives for real readiness, app shells, responsive media, and forced compare overlays without importing a gallery layout.",
-    "items": [
-      {
-        "type": "demo",
-        "demoId": "skeleton-flex-cards"
-      },
-      {
-        "type": "demo",
-        "demoId": "skeleton-app-shell"
-      },
-      {
-        "type": "demo",
-        "demoId": "skeleton-responsive-text"
-      },
-      {
-        "type": "demo",
-        "demoId": "skeleton-force-overlay"
-      }
-    ]
-  },
-  {
-    "id": "reveal",
-    "label": "Reveal",
-    "description": "Standalone section reveals for app and marketing UI without implying loading state.",
-    "items": [
-      {
-        "type": "demo",
-        "demoId": "reveal-sections"
-      },
-      {
-        "type": "demo",
-        "demoId": "reveal-image-ready"
-      }
-    ]
-  }
-];
+const DEMO_CATEGORIES: readonly DemoCategory[] = DEMO_NAV_CATEGORIES;
+const DEMO_PAGINATION_PARAMS = ["page", "gridPage", "masonryPage", "entriesPage"];
 
 function toDemoCanvasClassName(demoId: string) {
   return `demoCanvas${toPascalCase(demoId)}`;
@@ -1781,10 +1804,12 @@ function toDemoCanvasClassName(demoId: string) {
 function DemosPageContent(props: {
   searchParamsString: string;
   onSearchParamsStringChange?: (nextSearchParamsString: string) => void;
+  codeBlockOverrides?: DemoCodeBlockOverrides;
 }) {
   const {
     searchParamsString,
     onSearchParamsStringChange,
+    codeBlockOverrides,
   } = props;
   const router = useRouter();
   const pathname = usePathname();
@@ -1811,8 +1836,12 @@ function DemosPageContent(props: {
     selectedDemo.id,
     selectedCategory.id
   );
+  const selectedDemoForCode = applyDemoCodeOverride(
+    selectedDemo,
+    codeBlockOverrides?.[selectedDemo.id]
+  );
   const selectedDemoCanvasClassName = styles[toDemoCanvasClassName(selectedDemo.id)];
-  const selectedDemoSource = selectedDemo.source;
+  const selectedDemoSource = selectedDemoForCode.source;
   const pageHeading = requestedDemo
     ? getDemoTitle(requestedDemo)
     : "React Motion Gallery demos";
@@ -1838,6 +1867,7 @@ function DemosPageContent(props: {
     const nextParams = new URLSearchParams(searchParams.toString());
 
     nextParams.set("demo", demo.id);
+    DEMO_PAGINATION_PARAMS.forEach((param) => nextParams.delete(param));
 
     const query = nextParams.toString();
     onSearchParamsStringChange?.(query);
@@ -1920,6 +1950,7 @@ function DemosPageContent(props: {
                           }
 
                           const isActive = demo.id === selectedDemo.id;
+                          const demoLinkTitle = getSidebarDemoLinkTitle(item, demo);
 
                           return (
                             <Link
@@ -1937,7 +1968,7 @@ function DemosPageContent(props: {
                               aria-current={isActive ? "page" : undefined}
                             >
                               <strong className={styles.demoLinkTitle}>
-                                {demo.title}
+                                {demoLinkTitle}
                               </strong>
                             </Link>
                           );
@@ -1982,7 +2013,7 @@ function DemosPageContent(props: {
             <SelectedDemoPane
               key={selectedDemo.id}
               selectedCategoryLabel={selectedCategory.label}
-              selectedDemo={selectedDemo}
+              selectedDemo={selectedDemoForCode}
               selectedDemoCanvasClassName={selectedDemoCanvasClassName}
               selectedDemoSource={selectedDemoSource}
             />
@@ -1996,8 +2027,13 @@ function DemosPageContent(props: {
 export default function DemosPageClient(props: {
   initialSearchParamsString: string;
   skeletonCacheSnapshots?: Record<string, SkeletonCacheSnapshot | null | undefined>;
+  codeBlockOverrides?: DemoCodeBlockOverrides;
 }) {
-  const { initialSearchParamsString, skeletonCacheSnapshots } = props;
+  const {
+    initialSearchParamsString,
+    skeletonCacheSnapshots,
+    codeBlockOverrides,
+  } = props;
   const [searchParamsString, setSearchParamsString] = useState(
     initialSearchParamsString
   );
@@ -2023,6 +2059,7 @@ export default function DemosPageClient(props: {
       <DemosPageContent
         searchParamsString={searchParamsString}
         onSearchParamsStringChange={setSearchParamsString}
+        codeBlockOverrides={codeBlockOverrides}
       />
     </SkeletonCacheProvider>
   );

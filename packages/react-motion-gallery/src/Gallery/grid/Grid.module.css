@@ -10,6 +10,7 @@
 .gridItem {
   position: relative;
   display: block;
+  isolation: isolate;
 }
 
 .gridItem img,
@@ -29,31 +30,85 @@
   width: 100%;
 }
 
-.revealContainer {
+.itemInner {
+  display: contents;
+}
+
+.gridItem[data-rmg-grid-item-stage="1"] > .itemInner {
+  display: block;
   opacity: 0;
   transition:
-    opacity var(--rmg-reveal-duration, 420ms)
+    opacity var(--rmg-reveal-duration, 600ms)
       var(--rmg-reveal-easing, cubic-bezier(.2,.7,.2,1));
-}
-
-.revealItem {}
-
-.revealActive {
-  opacity: 1;
-}
-
-.revealContainer [data-rmg-idx] {
-  opacity: 0;
-  transition:
-    opacity 600ms cubic-bezier(.2,.7,.2,1);
-  transition-delay: calc(
-    var(--rmg-reveal-index, 0) * var(--rmg-reveal-stagger, 60ms)
-  );
   will-change: opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
-.revealContainer.revealActive [data-rmg-idx] {
+.gridItem[data-rmg-grid-item-layered="1"] > .itemInner {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.gridItem[data-rmg-grid-item-layered="1"] > .itemInner > * {
+  height: 100%;
+}
+
+.gridItem[data-rmg-grid-item-stage="1"][data-rmg-grid-item-reveal="1"] > .itemInner {
   opacity: 1;
+  pointer-events: auto;
+}
+
+.itemSkeleton {
+  --rmg-grid-item-skeleton-transition-duration: var(
+    --rmg-grid-item-skeleton-enter-duration,
+    var(--rmg-grid-item-skeleton-exit-duration, 220ms)
+  );
+  position: relative;
+  z-index: 0;
+  display: flex;
+  align-items: stretch;
+  opacity: var(--rmg-grid-item-skeleton-opacity, 1);
+  pointer-events: none;
+  transition:
+    opacity var(--rmg-grid-item-skeleton-transition-duration) ease;
+  will-change: opacity;
+  backface-visibility: hidden;
+}
+
+.itemSkeleton > * {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.gridItem[data-rmg-grid-item-reveal="1"]:not([data-rmg-grid-item-compare="1"]) > .itemSkeleton {
+  --rmg-grid-item-skeleton-transition-duration: var(
+    --rmg-grid-item-skeleton-exit-duration,
+    220ms
+  );
+  opacity: 0;
+}
+
+.gridItem[data-rmg-grid-item-compare="1"] > .itemSkeleton {
+  z-index: 2;
+  opacity: var(--rmg-grid-item-skeleton-opacity, 1);
+}
+
+.itemSkeleton[data-rmg-grid-item-shimmer="off"] {
+  --rmg-skel-shimmer-enabled: 0;
+  --rmg-skel-card-shimmer-enabled: 0;
+  will-change: auto;
+}
+
+.itemSkeleton[data-rmg-grid-item-shimmer="off"]::after,
+.itemSkeleton[data-rmg-grid-item-shimmer="off"] *::after {
+  opacity: 0;
+  animation: none;
+  will-change: auto;
 }
 
 .gridItem:focus-visible {

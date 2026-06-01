@@ -5,10 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Grid, type ResponsiveGridSpan } from "react-motion-gallery/grid";
-import { useGridReady } from "react-motion-gallery/grid/ready";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import type {
@@ -277,36 +275,26 @@ function FullscreenAddon() {
 
 export function GridTemplateColumnsDemo() {
   const fullscreenMedia = toMediaItems(ITEMS.map((item) => item.fullscreenSrc));
-  const { ref: gridRef, ready: gridReady } = useGridReady();
 
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
-      <GridSkeleton
-        cache={demoSkeletonCache("grid-template-columns")}
-        layout={GRID_TEMPLATE_COLUMNS_SKELETON}
-        ready={gridReady}
-        timing={{ exitMs: 1200 }}
-        grid={{
-          count: ITEMS.length,
-          templateColumns: TEMPLATE_COLUMNS,
-          gap: { 0: 12, 820: 16, 1200: 18 },
-          allowItemSpans: true,
+      <Grid
+        templateColumns={TEMPLATE_COLUMNS}
+        gap={{ 0: 12, 820: 16, 1200: 18 }}
+        fullscreenTrigger="item"
+        loading={{
+          skeleton: GRID_TEMPLATE_COLUMNS_SKELETON,
+          cache: demoSkeletonCache("grid-template-columns"),
+          timing: { exitMs: 1200 },
         }}
+        plugins={[gridFullscreen()]}
       >
-        <Grid
-          ref={gridRef}
-          templateColumns={TEMPLATE_COLUMNS}
-          gap={{ 0: 12, 820: 16, 1200: 18 }}
-          fullscreenTrigger="item"
-          plugins={[gridFullscreen()]}
-        >
-          {ITEMS.map((item, index) => (
-            <Grid.Item key={item.imageSrc} span={item.span}>
-              <TemplateColumnsTile item={item} index={index} />
-            </Grid.Item>
-          ))}
-        </Grid>
-      </GridSkeleton>
+        {ITEMS.map((item, index) => (
+          <Grid.Item key={item.imageSrc} span={item.span}>
+            <TemplateColumnsTile item={item} index={index} />
+          </Grid.Item>
+        ))}
+      </Grid>
       <FullscreenAddon />
     </GalleryCore>
   );

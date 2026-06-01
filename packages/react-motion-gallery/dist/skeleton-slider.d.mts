@@ -10,7 +10,7 @@ import './force-C5m1QpdF.mjs';
 import './media.mjs';
 import './layout-BSjd7pwQ.mjs';
 import './text-BBcRGVzn.mjs';
-import './transitions-DU3ftmIq.mjs';
+import './transitions-ChhEdSB6.mjs';
 
 type SliderSkeletonProps = Omit<SliderSkeletonProps$1, "cache" | "restore">;
 declare function buildScopedInitialHeightCss(args: {

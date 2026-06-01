@@ -6,12 +6,22 @@ type EntryLike = {
   media?: Array<{ kind?: string; src?: string }>;
 };
 
+type DecodePriority = "all" | "first";
+
+type UseEntryDecodeReadyOptions = {
+  timeoutMs?: number;
+  priority?: DecodePriority;
+};
+
 function safeEntriesKey(entries: EntryLike[] | undefined) {
   const list = entries ?? [];
   let key = `${list.length}|`;
   for (let i = 0; i < list.length; i++) {
     const e = list[i] as any;
-    key += (e?.key ?? e?.id ?? `i${i}`) + "|";
+    const mediaKey = (e?.media ?? [])
+      .map((media: any) => `${media?.kind ?? ""}:${media?.src ?? ""}`)
+      .join(",");
+    key += `${e?.key ?? e?.id ?? `i${i}`}[${mediaKey}]|`;
   }
   return key;
 }
@@ -19,13 +29,22 @@ function safeEntriesKey(entries: EntryLike[] | undefined) {
 function decodeImageUrl(url: string, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.decoding = "async";
-    img.src = url;
+    let done = false;
 
-    const finish = () => resolve();
+    const finish = () => {
+      if (done) return;
+      done = true;
+      signal?.removeEventListener("abort", finish);
+      img.onload = null;
+      img.onerror = null;
+      resolve();
+    };
 
     if (signal?.aborted) return finish();
     signal?.addEventListener("abort", finish, { once: true });
+
+    img.decoding = "async";
+    img.src = url;
 
     const hasDecode = typeof (img as any).decode === "function";
     if (hasDecode) {
@@ -43,9 +62,10 @@ export function useEntryDecodeReady(
   enabled: boolean,
   entries: EntryLike[] | undefined,
   inView: boolean[],
-  opts?: { timeoutMs?: number }
+  opts?: UseEntryDecodeReadyOptions
 ) {
   const timeoutMs = opts?.timeoutMs ?? 8000;
+  const priority = opts?.priority ?? "all";
 
   const entriesKey = React.useMemo(() => safeEntriesKey(entries), [entries]);
 
@@ -58,10 +78,27 @@ export function useEntryDecodeReady(
     );
   }, [entries]);
 
+  const entryPriorityImageUrls = React.useMemo(
+    () =>
+      entryImageUrls.map((urls) =>
+        priority === "first" ? urls.slice(0, 1) : urls
+      ),
+    [entryImageUrls, priority]
+  );
+
   const [decodedReady, setDecodedReady] = React.useState<boolean[]>([]);
   const startedRef = React.useRef<boolean[]>([]);
   const controllersRef = React.useRef<Map<number, AbortController>>(new Map());
   const initKeyRef = React.useRef<string>("");
+  const decodedReadyForRender = React.useMemo(() => {
+    if (!enabled || initKeyRef.current === entriesKey) return decodedReady;
+
+    const len = entries?.length ?? 0;
+    return Array.from(
+      { length: len },
+      (_, index) => (entryPriorityImageUrls[index]?.length ?? 0) === 0
+    );
+  }, [decodedReady, enabled, entries?.length, entriesKey, entryPriorityImageUrls]);
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -72,7 +109,10 @@ export function useEntryDecodeReady(
       initKeyRef.current = entriesKey;
 
       setDecodedReady(
-        Array.from({ length: len }, (_, i) => (entryImageUrls[i]?.length ?? 0) === 0)
+        Array.from(
+          { length: len },
+          (_, i) => (entryPriorityImageUrls[i]?.length ?? 0) === 0
+        )
       );
 
       startedRef.current = Array.from({ length: len }, () => false);
@@ -81,7 +121,7 @@ export function useEntryDecodeReady(
       controllersRef.current.clear();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, entriesKey, entries, entryImageUrls]);
+  }, [enabled, entriesKey, entries, entryPriorityImageUrls]);
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -98,8 +138,9 @@ export function useEntryDecodeReady(
 
       startedRef.current[entryIndex] = true;
 
-      const urls = entryImageUrls[entryIndex] ?? [];
-      if (!urls.length) {
+      const priorityUrls = entryPriorityImageUrls[entryIndex] ?? [];
+      const allUrls = entryImageUrls[entryIndex] ?? [];
+      if (!priorityUrls.length) {
         setDecodedReady((prev) => {
           if (prev[entryIndex]) return prev;
           const next = prev.slice();
@@ -112,7 +153,7 @@ export function useEntryDecodeReady(
       const ac = new AbortController();
       controllersRef.current.set(entryIndex, ac);
 
-      (async () => {
+      const decodeUrls = async (urls: string[]) => {
         for (const url of urls) {
           if (ac.signal.aborted) return;
 
@@ -131,6 +172,10 @@ export function useEntryDecodeReady(
             }),
           ]);
         }
+      };
+
+      (async () => {
+        await decodeUrls(priorityUrls);
 
         if (ac.signal.aborted) return;
 
@@ -141,9 +186,25 @@ export function useEntryDecodeReady(
           next[entryIndex] = true;
           return next;
         });
+
+        const remainingUrls =
+          priorityUrls.length >= allUrls.length
+            ? []
+            : allUrls.slice(priorityUrls.length);
+        if (remainingUrls.length) {
+          await decodeUrls(remainingUrls);
+        }
       })();
     }
-  }, [enabled, entries, entryImageUrls, inView, decodedReady, timeoutMs]);
+  }, [
+    enabled,
+    entries,
+    entryImageUrls,
+    entryPriorityImageUrls,
+    inView,
+    decodedReady,
+    timeoutMs,
+  ]);
 
   React.useEffect(() => {
     return () => {
@@ -152,5 +213,5 @@ export function useEntryDecodeReady(
     };
   }, []);
 
-  return { decodedReady, entriesKey };
+  return { decodedReady: decodedReadyForRender, entriesKey };
 }

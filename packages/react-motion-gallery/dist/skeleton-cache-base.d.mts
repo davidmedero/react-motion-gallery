@@ -8,7 +8,7 @@ export { T as TextSkeletonResponsiveBy } from './text-BBcRGVzn.mjs';
 import 'react';
 import './responsiveNumber-CouEMJ9O.mjs';
 import './force-C5m1QpdF.mjs';
-import './transitions-DU3ftmIq.mjs';
+import './transitions-ChhEdSB6.mjs';
 
 type CachedSkeletonProps = SkeletonProps & {
     cache?: SkeletonCacheOptions;

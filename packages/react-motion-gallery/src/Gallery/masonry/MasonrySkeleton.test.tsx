@@ -5,9 +5,15 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { BREAKPOINT_MAP } from "../shared/responsive";
 import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
+import { buildStableScopeId } from "../shared/stableScope";
+import skeletonFrameStyles from "../skeleton/Skeleton.module.css";
 import { CachedMasonrySkeleton } from "../skeleton/cache-masonry-structured";
-import { MasonrySkeleton } from "../skeleton/masonry-structured";
+import {
+  MasonrySkeleton,
+  MasonrySkeletonCore,
+} from "../skeleton/masonry-structured";
 import {
   MasonrySkeletonCard,
   resolveActiveFlexStateKey,
@@ -42,7 +48,7 @@ class MockResizeObserver {
           contentRect: makeDomRect(962),
         } as ResizeObserverEntry,
       ],
-      this as unknown as ResizeObserver
+      this as unknown as ResizeObserver,
     );
   }
 
@@ -71,8 +77,8 @@ describe("MasonrySkeleton layout and text nodes", () => {
           { minWidth: 720, columns: 2, gapPx: 12, key: "c2_g12" },
           { minWidth: 1140, columns: 3, gapPx: 18, key: "c3_g18" },
         ],
-        1280
-      )
+        1280,
+      ),
     ).toBe("c3_g18");
 
     expect(
@@ -82,8 +88,8 @@ describe("MasonrySkeleton layout and text nodes", () => {
           { minWidth: 720, columns: 2, gapPx: 12, key: "c2_g12" },
           { minWidth: 1140, columns: 3, gapPx: 18, key: "c3_g18" },
         ],
-        900
-      )
+        900,
+      ),
     ).toBe("c2_g12");
   });
 
@@ -95,7 +101,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
         classNames: {
           item: "legacy-skeleton",
         },
-      })
+      }),
     );
 
     expect(markup).toContain("legacy-skeleton");
@@ -114,7 +120,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
         spans: [{ 0: "full", 900: 2 }, 1],
         placement: "horizontalOrder",
         viewportWidth: 1000,
-      })
+      }),
     );
 
     expect(markup).toContain('data-rmg-mskel-variant="c4_g16"');
@@ -148,11 +154,13 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain('data-rmg-skel-text="true"');
-    expect(markup.match(/data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(2);
+    expect(markup.match(/data-rmg-skel-text-line="true"/g) ?? []).toHaveLength(
+      2,
+    );
     expect(markup).toContain("padding:12px");
     expect(markup).toContain("border-radius:18px");
     expect(markup).toContain("--rmg-masonry-skel-wrap-shadow:0 8px 24px");
@@ -167,7 +175,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
         return this.hasAttribute("data-rmg-skeleton-scope")
           ? makeDomRect(962)
           : makeDomRect(0);
-      }
+      },
     );
 
     const container = document.createElement("div");
@@ -218,12 +226,12 @@ describe("MasonrySkeleton layout and text nodes", () => {
               placement: "horizontalOrder",
               viewportWidth: 1600,
             }}
-          />
+          />,
         );
       });
 
       const variant = container.querySelector(
-        '[data-rmg-mskel-variant="c4_g18"]'
+        '[data-rmg-mskel-variant="c4_g18"]',
       );
       const variantStyle = variant?.getAttribute("style") ?? "";
 
@@ -238,7 +246,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
     }
   });
 
-  test("reserves wrapped masonry shell height before streamed content", () => {
+  test("renders wrapped masonry skeleton as the layout owner before content", () => {
     const markup = renderToStaticMarkup(
       <MasonrySkeleton
         layout={{
@@ -261,25 +269,172 @@ describe("MasonrySkeleton layout and text nodes", () => {
         }}
       >
         <div data-live-masonry-placeholder="true" style={{ height: 0 }} />
-      </MasonrySkeleton>
+      </MasonrySkeleton>,
     );
 
-    const reserveStyleIndex = markup.indexOf("[data-rmg-masonry-skeleton-shell");
     const wrapperIndex = markup.indexOf("data-rmg-skeleton-wrapper");
     const loadingIndex = markup.indexOf("data-rmg-skeleton-loading-layer");
     const contentIndex = markup.indexOf("data-rmg-skeleton-content-layer");
 
-    expect(reserveStyleIndex).toBeGreaterThanOrEqual(0);
     expect(wrapperIndex).toBeGreaterThanOrEqual(0);
     expect(loadingIndex).toBeGreaterThanOrEqual(0);
     expect(contentIndex).toBeGreaterThanOrEqual(0);
-    expect(reserveStyleIndex).toBeLessThan(wrapperIndex);
     expect(loadingIndex).toBeLessThan(contentIndex);
+    expect(markup).toContain("[data-rmg-masonry-skeleton-shell");
     expect(markup).toContain("data-rmg-masonry-skeleton-shell=");
-    expect(markup).toContain("min-height:calc(");
+    expect(markup).toContain('data-rmg-skeleton-layout-owner="skeleton"');
+    expect(markup).toContain(skeletonFrameStyles.contentLayerLayoutLocked);
+    expect(markup).toContain(skeletonFrameStyles.loadingLayerLayoutOwner);
+    expect(markup).not.toContain(skeletonFrameStyles.loadingLayerOverlay);
   });
 
-  test("streams paintable masonry skeleton DOM without browser-specific CSS", () => {
+  test("keeps the wrapped masonry skeleton in flow while it exits", async () => {
+    vi.useFakeTimers();
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const renderSkeleton = (ready: boolean) => (
+      <MasonrySkeleton
+        layout={{
+          layout: {
+            kind: "masonry",
+            item: {
+              kind: "rect",
+              style: { width: "100%", aspectRatio: "4 / 5" },
+            },
+          },
+        }}
+        ready={ready}
+        timing={{ minVisibleMs: 0, exitMs: 600 }}
+        masonry={{
+          count: 2,
+          columns: { 0: 1, 1140: 3 },
+          gap: { 0: 12, 1140: 18 },
+        }}
+      >
+        <div data-live-masonry-placeholder="true" style={{ height: 0 }} />
+      </MasonrySkeleton>
+    );
+
+    try {
+      await React.act(async () => {
+        root.render(renderSkeleton(false));
+      });
+
+      const wrapper = () =>
+        container.querySelector("[data-rmg-skeleton-wrapper]");
+      const loadingLayer = () =>
+        container.querySelector("[data-rmg-skeleton-loading-layer]");
+
+      expect(wrapper()?.getAttribute("data-rmg-skeleton-layout-owner")).toBe(
+        "skeleton",
+      );
+      expect(loadingLayer()).not.toBeNull();
+
+      await React.act(async () => {
+        root.render(renderSkeleton(true));
+        await Promise.resolve();
+      });
+
+      expect(wrapper()?.getAttribute("data-rmg-skeleton-layout-owner")).toBe(
+        "skeleton",
+      );
+      expect(loadingLayer()).not.toBeNull();
+
+      await React.act(async () => {
+        vi.advanceTimersByTime(600);
+      });
+
+      expect(wrapper()?.getAttribute("data-rmg-skeleton-layout-owner")).toBe(
+        "content",
+      );
+      expect(loadingLayer()).toBeNull();
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      container.remove();
+      vi.useRealTimers();
+    }
+  });
+
+  test("keeps wrapped masonry skeleton text stable when cache arrives while loading", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const layout = {
+      layout: {
+        kind: "masonry" as const,
+        item: {
+          kind: "text" as const,
+          textId: "title",
+          barHeight: 10,
+          lineHeight: 1,
+          lines: 1,
+        },
+      },
+    };
+    const cacheSnapshot = {
+      version: 1 as const,
+      key: "demo",
+      scopeId: "stable-scope",
+      kind: "masonry" as const,
+      routeKey: "/demo",
+      createdAt: Date.now(),
+      widthBucketMin: 0,
+      viewportWidth: 1200,
+      masonry: {
+        variantKey: "c1_g0",
+      },
+      text: {
+        title: {
+          lines: 4,
+          barHeight: 10,
+          lineHeight: 1,
+          barWidths: ["100%", "100%", "100%", "64%"],
+        },
+      },
+    };
+    const renderSkeleton = (
+      snapshot: typeof cacheSnapshot | null | undefined,
+    ) => (
+      <MasonrySkeletonCore
+        layout={layout}
+        scopeId="stable-scope"
+        cacheSnapshot={snapshot}
+        masonry={{ count: 1, columns: 1, gap: 0 }}
+        ready={false}
+      >
+        <div data-live-masonry-placeholder="true" />
+      </MasonrySkeletonCore>
+    );
+
+    try {
+      await React.act(async () => {
+        root.render(renderSkeleton(null));
+      });
+
+      expect(
+        container.querySelectorAll('[data-rmg-skel-text-line="true"]'),
+      ).toHaveLength(1);
+
+      await React.act(async () => {
+        root.render(renderSkeleton(cacheSnapshot));
+      });
+
+      expect(
+        container.querySelectorAll('[data-rmg-skel-text-line="true"]'),
+      ).toHaveLength(1);
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      container.remove();
+    }
+  });
+
+  test("streams wrapped masonry skeleton DOM before the reserve shell rule", () => {
     const markup = renderToStaticMarkup(
       <MasonrySkeleton
         layout={{
@@ -322,22 +477,37 @@ describe("MasonrySkeleton layout and text nodes", () => {
         }}
       >
         <div data-live-masonry-placeholder="true" style={{ height: 0 }} />
-      </MasonrySkeleton>
+      </MasonrySkeleton>,
     );
 
-    const reserveStyleIndex = markup.indexOf("[data-rmg-masonry-skeleton-shell");
     const wrapperIndex = markup.indexOf("data-rmg-skeleton-wrapper");
-    const firstVariantIndex = markup.indexOf("<div data-rmg-mskel-variant", wrapperIndex);
+    const firstVariantIndex = markup.indexOf(
+      "<div data-rmg-mskel-variant",
+      wrapperIndex,
+    );
     const firstSkeletonItemIndex = markup.indexOf(
       "<div data-rmg-mskel-index",
-      firstVariantIndex
+      firstVariantIndex,
+    );
+    const firstTextCssIndex = markup.indexOf(
+      '[data-rmg-skel-text-line="true"]',
+      wrapperIndex,
+    );
+    const scaffoldCssIndex = markup.indexOf("@container", wrapperIndex);
+    const reserveStyleIndex = markup.indexOf(
+      "[data-rmg-masonry-skeleton-shell",
+      firstSkeletonItemIndex,
     );
 
-    expect(reserveStyleIndex).toBeGreaterThanOrEqual(0);
     expect(wrapperIndex).toBeGreaterThanOrEqual(0);
     expect(firstVariantIndex).toBeGreaterThan(wrapperIndex);
     expect(firstSkeletonItemIndex).toBeGreaterThan(firstVariantIndex);
-    expect(reserveStyleIndex).toBeLessThan(wrapperIndex);
+    expect(firstTextCssIndex).toBeGreaterThan(wrapperIndex);
+    expect(firstTextCssIndex).toBeLessThan(firstVariantIndex);
+    expect(scaffoldCssIndex).toBeGreaterThan(wrapperIndex);
+    expect(scaffoldCssIndex).toBeLessThan(firstVariantIndex);
+    expect(reserveStyleIndex).toBeGreaterThan(firstSkeletonItemIndex);
+    expect(markup).toContain("data-rmg-masonry-skeleton-shell=");
     expect(markup).not.toContain("rmg-mskel-safari");
     expect(firstSkeletonItemIndex - wrapperIndex).toBeLessThan(300_000);
   });
@@ -409,7 +579,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             ],
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain("display:flex");
@@ -419,6 +589,69 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).not.toContain("position:absolute;top:calc(");
 
     expect(markup).not.toContain("rmg-mskel-safari");
+  });
+
+  test("streams the widest first-paint masonry variant before lower breakpoints", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 2,
+        columns: { 0: 1, 720: 2, 1140: 3 },
+        gap: { 0: 12, 1140: 18 },
+        spec: {
+          layout: {
+            kind: "masonry",
+            item: {
+              kind: "rect",
+              style: { width: "100%", height: 120 },
+            },
+          },
+        },
+      }),
+    );
+
+    const firstVariant = markup.match(
+      /<div data-rmg-mskel-variant="([^"]+)"/,
+    )?.[1];
+
+    expect(firstVariant).toBe("c3_g18");
+  });
+
+  test("inlines container-keyed masonry text state for first paint", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MasonrySkeletonCard, {
+        count: 1,
+        columns: { 0: 1, 1140: 3 },
+        gap: { 0: 12, 1140: 18 },
+        viewportWidth: 1280,
+        layoutWidthPx: 960,
+        spec: {
+          layout: {
+            kind: "masonry",
+            itemWrapStyle: {
+              padding: "10px 10px 14px",
+            },
+            item: {
+              kind: "text",
+              responsiveBy: "container",
+              barHeight: 14,
+              lineHeight: 1.5,
+              lines: { 0: 5, 240: 2 },
+              style: { width: "100%" },
+            },
+          },
+        },
+      }),
+    );
+
+    const firstVariantIndex = markup.indexOf("<div data-rmg-mskel-variant");
+    const scaffoldStyleIndex = markup.indexOf("<style", firstVariantIndex);
+    const variantMarkup = markup.slice(firstVariantIndex, scaffoldStyleIndex);
+    const hiddenLines =
+      variantMarkup.match(
+        /data-rmg-skel-text-line="true"[^>]*display:none/g,
+      ) ?? [];
+
+    expect(hiddenLines).toHaveLength(3);
   });
 
   test("does not add a trailing bottom gap to flow-layout masonry columns", () => {
@@ -440,7 +673,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain("margin-bottom:12px");
@@ -483,13 +716,13 @@ describe("MasonrySkeleton layout and text nodes", () => {
             ],
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain("height:calc(");
-    expect(markup).toContain("position:absolute;top:");
+    expect(markup).toMatch(/position:absolute;[^"]*top:/);
     expect(markup).toContain("height:calc(");
-    expect(markup).not.toContain("min-height:");
+    expect(markup).not.toContain("min-height:calc(");
   });
 
   test("emits container-query scaffold overrides for SSR positioned masonry skeletons", () => {
@@ -555,16 +788,16 @@ describe("MasonrySkeleton layout and text nodes", () => {
             ],
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain('data-rmg-mskel-index="1"');
     expect(markup).toContain("@container (min-width:856px)");
     expect(markup).toContain(
-      '--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (147.40625px)) + (20)) !important;'
+      "--rmg-mskel-height-1:calc(((((var(--rmg-mskel-width-1)) - (20)) / 1.25) + (147.40625px)) + (20)) !important;",
     );
     expect(markup).toContain(
-      '> [data-rmg-mskel-index="4"]{top:calc((var(--rmg-mskel-height-1)) + (18px)) !important;'
+      '> [data-rmg-mskel-index="4"]{top:calc((var(--rmg-mskel-height-1)) + (18px)) !important;',
     );
   });
 
@@ -662,11 +895,11 @@ describe("MasonrySkeleton layout and text nodes", () => {
             ],
           },
         },
-      })
+      }),
     );
 
     const variantMatch = markup.match(
-      /<div data-rmg-mskel-variant="c4_g18" style="([^"]+)"/
+      /<div data-rmg-mskel-variant="c4_g18" style="([^"]+)"/,
     );
 
     expect(variantMatch?.[1]).toBeTruthy();
@@ -740,7 +973,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             ],
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain("height:220px");
@@ -788,7 +1021,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain(sharedSkeletonStyles.skelCardShimmer);
@@ -813,7 +1046,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
         classNames: {
           item: "legacy-skeleton",
         },
-      })
+      }),
     );
 
     expect(markup).toContain("legacy-skeleton");
@@ -846,18 +1079,18 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     expect(
-      (markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).length
+      (markup.match(/<div data-rmg-skel-text-line="true"/g) ?? []).length,
     ).toBeGreaterThanOrEqual(3);
     expect(markup).toContain("@media (min-width:767px)");
     expect(markup).toContain(
-      '[data-rmg-skel-text-line="true"]{display:none !important;height:16px !important;}'
+      '[data-rmg-skel-text-line="true"]{display:none !important;height:16px !important;}',
     );
     expect(markup).toContain(
-      "nth-child(-n+2){display:block !important;width:100% !important;max-width:100% !important;}"
+      "nth-child(-n+2){display:block !important;width:100% !important;max-width:100% !important;}",
     );
     expect(markup).toContain("@media (min-width:1200px)");
     expect(markup).toContain("nth-child(1){max-width:56% !important;}");
@@ -881,11 +1114,11 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain(
-      "@supports (font: -apple-system-body) and (-webkit-hyphens: none)"
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none)",
     );
     expect(markup).toContain("--rmg-mskel-height-0:63px");
     expect(markup).toContain("height:var(--rmg-mskel-height-0)");
@@ -936,13 +1169,17 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
-    expect(markup.match(/<div[^>]*data-rmg-mskel-variant=/g) ?? []).toHaveLength(1);
+    expect(
+      markup.match(/<div[^>]*data-rmg-mskel-variant=/g) ?? [],
+    ).toHaveLength(1);
     expect(markup).toContain('data-rmg-mskel-variant="c2_g8"');
     expect(markup).toContain("height:123px");
-    expect(markup).toContain("@supports (font: -apple-system-body) and (-webkit-hyphens: none)");
+    expect(markup).toContain(
+      "@supports (font: -apple-system-body) and (-webkit-hyphens: none)",
+    );
     expect(markup).not.toContain("nth-child");
     expect(markup).not.toContain("@media (min-width:900px)");
     expect(markup).not.toContain("@container");
@@ -993,11 +1230,75 @@ describe("MasonrySkeleton layout and text nodes", () => {
           columns: { 0: 1, 900: 2 },
           gap: 8,
         }}
-      />
+      />,
     );
 
     expect(markup).toContain("nth-child");
     expect(markup).toContain("@container");
+  });
+
+  test("falls back to responsive output on the server when the viewport is unknown", () => {
+    const layout = {
+      layout: {
+        kind: "masonry" as const,
+        item: {
+          kind: "rect" as const,
+          style: {
+            width: "100%",
+            height: 120,
+          },
+        },
+      },
+    };
+    const masonry = {
+      count: 3,
+      columns: { 0: 1, 720: 2, 1140: 3 },
+      gap: { 0: 12, 1140: 18 },
+      placement: "balanced" as const,
+    };
+    const scopeId = buildStableScopeId("skel_", {
+      layout,
+      breakpoints: BREAKPOINT_MAP,
+      backgroundColor: undefined,
+      radius: undefined,
+      shimmer: undefined,
+      disableShimmer: undefined,
+      masonry,
+    });
+
+    const markup = renderToStaticMarkup(
+      <CachedMasonrySkeleton
+        layout={layout}
+        cache={{
+          key: "demo",
+          routeKey: "/demo",
+          snapshot: {
+            version: 1,
+            key: "demo",
+            scopeId,
+            kind: "masonry",
+            routeKey: "/demo",
+            createdAt: Date.now(),
+            widthBucketMin: 720,
+            viewportWidth: 1024,
+            masonry: {
+              variantKey: "c2_g12",
+              itemHeightsPx: [120, 120, 120],
+            },
+            text: {},
+          },
+        }}
+        masonry={masonry}
+      />,
+    );
+
+    expect(
+      markup.match(/<div[^>]*data-rmg-mskel-variant=/g) ?? [],
+    ).toHaveLength(3);
+    expect(markup).toContain('data-rmg-mskel-variant="c1_g12"');
+    expect(markup).toContain('data-rmg-mskel-variant="c2_g12"');
+    expect(markup).toContain('data-rmg-mskel-variant="c3_g18"');
+    expect(markup).toContain("@media (min-width:1140px)");
   });
 
   test("keeps multi-line masonry text when only lastBarWidth is responsive", () => {
@@ -1026,15 +1327,15 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     expect(
-      (markup.match(/data-rmg-skel-text-line="true"/g) ?? []).length
+      (markup.match(/data-rmg-skel-text-line="true"/g) ?? []).length,
     ).toBeGreaterThanOrEqual(3);
     expect(markup).toMatch(/height:68\.4375/);
     expect(markup).toContain(
-      "nth-child(-n+3){display:block !important;width:100% !important;max-width:100% !important;}"
+      "nth-child(-n+3){display:block !important;width:100% !important;max-width:100% !important;}",
     );
     expect(markup).toContain("@media (min-width:900px)");
     expect(markup).toContain("nth-child(3){max-width:20% !important;}");
@@ -1088,7 +1389,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain("height:var(--rmg-mskel-height-0)");
@@ -1141,7 +1442,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain("height:var(--rmg-mskel-height-0)");
@@ -1166,7 +1467,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     expect(markup.match(/data-rmg-skel-text="true"/g) ?? []).toHaveLength(2);
@@ -1213,7 +1514,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             },
           },
         },
-      })
+      }),
     );
 
     const firstVariantIndex = markup.indexOf("<div data-rmg-mskel-variant");
@@ -1221,7 +1522,6 @@ describe("MasonrySkeleton layout and text nodes", () => {
 
     expect(cssBeforeVariants).toContain("@container");
     expect(cssBeforeVariants).toContain("--rmg-mskel-height-0");
-    expect(cssBeforeVariants).not.toContain("data-rmg-mskel-index");
   });
 
   test("keeps span-positioned masonry scaffold CSS linear with custom properties", () => {
@@ -1319,7 +1619,7 @@ describe("MasonrySkeleton layout and text nodes", () => {
             ],
           },
         },
-      })
+      }),
     );
 
     expect(markup).toContain("height:calc(");

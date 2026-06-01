@@ -78,6 +78,7 @@ export type ZoomCtx = {
   ) => { x: any; y: any; povX: PovLike; povY: PovLike };
   renderPan: (x: number, y: number) => void;
   animRef: RefLike<{ start(): void; stop(): void; resetBlend(): void } | null>;
+  panRef?: RefLike<{ x: number; y: number }>;
 };
 
 export function applySmoothTransform(
@@ -232,6 +233,8 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
     tx1 = limX.constrain(0);
     ty1 = limY.constrain(0);
 
+    ctx.animRef.current?.stop();
+
     ctx.boundsX.current = ctx.ScrollBounds(
       limX,
       ctx.offX.current!,
@@ -250,15 +253,24 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
     );
 
     ctx.tgtX.current!.set(tx1);
+    ctx.locX.current!.set(tx1);
+    ctx.prevX.current!.set(tx1);
+    ctx.offX.current!.set(tx1);
+
     ctx.tgtY.current!.set(ty1);
+    ctx.locY.current!.set(ty1);
+    ctx.prevY.current!.set(ty1);
+    ctx.offY.current!.set(ty1);
+
+    ctx.panRef && (ctx.panRef.current = { x: tx1, y: ty1 });
+
     ctx.bodyX.current?.resetVelocity?.();
-    ctx.bodyX.current?.useBaseDuration?.();
-    ctx.bodyX.current?.useBaseFriction?.();
+    ctx.bodyX.current?.useDuration(0).useFriction(1).sync();
     ctx.bodyY.current?.resetVelocity?.();
-    ctx.bodyY.current?.useBaseDuration?.();
-    ctx.bodyY.current?.useBaseFriction?.();
+    ctx.bodyY.current?.useDuration(0).useFriction(1).sync();
+
     ctx.animRef.current?.resetBlend();
-    ctx.animRef.current?.start();
+    ctx.renderPan(tx1, ty1);
     return;
   }
 

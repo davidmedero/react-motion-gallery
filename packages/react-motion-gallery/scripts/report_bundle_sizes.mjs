@@ -22,6 +22,36 @@ const REPORTED_SURFACES = [
     entry: "dist/entries-cache.mjs",
   },
   {
+    label: "entries/ready",
+    exportName: "useEntriesReady",
+    entry: "dist/entries-ready.mjs",
+  },
+  {
+    label: "entries/pagination",
+    exportName: "entriesPagination",
+    entry: "dist/entries-pagination.mjs",
+  },
+  {
+    label: "entries/load-more",
+    exportName: "entriesLoadMore",
+    entry: "dist/entries-load-more.mjs",
+  },
+  {
+    label: "entries/infinite-scroll",
+    exportName: "entriesInfiniteScroll",
+    entry: "dist/entries-infinite-scroll.mjs",
+  },
+  {
+    label: "entries/virtualization",
+    exportName: "entriesVirtualization",
+    entry: "dist/entries-virtualization.mjs",
+  },
+  {
+    label: "rating-stars",
+    exportName: "RatingStars",
+    entry: "dist/rating-stars.mjs",
+  },
+  {
     label: "FullscreenThumbnailSlider",
     exportName: "FullscreenThumbnailSlider",
     entry: "dist/fullscreenThumbnails.mjs",
@@ -42,6 +72,26 @@ const REPORTED_SURFACES = [
     label: "grid/fullscreen",
     exportName: "gridFullscreen",
     entry: "dist/grid-fullscreen.mjs",
+  },
+  {
+    label: "grid/pagination",
+    exportName: "gridPagination",
+    entry: "dist/grid-pagination.mjs",
+  },
+  {
+    label: "grid/load-more",
+    exportName: "gridLoadMore",
+    entry: "dist/grid-load-more.mjs",
+  },
+  {
+    label: "grid/infinite-scroll",
+    exportName: "gridInfiniteScroll",
+    entry: "dist/grid-infinite-scroll.mjs",
+  },
+  {
+    label: "grid/virtualization",
+    exportName: "gridVirtualization",
+    entry: "dist/grid-virtualization.mjs",
   },
   { label: "Masonry", exportName: "Masonry", entry: "dist/masonry.mjs" },
   {
@@ -68,6 +118,26 @@ const REPORTED_SURFACES = [
     label: "masonry/lazy-load",
     exportName: "masonryLazyLoad",
     entry: "dist/masonry-lazy-load.mjs",
+  },
+  {
+    label: "masonry/pagination",
+    exportName: "masonryPagination",
+    entry: "dist/masonry-pagination.mjs",
+  },
+  {
+    label: "masonry/load-more",
+    exportName: "masonryLoadMore",
+    entry: "dist/masonry-load-more.mjs",
+  },
+  {
+    label: "masonry/infinite-scroll",
+    exportName: "masonryInfiniteScroll",
+    entry: "dist/masonry-infinite-scroll.mjs",
+  },
+  {
+    label: "masonry/virtualization",
+    exportName: "masonryVirtualization",
+    entry: "dist/masonry-virtualization.mjs",
   },
   {
     label: "Skeleton base",

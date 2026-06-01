@@ -4,10 +4,8 @@ export const source = `/* eslint-disable @next/next/no-img-element */
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Grid, type ResponsiveGridSpan } from "react-motion-gallery/grid";
-import { useGridReady } from "react-motion-gallery/grid/ready";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/cache/grid";
@@ -302,36 +300,26 @@ function FullscreenAddon() {
 
 export function GridColumnsDemo() {
   const fullscreenMedia = toMediaItems(ITEMS.map((item) => item.fullscreenSrc));
-  const { ref: gridRef, ready: gridReady } = useGridReady();
 
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
-      <GridSkeleton
-        cache={demoSkeletonCache("grid-columns")}
-        layout={GRID_SPANS_SKELETON}
-        ready={gridReady}
-        timing={{ exitMs: 1000 }}
-        grid={{
-          count: ITEMS.length,
-          columns: GRID_COLUMNS,
-          gap: GRID_GAP,
-          allowItemSpans: true,
+      <Grid
+        columns={GRID_COLUMNS}
+        gap={GRID_GAP}
+        fullscreenTrigger="item"
+        loading={{
+          skeleton: GRID_SPANS_SKELETON,
+          cache: demoSkeletonCache("grid-columns"),
+          timing: { exitMs: 1000 },
         }}
+        plugins={[gridFullscreen()]}
       >
-        <Grid
-          ref={gridRef}
-          columns={GRID_COLUMNS}
-          gap={GRID_GAP}
-          fullscreenTrigger="item"
-          plugins={[gridFullscreen()]}
-        >
-          {ITEMS.map((item, index) => (
-            <Grid.Item key={item.imageSrc} span={item.span}>
-              <GridSpanTile item={item} index={index} />
-            </Grid.Item>
-          ))}
-        </Grid>
-      </GridSkeleton>
+        {ITEMS.map((item, index) => (
+          <Grid.Item key={item.imageSrc} span={item.span}>
+            <GridSpanTile item={item} index={index} />
+          </Grid.Item>
+        ))}
+      </Grid>
       <FullscreenAddon />
     </GalleryCore>
   );

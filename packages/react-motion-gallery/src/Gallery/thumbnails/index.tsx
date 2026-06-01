@@ -473,12 +473,14 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
     const loadingLayerStyle = React.useMemo(
       () =>
         resolveCompareLoadingLayerStyle({
+          enterMs: loadingTiming.enterMs,
           exitMs: loadingTiming.exitMs,
           compareMode: loadingVisualState.compareMode,
           loadingLayerOpacity: loadingVisualState.loadingLayerOpacity,
           opacityVarName: "--rmg-thumb-loading-opacity",
         }),
       [
+        loadingTiming.enterMs,
         loadingTiming.exitMs,
         loadingVisualState.compareMode,
         loadingVisualState.loadingLayerOpacity,

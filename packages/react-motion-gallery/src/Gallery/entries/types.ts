@@ -5,7 +5,10 @@ import type {
   ResponsiveCaptionPlacement,
   ResponsiveLength,
 } from "../shared/responsive";
-import type { EntrySkeletonSpec, SkeletonLength } from "./components/EntrySkeleton";
+import type {
+  EntrySkeletonSpec,
+  SkeletonLength,
+} from "./components/EntrySkeleton";
 
 export type EntryItem = {
   media?: MediaItem[];
@@ -51,6 +54,8 @@ export type EntryOverlayStyle = ElementStyle & {
   zoomOutTransform?: string;
 };
 
+export type EntriesLayout = "list" | "grid";
+
 export type EntryMediaLayout = "slider" | "grid" | "masonry";
 
 export type EntryCardRenderArgs = {
@@ -69,20 +74,28 @@ export type EntriesLoadingOptions = {
   force?: LoadingForceOptions;
   skeleton?:
     | EntrySkeletonSpec
-    | ((args: EntrySkeletonResolverArgs) => EntrySkeletonSpec | null | undefined);
+    | ((
+        args: EntrySkeletonResolverArgs,
+      ) => EntrySkeletonSpec | null | undefined);
   minHeight?: SkeletonLength;
-  nearMargin?: string;   // default "700px 0px"
-  viewMargin?: string;   // default "0px 0px"
-  threshold?: number;    // default 0.01
+  enterMs?: number;
+  exitMs?: number;
+  nearMargin?: string; // default "700px 0px"
+  viewMargin?: string; // default "0px 0px"
+  threshold?: number; // default 0.01
   waitForDecode?: boolean; // default true
   decodeTimeoutMs?: number; // default 8000
   skeletonWrap?: ElementStyle;
+  rememberRevealed?: boolean;
 };
 
 export type RevealOptions = {
   renderReveal?: (
-    args: { active: boolean; containerProps: React.HTMLAttributes<HTMLDivElement> },
-    content: React.ReactNode
+    args: {
+      active: boolean;
+      containerProps: React.HTMLAttributes<HTMLDivElement>;
+    },
+    content: React.ReactNode,
   ) => React.ReactNode;
   staggerMs?: number;
   durationMs?: number;
@@ -93,10 +106,75 @@ export type RevealOptions = {
 export type EntrySkeletonRenderArgs = {
   entry: EntryItem;
   entryIndex: number;
-}
+};
+
+export type EntriesPluginKind =
+  | "pagination"
+  | "load-more"
+  | "infinite-scroll"
+  | "virtualization";
+
+export type EntriesDataMode = "client" | "server";
+
+export type EntriesPaginationOptions = {
+  enabled?: boolean;
+  mode?: EntriesDataMode;
+  pageIndex: number;
+  pageSize: number;
+  total?: number;
+  loading?: boolean;
+};
+
+export type EntriesLoadMoreOptions = {
+  enabled?: boolean;
+  mode?: EntriesDataMode;
+  visibleCount: number;
+  total?: number;
+  loading?: boolean;
+};
+
+export type EntriesInfiniteScrollOptions = {
+  enabled?: boolean;
+  hasMore?: boolean;
+  loading?: boolean;
+  rootMargin?: string;
+  threshold?: number;
+  onLoadMore?: () => void;
+  sentinel?: React.ReactNode;
+};
+
+export type EntriesVirtualizationOptions = {
+  enabled?: boolean;
+  layout?: EntriesLayout;
+  estimateSize?: number;
+  gap?: number;
+  overscan?: number;
+};
+
+export type EntriesPluginOptionsByKind = {
+  pagination: EntriesPaginationOptions;
+  "load-more": EntriesLoadMoreOptions;
+  "infinite-scroll": EntriesInfiniteScrollOptions;
+  virtualization: EntriesVirtualizationOptions;
+};
+
+export type EntriesPlugin<Kind extends EntriesPluginKind = EntriesPluginKind> =
+  {
+    readonly __rmgEntriesPlugin: true;
+    readonly kind: Kind;
+    readonly options: EntriesPluginOptionsByKind[Kind];
+  };
+
+export type EntriesHandle = {
+  getRootNode: () => HTMLDivElement | null;
+  getEntryNodes: () => HTMLElement[];
+  isReady: () => boolean;
+  onReady: (callback: (nodes: HTMLElement[]) => void) => () => void;
+};
 
 export type EntriesOptions = {
   items?: EntryItem[];
+  layout?: EntriesLayout;
   mediaLayout?: EntryMediaLayout;
   render?: {
     card?: (args: EntryCardRenderArgs) => React.ReactNode;
@@ -107,6 +185,7 @@ export type EntriesOptions = {
   overlay?: EntryOverlayStyle;
   loading?: EntriesLoadingOptions;
   reveal?: RevealOptions;
+  plugins?: EntriesPlugin[];
   entryList?: ElementStyle;
   entryRow?: ElementStyle;
 };

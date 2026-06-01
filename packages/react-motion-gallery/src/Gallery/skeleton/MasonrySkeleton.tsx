@@ -2,11 +2,11 @@
 import * as React from "react";
 
 import styles from "./MasonrySkeleton.module.css";
-import { BREAKPOINT_MAP } from "../shared/responsive";
-import type {
-  BreakpointMap,
-  ResponsiveNumber,
+import {
+  BREAKPOINT_MAP,
+  DEFAULT_SERVER_VIEWPORT_WIDTH,
 } from "../shared/responsive";
+import type { BreakpointMap, ResponsiveNumber } from "../shared/responsive";
 import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
 import {
   applySkeletonTextSnapshot,
@@ -23,13 +23,17 @@ import {
   applyBoxMargins,
   cssLen,
   escapeAttrValue,
+  resolveResponsiveBaseStyleAtMinWidth,
+  resolveResponsiveContainerStyleAtMinWidth,
   shimmerStyleVars,
   wrapStyleVars,
 } from "../shared/skeleton/layout";
 import { SAFARI_TEXT_SKELETON_SUPPORTS } from "../shared/skeleton/text";
+import { getResponsiveTextRenderState } from "../shared/skeleton/text";
 import { buildStableScopeId } from "../shared/stableScope";
 import type { MasonryClassNames } from "../masonry/Masonry";
 import {
+  resolveActiveMasonryPredictionVariant,
   buildMasonrySkeletonPrediction,
   resolveActiveFlexStateKey,
 } from "../masonry/prediction";
@@ -61,7 +65,9 @@ export type MasonrySkeletonLayoutNode = SkeletonLayoutRoot<"masonry"> & {
   slots?: MasonrySkeletonSlot[];
 };
 
-export type MasonrySkeletonNode = MasonrySkeletonLayoutNode | SharedSkeletonNode;
+export type MasonrySkeletonNode =
+  | MasonrySkeletonLayoutNode
+  | SharedSkeletonNode;
 
 export type MasonrySkeletonSpec = {
   className?: string;
@@ -93,7 +99,7 @@ export type MasonrySkeletonCardProps = {
 
 function buildFlexVariantVisibilityCss(
   scopeId: string,
-  states: Array<{ key: string; minWidth: number }>
+  states: Array<{ key: string; minWidth: number }>,
 ) {
   const scopeSel = `[data-rmg-mskel-scope="${escapeAttrValue(scopeId)}"]`;
   const lines: string[] = [];
@@ -103,17 +109,18 @@ function buildFlexVariantVisibilityCss(
   const base = states[0];
   if (base) {
     lines.push(
-      `${scopeSel} [data-rmg-mskel-variant="${base.key}"]{display:block !important;}`
+      `${scopeSel} [data-rmg-mskel-variant="${base.key}"]{display:block !important;}`,
     );
   }
 
   for (const state of states) {
     if (state.minWidth <= 0) continue;
+
     lines.push(
       `@media (min-width:${state.minWidth}px){` +
         `${scopeSel} [data-rmg-mskel-variant]{display:none !important;}` +
-        `${scopeSel} [data-rmg-mskel-variant="${state.key}"]{display:block !important;}` +
-        `}`
+        `${scopeSel} [data-rmg-mskel-variant="${escapeAttrValue(state.key)}"]{display:block !important;}` +
+        `}`,
     );
   }
 
@@ -126,7 +133,7 @@ function importantDecl(name: string, value: string | number) {
 
 function buildVariantContainerCss(
   scopeId: string,
-  variants: ReturnType<typeof buildMasonrySkeletonPrediction>["variants"]
+  variants: ReturnType<typeof buildMasonrySkeletonPrediction>["variants"],
 ) {
   const scopeSel = `[data-rmg-mskel-scope="${escapeAttrValue(scopeId)}"]`;
   const lines: string[] = [];
@@ -135,7 +142,7 @@ function buildVariantContainerCss(
     const usesPositionedSkeleton = variant.items.some((item) => item.span > 1);
 
     const variantSel = `${scopeSel} [data-rmg-mskel-variant="${escapeAttrValue(
-      variant.state.key
+      variant.state.key,
     )}"]`;
 
     for (const rule of variant.containerCssRules ?? []) {
@@ -163,7 +170,7 @@ function buildVariantContainerCss(
         : "";
 
       lines.push(
-        `@container (min-width:${rule.minWidth}px){${rootCss}${itemCss}}`
+        `@container (min-width:${rule.minWidth}px){${rootCss}${itemCss}}`,
       );
     }
   }
@@ -173,7 +180,7 @@ function buildVariantContainerCss(
 
 function buildVariantSafariCss(
   scopeId: string,
-  variants: ReturnType<typeof buildMasonrySkeletonPrediction>["variants"]
+  variants: ReturnType<typeof buildMasonrySkeletonPrediction>["variants"],
 ) {
   const scopeSel = `[data-rmg-mskel-scope="${escapeAttrValue(scopeId)}"]`;
   const lines: string[] = [];
@@ -181,12 +188,12 @@ function buildVariantSafariCss(
   for (const variant of variants) {
     const usesPositionedSkeleton = variant.items.some((item) => item.span > 1);
     const variantSel = `${scopeSel} [data-rmg-mskel-variant="${escapeAttrValue(
-      variant.state.key
+      variant.state.key,
     )}"]`;
     const fallbackShellHeight = variant.items.length
       ? Math.max(
           0,
-          ...variant.items.map((item) => item.safariTop + item.safariHeight)
+          ...variant.items.map((item) => item.safariTop + item.safariHeight),
         )
       : 0;
     const rootDecls = [
@@ -217,7 +224,7 @@ function buildVariantSafariCss(
               importantDecl("height", item.safariHeightCssExpr),
               importantDecl(
                 "top",
-                item.safariTopCssExpr ?? `${item.safariTop}px`
+                item.safariTopCssExpr ?? `${item.safariTop}px`,
               ),
             ]
           : [importantDecl("height", item.safariHeightCssExpr)];
@@ -228,7 +235,7 @@ function buildVariantSafariCss(
     const containerCss = (variant.safariContainerCssRules ?? [])
       .map((rule) => {
         const containerRootDecls = Object.entries(rule.rootDecls).filter(
-          ([name]) => usesPositionedSkeleton || name !== "height"
+          ([name]) => usesPositionedSkeleton || name !== "height",
         );
         const containerRootCss =
           `${variantSel}{` +
@@ -265,7 +272,9 @@ function buildVariantSafariCss(
     : "";
 }
 
-function splitMasonryItemWrapStyles(itemWrapStyle: MasonrySkeletonWrapStyle | undefined): {
+function splitMasonryItemWrapStyles(
+  itemWrapStyle: MasonrySkeletonWrapStyle | undefined,
+): {
   outerStyle: React.CSSProperties | undefined;
   innerStyle: React.CSSProperties | undefined;
 } {
@@ -281,20 +290,207 @@ function splitMasonryItemWrapStyles(itemWrapStyle: MasonrySkeletonWrapStyle | un
 
   if (innerStyle.boxShadow != null) {
     outerStyle.boxShadow = innerStyle.boxShadow;
-    (outerStyle as any)["--rmg-masonry-skel-wrap-shadow"] = innerStyle.boxShadow;
+    (outerStyle as any)["--rmg-masonry-skel-wrap-shadow"] =
+      innerStyle.boxShadow;
     (outerStyle as any)["--rmg-masonry-skel-wrap-shadow-opacity"] = 0;
     delete innerStyle.boxShadow;
   }
 
   if (innerStyle.borderRadius != null) {
     outerStyle.borderRadius = innerStyle.borderRadius;
-    (outerStyle as any)["--rmg-masonry-skel-wrap-shadow-radius"] = innerStyle.borderRadius;
+    (outerStyle as any)["--rmg-masonry-skel-wrap-shadow-radius"] =
+      innerStyle.borderRadius;
   }
 
   return {
     outerStyle: Object.keys(outerStyle).length ? outerStyle : undefined,
     innerStyle,
   };
+}
+
+function parseSkeletonCssLengthPx(
+  value: SkeletonLength | undefined,
+  basisPx: number,
+): number | null {
+  if (value == null) return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const pxMatch = trimmed.match(/^(-?\d+(?:\.\d+)?)px$/);
+  if (pxMatch?.[1] != null) {
+    const parsed = Number(pxMatch[1]);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  const percentMatch = trimmed.match(/^(-?\d+(?:\.\d+)?)%$/);
+  if (percentMatch?.[1] != null && Number.isFinite(basisPx)) {
+    const parsed = Number(percentMatch[1]);
+    return Number.isFinite(parsed) ? (basisPx * parsed) / 100 : null;
+  }
+
+  return null;
+}
+
+function parseInlineInsetPx(
+  value: SkeletonLength | undefined,
+  basisPx: number,
+): number {
+  if (value == null) return 0;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value * 2 : 0;
+  }
+
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return 0;
+
+  const parsed = parts.map((part) =>
+    parseSkeletonCssLengthPx(part, basisPx) ?? 0,
+  );
+
+  if (parsed.length === 1) return (parsed[0] ?? 0) * 2;
+  if (parsed.length === 2) return (parsed[1] ?? 0) * 2;
+  if (parsed.length === 3) return (parsed[1] ?? 0) * 2;
+  return (parsed[1] ?? 0) + (parsed[3] ?? 0);
+}
+
+function parseBorderInlinePx(border: React.CSSProperties["border"]): number {
+  if (typeof border !== "string") return 0;
+  const match = border.match(/(-?\d+(?:\.\d+)?)px/);
+  if (!match?.[1]) return 0;
+
+  const width = Number(match[1]);
+  return Number.isFinite(width) ? width * 2 : 0;
+}
+
+function resolveStyledOuterWidthPx(
+  style:
+    | Pick<SkeletonBaseStyle, "width" | "minWidth" | "maxWidth">
+    | Pick<SkeletonContainerStyle, "width" | "minWidth" | "maxWidth">
+    | undefined,
+  fallbackPx: number,
+): number {
+  let width = parseSkeletonCssLengthPx(style?.width, fallbackPx) ?? fallbackPx;
+  const minWidth = parseSkeletonCssLengthPx(style?.minWidth, fallbackPx);
+  const maxWidth = parseSkeletonCssLengthPx(style?.maxWidth, fallbackPx);
+
+  if (minWidth != null) width = Math.max(width, minWidth);
+  if (maxWidth != null) width = Math.min(width, maxWidth);
+  return Math.max(0, width);
+}
+
+function resolveContainerContentWidthPx(
+  style: SkeletonContainerStyle | undefined,
+  fallbackPx: number,
+): number {
+  const outerWidth = resolveStyledOuterWidthPx(style, fallbackPx);
+  const paddingInline = parseInlineInsetPx(style?.padding, outerWidth);
+  const borderInline = parseBorderInlinePx(style?.border);
+  return Math.max(0, outerWidth - paddingInline - borderInline);
+}
+
+function resolveWrapContentWidthPx(
+  style: MasonrySkeletonWrapStyle | undefined,
+  fallbackPx: number,
+): number {
+  const outerWidth = resolveStyledOuterWidthPx(style, fallbackPx);
+  const paddingInline = parseInlineInsetPx(style?.padding, outerWidth);
+  const borderInline = parseBorderInlinePx(style?.border);
+  return Math.max(0, outerWidth - paddingInline - borderInline);
+}
+
+function resolveTextOuterWidthPx(
+  style: SkeletonBaseStyle | undefined,
+  fallbackPx: number,
+): number {
+  return resolveStyledOuterWidthPx(style, fallbackPx);
+}
+
+function resolveContainerTextFirstPaintNode(
+  node: SkeletonNode,
+  availableWidthPx: number,
+  responsiveMinWidth: number,
+  breakpointMap: BreakpointMap,
+): SkeletonNode {
+  switch (node.kind) {
+    case "text": {
+      if (node.responsiveBy !== "container") return node;
+
+      const textStyle = resolveResponsiveBaseStyleAtMinWidth(
+        node.style,
+        responsiveMinWidth,
+        breakpointMap,
+      );
+      const textWidthPx = resolveTextOuterWidthPx(textStyle, availableWidthPx);
+      const renderState =
+        (node as any).__rmgTextRenderState ??
+        getResponsiveTextRenderState({
+          barHeight: node.barHeight,
+          barWidth: node.barWidth,
+          lineHeight: node.lineHeight,
+          lines: node.lines,
+          lastBarWidth: node.lastBarWidth,
+          responsiveBy: node.responsiveBy,
+          breakpointMap,
+        });
+      const activeState = renderState.states.reduce(
+        (
+          active: typeof renderState.baseState,
+          rule: (typeof renderState.states)[number],
+        ) =>
+          textWidthPx >= rule.minWidth ? rule.state : active,
+        renderState.baseState,
+      );
+
+      return {
+        ...(node as any),
+        __rmgTextRenderState: {
+          ...renderState,
+          baseState: activeState,
+          baseLines: activeState.lineCount,
+          baseLastBarWidth:
+            activeState.barWidths[activeState.lineCount - 1] ??
+            renderState.baseLastBarWidth,
+          metrics: activeState.metrics,
+        },
+      } as SkeletonNode;
+    }
+
+    case "stack":
+    case "row":
+    case "col": {
+      const style = resolveResponsiveContainerStyleAtMinWidth(
+        node.style,
+        responsiveMinWidth,
+        breakpointMap,
+      );
+      const contentWidthPx = resolveContainerContentWidthPx(
+        style,
+        availableWidthPx,
+      );
+
+      return {
+        ...(node as any),
+        children: node.children.map((child) =>
+          resolveContainerTextFirstPaintNode(
+            child,
+            contentWidthPx,
+            responsiveMinWidth,
+            breakpointMap,
+          ),
+        ),
+      } as SkeletonNode;
+    }
+
+    case "media":
+    case "rect":
+    case "square":
+    case "circle":
+      return node;
+  }
 }
 
 export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
@@ -312,14 +508,16 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
     disableShimmer,
     cacheSnapshot,
   } = props;
-  const initialLayoutWidthPxRef = React.useRef<number | undefined>(layoutWidthPx);
+  const initialLayoutWidthPxRef = React.useRef<number | undefined>(
+    layoutWidthPx,
+  );
   const frozenLayoutWidthPx =
     initialLayoutWidthPxRef.current !== undefined
       ? initialLayoutWidthPxRef.current
       : layoutWidthPx;
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints ?? {}) }),
-    [breakpoints]
+    [breakpoints],
   );
 
   const scopeId = React.useMemo(() => {
@@ -359,73 +557,77 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
           enabledVarName: "--rmg-skel-card-shimmer-enabled",
         }) as any)),
     ...(!disableShimmer && (spec?.shimmer?.c2 ?? spec?.highlightColor) != null
-      ? ({ ["--rmg-skel-shimmer-c2" as any]: spec?.shimmer?.c2 ?? spec?.highlightColor } as any)
+      ? ({
+          ["--rmg-skel-shimmer-c2" as any]:
+            spec?.shimmer?.c2 ?? spec?.highlightColor,
+        } as any)
       : null),
   };
 
-  const prediction = React.useMemo(
-    () => {
-      const cachedSpec =
-        cacheSnapshot?.text && spec
-          ? {
-              ...spec,
-              layout: spec.layout
-                ? applySkeletonTextSnapshot(
-                    spec.layout,
-                    cacheSnapshot.text,
-                    "masonry",
-                    effectiveBreakpoints
-                  )
-                : spec.layout,
-            }
-          : spec;
+  const prediction = React.useMemo(() => {
+    const cachedSpec =
+      cacheSnapshot?.text && spec
+        ? {
+            ...spec,
+            layout: spec.layout
+              ? applySkeletonTextSnapshot(
+                  spec.layout,
+                  cacheSnapshot.text,
+                  "masonry",
+                  effectiveBreakpoints,
+                )
+              : spec.layout,
+          }
+        : spec;
 
-      return buildMasonrySkeletonPrediction({
-        count,
-        columns,
-        gap,
-        breakpoints: effectiveBreakpoints,
-        ratios,
-        heightsPx: props.heightsPx,
-        spans: props.spans,
-        placement,
-        spec: cachedSpec,
-        scopeId,
-        viewportWidth,
-        layoutWidthPx: frozenLayoutWidthPx,
-      });
-    },
-    [
-      cacheSnapshot,
+    return buildMasonrySkeletonPrediction({
       count,
       columns,
       gap,
-      effectiveBreakpoints,
+      breakpoints: effectiveBreakpoints,
       ratios,
-      props.heightsPx,
-      props.spans,
+      heightsPx: props.heightsPx,
+      spans: props.spans,
       placement,
-      spec,
+      spec: cachedSpec,
       scopeId,
       viewportWidth,
-      frozenLayoutWidthPx,
-    ]
-  );
+      layoutWidthPx: frozenLayoutWidthPx,
+    });
+  }, [
+    cacheSnapshot,
+    count,
+    columns,
+    gap,
+    effectiveBreakpoints,
+    ratios,
+    props.heightsPx,
+    props.spans,
+    placement,
+    spec,
+    scopeId,
+    viewportWidth,
+    frozenLayoutWidthPx,
+  ]);
 
   const jsControlled = viewportWidth !== undefined;
   const cacheVariant = cacheSnapshot?.masonry?.variantKey
-    ? prediction.variants.find(
+    ? (prediction.variants.find(
         (variant) =>
           variant.state.key === cacheSnapshot.masonry?.variantKey &&
-          variant.state.minWidth === cacheSnapshot.widthBucketMin
-      ) ?? null
+          variant.state.minWidth === cacheSnapshot.widthBucketMin,
+      ) ?? null)
     : null;
   const cacheControlled = !!cacheVariant;
+  const jsActiveVariant = jsControlled
+    ? resolveActiveMasonryPredictionVariant(prediction.variants, viewportWidth)
+    : null;
   const activeKey = cacheControlled
     ? cacheVariant.state.key
     : jsControlled
-    ? resolveActiveFlexStateKey(prediction.states, viewportWidth)
-    : null;
+      ? (jsActiveVariant?.state.key ??
+        resolveActiveFlexStateKey(prediction.states, viewportWidth))
+      : null;
 
   const visibilityCss = React.useMemo(
     () =>
@@ -433,23 +635,20 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
         ? null
         : buildFlexVariantVisibilityCss(scopeId, prediction.states),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cacheControlled, jsControlled, scopeId, prediction.variants]
+    [cacheControlled, jsControlled, scopeId, prediction.variants],
   );
   const variantContainerCss = React.useMemo(
     () =>
       cacheControlled
         ? ""
         : buildVariantContainerCss(scopeId, prediction.variants),
-    [cacheControlled, scopeId, prediction.variants]
+    [cacheControlled, scopeId, prediction.variants],
   );
-  const variantSafariCss = React.useMemo(
-    () => {
-      const variantsForCss =
-        cacheControlled && cacheVariant ? [cacheVariant] : prediction.variants;
-      return buildVariantSafariCss(scopeId, variantsForCss);
-    },
-    [cacheControlled, cacheVariant, scopeId, prediction.variants]
-  );
+  const variantSafariCss = React.useMemo(() => {
+    const variantsForCss =
+      cacheControlled && cacheVariant ? [cacheVariant] : prediction.variants;
+    return buildVariantSafariCss(scopeId, variantsForCss);
+  }, [cacheControlled, cacheVariant, scopeId, prediction.variants]);
   const structuredLayout = prediction.structuredLayout;
   const rootClassName = classNames?.root ?? styles.masonrySkeletonRoot;
   const columnClassName = classNames?.column ?? styles.masonrySkeletonCol;
@@ -465,14 +664,54 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
     Number(frozenLayoutWidthPx) > 0;
 
   const variants = React.useMemo(() => {
-    const cardShimmerClass = disableShimmer ? null : sharedSkeletonStyles.skelCardShimmer;
-    const variantsToRender = cacheVariant ? [cacheVariant] : prediction.variants;
+    const cardShimmerClass = disableShimmer
+      ? null
+      : sharedSkeletonStyles.skelCardShimmer;
+    const serverActiveVariantKey = resolveActiveMasonryPredictionVariant(
+      prediction.variants,
+      viewportWidth ?? DEFAULT_SERVER_VIEWPORT_WIDTH,
+    )?.state.key;
+    const serverActiveStateKey = resolveActiveFlexStateKey(
+      prediction.states,
+      viewportWidth ?? DEFAULT_SERVER_VIEWPORT_WIDTH,
+    );
+    const widestVariantKey = prediction.variants.reduce<
+      (typeof prediction.variants)[number] | null
+    >(
+      (widest, variant) =>
+        !widest || variant.state.minWidth > widest.state.minWidth
+          ? variant
+          : widest,
+      null,
+    )?.state.key;
+    const baseVariantKey = prediction.states[0]?.key;
+    const firstPaintPriority = [
+      activeKey,
+      widestVariantKey,
+      baseVariantKey,
+      serverActiveVariantKey,
+      serverActiveStateKey,
+    ].filter((key): key is string => !!key);
+    const priorityFor = (key: string) => {
+      const priority = firstPaintPriority.indexOf(key);
+      return priority === -1 ? Number.POSITIVE_INFINITY : priority;
+    };
+    const variantsToRender = cacheVariant
+      ? [cacheVariant]
+      : [...prediction.variants].sort((a, b) => {
+          const priorityDelta =
+            priorityFor(a.state.key) - priorityFor(b.state.key);
+          if (priorityDelta !== 0) return priorityDelta;
+          return a.state.minWidth - b.state.minWidth;
+        });
 
     return variantsToRender.map((variant) => {
-      const usesPositionedSkeleton = variant.items.some((item) => item.span > 1);
+      const usesPositionedSkeleton = variant.items.some(
+        (item) => item.span > 1,
+      );
       const shellHeight = Math.max(
         0,
-        ...variant.items.map((item) => item.top + item.height)
+        ...variant.items.map((item) => item.top + item.height),
       );
       const cachedShellHeight = cacheVariant
         ? cacheSnapshot?.masonry?.shellHeightPx
@@ -481,7 +720,9 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
         const height = cacheVariant
           ? cacheSnapshot?.masonry?.itemHeightsPx?.[index]
           : undefined;
-        return typeof height === "number" && Number.isFinite(height) && height >= 0
+        return typeof height === "number" &&
+          Number.isFinite(height) &&
+          height >= 0
           ? height
           : fallback;
       };
@@ -489,7 +730,7 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
       if (!usesPositionedSkeleton) {
         const cols: Array<typeof variant.items> = Array.from(
           { length: variant.state.columns },
-          () => []
+          () => [],
         );
 
         for (const item of variant.items) {
@@ -505,11 +746,14 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
               ["--rmg-cols" as any]: variant.state.columns,
               ["--rmg-gap" as any]: `${variant.state.gapPx}px`,
               ...(variant.positionedCssVars ?? {}),
-              display: cacheControlled || jsControlled
-                ? variant.state.key === activeKey ? "block" : "none"
-                : variant.state.key === prediction.states[0]?.key
-                  ? "block"
-                  : "none",
+              display:
+                cacheControlled || jsControlled
+                  ? variant.state.key === activeKey
+                    ? "block"
+                    : "none"
+                  : variant.state.key === prediction.states[0]?.key
+                    ? "block"
+                    : "none",
             }}
           >
             <div
@@ -552,8 +796,16 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                         />
                       );
                     }
-                    const { outerStyle, innerStyle } = splitMasonryItemWrapStyles(
-                      item.slot?.itemWrapStyle
+                    const { outerStyle, innerStyle } =
+                      splitMasonryItemWrapStyles(item.slot?.itemWrapStyle);
+                    const firstPaintItemNode = resolveContainerTextFirstPaintNode(
+                      item.slot?.item ?? structuredLayout.item,
+                      resolveWrapContentWidthPx(
+                        item.slot?.itemWrapStyle,
+                        item.widthPx,
+                      ),
+                      variant.state.minWidth,
+                      effectiveBreakpoints,
                     );
 
                     return (
@@ -580,11 +832,13 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                           ]
                             .filter(Boolean)
                             .join(" ")}
-                          style={innerStyle}
+                          style={{
+                            ...innerStyle,
+                          }}
                         >
                           <div style={{ width: "100%" }}>
                             <SkeletonLayoutNode
-                              node={item.slot?.item ?? structuredLayout.item}
+                              node={firstPaintItemNode}
                               disableShimmer
                               breakpointMap={effectiveBreakpoints}
                             />
@@ -611,13 +865,16 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
               cachedShellHeight != null
                 ? `${cachedShellHeight}px`
                 : structuredLayout && !canUseNumericPositioning
-                ? (variant.shellHeightCssExpr ?? `${shellHeight}px`)
-                : `${shellHeight}px`,
-            display: cacheControlled || jsControlled
-              ? variant.state.key === activeKey ? "block" : "none"
-              : variant.state.key === prediction.states[0]?.key
-                ? "block"
-                : "none",
+                  ? (variant.shellHeightCssExpr ?? `${shellHeight}px`)
+                  : `${shellHeight}px`,
+            display:
+              cacheControlled || jsControlled
+                ? variant.state.key === activeKey
+                  ? "block"
+                  : "none"
+                : variant.state.key === prediction.states[0]?.key
+                  ? "block"
+                  : "none",
             ["--rmg-cols" as any]: variant.state.columns,
             ["--rmg-gap" as any]: `${variant.state.gapPx}px`,
             ...(variant.positionedCssVars ?? {}),
@@ -644,7 +901,13 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
             }
 
             const { outerStyle, innerStyle } = splitMasonryItemWrapStyles(
-              item.slot?.itemWrapStyle
+              item.slot?.itemWrapStyle,
+            );
+            const firstPaintItemNode = resolveContainerTextFirstPaintNode(
+              item.slot?.item ?? structuredLayout.item,
+              resolveWrapContentWidthPx(item.slot?.itemWrapStyle, item.widthPx),
+              variant.state.minWidth,
+              effectiveBreakpoints,
             );
 
             return (
@@ -653,39 +916,42 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
                 data-rmg-mskel-index={item.index}
                 className={itemClassName}
                 style={{
-                  ...(item.slot?.itemWrapStyle ? applyBoxMargins(item.slot.itemWrapStyle) : null),
+                  ...(item.slot?.itemWrapStyle
+                    ? applyBoxMargins(item.slot.itemWrapStyle)
+                    : null),
                   ...(outerStyle ?? null),
                   position: "absolute",
-                  top:
-                    canUseNumericPositioning
-                      ? `${item.top}px`
-                      : (item.topCssExpr ?? `${item.top}px`),
-                  left:
-                    canUseNumericPositioning
-                      ? `${item.leftPx}px`
-                      : item.leftCssExpr,
-                  width:
-                    canUseNumericPositioning
-                      ? `${item.widthPx}px`
-                      : item.widthCssExpr,
-                  height:
-                    cacheVariant
-                      ? `${itemHeight(item.index, item.height)}px`
-                      : canUseNumericPositioning
+                  top: canUseNumericPositioning
+                    ? `${item.top}px`
+                    : (item.topCssExpr ?? `${item.top}px`),
+                  left: canUseNumericPositioning
+                    ? `${item.leftPx}px`
+                    : item.leftCssExpr,
+                  width: canUseNumericPositioning
+                    ? `${item.widthPx}px`
+                    : item.widthCssExpr,
+                  height: cacheVariant
+                    ? `${itemHeight(item.index, item.height)}px`
+                    : canUseNumericPositioning
                       ? `${item.height}px`
                       : item.heightCssExpr,
                   minWidth: 0,
                 }}
               >
                 <div
-                  className={[styles.masonrySkeletonLayoutItemInner, cardShimmerClass]
+                  className={[
+                    styles.masonrySkeletonLayoutItemInner,
+                    cardShimmerClass,
+                  ]
                     .filter(Boolean)
                     .join(" ")}
-                  style={innerStyle}
+                  style={{
+                    ...innerStyle,
+                  }}
                 >
                   <div style={{ width: "100%" }}>
                     <SkeletonLayoutNode
-                      node={item.slot?.item ?? structuredLayout.item}
+                      node={firstPaintItemNode}
                       disableShimmer
                       breakpointMap={effectiveBreakpoints}
                     />
@@ -707,6 +973,7 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
     jsControlled,
     canUseNumericPositioning,
     activeKey,
+    viewportWidth,
     disableShimmer,
     cacheSnapshot,
     cacheVariant,
@@ -724,7 +991,9 @@ export function MasonrySkeletonCard(props: MasonrySkeletonCardProps) {
         width: "100%",
       }}
     >
-      {visibilityCss ? <style dangerouslySetInnerHTML={{ __html: visibilityCss }} /> : null}
+      {visibilityCss ? (
+        <style dangerouslySetInnerHTML={{ __html: visibilityCss }} />
+      ) : null}
       {prediction.responsiveCss ? (
         <style dangerouslySetInnerHTML={{ __html: prediction.responsiveCss }} />
       ) : null}

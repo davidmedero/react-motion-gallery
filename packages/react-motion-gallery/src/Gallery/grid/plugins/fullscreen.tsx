@@ -123,9 +123,13 @@ function GridFullscreenRuntime({ host }: GridPluginRuntimeProps) {
       HTMLElement,
       { tabIndex: string | null; ariaLabel: string | null }
     >();
+    const registeredIndicesRef = { current: new Set<number>() };
 
     const prepareNodes = () => {
-      host.handle?.getItemNodes().forEach((node, index) => {
+      host.handle?.getItemNodes().forEach((node) => {
+        const rawIndex = Number.parseInt(node.getAttribute("data-rmg-idx") ?? "", 10);
+        if (!Number.isFinite(rawIndex)) return;
+
         if (!originalAttrs.has(node)) {
           originalAttrs.set(node, {
             tabIndex: node.getAttribute("tabindex"),
@@ -137,10 +141,11 @@ function GridFullscreenRuntime({ host }: GridPluginRuntimeProps) {
         node.setAttribute("data-rmg-fullscreen-trigger-mode", host.fullscreenTrigger);
         if (!node.hasAttribute("tabindex")) node.setAttribute("tabindex", "0");
         if (!node.hasAttribute("aria-label")) {
-          node.setAttribute("aria-label", `View image ${index + 1}`);
+          node.setAttribute("aria-label", `View image ${rawIndex + 1}`);
         }
 
-        core.registerExpandableImage(index, node);
+        registeredIndicesRef.current.add(rawIndex);
+        core.registerExpandableImage(rawIndex, node);
       });
     };
 
@@ -253,9 +258,10 @@ function GridFullscreenRuntime({ host }: GridPluginRuntimeProps) {
         else node.setAttribute("aria-label", attrs.ariaLabel);
       });
 
-      for (let index = 0; index < host.itemCount; index++) {
+      registeredIndicesRef.current.forEach((index) => {
         core.registerExpandableImage(index, null);
-      }
+      });
+      registeredIndicesRef.current.clear();
     };
   }, [
     core,

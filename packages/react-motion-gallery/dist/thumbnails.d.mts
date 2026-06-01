@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { r as SliderIndexChannel, I as IndexMode } from './types-D9WBOrx6.mjs';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
-import { f as ThumbnailsOptions, h as ThumbnailSelectMeta } from './types-CYTSYIwL.mjs';
-export { R as ResponsivePosition, j as ThumbnailContainerLayout, i as ThumbnailLayout, a as ThumbnailLoadingElements, c as ThumbnailLoadingOptions, b as ThumbnailLoadingRenderArgs, T as ThumbnailPosition, e as ThumbnailRevealOptions, d as ThumbnailSkeletonMode, p as ThumbnailsControls, l as ThumbnailsElements, k as ThumbnailsLayout, n as ThumbnailsMotion, o as ThumbnailsRipple, m as ThumbnailsScroll, q as ThumbnailsTransitions } from './types-CYTSYIwL.mjs';
+import { f as ThumbnailsOptions, h as ThumbnailSelectMeta } from './types-uhDRb0mo.mjs';
+export { R as ResponsivePosition, j as ThumbnailContainerLayout, i as ThumbnailLayout, a as ThumbnailLoadingElements, c as ThumbnailLoadingOptions, b as ThumbnailLoadingRenderArgs, T as ThumbnailPosition, e as ThumbnailRevealOptions, d as ThumbnailSkeletonMode, p as ThumbnailsControls, l as ThumbnailsElements, k as ThumbnailsLayout, n as ThumbnailsMotion, o as ThumbnailsRipple, m as ThumbnailsScroll, q as ThumbnailsTransitions } from './types-uhDRb0mo.mjs';
 import './force-C5m1QpdF.mjs';
 import './media.mjs';
-import './transitions-DU3ftmIq.mjs';
+import './transitions-ChhEdSB6.mjs';
 
 type Props = {
     options?: ThumbnailsOptions;

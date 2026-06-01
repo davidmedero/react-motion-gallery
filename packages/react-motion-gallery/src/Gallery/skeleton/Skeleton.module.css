@@ -15,7 +15,13 @@
   z-index: 2;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--rmg-loading-fade-duration, 600ms) ease;
+  transition:
+    opacity
+      var(
+        --rmg-loading-fade-exit-duration,
+        var(--rmg-loading-fade-duration, 600ms)
+      )
+      ease;
   will-change: opacity;
 }
 
@@ -33,15 +39,33 @@
   pointer-events: none;
 }
 
+.contentLayerLayoutLocked {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 100%;
+  pointer-events: none;
+}
+
 .loadingLayer {
   position: relative;
   z-index: 1;
   opacity: var(--rmg-standalone-skeleton-opacity, 1);
   --rmg-masonry-skel-wrap-shadow-opacity: 1;
   pointer-events: none;
-  transition: opacity var(--rmg-loading-fade-duration, 600ms) ease;
+  transition:
+    opacity
+      var(
+        --rmg-loading-fade-enter-duration,
+        var(--rmg-loading-fade-duration, 600ms)
+      )
+      ease;
   will-change: opacity;
   overflow: hidden;
+}
+
+.loadingLayerLayoutOwner {
+  overflow: visible;
 }
 
 .loadingLayerOverlay {
@@ -57,8 +81,16 @@
 }
 
 .loadingLayerExit {
+  --rmg-loading-fade-shadow-duration: var(
+    --rmg-loading-fade-exit-duration,
+    var(--rmg-loading-fade-duration, 600ms)
+  );
   --rmg-standalone-skeleton-opacity: 0;
   --rmg-masonry-skel-wrap-shadow-opacity: 0;
+  transition-duration: var(
+    --rmg-loading-fade-exit-duration,
+    var(--rmg-loading-fade-duration, 600ms)
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {

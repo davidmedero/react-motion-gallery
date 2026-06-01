@@ -8,7 +8,7 @@ import { R as ResponsiveTextBarHeight, a as ResponsiveTextBarWidth, b as Respons
 import { SkeletonForceOptions, SkeletonTimingOptions } from './skeleton-base.mjs';
 import './force-C5m1QpdF.mjs';
 import './media.mjs';
-import './transitions-DU3ftmIq.mjs';
+import './transitions-ChhEdSB6.mjs';
 
 type SkeletonLength = number | string;
 type SkeletonShimmer = {

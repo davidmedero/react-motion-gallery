@@ -1,19 +1,26 @@
 .entryRow {
   position: relative;
   min-height: var(--rmg-entry-min-height, 260px);
+  isolation: isolate;
 }
 
 .entrySkeletonWrap {
+  --rmg-entry-skeleton-transition-duration: var(
+    --rmg-entry-skeleton-enter-duration,
+    var(--rmg-entry-skeleton-exit-duration, 220ms)
+  );
   position: relative;
   display: block;
   opacity: var(--rmg-entry-skeleton-opacity, 1);
-  transition: opacity 220ms ease;
+  transition: opacity var(--rmg-entry-skeleton-transition-duration) ease;
   transition-delay: 0ms;
   pointer-events: none;
   z-index: 0;
   height: var(--rmg-entry-min-height, 260px);
   border-radius: 12px;
   background-color: var(--rmg-entry-skeleton-bg, transparent);
+  will-change: opacity;
+  backface-visibility: hidden;
 }
 
 .entrySkeletonWrap::before {
@@ -42,10 +49,13 @@
   opacity: 0;
   pointer-events: none;
   transition:
-    opacity var(--rmg-entry-reveal-duration, 700ms)
-      var(--rmg-entry-reveal-easing, cubic-bezier(.4,0,.22,1));
+    opacity var(--rmg-entry-intro-duration, 700ms)
+      var(--rmg-entry-intro-easing, cubic-bezier(.4,0,.22,1));
   transition-delay: 0ms;
   z-index: 1;
+  will-change: opacity, transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 .entryInner > * {
@@ -53,14 +63,23 @@
 }
 
 .entryRow[data-rmg-entry-ready="1"]:not([data-rmg-entry-compare="1"]) .entrySkeletonWrap {
+  --rmg-entry-skeleton-transition-duration: var(
+    --rmg-entry-skeleton-exit-duration,
+    var(--rmg-entry-skeleton-enter-duration, 220ms)
+  );
   opacity: 0;
-  transition-delay: var(--rmg-entry-reveal-delay, 0ms);
+  transition-delay: var(--rmg-entry-intro-delay, 0ms);
 }
 
 .entryRow[data-rmg-entry-ready="1"] .entryInner {
   opacity: 1;
   pointer-events: auto;
-  transition-delay: var(--rmg-entry-reveal-delay, 0ms);
+  transition-delay: var(--rmg-entry-intro-delay, 0ms);
+}
+
+.entryRow[data-rmg-entry-reveal-settled="1"] .entryInner {
+  transform: none;
+  will-change: auto;
 }
 
 .entryRow[data-rmg-entry-compare="1"] .entrySkeletonWrap {
@@ -70,11 +89,13 @@
 .entrySkeletonWrap[data-rmg-entry-shimmer="off"] {
   --rmg-skel-shimmer-enabled: 0;
   --rmg-skel-card-shimmer-enabled: 0;
+  will-change: auto;
 }
 
-.entrySkeletonWrap[data-rmg-entry-shimmer="off"] .entrySkelTile::after {
+.entrySkeletonWrap[data-rmg-entry-shimmer="off"] .entrySkelRoot::after {
   opacity: 0;
   animation: none;
+  will-change: auto;
 }
 
 .entryList {
@@ -83,13 +104,31 @@
   gap: 1.5rem;
 }
 
-.entryMediaButton[data-rmg-fullscreen-enabled="true"][data-rmg-fullscreen-trigger-mode="media"] img {
-  cursor: zoom-in;
+.entryList[data-rmg-entries-layout="grid"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  align-items: start;
+}
+
+.entryVirtualSpacer {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.entryDataSentinel {
+  width: 100%;
+}
+
+.entryList[data-rmg-entries-layout="grid"] .entryVirtualSpacer,
+.entryList[data-rmg-entries-layout="grid"] .entryDataSentinel {
+  grid-column: 1 / -1;
 }
 
 .entrySkelRoot {
   --rmg-skel-radius: 12px;
+  position: relative;
   width: 100%;
+  overflow: hidden;
 }
 
 .entrySkelGroup {
@@ -138,7 +177,7 @@
   overflow: hidden;
 }
 
-.entrySkelTile::after {
+.entrySkelRoot::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -154,27 +193,30 @@
   );
   animation: rmgShimmer var(--rmg-skel-shimmer-duration, 1200ms)
     var(--rmg-skel-shimmer-timing, linear) infinite;
-  transform: translateX(-100%);
+  transform: translate3d(-100%, 0, 0);
   pointer-events: none;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 @keyframes rmgShimmer {
   0% {
-    transform: translateX(-100%);
+    transform: translate3d(-100%, 0, 0);
   }
   100% {
-    transform: translateX(100%);
+    transform: translate3d(100%, 0, 0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .entrySkelTile::after {
+  .entrySkelRoot::after {
     animation: none;
   }
 
   .entrySkeletonWrap {
     transition: none;
   }
+
 }
 
 .entrySkelRect {

@@ -9,6 +9,8 @@ import type {
 
 export type MasonryItemLayoutMeta = {
   span?: ResponsiveMasonrySpan;
+  revealKey?: React.Key;
+  placeholder?: boolean;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -17,6 +19,7 @@ export type MasonryCell = {
   id: string;
   node: React.ReactNode;
   layoutMeta?: MasonryItemLayoutMeta;
+  sourceIndex?: number;
 };
 
 type MasonryItemComponent = React.FC<MasonryItemProps> & {
@@ -70,6 +73,8 @@ export function normalizeMasonryChild(node: React.ReactNode): {
 
   const layoutMeta: MasonryItemLayoutMeta = {
     span: node.props.span,
+    revealKey: node.props.revealKey,
+    placeholder: node.props.placeholder === true,
     className: node.props.className,
     style: node.props.style,
   };

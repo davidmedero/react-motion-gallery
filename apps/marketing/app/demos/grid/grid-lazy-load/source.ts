@@ -5,11 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Grid } from "react-motion-gallery/grid";
-import { useGridReady } from "react-motion-gallery/grid/ready";
 import { gridLazyLoad } from "react-motion-gallery/grid/lazy-load";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
@@ -35,6 +33,9 @@ type GeneratedSkeletonTextEntry = {
   title: GeneratedSkeletonTextState;
   body: GeneratedSkeletonTextState;
 };
+
+const LAZY_IMAGE_PLACEHOLDER =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
 
 const ITEMS = [
   {
@@ -151,12 +152,18 @@ function GridCard(props: {
   title: string;
   body: string;
   skeletonTextIds: SkeletonTextIds;
+  lazy: boolean;
 }) {
-  const { imageSrc, badge, title, body, skeletonTextIds } = props;
+  const { imageSrc, badge, title, body, skeletonTextIds, lazy } = props;
 
   return (
     <article className={styles.gridCard}>
-      <img src={imageSrc} alt={title} className={styles.gridImage} />
+      <img
+        src={lazy ? LAZY_IMAGE_PLACEHOLDER : imageSrc}
+        data-rmg-lazy-src={lazy ? imageSrc : undefined}
+        alt={title}
+        className={styles.gridImage}
+      />
       <div className={styles.gridCopy}>
         <span
           className={styles.gridBadge}
@@ -260,48 +267,41 @@ export function GridLazyLoadDemo() {
   const searchParams = useSearchParams();
   const showMeasuredContent = searchParams.get("skeletonMeasure") === "content";
   const fullscreenMedia = toMediaItems(ITEMS.map((item) => item.fullscreenSrc));
-  const { ref: gridRef, ready: gridReady } = useGridReady();
 
   return (
     <GalleryCore layout="grid" fullscreenItems={fullscreenMedia}>
-      <GridSkeleton
-        cache={demoSkeletonCache("grid-lazy-load")}
-        layout={CARD_SKELETON}
-        ready={gridReady}
-        enabled={!showMeasuredContent}
-        timing={{ exitMs: 1200 }}
-        grid={{
-          count: ITEMS.length,
-          minColumnWidth: 220,
-          gap: { 0: 12, 900: 18 },
+      <Grid
+        minColumnWidth={220}
+        gap={{ 0: 12, 900: 18 }}
+        fullscreenTrigger="item"
+        loading={{
+          enabled: !showMeasuredContent,
+          waitForMedia: false,
+          skeleton: CARD_SKELETON,
+          cache: demoSkeletonCache("grid-lazy-load"),
+          timing: { exitMs: 1200 },
         }}
+        plugins={[
+          gridFullscreen(),
+          gridLazyLoad({
+            enabled: !showMeasuredContent,
+            spinner: true,
+            spinnerClassName: styles.spinner,
+          }),
+        ]}
       >
-        <Grid
-          ref={gridRef}
-          minColumnWidth={220}
-          gap={{ 0: 12, 900: 18 }}
-          fullscreenTrigger="item"
-          plugins={[
-            gridFullscreen(),
-            gridLazyLoad({
-              enabled: !showMeasuredContent,
-              spinner: true,
-              spinnerClassName: styles.spinner,
-            }),
-          ]}
-        >
-          {ITEMS.map((item, index) => (
-            <GridCard
-              key={item.imageSrc}
-              imageSrc={item.imageSrc}
-              badge={item.badge}
-              title={item.title}
-              body={item.body}
-              skeletonTextIds={GRID_LAZY_LOAD_TEXT_IDS[index]!}
-            />
-          ))}
-        </Grid>
-      </GridSkeleton>
+        {ITEMS.map((item, index) => (
+          <GridCard
+            key={item.imageSrc}
+            imageSrc={item.imageSrc}
+            badge={item.badge}
+            title={item.title}
+            body={item.body}
+            skeletonTextIds={GRID_LAZY_LOAD_TEXT_IDS[index]!}
+            lazy={!showMeasuredContent}
+          />
+        ))}
+      </Grid>
       <FullscreenAddon />
     </GalleryCore>
   );
