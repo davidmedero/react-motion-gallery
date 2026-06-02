@@ -31,6 +31,13 @@ type EntryPoint = {
 
 const entryPoints: EntryPoint[] = [
   {
+    category: "Root",
+    entry: "react-motion-gallery",
+    imports: "primary components, helpers, and companion public types",
+    description:
+      "Aggregate import path for modules that intentionally compose several gallery surfaces.",
+  },
+  {
     category: "Styles",
     entry: "react-motion-gallery/styles.css",
     imports: "compiled stylesheet",
@@ -41,6 +48,12 @@ const entryPoints: EntryPoint[] = [
     entry: "react-motion-gallery/media",
     imports: "toMediaItems",
     description: "Media normalization helpers.",
+  },
+  {
+    category: "Utilities",
+    entry: "react-motion-gallery/media/ready",
+    imports: "useImageDecodeReady",
+    description: "Image decode readiness hook for reveal and loading handoffs.",
   },
   {
     category: "Utilities",
@@ -106,6 +119,24 @@ const entryPoints: EntryPoint[] = [
   },
   {
     category: "Slider",
+    entry: "react-motion-gallery/slider/ripple",
+    imports: "sliderRipple",
+    description: "Shared click-position ripple feedback for Slider controls.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/auto-play",
+    imports: "sliderAutoPlay",
+    description: "Timed slide advancement plugin with pause and progress behavior.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/auto-scroll",
+    imports: "sliderAutoScroll",
+    description: "Continuous automatic slider movement for marquee-like galleries.",
+  },
+  {
+    category: "Slider",
     entry: "react-motion-gallery/slider/auto-height",
     imports: "sliderAutoHeight",
     description: "Plugin that sizes Slider height to the active slide.",
@@ -145,6 +176,12 @@ const entryPoints: EntryPoint[] = [
     entry: "react-motion-gallery/slider/fullscreen",
     imports: "sliderFullscreen",
     description: "Slider plugin that opens GalleryCore fullscreen from base slides.",
+  },
+  {
+    category: "Slider",
+    entry: "react-motion-gallery/slider/loading",
+    imports: "sliderLoading",
+    description: "Basic Slider loading overlay plugin for custom loading UI.",
   },
   {
     category: "Layout",
@@ -331,6 +368,18 @@ const entryPoints: EntryPoint[] = [
   },
   {
     category: "Loading",
+    entry: "react-motion-gallery/skeleton/cache",
+    imports: "skeleton cache cookie helpers and snapshot types",
+    description: "Server-safe skeleton cache parsing, serialization, and validation.",
+  },
+  {
+    category: "Loading",
+    entry: "react-motion-gallery/skeleton/cache/provider",
+    imports: "SkeletonCacheProvider",
+    description: "Client provider for server snapshots and refreshed cache cookies.",
+  },
+  {
+    category: "Loading",
     entry: "react-motion-gallery/skeleton/cache/base",
     imports: "CachedSkeleton",
     description: "Standalone skeleton wrapper with opt-in snapshot caching.",
@@ -498,6 +547,7 @@ const entryPointTabs = [
     filename: "media-imports.ts",
     code: [
       'import { toMediaItems } from "react-motion-gallery/media";',
+      'import { useImageDecodeReady } from "react-motion-gallery/media/ready";',
       "",
       'import type { MediaItem } from "react-motion-gallery/media";',
     ].join("\n"),
@@ -543,6 +593,9 @@ const entryPointTabs = [
       'import { sliderDots } from "react-motion-gallery/slider/dots";',
       'import { sliderProgress } from "react-motion-gallery/slider/progress";',
       'import { sliderScrollbar } from "react-motion-gallery/slider/scrollbar";',
+      'import { sliderRipple } from "react-motion-gallery/slider/ripple";',
+      'import { sliderAutoPlay } from "react-motion-gallery/slider/auto-play";',
+      'import { sliderAutoScroll } from "react-motion-gallery/slider/auto-scroll";',
       'import { sliderAutoHeight } from "react-motion-gallery/slider/auto-height";',
       'import { sliderLazyLoad } from "react-motion-gallery/slider/lazy-load";',
       'import { sliderParallax } from "react-motion-gallery/slider/parallax";',
@@ -550,6 +603,7 @@ const entryPointTabs = [
       'import { sliderFade } from "react-motion-gallery/slider/fade";',
       'import { sliderCrossfade } from "react-motion-gallery/slider/crossfade";',
       'import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";',
+      'import { sliderLoading } from "react-motion-gallery/slider/loading";',
     ].join("\n"),
   },
   {
@@ -626,8 +680,8 @@ const entryPointTabs = [
       "  resolveEntryLoadingVisualState,",
       "  useEntryDecodeReady,",
       "  useEntryInView,",
-      "  useNormalizedEntriesIntro,",
       "  useNormalizedEntriesLoading,",
+      "  useNormalizedEntriesReveal,",
       '} from "react-motion-gallery/entries";',
       'import { useEntriesReady } from "react-motion-gallery/entries/ready";',
       'import {',
@@ -658,6 +712,8 @@ const entryPointTabs = [
       'import { GridSkeleton } from "react-motion-gallery/skeleton/grid";',
       'import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";',
       'import { MasonrySkeleton as StructuredMasonrySkeleton } from "react-motion-gallery/skeleton/masonry/structured";',
+      'import { parseSkeletonCacheCookie } from "react-motion-gallery/skeleton/cache";',
+      'import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";',
       'import { CachedSkeleton } from "react-motion-gallery/skeleton/cache/base";',
       'import { CachedSliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";',
       'import { CachedGridSkeleton } from "react-motion-gallery/skeleton/cache/grid";',

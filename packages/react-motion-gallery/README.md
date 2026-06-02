@@ -166,6 +166,8 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 
 | Entry point                                              | Main surface                                                                                 |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `react-motion-gallery`                                   | Aggregate root for primary components, helpers, and companion public types                   |
+| `react-motion-gallery/styles.css`                        | Compiled stylesheet required by gallery primitives and controls                              |
 | `react-motion-gallery/media`                             | `toMediaItems`, `MediaItem`, `MediaInput`                                                    |
 | `react-motion-gallery/media/ready`                       | `useImageDecodeReady`                                                                        |
 | `react-motion-gallery/responsive`                        | `BREAKPOINT_MAP` and responsive value types                                                  |
@@ -241,6 +243,8 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/video`                             | `Video` and optional Plyr-backed video types                                                 |
 | `react-motion-gallery/zoomPan`                           | `ZoomPanImage` and zoom/pan types                                                            |
 | `react-motion-gallery/zoomPan/hover`                     | `zoomPanHover`                                                                               |
+
+For a named-export inventory that covers every public subpath, including type-only exports and lower-level helpers, see [`docs/public-api-inventory.md`](./docs/public-api-inventory.md).
 
 Data plugin imports are intentionally split by surface and behavior:
 

@@ -49,4 +49,5 @@ export const css = String.raw`.tile {
   font-size: 0.94rem;
   line-height: 1.5;
   text-wrap: pretty;
-}`;
+}
+`;

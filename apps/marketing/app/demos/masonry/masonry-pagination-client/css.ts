@@ -650,4 +650,5 @@ export const css = String.raw`.shell {
 }
 .placeholderItem {
   pointer-events: none;
-}`;
+}
+`;

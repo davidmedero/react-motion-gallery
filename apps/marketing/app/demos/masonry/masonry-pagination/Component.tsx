@@ -538,7 +538,7 @@ export function MasonryPaginationDemo() {
       waitForMedia: true,
       rootMargin: "0px",
       threshold: 0,
-      timing: { minVisibleMs: 0 },
+      timing: { enterMs: 360, minVisibleMs: 0 },
       keepSkeletonMounted: !retainingPageSizeContent,
       rememberRevealed: true,
       skeleton: retainingPageSizeContent

@@ -555,4 +555,5 @@ export function GridPaginationClientDemo() {
       )}
     </section>
   );
-}`;
+}
+`;

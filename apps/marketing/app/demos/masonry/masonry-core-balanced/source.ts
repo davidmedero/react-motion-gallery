@@ -1,8 +1,8 @@
-import { createCoreMasonrySource } from "../_core/source";
+export const source = `"use client";
 
-export const source = createCoreMasonrySource({
-  componentName: "MasonryCoreBalancedDemo",
-  cssModuleName: "masonry-core-balanced-demo.module.css",
-  placement: "balanced",
-  variant: "balanced",
-});
+import { CoreMasonryDemo } from "../_core/CoreMasonryDemo";
+
+export function MasonryCoreBalancedDemo() {
+  return <CoreMasonryDemo variant="balanced" />;
+}
+`;

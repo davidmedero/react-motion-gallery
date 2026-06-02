@@ -27,6 +27,14 @@ const packageDocs: PackageDoc[] = [
     whenToRead: "Use for the browser-based measured skeleton text manifest and generator workflow.",
   },
   {
+    id: "public-api-inventory",
+    title: "Public API Inventory",
+    uri: "rmg://docs/public-api-inventory",
+    path: repoPath("packages", "react-motion-gallery", "docs", "public-api-inventory.md"),
+    whenToRead:
+      "Use as the exhaustive inventory of package export paths and named public exports.",
+  },
+  {
     id: "entries-data-plugins",
     title: "Entries Data Plugins",
     uri: "rmg://docs/entries-data-plugins",

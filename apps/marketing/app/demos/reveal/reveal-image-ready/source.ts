@@ -36,7 +36,7 @@ function ImageReadyStage(props: { runId: number }) {
   const image = IMAGES[props.runId % IMAGES.length]!;
   const src = image.src + "?revealRun=" + props.runId;
   const decoded = useImageDecodeReady({ src, timeoutMs: 7000 });
-  const reveal = useReveal<HTMLElement>({
+  const { ref: revealRef, revealProps } = useReveal<HTMLElement>({
     ready: decoded.ready,
     transform: { y: 18, scale: 0.97 },
     durationMs: { opacity: 900, transform: 720 },
@@ -49,10 +49,10 @@ function ImageReadyStage(props: { runId: number }) {
         {decoded.ready ? "Decoded" : "Preparing image"}
       </span>
       <figure
-        {...reveal.revealProps}
-        ref={reveal.ref}
-        className={\`\${reveal.revealProps.className} \${styles.figure}\`}
-        style={reveal.revealProps.style}
+        {...revealProps}
+        ref={revealRef}
+        className={\`\${revealProps.className} \${styles.figure}\`}
+        style={revealProps.style}
       >
         <img src={src} alt={image.alt} loading="eager" decoding="async" />
         <figcaption>

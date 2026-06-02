@@ -470,6 +470,9 @@ export function GridPaginationDemo() {
       animate: true,
       waitForMedia: true,
       force: isInitialBusy ? true : undefined,
+      timing: {
+        enterMs: 360
+      },
       rootMargin: "0px",
       threshold: 0,
       keepSkeletonMounted: !retainingPageSizeContent,

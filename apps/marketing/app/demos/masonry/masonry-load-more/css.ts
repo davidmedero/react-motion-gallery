@@ -66,6 +66,8 @@ export const css = String.raw`.shell {
     border-color 160ms ease,
     background-color 160ms ease,
     box-shadow 160ms ease;
+  position: relative;
+  z-index: 1;
 }
 .primaryButton:hover:not(:disabled) {
   transform: translateY(-1px);

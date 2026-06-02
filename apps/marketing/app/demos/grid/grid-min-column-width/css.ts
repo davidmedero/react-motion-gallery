@@ -34,4 +34,5 @@ export const css = String.raw`.gridCard {
   color: rgba(11, 18, 32, 0.72);
   font-size: 0.92rem;
   line-height: 1.5;
-}`;
+}
+`;

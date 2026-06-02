@@ -1,8 +1,8 @@
-import { createCoreMasonrySource } from "../_core/source";
+export const source = `"use client";
 
-export const source = createCoreMasonrySource({
-  componentName: "MasonryCoreSpansDemo",
-  cssModuleName: "masonry-core-spans-demo.module.css",
-  placement: "balanced",
-  variant: "spans",
-});
+import { CoreMasonryDemo } from "../_core/CoreMasonryDemo";
+
+export function MasonryCoreSpansDemo() {
+  return <CoreMasonryDemo variant="spans" />;
+}
+`;

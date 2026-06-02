@@ -598,4 +598,5 @@ export function MasonryPaginationClientDemo() {
       )}
     </section>
   );
-}`;
+}
+`;

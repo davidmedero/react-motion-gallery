@@ -367,7 +367,7 @@ function MasonrySpansCard(props: {
             <button
               type="button"
               className={styles.fullscreen_trigger}
-              aria-label="Open fullscreen"
+              aria-label={\`Open \${item.title} fullscreen\`}
               data-rmg-fullscreen-trigger
             />
           </>

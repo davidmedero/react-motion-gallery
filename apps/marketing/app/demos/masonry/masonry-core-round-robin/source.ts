@@ -1,8 +1,8 @@
-import { createCoreMasonrySource } from "../_core/source";
+export const source = `"use client";
 
-export const source = createCoreMasonrySource({
-  componentName: "MasonryCoreRoundRobinDemo",
-  cssModuleName: "masonry-core-round-robin-demo.module.css",
-  placement: "roundRobin",
-  variant: "roundRobin",
-});
+import { CoreMasonryDemo } from "../_core/CoreMasonryDemo";
+
+export function MasonryCoreRoundRobinDemo() {
+  return <CoreMasonryDemo variant="roundRobin" />;
+}
+`;

@@ -111,4 +111,5 @@ export const css = String.raw`.masonryBalancedCard {
   color: rgba(11, 18, 32, 0.72);
   font-size: 14.72px;
   line-height: 1.55;
-}`;
+}
+`;

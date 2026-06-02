@@ -870,4 +870,5 @@ export const css = String.raw`.shell {
   .overlay {
     padding: 18px;
   }
-}`;
+}
+`;

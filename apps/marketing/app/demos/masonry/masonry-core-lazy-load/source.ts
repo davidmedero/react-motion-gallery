@@ -1,8 +1,8 @@
-import { createCoreMasonrySource } from "../_core/source";
+export const source = `"use client";
 
-export const source = createCoreMasonrySource({
-  componentName: "MasonryCoreLazyLoadDemo",
-  cssModuleName: "masonry-core-lazy-load-demo.module.css",
-  placement: "balanced",
-  variant: "lazyLoad",
-});
+import { CoreMasonryDemo } from "../_core/CoreMasonryDemo";
+
+export function MasonryCoreLazyLoadDemo() {
+  return <CoreMasonryDemo variant="lazyLoad" />;
+}
+`;

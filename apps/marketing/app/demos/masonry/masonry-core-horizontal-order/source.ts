@@ -1,8 +1,8 @@
-import { createCoreMasonrySource } from "../_core/source";
+export const source = `"use client";
 
-export const source = createCoreMasonrySource({
-  componentName: "MasonryCoreHorizontalOrderDemo",
-  cssModuleName: "masonry-core-horizontal-order-demo.module.css",
-  placement: "horizontalOrder",
-  variant: "horizontalOrder",
-});
+import { CoreMasonryDemo } from "../_core/CoreMasonryDemo";
+
+export function MasonryCoreHorizontalOrderDemo() {
+  return <CoreMasonryDemo variant="horizontalOrder" />;
+}
+`;
