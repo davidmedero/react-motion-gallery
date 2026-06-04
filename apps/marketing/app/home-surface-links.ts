@@ -1,4 +1,5 @@
 import {
+  DatabaseZap,
   LayoutDashboard,
   Film,
   Grid3X3,
@@ -47,6 +48,13 @@ export const HOME_SURFACE_LINKS = [
     href: "/demos?demo=entries-masonry",
     Icon: Rows3,
     tone: "blue",
+  },
+  {
+    title: "Data patterns",
+    description: "Server and client pagination, load more, infinite scroll, and virtualization for data-backed Grid, Masonry, and Entries surfaces.",
+    href: "/demos?demo=entries-pagination",
+    Icon: DatabaseZap,
+    tone: "gold",
   },
   {
     title: "Fullscreen",
