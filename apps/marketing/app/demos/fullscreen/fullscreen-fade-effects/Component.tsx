@@ -7,7 +7,7 @@ import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { FullscreenThumbnailSlider } from "react-motion-gallery/fullscreenThumbnails";
-import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenCrossfade } from "react-motion-gallery/fullscreen/crossfade";
@@ -16,7 +16,6 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import styles from "./fullscreen-fade-effects-demo.module.css";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 const CROSSFADE_DURATION_MS = 560;
 const CROSSFADE_EASING = "cubic-bezier(.22,1,.36,1)";
@@ -118,7 +117,6 @@ export function FullscreenFadeEffectsDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
-        cache={demoSkeletonCache("fullscreen-fade-effects")}
         layout={{
           visibleCount: 3,
           mode: "peek",

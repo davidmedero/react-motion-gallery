@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.81",
+  "version": "2.0.82",
   "description": "React gallery primitives for sliders, carousels, grid, masonry, fullscreen lightbox, entries, video, zoom/pan/pinch, skeleton loading and reveal animations",
   "keywords": [
     "react",
@@ -260,10 +260,6 @@
     "./skeleton/cache/provider": {
       "types": "./dist/skeleton-cache-provider.d.mts",
       "import": "./dist/skeleton-cache-provider.mjs"
-    },
-    "./skeleton/cache/slider": {
-      "types": "./dist/skeleton-cache-slider.d.mts",
-      "import": "./dist/skeleton-cache-slider.mjs"
     },
     "./skeleton/slider": {
       "types": "./dist/skeleton-slider.d.mts",

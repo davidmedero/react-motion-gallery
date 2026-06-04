@@ -4,7 +4,6 @@ import { describe, expect, test } from "vitest";
 import * as skeletonBaseEntry from "../../skeleton-base";
 import * as skeletonCacheEntry from "../../skeleton-cache";
 import * as skeletonCacheProviderEntry from "../../skeleton-cache-provider";
-import * as skeletonCacheSliderEntry from "../../skeleton-cache-slider";
 import * as skeletonGridEntry from "../../skeleton-grid";
 import * as skeletonMasonryEntry from "../../skeleton-masonry";
 import * as skeletonSliderEntry from "../../skeleton-slider";
@@ -29,7 +28,7 @@ describe("skeleton public entries", () => {
 
   test("exports gallery-specific skeleton subpaths", () => {
     expect(packageJson.exports["./skeleton/slider"]).toBeDefined();
-    expect(packageJson.exports["./skeleton/cache/slider"]).toBeDefined();
+    expect(packageJson.exports["./skeleton/cache/slider"]).toBeUndefined();
     expect(packageJson.exports["./skeleton/slider/restore"]).toBeDefined();
     expect(packageJson.exports["./skeleton/grid"]).toBeDefined();
     expect(packageJson.exports["./skeleton/cache/grid"]).toBeUndefined();
@@ -41,10 +40,6 @@ describe("skeleton public entries", () => {
     expect(skeletonSliderEntry.SliderSkeleton).toBeTypeOf("function");
     expect(skeletonSliderEntry.Skeleton).toBe(skeletonSliderEntry.SliderSkeleton);
     expect(skeletonSliderEntry.default).toBe(skeletonSliderEntry.SliderSkeleton);
-    expect(skeletonCacheSliderEntry.CachedSliderSkeleton).toBeTypeOf("function");
-    expect(skeletonCacheSliderEntry.SliderSkeleton).toBe(
-      skeletonCacheSliderEntry.CachedSliderSkeleton
-    );
     expect(skeletonSliderRestoreEntry.RestoredSliderSkeleton).toBeTypeOf("function");
     expect(skeletonSliderRestoreEntry.SliderSkeleton).toBe(
       skeletonSliderRestoreEntry.RestoredSliderSkeleton

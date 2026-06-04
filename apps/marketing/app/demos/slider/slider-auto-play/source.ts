@@ -7,7 +7,7 @@ import { toMediaItems } from "react-motion-gallery/media";
 import { Slider, type SliderHandle } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { sliderAutoPlay } from "react-motion-gallery/slider/auto-play";
@@ -16,7 +16,6 @@ import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-auto-play-demo.module.css";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 const AUTO_PLAY_SPEED_MS = 2200;
 
@@ -136,7 +135,6 @@ export function SliderAutoPlayDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
-        cache={demoSkeletonCache("slider-auto-play")}
         layout={{
           visibleCount: 3,
           mode: "peek",

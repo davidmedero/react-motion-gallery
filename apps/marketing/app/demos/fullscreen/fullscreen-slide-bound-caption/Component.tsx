@@ -6,13 +6,12 @@ import { toMediaItems } from "react-motion-gallery/media";
 import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenCaptions } from "react-motion-gallery/fullscreen/captions";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import styles from "./fullscreen-slide-bound-caption-demo.module.css";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 const SLIDES = [
   {
@@ -112,7 +111,6 @@ export function FullscreenSlideBoundCaptionDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
-        cache={demoSkeletonCache("fullscreen-slide-bound-caption")}
         layout={{
           visibleCount: 2,
           mode: "peek",

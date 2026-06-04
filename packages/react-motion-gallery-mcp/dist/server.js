@@ -470,18 +470,25 @@ var packageDocs = [
     whenToRead: "Use for the browser-based measured skeleton text manifest and generator workflow."
   },
   {
+    id: "public-api-inventory",
+    title: "Public API Inventory",
+    uri: "rmg://docs/public-api-inventory",
+    path: repoPath("packages", "react-motion-gallery", "docs", "public-api-inventory.md"),
+    whenToRead: "Use as the exhaustive inventory of package export paths and named public exports."
+  },
+  {
     id: "entries-data-plugins",
     title: "Entries Data Plugins",
     uri: "rmg://docs/entries-data-plugins",
     path: repoPath("packages", "react-motion-gallery", "docs", "entries-data-plugins.md"),
-    whenToRead: "Use for Entries pagination, load-more, infinite scroll, virtualization, URL sync, and data-window behavior."
+    whenToRead: "Use for Entries pagination, items-per-page controls, session storage, load-more, infinite scroll, virtualization, URL sync, and data-window behavior."
   },
   {
     id: "grid-masonry-data-plugins",
     title: "Grid And Masonry Data Plugins",
     uri: "rmg://docs/grid-masonry-data-plugins",
     path: repoPath("packages", "react-motion-gallery", "docs", "grid-masonry-data-plugins.md"),
-    whenToRead: "Use for Grid and Masonry pagination, load-more, infinite scroll, virtualization, and child-window behavior."
+    whenToRead: "Use for Grid and Masonry pagination, items-per-page controls, session storage, load-more, infinite scroll, virtualization, and child-window behavior."
   },
   {
     id: "skeleton-text-codex-prompt",
@@ -545,7 +552,7 @@ function agentBriefGuide() {
     "",
     "Browser-measured skeleton text applies to any real rendered DOM text: sliders, grids, masonry, entries, thumbnails, flex layouts, app shells, cards, and custom UI. Use flat `targets` by default. Add specialized `slider`, `masonry`, or `entries` manifest metadata only when those layout modes need readiness or compensation behavior.",
     "",
-    "The skeleton cookie snapshot cache is opt-in. Use `cache={{ key, routeKey }}` on `Skeleton`, `SliderSkeleton`, or `MasonrySkeleton`, use `Grid.loading.cache` for Grid, and use `entries.loading.cache` for Entries. In SSR apps, parse cookies with `react-motion-gallery/skeleton/cache` on the server, then pass snapshots through `SkeletonCacheProvider` from `react-motion-gallery/skeleton/cache/provider`."
+    "The skeleton cookie snapshot cache is opt-in for slider skeletons. Import `SliderSkeleton` from `react-motion-gallery/skeleton/slider/restore` and pass `cache={{ key, routeKey }}`. In SSR apps, parse cookies with `react-motion-gallery/skeleton/cache` on the server, then pass snapshots through `SkeletonCacheProvider` from `react-motion-gallery/skeleton/cache/provider`."
   ].join("\n");
 }
 function layoutSelectionGuide() {
@@ -665,8 +672,8 @@ function skeletonCacheGuide() {
     "",
     "- Import server-safe helpers from `react-motion-gallery/skeleton/cache`.",
     "- Import the client provider from `react-motion-gallery/skeleton/cache/provider`.",
-    "- Pass `cache={{ key, routeKey, ttlMs?, debounceMs?, cookie? }}` to `Skeleton`, `SliderSkeleton`, and structured `MasonrySkeleton` from `react-motion-gallery/skeleton/cache/masonry/structured`.",
-    "- For Grid, pass `loading.cache`; for Entries, pass `entries.loading.cache`.",
+    "- Import cache-capable slider skeletons from `react-motion-gallery/skeleton/slider/restore`.",
+    "- Pass `cache={{ key, routeKey, ttlMs?, debounceMs?, cookie? }}` to `SliderSkeleton` from that restore subpath.",
     "- Generated skeleton text sidecars emit `textId`; for hand-authored skeleton text, add `textId` to the skeleton `text` node and add matching `data-skeleton-text-id` to the real DOM text.",
     "",
     "Next.js pattern:",
@@ -689,15 +696,16 @@ function skeletonCacheGuide() {
     "```tsx",
     '"use client";',
     'import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";',
+    'import { SliderSkeleton } from "react-motion-gallery/skeleton/slider/restore";',
     "",
     "<SkeletonCacheProvider snapshots={skeletonCacheSnapshots}>",
-    "  <MasonrySkeleton",
-    '    cache={{ key: "portfolio-masonry", routeKey: "/gallery" }}',
-    "    layout={portfolioSkeleton}",
+    "  <SliderSkeleton",
+    '    cache={{ key: "portfolio-slider", routeKey: "/gallery" }}',
+    "    layout={portfolioSliderSkeleton}",
     "    ready={ready}",
     "  >",
     "    {content}",
-    "  </MasonrySkeleton>",
+    "  </SliderSkeleton>",
     "</SkeletonCacheProvider>",
     "```",
     "",

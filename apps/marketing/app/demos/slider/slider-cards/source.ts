@@ -7,12 +7,12 @@ import { toMediaItems } from "react-motion-gallery/media";
 import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
 import type {
   SkeletonNode,
   SliderSkeletonSlot,
   SliderSkeletonSpec,
-} from "react-motion-gallery/skeleton/cache/slider";
+} from "react-motion-gallery/skeleton/slider";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { sliderDots } from "react-motion-gallery/slider/dots";
@@ -29,7 +29,6 @@ import {
   cardTwoTitle,
   sliderCardsRowHeightCompensation,
 } from "./slider-cards.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 const PRODUCTS = [
   {
@@ -340,7 +339,6 @@ export function SliderCardsDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
-        cache={demoSkeletonCache("slider-cards")}
         layout={SLIDER_CARDS_SKELETON}
         ready={sliderReady}
         timing={{

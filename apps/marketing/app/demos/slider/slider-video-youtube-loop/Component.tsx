@@ -7,7 +7,7 @@ import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
-import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
@@ -16,7 +16,6 @@ import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-video-youtube-loop-demo.module.css";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 export function SliderVideoYoutubeLoopDemo() {
   const URLS = [
@@ -129,7 +128,6 @@ export function SliderVideoYoutubeLoopDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={MEDIA}>
       <SliderSkeleton
-        cache={demoSkeletonCache("slider-video-youtube-loop")}
         layout={{
           visibleCount: 3,
           mode: "peek",

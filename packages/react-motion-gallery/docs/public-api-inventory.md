@@ -328,12 +328,6 @@ Source entry: `src/skeleton-cache-provider.ts`.
 
 `SkeletonCacheProvider`, `SkeletonCacheProviderProps`
 
-## `react-motion-gallery/skeleton/cache/slider`
-
-Source entry: `src/skeleton-cache-slider.ts`.
-
-`CachedSliderSkeleton`, `CachedSliderSkeletonProps`, `default`, `Skeleton`, `SkeletonCacheOptions`, `SkeletonCacheSnapshot`, `SkeletonNode`, `SkeletonSliderLayout`, `SliderSkeleton`, `SliderSkeletonNode`, `SliderSkeletonSlot`, `SliderSkeletonSpec`
-
 ## `react-motion-gallery/skeleton/slider`
 
 Source entry: `src/skeleton-slider.ts`.

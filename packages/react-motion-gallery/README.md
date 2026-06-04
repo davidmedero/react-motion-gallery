@@ -42,8 +42,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `masonry/virtualization` | 252.0B |
 | `Skeleton base` | 9.1kB |
 | `skeleton/slider` | 14.7kB |
-| `skeleton/cache/slider` | 19.5kB |
-| `skeleton/slider/restore` | 25.5kB |
+| `skeleton/slider/restore` | 25.3kB |
 | `skeleton/grid` | 11.3kB |
 | `skeleton/masonry` | 4.8kB |
 | `Slider core` | 19.0kB |
@@ -218,8 +217,7 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/skeleton/masonry`                  | Lightweight `MasonrySkeleton` for dimensioned placeholders                                   |
 | `react-motion-gallery/skeleton/cache`                    | Server-safe skeleton cookie cache helpers and types                                          |
 | `react-motion-gallery/skeleton/cache/provider`           | Client `SkeletonCacheProvider` for SSR snapshots and client cookie refresh                   |
-| `react-motion-gallery/skeleton/cache/slider`             | `CachedSliderSkeleton` with `cache`                                                          |
-| `react-motion-gallery/skeleton/slider/restore`           | `RestoredSliderSkeleton` with `restore` and optional `cache`                                 |
+| `react-motion-gallery/skeleton/slider/restore`           | `SliderSkeleton` with `cache`, plus `RestoredSliderSkeleton` for optional restore            |
 | `react-motion-gallery/fullscreen`                        | `useFullscreenController` and fullscreen types                                               |
 | `react-motion-gallery/fullscreen/slider`                 | `fullscreenSlider`                                                                           |
 | `react-motion-gallery/fullscreen/controls`               | `fullscreenControls`                                                                         |
@@ -499,7 +497,7 @@ export function LoadingShell({ ready, children }: { ready: boolean; children: Re
 
 The wrapper timing model matches the gallery loading layers: content begins fading in as soon as the skeleton exit starts; it does not wait for the skeleton to unmount.
 
-Default skeleton imports are cache-free. The cache-backed public skeleton surface retained in this release is `CachedSliderSkeleton` from `react-motion-gallery/skeleton/cache/slider`; use `RestoredSliderSkeleton` from `react-motion-gallery/skeleton/slider/restore` when slider reload/back-forward restore is needed. Non-slider gallery loading surfaces no longer accept `loading.cache`.
+Default skeleton imports are cache-free. The cache-backed public skeleton surface retained in this release is `SliderSkeleton` from `react-motion-gallery/skeleton/slider/restore`; use its `restore` option, or the `RestoredSliderSkeleton` alias, when slider reload/back-forward restore is needed. Non-slider gallery loading surfaces no longer accept `loading.cache`.
 
 `SkeletonFrame` is also exported from `react-motion-gallery/skeleton/base` for lower-level composition when you already have a rendered skeleton node and want the shared wrapper timing/layering behavior.
 
@@ -538,7 +536,7 @@ Use `responsiveBy: "container"` when text wrapping follows the card or cell widt
 
 ### Slider skeleton cookie snapshot cache
 
-The skeleton cookie snapshot cache remains available for slider skeletons. Use `CachedSliderSkeleton` from `react-motion-gallery/skeleton/cache/slider` when a slider skeleton should read and write snapshot cookies, or `RestoredSliderSkeleton` from `react-motion-gallery/skeleton/slider/restore` when reload/back-forward restore is needed. Non-slider gallery loading surfaces no longer accept `loading.cache`, and the base/grid/masonry/entries cache wrapper subpaths have been removed.
+The skeleton cookie snapshot cache remains available for slider skeletons. Use `SliderSkeleton` from `react-motion-gallery/skeleton/slider/restore` when a slider skeleton should read and write snapshot cookies, and add `restore` or use the `RestoredSliderSkeleton` alias when reload/back-forward restore is needed. Non-slider gallery loading surfaces no longer accept `loading.cache`, and the base/grid/masonry/entries cache wrapper subpaths have been removed.
 
 In SSR frameworks, read cache cookies on the server with `react-motion-gallery/skeleton/cache`, pass snapshots through `SkeletonCacheProvider`, and opt slider skeletons in with a stable `cache={{ key, routeKey }}` object.
 

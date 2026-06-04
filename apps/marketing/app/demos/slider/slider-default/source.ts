@@ -6,7 +6,7 @@ import { toMediaItems } from "react-motion-gallery/media";
 import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
-import { SliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";
+import { SliderSkeleton } from "react-motion-gallery/skeleton/slider";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
@@ -14,7 +14,6 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-default-demo.module.css";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 const URLS = [
   "https://picsum.photos/id/10/1600/900",
@@ -64,7 +63,6 @@ export function SliderDefaultDemo() {
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>
       <SliderSkeleton
-        cache={demoSkeletonCache("slider-default")}
         layout={{
           visibleCount: 2,
           mode: "peek",

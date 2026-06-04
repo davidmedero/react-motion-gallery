@@ -54,7 +54,6 @@ export default defineConfig({
     "src/rating-stars.ts",
     "src/skeleton-base.ts",
     "src/skeleton-cache.ts",
-    "src/skeleton-cache-slider.ts",
     "src/skeleton-cache-provider.ts",
     "src/skeleton-slider.ts",
     "src/skeleton-slider-restore.ts",

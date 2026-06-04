@@ -374,15 +374,9 @@ const entryPoints: EntryPoint[] = [
   },
   {
     category: "Loading",
-    entry: "react-motion-gallery/skeleton/cache/slider",
-    imports: "CachedSliderSkeleton",
-    description: "Slider skeleton wrapper with opt-in snapshot caching.",
-  },
-  {
-    category: "Loading",
     entry: "react-motion-gallery/skeleton/slider/restore",
-    imports: "RestoredSliderSkeleton",
-    description: "Slider skeleton wrapper with reload and back/forward restore.",
+    imports: "SliderSkeleton, RestoredSliderSkeleton",
+    description: "Cache-capable slider skeleton wrapper with optional reload and back/forward restore.",
   },
   {
     category: "Fullscreen",
@@ -681,8 +675,7 @@ const entryPointTabs = [
       'import { MasonrySkeleton } from "react-motion-gallery/skeleton/masonry";',
       'import { parseSkeletonCacheCookie } from "react-motion-gallery/skeleton/cache";',
       'import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";',
-      'import { CachedSliderSkeleton } from "react-motion-gallery/skeleton/cache/slider";',
-      'import { RestoredSliderSkeleton } from "react-motion-gallery/skeleton/slider/restore";',
+      'import { SliderSkeleton, RestoredSliderSkeleton } from "react-motion-gallery/skeleton/slider/restore";',
       "",
       'import type { SkeletonNode } from "react-motion-gallery/skeleton/base";',
     ].join("\n"),

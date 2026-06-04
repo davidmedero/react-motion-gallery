@@ -155,11 +155,6 @@ const REPORTED_SURFACES = [
     entry: "dist/skeleton-slider.mjs",
   },
   {
-    label: "skeleton/cache/slider",
-    exportName: "CachedSliderSkeleton",
-    entry: "dist/skeleton-cache-slider.mjs",
-  },
-  {
     label: "skeleton/slider/restore",
     exportName: "RestoredSliderSkeleton",
     entry: "dist/skeleton-slider-restore.mjs",
