@@ -1,6 +1,6 @@
-import { e as EntriesPaginationOptions, f as EntriesPlugin } from './responsive-Bw0ub6Hv.mjs';
+import { e as EntriesPaginationOptions, f as EntriesPlugin } from './responsive-BgOmwHgG.mjs';
 import * as React from 'react';
-import { U as UseDataPaginationOptions, D as DataPaginationController, a as DataItemsPerPageOption, b as DataPageControlItem, c as DataPageItemsOptions, d as DataPageRangeItem, e as DataPageRangeOptions, f as DataPaginationControlsProps, g as DataPaginationRippleOptions, h as DataPaginationRippleProp, i as DataPaginationSessionStorageOptions, j as DataPaginationUrlSyncOptions } from './dataPlugins-DzaWlM6f.mjs';
+import { D as DataPaginationControlsProps, a as DataPageItemsOptions, b as DataPageControlItem, c as DataPageRangeOptions, d as DataPageRangeItem, U as UseDataPaginationOptions, e as DataPaginationController, f as DataItemsPerPageOption, g as DataPaginationRippleOptions, h as DataPaginationRippleProp, i as DataPaginationSessionStorageOptions, j as DataPaginationUrlSyncOptions } from './dataPlugins-C91mlyu6.mjs';
 import './types-uhDRb0mo.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 import './force-C5m1QpdF.mjs';

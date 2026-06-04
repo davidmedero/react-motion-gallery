@@ -1,4 +1,4 @@
-import { c as EntriesLoadMoreOptions, f as EntriesPlugin } from './responsive-Bw0ub6Hv.mjs';
+import { c as EntriesLoadMoreOptions, f as EntriesPlugin } from './responsive-BgOmwHgG.mjs';
 import * as React from 'react';
 import './types-uhDRb0mo.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';

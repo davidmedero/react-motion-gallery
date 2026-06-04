@@ -18,13 +18,14 @@ describe("Masonry reveal CSS", () => {
     expect(css).not.toContain("masonrySkeleton");
   });
 
-  test("keeps measured masonry CSS in the global style merge", () => {
+  test("keeps public split skeleton CSS in the global style merge", () => {
     const script = readFileSync(
       new URL("../../../scripts/merge_styles.mjs", import.meta.url),
       "utf8"
     );
 
-    expect(script).toContain('"masonry-measured.css"');
-    expect(script).toContain('"skeleton-masonry-structured.css"');
+    expect(script).not.toContain('"masonry-measured.css"');
+    expect(script).not.toContain('"skeleton-masonry-structured.css"');
+    expect(script).toContain('"skeleton-masonry.css"');
   });
 });

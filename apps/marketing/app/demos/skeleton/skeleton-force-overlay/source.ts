@@ -4,10 +4,9 @@ import { useSearchParams } from "next/navigation";
 import {
   Skeleton,
   type SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/base";
+} from "react-motion-gallery/skeleton/base";
 import styles from "./skeleton-force-overlay-demo.module.css";
 import { skeletonForceOverlaySkeletonText } from "./skeleton-force-overlay.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   detail: string;
@@ -306,7 +305,6 @@ export function SkeletonForceOverlayDemo() {
   return (
     <div className={styles.shell}>
       <Skeleton
-        cache={demoSkeletonCache("skeleton-force-overlay")}
         layout={FORCE_OVERLAY_LAYOUT}
         ready={true}
         enabled={!showMeasuredContent}

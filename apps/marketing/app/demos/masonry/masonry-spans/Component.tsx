@@ -6,20 +6,20 @@ import { toMediaItems } from "react-motion-gallery/media";
 import {
   Masonry,
   type ResponsiveMasonrySpan,
-} from "react-motion-gallery/masonry/measured";
+} from "react-motion-gallery/masonry";
+import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
-import type {
-  MasonrySkeletonSpec,
-  SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/masonry/structured";
-import type { SkeletonCacheOptions } from "react-motion-gallery/skeleton/cache";
+import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
+import {
+  createMasonryTextWrapSkeletonLayout,
+  useMasonryTextWrapLayout,
+} from "react-motion-gallery/masonry/text-wrap";
 import styles from "./masonry-spans-demo.module.css";
 import { masonrySpansSkeletonText } from "./masonry-spans.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -40,10 +40,6 @@ type GeneratedSkeletonTextEntry = {
   badge: GeneratedSkeletonTextState;
   title: GeneratedSkeletonTextState;
   body: GeneratedSkeletonTextState;
-};
-
-type MasonrySpansDemoProps = {
-  cache?: SkeletonCacheOptions;
 };
 
 const SPANS_CARD_METRICS = {
@@ -171,6 +167,21 @@ const ITEMS: DemoItem[] = [
 const MASONRY_SPANS_COLUMNS = { 0: 1, 760: 2, 1160: 4 };
 const MASONRY_SPANS_GAP = { 0: 12, 1160: 18 };
 
+const SPANS_LIGHT_CARD_METRICS = {
+  cardPaddingBlockPx: 24,
+  cardPaddingInlinePx: 20,
+  cardGapPx: SPANS_CARD_METRICS.cardGapPx,
+  metaGapPx: SPANS_CARD_METRICS.metaGapPx,
+  metaPaddingInlinePx: 8,
+} as const;
+
+const SPANS_SKELETON_WRAP_STYLE = {
+  padding: SPANS_CARD_METRICS.cardPadding,
+  borderRadius: 22,
+  backgroundColor: "rgba(255, 255, 255, 0.96)",
+  boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+};
+
 const MASONRY_SPANS_TEXT_IDS: SkeletonTextIds[] = [
   {
     badge: "masonrySpansItem01Badge",
@@ -279,30 +290,27 @@ function createSpansSkeletonItem(args: {
   };
 }
 
-const SPANS_SKELETON: MasonrySkeletonSpec = {
-  radius: 20,
-  layout: {
-    kind: "masonry",
-    itemWrapStyle: {
-      padding: SPANS_CARD_METRICS.cardPadding,
-      borderRadius: 22,
-      backgroundColor: "rgba(255, 255, 255, 0.96)",
-      boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
-    },
-    item: createSpansSkeletonItem({
-      item: ITEMS[0]!,
-      skeletonText: MASONRY_SPANS_SKELETON_TEXT[0]!,
-    }),
-    slots: ITEMS.map((item, index) => ({
-      span: item.span,
-      item: createSpansSkeletonItem({
-        item,
-        skeletonText:
-          MASONRY_SPANS_SKELETON_TEXT[index] ?? MASONRY_SPANS_SKELETON_TEXT[0]!,
-      }),
-    })),
-  },
-};
+const SPANS_SKELETON_SLOTS = ITEMS.map((item, index) => ({
+  span: item.span,
+  item: createSpansSkeletonItem({
+    item,
+    skeletonText:
+      MASONRY_SPANS_SKELETON_TEXT[index] ?? MASONRY_SPANS_SKELETON_TEXT[0]!,
+  }),
+}));
+
+function renderSpansSkeleton(index: number) {
+  const slot = SPANS_SKELETON_SLOTS[index] ?? SPANS_SKELETON_SLOTS[0]!;
+
+  return (
+    <Skeleton
+      layout={createMasonryTextWrapSkeletonLayout({
+        item: slot.item,
+        itemWrapStyle: SPANS_SKELETON_WRAP_STYLE,
+      })}
+    />
+  );
+}
 
 const SPANS_VIDEO_OPTIONS = {
   autoplay: true,
@@ -412,8 +420,12 @@ function MasonrySpansFullscreenAddon() {
   return <>{fullscreenNode}</>;
 }
 
-export function MasonrySpansDemo(props: MasonrySpansDemoProps = {}) {
-  const skeletonCache = props.cache ?? demoSkeletonCache("masonry-spans");
+export function MasonrySpansDemo() {
+  const masonryLayout = useMasonryTextWrapLayout({
+    columns: MASONRY_SPANS_COLUMNS,
+    gap: MASONRY_SPANS_GAP,
+    metrics: SPANS_LIGHT_CARD_METRICS,
+  });
   const fullscreenMedia = toMediaItems(
     ITEMS.map((item) =>
       item.kind === "image"
@@ -429,31 +441,47 @@ export function MasonrySpansDemo(props: MasonrySpansDemoProps = {}) {
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <Masonry
+        rootRef={masonryLayout.rootRef}
         columns={MASONRY_SPANS_COLUMNS}
         gap={MASONRY_SPANS_GAP}
         placement="balanced"
+        plugins={[masonryFullscreen()]}
         loading={{
-          cache: skeletonCache,
           count: ITEMS.length,
-          skeleton: SPANS_SKELETON,
+          skeleton: ({ index }) => renderSpansSkeleton(index),
           timing: { exitMs: 1200 },
         }}
       >
-        {ITEMS.map((item) => (
-          <Masonry.Item
-            key={item.kind === "image" ? item.src : item.poster}
-            span={item.span}
-            revealKey={item.kind === "image" ? item.src : item.poster}
-          >
-            <MasonrySpansCard
-              item={item}
-              skeletonTextIds={
-                MASONRY_SPANS_TEXT_IDS[item.displayIndex - 1] ??
-                MASONRY_SPANS_TEXT_IDS[0]!
-              }
-            />
-          </Masonry.Item>
-        ))}
+        {ITEMS.map((item) => {
+          const skeletonText =
+            MASONRY_SPANS_SKELETON_TEXT[item.displayIndex - 1] ??
+            MASONRY_SPANS_SKELETON_TEXT[0]!;
+          const geometry = masonryLayout.getItemGeometry({
+            ratio: item.ratio,
+            span: item.span,
+            skeletonText,
+          });
+          const key = item.kind === "image" ? item.src : (item.poster ?? item.src);
+
+          return (
+            <Masonry.Item
+              key={key}
+              span={item.span}
+              revealKey={key}
+              width={geometry.width}
+              height={geometry.height}
+              heightOffsetPx={geometry.heightOffsetPx}
+            >
+              <MasonrySpansCard
+                item={item}
+                skeletonTextIds={
+                  MASONRY_SPANS_TEXT_IDS[item.displayIndex - 1] ??
+                  MASONRY_SPANS_TEXT_IDS[0]!
+                }
+              />
+            </Masonry.Item>
+          );
+        })}
       </Masonry>
       <MasonrySpansFullscreenAddon />
     </GalleryCore>

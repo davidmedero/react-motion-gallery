@@ -375,6 +375,7 @@ function insetForViewportRect(rect: DOMRect, vw: number, vh: number) {
 
 function createViewportClipper(startInset: string, zIndex: number) {
   const clipper = document.createElement("div");
+  clipper.setAttribute("data-rmg-fs-close-clipper", "true");
   Object.assign(clipper.style, {
     position: "fixed",
     inset: "0",
@@ -1902,7 +1903,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       const overflowRects = findOverflowClipAncestorRectsFromEl(args.destImg ?? null, 2);
       const parentOverflowRect = overflowRects[0] ?? null;
       const grandparentOverflowRect = overflowRects[1] ?? null;
-      const closeMediaZ = computedBaseZ + 1;
+      const closeLayerRoot = modalRef.current;
+      const closeMediaZ = closeLayerRoot ? 1 : computedBaseZ + 1;
 
       const vw = document.documentElement.clientWidth;
       const vh = window.innerHeight;
@@ -1965,7 +1967,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
       const outermostClipper = grandparentClipper ?? parentClipper ?? imageClipper;
 
-      document.body.appendChild(outermostClipper);
+      (closeLayerRoot ?? document.body).appendChild(outermostClipper);
 
       movingEl.style.transform =
         `translate3d(${startT.cx}px, ${startT.cy}px, 0)` +

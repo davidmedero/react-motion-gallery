@@ -3,19 +3,20 @@
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
-import { Masonry } from "react-motion-gallery/masonry/measured";
+import { Masonry } from "react-motion-gallery/masonry";
+import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
-import type {
-  MasonrySkeletonSpec,
-  SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/masonry/structured";
+import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
+import {
+  createMasonryTextWrapSkeletonLayout,
+  useMasonryTextWrapLayout,
+} from "react-motion-gallery/masonry/text-wrap";
 import styles from "./masonry-balanced-demo.module.css";
 import { masonryBalancedSkeletonText } from "./masonry-balanced.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -43,6 +44,24 @@ const CARD_MEDIA_RATIOS = {
   medium: "4 / 5",
   large: "3 / 5",
 } as const;
+
+const MASONRY_BALANCED_COLUMNS = { 0: 1, 720: 2, 1140: 3 };
+const MASONRY_BALANCED_GAP = { 0: 12, 1140: 18 };
+
+const BALANCED_CARD_METRICS = {
+  cardPaddingBlockPx: 24,
+  cardPaddingInlinePx: 20,
+  cardGapPx: 12,
+  metaGapPx: 5,
+  metaPaddingInlinePx: 8,
+} as const;
+
+const BALANCED_SKELETON_WRAP_STYLE = {
+  padding: "10px 10px 14px",
+  borderRadius: 22,
+  backgroundColor: "rgba(255, 255, 255, 0.96)",
+  boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+};
 
 const ITEMS = [
   {
@@ -246,24 +265,18 @@ const BALANCED_SKELETON_SLOTS = [
   },
 ];
 
-const BALANCED_SKELETON: MasonrySkeletonSpec = {
-  radius: 18,
-  className: styles.masonryRoot,
-  layout: {
-    kind: "masonry",
-    itemWrapStyle: {
-      padding: "10px 10px 14px",
-      borderRadius: 22,
-      backgroundColor: "rgba(255, 255, 255, 0.96)",
-      boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
-    },
-    item: createBalancedSkeletonItem({
-      mediaRatio: ITEMS[0]!.ratio,
-      skeletonText: MASONRY_BALANCED_SKELETON_TEXT[0]!,
-    }),
-    slots: BALANCED_SKELETON_SLOTS,
-  },
-};
+function renderBalancedSkeleton(index: number) {
+  const slot = BALANCED_SKELETON_SLOTS[index] ?? BALANCED_SKELETON_SLOTS[0]!;
+
+  return (
+    <Skeleton
+      layout={createMasonryTextWrapSkeletonLayout({
+        item: slot.item,
+        itemWrapStyle: BALANCED_SKELETON_WRAP_STYLE,
+      })}
+    />
+  );
+}
 
 const BALANCED_VIDEO_OPTIONS = {
   autoplay: true,
@@ -374,6 +387,11 @@ function MasonryBalancedFullscreenAddon() {
 }
 
 export function MasonryBalancedDemo() {
+  const masonryLayout = useMasonryTextWrapLayout({
+    columns: MASONRY_BALANCED_COLUMNS,
+    gap: MASONRY_BALANCED_GAP,
+    metrics: BALANCED_CARD_METRICS,
+  });
   const fullscreenMedia = toMediaItems(
     ITEMS.map((item) =>
       item.kind === "image"
@@ -389,25 +407,43 @@ export function MasonryBalancedDemo() {
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <Masonry
-        columns={{ 0: 1, 720: 2, 1140: 3 }}
-        gap={{ 0: 12, 1140: 18 }}
+        rootRef={masonryLayout.rootRef}
+        columns={MASONRY_BALANCED_COLUMNS}
+        gap={MASONRY_BALANCED_GAP}
+        plugins={[masonryFullscreen()]}
         loading={{
-          cache: demoSkeletonCache("masonry-balanced"),
           count: ITEMS.length,
-          skeleton: BALANCED_SKELETON,
+          skeleton: ({ index }) => renderBalancedSkeleton(index),
           timing: { exitMs: 1200 },
         }}
       >
-        {ITEMS.map((item, index) => (
-          <MasonryBalancedCard
-            key={item.kind === "image" ? item.src : item.poster}
-            item={item}
-            skeletonTextIds={
-              MASONRY_BALANCED_TEXT_IDS[index] ??
-              MASONRY_BALANCED_TEXT_IDS[0]!
-            }
-          />
-        ))}
+        {ITEMS.map((item, index) => {
+          const skeletonText =
+            MASONRY_BALANCED_SKELETON_TEXT[index] ??
+            MASONRY_BALANCED_SKELETON_TEXT[0]!;
+          const skeletonTextIds =
+            MASONRY_BALANCED_TEXT_IDS[index] ?? MASONRY_BALANCED_TEXT_IDS[0]!;
+          const geometry = masonryLayout.getItemGeometry({
+            ratio: item.ratio,
+            skeletonText,
+          });
+          const key = item.kind === "image" ? item.src : item.poster;
+
+          return (
+            <Masonry.Item
+              key={key}
+              revealKey={key}
+              width={geometry.width}
+              height={geometry.height}
+              heightOffsetPx={geometry.heightOffsetPx}
+            >
+              <MasonryBalancedCard
+                item={item}
+                skeletonTextIds={skeletonTextIds}
+              />
+            </Masonry.Item>
+          );
+        })}
       </Masonry>
       <MasonryBalancedFullscreenAddon />
     </GalleryCore>

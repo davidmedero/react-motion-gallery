@@ -7,15 +7,14 @@ import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import {
   Entries,
-  createEntriesGridMedia,
   flattenEntries,
   type EntryCardRenderArgs,
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
-} from "react-motion-gallery/entries/cache";
+} from "react-motion-gallery/entries";
+import { createEntriesGridMedia } from "react-motion-gallery/entries/media/grid";
 import styles from "./entries-grid-demo.module.css";
 import { entriesGridSkeletonText } from "./entries-grid.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoEntry = {
   id: string;
@@ -455,7 +454,6 @@ export function EntriesGridDemo() {
               overlay: renderEntryOverlay,
             },
             loading: {
-              cache: demoSkeletonCache("entries-grid"),
               skeletonWrap: {
                 style: {
                   background: "#fff",

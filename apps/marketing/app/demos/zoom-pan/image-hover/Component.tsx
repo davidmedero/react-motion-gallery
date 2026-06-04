@@ -6,9 +6,8 @@ import { zoomPanHover } from "react-motion-gallery/zoomPan/hover";
 import {
   Skeleton,
   type SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/base";
+} from "react-motion-gallery/skeleton/base";
 import styles from "./image-hover-demo.module.css";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 const IMAGE_HOVER_SKELETON: SkeletonNode = {
   kind: "rect",
@@ -38,7 +37,6 @@ export function ZoomPanImageHoverDemo() {
   return (
     <div className={styles.shell}>
       <Skeleton
-        cache={demoSkeletonCache("zoom-pan-image-hover")}
         layout={IMAGE_HOVER_SKELETON}
         ready={imageReady}
         shellClassName={styles.frame}

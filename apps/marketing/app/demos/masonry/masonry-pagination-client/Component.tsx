@@ -15,7 +15,7 @@ import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import {
   Masonry,
   type MasonryLoadingOptions,
-} from "react-motion-gallery/masonry/measured";
+} from "react-motion-gallery/masonry";
 import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import {
   MasonryPaginationControls,
@@ -189,7 +189,6 @@ const GENERATED_IMAGE_SIZES = [
   { width: 900, height: 1520, color: "d8edf4" },
   { width: 900, height: 1120, color: "eadfe0" },
 ] as const;
-const FIRST_PAINT_CONTENT_WIDTH = 306.65;
 const CARD_CHROME_HEIGHT = 250;
 function stableProductNumber(product: Product) {
   const match = product.id.match(/\d+/);
@@ -226,23 +225,16 @@ function productImageStyle(image: { width: number; height: number }) {
       String(image.width) + " / " + String(image.height),
   } as CSSProperties;
 }
-function estimateCardHeight(product: Product) {
-  const image = productImage(product);
-  return (
-    Math.round(
-      ((FIRST_PAINT_CONTENT_WIDTH * image.height) / image.width +
-        CARD_CHROME_HEIGHT) *
-        1000,
-    ) / 1000
-  );
-}
 function skeletonImageStyle(index: number) {
   return productImageStyle(generatedImageSpec(index));
+}
+function getProductSlotKey(index: number) {
+  return "product-slot-" + String(index);
 }
 function slotProducts(products: Product[]) {
   return products.map((product, index) => ({
     ...product,
-    key: "product-slot-" + String(index),
+    key: getProductSlotKey(index),
     revealKey: product.id,
   }));
 }
@@ -250,7 +242,7 @@ function createPlaceholderProducts(count: number, startIndex = 0): Product[] {
   return Array.from({ length: count }, (_, index) => {
     const slotIndex = startIndex + index;
     return {
-      key: "product-placeholder-slot-" + String(slotIndex),
+      key: getProductSlotKey(slotIndex),
       id: "product-placeholder-" + String(slotIndex),
       section: "Loading",
       title: "Loading product",
@@ -260,7 +252,7 @@ function createPlaceholderProducts(count: number, startIndex = 0): Product[] {
       rating: 0,
       stock: 0,
       reviewCount: 0,
-      revealKey: "product-placeholder-" + String(slotIndex),
+      revealKey: getProductSlotKey(slotIndex),
       images: [],
     };
   });
@@ -323,14 +315,22 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
 function ProductSkeleton({
   index,
   ariaHidden,
+  shimmer = true,
 }: {
   index: number;
   ariaHidden?: boolean;
+  shimmer?: boolean;
 }) {
   return (
     <article
       aria-hidden={ariaHidden ? true : undefined}
-      className={[styles.skeletonCard, styles.skeletonMasonryCard].join(" ")}
+      className={[
+        styles.skeletonCard,
+        styles.skeletonMasonryCard,
+        shimmer ? "" : styles.skeletonSpacerCard,
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={skeletonImageStyle(index)}
     >
       <div className={styles.skeletonImage} />
@@ -447,16 +447,11 @@ function MasonryGallery({
   plugins: unknown[];
   reveal?: typeof revealOptions;
 }) {
-  const initialHeights = useMemo(
-    () => products.map((product) => estimateCardHeight(product)),
-    [products],
-  );
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenItems(products)}>
       <Masonry
         columns={{ 0: 1, 640: 2, 1024: 3 }}
         gap={{ 0: 12, 900: 18 }}
-        initialHeights={initialHeights}
         placement="balanced"
         plugins={plugins as never}
         classNames={{ root: styles.masonryRoot, item: styles.masonryItem }}
@@ -465,15 +460,19 @@ function MasonryGallery({
       >
         {products.map((product, index) => {
           const placeholder = isPlaceholderProduct(product);
+          const image = productImage(product);
           return (
             <Masonry.Item
               key={productKey(product, index)}
+              width={image.width}
+              height={image.height}
+              heightOffsetPx={CARD_CHROME_HEIGHT}
               revealKey={productRevealKey(product)}
               placeholder={placeholder}
               className={placeholder ? styles.placeholderItem : undefined}
             >
               {placeholder ? (
-                <ProductSkeleton ariaHidden index={index} />
+                <ProductSkeleton ariaHidden index={index} shimmer={false} />
               ) : (
                 <ProductCard product={product} index={index} />
               )}
@@ -503,7 +502,10 @@ export function MasonryPaginationClientDemo() {
     () => ({
       active: loading && products.length > 0,
       count: 0,
-      force: loading && products.length > 0 ? true : undefined,
+      force:
+        loading && products.length > 0
+          ? { enabled: true, showContent: true, skeletonOpacity: 1 }
+          : undefined,
       animate: true,
       waitForMedia: true,
       rootMargin: "0px",

@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 
-import * as entriesCacheEntry from "../../entries-cache";
 import * as entriesEntry from "../../entries";
+import * as entriesMediaGridEntry from "../../entries-media-grid";
+import * as entriesMediaMasonryEntry from "../../entries-media-masonry";
+import * as entriesMediaSliderEntry from "../../entries-media-slider";
 import * as entriesInfiniteScrollEntry from "../../entries-infinite-scroll";
 import * as entriesLoadMoreEntry from "../../entries-load-more";
 import * as entriesPaginationEntry from "../../entries-pagination";
@@ -14,19 +16,24 @@ const packageJson = JSON.parse(
 ) as { exports: Record<string, unknown> };
 
 describe("entries public entries", () => {
-  test("exports default and cached entries subpaths", () => {
+  test("exports default entries subpaths", () => {
     expect(packageJson.exports["./entries"]).toBeDefined();
-    expect(packageJson.exports["./entries/cache"]).toBeDefined();
+    expect(packageJson.exports["./entries/media"]).toBeUndefined();
+    expect(packageJson.exports["./entries/media/slider"]).toBeDefined();
+    expect(packageJson.exports["./entries/media/grid"]).toBeDefined();
+    expect(packageJson.exports["./entries/media/masonry"]).toBeDefined();
+    expect(packageJson.exports["./entries/cache"]).toBeUndefined();
     expect(packageJson.exports["./entries/ready"]).toBeDefined();
 
     expect(entriesEntry.Entries).toBeDefined();
     expect(entriesEntry.default).toBe(entriesEntry.Entries);
     expect(entriesEntry.useEntriesReady).toBe(entriesReadyEntry.useEntriesReady);
-
-    expect(entriesCacheEntry.CachedEntries).toBeDefined();
-    expect(entriesCacheEntry.Entries).toBe(entriesCacheEntry.CachedEntries);
-    expect(entriesCacheEntry.default).toBe(entriesCacheEntry.CachedEntries);
-    expect(entriesCacheEntry.flattenEntries).toBe(entriesEntry.flattenEntries);
+    expect("createEntriesSliderMedia" in entriesEntry).toBe(false);
+    expect("createEntriesGridMedia" in entriesEntry).toBe(false);
+    expect("createEntriesMasonryMedia" in entriesEntry).toBe(false);
+    expect(entriesMediaSliderEntry.createEntriesSliderMedia).toBeTypeOf("function");
+    expect(entriesMediaGridEntry.createEntriesGridMedia).toBeTypeOf("function");
+    expect(entriesMediaMasonryEntry.createEntriesMasonryMedia).toBeTypeOf("function");
   });
 
   test("exports controlled entries data plugins", () => {

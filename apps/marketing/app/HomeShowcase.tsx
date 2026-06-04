@@ -6,7 +6,6 @@ import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache"
 import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";
 import { FullscreenCaptionThumbnailsDemo } from "./demos/fullscreen/fullscreen-caption-thumbnails/Component";
 import { MasonrySpansDemo } from "./demos/masonry/masonry-spans/Component";
-import { demoSkeletonCache } from "./demos/skeleton-cache";
 import { SkeletonFlexCardsDemo } from "./demos/skeleton/skeleton-flex-cards/Component";
 import { SliderParallaxDemo } from "./demos/slider/slider-parallax/Component";
 import { ZoomPanGridDemo } from "./demos/zoom-pan/grid/Component";
@@ -30,12 +29,8 @@ type HomeShowcaseProps = {
   skeletonCacheSnapshots?: Record<string, SkeletonCacheSnapshot | null | undefined>;
 };
 
-const HOME_MASONRY_SPANS_CACHE = demoSkeletonCache("home-masonry-spans", {
-  routeKey: "/",
-});
-
 function HomeMasonrySpansDemo() {
-  return <MasonrySpansDemo cache={HOME_MASONRY_SPANS_CACHE} />;
+  return <MasonrySpansDemo />;
 }
 
 const SHOWCASE_DEMOS = [
@@ -78,7 +73,7 @@ const SHOWCASE_DEMOS = [
     eyebrow: "Loading fidelity",
     title: "Loading states shaped like the final UI",
     description:
-      "Standalone skeleton primitives protect card rhythm, with cookie cache optimizing skeleton rendering and CSS parsing while images decode.",
+      "Standalone skeleton primitives protect card rhythm while images decode.",
     href: "/demos?demo=skeleton-flex-cards",
     tags: ["standalone", "responsive", "text", "decode"],
     Component: SkeletonFlexCardsDemo,

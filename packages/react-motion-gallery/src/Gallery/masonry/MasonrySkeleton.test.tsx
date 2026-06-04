@@ -7,9 +7,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { BREAKPOINT_MAP } from "../shared/responsive";
 import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
-import { buildStableScopeId } from "../shared/stableScope";
 import skeletonFrameStyles from "../skeleton/Skeleton.module.css";
-import { CachedMasonrySkeleton } from "../skeleton/cache-masonry-structured";
 import {
   MasonrySkeleton,
   MasonrySkeletonCore,
@@ -1185,58 +1183,6 @@ describe("MasonrySkeleton layout and text nodes", () => {
     expect(markup).not.toContain("@container");
   });
 
-  test("falls back to responsive output when a masonry snapshot scope mismatches", () => {
-    const markup = renderToStaticMarkup(
-      <CachedMasonrySkeleton
-        layout={{
-          layout: {
-            kind: "masonry",
-            item: {
-              kind: "text",
-              textId: "body",
-              barHeight: 14,
-              lineHeight: 1.5,
-              lines: { 0: 4, 240: 1 },
-              responsiveBy: "container",
-            },
-          },
-        }}
-        cache={{
-          key: "demo",
-          routeKey: "/demo",
-          snapshot: {
-            version: 1,
-            key: "demo",
-            scopeId: "wrong",
-            kind: "masonry",
-            routeKey: "/demo",
-            createdAt: Date.now(),
-            widthBucketMin: 0,
-            viewportWidth: 920,
-            masonry: {
-              variantKey: "c1_g8",
-              itemHeightsPx: [20],
-            },
-            text: {
-              body: {
-                lines: 1,
-                barWidths: ["240px"],
-              },
-            },
-          },
-        }}
-        masonry={{
-          count: 1,
-          columns: { 0: 1, 900: 2 },
-          gap: 8,
-        }}
-      />,
-    );
-
-    expect(markup).toContain("nth-child");
-    expect(markup).toContain("@container");
-  });
-
   test("falls back to responsive output on the server when the viewport is unknown", () => {
     const layout = {
       layout: {
@@ -1256,37 +1202,23 @@ describe("MasonrySkeleton layout and text nodes", () => {
       gap: { 0: 12, 1140: 18 },
       placement: "balanced" as const,
     };
-    const scopeId = buildStableScopeId("skel_", {
-      layout,
-      breakpoints: BREAKPOINT_MAP,
-      backgroundColor: undefined,
-      radius: undefined,
-      shimmer: undefined,
-      disableShimmer: undefined,
-      masonry,
-    });
-
     const markup = renderToStaticMarkup(
-      <CachedMasonrySkeleton
+      <MasonrySkeletonCore
         layout={layout}
-        cache={{
+        cacheSnapshot={{
+          version: 1,
           key: "demo",
+          scopeId: "demo-scope",
+          kind: "masonry",
           routeKey: "/demo",
-          snapshot: {
-            version: 1,
-            key: "demo",
-            scopeId,
-            kind: "masonry",
-            routeKey: "/demo",
-            createdAt: Date.now(),
-            widthBucketMin: 720,
-            viewportWidth: 1024,
-            masonry: {
-              variantKey: "c2_g12",
-              itemHeightsPx: [120, 120, 120],
-            },
-            text: {},
+          createdAt: Date.now(),
+          widthBucketMin: 720,
+          viewportWidth: 1024,
+          masonry: {
+            variantKey: "c2_g12",
+            itemHeightsPx: [120, 120, 120],
           },
+          text: {},
         }}
         masonry={masonry}
       />,

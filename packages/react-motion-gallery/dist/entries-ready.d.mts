@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { E as EntriesHandle } from './responsive-Bw0ub6Hv.mjs';
+import { E as EntriesHandle } from './responsive-BgOmwHgG.mjs';
 import './types-uhDRb0mo.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 import './force-C5m1QpdF.mjs';

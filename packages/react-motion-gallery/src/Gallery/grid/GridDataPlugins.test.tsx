@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { GalleryCore, useGalleryCore } from "../core";
 import { useFullscreenController } from "../fullscreen";
 import type { FullscreenPlugin } from "../fullscreen/types";
+import sharedSkeletonStyles from "../shared/skeleton/layout.module.css";
+import type { GridSkeletonSpec } from "../skeleton/grid";
 import Grid from "./index";
 import { gridFullscreen } from "./plugins/fullscreen";
 import { gridInfiniteScroll } from "./plugins/infiniteScroll";
@@ -923,6 +925,56 @@ describe("Grid data plugins", () => {
     expect(readyArgs.every((ready) => ready === false)).toBe(true);
   });
 
+  test("item reveal keeps offscreen skeletons mounted until their item enters view", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+
+    const host = mount(
+      <Grid
+        columns={1}
+        loading={{
+          waitForMedia: false,
+          timing: { minVisibleMs: 0, exitMs: 500 },
+          skeleton: ({ index }) => (
+            <span data-grid-skeleton-card={index}>loading {index}</span>
+          ),
+        }}
+      >
+        <article data-rmg-grid-reveal-key="product-a">alpha</article>
+        <article data-rmg-grid-reveal-key="product-b">beta</article>
+      </Grid>,
+    );
+    await flushItemReveal();
+
+    const first = host.querySelector<HTMLElement>("[data-rmg-idx='0']");
+    const second = host.querySelector<HTMLElement>("[data-rmg-idx='1']");
+    expect(first?.getAttribute("data-rmg-grid-item-reveal")).toBe("0");
+    expect(second?.getAttribute("data-rmg-grid-item-reveal")).toBe("0");
+    expect(second?.querySelector("[data-rmg-grid-item-skeleton]")).not.toBeNull();
+    expect(second?.textContent).toContain("loading 1");
+
+    const firstObserver = MockIntersectionObserver.instances.find(
+      (observer) => observer.target === first,
+    );
+    await React.act(async () => {
+      firstObserver?.trigger(true);
+    });
+    await flushItemReveal();
+
+    expect(first?.getAttribute("data-rmg-grid-item-reveal")).toBe("1");
+    expect(second?.getAttribute("data-rmg-grid-item-reveal")).toBe("0");
+    expect(second?.querySelector("[data-rmg-grid-item-skeleton]")).not.toBeNull();
+
+    const secondObserver = MockIntersectionObserver.instances.find(
+      (observer) => observer.target === second,
+    );
+    await React.act(async () => {
+      secondObserver?.trigger(true);
+    });
+    await flushItemReveal();
+
+    expect(second?.getAttribute("data-rmg-grid-item-reveal")).toBe("1");
+  });
+
   test("item reveal applies custom skeleton enter and exit durations", () => {
     const markup = renderToStaticMarkup(
       <Grid
@@ -1095,6 +1147,105 @@ describe("Grid data plugins", () => {
         "--rmg-grid-item-skeleton-exit-duration",
       ),
     ).toBe("420ms");
+  });
+
+  test("structured grid skeletons stay mounted as inner layout anchors after reveal", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+
+    const skeleton: GridSkeletonSpec = {
+      shimmer: {
+        durationMs: 1550,
+      },
+      layout: {
+        kind: "grid",
+        item: {
+          kind: "col",
+          style: { gap: 10 },
+          children: [
+            {
+              kind: "rect",
+              style: { width: "100%", aspectRatio: "4 / 5" },
+            },
+            {
+              kind: "text",
+              barHeight: 14,
+              lineHeight: 1.5,
+              lines: 2,
+            },
+          ],
+        },
+      },
+    };
+
+    const host = mount(
+      <Grid
+        columns={1}
+        loading={{
+          waitForMedia: false,
+          timing: { minVisibleMs: 0, exitMs: 240 },
+          skeleton,
+        }}
+      >
+        <article data-rmg-grid-reveal-key="product-a">
+          <div style={{ height: 1 }}>alpha</div>
+        </article>
+      </Grid>,
+    );
+
+    await flushItemReveal();
+
+    const item = host.querySelector<HTMLElement>(
+      "[data-rmg-grid-node='true'] [data-rmg-grid-item-key]",
+    );
+    const skeletonLayer = host.querySelector<HTMLElement>(
+      "[data-rmg-grid-item-skeleton]",
+    );
+    expect(item).not.toBeNull();
+    expect(skeletonLayer).not.toBeNull();
+    expect(host.querySelector("[data-rmg-skeleton-wrapper]")).not.toBeNull();
+    expect(item?.getAttribute("data-rmg-grid-item-layered")).toBe("1");
+    expect(
+      Array.from(host.querySelectorAll("style"))
+        .map((node) => node.textContent ?? "")
+        .join("\n"),
+    ).not.toContain("--rmg-grid-item-seed-height");
+    expect(item?.getAttribute("data-rmg-grid-item-layout-seed")).toBeNull();
+    expect(skeletonLayer?.getAttribute("data-rmg-grid-item-shimmer")).toBeNull();
+    expect(skeletonLayer?.innerHTML).toContain(sharedSkeletonStyles.skelCardShimmer);
+    expect(
+      skeletonLayer
+        ?.querySelector<HTMLElement>("[data-rmg-grid-skel-scope]")
+        ?.style.getPropertyValue("--rmg-skel-shimmer-duration"),
+    ).toBe("1550ms");
+
+    await React.act(async () => {
+      MockIntersectionObserver.instances.forEach((observer) => {
+        observer.trigger(true);
+      });
+    });
+    await flushItemReveal();
+
+    expect(item?.getAttribute("data-rmg-grid-item-reveal")).toBe("1");
+    expect(host.querySelector("[data-rmg-grid-item-skeleton]")).toBe(skeletonLayer);
+    expect(skeletonLayer?.getAttribute("data-rmg-grid-item-shimmer")).toBeNull();
+
+    await React.act(async () => {
+      const event = new Event("transitionend", { bubbles: true });
+      Object.defineProperty(event, "propertyName", { value: "opacity" });
+      skeletonLayer?.dispatchEvent(event);
+    });
+
+    const settledSkeleton = host.querySelector<HTMLElement>(
+      "[data-rmg-grid-item-skeleton]",
+    );
+    expect(settledSkeleton).toBe(skeletonLayer);
+    expect(item?.getAttribute("data-rmg-grid-item-layered")).toBe("1");
+    expect(item?.getAttribute("data-rmg-grid-item-layout-seed")).toBeNull();
+    expect(item?.getAttribute("data-rmg-grid-item-reveal-settled")).toBe("1");
+    expect(settledSkeleton?.getAttribute("data-rmg-grid-item-shimmer")).toBe("off");
+    expect(
+      item?.querySelector("[data-rmg-grid-item-content='true']"),
+    ).not.toBeNull();
   });
 
   test("item reveal keeps a stable slot skeleton layer when the reveal key changes", async () => {

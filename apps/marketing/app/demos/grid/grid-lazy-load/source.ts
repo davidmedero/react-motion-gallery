@@ -11,10 +11,9 @@ import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
-import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/cache/grid";
+import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-lazy-load-demo.module.css";
 import { gridLazyLoadSkeletonText } from "./grid-lazy-load.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -278,7 +277,6 @@ export function GridLazyLoadDemo() {
           enabled: !showMeasuredContent,
           waitForMedia: false,
           skeleton: CARD_SKELETON,
-          cache: demoSkeletonCache("grid-lazy-load"),
           timing: { exitMs: 1200 },
         }}
         plugins={[

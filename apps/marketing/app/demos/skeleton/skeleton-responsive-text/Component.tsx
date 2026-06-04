@@ -6,10 +6,9 @@ import { Video } from "react-motion-gallery/video";
 import {
   Skeleton,
   type SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/base";
+} from "react-motion-gallery/skeleton/base";
 import styles from "./skeleton-responsive-text-demo.module.css";
 import { skeletonResponsiveTextSkeletonText } from "./skeleton-responsive-text.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   label: string;
@@ -360,7 +359,6 @@ export function SkeletonResponsiveTextDemo() {
   return (
     <div className={styles.shell}>
       <Skeleton
-        cache={demoSkeletonCache("skeleton-responsive-text")}
         layout={RESPONSIVE_TEXT_LAYOUT}
         ready={isLoaded}
         enabled={!showMeasuredContent}

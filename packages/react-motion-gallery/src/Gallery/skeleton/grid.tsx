@@ -261,6 +261,8 @@ export function GridSkeletonCore({
       contentClassName={contentClassName}
       contentStyle={contentStyle}
       contentOwnsWrapperLayout={children !== undefined}
+      lockContentLayoutWhileLoading={children !== undefined}
+      loadingLayerFirst={children !== undefined}
       shellRef={providedShellRef}
     >
       {children}

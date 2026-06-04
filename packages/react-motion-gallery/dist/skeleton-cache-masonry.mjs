@@ -1,1 +1,0 @@
-import {f}from'./chunk-2AM3S2QN.mjs';import'./chunk-QE3NYNL4.mjs';import'./chunk-UML6FCOQ.mjs';import'./chunk-B4CC5AGE.mjs';import'./chunk-HK2DPKES.mjs';import {jsx}from'react/jsx-runtime';function e({cache:a,...n}){return jsx(f,{...n})}export{e as CachedMasonrySkeleton,e as MasonrySkeleton,e as Skeleton,e as default};

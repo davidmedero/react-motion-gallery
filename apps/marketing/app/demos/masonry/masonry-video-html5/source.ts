@@ -3,19 +3,23 @@ export const source = `/* eslint-disable @next/next/no-img-element */
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
-import { Masonry } from "react-motion-gallery/masonry/measured";
+import {
+  Masonry,
+  type ResponsiveMasonrySpan,
+} from "react-motion-gallery/masonry";
+import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
-import type {
-  MasonrySkeletonSpec,
-  SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/masonry/structured";
+import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
+import {
+  createMasonryTextWrapSkeletonLayout,
+  useMasonryTextWrapLayout,
+} from "react-motion-gallery/masonry/text-wrap";
 import styles from "./masonry-video-html5-demo.module.css";
 import { masonryVideoHtml5SkeletonText } from "./masonry-video-html5.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   title: string;
@@ -43,8 +47,11 @@ type MasonryVideoItem = {
   title: string;
   body: string;
   ratio: string;
-  span: number | Record<string, number>;
+  span: ResponsiveMasonrySpan;
 };
+
+const MASONRY_VIDEO_COLUMNS = { 0: 1, 820: 2, 1280: 4 };
+const MASONRY_VIDEO_GAP = { 0: 14, 820: 18, 1280: 20 };
 
 const ITEMS: MasonryVideoItem[] = [
   {
@@ -123,6 +130,17 @@ const HTML5_CARD_METRICS = {
     barHeight: 14.72,
     lineHeight: 1.6,
   },
+} as const;
+
+const HTML5_CARD_LAYOUT_METRICS = {
+  cardPaddingBlockPx: 26,
+  cardPaddingInlinePx: 24,
+  cardGapPx: HTML5_CARD_METRICS.cardGapPx,
+  metaGapPx: HTML5_CARD_METRICS.metaGapPx,
+  metaPaddingInlinePx: 0,
+  borderBlockPx: 2,
+  borderInlinePx: 2,
+  textGapCount: 1,
 } as const;
 
 const MASONRY_VIDEO_HTML5_TEXT_IDS: SkeletonTextIds[] = [
@@ -206,32 +224,36 @@ function createHtml5SkeletonItem(args: {
   };
 }
 
-const HTML5_SKELETON: MasonrySkeletonSpec = {
-  radius: 18,
-  layout: {
-    kind: "masonry",
-    itemWrapStyle: {
-      padding: HTML5_CARD_METRICS.cardPadding,
-      borderRadius: HTML5_CARD_METRICS.cardRadiusPx,
-      border: "1px solid rgba(15, 23, 42, 0.08)",
-      backgroundColor: "rgba(255, 255, 255, 0.96)",
-      boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
-    },
-    item: createHtml5SkeletonItem({
-      item: ITEMS[0]!,
-      skeletonText: MASONRY_VIDEO_HTML5_SKELETON_TEXT[0]!,
-    }),
-    slots: ITEMS.map((item, index) => ({
-      span: item.span,
-      item: createHtml5SkeletonItem({
-        item,
-        skeletonText:
-          MASONRY_VIDEO_HTML5_SKELETON_TEXT[index] ??
-          MASONRY_VIDEO_HTML5_SKELETON_TEXT[0]!,
-      }),
-    })),
-  },
+const HTML5_SKELETON_WRAP_STYLE = {
+  padding: HTML5_CARD_METRICS.cardPadding,
+  borderRadius: HTML5_CARD_METRICS.cardRadiusPx,
+  border: "1px solid rgba(15, 23, 42, 0.08)",
+  backgroundColor: "rgba(255, 255, 255, 0.96)",
+  boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
 };
+
+const HTML5_SKELETON_SLOTS = ITEMS.map((item, index) => ({
+  item: createHtml5SkeletonItem({
+    item,
+    skeletonText:
+      MASONRY_VIDEO_HTML5_SKELETON_TEXT[index] ??
+      MASONRY_VIDEO_HTML5_SKELETON_TEXT[0]!,
+  }),
+}));
+
+function renderHtml5Skeleton(index: number) {
+  const slot = HTML5_SKELETON_SLOTS[index] ?? HTML5_SKELETON_SLOTS[0]!;
+
+  return (
+    <Skeleton
+      radius={18}
+      layout={createMasonryTextWrapSkeletonLayout({
+        item: slot.item,
+        itemWrapStyle: HTML5_SKELETON_WRAP_STYLE,
+      })}
+    />
+  );
+}
 
 const HTML5_LOOP_OPTIONS = {
   autoplay: true,
@@ -317,36 +339,60 @@ function MasonryHtml5FullscreenAddon() {
 }
 
 export function MasonryVideoHtml5Demo() {
+  const masonryLayout = useMasonryTextWrapLayout({
+    columns: MASONRY_VIDEO_COLUMNS,
+    gap: MASONRY_VIDEO_GAP,
+    metrics: HTML5_CARD_LAYOUT_METRICS,
+  });
   const media = toMediaItems(ITEMS);
 
   return (
     <GalleryCore layout="masonry" fullscreenItems={media}>
       <Masonry
-        columns={{ 0: 1, 820: 2, 1280: 4 }}
-        gap={{ 0: 14, 820: 18, 1280: 20 }}
+        rootRef={masonryLayout.rootRef}
+        columns={MASONRY_VIDEO_COLUMNS}
+        gap={MASONRY_VIDEO_GAP}
         placement="balanced"
+        plugins={[masonryFullscreen()]}
         loading={{
-          cache: demoSkeletonCache("masonry-video-html5"),
           count: ITEMS.length,
-          skeleton: HTML5_SKELETON,
+          skeleton: ({ index }) => renderHtml5Skeleton(index),
           timing: { exitMs: 1200 },
         }}
       >
-        {ITEMS.map((item, index) => (
-          <Masonry.Item key={item.src} span={item.span} revealKey={item.src}>
-            <MasonryHtml5Card
-              src={item.src}
-              poster={item.poster}
-              title={item.title}
-              body={item.body}
-              ratio={item.ratio}
-              skeletonTextIds={
-                MASONRY_VIDEO_HTML5_TEXT_IDS[index] ??
-                MASONRY_VIDEO_HTML5_TEXT_IDS[0]!
-              }
-            />
-          </Masonry.Item>
-        ))}
+        {ITEMS.map((item, index) => {
+          const skeletonText =
+            MASONRY_VIDEO_HTML5_SKELETON_TEXT[index] ??
+            MASONRY_VIDEO_HTML5_SKELETON_TEXT[0]!;
+          const geometry = masonryLayout.getItemGeometry({
+            ratio: item.ratio,
+            span: item.span,
+            textStates: [skeletonText.title, skeletonText.body],
+          });
+
+          return (
+            <Masonry.Item
+              key={item.src}
+              span={item.span}
+              revealKey={item.src}
+              width={geometry.width}
+              height={geometry.height}
+              heightOffsetPx={geometry.heightOffsetPx}
+            >
+              <MasonryHtml5Card
+                src={item.src}
+                poster={item.poster}
+                title={item.title}
+                body={item.body}
+                ratio={item.ratio}
+                skeletonTextIds={
+                  MASONRY_VIDEO_HTML5_TEXT_IDS[index] ??
+                  MASONRY_VIDEO_HTML5_TEXT_IDS[0]!
+                }
+              />
+            </Masonry.Item>
+          );
+        })}
       </Masonry>
       <MasonryHtml5FullscreenAddon />
     </GalleryCore>

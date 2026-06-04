@@ -439,6 +439,7 @@
 
 .demoCanvas {
   margin-top: 0;
+  overflow-anchor: none;
   padding: clamp(
     var(--demos-demo-canvas-padding-min),
     calc(100vw * var(--demos-demo-canvas-padding-ratio)),

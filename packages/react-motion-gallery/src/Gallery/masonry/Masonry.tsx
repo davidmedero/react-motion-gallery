@@ -14,7 +14,11 @@ import {
   useAbsoluteVirtualRange,
   type DataVirtualizationOptions,
 } from "../shared/dataPlugins";
-import { resolveLoadingForceOptions } from "../shared/loading/force";
+import {
+  resolveCompareLoadingLayerVisualState,
+  resolveLoadingForceOptions,
+  type LoadingForceOptions,
+} from "../shared/loading/force";
 import { useSkeletonRevealGate } from "../shared/loading/skeletonRevealGate";
 import {
   useDoublePaintReady,
@@ -144,6 +148,32 @@ function assignRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
   if (!ref) return;
   if (typeof ref === "function") ref(value);
   else if (typeof ref === "object") (ref as any).current = value;
+}
+
+function resolveMasonryLoadingVisualState(args: {
+  loadingActive: boolean;
+  loadingForced?: LoadingForceOptions;
+  shouldMountContent: boolean;
+  contentReady: boolean;
+  defaultReveal: boolean;
+}) {
+  const compareState = resolveCompareLoadingLayerVisualState({
+    loadingActive: args.loadingActive && args.shouldMountContent,
+    loadingForced: args.loadingForced,
+    contentReady: args.contentReady,
+  });
+  const resolvedForce = resolveLoadingForceOptions(args.loadingForced);
+  const forcedLoading = args.loadingActive && resolvedForce.enabled;
+
+  return {
+    compareMode: compareState.compareMode,
+    revealContent: compareState.compareMode
+      ? true
+      : forcedLoading
+        ? false
+        : args.defaultReveal,
+    loadingLayerOpacity: compareState.loadingLayerOpacity,
+  };
 }
 
 export const MasonryCore: React.FC<MasonryProps> = ({
@@ -556,6 +586,9 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
 }) => {
   const ref = React.useRef<HTMLDivElement | null>(null);
   const [node, setNode] = React.useState<HTMLDivElement | null>(null);
+  const [contentNode, setContentNode] = React.useState<HTMLDivElement | null>(
+    null,
+  );
   const prefersReducedMotion = usePrefersReducedMotion();
   const localRevealedIndicesRef = React.useRef(new Set<number>());
   const resolvedRevealedIndicesRef =
@@ -586,6 +619,16 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
     !stage || wasPreviouslyRevealed,
   );
   const [settled, setSettled] = React.useState(!stage || wasPreviouslyRevealed);
+  const [skeletonSettled, setSkeletonSettled] = React.useState(false);
+  const skeletonRenderStateRef = React.useRef<{
+    key: React.Key;
+    stage: boolean;
+    ready: boolean;
+  }>({
+    key: stateKey,
+    stage,
+    ready: !stage || wasPreviouslyRevealed,
+  });
   const skeletonMountedAtRef = React.useRef(0);
   const revealTimeoutRef = React.useRef<ReturnType<
     typeof globalThis.setTimeout
@@ -639,26 +682,48 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
   );
   const effectiveRevealed = resettingForStateKey ? false : revealed;
   const effectiveSettled = resettingForStateKey ? false : settled;
+  const effectiveSkeletonSettled = resettingForStateKey
+    ? false
+    : skeletonSettled;
+  const contentReady =
+    effectiveMediaReady || effectiveRevealed || effectiveSettled;
+  const defaultReveal = !stage || effectiveRevealed || effectiveSettled;
+  const loadingVisualState = resolveMasonryLoadingVisualState({
+    loadingActive: !!loading?.active || placeholderActive,
+    loadingForced: loading?.force,
+    shouldMountContent: !placeholderActive || contentNode != null,
+    contentReady,
+    defaultReveal,
+  });
   const loadingBlocksReveal =
     (!!loading?.active || placeholderActive) &&
-    (!loadingForce.enabled || !loadingForce.showContent);
-  const compareMode =
-    !!loading?.active &&
-    loadingForce.enabled &&
-    loadingForce.showContent &&
-    (effectiveRevealed || effectiveSettled || effectiveMediaReady);
-  const ready = !stage || effectiveRevealed || effectiveSettled || compareMode;
-  const skeleton =
-    typeof loading?.skeleton === "function"
-      ? loading.skeleton({
-          index,
-          itemIndex,
-          key: stateKey,
-          revealKey: stateKey,
-          placeholder: placeholderActive,
-          ready,
-        })
-      : null;
+    (!loadingForce.enabled || !loadingVisualState.revealContent);
+  const compareMode = loadingVisualState.compareMode;
+  const ready = !stage || loadingVisualState.revealContent;
+  if (
+    skeletonRenderStateRef.current.key !== stateKey ||
+    skeletonRenderStateRef.current.stage !== stage
+  ) {
+    skeletonRenderStateRef.current = {
+      key: stateKey,
+      stage,
+      ready: !stage || wasPreviouslyRevealed,
+    };
+  }
+  const skeleton = React.useMemo(
+    () =>
+      typeof loading?.skeleton === "function"
+        ? loading.skeleton({
+            index,
+            itemIndex,
+            key: stateKey,
+            revealKey: stateKey,
+            placeholder: placeholderActive,
+            ready: skeletonRenderStateRef.current.ready,
+          })
+        : null,
+    [index, itemIndex, loading?.skeleton, placeholderActive, stateKey],
+  );
   const hasSkeleton = skeleton != null;
   const itemRevealReady =
     !stage ||
@@ -667,12 +732,16 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
       ready &&
       externalRevealReady !== false &&
       (skeletonRevealGate ?? true));
+  const skeletonShimmerSettled =
+    itemRevealReady && !compareMode && effectiveSkeletonSettled;
   const shouldMountSkeleton =
     hasSkeleton &&
     (!effectiveSettled ||
       !!loading?.active ||
       placeholderActive ||
       !!loading?.keepSkeletonMounted);
+  const skeletonEnterMs =
+    !itemRevealReady && !compareMode ? 0 : lifecycleEnterMs;
 
   const mergedRef = React.useCallback((nextNode: HTMLDivElement | null) => {
     ref.current = nextNode;
@@ -720,15 +789,24 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
     setMediaReady(false);
     setRevealed(false);
     setSettled(false);
+    setSkeletonSettled(false);
   }, [rememberRevealed, revealedKeysRef, stage, stateKey]);
 
   React.useEffect(() => {
     if (!stage || !loading?.active) return;
     setSettled(false);
+    setSkeletonSettled(false);
   }, [loading?.active, stage, stateKey]);
 
   React.useEffect(() => {
-    if (!stage || !node || !inView || !painted || effectiveMediaReady) return;
+    if (
+      !stage ||
+      !contentNode ||
+      !inView ||
+      !painted ||
+      effectiveMediaReady
+    )
+      return;
 
     if (loading?.waitForMedia === false) {
       const timeout = globalThis.setTimeout(() => setMediaReady(true), 0);
@@ -736,7 +814,7 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
     }
 
     let cancelled = false;
-    void waitForElementMediaReady(node, {
+    void waitForElementMediaReady(contentNode, {
       timeoutMs: lifecycleDecodeTimeoutMs,
       waitForLazy: true,
     }).then(() => {
@@ -751,7 +829,7 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
     lifecycleDecodeTimeoutMs,
     loading?.waitForMedia,
     effectiveMediaReady,
-    node,
+    contentNode,
     painted,
     stage,
     stateKey,
@@ -761,6 +839,7 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
     setRevealed(true);
     if (!hasSkeleton || lifecycleExitMs <= 0) {
       setSettled(true);
+      setSkeletonSettled(true);
     }
     resolvedRevealedIndicesRef.current.add(itemIndex);
     revealedKeysRef.current.add(stateKey);
@@ -843,6 +922,7 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
     )
       return;
     setSettled(true);
+    setSkeletonSettled(true);
   }, [
     effectiveRevealed,
     effectiveSettled,
@@ -919,26 +999,37 @@ const MasonryItem: React.FC<MasonryItemProps> = ({
 
   const content = (
     <>
-      {children}
+      <div
+        key={stateKey}
+        data-rmg-masonry-item-content="true"
+        ref={setContentNode}
+      >
+        {children}
+      </div>
       {shouldMountSkeleton ? (
         <div
+          key="skeleton"
           className={styles.itemSkeleton}
           data-rmg-masonry-item-skeleton="true"
           aria-hidden="true"
           style={{
             ["--rmg-masonry-item-skeleton-enter-duration" as any]:
-              `${lifecycleEnterMs}ms`,
+              `${skeletonEnterMs}ms`,
             ["--rmg-masonry-item-skeleton-exit-duration" as any]:
               `${lifecycleExitMs}ms`,
             ["--rmg-masonry-item-skeleton-opacity" as any]: compareMode
-              ? loadingForce.skeletonOpacity
+              ? loadingVisualState.loadingLayerOpacity
               : undefined,
           }}
+          data-rmg-masonry-item-shimmer={
+            skeletonShimmerSettled ? "off" : undefined
+          }
           onTransitionEnd={(event) => {
             if (event.target !== event.currentTarget) return;
             if (event.propertyName !== "opacity") return;
-            if (!effectiveRevealed) return;
+            if (!itemRevealReady || compareMode) return;
             setSettled(true);
+            setSkeletonSettled(true);
           }}
         >
           {skeleton}

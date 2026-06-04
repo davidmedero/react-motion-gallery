@@ -2,25 +2,10 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
-import { Entries } from "../../entries";
 import { Skeleton } from "../../skeleton-base";
 import { GridSkeleton } from "../../skeleton-grid";
 import { MasonrySkeleton } from "../../skeleton-masonry";
 import { SliderSkeleton } from "../../skeleton-slider";
-
-const ignoredCache = {
-  key: "ignored",
-  snapshot: {
-    version: 1,
-    key: "ignored",
-    scopeId: "ignored-scope",
-    kind: "slider",
-    createdAt: Date.now(),
-    widthBucketMin: 0,
-    viewportWidth: 1024,
-    text: {},
-  },
-};
 
 function expectNoDefaultCacheOrRestoreMarkers(markup: string) {
   expect(markup).not.toContain("rmg_skel_cache");
@@ -29,10 +14,9 @@ function expectNoDefaultCacheOrRestoreMarkers(markup: string) {
 }
 
 describe("default skeleton import surface", () => {
-  test("ignores legacy cache and restore props on default skeleton components", () => {
+  test("renders default skeleton components without cache or restore markers", () => {
     const base = renderToStaticMarkup(
       <Skeleton
-        {...({ cache: ignoredCache } as any)}
         layout={{
           kind: "rect",
           style: { width: "100%", height: 80 },
@@ -42,7 +26,6 @@ describe("default skeleton import surface", () => {
 
     const slider = renderToStaticMarkup(
       <SliderSkeleton
-        {...({ cache: ignoredCache, restore: { key: "ignored" } } as any)}
         layout={{
           kind: "slider",
           item: {
@@ -55,7 +38,6 @@ describe("default skeleton import surface", () => {
 
     const grid = renderToStaticMarkup(
       <GridSkeleton
-        {...({ cache: ignoredCache } as any)}
         layout={{
           kind: "grid",
           item: {
@@ -67,31 +49,32 @@ describe("default skeleton import surface", () => {
     );
 
     const masonry = renderToStaticMarkup(
-      <MasonrySkeleton
-        {...({ cache: ignoredCache } as any)}
-        items={[{ width: 100, height: 160 }]}
-      />
+      <MasonrySkeleton items={[{ width: 100, height: 160 }]} />
     );
 
     expectNoDefaultCacheOrRestoreMarkers([base, slider, grid, masonry].join(""));
   });
 
-  test("ignores entries.loading.cache on default Entries", () => {
-    const markup = renderToStaticMarkup(
-      <Entries
-        entries={
-          {
-            items: [{ id: "one", media: [] }],
-            loading: {
-              enabled: true,
-              cache: ignoredCache,
-            },
-          } as any
-        }
-        renderMediaContainer={() => null}
-      />
+  test("lets wrapped GridSkeleton own layout while loading", () => {
+    const layout = {
+      kind: "grid" as const,
+      item: {
+        kind: "rect" as const,
+        style: { width: "100%", height: 120 },
+      },
+    };
+    const loading = renderToStaticMarkup(
+      <GridSkeleton layout={layout} ready={false}>
+        <div>grid content</div>
+      </GridSkeleton>
+    );
+    const ready = renderToStaticMarkup(
+      <GridSkeleton layout={layout} ready>
+        <div>grid content</div>
+      </GridSkeleton>
     );
 
-    expectNoDefaultCacheOrRestoreMarkers(markup);
+    expect(loading).toContain('data-rmg-skeleton-layout-owner="skeleton"');
+    expect(ready).toContain('data-rmg-skeleton-layout-owner="content"');
   });
 });

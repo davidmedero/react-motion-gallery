@@ -8,15 +8,14 @@ import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { Masonry } from "react-motion-gallery/masonry";
 import {
   Entries,
-  createEntriesMasonryMedia,
   flattenEntries,
   type EntryCardRenderArgs,
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
-} from "react-motion-gallery/entries/cache";
+} from "react-motion-gallery/entries";
+import { createEntriesMasonryMedia } from "react-motion-gallery/entries/media/masonry";
 import styles from "./entries-masonry-demo.module.css";
 import { entriesMasonrySkeletonText } from "./entries-masonry.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoEntry = {
   id: string;
@@ -574,7 +573,6 @@ export function EntriesMasonryDemo() {
               overlay: renderEntryOverlay,
             },
             loading: {
-              cache: demoSkeletonCache("entries-masonry"),
               skeletonWrap: {
                 style: {
                   background: "#fff",

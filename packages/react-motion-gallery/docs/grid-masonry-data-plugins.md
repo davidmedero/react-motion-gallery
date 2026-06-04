@@ -51,7 +51,7 @@ import {
 | Grid    | `react-motion-gallery/grid/pagination`    | `react-motion-gallery/grid/load-more`    | `react-motion-gallery/grid/infinite-scroll`    | `react-motion-gallery/grid/virtualization`    |
 | Masonry | `react-motion-gallery/masonry/pagination` | `react-motion-gallery/masonry/load-more` | `react-motion-gallery/masonry/infinite-scroll` | `react-motion-gallery/masonry/virtualization` |
 
-The Masonry factories are cross-surface plugins. The same `masonryPagination()`, `masonryLoadMore()`, `masonryInfiniteScroll()`, and `masonryVirtualization()` plugin can be passed to either default dimensioned Masonry or measured Masonry.
+The Masonry factories target the dimensioned `react-motion-gallery/masonry` surface. Each child should provide deterministic item geometry through `Masonry.Item`.
 
 ## Minimal Examples
 
@@ -166,4 +166,4 @@ The sentinel renders after the layout root. That keeps it out of CSS grid placem
 | `gap`          | `number`  | `24`    | Vertical gap used for virtual range math.        |
 | `overscan`     | `number`  | `3`     | Extra rows or items mounted around the viewport. |
 
-Virtualization runs after pagination and load-more. Grid virtualizes by rows and uses top and bottom spacers. Default Masonry uses known item positions. Measured Masonry starts from estimated or seeded heights, then refines its virtual range as items are measured with `ResizeObserver`.
+Virtualization runs after pagination and load-more. Grid virtualizes by rows and uses top and bottom spacers. Masonry windows known dimensioned item positions, so `Masonry.Item` width, height, span, and optional `heightOffsetPx` should reflect the rendered card geometry.

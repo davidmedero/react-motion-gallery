@@ -8,15 +8,10 @@ const outputFile = path.join(distDir, "styles.css");
 
 const styleEntryFiles = [
   "index.css",
-  // The root entry now points at the lightweight masonry core. Keep the
-  // measured masonry CSS in the global stylesheet for users and demos that
-  // import react-motion-gallery/styles.css with the measured subpath.
-  "masonry-measured.css",
   // The root entry does not reference the split skeleton entries, but public
   // demos and copy-paste examples can import them from react-motion-gallery/skeleton/*.
   "skeleton-grid.css",
   "skeleton-masonry.css",
-  "skeleton-masonry-structured.css",
 ];
 
 const missingFiles = styleEntryFiles.filter(

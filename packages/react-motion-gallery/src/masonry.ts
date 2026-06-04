@@ -7,6 +7,8 @@ export { useMasonryReady } from "./masonry-ready";
 
 export type {
   MasonryHandle,
+  MasonryHeightOffsetPx,
+  MasonryHeightOffsetRule,
   MasonryItemProps,
   MasonryLoadingOptions,
   MasonryLoadingSkeletonArgs,

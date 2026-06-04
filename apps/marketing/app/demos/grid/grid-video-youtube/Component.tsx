@@ -10,10 +10,9 @@ import { Video } from "react-motion-gallery/video";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
-import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/cache/grid";
+import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-video-youtube-demo.module.css";
 import { gridVideoYoutubeSkeletonText } from "./grid-video-youtube.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   title: string;
@@ -207,7 +206,6 @@ export function GridVideoYoutubeDemo() {
         fullscreenTrigger="item"
         loading={{
           skeleton: YOUTUBE_VIDEO_SKELETON,
-          cache: demoSkeletonCache("grid-video-youtube"),
         }}
         plugins={[gridFullscreen()]}
       >

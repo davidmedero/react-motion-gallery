@@ -1,18 +1,20 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
-import { Grid, type ResponsiveGridSpan } from "react-motion-gallery/grid";
+import {
+  Grid,
+  type ResponsiveGridSpan,
+} from "react-motion-gallery/grid";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
-import type {
-  GridSkeletonSpec,
-  SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/grid";
+import {
+  type GridSkeletonSpec,
+  type SkeletonNode,
+} from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-template-columns-demo.module.css";
 import {
   bridgeSpanBody,
@@ -28,7 +30,6 @@ import {
   narrowRailBody,
   narrowRailTitle,
 } from "./grid-template-columns.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoItem = {
   imageSrc: string;
@@ -284,7 +285,6 @@ export function GridTemplateColumnsDemo() {
         fullscreenTrigger="item"
         loading={{
           skeleton: GRID_TEMPLATE_COLUMNS_SKELETON,
-          cache: demoSkeletonCache("grid-template-columns"),
           timing: { exitMs: 1200 },
         }}
         plugins={[gridFullscreen()]}

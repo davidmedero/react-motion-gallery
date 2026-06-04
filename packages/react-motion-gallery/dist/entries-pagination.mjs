@@ -1,1 +1,1 @@
-export{e as EntriesPaginationControls,c as entriesPagination,b as getEntriesPageItems,a as getEntriesPageRange,d as useEntriesPagination}from'./chunk-VKROQSDU.mjs';import'./chunk-L4NJDMCU.mjs';import'./chunk-ODBPQRVS.mjs';
+export{e as EntriesPaginationControls,c as entriesPagination,b as getEntriesPageItems,a as getEntriesPageRange,d as useEntriesPagination}from'./chunk-IWFBL2G3.mjs';import'./chunk-ODBPQRVS.mjs';import'./chunk-L4NJDMCU.mjs';

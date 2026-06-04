@@ -17,9 +17,19 @@ const README_END = "<!-- bundle-size:end -->";
 const REPORTED_SURFACES = [
   { label: "Entries", exportName: "Entries", entry: "dist/entries.mjs" },
   {
-    label: "entries/cache",
-    exportName: "CachedEntries",
-    entry: "dist/entries-cache.mjs",
+    label: "entries/media/slider",
+    exportName: "createEntriesSliderMedia",
+    entry: "dist/entries-media-slider.mjs",
+  },
+  {
+    label: "entries/media/grid",
+    exportName: "createEntriesGridMedia",
+    entry: "dist/entries-media-grid.mjs",
+  },
+  {
+    label: "entries/media/masonry",
+    exportName: "createEntriesMasonryMedia",
+    entry: "dist/entries-media-masonry.mjs",
   },
   {
     label: "entries/ready",
@@ -105,19 +115,14 @@ const REPORTED_SURFACES = [
     entry: "dist/masonry-fullscreen.mjs",
   },
   {
-    label: "masonry/measured",
-    exportName: "Masonry",
-    entry: "dist/masonry-measured.mjs",
-  },
-  {
-    label: "masonry/measured/ready",
-    exportName: "useMasonryReady",
-    entry: "dist/masonry-measured-ready.mjs",
-  },
-  {
     label: "masonry/lazy-load",
     exportName: "masonryLazyLoad",
     entry: "dist/masonry-lazy-load.mjs",
+  },
+  {
+    label: "masonry/text-wrap",
+    exportName: "useMasonryTextWrapLayout",
+    entry: "dist/masonry-text-wrap.mjs",
   },
   {
     label: "masonry/pagination",
@@ -145,11 +150,6 @@ const REPORTED_SURFACES = [
     entry: "dist/skeleton-base.mjs",
   },
   {
-    label: "skeleton/cache/base",
-    exportName: "CachedSkeleton",
-    entry: "dist/skeleton-cache-base.mjs",
-  },
-  {
     label: "skeleton/slider",
     exportName: "SliderSkeleton",
     entry: "dist/skeleton-slider.mjs",
@@ -170,29 +170,9 @@ const REPORTED_SURFACES = [
     entry: "dist/skeleton-grid.mjs",
   },
   {
-    label: "skeleton/cache/grid",
-    exportName: "CachedGridSkeleton",
-    entry: "dist/skeleton-cache-grid.mjs",
-  },
-  {
     label: "skeleton/masonry",
     exportName: "MasonrySkeleton",
     entry: "dist/skeleton-masonry.mjs",
-  },
-  {
-    label: "skeleton/cache/masonry",
-    exportName: "CachedMasonrySkeleton",
-    entry: "dist/skeleton-cache-masonry.mjs",
-  },
-  {
-    label: "skeleton/masonry/structured",
-    exportName: "MasonrySkeleton",
-    entry: "dist/skeleton-masonry-structured.mjs",
-  },
-  {
-    label: "skeleton/cache/masonry/structured",
-    exportName: "CachedMasonrySkeleton",
-    entry: "dist/skeleton-cache-masonry-structured.mjs",
   },
   {
     label: "Slider core",

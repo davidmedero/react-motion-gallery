@@ -225,7 +225,7 @@ sampling line boxes:
 - `stableGeometryFrames`
   - optional number of consecutive polling ticks that target geometry must remain unchanged before sampling
   - defaults to `3`
-  - increase this for layouts with extra client measurement passes, such as masonry pages that seed item heights and then update after `ResizeObserver`
+  - increase this for layouts with extra client-side measurement passes, such as pages that wait for media, fonts, or responsive geometry to settle after hydration
 - `readyExpression`
   - optional browser expression string that must evaluate truthy before stable geometry is sampled
   - use this for demos with a known client-only responsive state, such as masonry columns that briefly render in an intermediate layout before the final breakpoint state is applied

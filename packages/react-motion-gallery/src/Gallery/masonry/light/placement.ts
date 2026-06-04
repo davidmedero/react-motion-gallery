@@ -14,8 +14,23 @@ export type ResponsiveMasonrySpan = MasonrySpan | Record<string, MasonrySpan>;
 export type MasonryDimensionItem = {
   width: number;
   height: number;
+  heightOffsetPx?: MasonryHeightOffsetPx;
   span?: ResponsiveMasonrySpan;
 };
+
+export type MasonryHeightOffsetRule = {
+  value: number;
+  viewportMinWidth?: number;
+  containerMinWidth?: number;
+};
+
+export type MasonryHeightOffsetPx =
+  | number
+  | ResponsiveNumber
+  | {
+      rules: ReadonlyArray<MasonryHeightOffsetRule>;
+      fallback?: number;
+    };
 
 export type MasonryPositionedItem = {
   index: number;
@@ -61,6 +76,40 @@ function addResponsiveMinWidth(
   }
 }
 
+function isHeightOffsetRuleSet(
+  value: MasonryHeightOffsetPx | undefined
+): value is { rules: ReadonlyArray<MasonryHeightOffsetRule>; fallback?: number } {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Array.isArray((value as { rules?: unknown }).rules)
+  );
+}
+
+function addResponsiveHeightOffsetMinWidths(
+  value: MasonryHeightOffsetPx | undefined,
+  viewportMinWidths: Set<number>,
+  containerMinWidths: Set<number>,
+  breakpointMap: BreakpointMap
+) {
+  if (isHeightOffsetRuleSet(value)) {
+    for (const rule of value.rules) {
+      const viewportMinWidth = Number(rule.viewportMinWidth ?? 0);
+      const containerMinWidth = Number(rule.containerMinWidth ?? 0);
+      if (Number.isFinite(viewportMinWidth) && viewportMinWidth >= 0) {
+        viewportMinWidths.add(viewportMinWidth);
+      }
+      if (Number.isFinite(containerMinWidth) && containerMinWidth >= 0) {
+        containerMinWidths.add(containerMinWidth);
+      }
+    }
+    return;
+  }
+
+  addResponsiveMinWidth(value, viewportMinWidths, breakpointMap);
+}
+
 function parseBreakpointMinWidth(key: string, breakpointMap: BreakpointMap) {
   const mapped = breakpointMap[key];
   if (typeof mapped === "number" && Number.isFinite(mapped)) return mapped;
@@ -83,6 +132,31 @@ export function collectMasonryResponsiveMinWidths(args: {
 
   for (const item of args.items ?? []) {
     addResponsiveMinWidth(item.span, minWidths, breakpointMap);
+    addResponsiveHeightOffsetMinWidths(
+      item.heightOffsetPx,
+      minWidths,
+      new Set<number>(),
+      breakpointMap
+    );
+  }
+
+  return Array.from(minWidths).sort((a, b) => a - b);
+}
+
+export function collectMasonryResponsiveContainerMinWidths(args: {
+  items?: ReadonlyArray<MasonryDimensionItem>;
+  breakpointMap?: BreakpointMap;
+}) {
+  const breakpointMap = args.breakpointMap ?? BREAKPOINT_MAP;
+  const minWidths = new Set<number>([0]);
+
+  for (const item of args.items ?? []) {
+    addResponsiveHeightOffsetMinWidths(
+      item.heightOffsetPx,
+      new Set<number>(),
+      minWidths,
+      breakpointMap
+    );
   }
 
   return Array.from(minWidths).sort((a, b) => a - b);
@@ -186,6 +260,50 @@ function round(value: number) {
   return Math.round(value * 1000) / 1000;
 }
 
+function normalizeHeightOffsetPx(
+  value: MasonryHeightOffsetPx | undefined,
+  viewportWidth: number,
+  containerWidth: number,
+  breakpointMap: BreakpointMap
+) {
+  if (isHeightOffsetRuleSet(value)) {
+    const fallback = Math.max(0, Number(value.fallback ?? 0) || 0);
+    let resolved = fallback;
+
+    value.rules
+      .slice()
+      .sort(
+        (a, b) =>
+          (a.viewportMinWidth ?? 0) - (b.viewportMinWidth ?? 0) ||
+          (a.containerMinWidth ?? 0) - (b.containerMinWidth ?? 0)
+      )
+      .forEach((rule) => {
+        const ruleViewportWidth = Number(rule.viewportMinWidth ?? 0);
+        const ruleContainerWidth = Number(rule.containerMinWidth ?? 0);
+
+        if (
+          viewportWidth >= ruleViewportWidth &&
+          containerWidth >= ruleContainerWidth
+        ) {
+          const offset = Number(rule.value);
+          if (Number.isFinite(offset)) resolved = Math.max(0, offset);
+        }
+      });
+
+    return resolved;
+  }
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return Math.max(
+      0,
+      resolveNumberFromResponsive(value, 0, viewportWidth, breakpointMap)
+    );
+  }
+
+  const offset = Number(value);
+  return Number.isFinite(offset) ? Math.max(0, offset) : 0;
+}
+
 type FluidTerm = {
   cqw: number;
   px: number;
@@ -275,10 +393,17 @@ export function buildDimensionedMasonryLayout(args: {
     const itemWidth = columnWidth * span + gapPx * Math.max(0, span - 1);
     const intrinsicWidth = Number(item.width);
     const intrinsicHeight = Number(item.height);
-    const itemHeight =
+    const heightOffsetPx = normalizeHeightOffsetPx(
+      item.heightOffsetPx,
+      viewportWidth,
+      containerWidth,
+      args.breakpointMap ?? BREAKPOINT_MAP
+    );
+    const ratioHeight =
       intrinsicWidth > 0 && intrinsicHeight > 0
         ? itemWidth * (intrinsicHeight / intrinsicWidth)
         : 0;
+    const itemHeight = ratioHeight + heightOffsetPx;
 
     let columnStart = 0;
     let top = 0;
@@ -347,6 +472,7 @@ export function buildDimensionedMasonryFluidLayout(args: {
   gapPx: number;
   placement?: MasonryPlacement;
   viewportWidth?: number;
+  containerWidth?: number;
   breakpointMap?: BreakpointMap;
 }): MasonryFluidPositionedLayout {
   const safeColumnCount = Math.max(1, args.columnCount | 0);
@@ -359,6 +485,7 @@ export function buildDimensionedMasonryFluidLayout(args: {
   const positioned: MasonryFluidPositionedItem[] = [];
   const placement = args.placement ?? "balanced";
   const viewportWidth = args.viewportWidth ?? DEFAULT_SERVER_VIEWPORT_WIDTH;
+  const containerWidth = args.containerWidth ?? viewportWidth;
   let layoutHeight: FluidTerm = { cqw: 0, px: 0 };
   let roundRobinCursor = 0;
   let horizontalCursor = 0;
@@ -377,10 +504,17 @@ export function buildDimensionedMasonryFluidLayout(args: {
     };
     const intrinsicWidth = Number(item.width);
     const intrinsicHeight = Number(item.height);
-    const itemHeight =
+    const heightOffsetPx = normalizeHeightOffsetPx(
+      item.heightOffsetPx,
+      viewportWidth,
+      containerWidth,
+      args.breakpointMap ?? BREAKPOINT_MAP
+    );
+    const ratioHeight =
       intrinsicWidth > 0 && intrinsicHeight > 0
         ? scaleTerm(itemWidth, intrinsicHeight / intrinsicWidth)
         : { cqw: 0, px: 0 };
+    const itemHeight = addTerms(ratioHeight, { cqw: 0, px: heightOffsetPx });
 
     let columnStart = 0;
     let top: FluidTerm = { cqw: 0, px: 0 };

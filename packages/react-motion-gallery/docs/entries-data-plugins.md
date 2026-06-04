@@ -42,7 +42,7 @@ The `react-motion-gallery/entries` subpath also exports the plugin helpers when 
 | Infinite scroll | `react-motion-gallery/entries/infinite-scroll` | `entriesInfiniteScroll`, `useEntriesInfiniteScroll`                      |
 | Virtualization  | `react-motion-gallery/entries/virtualization`  | `entriesVirtualization`, `useEntriesVirtualizer`                         |
 
-The snippets below focus on data behavior and assume your component already provides a `renderMediaContainer` function such as the helper returned by `createEntriesGridMedia()`, `createEntriesSliderMedia()`, or `createEntriesMasonryMedia()`.
+The snippets below focus on data behavior and assume your component already provides a `renderMediaContainer` function such as the helper returned by `createEntriesGridMedia()` from `react-motion-gallery/entries/media/grid`, `createEntriesSliderMedia()` from `react-motion-gallery/entries/media/slider`, or `createEntriesMasonryMedia()` from `react-motion-gallery/entries/media/masonry`.
 
 Minimal examples:
 

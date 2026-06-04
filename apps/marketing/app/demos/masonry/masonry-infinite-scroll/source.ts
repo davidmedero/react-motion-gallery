@@ -16,7 +16,7 @@ import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import {
   Masonry,
   type MasonryLoadingOptions,
-} from "react-motion-gallery/masonry/measured";
+} from "react-motion-gallery/masonry";
 import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import { masonryLoadMore } from "react-motion-gallery/masonry/load-more";
 import { useMasonryInfiniteScroll } from "react-motion-gallery/masonry/infinite-scroll";
@@ -181,7 +181,6 @@ const GENERATED_IMAGE_SIZES = [
   { width: 900, height: 1520, color: "d8edf4" },
   { width: 900, height: 1120, color: "eadfe0" },
 ] as const;
-const FIRST_PAINT_CONTENT_WIDTH = 306.65;
 const CARD_CHROME_HEIGHT = 250;
 function stableProductNumber(product: Product) {
   const match = product.id.match(/\d+/);
@@ -217,16 +216,6 @@ function productImageStyle(image: { width: number; height: number }) {
     "--product-image-aspect-ratio":
       String(image.width) + " / " + String(image.height),
   } as CSSProperties;
-}
-function estimateCardHeight(product: Product) {
-  const image = productImage(product);
-  return (
-    Math.round(
-      ((FIRST_PAINT_CONTENT_WIDTH * image.height) / image.width +
-        CARD_CHROME_HEIGHT) *
-        1000,
-    ) / 1000
-  );
 }
 function skeletonImageStyle(index: number) {
   return productImageStyle(generatedImageSpec(index));
@@ -457,16 +446,11 @@ function MasonryGallery({
   loadingOptions: MasonryLoadingOptions;
   plugins: unknown[];
 }) {
-  const initialHeights = useMemo(
-    () => products.map((product) => estimateCardHeight(product)),
-    [products],
-  );
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenItems(products)}>
       <Masonry
         columns={{ 0: 1, 640: 2, 1024: 3 }}
         gap={{ 0: 12, 900: 18 }}
-        initialHeights={initialHeights}
         placement="balanced"
         plugins={plugins as never}
         classNames={{ root: styles.masonryRoot, item: styles.masonryItem }}
@@ -476,9 +460,13 @@ function MasonryGallery({
         {products.map((product, index) => {
           const key = productKey(product, index);
           const placeholder = isPlaceholderProduct(product);
+          const image = productImage(product);
           return (
             <Masonry.Item
               key={key}
+              width={image.width}
+              height={image.height}
+              heightOffsetPx={CARD_CHROME_HEIGHT}
               revealKey={productRevealKey(product)}
               placeholder={placeholder}
               className={placeholder ? styles.placeholderItem : undefined}
@@ -496,7 +484,6 @@ function MasonryGallery({
     </GalleryCore>
   );
 }
-
 export function MasonryInfiniteScrollDemo() {
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
@@ -509,20 +496,22 @@ export function MasonryInfiniteScrollDemo() {
   useEffect(() => {
     lengthRef.current = products.length;
   }, [products.length]);
+  const isInitialBusy = loading && products.length === 0;
   const loadingOptions = useMemo<MasonryLoadingOptions>(
     () => ({
-      active: false,
-      count: 0,
+      active: isInitialBusy,
+      count: PAGE_SIZE,
+      force: isInitialBusy ? true : undefined,
       animate: true,
       waitForMedia: true,
       rootMargin: "0px",
       threshold: 0,
-      timing: { minVisibleMs: 0 },
-      keepSkeletonMounted: false,
+      timing: { enterMs: 360, minVisibleMs: 0 },
+      keepSkeletonMounted: true,
       rememberRevealed: true,
       skeleton: ({ index }) => <ProductSkeleton index={index} />,
     }),
-    [],
+    [isInitialBusy],
   );
   const loadNext = useCallback(
     (mode: "replace" | "append" = "append") => {
@@ -584,7 +573,7 @@ export function MasonryInfiniteScrollDemo() {
   }, [loadNext]);
   const hasMore = total === 0 || products.length < total;
   const displayProducts = useMemo(() => {
-    if (products.length === 0 && loading) {
+    if (isInitialBusy) {
       return createPlaceholderProducts(PAGE_SIZE, 0, getInitialProductSlotKey);
     }
 
@@ -600,17 +589,17 @@ export function MasonryInfiniteScrollDemo() {
         )
       : products;
 
-    return pendingCount > 0
-      ? [
-          ...slottedProducts,
-          ...createPlaceholderProducts(
-            pendingCount,
-            products.length,
-            getProductSlotKey,
-          ),
-        ]
-      : slottedProducts;
-  }, [loading, pendingCount, products, useInitialSlots]);
+    if (pendingCount <= 0) return slottedProducts;
+
+    return [
+      ...slottedProducts,
+      ...createPlaceholderProducts(
+        pendingCount,
+        products.length,
+        getProductSlotKey,
+      ),
+    ];
+  }, [isInitialBusy, pendingCount, products, useInitialSlots]);
   const infinitePlugin = useMasonryInfiniteScroll({
     hasMore,
     loading,

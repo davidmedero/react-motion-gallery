@@ -4,10 +4,9 @@ import { describe, expect, test } from "vitest";
 
 import * as masonryEntry from "../../masonry";
 import * as masonryReadyEntry from "../../masonry-ready";
-import * as masonryMeasuredEntry from "../../masonry-measured";
-import * as masonryMeasuredReadyEntry from "../../masonry-measured-ready";
 import * as masonryFullscreenEntry from "../../masonry-fullscreen";
 import * as masonryLazyLoadEntry from "../../masonry-lazy-load";
+import * as masonryTextWrapEntry from "../../masonry-text-wrap";
 import * as masonryPaginationEntry from "../../masonry-pagination";
 import * as masonryLoadMoreEntry from "../../masonry-load-more";
 import * as masonryInfiniteScrollEntry from "../../masonry-infinite-scroll";
@@ -18,12 +17,6 @@ import type {
   MasonryLoadingSkeletonArgs,
   MasonryRevealOptions,
 } from "../../masonry";
-import type {
-  MasonryItemProps as MeasuredMasonryItemProps,
-  MasonryLoadingOptions as MeasuredMasonryLoadingOptions,
-  MasonryLoadingSkeletonArgs as MeasuredMasonryLoadingSkeletonArgs,
-  RevealOptions as MeasuredMasonryRevealOptions,
-} from "../../masonry-measured";
 
 type Expect<T extends true> = T;
 type MasonryLoadingOptionsExported = Expect<
@@ -43,24 +36,6 @@ type MasonryItemRevealKeyExported = Expect<
 type MasonryItemPlaceholderExported = Expect<
   MasonryItemProps extends { placeholder?: boolean } ? true : false
 >;
-type MeasuredMasonryLoadingOptionsExported = Expect<
-  MeasuredMasonryLoadingOptions extends { skeleton?: unknown } ? true : false
->;
-type MeasuredMasonryLoadingSkeletonArgsExported = Expect<
-  MeasuredMasonryLoadingSkeletonArgs extends { ready: boolean; revealKey?: React.Key }
-    ? true
-    : false
->;
-type MeasuredMasonryRevealStaggerLimitExported = Expect<
-  MeasuredMasonryRevealOptions extends { staggerLimit?: number } ? true : false
->;
-type MeasuredMasonryItemRevealKeyExported = Expect<
-  MeasuredMasonryItemProps extends { revealKey?: React.Key } ? true : false
->;
-type MeasuredMasonryItemPlaceholderExported = Expect<
-  MeasuredMasonryItemProps extends { placeholder?: boolean } ? true : false
->;
-
 const packageJson = JSON.parse(
   readFileSync(new URL("../../../package.json", import.meta.url), "utf8")
 ) as { exports: Record<string, unknown> };
@@ -72,10 +47,8 @@ describe("masonry public entries", () => {
     expect(masonryEntry.useMasonryReady).toBeTypeOf("function");
     expect(packageJson.exports["./masonry/ready"]).toBeDefined();
     expect(masonryReadyEntry.useMasonryReady).toBe(masonryEntry.useMasonryReady);
-    expect(packageJson.exports["./masonry/measured"]).toBeDefined();
-    expect(packageJson.exports["./masonry/measured/ready"]).toBeDefined();
-    expect(masonryMeasuredEntry.Masonry).toBeDefined();
-    expect(masonryMeasuredEntry.useMasonryReady).toBe(masonryMeasuredReadyEntry.useMasonryReady);
+    expect(packageJson.exports["./masonry/measured"]).toBeUndefined();
+    expect(packageJson.exports["./masonry/measured/ready"]).toBeUndefined();
   });
 
   test("exports masonry lazy-load as a dedicated plugin subpath", () => {
@@ -92,6 +65,25 @@ describe("masonry public entries", () => {
       __rmgLightMasonryPlugin: true,
       kind: "lazy-load",
       blocksReady: false,
+    });
+  });
+
+  test("exports masonry text-wrap helpers as a dedicated subpath", () => {
+    expect(packageJson.exports["./masonry/text-wrap"]).toBeDefined();
+    expect(masonryTextWrapEntry.useMasonryTextWrapLayout).toBeTypeOf("function");
+    expect(
+      masonryTextWrapEntry.createMasonryTextWrapSkeletonLayout({
+        item: { kind: "rect", style: { height: 24 } },
+        itemWrapStyle: { padding: 12 },
+      }),
+    ).toMatchObject({
+      kind: "col",
+      style: {
+        width: "100%",
+        boxSizing: "border-box",
+        padding: 12,
+      },
+      children: [{ kind: "rect", style: { height: 24 } }],
     });
   });
 

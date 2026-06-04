@@ -38,6 +38,13 @@ function getOriginImage(
   return item.querySelector<HTMLImageElement>("img");
 }
 
+function getOriginVideo(item: HTMLElement, trigger: HTMLElement | null) {
+  return (
+    trigger?.querySelector<HTMLElement>("video,[data-rmg-plyr='true'],.plyr") ??
+    item.querySelector<HTMLElement>("video,[data-rmg-plyr='true'],.plyr")
+  );
+}
+
 function isInteractiveTarget(target: EventTarget | null) {
   const node = getElement(target);
   return !!node?.closest(
@@ -71,7 +78,8 @@ export function resolveMasonryFullscreenClick(target: EventTarget | null) {
   if (!Number.isFinite(index)) return null;
 
   const image = getOriginImage(target, item, trigger);
-  if (!image) return null;
+  const media = image ?? getOriginVideo(item, trigger);
+  if (!media) return null;
 
   return { index, image };
 }

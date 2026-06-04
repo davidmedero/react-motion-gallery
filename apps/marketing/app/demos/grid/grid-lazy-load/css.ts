@@ -1,4 +1,9 @@
-export const css = String.raw`.gridCard {
+export const css = String.raw`:global([data-rmg-grid-item-layered="1"] > [data-rmg-grid-item-content="true"])
+.gridCard {
+  height: auto;
+}
+
+.gridCard {
   display: grid;
   gap: 12px;
 }

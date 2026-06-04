@@ -34,6 +34,7 @@ function renderLazyMasonryItem(
     <LazyItemHost
       ref={args.itemRef}
       index={args.index}
+      resetKey={args.itemIndex ?? args.index}
       lazyLoad={lazyLoad}
       revealedIndicesRef={args.revealedIndicesRef}
       {...args.itemProps}

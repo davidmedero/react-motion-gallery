@@ -16,7 +16,6 @@ import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import {
   Entries,
-  createEntriesSliderMedia,
   flattenEntries,
   type EntriesHandle,
   type EntriesPlugin,
@@ -25,6 +24,7 @@ import {
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
 } from "react-motion-gallery/entries";
+import { createEntriesSliderMedia } from "react-motion-gallery/entries/media/slider";
 import {
   EntriesPaginationControls,
   useEntriesPagination,

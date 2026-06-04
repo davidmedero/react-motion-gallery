@@ -659,6 +659,29 @@ describe("fullscreen close sequencing", () => {
     unmount(root, container);
   });
 
+  test("keeps the transform close image inside the modal stacking context", async () => {
+    const { closeButton, container, root } = setupGridCloseScenario(
+      undefined,
+      undefined,
+      "linear",
+      { destDocumentTop: 250 }
+    );
+
+    await clickClose(closeButton);
+
+    const modal = container.querySelector(".fs_modal");
+    const closeClipper = container.querySelector<HTMLElement>(
+      "[data-rmg-fs-close-clipper='true']"
+    );
+
+    expect(modal).not.toBeNull();
+    expect(closeClipper).not.toBeNull();
+    expect(closeClipper?.parentElement).toBe(modal);
+    expect(closeClipper?.style.zIndex).toBe("1");
+
+    unmount(root, container);
+  });
+
   test("uses fade timing when the slider thumbnail is offscreen", async () => {
     const { closeButton, container, events, root } = setupGridCloseScenario(
       undefined,

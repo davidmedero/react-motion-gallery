@@ -1,4 +1,4 @@
-export { R as ResponsiveCaptionPlacement, A as ResponsiveLength, B as ResponsiveLengthValue, Z as ResponsivePosition } from './responsive-Bw0ub6Hv.mjs';
+export { R as ResponsiveCaptionPlacement, A as ResponsiveLength, B as ResponsiveLengthValue, Z as ResponsivePosition } from './responsive-BgOmwHgG.mjs';
 export { a as BREAKPOINT_MAP, B as BreakpointMap, R as ResponsiveNumber } from './responsiveNumber-CouEMJ9O.mjs';
 import './types-uhDRb0mo.mjs';
 import 'react';

@@ -204,7 +204,9 @@ Source entry: `src/grid-virtualization.ts`.
 
 Source entry: `src/masonry.ts`.
 
-`default`, `Masonry`, `MasonryHandle`, `MasonryInfiniteScrollOptions`, `MasonryItem`, `MasonryItemProps`, `MasonryItemsPerPageOption`, `MasonryLoadingOptions`, `MasonryLoadingSkeletonArgs`, `MasonryLoadMoreOptions`, `MasonryOptions`, `MasonryPaginationControlsProps`, `MasonryPaginationOptions`, `MasonryPaginationRippleOptions`, `MasonryPaginationRippleProp`, `MasonryPaginationSessionStorageOptions`, `MasonryPlacement`, `MasonryPlugin`, `MasonryPluginHost`, `MasonryPluginKind`, `MasonryPluginRuntimeProps`, `MasonryReadyController`, `MasonryRevealOptions`, `MasonrySpan`, `MasonryVirtualizationOptions`, `ResponsiveMasonrySpan`, `UseMasonryInfiniteScrollOptions`, `UseMasonryLoadMoreOptions`, `UseMasonryPaginationOptions`, `useMasonryReady`, `UseMasonryVirtualizerOptions`
+`default`, `Masonry`, `MasonryHandle`, `MasonryHeightOffsetPx`, `MasonryHeightOffsetRule`, `MasonryInfiniteScrollOptions`, `MasonryItem`, `MasonryItemProps`, `MasonryItemsPerPageOption`, `MasonryLoadingOptions`, `MasonryLoadingSkeletonArgs`, `MasonryLoadMoreOptions`, `MasonryOptions`, `MasonryPaginationControlsProps`, `MasonryPaginationOptions`, `MasonryPaginationRippleOptions`, `MasonryPaginationRippleProp`, `MasonryPaginationSessionStorageOptions`, `MasonryPlacement`, `MasonryPlugin`, `MasonryPluginHost`, `MasonryPluginKind`, `MasonryPluginRuntimeProps`, `MasonryReadyController`, `MasonryRevealOptions`, `MasonrySpan`, `MasonryVirtualizationOptions`, `ResponsiveMasonrySpan`, `UseMasonryInfiniteScrollOptions`, `UseMasonryLoadMoreOptions`, `UseMasonryPaginationOptions`, `useMasonryReady`, `UseMasonryVirtualizerOptions`
+
+`MasonryItemProps` includes `heightOffsetPx?: MasonryHeightOffsetPx` for fixed or responsive card chrome added after aspect-ratio layout.
 
 ## `react-motion-gallery/masonry/ready`
 
@@ -218,23 +220,17 @@ Source entry: `src/masonry-fullscreen.ts`.
 
 `masonryFullscreen`, `resolveMasonryFullscreenClick`
 
-## `react-motion-gallery/masonry/measured`
-
-Source entry: `src/masonry-measured.ts`.
-
-`default`, `Masonry`, `MasonryHandle`, `MasonryInfiniteScrollOptions`, `MasonryItemProps`, `MasonryLoadingOptions`, `MasonryLoadingSkeletonArgs`, `MasonryLoadMoreOptions`, `MasonryOptions`, `MasonryPaginationControlsProps`, `MasonryPaginationOptions`, `MasonryPlugin`, `MasonryPluginHost`, `MasonryPluginKind`, `MasonryPluginRuntimeProps`, `MasonryReadyController`, `MasonrySpan`, `MasonryVirtualizationOptions`, `ResponsiveMasonrySpan`, `RevealOptions`, `UseMasonryInfiniteScrollOptions`, `UseMasonryLoadMoreOptions`, `UseMasonryPaginationOptions`, `useMasonryReady`, `UseMasonryVirtualizerOptions`
-
-## `react-motion-gallery/masonry/measured/ready`
-
-Source entry: `src/masonry-measured-ready.ts`.
-
-`MasonryReadyController`, `useMasonryReady`
-
 ## `react-motion-gallery/masonry/lazy-load`
 
 Source entry: `src/masonry-lazy-load.ts`.
 
 `masonryLazyLoad`, `MasonryLazyLoadOptions`
+
+## `react-motion-gallery/masonry/text-wrap`
+
+Source entry: `src/masonry-text-wrap.ts`.
+
+`createMasonryTextWrapSkeletonLayout`, `MasonryTextWrapChromeMetrics`, `MasonryTextWrapItemGeometry`, `MasonryTextWrapItemGeometryOptions`, `MasonryTextWrapLayoutController`, `MasonryTextWrapLayoutOptions`, `MasonryTextWrapResponsiveNumber`, `MasonryTextWrapTextEntry`, `MasonryTextWrapTextState`, `useMasonryTextWrapLayout`
 
 ## `react-motion-gallery/masonry/pagination`
 
@@ -264,13 +260,25 @@ Source entry: `src/masonry-virtualization.ts`.
 
 Source entry: `src/entries.ts`.
 
-`createEntriesGridMedia`, `createEntriesMasonryMedia`, `createEntriesSliderMedia`, `default`, `DEFAULT_ENTRIES_SKELETON_EXIT_MS`, `Entries`, `EntriesCore`, `EntriesCoreProps`, `EntriesDataMode`, `EntriesHandle`, `entriesInfiniteScroll`, `EntriesInfiniteScrollOptions`, `EntriesItemsPerPageOption`, `EntriesLayout`, `EntriesLoadingOptions`, `entriesLoadMore`, `EntriesLoadMoreController`, `EntriesLoadMoreOptions`, `EntriesMediaContainerRender`, `EntriesOptions`, `EntriesPageControlItem`, `EntriesPageItemsOptions`, `EntriesPageRangeItem`, `EntriesPageRangeOptions`, `entriesPagination`, `EntriesPaginationController`, `EntriesPaginationControls`, `EntriesPaginationControlsProps`, `EntriesPaginationOptions`, `EntriesPaginationRippleOptions`, `EntriesPaginationRippleProp`, `EntriesPaginationSessionStorageOptions`, `EntriesPaginationUrlSyncOptions`, `EntriesPlugin`, `EntriesPluginKind`, `EntriesPluginOptionsByKind`, `EntriesProps`, `EntriesReadyController`, `entriesVirtualization`, `EntriesVirtualizationOptions`, `EntryCardRenderArgs`, `EntryItem`, `EntryList`, `EntryMediaLayout`, `EntryMediaRenderArgs`, `EntryOverlayRenderArgs`, `EntryOverlayStyle`, `EntrySkeletonRenderArgs`, `EntrySkeletonResolverArgs`, `flattenEntries`, `getEntriesPageItems`, `getEntriesPageRange`, `MediaEntryLink`, `nodeFromMediaDefault`, `resolveEntryLoadingVisualState`, `RevealOptions`, `SlideOwner`, `useEntriesInfiniteScroll`, `UseEntriesInfiniteScrollOptions`, `useEntriesLoadMore`, `UseEntriesLoadMoreOptions`, `useEntriesPagination`, `UseEntriesPaginationOptions`, `useEntriesReady`, `UseEntriesReadyOptions`, `useEntriesVirtualizer`, `UseEntriesVirtualizerOptions`, `useEntryDecodeReady`, `useEntryInView`, `UseEntryInViewOpts`, `useNormalizedEntriesLoading`, `useNormalizedEntriesReveal`
+`default`, `DEFAULT_ENTRIES_SKELETON_EXIT_MS`, `Entries`, `EntriesCore`, `EntriesCoreProps`, `EntriesDataMode`, `EntriesHandle`, `entriesInfiniteScroll`, `EntriesInfiniteScrollOptions`, `EntriesItemsPerPageOption`, `EntriesLayout`, `EntriesLoadingOptions`, `entriesLoadMore`, `EntriesLoadMoreController`, `EntriesLoadMoreOptions`, `EntriesMediaContainerRender`, `EntriesOptions`, `EntriesPageControlItem`, `EntriesPageItemsOptions`, `EntriesPageRangeItem`, `EntriesPageRangeOptions`, `entriesPagination`, `EntriesPaginationController`, `EntriesPaginationControls`, `EntriesPaginationControlsProps`, `EntriesPaginationOptions`, `EntriesPaginationRippleOptions`, `EntriesPaginationRippleProp`, `EntriesPaginationSessionStorageOptions`, `EntriesPaginationUrlSyncOptions`, `EntriesPlugin`, `EntriesPluginKind`, `EntriesPluginOptionsByKind`, `EntriesProps`, `EntriesReadyController`, `entriesVirtualization`, `EntriesVirtualizationOptions`, `EntryCardRenderArgs`, `EntryItem`, `EntryList`, `EntryMediaLayout`, `EntryMediaRenderArgs`, `EntryOverlayRenderArgs`, `EntryOverlayStyle`, `EntrySkeletonRenderArgs`, `EntrySkeletonResolverArgs`, `flattenEntries`, `getEntriesPageItems`, `getEntriesPageRange`, `MediaEntryLink`, `nodeFromMediaDefault`, `resolveEntryLoadingVisualState`, `RevealOptions`, `SlideOwner`, `useEntriesInfiniteScroll`, `UseEntriesInfiniteScrollOptions`, `useEntriesLoadMore`, `UseEntriesLoadMoreOptions`, `useEntriesPagination`, `UseEntriesPaginationOptions`, `useEntriesReady`, `UseEntriesReadyOptions`, `useEntriesVirtualizer`, `UseEntriesVirtualizerOptions`, `useEntryDecodeReady`, `useEntryInView`, `UseEntryInViewOpts`, `useNormalizedEntriesLoading`, `useNormalizedEntriesReveal`
 
-## `react-motion-gallery/entries/cache`
+## `react-motion-gallery/entries/media/slider`
 
-Source entry: `src/entries-cache.ts`.
+Source entry: `src/entries-media-slider.ts`.
 
-`CachedEntries`, `CachedEntriesOptions`, `CachedEntriesProps`, `createEntriesGridMedia`, `createEntriesMasonryMedia`, `createEntriesSliderMedia`, `default`, `Entries`, `EntriesHandle`, `entriesInfiniteScroll`, `EntriesInfiniteScrollOptions`, `EntriesItemsPerPageOption`, `EntriesLoadingOptions`, `entriesLoadMore`, `EntriesLoadMoreOptions`, `EntriesMediaContainerRender`, `EntriesOptions`, `EntriesPageControlItem`, `EntriesPageItemsOptions`, `EntriesPageRangeItem`, `EntriesPageRangeOptions`, `entriesPagination`, `EntriesPaginationController`, `EntriesPaginationControlsProps`, `EntriesPaginationOptions`, `EntriesPaginationRippleOptions`, `EntriesPaginationRippleProp`, `EntriesPaginationSessionStorageOptions`, `EntriesPaginationUrlSyncOptions`, `EntriesPlugin`, `EntriesPluginKind`, `EntriesProps`, `entriesVirtualization`, `EntriesVirtualizationOptions`, `EntryCardRenderArgs`, `EntryItem`, `EntryMediaLayout`, `EntryMediaRenderArgs`, `EntryOverlayRenderArgs`, `EntryOverlayStyle`, `EntrySkeletonRenderArgs`, `EntrySkeletonResolverArgs`, `flattenEntries`, `MediaEntryLink`, `RevealOptions`, `SkeletonCacheOptions`, `SkeletonCacheSnapshot`, `SlideOwner`, `useEntriesInfiniteScroll`, `useEntriesLoadMore`, `useEntriesPagination`, `UseEntriesPaginationOptions`, `useEntriesReady`, `useEntriesVirtualizer`
+`createEntriesSliderMedia`
+
+## `react-motion-gallery/entries/media/grid`
+
+Source entry: `src/entries-media-grid.ts`.
+
+`createEntriesGridMedia`
+
+## `react-motion-gallery/entries/media/masonry`
+
+Source entry: `src/entries-media-masonry.ts`.
+
+`createEntriesMasonryMedia`
 
 ## `react-motion-gallery/entries/ready`
 
@@ -320,41 +328,11 @@ Source entry: `src/skeleton-cache-provider.ts`.
 
 `SkeletonCacheProvider`, `SkeletonCacheProviderProps`
 
-## `react-motion-gallery/skeleton/cache/base`
-
-Source entry: `src/skeleton-cache-base.ts`.
-
-`CachedSkeleton`, `CachedSkeletonProps`, `default`, `Skeleton`, `SkeletonBaseStyle`, `SkeletonBaseStyleResponsive`, `SkeletonCacheOptions`, `SkeletonCacheSnapshot`, `SkeletonContainerStyle`, `SkeletonContainerStyleResponsive`, `SkeletonForceOptions`, `SkeletonFrameProps`, `SkeletonLength`, `SkeletonNode`, `SkeletonProps`, `SkeletonShimmer`, `SkeletonTimingOptions`, `TextSkeletonResponsiveBy`
-
 ## `react-motion-gallery/skeleton/cache/slider`
 
 Source entry: `src/skeleton-cache-slider.ts`.
 
 `CachedSliderSkeleton`, `CachedSliderSkeletonProps`, `default`, `Skeleton`, `SkeletonCacheOptions`, `SkeletonCacheSnapshot`, `SkeletonNode`, `SkeletonSliderLayout`, `SliderSkeleton`, `SliderSkeletonNode`, `SliderSkeletonSlot`, `SliderSkeletonSpec`
-
-## `react-motion-gallery/skeleton/cache/grid`
-
-Source entry: `src/skeleton-cache-grid.ts`.
-
-`CachedGridSkeleton`, `CachedGridSkeletonProps`, `default`, `GridSkeleton`, `GridSkeletonNode`, `GridSkeletonSlot`, `GridSkeletonSpec`, `Skeleton`, `SkeletonCacheOptions`, `SkeletonCacheSnapshot`, `SkeletonGridLayout`, `SkeletonGridOptions`, `SkeletonNode`
-
-## `react-motion-gallery/skeleton/cache/masonry`
-
-Source entry: `src/skeleton-cache-masonry.ts`.
-
-`CachedMasonrySkeleton`, `CachedMasonrySkeletonProps`, `default`, `MasonryPlacement`, `MasonrySkeleton`, `MasonrySkeletonNode`, `MasonrySkeletonSlot`, `MasonrySkeletonSpec`, `Skeleton`, `SkeletonCacheOptions`, `SkeletonCacheSnapshot`, `SkeletonMasonryLayout`, `SkeletonMasonryOptions`, `SkeletonNode`
-
-## `react-motion-gallery/skeleton/masonry/structured`
-
-Source entry: `src/skeleton-masonry-structured.ts`.
-
-`default`, `MasonryPlacement`, `MasonrySkeleton`, `MasonrySkeletonNode`, `MasonrySkeletonProps`, `MasonrySkeletonSlot`, `MasonrySkeletonSpec`, `Skeleton`, `SkeletonForceOptions`, `SkeletonMasonryLayout`, `SkeletonMasonryOptions`, `SkeletonNode`, `SkeletonTimingOptions`
-
-## `react-motion-gallery/skeleton/cache/masonry/structured`
-
-Source entry: `src/skeleton-cache-masonry-structured.ts`.
-
-`CachedMasonrySkeleton`, `CachedMasonrySkeletonProps`, `default`, `MasonryPlacement`, `MasonrySkeleton`, `MasonrySkeletonNode`, `MasonrySkeletonSlot`, `MasonrySkeletonSpec`, `Skeleton`, `SkeletonForceOptions`, `SkeletonMasonryLayout`, `SkeletonMasonryOptions`, `SkeletonNode`, `SkeletonTimingOptions`
 
 ## `react-motion-gallery/skeleton/slider`
 

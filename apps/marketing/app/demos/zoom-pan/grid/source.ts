@@ -3,9 +3,8 @@ export const source = `"use client";
 import { GalleryCore } from "react-motion-gallery/core";
 import { Grid } from "react-motion-gallery/grid";
 import { ZoomPanImage } from "react-motion-gallery/zoomPan";
-import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/cache/grid";
+import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-demo.module.css";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 const IMAGES = [
   {
@@ -61,7 +60,6 @@ export function ZoomPanGridDemo() {
         gap={{ 0: 12, 960: 16 }}
         loading={{
           skeleton: ZOOM_PAN_GRID_SKELETON,
-          cache: demoSkeletonCache("zoom-pan-grid"),
         }}
         reveal={{
           staggerMs: 60,

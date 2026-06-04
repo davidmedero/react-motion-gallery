@@ -28,7 +28,6 @@ import {
   resolveLoadingForceOptions,
   type LoadingForceOptions,
 } from "../../shared/loading/force";
-import type { SkeletonCacheSnapshot } from "../../skeleton/cache";
 
 declare const process:
   | {
@@ -191,9 +190,7 @@ type Props = {
     node: HTMLImageElement | HTMLVideoElement | null,
   ) => void;
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
-  cacheSnapshot?: SkeletonCacheSnapshot | null;
   listRef?: React.RefObject<HTMLDivElement | null>;
-  skeletonCacheScopeId?: string;
 };
 
 function warnEntriesOnce(key: string, message: string) {
@@ -660,9 +657,7 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
       breakpoints,
       registerExpandableImage,
       entrySliderRefs,
-      cacheSnapshot,
       listRef: providedListRef,
-      skeletonCacheScopeId,
     },
     forwardedRef,
   ) {
@@ -949,7 +944,6 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [items, entries.loading?.skeleton],
     );
-    const scopeId = skeletonCacheScopeId;
     const localListRef = React.useRef<HTMLDivElement | null>(null);
     const listRef = providedListRef ?? localListRef;
 
@@ -1366,7 +1360,6 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
                       <EntrySkeletonCard
                         spec={spec}
                         breakpoints={breakpoints}
-                        cacheSnapshot={cacheSnapshot}
                       />
                     )}
                   </div>
@@ -1716,7 +1709,6 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
       React.RefAttributes<HTMLDivElement> &
       Record<`data-${string}`, string | undefined> = {
       ref: listRef,
-      "data-rmg-entry-skeleton-cache-scope": scopeId,
       className: [styles.entryList, entries.entryList?.className]
         .filter(Boolean)
         .join(" "),

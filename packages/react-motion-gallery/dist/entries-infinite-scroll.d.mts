@@ -1,4 +1,4 @@
-import { a as EntriesInfiniteScrollOptions, f as EntriesPlugin } from './responsive-Bw0ub6Hv.mjs';
+import { a as EntriesInfiniteScrollOptions, f as EntriesPlugin } from './responsive-BgOmwHgG.mjs';
 import './types-uhDRb0mo.mjs';
 import 'react';
 import './responsiveNumber-CouEMJ9O.mjs';

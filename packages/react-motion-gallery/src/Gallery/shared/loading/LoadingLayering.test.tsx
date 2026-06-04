@@ -264,10 +264,19 @@ describe("loading layer stacking", () => {
     const skeletonCss = readCss("../../skeleton/GridSkeleton.module.css");
 
     expect(gridCss).toMatch(
-      /\.itemSkeleton\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*stretch;/s,
+      /\.gridItem\[data-rmg-grid-item-stage="1"\]\s*>\s*\.itemInner\s*\{[^}]*height:\s*100%;/s,
     );
     expect(gridCss).toMatch(
-      /\.itemSkeleton\s*>\s*\*\s*\{[^}]*flex:\s*1 1 auto;[^}]*width:\s*100%;[^}]*min-height:\s*0;/s,
+      /\.gridItem\[data-rmg-grid-item-layered="1"\]\s*>\s*\.itemInner\s*>\s*\*\s*\{[^}]*height:\s*100%;/s,
+    );
+    expect(gridCss).not.toMatch(
+      /\.gridItem\[data-rmg-grid-item-stage="1"\]\s*>\s*\.itemInner\s*>\s*\*\s*\{[^}]*height:\s*100%;/s,
+    );
+    expect(gridCss).toMatch(
+      /\.itemSkeleton\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*stretch;[^}]*height:\s*100%;/s,
+    );
+    expect(gridCss).toMatch(
+      /\.itemSkeleton\s*>\s*\*\s*\{[^}]*flex:\s*1 1 auto;[^}]*width:\s*100%;[^}]*min-height:\s*0;[^}]*height:\s*100%;/s,
     );
     expect(masonryCss).toMatch(
       /\.masonryItem\[data-rmg-masonry-item-compare="1"\]\s*>\s*\.itemSkeleton\s*\{[^}]*opacity:\s*var\(--rmg-masonry-item-skeleton-opacity,\s*1\);/s,

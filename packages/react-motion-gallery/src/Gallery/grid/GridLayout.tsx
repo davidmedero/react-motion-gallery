@@ -24,10 +24,6 @@ import { RmgSlideProvider } from '../shared/slideContext';
 import { createRmgSlideStoreBag } from '../shared/slideStoreBag';
 import { buildStableScopeId } from '../shared/stableScope';
 import {
-  collectSkeletonTextIds,
-  type SkeletonNode,
-} from '../shared/skeleton/layout';
-import {
   getDataPluginOptions,
   resolveDataWindow,
   useMeasuredVirtualWindow,
@@ -42,20 +38,11 @@ import {
   type GridItemLayoutMeta,
 } from './item';
 import {
+  GridSkeletonCard,
   GridSkeletonSlotContent,
   type GridSkeletonSpec,
 } from '../skeleton/GridSkeleton';
-import {
-  validateSkeletonCacheSnapshot,
-  type SkeletonCacheOptions,
-  type SkeletonCacheSnapshot,
-} from '../skeleton/cache';
-import {
-  resolveSkeletonCacheOptions,
-  useSkeletonCacheContext,
-  useSkeletonCacheRenderSnapshot,
-} from '../skeleton/cache-context';
-import { useSkeletonCacheWriter } from '../skeleton/cache-writer';
+import { SkeletonFrame } from '../skeleton/base';
 import {
   type GridFullscreenTrigger,
   type GridHandle,
@@ -100,7 +87,6 @@ type NormalizedGridLoading = {
   active: boolean;
   count: number;
   skeleton?: GridLoadingOptions['skeleton'];
-  cache?: SkeletonCacheOptions;
   force?: LoadingForceOptions;
   animate: boolean;
   waitForMedia: boolean;
@@ -603,7 +589,6 @@ function normalizeGridLoading(
         ? Math.max(0, src.count | 0)
         : 0,
     skeleton: src?.skeleton,
-    cache: src?.cache,
     force: src?.force,
     animate,
     waitForMedia: src?.waitForMedia ?? true,
@@ -641,13 +626,6 @@ function getGridSkeletonDefaultCount(
     : 0;
 }
 
-function getGridSkeletonTextRoot(
-  skeleton: GridLoadingOptions['skeleton'] | undefined
-): SkeletonNode | undefined {
-  if (!isGridSkeletonSpec(skeleton)) return undefined;
-  return skeleton.layout as unknown as SkeletonNode | undefined;
-}
-
 function getPlaceholderCells(
   loading: NormalizedGridLoading,
   fallbackCount: number
@@ -677,7 +655,6 @@ function resolveSkeletonNode(args: {
   ready: boolean;
   count: number;
   breakpoints: BreakpointMap;
-  cacheSnapshot: SkeletonCacheSnapshot | null;
 }) {
   if (!args.skeleton) return null;
 
@@ -699,7 +676,6 @@ function resolveSkeletonNode(args: {
       count={args.count}
       spec={args.skeleton}
       breakpoints={args.breakpoints}
-      cacheSnapshot={args.cacheSnapshot}
     />
   );
 }
@@ -807,12 +783,17 @@ function GridItemHost({
     [renderSkeleton, stateKey]
   );
   const hasSkeleton = skeleton != null;
+  const hasStructuredSkeleton = isGridSkeletonSpec(loading.skeleton);
   const revealReady = !stage || !loadingBlocksReveal && ready;
   const skeletonShimmerSettled =
     revealReady && !compareMode && effectiveSkeletonSettled;
+  const keepSkeletonAsLayoutAnchor = stage && hasStructuredSkeleton;
   const shouldMountSkeleton =
     hasSkeleton &&
-    (!effectiveSettled || loading.active || loading.keepSkeletonMounted);
+    (!effectiveSettled ||
+      loading.active ||
+      loading.keepSkeletonMounted ||
+      keepSkeletonAsLayoutAnchor);
 
   const setMergedNode = React.useCallback(
     (nextNode: HTMLElement | null) => {
@@ -1135,67 +1116,6 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     (_index: number, _node: HTMLImageElement | null) => {},
     []
   );
-
-  const loadingSkeletonSpec = isGridSkeletonSpec(loading.skeleton)
-    ? loading.skeleton
-    : undefined;
-  const skeletonTextRoot = React.useMemo(
-    () => getGridSkeletonTextRoot(loading.skeleton),
-    [loading.skeleton]
-  );
-  const textIds = React.useMemo(
-    () => skeletonTextRoot ? Array.from(collectSkeletonTextIds(skeletonTextRoot, 'grid')) : [],
-    [skeletonTextRoot]
-  );
-  const cacheContext = useSkeletonCacheContext();
-  const effectiveCache = resolveSkeletonCacheOptions(loading.cache, cacheContext);
-  const renderCacheSnapshot = useSkeletonCacheRenderSnapshot(effectiveCache);
-  const skeletonCacheScopeId = React.useMemo(
-    () =>
-      buildStableScopeId('skel_', {
-        layout: loadingSkeletonSpec,
-        breakpoints: breakpointMap,
-        grid: {
-          count: renderCells.length,
-          columns: grid.columns,
-          templateColumns: grid.templateColumns,
-          minColumnWidth: grid.minColumnWidth,
-          gap: grid.gap,
-          items: renderCells.map((cell) => ({
-            id: cell.id,
-            span: cell.layoutMeta?.span,
-          })),
-          allowItemSpans: grid.templateColumns != null || grid.columns != null,
-        },
-      }),
-    [
-      breakpointMap,
-      grid.columns,
-      grid.gap,
-      grid.minColumnWidth,
-      grid.templateColumns,
-      loadingSkeletonSpec,
-      renderCells,
-    ]
-  );
-  const validCacheSnapshot = validateSkeletonCacheSnapshot(renderCacheSnapshot, {
-    key: effectiveCache?.key,
-    scopeId: skeletonCacheScopeId,
-    kind: 'grid',
-    routeKey: effectiveCache?.routeKey,
-    ttlMs: effectiveCache?.ttlMs,
-    viewportWidth: viewportWidth || undefined,
-    textIds,
-  });
-
-  useSkeletonCacheWriter({
-    cache: effectiveCache,
-    kind: 'grid',
-    scopeId: skeletonCacheScopeId,
-    textIds,
-    skeletonRootRef: gridRootRef,
-    shellRef: gridRootRef,
-  });
 
   const clearRevealScheduler = React.useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -1548,8 +1468,15 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     [gridScope, renderCells, breakpointMap, hasExplicitTracks]
   );
 
+  const structuredSkeleton = isGridSkeletonSpec(loading.skeleton)
+    ? loading.skeleton
+    : undefined;
+
   const responsiveCssText = React.useMemo(
-    () => [responsiveGridCssText, responsiveItemCssText].filter(Boolean).join('\n'),
+    () =>
+      [responsiveGridCssText, responsiveItemCssText]
+        .filter(Boolean)
+        .join('\n'),
     [responsiveGridCssText, responsiveItemCssText]
   );
 
@@ -1631,6 +1558,14 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   }, [getItemNodes, gridReady]);
 
   const skeletonCount = Math.max(renderCells.length, loading.count, skeletonDefaultCount);
+  const structuredSkeletonLayoutItems = React.useMemo(
+    () =>
+      renderCells.map((cell) => ({
+        id: cell.id,
+        span: cell.layoutMeta?.span,
+      })),
+    [renderCells]
+  );
 
   const gridChildren = React.useMemo(() => {
     return visibleCells.map((cell, virtualIndex) => {
@@ -1669,7 +1604,6 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
           ready,
           count: skeletonCount,
           breakpoints: breakpointMap,
-          cacheSnapshot: validCacheSnapshot,
         });
 
       let Root: React.ElementType = 'div';
@@ -1773,7 +1707,6 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     revealGateActive,
     scheduleGridItemReveal,
     skeletonCount,
-    validCacheSnapshot,
     virtualRows.firstCellByRow,
     virtualRows.rowByCell,
     virtualWindow,
@@ -1786,7 +1719,6 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       'data-rmg-grid-node': 'true',
       'data-rmg-grid-reveal-active': revealGateActive ? 'true' : undefined,
       'data-rmg-grid-loading': loading.enabled ? 'true' : undefined,
-      'data-rmg-grid-skeleton-cache-scope': skeletonCacheScopeId,
       style: {
         ...gridStyle,
         ['--rmg-reveal-stagger' as any]: `${reveal.staggerMs}ms`,
@@ -1804,7 +1736,6 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       reveal.easing,
       reveal.staggerMs,
       revealGateActive,
-      skeletonCacheScopeId,
     ]
   );
 
@@ -1819,11 +1750,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     [cells.length, fullscreenTrigger, gridReady, handle, visibleCells.length]
   );
 
-  return (
-    <div
-      className={styles.gridShell}
-      data-rmg-grid-scope={gridScope}
-    >
+  const gridNode = (
+    <>
       {responsiveCssText ? (
         <style dangerouslySetInnerHTML={{ __html: responsiveCssText }} />
       ) : null}
@@ -1844,6 +1772,46 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
           />
         ) : null}
       </div>
+    </>
+  );
+  const structuredSkeletonLayoutOwner =
+    loading.enabled && structuredSkeleton ? (
+      <SkeletonFrame
+        skeletonNode={
+          <GridSkeletonCard
+            count={skeletonCount}
+            spec={structuredSkeleton}
+            breakpoints={breakpointMap}
+            columns={grid.columns}
+            templateColumns={grid.templateColumns}
+            minColumnWidth={grid.minColumnWidth}
+            gap={grid.gap}
+            items={structuredSkeletonLayoutItems}
+            allowItemSpans={hasExplicitTracks}
+          />
+        }
+        ready={gridReady}
+        enabled
+        force={loading.force}
+        timing={{
+          enterMs: loading.enterMs,
+          exitMs: loading.exitMs,
+          minVisibleMs: loading.minVisibleMs,
+        }}
+        contentOwnsWrapperLayout
+        lockContentLayoutWhileLoading
+        loadingLayerFirst
+      >
+        {gridNode}
+      </SkeletonFrame>
+    ) : null;
+
+  return (
+    <div
+      className={styles.gridShell}
+      data-rmg-grid-scope={gridScope}
+    >
+      {structuredSkeletonLayoutOwner ?? gridNode}
       {pluginEntries.map((plugin, index) => {
         const Runtime = plugin.Runtime;
         return Runtime ? (

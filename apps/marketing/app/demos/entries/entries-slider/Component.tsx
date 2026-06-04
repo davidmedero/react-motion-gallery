@@ -7,15 +7,14 @@ import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import {
   Entries,
-  createEntriesSliderMedia,
   flattenEntries,
   type EntryCardRenderArgs,
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
-} from "react-motion-gallery/entries/cache";
+} from "react-motion-gallery/entries";
+import { createEntriesSliderMedia } from "react-motion-gallery/entries/media/slider";
 import styles from "./entries-slider-demo.module.css";
 import { entriesSliderSkeletonText } from "./entries-slider.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoEntry = {
   id: string;
@@ -462,7 +461,6 @@ export function EntriesSliderDemo() {
             overlay: renderEntryOverlay,
           },
           loading: {
-            cache: demoSkeletonCache("entries-slider"),
             skeletonWrap: {
               style: {
                 background: "#fff",

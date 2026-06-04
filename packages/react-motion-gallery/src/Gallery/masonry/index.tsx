@@ -17,7 +17,7 @@ import type {
 } from "./types";
 import { MasonryLayout } from "./MasonryLayout";
 import { buildMasonryChildren } from "./buildMasonryChildren";
-import CachedMasonrySkeleton from "../skeleton/cache-masonry-structured";
+import MasonrySkeleton from "../skeleton/masonry-structured";
 
 type Props = MasonryOptions & {
   children?: React.ReactNode;
@@ -272,13 +272,12 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
   if (!useStructuredLoading) return layoutNode;
 
   return (
-    <CachedMasonrySkeleton
+    <MasonrySkeleton
       layout={loading.skeleton}
       ready={structuredLoadingReady}
       enabled={loading.enabled}
       force={loading.force}
       timing={loading.timing}
-      cache={loading.cache}
       breakpoints={effectiveBreakpoints}
       masonry={{
         count: loading.count ?? masonryChildren.length,
@@ -289,7 +288,7 @@ const MasonryImpl = React.forwardRef<MasonryHandle, Props>(function MasonryImpl(
       }}
     >
       {layoutNode}
-    </CachedMasonrySkeleton>
+    </MasonrySkeleton>
   );
 });
 

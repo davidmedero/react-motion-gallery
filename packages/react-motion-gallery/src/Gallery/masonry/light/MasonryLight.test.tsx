@@ -53,6 +53,29 @@ function mount(node: React.ReactNode) {
   return mountedHost;
 }
 
+function nextFrame() {
+  return new Promise<void>((resolve) => {
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => resolve());
+      return;
+    }
+
+    window.setTimeout(resolve, 0);
+  });
+}
+
+async function flushLightItemReveal() {
+  await React.act(async () => {
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+  });
+
+  for (let index = 0; index < 4; index += 1) {
+    await React.act(async () => {
+      await nextFrame();
+    });
+  }
+}
+
 const testFullscreenRuntime = {
   __rmgFullscreenPlugin: true,
   kind: "slider",
@@ -214,6 +237,7 @@ describe("light Masonry public rendering", () => {
       placeholder: boolean;
       width?: number;
       height?: number;
+      heightOffsetPx?: number;
     }> = [];
     renderToStaticMarkup(
       <Masonry
@@ -226,7 +250,12 @@ describe("light Masonry public rendering", () => {
           },
         }}
       >
-        <Masonry.Item width={1200} height={900} revealKey="image-a">
+        <Masonry.Item
+          width={1200}
+          height={900}
+          heightOffsetPx={48}
+          revealKey="image-a"
+        >
           <img src="/a.jpg" alt="A" />
         </Masonry.Item>
       </Masonry>,
@@ -239,8 +268,63 @@ describe("light Masonry public rendering", () => {
         placeholder: false,
         width: 1200,
         height: 900,
+        heightOffsetPx: 48,
       }),
     ]);
+  });
+
+  test("keeps keyed placeholder slots mounted when light masonry content arrives", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+
+    const render = (placeholder: boolean) => (
+      <Masonry
+        columns={1}
+        gap={12}
+        loading={{
+          waitForMedia: false,
+          timing: { minVisibleMs: 0 },
+          skeleton: () => <span data-stable-skeleton>loading</span>,
+        }}
+      >
+        <Masonry.Item
+          key="product-slot-6"
+          width={1200}
+          height={900}
+          revealKey={placeholder ? "product-slot-6" : "product-a"}
+          placeholder={placeholder}
+        >
+          {placeholder ? (
+            <span data-placeholder-content>pending</span>
+          ) : (
+            <article>real product</article>
+          )}
+        </Masonry.Item>
+      </Masonry>
+    );
+
+    const host = mount(render(true));
+    const itemBefore = host.querySelector<HTMLElement>("[data-rmg-idx='0']");
+    const skeletonBefore = host.querySelector<HTMLElement>(
+      "[data-rmg-masonry-item-skeleton]",
+    );
+    expect(itemBefore).not.toBeNull();
+    expect(skeletonBefore).not.toBeNull();
+    expect(host.querySelector("[data-placeholder-content]")).not.toBeNull();
+
+    await React.act(async () => {
+      mountedRoot?.render(render(false));
+      await Promise.resolve();
+    });
+
+    const itemAfter = host.querySelector<HTMLElement>("[data-rmg-idx='0']");
+    const skeletonAfter = host.querySelector<HTMLElement>(
+      "[data-rmg-masonry-item-skeleton]",
+    );
+
+    expect(itemAfter).toBe(itemBefore);
+    expect(skeletonAfter).toBe(skeletonBefore);
+    expect(host.querySelector("[data-placeholder-content]")).toBeNull();
+    expect(host.textContent).toContain("real product");
   });
 
   test("renders dimensioned Masonry.Item children with positioned wrappers", () => {
@@ -300,6 +384,18 @@ describe("light Masonry public rendering", () => {
     expect(markup).toContain("data-rmg-masonry-fluid-scope=");
     expect(markup).toContain('data-rmg-masonry-fluid-spacer="true"');
     expect(markup).toContain('data-rmg-masonry-fluid-index="0"');
+    expect(markup).toMatch(
+      /data-rmg-masonry-fluid-spacer="true"[^>]*style="[^"]*height:/,
+    );
+    expect(markup).toMatch(
+      /data-rmg-masonry-fluid-index="0"[^>]*style="[^"]*top:[^"]*left:[^"]*width:[^"]*height:/,
+    );
+    expect(
+      markup.indexOf('data-rmg-masonry-fluid-spacer="true" aria-hidden'),
+    ).toBeLessThan(markup.indexOf("@media (min-width:1140px)"));
+    expect(
+      markup.indexOf('data-rmg-masonry-fluid-index="0"'),
+    ).toBeLessThan(markup.indexOf("@media (min-width:1140px)"));
     expect(markup).toContain("@media (min-width:1140px)");
     expect(markup).toContain("height:auto !important");
     expect(markup).toContain("--rmg-cols:3 !important");
@@ -551,6 +647,19 @@ describe("light Masonry public rendering", () => {
     expect(markup).not.toContain('data-rmg-skel-text="true"');
   });
 
+  test("preserves light masonry skeleton item height offsets", () => {
+    const markup = renderToStaticMarkup(
+      <MasonrySkeleton
+        columns={2}
+        gap={10}
+        items={[{ width: 100, height: 50, heightOffsetPx: 24 }]}
+      />,
+    );
+
+    expect(markup).toContain("calc(25cqw + 21.5px)");
+    expect(markup).toContain('data-rmg-mskel-index="0"');
+  });
+
   test("renders responsive first-paint variants for lean masonry skeletons", () => {
     const markup = renderToStaticMarkup(
       <MasonrySkeleton
@@ -598,7 +707,7 @@ describe("light Masonry public rendering", () => {
     expect(markup).toContain(skeletonStyles.contentBlocked);
   });
 
-  test("applies separate lean masonry item skeleton enter and exit durations", () => {
+  test("snaps blocked light masonry item skeletons in and preserves exit durations", () => {
     const markup = renderToStaticMarkup(
       <Masonry
         columns={1}
@@ -617,8 +726,170 @@ describe("light Masonry public rendering", () => {
     );
 
     expect(markup).toContain('data-rmg-masonry-item-skeleton="true"');
-    expect(markup).toContain("--rmg-masonry-item-skeleton-enter-duration:180ms");
+    expect(markup).toContain("--rmg-masonry-item-skeleton-enter-duration:0ms");
     expect(markup).toContain("--rmg-masonry-item-skeleton-exit-duration:420ms");
+  });
+
+  test("keeps the light masonry skeleton animation node stable when the reveal key changes", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+
+    const render = (revealKey: string) => (
+      <Masonry
+        columns={1}
+        gap={12}
+        loading={{
+          keepSkeletonMounted: true,
+          rememberRevealed: false,
+          waitForMedia: false,
+          timing: { enterMs: 360, minVisibleMs: 0 },
+          skeleton: ({ revealKey }) => (
+            <span data-test-skeleton-card="true">
+              loading {String(revealKey)}
+            </span>
+          ),
+        }}
+        reveal={{ staggerMs: 0 }}
+      >
+        <Masonry.Item key="slot" width={1200} height={900} revealKey={revealKey}>
+          <article>{revealKey}</article>
+        </Masonry.Item>
+      </Masonry>
+    );
+
+    const host = mount(render("product-a"));
+    await flushLightItemReveal();
+    React.act(() => {
+      MockIntersectionObserver.instances.forEach((observer) => {
+        observer.trigger(true);
+      });
+    });
+    await flushLightItemReveal();
+
+    const skeletonBefore = host.querySelector(
+      "[data-rmg-masonry-item-skeleton]",
+    );
+    const skeletonCardBefore = host.querySelector("[data-test-skeleton-card]");
+    expect(skeletonBefore).not.toBeNull();
+    expect(skeletonCardBefore).not.toBeNull();
+
+    await React.act(async () => {
+      mountedRoot?.render(render("product-b"));
+      await Promise.resolve();
+    });
+
+    const skeletonAfter = host.querySelector(
+      "[data-rmg-masonry-item-skeleton]",
+    );
+    const skeletonCardAfter = host.querySelector("[data-test-skeleton-card]");
+    expect(skeletonAfter).toBe(skeletonBefore);
+    expect(skeletonCardAfter).toBe(skeletonCardBefore);
+    expect(
+      (skeletonAfter as HTMLElement | null)?.style.getPropertyValue(
+        "--rmg-masonry-item-skeleton-enter-duration",
+      ),
+    ).toBe("0ms");
+    expect(skeletonAfter?.textContent).toContain("loading product-b");
+    expect(
+      host.querySelector("[data-rmg-masonry-item-reveal='0']"),
+    ).not.toBeNull();
+  });
+
+  test("keeps settled light masonry skeleton shimmer off until forced comparison loading", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+
+    const render = (loading: boolean) => (
+      <Masonry
+        columns={1}
+        gap={12}
+        loading={{
+          active: loading,
+          force: loading
+            ? {
+                enabled: true,
+                showContent: true,
+                skeletonOpacity: 0.5,
+              }
+            : undefined,
+          keepSkeletonMounted: true,
+          waitForMedia: false,
+          timing: { enterMs: 180, exitMs: 420, minVisibleMs: 0 },
+          skeleton: () => <span>loading card</span>,
+        }}
+      >
+        <Masonry.Item width={1200} height={900} revealKey="product-a">
+          <article>alpha</article>
+        </Masonry.Item>
+      </Masonry>
+    );
+
+    const host = mount(render(false));
+    await flushLightItemReveal();
+    React.act(() => {
+      MockIntersectionObserver.instances.forEach((observer) => {
+        observer.trigger(true);
+      });
+    });
+    await flushLightItemReveal();
+
+    const exitingSkeleton = host.querySelector<HTMLElement>(
+      "[data-rmg-masonry-item-skeleton]",
+    );
+    expect(exitingSkeleton).not.toBeNull();
+
+    await React.act(async () => {
+      const event = new Event("transitionend", { bubbles: true });
+      Object.defineProperty(event, "propertyName", { value: "opacity" });
+      exitingSkeleton?.dispatchEvent(event);
+    });
+
+    const settledSkeleton = host.querySelector<HTMLElement>(
+      "[data-rmg-masonry-item-skeleton]",
+    );
+    expect(settledSkeleton).toBe(exitingSkeleton);
+    expect(settledSkeleton?.getAttribute("data-rmg-masonry-item-shimmer")).toBe(
+      "off",
+    );
+
+    await React.act(async () => {
+      mountedRoot?.render(render(true));
+      await Promise.resolve();
+    });
+
+    const compareSkeleton = host.querySelector<HTMLElement>(
+      "[data-rmg-masonry-item-skeleton]",
+    );
+    expect(compareSkeleton).toBe(settledSkeleton);
+    expect(
+      compareSkeleton?.getAttribute("data-rmg-masonry-item-shimmer"),
+    ).toBeNull();
+    expect(
+      host.querySelector("[data-rmg-masonry-item-compare='1']"),
+    ).not.toBeNull();
+    expect(
+      compareSkeleton?.style.getPropertyValue(
+        "--rmg-masonry-item-skeleton-opacity",
+      ),
+    ).toBe("0.5");
+    expect(
+      compareSkeleton?.style.getPropertyValue(
+        "--rmg-masonry-item-skeleton-enter-duration",
+      ),
+    ).toBe("180ms");
+    expect(
+      compareSkeleton?.style.getPropertyValue(
+        "--rmg-masonry-item-skeleton-exit-duration",
+      ),
+    ).toBe("420ms");
+
+    await React.act(async () => {
+      const event = new Event("transitionend", { bubbles: true });
+      Object.defineProperty(event, "propertyName", { value: "opacity" });
+      compareSkeleton?.dispatchEvent(event);
+    });
+
+    expect(
+      compareSkeleton?.getAttribute("data-rmg-masonry-item-shimmer"),
+    ).toBeNull();
   });
 
   test("waits for minVisibleMs before the lean masonry skeleton exits", async () => {
@@ -688,6 +959,22 @@ describe("light Masonry public rendering", () => {
       image: img,
     });
     expect(resolveMasonryFullscreenClick(button)).toBeNull();
+  });
+
+  test("resolves light masonry video fullscreen triggers without an image origin", () => {
+    const item = document.createElement("div");
+    item.setAttribute("data-rmg-idx", "2");
+    const video = document.createElement("video");
+    item.appendChild(video);
+    const trigger = document.createElement("button");
+    trigger.setAttribute("data-rmg-fullscreen-trigger", "");
+    item.appendChild(trigger);
+
+    expect(resolveMasonryFullscreenClick(video)).toBeNull();
+    expect(resolveMasonryFullscreenClick(trigger)).toMatchObject({
+      index: 2,
+      image: null,
+    });
   });
 
   test("opens GalleryCore fullscreen from the light masonry fullscreen plugin", async () => {

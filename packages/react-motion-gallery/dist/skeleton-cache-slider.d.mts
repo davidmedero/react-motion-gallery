@@ -8,7 +8,7 @@ import './skeleton-base.mjs';
 import 'react';
 import './force-C5m1QpdF.mjs';
 import './transitions-ChhEdSB6.mjs';
-import './layout-BSjd7pwQ.mjs';
+import './layout-BOy4geKv.mjs';
 import './text-BBcRGVzn.mjs';
 import './types-D9WBOrx6.mjs';
 import './media.mjs';

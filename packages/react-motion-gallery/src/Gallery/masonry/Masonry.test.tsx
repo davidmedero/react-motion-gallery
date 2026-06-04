@@ -5,7 +5,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import MasonrySubpath from "../../masonry-measured";
 import {
   buildMasonryColumnLayout,
   MasonryCore,
@@ -237,7 +236,7 @@ describe("Masonry spans and positioned runtime", () => {
     );
 
     expect(Masonry.Item).toBeDefined();
-    expect(MasonrySubpath.Item).toBe(Masonry.Item);
+    expect(Masonry.Item).toBeTypeOf("function");
     expect(markup).toContain("feature-shell");
     expect(markup).toContain("card-shell");
     expect(markup).toContain("padding:8px");
@@ -361,7 +360,9 @@ describe("Masonry spans and positioned runtime", () => {
           },
           keepSkeletonMounted: true,
           skeleton: ({ revealKey }) => (
-            <span data-test-skeleton="true">loading {String(revealKey)}</span>
+            <span data-test-skeleton-card="true">
+              loading {String(revealKey)}
+            </span>
           ),
           timing: { minVisibleMs: 0, exitMs: 0 },
           waitForMedia: false,
@@ -380,8 +381,12 @@ describe("Masonry spans and positioned runtime", () => {
       const skeletonBefore = container.querySelector(
         "[data-rmg-masonry-item-skeleton]",
       );
+      const skeletonCardBefore = container.querySelector(
+        "[data-test-skeleton-card]",
+      );
       expect(skeletonBefore).toBeInstanceOf(HTMLElement);
       expect(skeletonBefore?.textContent).toContain("loading product-a");
+      expect(skeletonCardBefore).toBeInstanceOf(HTMLElement);
 
       await renderIntoRoot(root, render("product-b"));
       await settleMasonryMeasurements();
@@ -389,13 +394,146 @@ describe("Masonry spans and positioned runtime", () => {
       const skeletonAfter = container.querySelector(
         "[data-rmg-masonry-item-skeleton]",
       );
+      const skeletonCardAfter = container.querySelector(
+        "[data-test-skeleton-card]",
+      );
       expect(skeletonAfter).toBe(skeletonBefore);
+      expect(skeletonCardAfter).toBe(skeletonCardBefore);
       expect(skeletonAfter?.textContent).toContain("loading product-b");
     } finally {
       await React.act(async () => {
         root.unmount();
       });
       container.remove();
+    }
+  });
+
+  test("keeps settled measured masonry skeleton shimmer off until forced comparison loading", async () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalCancelAnimationFrame = window.cancelAnimationFrame;
+    Object.defineProperty(window, "requestAnimationFrame", {
+      configurable: true,
+      value: (callback: FrameRequestCallback) =>
+        window.setTimeout(() => callback(performance.now()), 0),
+    });
+    Object.defineProperty(window, "cancelAnimationFrame", {
+      configurable: true,
+      value: (id: number) => window.clearTimeout(id),
+    });
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const render = (loading: boolean) => (
+      <Masonry
+        columns={1}
+        gap={12}
+        reveal={{ staggerMs: 0 }}
+        loading={{
+          active: loading,
+          force: loading
+            ? {
+                enabled: true,
+                showContent: true,
+                skeletonOpacity: 0.5,
+              }
+            : undefined,
+          keepSkeletonMounted: true,
+          waitForMedia: false,
+          timing: { enterMs: 180, exitMs: 420, minVisibleMs: 0 },
+          skeleton: () => <span>loading card</span>,
+        }}
+      >
+        <Masonry.Item key="slot" revealKey="product-a">
+          <article>alpha</article>
+        </Masonry.Item>
+      </Masonry>
+    );
+
+    try {
+      await renderIntoRoot(root, render(false));
+      await settleMasonryMeasurements();
+      await flushItemLifecycle(12);
+
+      const exitingSkeleton = container.querySelector<HTMLElement>(
+        "[data-rmg-masonry-item-skeleton]",
+      );
+      expect(exitingSkeleton).not.toBeNull();
+      expect(
+        container.querySelector("[data-rmg-masonry-item-reveal='1']"),
+      ).not.toBeNull();
+
+      await React.act(async () => {
+        const event = new Event("transitionend", { bubbles: true });
+        Object.defineProperty(event, "propertyName", { value: "opacity" });
+        exitingSkeleton?.dispatchEvent(event);
+      });
+
+      const settledSkeleton = container.querySelector<HTMLElement>(
+        "[data-rmg-masonry-item-skeleton]",
+      );
+      expect(settledSkeleton).toBe(exitingSkeleton);
+      expect(
+        settledSkeleton?.getAttribute("data-rmg-masonry-item-shimmer"),
+      ).toBe("off");
+
+      await renderIntoRoot(root, render(true));
+
+      const compareSkeleton = container.querySelector<HTMLElement>(
+        "[data-rmg-masonry-item-skeleton]",
+      );
+      expect(compareSkeleton).toBe(settledSkeleton);
+      expect(
+        compareSkeleton?.getAttribute("data-rmg-masonry-item-shimmer"),
+      ).toBeNull();
+      expect(
+        container.querySelector("[data-rmg-masonry-item-compare='1']"),
+      ).not.toBeNull();
+      expect(
+        compareSkeleton?.style.getPropertyValue(
+          "--rmg-masonry-item-skeleton-opacity",
+        ),
+      ).toBe("0.5");
+      expect(
+        compareSkeleton?.style.getPropertyValue(
+          "--rmg-masonry-item-skeleton-enter-duration",
+        ),
+      ).toBe("180ms");
+      expect(
+        compareSkeleton?.style.getPropertyValue(
+          "--rmg-masonry-item-skeleton-exit-duration",
+        ),
+      ).toBe("420ms");
+
+      await React.act(async () => {
+        const event = new Event("transitionend", { bubbles: true });
+        Object.defineProperty(event, "propertyName", { value: "opacity" });
+        compareSkeleton?.dispatchEvent(event);
+      });
+
+      expect(
+        compareSkeleton?.getAttribute("data-rmg-masonry-item-shimmer"),
+      ).toBeNull();
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      container.remove();
+      if (originalRequestAnimationFrame) {
+        Object.defineProperty(window, "requestAnimationFrame", {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+        });
+      } else {
+        delete (window as any).requestAnimationFrame;
+      }
+      if (originalCancelAnimationFrame) {
+        Object.defineProperty(window, "cancelAnimationFrame", {
+          configurable: true,
+          value: originalCancelAnimationFrame,
+        });
+      } else {
+        delete (window as any).cancelAnimationFrame;
+      }
     }
   });
 
@@ -449,7 +587,7 @@ describe("Masonry spans and positioned runtime", () => {
           skeleton: ({ revealKey }) => (
             <span data-test-skeleton="true">loading {String(revealKey)}</span>
           ),
-          timing: { minVisibleMs: 0, exitMs: 0 },
+          timing: { enterMs: 360, minVisibleMs: 0, exitMs: 0 },
           waitForMedia: false,
           rememberRevealed: false,
         }}
@@ -481,6 +619,13 @@ describe("Masonry spans and positioned runtime", () => {
       const itemAfter = container.querySelector("[data-rmg-idx='0']");
       expect(itemAfter).toBe(itemBefore);
       expect(itemAfter?.getAttribute("data-rmg-masonry-item-reveal")).toBe("0");
+      expect(
+        container
+          .querySelector<HTMLElement>("[data-rmg-masonry-item-skeleton]")
+          ?.style.getPropertyValue(
+            "--rmg-masonry-item-skeleton-enter-duration",
+          ),
+      ).toBe("0ms");
 
       await flushFrames(2);
       await flushItemLifecycle(1);
@@ -722,7 +867,7 @@ describe("Masonry spans and positioned runtime", () => {
     expect(markup).toContain('data-rmg-masonry-item-skeleton="true"');
     expect(markup).toContain('data-test-skeleton="0"');
     expect(markup).toContain('data-ready="false"');
-    expect(markup).toContain("--rmg-masonry-item-skeleton-enter-duration:480ms");
+    expect(markup).toContain("--rmg-masonry-item-skeleton-enter-duration:0ms");
     expect(markup).toContain("--rmg-masonry-item-skeleton-exit-duration:1200ms");
     expect(markup).toContain(">alpha<");
   });

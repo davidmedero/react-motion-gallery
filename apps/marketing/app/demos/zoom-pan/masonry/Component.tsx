@@ -1,11 +1,10 @@
 "use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
-import { Masonry } from "react-motion-gallery/masonry/measured";
+import { Masonry } from "react-motion-gallery/masonry";
 import { ZoomPanImage } from "react-motion-gallery/zoomPan";
-import type { MasonrySkeletonSpec } from "react-motion-gallery/skeleton/cache/masonry/structured";
+import type { MasonrySkeletonProps } from "react-motion-gallery/skeleton/masonry";
 import styles from "./masonry-demo.module.css";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 const IMAGES = [
   {
@@ -40,29 +39,18 @@ const IMAGES = [
   },
 ];
 
-function createZoomPanMasonrySkeletonItem(ratio: string) {
-  return {
-    kind: "rect",
-    style: {
-      width: "100%",
-      aspectRatio: ratio,
-      borderRadius: 20,
-      overflow: "hidden",
-    },
-  } as const;
+function dimensionsFromRatio(ratio: string) {
+  const [rawWidth, rawHeight] = ratio.split("/").map((part) => Number(part.trim()));
+  const width = Number.isFinite(rawWidth) && rawWidth > 0 ? rawWidth : 1;
+  const height = Number.isFinite(rawHeight) && rawHeight > 0 ? rawHeight : width;
+  return { width, height };
 }
 
 const ZOOM_PAN_MASONRY_SKELETON = {
   radius: 20,
   className: styles.masonryRoot,
-  layout: {
-    kind: "masonry",
-    item: createZoomPanMasonrySkeletonItem(IMAGES[0]!.ratio),
-    slots: IMAGES.map((image) => ({
-      item: createZoomPanMasonrySkeletonItem(image.ratio),
-    })),
-  },
-} satisfies MasonrySkeletonSpec;
+  items: IMAGES.map((image) => dimensionsFromRatio(image.ratio)),
+} satisfies MasonrySkeletonProps;
 
 export function ZoomPanMasonryDemo() {
   return (
@@ -72,25 +60,33 @@ export function ZoomPanMasonryDemo() {
         gap={{ 0: 12, 960: 16 }}
         reveal={{ staggerMs: 60 }}
         loading={{
-          cache: demoSkeletonCache("zoom-pan-masonry"),
           count: IMAGES.length,
           skeleton: ZOOM_PAN_MASONRY_SKELETON,
         }}
       >
-        {IMAGES.map((image) => (
-          <ZoomPanImage
-            key={image.src}
-            src={image.src}
-            alt={image.alt}
-            className={styles.frame}
-            imageClassName={styles.image}
-            style={{ aspectRatio: image.ratio }}
-            zoom={{
-              clickZoomLevel: 2.1,
-              maxZoomLevel: 3.25,
-            }}
-          />
-        ))}
+        {IMAGES.map((image) => {
+          const dimensions = dimensionsFromRatio(image.ratio);
+
+          return (
+            <Masonry.Item
+              key={image.src}
+              width={dimensions.width}
+              height={dimensions.height}
+            >
+              <ZoomPanImage
+                src={image.src}
+                alt={image.alt}
+                className={styles.frame}
+                imageClassName={styles.image}
+                style={{ aspectRatio: image.ratio }}
+                zoom={{
+                  clickZoomLevel: 2.1,
+                  maxZoomLevel: 3.25,
+                }}
+              />
+            </Masonry.Item>
+          );
+        })}
       </Masonry>
     </GalleryCore>
   );

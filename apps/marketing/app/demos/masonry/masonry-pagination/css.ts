@@ -86,6 +86,11 @@ export const css = String.raw`.shell {
 .masonryCard {
   height: 100%;
 }
+.masonryItem[data-rmg-masonry-item-compare="1"]
+  > [data-rmg-masonry-item-skeleton="true"]
+  .skeletonCard {
+  box-shadow: none;
+}
 .skeletonCard {
   --product-image-aspect-ratio: 1 / 1;
   position: relative;
@@ -110,6 +115,14 @@ export const css = String.raw`.shell {
 }
 .skeletonMasonryCard {
   height: 100%;
+}
+.skeletonCard.skeletonSpacerCard {
+  box-shadow: none;
+}
+.skeletonCard.skeletonSpacerCard::after {
+  animation: none;
+  opacity: 0;
+  will-change: auto;
 }
 .skeletonCard::after {
   --product-skeleton-sheen: rgba(255, 255, 255, 0.48);

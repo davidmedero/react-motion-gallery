@@ -1,6 +1,5 @@
 import type { LoadingForceOptions } from "../shared/loading/force";
 import type { ResponsiveNumber } from "../shared/responsive";
-import type { SkeletonCacheOptions } from "../skeleton/cache";
 import type { GridSkeletonSpec } from "../skeleton/grid";
 
 export type RevealOptions = {
@@ -26,7 +25,6 @@ export type GridLoadingOptions = {
   skeleton?:
     | GridSkeletonSpec
     | ((args: GridLoadingSkeletonArgs) => React.ReactNode);
-  cache?: SkeletonCacheOptions;
   force?: LoadingForceOptions;
   timing?: {
     enterMs?: number;

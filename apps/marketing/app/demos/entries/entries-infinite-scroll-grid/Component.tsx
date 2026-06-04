@@ -17,7 +17,6 @@ import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import {
   Entries,
-  createEntriesSliderMedia,
   flattenEntries,
   type EntriesHandle,
   type EntriesPlugin,
@@ -26,6 +25,7 @@ import {
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
 } from "react-motion-gallery/entries";
+import { createEntriesSliderMedia } from "react-motion-gallery/entries/media/slider";
 import { RatingStars } from "react-motion-gallery/rating-stars";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";

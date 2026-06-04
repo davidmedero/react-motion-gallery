@@ -3,12 +3,15 @@
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
-import { Grid, type ResponsiveGridSpan } from "react-motion-gallery/grid";
+import {
+  Grid,
+  type ResponsiveGridSpan,
+} from "react-motion-gallery/grid";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
-import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/cache/grid";
+import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-columns-demo.module.css";
 import {
   closingPanoramaBody,
@@ -28,7 +31,6 @@ import {
   wideTileBody,
   wideTileTitle,
 } from "./grid-columns.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoItem = {
   imageSrc: string;
@@ -309,7 +311,6 @@ export function GridColumnsDemo() {
         fullscreenTrigger="item"
         loading={{
           skeleton: GRID_SPANS_SKELETON,
-          cache: demoSkeletonCache("grid-columns"),
           timing: { exitMs: 1000 },
         }}
         plugins={[gridFullscreen()]}

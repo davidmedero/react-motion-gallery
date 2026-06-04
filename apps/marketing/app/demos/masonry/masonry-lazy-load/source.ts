@@ -1,21 +1,22 @@
-export const source = `/* eslint-disable @next/next/no-img-element */
+export const source = String.raw`/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
-import { Masonry } from "react-motion-gallery/masonry/measured";
+import { Masonry } from "react-motion-gallery/masonry";
+import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import { masonryLazyLoad } from "react-motion-gallery/masonry/lazy-load";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenLazyLoad } from "react-motion-gallery/fullscreen/lazy-load";
-import type {
-  MasonrySkeletonSpec,
-  SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/masonry/structured";
+import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
+import {
+  createMasonryTextWrapSkeletonLayout,
+  useMasonryTextWrapLayout,
+} from "react-motion-gallery/masonry/text-wrap";
 import styles from "./masonry-lazy-load-demo.module.css";
 import { masonryLazyLoadSkeletonText } from "./masonry-lazy-load.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -95,6 +96,9 @@ const ITEMS = [
   },
 ];
 
+const MASONRY_LAZY_COLUMNS = { 0: 1, 720: 2, 1140: 3 };
+const MASONRY_LAZY_GAP = { 0: 12, 1140: 18 };
+
 const LAZY_CARD_METRICS = {
   cardGapPx: 12,
   cardPadding: "10px 10px 14px",
@@ -115,6 +119,24 @@ const LAZY_CARD_METRICS = {
     lineHeight: 1.55,
   },
 } as const;
+
+const LAZY_LIGHT_CARD_METRICS = {
+  cardPaddingBlockPx: 24,
+  cardPaddingInlinePx: 20,
+  borderBlockPx: 2,
+  borderInlinePx: 2,
+  cardGapPx: LAZY_CARD_METRICS.cardGapPx,
+  metaGapPx: LAZY_CARD_METRICS.metaGapPx,
+  metaPaddingInlinePx: 8,
+} as const;
+
+const LAZY_SKELETON_WRAP_STYLE = {
+  padding: LAZY_CARD_METRICS.cardPadding,
+  borderRadius: LAZY_CARD_METRICS.cardRadiusPx,
+  border: "1px solid rgba(125, 211, 252, 0.3)",
+  backgroundColor: "rgba(255, 255, 255, 0.96)",
+  boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+};
 
 const MASONRY_LAZY_TEXT_IDS: SkeletonTextIds[] = [
   {
@@ -214,31 +236,26 @@ function createLazySkeletonItem(args: {
   };
 }
 
-const LAZY_SKELETON: MasonrySkeletonSpec = {
-  radius: 18,
-  className: styles.masonryRoot,
-  layout: {
-    kind: "masonry",
-    itemWrapStyle: {
-      padding: LAZY_CARD_METRICS.cardPadding,
-      borderRadius: LAZY_CARD_METRICS.cardRadiusPx,
-      border: "1px solid rgba(125, 211, 252, 0.3)",
-      backgroundColor: "rgba(255, 255, 255, 0.96)",
-      boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
-    },
-    item: createLazySkeletonItem({
-      item: ITEMS[0]!,
-      skeletonText: MASONRY_LAZY_SKELETON_TEXT[0]!,
-    }),
-    slots: ITEMS.map((item, index) => ({
-      item: createLazySkeletonItem({
-        item,
-        skeletonText:
-          MASONRY_LAZY_SKELETON_TEXT[index] ?? MASONRY_LAZY_SKELETON_TEXT[0]!,
-      }),
-    })),
-  },
-};
+const LAZY_SKELETON_SLOTS = ITEMS.map((item, index) => ({
+  item: createLazySkeletonItem({
+    item,
+    skeletonText:
+      MASONRY_LAZY_SKELETON_TEXT[index] ?? MASONRY_LAZY_SKELETON_TEXT[0]!,
+  }),
+}));
+
+function renderLazySkeleton(index: number) {
+  const slot = LAZY_SKELETON_SLOTS[index] ?? LAZY_SKELETON_SLOTS[0]!;
+
+  return (
+    <Skeleton
+      layout={createMasonryTextWrapSkeletonLayout({
+        item: slot.item,
+        itemWrapStyle: LAZY_SKELETON_WRAP_STYLE,
+      })}
+    />
+  );
+}
 
 function MasonryLazyCard(props: {
   item: (typeof ITEMS)[number];
@@ -299,35 +316,55 @@ function MasonryLazyFullscreenAddon() {
 }
 
 export function MasonryLazyLoadDemo() {
+  const masonryLayout = useMasonryTextWrapLayout({
+    columns: MASONRY_LAZY_COLUMNS,
+    gap: MASONRY_LAZY_GAP,
+    metrics: LAZY_LIGHT_CARD_METRICS,
+  });
   const fullscreenMedia = toMediaItems(ITEMS.map((item) => item.fullscreenSrc));
 
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <Masonry
-        columns={{ 0: 1, 720: 2, 1140: 3 }}
-        gap={{ 0: 12, 1140: 18 }}
+        rootRef={masonryLayout.rootRef}
+        columns={MASONRY_LAZY_COLUMNS}
+        gap={MASONRY_LAZY_GAP}
         plugins={[
+          masonryFullscreen(),
           masonryLazyLoad({
             spinner: true,
             spinnerClassName: styles.masonryLazySpinner,
           }),
         ]}
         loading={{
-          cache: demoSkeletonCache("masonry-lazy-load"),
           count: ITEMS.length,
-          skeleton: LAZY_SKELETON,
+          skeleton: ({ index }) => renderLazySkeleton(index),
           timing: { exitMs: 1200 },
         }}
       >
-        {ITEMS.map((item, index) => (
-          <MasonryLazyCard
-            key={item.src}
-            item={item}
-            skeletonTextIds={
-              MASONRY_LAZY_TEXT_IDS[index] ?? MASONRY_LAZY_TEXT_IDS[0]!
-            }
-          />
-        ))}
+        {ITEMS.map((item, index) => {
+          const skeletonText =
+            MASONRY_LAZY_SKELETON_TEXT[index] ??
+            MASONRY_LAZY_SKELETON_TEXT[0]!;
+          const skeletonTextIds =
+            MASONRY_LAZY_TEXT_IDS[index] ?? MASONRY_LAZY_TEXT_IDS[0]!;
+          const geometry = masonryLayout.getItemGeometry({
+            ratio: item.ratio,
+            skeletonText,
+          });
+
+          return (
+            <Masonry.Item
+              key={item.src}
+              revealKey={item.src}
+              width={geometry.width}
+              height={geometry.height}
+              heightOffsetPx={geometry.heightOffsetPx}
+            >
+              <MasonryLazyCard item={item} skeletonTextIds={skeletonTextIds} />
+            </Masonry.Item>
+          );
+        })}
       </Masonry>
       <MasonryLazyFullscreenAddon />
     </GalleryCore>

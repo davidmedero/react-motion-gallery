@@ -10,15 +10,14 @@ import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
 import {
   Entries,
-  createEntriesSliderMedia,
   flattenEntries,
   type EntryCardRenderArgs,
   type EntryMediaRenderArgs,
   type EntryOverlayRenderArgs,
-} from "react-motion-gallery/entries/cache";
+} from "react-motion-gallery/entries";
+import { createEntriesSliderMedia } from "react-motion-gallery/entries/media/slider";
 import styles from "./entries-slider-html5-demo.module.css";
 import { entriesSliderHtml5SkeletonText } from "./entries-slider-html5.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type DemoMedia = {
   description: string;
@@ -541,7 +540,6 @@ export function EntriesSliderHtml5Demo() {
               }
             : undefined,
           loading: {
-            cache: demoSkeletonCache("entries-slider-html5"),
             waitForDecode: showMeasuredContent ? false : undefined,
             skeletonWrap: {
               style: {

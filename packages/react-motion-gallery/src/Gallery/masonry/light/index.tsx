@@ -20,6 +20,7 @@ import {
 import { usePrefersReducedMotion } from "../../shared/hooks/usePrefersReducedMotion";
 import styles from "./MasonryLight.module.css";
 import {
+  resolveCompareLoadingLayerVisualState,
   resolveLoadingForceOptions,
   type LoadingForceOptions,
 } from "../../shared/loading/force";
@@ -34,13 +35,14 @@ import type {
   MasonrySkeletonItem,
   MasonrySkeletonProps,
 } from "../../skeleton/masonry";
-import type { SkeletonCacheOptions } from "../../skeleton/cache";
 import {
   buildDimensionedMasonryLayout,
   buildDimensionedMasonryFluidLayout,
+  collectMasonryResponsiveContainerMinWidths,
   collectMasonryResponsiveMinWidths,
   resolveMasonryColumns,
   resolveMasonryGap,
+  type MasonryHeightOffsetPx,
   type MasonryPlacement,
   type MasonrySpan,
   type ResponsiveMasonrySpan,
@@ -49,6 +51,8 @@ import type { MasonryPlugin } from "./types";
 import { buildStableScopeId } from "../../shared/stableScope";
 
 export type {
+  MasonryHeightOffsetPx,
+  MasonryHeightOffsetRule,
   MasonryPlacement,
   MasonrySpan,
   ResponsiveMasonrySpan,
@@ -77,6 +81,7 @@ export type MasonryLoadingSkeletonArgs = {
   span?: ResponsiveMasonrySpan;
   width?: number;
   height?: number;
+  heightOffsetPx?: MasonryHeightOffsetPx;
 };
 
 export type MasonryLoadingOptions = {
@@ -86,7 +91,6 @@ export type MasonryLoadingOptions = {
   skeleton?:
     | MasonrySkeletonProps
     | ((args: MasonryLoadingSkeletonArgs) => React.ReactNode);
-  cache?: SkeletonCacheOptions;
   force?: LoadingForceOptions;
   timing?: {
     enterMs?: number;
@@ -105,6 +109,7 @@ export type MasonryLoadingOptions = {
 export type MasonryItemProps = {
   width: number;
   height: number;
+  heightOffsetPx?: MasonryHeightOffsetPx;
   span?: ResponsiveMasonrySpan;
   revealKey?: React.Key;
   placeholder?: boolean;
@@ -149,6 +154,7 @@ type MasonryComponent = React.ForwardRefExoticComponent<
 
 type MasonryCell = MasonryItemProps & {
   id: number;
+  key?: React.Key;
   placeholder?: boolean;
 };
 
@@ -157,7 +163,6 @@ type NormalizedMasonryLoading = {
   active: boolean;
   count: number;
   skeleton?: MasonryLoadingOptions["skeleton"];
-  cache?: SkeletonCacheOptions;
   force?: LoadingForceOptions;
   animate: boolean;
   waitForMedia: boolean;
@@ -240,7 +245,6 @@ function normalizeMasonryLoading(
         ? Math.max(0, src.count | 0)
         : 0,
     skeleton: src?.skeleton,
-    cache: src?.cache,
     force: src?.force,
     animate,
     waitForMedia: src?.waitForMedia ?? true,
@@ -259,6 +263,32 @@ function normalizeMasonryLoading(
     exitMs: prefersReducedMotion || !animate ? 0 : exitMs,
     keepSkeletonMounted: src?.keepSkeletonMounted ?? false,
     rememberRevealed: src?.rememberRevealed ?? true,
+  };
+}
+
+function resolveMasonryLoadingVisualState(args: {
+  loadingActive: boolean;
+  loadingForced?: LoadingForceOptions;
+  shouldMountContent: boolean;
+  contentReady: boolean;
+  defaultReveal: boolean;
+}) {
+  const compareState = resolveCompareLoadingLayerVisualState({
+    loadingActive: args.loadingActive && args.shouldMountContent,
+    loadingForced: args.loadingForced,
+    contentReady: args.contentReady,
+  });
+  const resolvedForce = resolveLoadingForceOptions(args.loadingForced);
+  const forcedLoading = args.loadingActive && resolvedForce.enabled;
+
+  return {
+    compareMode: compareState.compareMode,
+    revealContent: compareState.compareMode
+      ? true
+      : forcedLoading
+        ? false
+        : args.defaultReveal,
+    loadingLayerOpacity: compareState.loadingLayerOpacity,
   };
 }
 
@@ -313,6 +343,7 @@ function getPlaceholderCells(loading: NormalizedMasonryLoading): MasonryCell[] {
       id: -1 - index,
       width: item?.width ?? 100,
       height: item?.height ?? 100,
+      heightOffsetPx: item?.heightOffsetPx,
       span: item?.span,
       children: null,
       placeholder: true,
@@ -371,23 +402,38 @@ function isMasonryItemElement(
 }
 
 function collectCells(children: React.ReactNode): MasonryCell[] {
-  return React.Children.toArray(children)
-    .filter(isMasonryItemElement)
-    .map((child, index) => ({
+  const cells: MasonryCell[] = [];
+
+  React.Children.forEach(children, (child) => {
+    if (!isMasonryItemElement(child)) return;
+
+    const index = cells.length;
+    cells.push({
       id: index,
+      key: child.key ?? undefined,
       width: child.props.width,
       height: child.props.height,
+      heightOffsetPx: child.props.heightOffsetPx,
       span: child.props.span,
       revealKey: child.props.revealKey,
       placeholder: child.props.placeholder === true,
       className: child.props.className,
       style: child.props.style,
       children: child.props.children,
-    }));
+    });
+  });
+
+  return cells;
 }
 
 function getMasonryCellRevealKey(cell: MasonryCell): React.Key {
   return cell.revealKey ?? cell.id;
+}
+
+function getMasonryCellKey(cell: MasonryCell, index: number): React.Key {
+  return (
+    cell.key ?? (cell.placeholder ? `rmg-masonry-loading-${index}` : cell.id)
+  );
 }
 
 function cssImportant(name: string, value: string | number) {
@@ -402,19 +448,51 @@ function buildResponsiveFluidLayoutCss(args: {
   items: ReadonlyArray<MasonryCell>;
   breakpointMap: BreakpointMap;
 }) {
-  const minWidths = collectMasonryResponsiveMinWidths({
+  const viewportMinWidths = collectMasonryResponsiveMinWidths({
     columns: args.columns,
     gap: args.gap,
     items: args.items,
     breakpointMap: args.breakpointMap,
   });
+  const containerMinWidths = collectMasonryResponsiveContainerMinWidths({
+    items: args.items,
+    breakpointMap: args.breakpointMap,
+  });
 
-  if (minWidths.length <= 1) return null;
+  if (viewportMinWidths.length <= 1 && containerMinWidths.length <= 1) {
+    return null;
+  }
 
   const scopeSelector = `[data-rmg-masonry-fluid-scope="${args.scopeId}"]`;
   const spacerSelector = `${scopeSelector}>[data-rmg-masonry-fluid-spacer="true"]`;
-  const buildRules = (minWidth: number) => {
-    const responsiveWidth = Math.max(1, minWidth);
+  const buildRootRules = (viewportMinWidth: number) => {
+    const responsiveWidth = Math.max(1, viewportMinWidth);
+    const columnCount = resolveMasonryColumns({
+      columns: args.columns,
+      viewportWidth: responsiveWidth,
+      breakpointMap: args.breakpointMap,
+    });
+    const gapPx = resolveMasonryGap({
+      gap: args.gap,
+      viewportWidth: responsiveWidth,
+      breakpointMap: args.breakpointMap,
+    });
+    return (
+      `${scopeSelector}{` +
+      [
+        cssImportant("height", "auto"),
+        cssImportant("--rmg-cols", columnCount),
+        cssImportant("--rmg-gap", `${gapPx}px`),
+      ].join("") +
+      "}"
+    );
+  };
+  const buildLayoutRules = (
+    viewportMinWidth: number,
+    containerMinWidth: number,
+  ) => {
+    const responsiveWidth = Math.max(1, viewportMinWidth);
+    const responsiveContainerWidth = Math.max(1, containerMinWidth);
     const columnCount = resolveMasonryColumns({
       columns: args.columns,
       viewportWidth: responsiveWidth,
@@ -431,16 +509,9 @@ function buildResponsiveFluidLayoutCss(args: {
       gapPx,
       placement: args.placement,
       viewportWidth: responsiveWidth,
+      containerWidth: responsiveContainerWidth,
       breakpointMap: args.breakpointMap,
     });
-    const rootCss =
-      `${scopeSelector}{` +
-      [
-        cssImportant("height", "auto"),
-        cssImportant("--rmg-cols", columnCount),
-        cssImportant("--rmg-gap", `${gapPx}px`),
-      ].join("") +
-      "}";
     const spacerCss =
       `${spacerSelector}{` +
       [
@@ -465,16 +536,39 @@ function buildResponsiveFluidLayoutCss(args: {
       )
       .join("");
 
-    return `${rootCss}${spacerCss}${itemCss}`;
+    return `${spacerCss}${itemCss}`;
   };
-
-  return minWidths
-    .map((minWidth) => {
-      const css = buildRules(minWidth);
-      if (minWidth <= 0) return css;
-      return `@media (min-width:${minWidth}px){${css}}`;
-    })
+  const wrapViewportQuery = (css: string, minWidth: number) =>
+    minWidth <= 0 ? css : `@media (min-width:${minWidth}px){${css}}`;
+  const wrapContainerQuery = (css: string, minWidth: number) =>
+    minWidth <= 0 ? css : `@container (min-width:${minWidth}px){${css}}`;
+  const rootCss = viewportMinWidths
+    .map((minWidth) => wrapViewportQuery(buildRootRules(minWidth), minWidth))
     .join("");
+  const layoutCss = viewportMinWidths
+    .flatMap((viewportMinWidth) =>
+      containerMinWidths.map((containerMinWidth) => ({
+        viewportMinWidth,
+        containerMinWidth,
+      })),
+    )
+    .sort(
+      (a, b) =>
+        a.viewportMinWidth - b.viewportMinWidth ||
+        a.containerMinWidth - b.containerMinWidth,
+    )
+    .map(({ viewportMinWidth, containerMinWidth }) =>
+      wrapViewportQuery(
+        wrapContainerQuery(
+          buildLayoutRules(viewportMinWidth, containerMinWidth),
+          containerMinWidth,
+        ),
+        viewportMinWidth,
+      ),
+    )
+    .join("");
+
+  return `${rootCss}${layoutCss}`;
 }
 
 function renderMasonrySkeletonNode(args: {
@@ -500,6 +594,7 @@ function renderMasonrySkeletonNode(args: {
       span: args.cell.span,
       width: args.cell.width,
       height: args.cell.height,
+      heightOffsetPx: args.cell.heightOffsetPx,
     });
   }
 
@@ -531,6 +626,7 @@ function renderMasonrySkeletonNode(args: {
         {
           width: args.cell.width,
           height: args.cell.height,
+          heightOffsetPx: args.cell.heightOffsetPx,
           span: args.cell.span,
         },
       ]}
@@ -583,6 +679,9 @@ function MasonryLightItemHost({
   const wasPreviouslyRevealed =
     stage && loading.rememberRevealed && revealedKeysRef.current.has(stateKey);
   const [node, setNode] = React.useState<HTMLDivElement | null>(null);
+  const [contentNode, setContentNode] = React.useState<HTMLDivElement | null>(
+    null,
+  );
   const [mediaReady, setMediaReady] = React.useState(
     !stage || wasPreviouslyRevealed,
   );
@@ -590,6 +689,31 @@ function MasonryLightItemHost({
     !stage || wasPreviouslyRevealed,
   );
   const [settled, setSettled] = React.useState(!stage || wasPreviouslyRevealed);
+  const [skeletonSettled, setSkeletonSettled] = React.useState(false);
+  const lifecycleKeyRef = React.useRef<{
+    stateKey: React.Key;
+    stage: boolean;
+  }>({
+    stateKey,
+    stage,
+  });
+  const lifecycleChanged =
+    lifecycleKeyRef.current.stateKey !== stateKey ||
+    lifecycleKeyRef.current.stage !== stage;
+  const resetReady = !stage || wasPreviouslyRevealed;
+  const effectiveMediaReady = lifecycleChanged ? resetReady : mediaReady;
+  const effectiveRevealed = lifecycleChanged ? resetReady : revealed;
+  const effectiveSettled = lifecycleChanged ? resetReady : settled;
+  const effectiveSkeletonSettled = lifecycleChanged ? false : skeletonSettled;
+  const skeletonRenderStateRef = React.useRef<{
+    key: React.Key;
+    stage: boolean;
+    ready: boolean;
+  }>({
+    key: stateKey,
+    stage,
+    ready: !stage || wasPreviouslyRevealed,
+  });
   const skeletonMountedAtRef = React.useRef(0);
   const revealTimeoutRef = React.useRef<ReturnType<
     typeof globalThis.setTimeout
@@ -603,37 +727,64 @@ function MasonryLightItemHost({
     stage && !wasPreviouslyRevealed,
     stateKey,
   );
+  const readyPainted = useDoublePaintReady(
+    stage && !wasPreviouslyRevealed && effectiveMediaReady,
+    `${String(stateKey)}:ready`,
+  );
+  const contentReady =
+    effectiveMediaReady || effectiveRevealed || effectiveSettled;
+  const defaultReveal = !stage || effectiveRevealed || effectiveSettled;
+  const loadingVisualState = resolveMasonryLoadingVisualState({
+    loadingActive: loading.active || placeholderActive,
+    loadingForced: loading.force,
+    shouldMountContent: !placeholderActive || contentNode != null,
+    contentReady,
+    defaultReveal,
+  });
   const loadingForce = React.useMemo(
     () => resolveLoadingForceOptions(loading.force),
     [loading.force],
   );
   const loadingBlocksReveal =
     (loading.active || placeholderActive) &&
-    (!loadingForce.enabled || !loadingForce.showContent);
-  const compareMode =
-    loading.active &&
-    loadingForce.enabled &&
-    loadingForce.showContent &&
-    (revealed || settled || mediaReady);
-  const ready = !stage || revealed || settled || compareMode;
-  const skeleton = renderMasonrySkeletonNode({
-    skeleton: loading.skeleton,
-    index: renderIndex,
-    itemIndex,
-    itemKey,
-    revealKey: stateKey,
-    placeholder: !!cell.placeholder,
-    ready,
-    cell,
-  });
+    (!loadingForce.enabled || !loadingVisualState.revealContent);
+  const compareMode = loadingVisualState.compareMode;
+  const ready = !stage || loadingVisualState.revealContent;
+  if (
+    skeletonRenderStateRef.current.key !== stateKey ||
+    skeletonRenderStateRef.current.stage !== stage
+  ) {
+    skeletonRenderStateRef.current = {
+      key: stateKey,
+      stage,
+      ready: !stage || wasPreviouslyRevealed,
+    };
+  }
+  const skeleton = React.useMemo(
+    () =>
+      renderMasonrySkeletonNode({
+        skeleton: loading.skeleton,
+        index: renderIndex,
+        itemIndex,
+        itemKey,
+        revealKey: stateKey,
+        placeholder: !!cell.placeholder,
+        ready: skeletonRenderStateRef.current.ready,
+        cell,
+      }),
+    [cell, itemIndex, itemKey, loading.skeleton, renderIndex, stateKey],
+  );
   const hasSkeleton = skeleton != null;
   const revealReady = !stage || (!loadingBlocksReveal && ready);
+  const skeletonShimmerSettled =
+    revealReady && !compareMode && effectiveSkeletonSettled;
   const shouldMountSkeleton =
     hasSkeleton &&
-    (!settled ||
+    (!effectiveSettled ||
       loading.active ||
       placeholderActive ||
       loading.keepSkeletonMounted);
+  const skeletonEnterMs = !revealReady && !compareMode ? 0 : loading.enterMs;
 
   const mergedRef = React.useCallback(
     (nextNode: HTMLDivElement | null) => {
@@ -650,6 +801,11 @@ function MasonryLightItemHost({
   }, [hasSkeleton, stateKey]);
 
   React.useLayoutEffect(() => {
+    lifecycleKeyRef.current = {
+      stateKey,
+      stage,
+    };
+
     const rememberedReveal =
       stage &&
       loading.rememberRevealed &&
@@ -665,15 +821,24 @@ function MasonryLightItemHost({
     setMediaReady(false);
     setRevealed(false);
     setSettled(false);
+    setSkeletonSettled(false);
   }, [loading.rememberRevealed, revealedKeysRef, stage, stateKey]);
 
   React.useEffect(() => {
     if (!stage || !loading.active) return;
     setSettled(false);
+    setSkeletonSettled(false);
   }, [loading.active, stage, stateKey]);
 
   React.useEffect(() => {
-    if (!stage || !node || !inView || !painted || mediaReady) return;
+    if (
+      !stage ||
+      !contentNode ||
+      !inView ||
+      !painted ||
+      effectiveMediaReady
+    )
+      return;
 
     if (!loading.waitForMedia) {
       const timeout = globalThis.setTimeout(() => setMediaReady(true), 0);
@@ -681,7 +846,7 @@ function MasonryLightItemHost({
     }
 
     let cancelled = false;
-    void waitForElementMediaReady(node, {
+    void waitForElementMediaReady(contentNode, {
       timeoutMs: loading.decodeTimeoutMs,
       waitForLazy: true,
     }).then(() => {
@@ -695,8 +860,8 @@ function MasonryLightItemHost({
     inView,
     loading.decodeTimeoutMs,
     loading.waitForMedia,
-    mediaReady,
-    node,
+    effectiveMediaReady,
+    contentNode,
     painted,
     stage,
     stateKey,
@@ -714,9 +879,10 @@ function MasonryLightItemHost({
       !revealGateActive ||
       !inView ||
       !painted ||
-      !mediaReady ||
+      !readyPainted ||
+      !effectiveMediaReady ||
       loadingBlocksReveal ||
-      revealed
+      effectiveRevealed
     ) {
       return;
     }
@@ -756,20 +922,34 @@ function MasonryLightItemHost({
     loading.minVisibleMs,
     loadingBlocksReveal,
     markRevealed,
-    mediaReady,
+    effectiveMediaReady,
     painted,
+    readyPainted,
     revealGateActive,
-    revealed,
+    effectiveRevealed,
     scheduleReveal,
     stage,
     stateKey,
   ]);
 
   React.useEffect(() => {
-    if (!stage || !hasSkeleton || !revealed || settled || loading.exitMs > 0)
+    if (
+      !stage ||
+      !hasSkeleton ||
+      !effectiveRevealed ||
+      effectiveSettled ||
+      loading.exitMs > 0
+    )
       return;
     setSettled(true);
-  }, [hasSkeleton, loading.exitMs, revealed, settled, stage]);
+    setSkeletonSettled(true);
+  }, [
+    effectiveRevealed,
+    effectiveSettled,
+    hasSkeleton,
+    loading.exitMs,
+    stage,
+  ]);
 
   React.useEffect(() => {
     return () => {
@@ -790,30 +970,41 @@ function MasonryLightItemHost({
         : "0"
       : undefined,
     "data-rmg-masonry-item-compare": compareMode ? "1" : undefined,
-    "data-rmg-masonry-item-reveal-settled": settled ? "1" : undefined,
+    "data-rmg-masonry-item-reveal-settled": effectiveSettled ? "1" : undefined,
     "aria-hidden": cell.placeholder ? true : itemProps["aria-hidden"],
   } as React.HTMLAttributes<HTMLDivElement>;
 
   const content = (
     <>
-      {children}
+      <div
+        key={stateKey}
+        data-rmg-masonry-item-content="true"
+        ref={setContentNode}
+      >
+        {children}
+      </div>
       {shouldMountSkeleton ? (
         <div
+          key="skeleton"
           className={styles.itemSkeleton}
           data-rmg-masonry-item-skeleton="true"
           aria-hidden="true"
           style={{
-            ["--rmg-masonry-item-skeleton-enter-duration" as any]: `${loading.enterMs}ms`,
+            ["--rmg-masonry-item-skeleton-enter-duration" as any]: `${skeletonEnterMs}ms`,
             ["--rmg-masonry-item-skeleton-exit-duration" as any]: `${loading.exitMs}ms`,
             ["--rmg-masonry-item-skeleton-opacity" as any]: compareMode
-              ? loadingForce.skeletonOpacity
+              ? loadingVisualState.loadingLayerOpacity
               : undefined,
           }}
+          data-rmg-masonry-item-shimmer={
+            skeletonShimmerSettled ? "off" : undefined
+          }
           onTransitionEnd={(event) => {
             if (event.target !== event.currentTarget) return;
             if (event.propertyName !== "opacity") return;
-            if (!revealed) return;
+            if (!revealReady || compareMode) return;
             setSettled(true);
+            setSkeletonSettled(true);
           }}
         >
           {skeleton}
@@ -984,6 +1175,7 @@ const MasonryImpl = React.forwardRef<MasonryHandle, MasonryOptions>(
           items: renderCells.map((cell) => ({
             width: cell.width,
             height: cell.height,
+            heightOffsetPx: cell.heightOffsetPx,
             span: cell.span,
           })),
           breakpoints: effectiveBreakpoints,
@@ -1155,24 +1347,17 @@ const MasonryImpl = React.forwardRef<MasonryHandle, MasonryOptions>(
           }}
           aria-busy={ready ? undefined : true}
         >
-          {responsiveFluidCss ? (
-            <style dangerouslySetInnerHTML={{ __html: responsiveFluidCss }} />
-          ) : null}
           {!hasMeasuredWidth ? (
             <div
               data-rmg-masonry-fluid-spacer="true"
               aria-hidden="true"
-              style={
-                responsiveFluidCss
-                  ? undefined
-                  : {
-                      display: "block",
-                      width: "100%",
-                      height: fluidLayout?.height ?? layout.height,
-                      visibility: "hidden",
-                      pointerEvents: "none",
-                    }
-              }
+              style={{
+                display: "block",
+                width: "100%",
+                height: fluidLayout?.height ?? layout.height,
+                visibility: "hidden",
+                pointerEvents: "none",
+              }}
             />
           ) : null}
           {renderCells.map((cell, index) => {
@@ -1182,9 +1367,7 @@ const MasonryImpl = React.forwardRef<MasonryHandle, MasonryOptions>(
             if (index < virtualRange.start || index >= virtualRange.end)
               return null;
             const itemIndex = cell.id;
-            const itemKey = cell.placeholder
-              ? `rmg-masonry-loading-${index}`
-              : cell.id;
+            const itemKey = getMasonryCellKey(cell, index);
 
             const itemProps = {
               "data-rmg-idx": itemIndex,
@@ -1198,14 +1381,10 @@ const MasonryImpl = React.forwardRef<MasonryHandle, MasonryOptions>(
                 cell.className,
               ),
               style: {
-                ...(responsiveFluidCss
-                  ? null
-                  : {
-                      top: fluidItem?.top ?? item.top,
-                      left: fluidItem?.left ?? item.left,
-                      width: fluidItem?.width ?? item.width,
-                      height: fluidItem?.height ?? item.height,
-                    }),
+                top: fluidItem?.top ?? item.top,
+                left: fluidItem?.left ?? item.left,
+                width: fluidItem?.width ?? item.width,
+                height: fluidItem?.height ?? item.height,
                 ["--rmg-reveal-index" as any]: index,
                 ...cell.style,
               },
@@ -1235,6 +1414,9 @@ const MasonryImpl = React.forwardRef<MasonryHandle, MasonryOptions>(
               </MasonryLightItemHost>
             );
           })}
+          {responsiveFluidCss ? (
+            <style dangerouslySetInnerHTML={{ __html: responsiveFluidCss }} />
+          ) : null}
         </RootComponent>
         {activePlugins.map((plugin, index) => {
           const Runtime = plugin.Runtime;

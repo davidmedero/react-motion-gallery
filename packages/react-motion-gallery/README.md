@@ -12,16 +12,18 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | Surface | JS gzip |
 | --- | --- |
 | `Entries` | 16.2kB |
-| `entries/cache` | 21.0kB |
+| `entries/media/slider` | 20.7kB |
+| `entries/media/grid` | 20.6kB |
+| `entries/media/masonry` | 18.7kB |
 | `entries/ready` | 360.0B |
-| `entries/pagination` | 240.0B |
+| `entries/pagination` | 242.0B |
 | `entries/load-more` | 198.0B |
 | `entries/infinite-scroll` | 208.0B |
 | `entries/virtualization` | 236.0B |
 | `rating-stars` | 1.3kB |
 | `FullscreenThumbnailSlider` | 20.4kB |
 | `GalleryCore` | 2.6kB |
-| `Grid` | 22.2kB |
+| `Grid` | 19.9kB |
 | `grid/ready` | 323.0B |
 | `grid/lazy-load` | 3.7kB |
 | `grid/fullscreen` | 1.6kB |
@@ -29,31 +31,25 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `grid/load-more` | 236.0B |
 | `grid/infinite-scroll` | 667.0B |
 | `grid/virtualization` | 256.0B |
-| `Masonry` | 11.2kB |
+| `Masonry` | 12.1kB |
 | `masonry/ready` | 323.0B |
 | `masonry/fullscreen` | 1.1kB |
-| `masonry/measured` | 35.2kB |
-| `masonry/measured/ready` | 323.0B |
-| `masonry/lazy-load` | 3.6kB |
+| `masonry/lazy-load` | 3.7kB |
+| `masonry/text-wrap` | 1.8kB |
 | `masonry/pagination` | 239.0B |
 | `masonry/load-more` | 227.0B |
 | `masonry/infinite-scroll` | 630.0B |
 | `masonry/virtualization` | 252.0B |
 | `Skeleton base` | 9.1kB |
-| `skeleton/cache/base` | 13.7kB |
 | `skeleton/slider` | 14.7kB |
 | `skeleton/cache/slider` | 19.5kB |
-| `skeleton/slider/restore` | 25.4kB |
-| `skeleton/grid` | 11.4kB |
-| `skeleton/cache/grid` | 16.0kB |
-| `skeleton/masonry` | 4.4kB |
-| `skeleton/cache/masonry` | 4.4kB |
-| `skeleton/masonry/structured` | 20.9kB |
-| `skeleton/cache/masonry/structured` | 25.9kB |
-| `Slider core` | 19.1kB |
+| `skeleton/slider/restore` | 25.5kB |
+| `skeleton/grid` | 11.3kB |
+| `skeleton/masonry` | 4.8kB |
+| `Slider core` | 19.0kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
-| `slider/dots` | 934.0B |
+| `slider/dots` | 929.0B |
 | `slider/progress` | 892.0B |
 | `slider/scrollbar` | 1.2kB |
 | `slider/auto-height` | 1.3kB |
@@ -67,13 +63,13 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `useFullscreenController` | 5.0kB |
 | `fullscreen/slider` | 39.7kB |
 | `fullscreen/controls` | 173.0B |
-| `fullscreen/captions` | 13.5kB |
+| `fullscreen/captions` | 13.6kB |
 | `fullscreen/zoom-pan` | 12.4kB |
-| `fullscreen/video` | 16.7kB |
-| `fullscreen/lazy-load` | 13.5kB |
+| `fullscreen/video` | 16.8kB |
+| `fullscreen/lazy-load` | 13.6kB |
 | `fullscreen/crossfade` | 181.0B |
 | `fullscreen/thumbnails` | 160.0B |
-| `Video` | 13.0kB |
+| `Video` | 13.1kB |
 | `ZoomPanImage` | 11.0kB |
 | `zoomPan/hover` | 124.0B |
 | `media / toMediaItems` | 260.0B |
@@ -202,15 +198,15 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/masonry`                           | `Masonry`, `Masonry.Item`, masonry types                                                     |
 | `react-motion-gallery/masonry/ready`                     | `useMasonryReady`                                                                            |
 | `react-motion-gallery/masonry/fullscreen`                | `masonryFullscreen` for light Masonry + `GalleryCore`                                        |
-| `react-motion-gallery/masonry/measured`                  | Measured `Masonry`, `Masonry.Item`, plugins/reveal/fullscreen types                          |
-| `react-motion-gallery/masonry/measured/ready`            | `useMasonryReady` for measured masonry                                                       |
 | `react-motion-gallery/masonry/lazy-load`                 | `masonryLazyLoad`                                                                            |
 | `react-motion-gallery/masonry/pagination`                | `masonryPagination`, `useMasonryPagination`, `MasonryPaginationControls`, page range helpers |
 | `react-motion-gallery/masonry/load-more`                 | `masonryLoadMore`, `useMasonryLoadMore`                                                      |
 | `react-motion-gallery/masonry/infinite-scroll`           | `masonryInfiniteScroll`, `useMasonryInfiniteScroll`                                          |
 | `react-motion-gallery/masonry/virtualization`            | `masonryVirtualization`, `useMasonryVirtualizer`                                             |
-| `react-motion-gallery/entries`                           | `Entries`, `flattenEntries`, entry layout/media container helpers                            |
-| `react-motion-gallery/entries/cache`                     | `CachedEntries` with `entries.loading.cache`                                                 |
+| `react-motion-gallery/entries`                           | `Entries`, `flattenEntries`, entry data plugins, hooks, and types                           |
+| `react-motion-gallery/entries/media/slider`              | `createEntriesSliderMedia`                                                                  |
+| `react-motion-gallery/entries/media/grid`                | `createEntriesGridMedia`                                                                    |
+| `react-motion-gallery/entries/media/masonry`             | `createEntriesMasonryMedia`                                                                 |
 | `react-motion-gallery/entries/ready`                     | `useEntriesReady`                                                                            |
 | `react-motion-gallery/entries/pagination`                | `entriesPagination`, `useEntriesPagination`, `EntriesPaginationControls`, page range helpers |
 | `react-motion-gallery/entries/load-more`                 | `entriesLoadMore`, `useEntriesLoadMore`                                                      |
@@ -220,14 +216,9 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/skeleton/slider`                   | `SliderSkeleton` and slider skeleton authoring types                                         |
 | `react-motion-gallery/skeleton/grid`                     | `GridSkeleton` and grid skeleton authoring types                                             |
 | `react-motion-gallery/skeleton/masonry`                  | Lightweight `MasonrySkeleton` for dimensioned placeholders                                   |
-| `react-motion-gallery/skeleton/masonry/structured`       | Structured `MasonrySkeleton` and masonry skeleton authoring types                            |
 | `react-motion-gallery/skeleton/cache`                    | Server-safe skeleton cookie cache helpers and types                                          |
 | `react-motion-gallery/skeleton/cache/provider`           | Client `SkeletonCacheProvider` for SSR snapshots and client cookie refresh                   |
-| `react-motion-gallery/skeleton/cache/base`               | `CachedSkeleton` with `cache`                                                                |
 | `react-motion-gallery/skeleton/cache/slider`             | `CachedSliderSkeleton` with `cache`                                                          |
-| `react-motion-gallery/skeleton/cache/grid`               | `CachedGridSkeleton` with `cache`                                                            |
-| `react-motion-gallery/skeleton/cache/masonry`            | Lightweight `CachedMasonrySkeleton`                                                          |
-| `react-motion-gallery/skeleton/cache/masonry/structured` | Structured `CachedMasonrySkeleton` with `cache`                                              |
 | `react-motion-gallery/skeleton/slider/restore`           | `RestoredSliderSkeleton` with `restore` and optional `cache`                                 |
 | `react-motion-gallery/fullscreen`                        | `useFullscreenController` and fullscreen types                                               |
 | `react-motion-gallery/fullscreen/slider`                 | `fullscreenSlider`                                                                           |
@@ -508,15 +499,28 @@ export function LoadingShell({ ready, children }: { ready: boolean; children: Re
 
 The wrapper timing model matches the gallery loading layers: content begins fading in as soon as the skeleton exit starts; it does not wait for the skeleton to unmount.
 
-Default skeleton imports are cache-free. Use the opt-in cache subpaths when a surface should read and write skeleton snapshot cookies: `CachedSkeleton`, `CachedSliderSkeleton`, `CachedGridSkeleton`, `CachedMasonrySkeleton`, or `CachedEntries`.
+Default skeleton imports are cache-free. The cache-backed public skeleton surface retained in this release is `CachedSliderSkeleton` from `react-motion-gallery/skeleton/cache/slider`; use `RestoredSliderSkeleton` from `react-motion-gallery/skeleton/slider/restore` when slider reload/back-forward restore is needed. Non-slider gallery loading surfaces no longer accept `loading.cache`.
 
-Migration notes for cache and restore:
+`SkeletonFrame` is also exported from `react-motion-gallery/skeleton/base` for lower-level composition when you already have a rendered skeleton node and want the shared wrapper timing/layering behavior.
 
-- replace `react-motion-gallery/skeleton/base` imports with `react-motion-gallery/skeleton/cache/base` when passing `cache`
-- replace `react-motion-gallery/skeleton/slider` imports with `react-motion-gallery/skeleton/cache/slider` when passing only `cache`
-- replace `react-motion-gallery/skeleton/slider` imports with `react-motion-gallery/skeleton/slider/restore` when passing `restore`
-- replace `react-motion-gallery/skeleton/grid` and `/masonry` imports with their `skeleton/cache/*` counterparts when passing `cache`
-- replace `react-motion-gallery/entries` with `react-motion-gallery/entries/cache` when using `entries.loading.cache`
+| `SkeletonFrame` prop           | Type                                                                                | Default | Notes                                                                                               |
+| ------------------------------ | ----------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------- |
+| `skeletonNode`                 | `React.ReactNode`                                                                   | required | Loading layer content.                                                                               |
+| `children`                     | `React.ReactNode`                                                                   | `—`     | Real content. Without children, `SkeletonFrame` returns `skeletonNode` directly.                     |
+| `ready`                        | `boolean`                                                                           | `false` | Reveals content when true.                                                                           |
+| `enabled`                      | `boolean`                                                                           | `true`  | Bypasses loading behavior when false.                                                                |
+| `force`                        | `boolean \| { enabled?: boolean; showContent?: boolean; skeletonOpacity?: number }` | `false` | Keeps or compares the loading layer.                                                                 |
+| `timing`                       | `{ enterMs?, exitMs?, minVisibleMs? }`                                               | shared defaults | Loading-layer timing.                                                                         |
+| `shellClassName` / `shellStyle` | `string` / `React.CSSProperties`                                                    | `—`     | Outer shell class and style.                                                                         |
+| `loadingShellStyle`            | `React.CSSProperties \| null`                                                       | `—`     | Style applied to the shell only while the loading layer is showing.                                  |
+| `contentClassName` / `contentStyle` | `string` / `React.CSSProperties`                                                | `—`     | Content layer class and style.                                                                       |
+| `contentOwnsWrapperLayout`     | `boolean`                                                                           | `false` | Keeps the wrapper sized by content when the content layer is not locked.                             |
+| `lockContentLayoutWhileLoading` | `boolean`                                                                          | `false` | Temporarily makes the loading layer the normal-flow owner and absolutely layers content over it.      |
+| `loadingLayerFirst`            | `boolean`                                                                           | `false` | Renders the loading layer before the content layer.                                                   |
+| `contentWrapper`               | `(children: ReactNode) => ReactNode`                                                | `—`     | Wraps content inside the shared skeleton reveal-gate provider.                                       |
+| `shellDataAttributes`          | `Record<string, string \| boolean \| undefined>`                                   | `—`     | Extra data attributes for the shell.                                                                 |
+| `loadingShellDataAttributes`   | `Record<string, string \| boolean \| undefined>`                                   | `—`     | Extra shell data attributes while loading is showing.                                                |
+| `shellRef`                     | `React.Ref<HTMLDivElement>`                                                         | `—`     | Ref for the outer shell.                                                                             |
 
 ### Browser-measured skeleton text authoring
 
@@ -532,168 +536,43 @@ npm run --silent generate:skeleton-text-module -- \
 
 Use `responsiveBy: "container"` when text wrapping follows the card or cell width more closely than the viewport. For equal-height card sliders, the browser analyzer can also measure all canonical slider items and emit `rowHeightCompensation` so unseen cards cannot surprise the skeleton row height. See [`docs/skeleton-text-authoring.md`](./docs/skeleton-text-authoring.md) for manifest fields, command options, and the Codex-friendly workflow.
 
-### Skeleton cookie snapshot cache
+### Slider skeleton cookie snapshot cache
 
-The skeleton cookie snapshot cache is an opt-in SSR acceleration path for skeletons with expensive responsive text or layout geometry. The first visit uses the normal responsive skeleton CSS. After hydration, and again after debounced resizes, the client measures the active rendered content/skeleton geometry and writes a compact cookie. On a later server render, a valid cookie lets the skeleton render only the active snapshot values instead of the full responsive text CSS table.
+The skeleton cookie snapshot cache remains available for slider skeletons. Use `CachedSliderSkeleton` from `react-motion-gallery/skeleton/cache/slider` when a slider skeleton should read and write snapshot cookies, or `RestoredSliderSkeleton` from `react-motion-gallery/skeleton/slider/restore` when reload/back-forward restore is needed. Non-slider gallery loading surfaces no longer accept `loading.cache`, and the base/grid/masonry/entries cache wrapper subpaths have been removed.
 
-This exists because very accurate skeletons can require a lot of responsive text CSS, especially when text wrapping affects masonry packing or card heights. Client-only storage such as `sessionStorage` cannot help SSR because the server cannot read it and the browser only gets it after the document starts executing. A cookie is available during SSR, so the server can reserve the correct first-paint geometry before hydration.
+In SSR frameworks, read cache cookies on the server with `react-motion-gallery/skeleton/cache`, pass snapshots through `SkeletonCacheProvider`, and opt slider skeletons in with a stable `cache={{ key, routeKey }}` object.
 
-What the cache stores:
+| Cache export | Notes |
+| ------------ | ----- |
+| `getSkeletonCacheCookieName(key)` | Returns the deterministic cookie name for a cache key. |
+| `getSkeletonCacheRouteKey(location?)` | Builds the default route key from `pathname + search`, or `""` without a location. |
+| `parseSkeletonCacheCookie(raw, options?)` | Parses and validates a cookie value into `SkeletonCacheSnapshot \| null`. |
+| `serializeSkeletonCacheSnapshot(snapshot)` | Serializes a snapshot into the compact cookie payload string. |
+| `validateSkeletonCacheSnapshot(snapshot, options?)` | Re-validates an already parsed snapshot against key, route, kind, viewport, TTL, text ids, and item metadata. |
+| `SKELETON_CACHE_VERSION` and default constants | Exported for diagnostics and custom integrations: TTL, debounce, per-cookie byte budget, and total cookie byte budget. |
 
-- cache version, cache key, scope id, route key, timestamp, viewport width, and active width bucket
-- measured skeleton text records keyed by `textId`: line count, per-line widths, and optional bar metrics
-- masonry-only active geometry: variant key, shell height, and item heights
-- slider-only restore state when enabled: active index, measured shell height, slide count, skeleton slot count, route key, scope id, viewport width, and timestamp
-- no text strings, no media URLs, and no full CSS text
+| `SkeletonCacheOptions` field | Type | Notes |
+| ---------------------------- | ---- | ----- |
+| `key` | `string` | Required stable cache identity. |
+| `snapshot` | `SkeletonCacheSnapshot \| null` | Server-provided snapshot override. |
+| `ttlMs` | `number` | Snapshot freshness window. Defaults to `DEFAULT_SKELETON_CACHE_TTL_MS`. |
+| `debounceMs` | `number` | Client write debounce. Defaults to `DEFAULT_SKELETON_CACHE_DEBOUNCE_MS`. |
+| `routeKey` | `string` | Optional route guard for page-specific skeleton geometry. |
+| `cookie.path` | `string` | Cookie path. Defaults to `/`. |
+| `cookie.sameSite` | `"lax" \| "strict" \| "none"` | SameSite policy. Defaults to `lax`. |
+| `cookie.secure` | `boolean` | Adds the Secure cookie attribute when true. |
+| `cookie.maxCookieBytes` | `number` | Per-cookie write budget. Defaults to `DEFAULT_SKELETON_CACHE_COOKIE_MAX_BYTES`. |
+| `cookie.maxTotalCookieBytes` | `number` | Combined React Motion Gallery cache-cookie budget. Defaults to `DEFAULT_SKELETON_CACHE_COOKIE_MAX_TOTAL_BYTES`. |
 
-Benefits:
+| Parse/validate option | Notes |
+| --------------------- | ----- |
+| `key`, `scopeId`, `kind`, `routeKey` | Reject snapshots that do not match the expected identity, cache kind, or route. |
+| `ttlMs`, `now` | Override freshness validation and the timestamp used for age checks. |
+| `viewportWidth`, `viewportTolerancePx`, `widthBucketMin` | Require compatible viewport or bucket metadata. |
+| `textIds` | Require text measurements for specific skeleton text ids. |
+| `itemCount`, `variantKeys` | Require compatible masonry snapshot metadata when validating older/custom snapshots. |
 
-- first visit remains unchanged and uses the full responsive skeleton behavior
-- later reloads can parse much less skeleton CSS for the active breakpoint
-- text-heavy masonry, grid, slider, entries, and standalone skeletons can keep layout stability while reducing first-paint CSS work
-- cache-backed slider restore can render the restored slot order and auto-height before the slider handle is ready
-- stale, expired, route-mismatched, scope-mismatched, or malformed cookies silently fall back to the normal responsive path
-
-Defaults: `ttlMs` is `10 * 60 * 1000`, `debounceMs` is `250`, cookie `path` is `/`, `sameSite` is `lax`, `maxCookieBytes` is `3000`, and `maxTotalCookieBytes` is `8000`. Oversized snapshots are skipped, and when the combined React Motion Gallery skeleton cache cookies would exceed the total budget, older cache cookies are pruned before writing the new snapshot. Use a stable `key` per skeleton surface and a stable `routeKey` when a skeleton only applies to one route.
-
-For skeleton text to be measurable, the skeleton `text` node needs a `textId`, and the matching real content text needs `data-skeleton-text-id`. Browser-generated skeleton text modules include `textId` automatically, so existing spreads such as `...skeletonText.body` are cache-ready.
-
-```typescript
-const cardBodySkeleton = {
-  kind: "text",
-  textId: "cardBody",
-  barHeight: 14,
-  lineHeight: 1.45,
-  lines: { 0: 4, 900: 3, 1200: 2 },
-} as const;
-
-function CardBody({ children }: { children: React.ReactNode }) {
-  return <p data-skeleton-text-id="cardBody">{children}</p>;
-}
-```
-
-In SSR frameworks, read cache cookies on the server with the server-safe helper entry, then pass valid snapshots into a client provider. This example parses all React Motion Gallery skeleton cache cookies for the route.
-
-```tsx
-// app/gallery/page.tsx
-import { cookies } from "next/headers";
-import {
-  parseSkeletonCacheCookie,
-  type SkeletonCacheSnapshot,
-} from "react-motion-gallery/skeleton/cache";
-import { GalleryPageClient } from "./GalleryPageClient";
-
-function readSkeletonCacheSnapshots(
-  cookieStore: Awaited<ReturnType<typeof cookies>>,
-) {
-  const snapshots: Record<string, SkeletonCacheSnapshot> = {};
-
-  for (const cookie of cookieStore.getAll()) {
-    if (!cookie.name.startsWith("rmg_skel_cache_")) continue;
-
-    const snapshot = parseSkeletonCacheCookie(cookie.value);
-    if (snapshot) snapshots[snapshot.key] = snapshot;
-  }
-
-  return snapshots;
-}
-
-export default async function GalleryPage() {
-  const snapshotMap = readSkeletonCacheSnapshots(await cookies());
-
-  return <GalleryPageClient skeletonCacheSnapshots={snapshotMap} />;
-}
-```
-
-Wrap the client tree in `SkeletonCacheProvider`, then opt individual skeletons in with `cache={{ key, routeKey }}`. Per-skeleton `cache.snapshot` takes precedence over provider snapshots when you need to pass one directly. The provider uses server snapshots for hydration, then refreshes readable cache cookies on later client mounts and history restores so back/forward navigation can pick up snapshots written after the original server render.
-
-```tsx
-// app/gallery/GalleryPageClient.tsx
-"use client";
-
-import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
-import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";
-import { CachedMasonrySkeleton as MasonrySkeleton } from "react-motion-gallery/skeleton/cache/masonry/structured";
-import { Masonry } from "react-motion-gallery/masonry/measured";
-import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
-
-export function GalleryPageClient({
-  skeletonCacheSnapshots,
-}: {
-  skeletonCacheSnapshots: Record<
-    string,
-    SkeletonCacheSnapshot | null | undefined
-  >;
-}) {
-  const { ref, ready } = useMasonryReady();
-
-  return (
-    <SkeletonCacheProvider snapshots={skeletonCacheSnapshots}>
-      <MasonrySkeleton
-        cache={{
-          key: "portfolio-masonry",
-          routeKey: "/gallery",
-        }}
-        layout={portfolioSkeleton}
-        ready={ready}
-        masonry={{
-          count: items.length,
-          columns: { 0: 1, 720: 2, 1140: 4 },
-          gap: { 0: 12, 1140: 18 },
-        }}
-      >
-        <Masonry ref={ref} columns={{ 0: 1, 720: 2, 1140: 4 }}>
-          {items.map((item) => (
-            <Masonry.Item key={item.id}>{/* real card */}</Masonry.Item>
-          ))}
-        </Masonry>
-      </MasonrySkeleton>
-    </SkeletonCacheProvider>
-  );
-}
-```
-
-Use the same `cache` object on the opt-in cache components: `CachedSliderSkeleton`, `CachedGridSkeleton`, and standalone `CachedSkeleton`. For `Entries`, import `CachedEntries` from `react-motion-gallery/entries/cache` and put the cache object under `entries.loading.cache`.
-
-```tsx
-import { CachedEntries as Entries } from "react-motion-gallery/entries/cache";
-
-<Entries
-  entries={{
-    items,
-    mediaLayout: "grid",
-    loading: {
-      cache: {
-        key: "editorial-entries",
-        routeKey: "/stories",
-      },
-      skeleton: entrySkeleton,
-    },
-  }}
-/>;
-```
-
-Cookie options can be tuned per skeleton:
-
-```tsx
-import { CachedGridSkeleton as GridSkeleton } from "react-motion-gallery/skeleton/cache/grid";
-
-<GridSkeleton
-  cache={{
-    key: "product-grid",
-    routeKey: "/products",
-    ttlMs: 5 * 60 * 1000,
-    debounceMs: 150,
-    cookie: {
-      path: "/",
-      sameSite: "lax",
-      maxCookieBytes: 3000,
-      maxTotalCookieBytes: 8000,
-    },
-  }}
-  layout={productGridSkeleton}
-/>;
-```
+`SkeletonCacheProvider` accepts `children`, shared `options`, one `snapshot`, or a keyed `snapshots` map. Provider snapshots are used during hydration, then the client refreshes readable cache cookies after mounted slider skeletons measure.
 
 ## Reveal
 
@@ -1366,6 +1245,7 @@ export function BasicGrid() {
 | ----------- | ------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------ |
 | `children`  | `React.ReactNode`                                      | `—`     | The grid card content.                                                                                             |
 | `span`      | `number \| "full" \| Record<string, number \| "full">` | `1`     | Per-item track span. `"full"` renders `grid-column: 1 / -1`; numeric values render `grid-column: span n / span n`. |
+| `revealKey` | `React.Key`                                            | `—`     | Stable reveal identity for a slot whose backing data can change.                                                    |
 | `className` | `string`                                               | `—`     | Extra class name merged onto the grid item wrapper.                                                                |
 | `style`     | `React.CSSProperties`                                  | `—`     | Inline styles merged onto the grid item wrapper.                                                                   |
 
@@ -1381,7 +1261,7 @@ export function BasicGrid() {
 | `itemClassName`       | `string`                           | `—`                          | Class name added to each wrapped grid item.                                                                                                                                       |
 | `fullscreenTrigger`   | `"item" \| "media"`                | `"media"`                    | When `gridFullscreen()` is active, opens fullscreen from the clicked media node or the entire item shell.                                                                         |
 | `plugins`             | `GridPlugin[]`                     | `[]`                         | Explicit first-party Grid features such as lazy-load, fullscreen, pagination, load-more, infinite scroll, and virtualization.                                                     |
-| `loading`             | `GridLoadingOptions`               | `—`                          | Core per-item skeleton/reveal lifecycle. Supports `skeleton`, `cache`, `active`, `count`, media decode waiting, forced compare mode, skeleton timing, and reveal identity memory. |
+| `loading`             | `GridLoadingOptions`               | `—`                          | Core per-item skeleton/reveal lifecycle. Supports structured or callback skeletons, `active`, `count`, media decode waiting, forced compare mode, skeleton timing, and reveal identity memory. |
 | `reveal.staggerMs`    | `number`                           | `60`                         | Reveal stagger for the fade-in.                                                                                                                                                   |
 | `reveal.durationMs`   | `number`                           | `600`                        | Reveal fade duration.                                                                                                                                                             |
 | `reveal.easing`       | `string`                           | `"cubic-bezier(.2,.7,.2,1)"` | Reveal fade easing.                                                                                                                                                               |
@@ -1425,7 +1305,7 @@ function ProductGrid({ items, total }) {
 
 Grid pagination, load-more, infinite-scroll, and virtualization APIs are documented in the shared data-plugin sections after Entries. Pagination and load-more window the child list before CSS grid layout, so hidden items do not reserve tracks. In `"server"` mode the supplied children and `fullscreenItems` are treated as the current server window.
 
-Grid fullscreen behavior is provided by `GalleryCore`, `useFullscreenController`, and the opt-in `gridFullscreen()` plugin. Grid itself does not expose a ref-based imperative API.
+Grid fullscreen behavior is provided by `GalleryCore`, `useFullscreenController`, and the opt-in `gridFullscreen()` plugin. The Grid ref handle is for readiness and DOM access; fullscreen opens through `GalleryCore` rather than a Grid imperative method.
 
 Wrap a card in `Grid.Item` when it should span tracks or needs wrapper styling:
 
@@ -1469,6 +1349,47 @@ Grid skeleton specs live in `react-motion-gallery/skeleton/grid`. Their `text` n
 Grid skeleton slots inherit real item spans by default. Slot overrides in the skeleton layout can change individual placeholder nodes or wrapper styles without losing the span applied by `Grid.Item`.
 
 Use `loading.active` to hold reveals while async data is pending, `loading.timing.exitMs` to control the per-item skeleton opacity fade-out duration, and `loading.keepSkeletonMounted` when a settled skeleton layer should stay mounted at opacity 0 so a later loading transition can fade it back in smoothly. Set `rememberRevealed: false` for server-paged slots that should animate again when an item leaves and later re-enters the current data window. If an item should keep the same grid slot while its backing data changes, pass `revealKey` on `Grid.Item` or `data-rmg-grid-reveal-key` on a raw child.
+
+#### `GridLoadingOptions`
+
+| Option                       | Type                                                                                | Default | Notes                                                                                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`                    | `boolean`                                                                           | `true` when `loading` is provided | Disables the Grid loading/reveal lifecycle when false.                                                                              |
+| `active`                     | `boolean`                                                                           | `false` | Holds the grid busy, blocks reveal unless forced, and creates placeholder cells when there are no children.                                                       |
+| `count`                      | `number`                                                                            | `0`     | Placeholder count used with `active` and empty children. Falls back to `GridSkeletonSpec.layout.count` when available.                                           |
+| `skeleton`                   | `GridSkeletonSpec \| ((args: GridLoadingSkeletonArgs) => ReactNode)`                | `—`     | Structured skeleton spec or custom per-item skeleton renderer. Structured specs also render an internal normal-flow grid skeleton during SSR for layout stability. |
+| `force`                      | `boolean \| { enabled?: boolean; showContent?: boolean; skeletonOpacity?: number }` | `false` | Keeps skeletons visible. `showContent: true` enables compare mode with mounted content under the skeleton.                                                       |
+| `timing.enterMs`             | `number`                                                                            | `exitMs` | Skeleton opacity enter duration when forced loading returns.                                                                                                    |
+| `timing.minVisibleMs`        | `number`                                                                            | `120`   | Minimum time an item skeleton remains visible before reveal can start.                                                                                          |
+| `timing.exitMs`              | `number`                                                                            | `220`   | Item skeleton opacity fade-out duration.                                                                                                                        |
+| `animate`                    | `boolean`                                                                           | `true`  | Set false to collapse enter/exit durations to zero. Reduced-motion preferences also disable these durations.                                                     |
+| `waitForMedia`               | `boolean`                                                                           | `true`  | Waits for trackable descendant media to load/decode before reveal.                                                                                              |
+| `decodeTimeoutMs`            | `number`                                                                            | `8000`  | Media readiness timeout fallback.                                                                                                                              |
+| `rootMargin`                 | `string`                                                                            | `"0px"` | IntersectionObserver root margin for item reveal.                                                                                                               |
+| `threshold`                  | `number`                                                                            | `0.01`  | IntersectionObserver threshold for item reveal.                                                                                                                 |
+| `keepSkeletonMounted`        | `boolean`                                                                           | `false` | Keeps callback skeletons mounted after reveal. Structured `GridSkeletonSpec` skeletons stay mounted as inner layout anchors by default.                          |
+| `rememberRevealed`           | `boolean`                                                                           | `true`  | Keeps known item identities revealed across data-window changes.                                                                                                |
+
+#### `GridLoadingSkeletonArgs`
+
+| Field         | Type        | Notes                                                            |
+| ------------- | ----------- | ---------------------------------------------------------------- |
+| `index`       | `number`    | Source item index.                                                |
+| `key`         | `React.Key` | Grid item key.                                                    |
+| `revealKey`   | `React.Key` | Stable reveal identity when provided.                            |
+| `placeholder` | `boolean`   | True for empty-grid placeholder cells created from loading count. |
+| `ready`       | `boolean`   | Whether the item content is considered ready for the skeleton.    |
+
+### `GridHandle` methods
+
+Forward a ref to `Grid` when parent code needs readiness or DOM access.
+
+| Method         | Signature                                               | Notes                                      |
+| -------------- | ------------------------------------------------------- | ------------------------------------------ |
+| `getRootNode`  | `() => HTMLElement \| null`                             | Returns the live grid root.                |
+| `getItemNodes` | `() => HTMLElement[]`                                   | Returns current rendered grid item nodes.  |
+| `isReady`      | `() => boolean`                                         | True when client, loading, and plugin gates are ready. |
+| `onReady`      | `(callback: (nodes: HTMLElement[]) => void) => () => void` | Subscribes to the ready signal.         |
 
 ```typescript
 import { Grid } from "react-motion-gallery";
@@ -1552,7 +1473,10 @@ export function BasicMasonry() {
 | `children`  | `React.ReactNode`                                      | `—`     | The masonry card content.                                                                                              |
 | `width`     | `number`                                               | `—`     | Intrinsic item width used for aspect-ratio layout.                                                                     |
 | `height`    | `number`                                               | `—`     | Intrinsic item height used for aspect-ratio layout.                                                                    |
+| `heightOffsetPx` | `number \| Record<string, number> \| { rules, fallback? }` | `0` | Pixel height added after aspect-ratio scaling, useful for ratio-based media plus fixed or responsive chrome.           |
 | `span`      | `number \| "full" \| Record<string, number \| "full">` | `1`     | Per-item track span. `"full"` resolves to the active column count and numeric values clamp to the current track count. |
+| `revealKey` | `React.Key`                                            | `—`     | Stable reveal identity for a slot whose backing data can change.                                                       |
+| `placeholder` | `boolean`                                           | `false` | Marks a manually supplied item placeholder as hidden from assistive tech.                                              |
 | `className` | `string`                                               | `—`     | Extra class name merged onto the masonry item wrapper.                                                                 |
 | `style`     | `React.CSSProperties`                                  | `—`     | Inline styles merged onto the masonry item wrapper.                                                                    |
 
@@ -1564,19 +1488,23 @@ export function BasicMasonry() {
 | `gap`               | `number \| Record<string, number>`                | `—`                          | Responsive gap between columns and items.                                                                                                                                                            |
 | `placement`         | `"balanced" \| "roundRobin" \| "horizontalOrder"` | `"balanced"`                 | `balanced` packs into the shortest fitting column group, `roundRobin` cycles start columns deterministically, and `horizontalOrder` preserves a stronger left-to-right scan when spans are involved. |
 | `as`                | `React.ElementType`                               | `"div"`                      | Root HTML element or custom component.                                                                                                                                                               |
-| `rootRef`           | `React.Ref<HTMLDivElement>`                       | `—`                          | Ref to the masonry root.                                                                                                                                                                             |
+| `rootRef`           | `React.Ref<HTMLElement>`                          | `—`                          | Ref to the masonry root.                                                                                                                                                                             |
 | `classNames.root`   | `string`                                          | `—`                          | Root class name.                                                                                                                                                                                     |
 | `classNames.item`   | `string`                                          | `—`                          | Item class name.                                                                                                                                                                                     |
+| `className`         | `string`                                          | `—`                          | Class name merged onto the masonry root.                                                                                                                                                             |
+| `style`             | `React.CSSProperties`                             | `—`                          | Inline styles merged onto the masonry root.                                                                                                                                                          |
 | `plugins`           | `MasonryPlugin[]`                                 | `[]`                         | Opt-in Masonry plugins for fullscreen, lazy-load, pagination, load-more, infinite scroll, and virtualization.                                                                                        |
+| `loading`           | `MasonryLoadingOptions`                           | `—`                          | Core dimensioned Masonry skeleton/reveal lifecycle.                                                                                                                                                  |
 | `reveal.staggerMs`  | `number`                                          | `160`                        | Reveal stagger for the fade-in.                                                                                                                                                                      |
 | `reveal.durationMs` | `number`                                          | `600`                        | Reveal fade duration.                                                                                                                                                                                |
 | `reveal.easing`     | `string`                                          | `"cubic-bezier(.2,.7,.2,1)"` | Reveal fade easing.                                                                                                                                                                                  |
+| `reveal.staggerLimit` | `number`                                        | `—`                          | Optional cap on how many items stagger.                                                                                                                                                              |
 | `reveal.disabled`   | `boolean`                                         | `false`                      | Disables the built-in reveal classes.                                                                                                                                                                |
 | `revealReady`       | `boolean`                                         | `true`                       | Holds the reveal until external loading or viewport orchestration is ready.                                                                                                                          |
 
 ### Masonry plugins
 
-Import Masonry plugins from their own subpaths and pass them to `plugins`. The data plugin factories work across both the default dimensioned Masonry and measured Masonry.
+Import Masonry plugins from their own subpaths and pass them to `plugins`.
 
 ```typescript
 import { GalleryCore } from "react-motion-gallery/core";
@@ -1609,15 +1537,13 @@ function ProductMasonry({ children, items }) {
 | `react-motion-gallery/masonry/pagination`      | `masonryPagination(options)`     | Windows child items by `pageIndex` and `pageSize`; `useMasonryPagination()` also returns page state and `MasonryPaginationControls`.                                                         |
 | `react-motion-gallery/masonry/load-more`       | `masonryLoadMore(options)`       | Windows child items by `visibleCount`; `useMasonryLoadMore()` owns and increments the visible count.                                                                                         |
 | `react-motion-gallery/masonry/infinite-scroll` | `masonryInfiniteScroll(options)` | Renders a sentinel after the masonry root so it does not disturb absolute item positioning.                                                                                                  |
-| `react-motion-gallery/masonry/virtualization`  | `masonryVirtualization(options)` | Runs after pagination/load-more. Default Masonry uses known item positions; measured Masonry starts from estimated heights and refines with `ResizeObserver`.                                |
+| `react-motion-gallery/masonry/virtualization`  | `masonryVirtualization(options)` | Runs after pagination/load-more and windows known dimensioned item positions.                                                                                                           |
 
-`masonryLazyLoad()` is for measured Masonry and enables lazy loading by default. Pass `{ enabled: false }` to make the plugin inert.
+`masonryLazyLoad()` enables lazy loading by default. Pass `{ enabled: false }` to make the plugin inert.
 
 Masonry pagination, load-more, infinite-scroll, and virtualization APIs are documented in the shared data-plugin sections after Entries. Pagination and load-more apply before layout so hidden items do not reserve columns or masonry positions. In `"server"` mode the supplied children and `fullscreenItems` are treated as the current server window.
 
-Measured Masonry accepts arbitrary React children, including text-containing JSX. The wrapper props are only for styling the built-in masonry item shell.
-
-In the measured subpath, wrap a card in `Masonry.Item` when it needs its own span, wrapper `className`, or wrapper `style`:
+Wrap a card in `Masonry.Item` to provide its dimensions. Use `span`, `heightOffsetPx`, `className`, and `style` when it needs custom placement or wrapper styling:
 
 ```typescript
 <Masonry
@@ -1640,64 +1566,33 @@ Choose a placement based on what should feel stable:
 - `roundRobin`: best when deterministic column assignment matters more than tight packing.
 - `horizontalOrder`: best when wider cards should still read in a mostly left-to-right order.
 
-Masonry no longer owns loading UI. Use `useMasonryReady` and wrap Masonry with `MasonrySkeleton`, the same composition pattern used by Slider and Grid.
+Masonry no longer owns cache-backed loading UI. Use `useMasonryReady` and wrap Masonry with `MasonrySkeleton` when a separate full-layout skeleton wrapper should own loading layout.
 
-The default Masonry import is dimensioned and lightweight, with built-in reveal timing and opt-in fullscreen through `react-motion-gallery/masonry/fullscreen`. For arbitrary measured card heights, measured lazy-load plugins, and structured skeleton text, import from `react-motion-gallery/masonry/measured` and `react-motion-gallery/skeleton/masonry/structured`.
+The Masonry import is dimensioned and lightweight, with built-in reveal timing, `loading.skeleton` support, and opt-in fullscreen through `react-motion-gallery/masonry/fullscreen`.
 
 Lightweight Masonry skeletons live in `react-motion-gallery/skeleton/masonry` and mirror dimensioned `Masonry.Item` data with `items`, `ratios`, or `heightsPx`.
 
-Structured Masonry skeletons live in `react-motion-gallery/skeleton/masonry/structured` and can use a `layout` spec with the same inner node vocabulary as Grid skeletons, including `text` nodes and `itemWrapStyle`.
+For dimensioned cards with text that wraps at different viewport or container widths, import `useMasonryTextWrapLayout` and `createMasonryTextWrapSkeletonLayout` from `react-motion-gallery/masonry/text-wrap`. The hook returns a `rootRef` for Masonry plus `getItemGeometry()`, which computes the ratio dimensions and responsive `heightOffsetPx` rules from measured skeleton text metrics.
 
-Live Masonry content mounts invisibly until the current item set has completed an initial measurement pass. The Skeleton wrapper stays visible during that handoff, so the first revealed layout is based on measured DOM geometry rather than approximate height hints.
+For text-heavy cards, `heightOffsetPx` lets the ratio-based media height and fixed or responsive card chrome participate in the same deterministic placement model.
 
-`layout.slots` gives Masonry the same per-card override escape hatch that slider skeletons have. Use a slot when one card needs a different placeholder tree, wrapper styling, span, or outer height. `slot.span` can override the corresponding `Masonry.Item` span for the placeholder, `slot.ratio` maps to Masonry's card-height rhythm, and `slot.heightPx` lets you pin a specific shell height when you need an exact placeholder.
+Use `items` when one card needs a different placeholder height or span. For simpler shells, `ratios`, `heightsPx`, and `spans` can describe the same rhythm without a full item list.
 
 ```typescript
-import { Masonry } from "react-motion-gallery/masonry/measured";
-import { useMasonryReady } from "react-motion-gallery/masonry/measured/ready";
+import { Masonry } from "react-motion-gallery/masonry";
+import { useMasonryReady } from "react-motion-gallery/masonry/ready";
 import {
   MasonrySkeleton,
-  type MasonrySkeletonSpec,
-} from "react-motion-gallery/skeleton/masonry/structured";
+  type MasonrySkeletonProps,
+} from "react-motion-gallery/skeleton/masonry";
 
-const masonrySkeleton: MasonrySkeletonSpec = {
+const masonrySkeleton: MasonrySkeletonProps = {
   ratios: [118, 126, 102, 146],
-  layout: {
-    kind: "masonry",
-    itemWrapStyle: {
-      padding: 14,
-      borderRadius: 20,
-      boxShadow: "0 18px 36px rgba(15, 23, 42, 0.08)",
-    },
-    item: {
-      kind: "col",
-      style: { gap: 12 },
-      children: [
-        {
-          kind: "rect",
-          style: { width: "100%", height: 180, borderRadius: 16 },
-        },
-        {
-          kind: "text",
-          barHeight: 14,
-          lineHeight: 1.55,
-          lines: 3,
-          lastBarWidth: "74%",
-          style: { width: "100%" },
-        },
-      ],
-    },
-    slots: [
-      {
-        ratio: 182,
-        span: { 0: 1, 1100: 2 },
-        item: {
-          kind: "rect",
-          style: { width: "100%", aspectRatio: "3 / 5", borderRadius: 16 },
-        },
-      },
-    ],
-  },
+  spans: [undefined, { 0: 1, 1100: 2 }, undefined, undefined],
+  columns: { 0: 1, 700: 2, 1100: 3 },
+  gap: { 0: 12, 1100: 20 },
+  placement: "balanced",
+  radius: 18,
 };
 
 function MasonryWithSkeleton({ items }: { items: React.ReactNode[] }) {
@@ -1705,15 +1600,10 @@ function MasonryWithSkeleton({ items }: { items: React.ReactNode[] }) {
 
   return (
     <MasonrySkeleton
-      layout={masonrySkeleton}
+      {...masonrySkeleton}
       ready={masonryReady}
       timing={{ minVisibleMs: 220, exitMs: 600 }}
-      masonry={{
-        count: items.length,
-        columns: { 0: 1, 700: 2, 1100: 3 },
-        gap: { 0: 12, 1100: 20 },
-        placement: "balanced",
-      }}
+      count={items.length}
     >
       <Masonry
         ref={masonryRef}
@@ -1730,6 +1620,52 @@ function MasonryWithSkeleton({ items }: { items: React.ReactNode[] }) {
   );
 }
 ```
+
+#### `MasonryLoadingOptions`
+
+| Option                       | Type                                                                                   | Default | Notes                                                                                                    |
+| ---------------------------- | -------------------------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `enabled`                    | `boolean`                                                                              | `true` when `loading` is provided | Disables the Masonry loading/reveal lifecycle when false.                       |
+| `active`                     | `boolean`                                                                              | `false` | Holds the masonry busy, blocks reveal unless forced, and creates placeholder items when there are no children. |
+| `count`                      | `number`                                                                               | `0`     | Placeholder count used with `active` and empty children.                                                 |
+| `skeleton`                   | `MasonrySkeletonProps \| ((args: MasonryLoadingSkeletonArgs) => ReactNode)`            | `—`     | Standalone masonry skeleton props or custom per-item skeleton renderer.                                  |
+| `force`                      | `boolean \| { enabled?: boolean; showContent?: boolean; skeletonOpacity?: number }`    | `false` | Keeps skeletons visible. `showContent: true` enables compare mode with mounted content under the skeleton. |
+| `timing.enterMs`             | `number`                                                                               | `exitMs` | Skeleton opacity enter duration when forced loading returns.                                             |
+| `timing.minVisibleMs`        | `number`                                                                               | `120`   | Minimum time an item skeleton remains visible before reveal can start.                                   |
+| `timing.exitMs`              | `number`                                                                               | `220`   | Item skeleton opacity fade-out duration.                                                                 |
+| `animate`                    | `boolean`                                                                              | `true`  | Set false to collapse enter/exit durations to zero. Reduced-motion preferences also disable these durations. |
+| `waitForMedia`               | `boolean`                                                                              | `true`  | Waits for trackable descendant media to load/decode before reveal.                                       |
+| `decodeTimeoutMs`            | `number`                                                                               | `8000`  | Media readiness timeout fallback.                                                                       |
+| `rootMargin`                 | `string`                                                                               | `"0px"` | IntersectionObserver root margin for item reveal.                                                        |
+| `threshold`                  | `number`                                                                               | `0.01`  | IntersectionObserver threshold for item reveal.                                                          |
+| `keepSkeletonMounted`        | `boolean`                                                                              | `false` | Keeps settled skeleton layers mounted at opacity 0 for later loading transitions.                        |
+| `rememberRevealed`           | `boolean`                                                                              | `true`  | Keeps known item identities revealed across data-window changes.                                         |
+
+#### `MasonryLoadingSkeletonArgs`
+
+| Field            | Type                     | Notes                                                             |
+| ---------------- | ------------------------ | ----------------------------------------------------------------- |
+| `index`          | `number`                 | Source item index.                                                 |
+| `itemIndex`      | `number`                 | Original item index when a plugin window is active.                |
+| `key`            | `React.Key`              | Masonry item key.                                                  |
+| `revealKey`      | `React.Key`              | Stable reveal identity when provided.                              |
+| `placeholder`    | `boolean`                | True for empty-masonry placeholder items created from loading count. |
+| `ready`          | `boolean`                | Whether the item content is considered ready for the skeleton.     |
+| `span`           | `ResponsiveMasonrySpan`  | Active item span metadata.                                         |
+| `width`          | `number`                 | Intrinsic item width.                                              |
+| `height`         | `number`                 | Intrinsic item height.                                             |
+| `heightOffsetPx` | `MasonryHeightOffsetPx`  | Extra fixed or responsive item chrome height.                      |
+
+### `MasonryHandle` methods
+
+Forward a ref to `Masonry` when parent code needs readiness or DOM access.
+
+| Method         | Signature                                                  | Notes                                         |
+| -------------- | ---------------------------------------------------------- | --------------------------------------------- |
+| `getRootNode`  | `() => HTMLElement \| null`                                | Returns the masonry root.                     |
+| `getItemNodes` | `() => HTMLElement[]`                                      | Returns current rendered masonry item nodes.  |
+| `isReady`      | `() => boolean`                                            | True when client, loading, and plugin gates are ready. |
+| `onReady`      | `(callback: (nodes: HTMLElement[]) => void) => () => void` | Subscribes to the ready signal.               |
 
 ## Entries
 
@@ -1839,9 +1775,9 @@ For common entry media layouts, the exported helper factories can own `renderMed
 ```typescript
 import {
   Entries,
-  createEntriesGridMedia,
   type EntriesOptions,
 } from "react-motion-gallery/entries";
+import { createEntriesGridMedia } from "react-motion-gallery/entries/media/grid";
 
 const renderEntryGridMedia = createEntriesGridMedia({
   gridObject: {
@@ -1863,7 +1799,7 @@ export function EntryGrid({ entries }: { entries: EntriesOptions["items"] }) {
 }
 ```
 
-The same pattern works with `createEntriesSliderMedia()` and `createEntriesMasonryMedia()`. Import from `react-motion-gallery/entries/cache` instead when the entry loading skeleton also uses `loading.cache`.
+The same pattern works with `createEntriesSliderMedia()` from `react-motion-gallery/entries/media/slider` and `createEntriesMasonryMedia()` from `react-motion-gallery/entries/media/masonry`.
 
 ### Entry loading, decode, and reveal flow
 
@@ -1911,7 +1847,6 @@ Fullscreen close has a matching entry-aware path. If the user closes fullscreen 
 | `loading.enabled`                    | `boolean`                                                                                                | `—`                          | Enables entry loading and decode gating.                                                                                                                                           |
 | `loading.force`                      | `boolean \| { enabled?: boolean; showContent?: boolean; skeletonOpacity?: number }`                      | `—`                          | Forces entry skeletons to remain visible. Set `showContent: true` to preview mounted, ready entry content under the skeleton, and tune the loading overlay with `skeletonOpacity`. |
 | `loading.skeleton`                   | `EntrySkeletonSpec \| ((args) => EntrySkeletonSpec \| null \| undefined)`                                | `—`                          | Built-in skeleton spec or resolver.                                                                                                                                                |
-| `loading.cache`                      | `SkeletonCacheOptions`                                                                                   | `—`                          | Opts entry skeleton text into the cookie snapshot cache.                                                                                                                           |
 | `loading.minHeight`                  | `number \| string`                                                                                       | `"260px"`                    | Minimum reserved height while loading.                                                                                                                                             |
 | `loading.exitMs`                     | `number`                                                                                                 | `220`                        | Entry skeleton opacity fade-out duration.                                                                                                                                          |
 | `loading.nearMargin`                 | `string`                                                                                                 | `"700px 0px"`                | Preload margin used before entries enter view.                                                                                                                                     |
@@ -1928,6 +1863,15 @@ Fullscreen close has a matching entry-aware path. If the user closes fullscreen 
 | `reveal.staggerLimit`                | `number`                                                                                                 | `6`                          | Maximum number of entries that receive staggered delays.                                                                                                                           |
 | `entryList`                          | `ElementStyle`                                                                                           | `—`                          | Styles the entry list container.                                                                                                                                                   |
 | `entryRow`                           | `ElementStyle`                                                                                           | `—`                          | Styles each entry row container.                                                                                                                                                   |
+
+### `EntriesHandle` methods
+
+| Method          | Type                                                    | Notes                                      |
+| --------------- | ------------------------------------------------------- | ------------------------------------------ |
+| `getRootNode`   | `() => HTMLDivElement \| null`                          | Returns the live entries root.             |
+| `getEntryNodes` | `() => HTMLElement[]`                                   | Returns the rendered entry row elements.   |
+| `isReady`       | `() => boolean`                                         | True when loading and plugin gates are ready. |
+| `onReady`       | `(callback: (nodes: HTMLElement[]) => void) => () => void` | Subscribes to the ready signal.         |
 
 Entry skeleton `text` nodes also render wrapped line bars via `lines`, matching the slider and grid skeleton behavior, including responsive `barHeight` and line counts plus configurable trailing `lastBarWidth`.
 
@@ -2190,7 +2134,7 @@ Virtualization mounts only the records near the viewport. It runs after paginati
 | `gap`          | all      | `number`           | `24`             | Vertical gap included in virtual range and spacer calculations. Values below zero clamp to zero. |
 | `overscan`     | all      | `number`           | `3`              | Extra rows or items to mount before and after the visible range. Values below zero clamp to zero. |
 
-The hook form memoizes the factory call and returns the plugin. Grid virtualizes by rows and inserts top and bottom spacers that span every grid column. Entries virtualizes list rows by default and grid rows when `entries.layout: "grid"` or `entriesVirtualization({ layout: "grid" })` is used. Default Masonry uses known item positions; measured Masonry starts from estimated or seeded heights and refines its range as items are measured with `ResizeObserver`.
+The hook form memoizes the factory call and returns the plugin. Grid virtualizes by rows and inserts top and bottom spacers that span every grid column. Entries virtualizes list rows by default and grid rows when `entries.layout: "grid"` or `entriesVirtualization({ layout: "grid" })` is used. Masonry virtualizes known dimensioned item positions from `Masonry.Item` geometry, including spans and `heightOffsetPx`.
 
 ## RatingStars
 

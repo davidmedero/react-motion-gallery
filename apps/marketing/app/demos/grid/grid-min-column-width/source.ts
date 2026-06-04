@@ -8,10 +8,9 @@ import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
-import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/cache/grid";
+import type { GridSkeletonSpec } from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-min-column-width-demo.module.css";
 import { gridMinColumnWidthSkeletonText } from "./grid-min-column-width.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 type SkeletonTextIds = {
   badge: string;
@@ -203,19 +202,19 @@ function createCardSkeletonItem(index: number) {
         children: [
           {
             kind: "text" as const,
-            barHeight: 13,
-            lineHeight: 1.25,
+            barHeight: 11.84,
+            lineHeight: 1.5,
             ...skeletonText.badge,
           },
           {
             kind: "text" as const,
-            barHeight: 17,
-            lineHeight: 1.22,
+            barHeight: 16.8,
+            lineHeight: 1.2,
             ...skeletonText.title,
           },
           {
             kind: "text" as const,
-            barHeight: 15,
+            barHeight: 14.72,
             lineHeight: 1.5,
             ...skeletonText.body,
           },
@@ -258,7 +257,6 @@ export function GridMinColumnWidthDemo() {
         fullscreenTrigger="item"
         loading={{
           skeleton: CARD_SKELETON,
-          cache: demoSkeletonCache("grid-min-column-width"),
           timing: { exitMs: 1600 },
         }}
         plugins={[gridFullscreen()]}

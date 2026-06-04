@@ -12,9 +12,11 @@ import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import {
   buildDimensionedMasonryLayout,
   buildDimensionedMasonryFluidLayout,
+  collectMasonryResponsiveContainerMinWidths,
   collectMasonryResponsiveMinWidths,
   resolveMasonryColumns,
   resolveMasonryGap,
+  type MasonryHeightOffsetPx,
   type MasonryDimensionItem,
 } from "../masonry/light/placement";
 import type {
@@ -45,6 +47,7 @@ export type SkeletonShimmer = {
 export type MasonrySkeletonItem = {
   width: number;
   height: number;
+  heightOffsetPx?: MasonryHeightOffsetPx;
   span?: ResponsiveMasonrySpan;
 };
 
@@ -288,6 +291,7 @@ function resolveItems(options: SkeletonMasonryOptions): MasonryDimensionItem[] {
     return options.items.map((item) => ({
       width: item.width,
       height: item.height,
+      heightOffsetPx: item.heightOffsetPx,
       span: item.span,
     }));
   }
@@ -402,44 +406,64 @@ function MasonrySkeletonNode({
   );
   let fluidVariants:
     | Array<{
-        minWidth: number;
+        viewportMinWidth: number;
+        containerMinWidth: number;
         layout: ReturnType<typeof buildDimensionedMasonryFluidLayout>;
       }>
     | null = null;
   if ((!hasResolvedLayoutWidth || !viewportReady) && options.viewportWidth == null) {
-    const minWidths = collectMasonryResponsiveMinWidths({
+    const viewportMinWidths = collectMasonryResponsiveMinWidths({
       columns: options.columns,
       gap: options.gap,
       items,
       breakpointMap: breakpoints,
     });
+    const containerMinWidths = collectMasonryResponsiveContainerMinWidths({
+      items,
+      breakpointMap: breakpoints,
+    });
 
-    if (minWidths.length > 1) {
-      fluidVariants = minWidths.map((minWidth) => {
-        const variantResponsiveWidth = Math.max(1, minWidth);
-        const variantColumnCount = resolveMasonryColumns({
-          columns: options.columns,
-          viewportWidth: variantResponsiveWidth,
-          breakpointMap: breakpoints,
-        });
-        const variantGapPx = resolveMasonryGap({
-          gap: options.gap,
-          viewportWidth: variantResponsiveWidth,
-          breakpointMap: breakpoints,
-        });
-
-        return {
-          minWidth,
-          layout: buildDimensionedMasonryFluidLayout({
-            items,
-            columnCount: variantColumnCount,
-            gapPx: variantGapPx,
-            placement: options.placement,
+    if (viewportMinWidths.length > 1 || containerMinWidths.length > 1) {
+      fluidVariants = viewportMinWidths
+        .flatMap((viewportMinWidth) =>
+          containerMinWidths.map((containerMinWidth) => ({
+            viewportMinWidth,
+            containerMinWidth,
+          })),
+        )
+        .sort(
+          (a, b) =>
+            a.viewportMinWidth - b.viewportMinWidth ||
+            a.containerMinWidth - b.containerMinWidth,
+        )
+        .map(({ viewportMinWidth, containerMinWidth }) => {
+          const variantResponsiveWidth = Math.max(1, viewportMinWidth);
+          const variantContainerWidth = Math.max(1, containerMinWidth);
+          const variantColumnCount = resolveMasonryColumns({
+            columns: options.columns,
             viewportWidth: variantResponsiveWidth,
             breakpointMap: breakpoints,
-          }),
-        };
-      });
+          });
+          const variantGapPx = resolveMasonryGap({
+            gap: options.gap,
+            viewportWidth: variantResponsiveWidth,
+            breakpointMap: breakpoints,
+          });
+
+          return {
+            viewportMinWidth,
+            containerMinWidth,
+            layout: buildDimensionedMasonryFluidLayout({
+              items,
+              columnCount: variantColumnCount,
+              gapPx: variantGapPx,
+              placement: options.placement,
+              viewportWidth: variantResponsiveWidth,
+              containerWidth: variantContainerWidth,
+              breakpointMap: breakpoints,
+            }),
+          };
+        });
     }
   }
 
@@ -454,11 +478,16 @@ function MasonrySkeletonNode({
             `${selector}>div:nth-of-type(${item.index + 1}){top:${item.top};left:${item.left};width:${item.width};height:${item.height};}`
         )
         .join("");
-    const css = [rulesFor(fluidVariants[0]!)];
-
-    for (const variant of fluidVariants.slice(1)) {
-      css.push(`@media (min-width:${variant.minWidth}px){${rulesFor(variant)}}`);
-    }
+    const wrapViewportQuery = (css: string, minWidth: number) =>
+      minWidth <= 0 ? css : `@media (min-width:${minWidth}px){${css}}`;
+    const wrapContainerQuery = (css: string, minWidth: number) =>
+      minWidth <= 0 ? css : `@container (min-width:${minWidth}px){${css}}`;
+    const css = fluidVariants.map((variant) =>
+      wrapViewportQuery(
+        wrapContainerQuery(rulesFor(variant), variant.containerMinWidth),
+        variant.viewportMinWidth,
+      ),
+    );
 
     responsiveCss = css.join("");
   }

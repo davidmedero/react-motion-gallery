@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.79",
+  "version": "2.0.80",
   "description": "React gallery primitives for sliders, carousels, grid, masonry, fullscreen lightbox, entries, video, zoom/pan/pinch, skeleton loading and reveal animations",
   "keywords": [
     "react",
@@ -189,17 +189,13 @@
       "types": "./dist/masonry-fullscreen.d.mts",
       "import": "./dist/masonry-fullscreen.mjs"
     },
-    "./masonry/measured": {
-      "types": "./dist/masonry-measured.d.mts",
-      "import": "./dist/masonry-measured.mjs"
-    },
-    "./masonry/measured/ready": {
-      "types": "./dist/masonry-measured-ready.d.mts",
-      "import": "./dist/masonry-measured-ready.mjs"
-    },
     "./masonry/lazy-load": {
       "types": "./dist/masonry-lazy-load.d.mts",
       "import": "./dist/masonry-lazy-load.mjs"
+    },
+    "./masonry/text-wrap": {
+      "types": "./dist/masonry-text-wrap.d.mts",
+      "import": "./dist/masonry-text-wrap.mjs"
     },
     "./masonry/pagination": {
       "types": "./dist/masonry-pagination.d.mts",
@@ -221,9 +217,17 @@
       "types": "./dist/entries.d.mts",
       "import": "./dist/entries.mjs"
     },
-    "./entries/cache": {
-      "types": "./dist/entries-cache.d.mts",
-      "import": "./dist/entries-cache.mjs"
+    "./entries/media/slider": {
+      "types": "./dist/entries-media-slider.d.mts",
+      "import": "./dist/entries-media-slider.mjs"
+    },
+    "./entries/media/grid": {
+      "types": "./dist/entries-media-grid.d.mts",
+      "import": "./dist/entries-media-grid.mjs"
+    },
+    "./entries/media/masonry": {
+      "types": "./dist/entries-media-masonry.d.mts",
+      "import": "./dist/entries-media-masonry.mjs"
     },
     "./entries/ready": {
       "types": "./dist/entries-ready.d.mts",
@@ -257,29 +261,9 @@
       "types": "./dist/skeleton-cache-provider.d.mts",
       "import": "./dist/skeleton-cache-provider.mjs"
     },
-    "./skeleton/cache/base": {
-      "types": "./dist/skeleton-cache-base.d.mts",
-      "import": "./dist/skeleton-cache-base.mjs"
-    },
     "./skeleton/cache/slider": {
       "types": "./dist/skeleton-cache-slider.d.mts",
       "import": "./dist/skeleton-cache-slider.mjs"
-    },
-    "./skeleton/cache/grid": {
-      "types": "./dist/skeleton-cache-grid.d.mts",
-      "import": "./dist/skeleton-cache-grid.mjs"
-    },
-    "./skeleton/cache/masonry": {
-      "types": "./dist/skeleton-cache-masonry.d.mts",
-      "import": "./dist/skeleton-cache-masonry.mjs"
-    },
-    "./skeleton/masonry/structured": {
-      "types": "./dist/skeleton-masonry-structured.d.mts",
-      "import": "./dist/skeleton-masonry-structured.mjs"
-    },
-    "./skeleton/cache/masonry/structured": {
-      "types": "./dist/skeleton-cache-masonry-structured.d.mts",
-      "import": "./dist/skeleton-cache-masonry-structured.mjs"
     },
     "./skeleton/slider": {
       "types": "./dist/skeleton-slider.d.mts",

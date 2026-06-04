@@ -117,6 +117,14 @@ export const css = String.raw`.shell {
 .skeletonMasonryCard {
   height: 100%;
 }
+.skeletonCard.skeletonSpacerCard {
+  box-shadow: none;
+}
+.skeletonCard.skeletonSpacerCard::after {
+  animation: none;
+  opacity: 0;
+  will-change: auto;
+}
 .skeletonCard::after {
   --product-skeleton-sheen: rgba(255, 255, 255, 0.48);
   content: "";

@@ -1,6 +1,5 @@
 import { type ResponsiveNumber } from "../shared/responsive";
 import type { LoadingForceOptions } from "../shared/loading/force";
-import type { SkeletonCacheOptions } from "../skeleton/cache";
 import type { MasonrySkeletonSpec } from "../skeleton/MasonrySkeleton";
 
 export type RevealOptions = {
@@ -39,7 +38,6 @@ export type MasonryLoadingOptions = {
   skeleton?:
     | MasonrySkeletonSpec
     | ((args: MasonryLoadingSkeletonArgs) => React.ReactNode);
-  cache?: SkeletonCacheOptions;
   force?: LoadingForceOptions;
   timing?: {
     enterMs?: number;

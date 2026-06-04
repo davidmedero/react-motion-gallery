@@ -174,6 +174,7 @@ export type LazyItemHostProps = React.HTMLAttributes<HTMLDivElement> & {
   onVisibleIndex?: (index: number) => void;
   registerExpandableImage?: (index: number, node: HTMLImageElement | null) => void;
   revealedIndicesRef?: React.RefObject<Set<number>>;
+  resetKey?: React.Key;
 };
 
 export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
@@ -184,6 +185,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       onVisibleIndex,
       registerExpandableImage,
       revealedIndicesRef,
+      resetKey,
       children,
       className,
       style,
@@ -202,6 +204,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       () => normalizedLazy.enabled ? prepareLazyChildren(children) : children,
       [children, normalizedLazy.enabled]
     );
+    const resetSignal = resetKey ?? preparedChildren;
 
     const spinnerResolved = React.useMemo(
       () => resolveLazySpinnerNode({ lazy: normalizedLazy, kind: "image", isClone: false }),
@@ -217,7 +220,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       visibleSentRef.current = false;
       primaryImageRef.current = null;
       setSpinnerAnchor(null);
-    }, [index, preparedChildren]);
+    }, [index, resetSignal]);
 
     React.useEffect(() => {
       if (!onVisibleIndex) return;
@@ -240,7 +243,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
 
       io.observe(host);
       return () => io.disconnect();
-    }, [preparedChildren, index, onVisibleIndex]);
+    }, [resetSignal, index, onVisibleIndex]);
 
     React.useLayoutEffect(() => {
       const host = hostRef.current;
@@ -340,7 +343,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
         primaryImageRef.current = null;
         registerExpandableImage?.(index, null);
       };
-    }, [preparedChildren, index, normalizedLazy.enabled, registerExpandableImage, revealedIndicesRef]);
+    }, [resetSignal, index, normalizedLazy.enabled, registerExpandableImage, revealedIndicesRef]);
 
     React.useLayoutEffect(() => {
       if (!normalizedLazy.enabled || spinnerResolved.isCustom) {
@@ -396,6 +399,7 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
       window.addEventListener("resize", scheduleMeasure, { passive: true });
       window.visualViewport?.addEventListener("resize", scheduleMeasure);
 
+      measure();
       scheduleMeasure();
 
       return () => {
@@ -408,12 +412,15 @@ export const LazyItemHost = React.forwardRef<HTMLDivElement, LazyItemHostProps>(
         window.removeEventListener("resize", scheduleMeasure);
         window.visualViewport?.removeEventListener("resize", scheduleMeasure);
       };
-    }, [preparedChildren, index, normalizedLazy.enabled, spinnerResolved.isCustom]);
+    }, [resetSignal, index, normalizedLazy.enabled, spinnerResolved.isCustom]);
+
+    const spinnerAnchorReady = spinnerResolved.isCustom || spinnerAnchor != null;
 
     const shouldRenderSpinner =
       normalizedLazy.enabled &&
       hasTrackableImages &&
-      spinnerResolved.render;
+      spinnerResolved.render &&
+      spinnerAnchorReady;
 
     const showSpinner =
       shouldRenderSpinner &&

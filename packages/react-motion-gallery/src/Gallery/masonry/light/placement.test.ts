@@ -77,6 +77,28 @@ describe("dimensioned masonry placement", () => {
     });
   });
 
+  test("adds fixed height offsets to measured-width item geometry", () => {
+    const layout = buildDimensionedMasonryLayout({
+      columnCount: 2,
+      gapPx: 10,
+      containerWidth: 210,
+      placement: "balanced",
+      items: [
+        { width: 100, height: 50, heightOffsetPx: 24 },
+        { width: 100, height: 100 },
+      ],
+    });
+
+    expect(layout.items[0]).toMatchObject({
+      width: 100,
+      height: 74,
+    });
+    expect(layout.items[1]).toMatchObject({
+      width: 100,
+      height: 100,
+    });
+  });
+
   test("builds container-width CSS for first-paint dimensioned layouts", () => {
     const layout = buildDimensionedMasonryFluidLayout({
       columnCount: 3,
@@ -101,6 +123,22 @@ describe("dimensioned masonry placement", () => {
       width: "calc(66.667cqw - 4px)",
     });
     expect(layout.height).toContain("cqw");
+  });
+
+  test("adds fixed height offsets to first-paint fluid geometry", () => {
+    const layout = buildDimensionedMasonryFluidLayout({
+      columnCount: 2,
+      gapPx: 10,
+      viewportWidth: 900,
+      placement: "balanced",
+      items: [{ width: 100, height: 50, heightOffsetPx: 24 }],
+    });
+
+    expect(layout.items[0]).toMatchObject({
+      width: "calc(50cqw - 5px)",
+      height: "calc(25cqw + 21.5px)",
+    });
+    expect(layout.height).toBe("calc(25cqw + 21.5px)");
   });
 
   test("collects responsive masonry breakpoints from columns, gap, and spans", () => {

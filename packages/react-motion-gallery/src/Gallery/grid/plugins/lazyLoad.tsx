@@ -27,10 +27,12 @@ function renderLazyGridItem(
     <LazyItemHost
       key={args.key}
       index={args.index}
+      resetKey={args.key}
       lazyLoad={lazyLoad}
       registerExpandableImage={args.registerExpandableImage}
       revealedIndicesRef={args.revealedIndicesRef}
       {...args.itemProps}
+      data-rmg-grid-lazy-host="true"
     >
       {args.children}
     </LazyItemHost>

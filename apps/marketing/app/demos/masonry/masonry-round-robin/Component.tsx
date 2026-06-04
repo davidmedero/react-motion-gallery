@@ -3,25 +3,45 @@
 
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
-import { Masonry } from "react-motion-gallery/masonry/measured";
+import { Masonry } from "react-motion-gallery/masonry";
+import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import { useFullscreenController } from "react-motion-gallery/fullscreen";
 import { Video } from "react-motion-gallery/video";
 import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { fullscreenZoomPan } from "react-motion-gallery/fullscreen/zoom-pan";
 import { fullscreenVideo } from "react-motion-gallery/fullscreen/video";
-import type {
-  MasonrySkeletonSpec,
-  SkeletonNode,
-} from "react-motion-gallery/skeleton/cache/masonry/structured";
+import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
+import {
+  createMasonryTextWrapSkeletonLayout,
+  useMasonryTextWrapLayout,
+} from "react-motion-gallery/masonry/text-wrap";
 import styles from "./masonry-round-robin-demo.module.css";
 import { masonryRoundRobinSkeletonText } from "./masonry-round-robin.skeleton-text.generated";
-import { demoSkeletonCache } from "../../skeleton-cache";
 
 const CARD_MEDIA_RATIOS = {
   small: "5 / 4",
   medium: "4 / 5",
   large: "3 / 5",
 } as const;
+
+const MASONRY_ROUND_ROBIN_COLUMNS = { 0: 1, 720: 2, 1140: 3 };
+const MASONRY_ROUND_ROBIN_GAP = { 0: 12, 1140: 18 };
+
+const ROUND_ROBIN_CARD_METRICS = {
+  cardPaddingBlockPx: 24,
+  cardPaddingInlinePx: 20,
+  cardGapPx: 12,
+  metaGapPx: 5,
+  metaPaddingInlinePx: 8,
+} as const;
+
+const ROUND_ROBIN_SKELETON_WRAP_STYLE = {
+  padding: "10px 10px 14px",
+  borderRadius: 22,
+  backgroundColor: "rgba(255, 255, 255, 0.96)",
+  boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
+  height: "100%",
+};
 
 const ITEMS = [
   {
@@ -216,25 +236,20 @@ const ROUND_ROBIN_SKELETON_SLOTS = ITEMS.map((item, index) => ({
   }),
 }));
 
-const ROUND_ROBIN_SKELETON: MasonrySkeletonSpec = {
-  radius: 18,
-  className: styles.masonryRoot,
-  layout: {
-    kind: "masonry",
-    itemWrapStyle: {
-      padding: "10px 10px 14px",
-      borderRadius: 22,
-      backgroundColor: "rgba(255, 255, 255, 0.96)",
-      boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)",
-      height: "100%",
-    },
-    item: createRoundRobinSkeletonItem({
-      mediaRatio: ITEMS[0]!.ratio,
-      skeletonText: MASONRY_ROUND_ROBIN_SKELETON_TEXT[0]!,
-    }),
-    slots: ROUND_ROBIN_SKELETON_SLOTS,
-  },
-};
+function renderRoundRobinSkeleton(index: number) {
+  const slot =
+    ROUND_ROBIN_SKELETON_SLOTS[index] ?? ROUND_ROBIN_SKELETON_SLOTS[0]!;
+
+  return (
+    <Skeleton
+      style={{ height: "100%" }}
+      layout={createMasonryTextWrapSkeletonLayout({
+        item: slot.item,
+        itemWrapStyle: ROUND_ROBIN_SKELETON_WRAP_STYLE,
+      })}
+    />
+  );
+}
 
 const ROUND_ROBIN_VIDEO_OPTIONS = {
   autoplay: true,
@@ -345,6 +360,11 @@ function MasonryRoundRobinFullscreenAddon() {
 }
 
 export function MasonryRoundRobinDemo() {
+  const masonryLayout = useMasonryTextWrapLayout({
+    columns: MASONRY_ROUND_ROBIN_COLUMNS,
+    gap: MASONRY_ROUND_ROBIN_GAP,
+    metrics: ROUND_ROBIN_CARD_METRICS,
+  });
   const fullscreenMedia = toMediaItems(
     ITEMS.map((item) =>
       item.kind === "image"
@@ -360,26 +380,45 @@ export function MasonryRoundRobinDemo() {
   return (
     <GalleryCore layout="masonry" fullscreenItems={fullscreenMedia}>
       <Masonry
-        columns={{ 0: 1, 720: 2, 1140: 3 }}
-        gap={{ 0: 12, 1140: 18 }}
+        rootRef={masonryLayout.rootRef}
+        columns={MASONRY_ROUND_ROBIN_COLUMNS}
+        gap={MASONRY_ROUND_ROBIN_GAP}
         placement="roundRobin"
+        plugins={[masonryFullscreen()]}
         loading={{
-          cache: demoSkeletonCache("masonry-round-robin"),
           count: ITEMS.length,
-          skeleton: ROUND_ROBIN_SKELETON,
+          skeleton: ({ index }) => renderRoundRobinSkeleton(index),
           timing: { exitMs: 1200 },
         }}
       >
-        {ITEMS.map((item, index) => (
-          <MasonryRoundRobinCard
-            key={item.kind === "image" ? item.src : item.poster}
-            item={item}
-            skeletonTextIds={
-              MASONRY_ROUND_ROBIN_TEXT_IDS[index] ??
-              MASONRY_ROUND_ROBIN_TEXT_IDS[0]!
-            }
-          />
-        ))}
+        {ITEMS.map((item, index) => {
+          const skeletonText =
+            MASONRY_ROUND_ROBIN_SKELETON_TEXT[index] ??
+            MASONRY_ROUND_ROBIN_SKELETON_TEXT[0]!;
+          const skeletonTextIds =
+            MASONRY_ROUND_ROBIN_TEXT_IDS[index] ??
+            MASONRY_ROUND_ROBIN_TEXT_IDS[0]!;
+          const geometry = masonryLayout.getItemGeometry({
+            ratio: item.ratio,
+            skeletonText,
+          });
+          const key = item.kind === "image" ? item.src : item.poster;
+
+          return (
+            <Masonry.Item
+              key={key}
+              revealKey={key}
+              width={geometry.width}
+              height={geometry.height}
+              heightOffsetPx={geometry.heightOffsetPx}
+            >
+              <MasonryRoundRobinCard
+                item={item}
+                skeletonTextIds={skeletonTextIds}
+              />
+            </Masonry.Item>
+          );
+        })}
       </Masonry>
       <MasonryRoundRobinFullscreenAddon />
     </GalleryCore>

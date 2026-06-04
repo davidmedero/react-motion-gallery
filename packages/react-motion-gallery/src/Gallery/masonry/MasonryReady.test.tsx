@@ -4,8 +4,8 @@ import * as React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { Masonry, useMasonryReady } from "../../masonry-measured";
 import { masonryLazyLoad } from "../../masonry-lazy-load";
+import Masonry, { useMasonryReady } from "./index";
 import type { MasonryHandle } from "./types";
 
 type ResizeObserverEntryLike = {
