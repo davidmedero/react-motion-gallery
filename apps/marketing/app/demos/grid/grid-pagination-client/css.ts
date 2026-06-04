@@ -140,7 +140,7 @@ export const css = String.raw`.shell {
     transparent 100%
   );
   animation: productDataSkeletonShimmer 1200ms linear infinite;
-  transform: translateX(-100%);
+  transform: translateX(-100%) translateZ(0);
   will-change: transform, opacity;
   backface-visibility: hidden;
   pointer-events: none;
@@ -631,10 +631,10 @@ export const css = String.raw`.shell {
 }
 @keyframes productDataSkeletonShimmer {
   0% {
-    transform: translateX(-100%);
+    transform: translateX(-100%) translateZ(0);
   }
   100% {
-    transform: translateX(100%);
+    transform: translateX(100%) translateZ(0);
   }
 }
 @media (prefers-reduced-motion: reduce) {

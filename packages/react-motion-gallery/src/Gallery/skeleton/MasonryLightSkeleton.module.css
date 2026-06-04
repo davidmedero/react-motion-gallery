@@ -90,7 +90,7 @@
   animation: rmgMasonryLightSkeletonShimmer
     var(--rmg-skel-shimmer-duration, 1200ms)
     var(--rmg-skel-shimmer-timing, linear) infinite;
-  transform: translate3d(-100%, 0, 0);
+  transform: translateX(-100%) translateZ(0);
   will-change: transform, opacity;
   backface-visibility: hidden;
   pointer-events: none;
@@ -98,11 +98,11 @@
 
 @keyframes rmgMasonryLightSkeletonShimmer {
   0% {
-    transform: translate3d(-100%, 0, 0);
+    transform: translateX(-100%) translateZ(0);
   }
 
   100% {
-    transform: translate3d(100%, 0, 0);
+    transform: translateX(100%) translateZ(0);
   }
 }
 

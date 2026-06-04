@@ -198,7 +198,7 @@
   );
   animation: productDataSkeletonShimmer 1200ms linear infinite;
   animation-delay: var(--product-skeleton-animation-delay, 0ms);
-  transform: translateX(-100%);
+  transform: translateX(-100%) translateZ(0);
   will-change: transform, opacity;
   backface-visibility: hidden;
   pointer-events: none;
@@ -422,10 +422,10 @@
 }
 @keyframes productDataSkeletonShimmer {
   0% {
-    transform: translateX(-100%);
+    transform: translateX(-100%) translateZ(0);
   }
   100% {
-    transform: translateX(100%);
+    transform: translateX(100%) translateZ(0);
   }
 }
 @keyframes loadMoreButtonSpin {

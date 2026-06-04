@@ -355,8 +355,8 @@ describe("loading layer stacking", () => {
     expect(thumbnailCss).toContain("var(--rmg-skel-shimmer-enabled, 1)");
     expect(thumbnailCss).toContain("var(--rmg-skel-shimmer-duration, 1200ms)");
     expect(thumbnailCss).toContain("var(--rmg-skel-shimmer-timing, linear)");
-    expect(thumbnailCss).toContain("transform: translate3d(-100%, 0, 0)");
-    expect(thumbnailCss).toContain("transform: translate3d(100%, 0, 0)");
+    expect(thumbnailCss).toContain("transform: translateX(-100%) translateZ(0)");
+    expect(thumbnailCss).toContain("transform: translateX(100%) translateZ(0)");
     expect(thumbnailCss).toContain("will-change: transform, opacity");
     expect(thumbnailCss).toContain("backface-visibility: hidden");
     expect(thumbnailCss).toMatch(
@@ -371,8 +371,8 @@ describe("loading layer stacking", () => {
     const sliderCss = readCss("../../slider/Slider.module.css");
 
     for (const css of [sharedSkeletonCss, masonryLightCss, sliderCss]) {
-      expect(css).toContain("transform: translate3d(-100%, 0, 0)");
-      expect(css).toContain("transform: translate3d(100%, 0, 0)");
+      expect(css).toContain("transform: translateX(-100%) translateZ(0)");
+      expect(css).toContain("transform: translateX(100%) translateZ(0)");
       expect(css).toContain("will-change: transform, opacity");
       expect(css).toContain("backface-visibility: hidden");
     }
@@ -501,11 +501,11 @@ describe("loading layer stacking", () => {
       entriesCss.match(/^\.entrySkelRoot::after\s*\{(?<body>[^}]*)\}/m)?.groups
         ?.body ?? "";
 
-    expect(shimmerRule).toContain("transform: translate3d(-100%, 0, 0)");
+    expect(shimmerRule).toContain("transform: translateX(-100%) translateZ(0)");
     expect(shimmerRule).toContain("will-change: transform, opacity");
     expect(shimmerRule).toContain("backface-visibility: hidden");
     expect(entriesCss).not.toContain(".entrySkelTile::after");
-    expect(entriesCss).toContain("transform: translate3d(100%, 0, 0);");
+    expect(entriesCss).toContain("transform: translateX(100%) translateZ(0);");
     expect(entriesCss).not.toContain("data-rmg-entry-shimmer-ready");
   });
 

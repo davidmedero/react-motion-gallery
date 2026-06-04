@@ -49,7 +49,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `Slider core` | 19.0kB |
 | `slider/ready` | 894.0B |
 | `slider/arrows` | 1.2kB |
-| `slider/dots` | 929.0B |
+| `slider/dots` | 928.0B |
 | `slider/progress` | 892.0B |
 | `slider/scrollbar` | 1.2kB |
 | `slider/auto-height` | 1.3kB |

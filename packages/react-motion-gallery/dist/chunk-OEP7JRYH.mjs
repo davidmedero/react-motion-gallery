@@ -1,0 +1,1 @@
+var r={rtl:"ne",track:"oe",fullscreenOverlay:"Ba",open:"m",duplicateImg:"Ca",closeBtn:"B",leftChevron:"x",rightChevron:"w",counter:"C",fsOverlayCaption:"se",spinner:"Da",rmgSpin:"me",spinnerWrap:"Ea"};export{r as a};
