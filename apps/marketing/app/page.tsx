@@ -90,7 +90,7 @@ export default async function Home() {
                   className="home-intro-cardReveal"
                   key={card.title}
                   role="listitem"
-                  staggerIndex={index}
+                  staggerIndex={index === HOME_SURFACE_LINKS.length - 1 ? 1 : index}
                   transform={{ y: 18, scale: 0.97 }}
                   durationMs={{
                     opacity: 1000,
