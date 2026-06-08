@@ -75,6 +75,36 @@ export default async function Home() {
                   Github
                 </a>.{" "}
               </Reveal>
+              <Reveal
+                as="a"
+                className="home-intro__npmLink"
+                href={`https://www.npmjs.com/package/${packageJson.name}`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`View ${packageJson.name} on npm`}
+                transform={{ y: 12 }}
+                rootMargin="0px"
+                delayMs={260}
+              >
+                <svg
+                  className="home-intro__npmLogo"
+                  viewBox="0 0 96 38"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <rect width="96" height="38" rx="4" />
+                  <text x="48" y="27" textAnchor="middle">
+                    npm
+                  </text>
+                </svg>
+                <span>View package</span>
+                <ArrowUpRight
+                  className="home-intro__npmArrow"
+                  size={15}
+                  strokeWidth={2.4}
+                  aria-hidden
+                />
+              </Reveal>
             </div>
 
             <HomeIntroVisual />
