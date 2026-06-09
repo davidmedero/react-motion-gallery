@@ -23,6 +23,7 @@ type UseElementInViewOnceOptions = {
   rootMargin?: string;
   threshold?: number;
   resetKey?: React.Key;
+  preferObserver?: boolean;
 };
 
 type WaitForElementMediaReadyOptions = {
@@ -118,6 +119,7 @@ export function useElementInViewOnce(
   const rootMargin = options.rootMargin ?? "0px";
   const threshold = options.threshold ?? 0;
   const resetKey = options.resetKey;
+  const preferObserver = options.preferObserver ?? false;
   const [inView, setInView] = React.useState(!enabled);
   const seenRef = React.useRef(!enabled);
 
@@ -136,15 +138,23 @@ export function useElementInViewOnce(
 
     if (typeof window === "undefined") return;
 
-    const ratio = approximateIntersectionRatio(node, root, rootMargin);
-    if (passesIntersectionThreshold(ratio, threshold)) {
+    if (typeof IntersectionObserver === "undefined") {
+      const ratio = approximateIntersectionRatio(node, root, rootMargin);
+      if (passesIntersectionThreshold(ratio, threshold)) {
+        mark();
+        return;
+      }
+
       mark();
       return;
     }
 
-    if (typeof IntersectionObserver === "undefined") {
-      mark();
-      return;
+    if (!preferObserver) {
+      const ratio = approximateIntersectionRatio(node, root, rootMargin);
+      if (passesIntersectionThreshold(ratio, threshold)) {
+        mark();
+        return;
+      }
     }
 
     const observer = new IntersectionObserver(
@@ -167,7 +177,7 @@ export function useElementInViewOnce(
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [enabled, node, resetKey, root, rootMargin, threshold]);
+  }, [enabled, node, preferObserver, resetKey, root, rootMargin, threshold]);
 
   return inView;
 }

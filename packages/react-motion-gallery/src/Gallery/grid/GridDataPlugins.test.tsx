@@ -1202,7 +1202,7 @@ describe("Grid data plugins", () => {
     );
     expect(item).not.toBeNull();
     expect(skeletonLayer).not.toBeNull();
-    expect(host.querySelector("[data-rmg-skeleton-wrapper]")).not.toBeNull();
+    expect(host.querySelector("[data-rmg-skeleton-wrapper]")).toBeNull();
     expect(item?.getAttribute("data-rmg-grid-item-layered")).toBe("1");
     expect(
       Array.from(host.querySelectorAll("style"))
@@ -1246,6 +1246,65 @@ describe("Grid data plugins", () => {
     expect(
       item?.querySelector("[data-rmg-grid-item-content='true']"),
     ).not.toBeNull();
+  });
+
+  test("item reveal settles immediately when there is no item skeleton", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+
+    const host = mount(
+      <Grid
+        columns={1}
+        loading={{
+          waitForMedia: false,
+          timing: { minVisibleMs: 0, exitMs: 240 },
+        }}
+      >
+        <article data-rmg-grid-reveal-key="product-a">alpha</article>
+      </Grid>,
+    );
+
+    await flushItemReveal();
+    await React.act(async () => {
+      MockIntersectionObserver.instances.forEach((observer) => {
+        observer.trigger(true);
+      });
+    });
+    await flushItemReveal();
+
+    const item = host.querySelector<HTMLElement>("[data-rmg-grid-item-key]");
+    expect(item?.getAttribute("data-rmg-grid-item-reveal")).toBe("1");
+    expect(item?.getAttribute("data-rmg-grid-item-reveal-settled")).toBe("1");
+    expect(host.querySelector("[data-rmg-grid-item-skeleton]")).toBeNull();
+  });
+
+  test("item reveal settles immediately when the item skeleton exit is disabled", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+
+    const host = mount(
+      <Grid
+        columns={1}
+        loading={{
+          waitForMedia: false,
+          timing: { minVisibleMs: 0, exitMs: 0 },
+          skeleton: ({ revealKey }) => <span>loading {String(revealKey)}</span>,
+        }}
+      >
+        <article data-rmg-grid-reveal-key="product-a">alpha</article>
+      </Grid>,
+    );
+
+    await flushItemReveal();
+    await React.act(async () => {
+      MockIntersectionObserver.instances.forEach((observer) => {
+        observer.trigger(true);
+      });
+    });
+    await flushItemReveal();
+
+    const item = host.querySelector<HTMLElement>("[data-rmg-grid-item-key]");
+    expect(item?.getAttribute("data-rmg-grid-item-reveal")).toBe("1");
+    expect(item?.getAttribute("data-rmg-grid-item-reveal-settled")).toBe("1");
+    expect(host.querySelector("[data-rmg-grid-item-skeleton]")).toBeNull();
   });
 
   test("item reveal keeps a stable slot skeleton layer when the reveal key changes", async () => {

@@ -466,6 +466,13 @@
   margin-top: 0;
 }
 
+.codeBlockPlaceholder {
+  min-height: min(520px, 70vh);
+  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  background: #f8fafc;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .demoCanvasTabIndicator,
   .demoCanvasTab,

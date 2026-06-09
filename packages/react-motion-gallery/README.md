@@ -13,7 +13,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | --- | --- |
 | `Entries` | 16.2kB |
 | `entries/media/slider` | 20.7kB |
-| `entries/media/grid` | 20.6kB |
+| `entries/media/grid` | 20.8kB |
 | `entries/media/masonry` | 18.7kB |
 | `entries/ready` | 360.0B |
 | `entries/pagination` | 242.0B |
@@ -23,7 +23,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `rating-stars` | 1.3kB |
 | `FullscreenThumbnailSlider` | 20.4kB |
 | `GalleryCore` | 2.6kB |
-| `Grid` | 19.9kB |
+| `Grid` | 18.0kB |
 | `grid/ready` | 323.0B |
 | `grid/lazy-load` | 3.7kB |
 | `grid/fullscreen` | 1.6kB |
@@ -31,7 +31,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `grid/load-more` | 236.0B |
 | `grid/infinite-scroll` | 667.0B |
 | `grid/virtualization` | 256.0B |
-| `Masonry` | 12.1kB |
+| `Masonry` | 12.2kB |
 | `masonry/ready` | 323.0B |
 | `masonry/fullscreen` | 1.1kB |
 | `masonry/lazy-load` | 3.7kB |
@@ -43,7 +43,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `Skeleton base` | 9.1kB |
 | `skeleton/slider` | 14.7kB |
 | `skeleton/slider/restore` | 25.3kB |
-| `skeleton/grid` | 11.3kB |
+| `skeleton/grid` | 11.4kB |
 | `skeleton/masonry` | 4.8kB |
 | `Slider core` | 19.0kB |
 | `slider/ready` | 894.0B |

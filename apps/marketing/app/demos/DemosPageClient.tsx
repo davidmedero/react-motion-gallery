@@ -4,8 +4,8 @@ import {
   DEMO_CANVAS_SHELL_CSS_VARS,
   DEMO_CANVAS_SHELL_RESPONSIVE_CSS,
 } from "@/lib/demo-canvas-shell";
-import { CodeBlock } from "@/components/ui/code-block";
 import { ChevronDown } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type SimpleBarCore from "simplebar-core";
@@ -24,294 +24,551 @@ import {
   useState,
   useSyncExternalStore,
   type ComponentProps,
-  type ReactElement,
+  type ComponentType,
   type ReactNode,
 } from "react";
 import type { JSX } from "react";
 import styles from "./demos.module.css";
-import { generatedCodeTabsByDemoId } from "./generated-code-tabs";
-import { SliderDefaultDemo } from "./slider/slider-default/Component";
-import { source as sliderDefaultSource } from "./slider/slider-default/source";
-import { css as sliderDefaultCss } from "./slider/slider-default/css";
-import { SliderLoopDemo } from "./slider/slider-loop/Component";
-import { source as sliderLoopSource } from "./slider/slider-loop/source";
-import { css as sliderLoopCss } from "./slider/slider-loop/css";
-import { SliderVideoHtml5Demo } from "./slider/slider-video-html5/Component";
-import { source as sliderVideoHtml5Source } from "./slider/slider-video-html5/source";
-import { css as sliderVideoHtml5Css } from "./slider/slider-video-html5/css";
-import { SliderVideoHtml5LoopDemo } from "./slider/slider-video-html5-loop/Component";
-import { source as sliderVideoHtml5LoopSource } from "./slider/slider-video-html5-loop/source";
-import { css as sliderVideoHtml5LoopCss } from "./slider/slider-video-html5-loop/css";
-import { SliderVideoYoutubeDemo } from "./slider/slider-video-youtube/Component";
-import { source as sliderVideoYoutubeSource } from "./slider/slider-video-youtube/source";
-import { css as sliderVideoYoutubeCss } from "./slider/slider-video-youtube/css";
-import { SliderVideoYoutubeLoopDemo } from "./slider/slider-video-youtube-loop/Component";
-import { source as sliderVideoYoutubeLoopSource } from "./slider/slider-video-youtube-loop/source";
-import { css as sliderVideoYoutubeLoopCss } from "./slider/slider-video-youtube-loop/css";
-import { SliderVideoVimeoDemo } from "./slider/slider-video-vimeo/Component";
-import { source as sliderVideoVimeoSource } from "./slider/slider-video-vimeo/source";
-import { css as sliderVideoVimeoCss } from "./slider/slider-video-vimeo/css";
-import { SliderVideoVimeoLoopDemo } from "./slider/slider-video-vimeo-loop/Component";
-import { source as sliderVideoVimeoLoopSource } from "./slider/slider-video-vimeo-loop/source";
-import { css as sliderVideoVimeoLoopCss } from "./slider/slider-video-vimeo-loop/css";
-import { SliderRightToLeftDemo } from "./slider/slider-right-to-left/Component";
-import { source as sliderRightToLeftSource } from "./slider/slider-right-to-left/source";
-import { css as sliderRightToLeftCss } from "./slider/slider-right-to-left/css";
-import { SliderGroupCellsDemo } from "./slider/slider-group-cells/Component";
-import { source as sliderGroupCellsSource } from "./slider/slider-group-cells/source";
-import { css as sliderGroupCellsCss } from "./slider/slider-group-cells/css";
-import { SliderFreeScrollDemo } from "./slider/slider-free-scroll/Component";
-import { source as sliderFreeScrollSource } from "./slider/slider-free-scroll/source";
-import { css as sliderFreeScrollCss } from "./slider/slider-free-scroll/css";
-import { SliderSkipSnapsDemo } from "./slider/slider-skip-snaps/Component";
-import { source as sliderSkipSnapsSource } from "./slider/slider-skip-snaps/source";
-import { css as sliderSkipSnapsCss } from "./slider/slider-skip-snaps/css";
-import { SliderStrictSnapsDemo } from "./slider/slider-strict-snaps/Component";
-import { source as sliderStrictSnapsSource } from "./slider/slider-strict-snaps/source";
-import { css as sliderStrictSnapsCss } from "./slider/slider-strict-snaps/css";
-import { SliderCenterAlignDemo } from "./slider/slider-center-align/Component";
-import { source as sliderCenterAlignSource } from "./slider/slider-center-align/source";
-import { css as sliderCenterAlignCss } from "./slider/slider-center-align/css";
-import { SliderVariableWidthsDemo } from "./slider/slider-variable-widths/Component";
-import { source as sliderVariableWidthsSource } from "./slider/slider-variable-widths/source";
-import { css as sliderVariableWidthsCss } from "./slider/slider-variable-widths/css";
-import { SliderYAxisDemo } from "./slider/slider-y-axis/Component";
-import { source as sliderYAxisSource } from "./slider/slider-y-axis/source";
-import { css as sliderYAxisCss } from "./slider/slider-y-axis/css";
-import { SliderCellsPerSlideDemo } from "./slider/slider-cells-per-slide/Component";
-import { source as sliderCellsPerSlideSource } from "./slider/slider-cells-per-slide/source";
-import { css as sliderCellsPerSlideCss } from "./slider/slider-cells-per-slide/css";
-import { SliderThumbnailsDemo } from "./slider/slider-thumbnails/Component";
-import { source as sliderThumbnailsSource } from "./slider/slider-thumbnails/source";
-import { css as sliderThumbnailsCss } from "./slider/slider-thumbnails/css";
-import { SliderLazyLoadDemo } from "./slider/slider-lazy-load/Component";
-import { source as sliderLazyLoadSource } from "./slider/slider-lazy-load/source";
-import { css as sliderLazyLoadCss } from "./slider/slider-lazy-load/css";
-import { SliderAutoScrollDemo } from "./slider/slider-auto-scroll/Component";
-import { source as sliderAutoScrollSource } from "./slider/slider-auto-scroll/source";
-import { css as sliderAutoScrollCss } from "./slider/slider-auto-scroll/css";
-import { SliderAutoPlayDemo } from "./slider/slider-auto-play/Component";
-import { source as sliderAutoPlaySource } from "./slider/slider-auto-play/source";
-import { css as sliderAutoPlayCss } from "./slider/slider-auto-play/css";
-import { SliderAutoHeightDemo } from "./slider/slider-auto-height/Component";
-import { source as sliderAutoHeightSource } from "./slider/slider-auto-height/source";
-import { css as sliderAutoHeightCss } from "./slider/slider-auto-height/css";
-import { SliderParallaxDemo } from "./slider/slider-parallax/Component";
-import { source as sliderParallaxSource } from "./slider/slider-parallax/source";
-import { css as sliderParallaxCss } from "./slider/slider-parallax/css";
-import { SliderScaleDemo } from "./slider/slider-scale/Component";
-import { source as sliderScaleSource } from "./slider/slider-scale/source";
-import { css as sliderScaleCss } from "./slider/slider-scale/css";
-import { SliderFadeDemo } from "./slider/slider-fade/Component";
-import { source as sliderFadeSource } from "./slider/slider-fade/source";
-import { css as sliderFadeCss } from "./slider/slider-fade/css";
-import { SliderCrossfadeDemo } from "./slider/slider-crossfade/Component";
-import { source as sliderCrossfadeSource } from "./slider/slider-crossfade/source";
-import { css as sliderCrossfadeCss } from "./slider/slider-crossfade/css";
-import { SliderCardsDemo } from "./slider/slider-cards/Component";
-import { source as sliderCardsSource } from "./slider/slider-cards/source";
-import { css as sliderCardsCss } from "./slider/slider-cards/css";
-import { SliderInteractiveDemo } from "./slider/slider-interactive/Component";
-import { source as sliderInteractiveSource } from "./slider/slider-interactive/source";
-import { css as sliderInteractiveCss } from "./slider/slider-interactive/css";
-import { GridColumnsDemo } from "./grid/grid-columns/Component";
-import { source as gridColumnsSource } from "./grid/grid-columns/source";
-import { css as gridColumnsCss } from "./grid/grid-columns/css";
-import { GridTemplateColumnsDemo } from "./grid/grid-template-columns/Component";
-import { source as gridTemplateColumnsSource } from "./grid/grid-template-columns/source";
-import { css as gridTemplateColumnsCss } from "./grid/grid-template-columns/css";
-import { GridMinColumnWidthDemo } from "./grid/grid-min-column-width/Component";
-import { source as gridMinColumnWidthSource } from "./grid/grid-min-column-width/source";
-import { css as gridMinColumnWidthCss } from "./grid/grid-min-column-width/css";
-import { GridLazyLoadDemo } from "./grid/grid-lazy-load/Component";
-import { source as gridLazyLoadSource } from "./grid/grid-lazy-load/source";
-import { css as gridLazyLoadCss } from "./grid/grid-lazy-load/css";
-import { GridPaginationDemo } from "./grid/grid-pagination/Component";
-import { source as gridPaginationSource } from "./grid/grid-pagination/source";
-import { css as gridPaginationCss } from "./grid/grid-pagination/css";
-import { GridPaginationClientDemo } from "./grid/grid-pagination-client/Component";
-import { source as gridPaginationClientSource } from "./grid/grid-pagination-client/source";
-import { css as gridPaginationClientCss } from "./grid/grid-pagination-client/css";
-import { GridLoadMoreDemo } from "./grid/grid-load-more/Component";
-import { source as gridLoadMoreSource } from "./grid/grid-load-more/source";
-import { css as gridLoadMoreCss } from "./grid/grid-load-more/css";
-import { GridInfiniteScrollDemo } from "./grid/grid-infinite-scroll/Component";
-import { source as gridInfiniteScrollSource } from "./grid/grid-infinite-scroll/source";
-import { css as gridInfiniteScrollCss } from "./grid/grid-infinite-scroll/css";
-import { GridVirtualizationDemo } from "./grid/grid-virtualization/Component";
-import { source as gridVirtualizationSource } from "./grid/grid-virtualization/source";
-import { css as gridVirtualizationCss } from "./grid/grid-virtualization/css";
-import { GridVideoHtml5Demo } from "./grid/grid-video-html5/Component";
-import { source as gridVideoHtml5Source } from "./grid/grid-video-html5/source";
-import { css as gridVideoHtml5Css } from "./grid/grid-video-html5/css";
-import { GridVideoYoutubeDemo } from "./grid/grid-video-youtube/Component";
-import { source as gridVideoYoutubeSource } from "./grid/grid-video-youtube/source";
-import { css as gridVideoYoutubeCss } from "./grid/grid-video-youtube/css";
-import { GridVideoVimeoDemo } from "./grid/grid-video-vimeo/Component";
-import { source as gridVideoVimeoSource } from "./grid/grid-video-vimeo/source";
-import { css as gridVideoVimeoCss } from "./grid/grid-video-vimeo/css";
-import { MasonryCoreBalancedDemo } from "./masonry/masonry-core-balanced/Component";
-import { source as masonryCoreBalancedSource } from "./masonry/masonry-core-balanced/source";
-import { css as masonryCoreBalancedCss } from "./masonry/masonry-core-balanced/css";
-import { MasonryCoreSpansDemo } from "./masonry/masonry-core-spans/Component";
-import { source as masonryCoreSpansSource } from "./masonry/masonry-core-spans/source";
-import { css as masonryCoreSpansCss } from "./masonry/masonry-core-spans/css";
-import { MasonryCoreHorizontalOrderDemo } from "./masonry/masonry-core-horizontal-order/Component";
-import { source as masonryCoreHorizontalOrderSource } from "./masonry/masonry-core-horizontal-order/source";
-import { css as masonryCoreHorizontalOrderCss } from "./masonry/masonry-core-horizontal-order/css";
-import { MasonryCoreRoundRobinDemo } from "./masonry/masonry-core-round-robin/Component";
-import { source as masonryCoreRoundRobinSource } from "./masonry/masonry-core-round-robin/source";
-import { css as masonryCoreRoundRobinCss } from "./masonry/masonry-core-round-robin/css";
-import { MasonryCoreLazyLoadDemo } from "./masonry/masonry-core-lazy-load/Component";
-import { source as masonryCoreLazyLoadSource } from "./masonry/masonry-core-lazy-load/source";
-import { css as masonryCoreLazyLoadCss } from "./masonry/masonry-core-lazy-load/css";
-import { MasonryPaginationDemo } from "./masonry/masonry-pagination/Component";
-import { source as masonryPaginationSource } from "./masonry/masonry-pagination/source";
-import { css as masonryPaginationCss } from "./masonry/masonry-pagination/css";
-import { MasonryPaginationClientDemo } from "./masonry/masonry-pagination-client/Component";
-import { source as masonryPaginationClientSource } from "./masonry/masonry-pagination-client/source";
-import { css as masonryPaginationClientCss } from "./masonry/masonry-pagination-client/css";
-import { MasonryLoadMoreDemo } from "./masonry/masonry-load-more/Component";
-import { source as masonryLoadMoreSource } from "./masonry/masonry-load-more/source";
-import { css as masonryLoadMoreCss } from "./masonry/masonry-load-more/css";
-import { MasonryInfiniteScrollDemo } from "./masonry/masonry-infinite-scroll/Component";
-import { source as masonryInfiniteScrollSource } from "./masonry/masonry-infinite-scroll/source";
-import { css as masonryInfiniteScrollCss } from "./masonry/masonry-infinite-scroll/css";
-import { MasonryVirtualizationDemo } from "./masonry/masonry-virtualization/Component";
-import { source as masonryVirtualizationSource } from "./masonry/masonry-virtualization/source";
-import { css as masonryVirtualizationCss } from "./masonry/masonry-virtualization/css";
-import { MasonryBalancedDemo } from "./masonry/masonry-balanced/Component";
-import { source as masonryBalancedSource } from "./masonry/masonry-balanced/source";
-import { css as masonryBalancedCss } from "./masonry/masonry-balanced/css";
-import { MasonrySpansDemo } from "./masonry/masonry-spans/Component";
-import { source as masonrySpansSource } from "./masonry/masonry-spans/source";
-import { css as masonrySpansCss } from "./masonry/masonry-spans/css";
-import { MasonryHorizontalOrderDemo } from "./masonry/masonry-horizontal-order/Component";
-import { source as masonryHorizontalOrderSource } from "./masonry/masonry-horizontal-order/source";
-import { css as masonryHorizontalOrderCss } from "./masonry/masonry-horizontal-order/css";
 import type { SkeletonCacheSnapshot } from "react-motion-gallery/skeleton/cache";
 import { SkeletonCacheProvider } from "react-motion-gallery/skeleton/cache/provider";
-import { MasonryRoundRobinDemo } from "./masonry/masonry-round-robin/Component";
-import { source as masonryRoundRobinSource } from "./masonry/masonry-round-robin/source";
-import { css as masonryRoundRobinCss } from "./masonry/masonry-round-robin/css";
-import { MasonryLazyLoadDemo } from "./masonry/masonry-lazy-load/Component";
-import { source as masonryLazyLoadSource } from "./masonry/masonry-lazy-load/source";
-import { css as masonryLazyLoadCss } from "./masonry/masonry-lazy-load/css";
-import { MasonryVideoHtml5Demo } from "./masonry/masonry-video-html5/Component";
-import { source as masonryVideoHtml5Source } from "./masonry/masonry-video-html5/source";
-import { css as masonryVideoHtml5Css } from "./masonry/masonry-video-html5/css";
-import { MasonryVideoYoutubeDemo } from "./masonry/masonry-video-youtube/Component";
-import { source as masonryVideoYoutubeSource } from "./masonry/masonry-video-youtube/source";
-import { css as masonryVideoYoutubeCss } from "./masonry/masonry-video-youtube/css";
-import { MasonryVideoVimeoDemo } from "./masonry/masonry-video-vimeo/Component";
-import { source as masonryVideoVimeoSource } from "./masonry/masonry-video-vimeo/source";
-import { css as masonryVideoVimeoCss } from "./masonry/masonry-video-vimeo/css";
-import { EntriesSliderDemo } from "./entries/entries-slider/Component";
-import { source as entriesSliderSource } from "./entries/entries-slider/source";
-import { css as entriesSliderCss } from "./entries/entries-slider/css";
-import { EntriesSliderHtml5Demo } from "./entries/entries-slider-html5/Component";
-import { source as entriesSliderHtml5Source } from "./entries/entries-slider-html5/source";
-import { css as entriesSliderHtml5Css } from "./entries/entries-slider-html5/css";
-import { EntriesGridDemo } from "./entries/entries-grid/Component";
-import { source as entriesGridSource } from "./entries/entries-grid/source";
-import { css as entriesGridCss } from "./entries/entries-grid/css";
-import { EntriesMasonryDemo } from "./entries/entries-masonry/Component";
-import { source as entriesMasonrySource } from "./entries/entries-masonry/source";
-import { css as entriesMasonryCss } from "./entries/entries-masonry/css";
-import { EntriesPaginationDemo } from "./entries/entries-pagination/Component";
-import { source as entriesPaginationSource } from "./entries/entries-pagination/source";
-import { css as entriesPaginationCss } from "./entries/entries-pagination/css";
-import { EntriesPaginationClientDemo } from "./entries/entries-pagination-client/Component";
-import { source as entriesPaginationClientSource } from "./entries/entries-pagination-client/source";
-import { css as entriesPaginationClientCss } from "./entries/entries-pagination-client/css";
-import { EntriesLoadMoreDemo } from "./entries/entries-load-more/Component";
-import { source as entriesLoadMoreSource } from "./entries/entries-load-more/source";
-import { css as entriesLoadMoreCss } from "./entries/entries-load-more/css";
-import { EntriesInfiniteScrollDemo } from "./entries/entries-infinite-scroll/Component";
-import { source as entriesInfiniteScrollSource } from "./entries/entries-infinite-scroll/source";
-import { css as entriesInfiniteScrollCss } from "./entries/entries-infinite-scroll/css";
-import { EntriesVirtualizationDemo } from "./entries/entries-virtualization/Component";
-import { source as entriesVirtualizationSource } from "./entries/entries-virtualization/source";
-import { css as entriesVirtualizationCss } from "./entries/entries-virtualization/css";
-import { EntriesPaginationGridDemo } from "./entries/entries-pagination-grid/Component";
-import { source as entriesPaginationGridSource } from "./entries/entries-pagination-grid/source";
-import { css as entriesPaginationGridCss } from "./entries/entries-pagination-grid/css";
-import { EntriesPaginationGridClientDemo } from "./entries/entries-pagination-grid-client/Component";
-import { source as entriesPaginationGridClientSource } from "./entries/entries-pagination-grid-client/source";
-import { css as entriesPaginationGridClientCss } from "./entries/entries-pagination-grid-client/css";
-import { EntriesLoadMoreGridDemo } from "./entries/entries-load-more-grid/Component";
-import { source as entriesLoadMoreGridSource } from "./entries/entries-load-more-grid/source";
-import { css as entriesLoadMoreGridCss } from "./entries/entries-load-more-grid/css";
-import { EntriesInfiniteScrollGridDemo } from "./entries/entries-infinite-scroll-grid/Component";
-import { source as entriesInfiniteScrollGridSource } from "./entries/entries-infinite-scroll-grid/source";
-import { css as entriesInfiniteScrollGridCss } from "./entries/entries-infinite-scroll-grid/css";
-import { EntriesVirtualizationGridDemo } from "./entries/entries-virtualization-grid/Component";
-import { source as entriesVirtualizationGridSource } from "./entries/entries-virtualization-grid/source";
-import { css as entriesVirtualizationGridCss } from "./entries/entries-virtualization-grid/css";
-import { FullscreenSlideBoundCaptionDemo } from "./fullscreen/fullscreen-slide-bound-caption/Component";
-import { source as fullscreenSlideBoundCaptionSource } from "./fullscreen/fullscreen-slide-bound-caption/source";
-import { css as fullscreenSlideBoundCaptionCss } from "./fullscreen/fullscreen-slide-bound-caption/css";
-import { FullscreenThumbnailsDemo } from "./fullscreen/fullscreen-thumbnails/Component";
-import { source as fullscreenThumbnailsSource } from "./fullscreen/fullscreen-thumbnails/source";
-import { css as fullscreenThumbnailsCss } from "./fullscreen/fullscreen-thumbnails/css";
-import { FullscreenCaptionThumbnailsDemo } from "./fullscreen/fullscreen-caption-thumbnails/Component";
-import { source as fullscreenCaptionThumbnailsSource } from "./fullscreen/fullscreen-caption-thumbnails/source";
-import { css as fullscreenCaptionThumbnailsCss } from "./fullscreen/fullscreen-caption-thumbnails/css";
-import { FullscreenFadeEffectsDemo } from "./fullscreen/fullscreen-fade-effects/Component";
-import { source as fullscreenFadeEffectsSource } from "./fullscreen/fullscreen-fade-effects/source";
-import { css as fullscreenFadeEffectsCss } from "./fullscreen/fullscreen-fade-effects/css";
-import { FullscreenViewportOverlayCaptionDemo } from "./fullscreen/fullscreen-viewport-overlay-caption/Component";
-import { source as fullscreenViewportOverlayCaptionSource } from "./fullscreen/fullscreen-viewport-overlay-caption/source";
-import { css as fullscreenViewportOverlayCaptionCss } from "./fullscreen/fullscreen-viewport-overlay-caption/css";
-import { FullscreenViewportOverlayCaptionSizedDemo } from "./fullscreen/fullscreen-viewport-overlay-caption-sized/Component";
-import { source as fullscreenViewportOverlayCaptionSizedSource } from "./fullscreen/fullscreen-viewport-overlay-caption-sized/source";
-import { css as fullscreenViewportOverlayCaptionSizedCss } from "./fullscreen/fullscreen-viewport-overlay-caption-sized/css";
-import { FullscreenLazyLoadDemo } from "./fullscreen/fullscreen-lazy-load/Component";
-import { source as fullscreenLazyLoadSource } from "./fullscreen/fullscreen-lazy-load/source";
-import { css as fullscreenLazyLoadCss } from "./fullscreen/fullscreen-lazy-load/css";
-import { FullscreenImageHoverDemo } from "./fullscreen/fullscreen-image-hover/Component";
-import { source as fullscreenImageHoverSource } from "./fullscreen/fullscreen-image-hover/source";
-import { css as fullscreenImageHoverCss } from "./fullscreen/fullscreen-image-hover/css";
-import { FullscreenLayoutAgnosticDemo } from "./fullscreen/fullscreen-layout-agnostic/Component";
-import { source as fullscreenLayoutAgnosticSource } from "./fullscreen/fullscreen-layout-agnostic/source";
-import { css as fullscreenLayoutAgnosticCss } from "./fullscreen/fullscreen-layout-agnostic/css";
-import { SkeletonFlexCardsDemo } from "./skeleton/skeleton-flex-cards/Component";
-import { source as skeletonFlexCardsSource } from "./skeleton/skeleton-flex-cards/source";
-import { css as skeletonFlexCardsCss } from "./skeleton/skeleton-flex-cards/css";
-import { SkeletonAppShellDemo } from "./skeleton/skeleton-app-shell/Component";
-import { source as skeletonAppShellSource } from "./skeleton/skeleton-app-shell/source";
-import { css as skeletonAppShellCss } from "./skeleton/skeleton-app-shell/css";
-import { SkeletonResponsiveTextDemo } from "./skeleton/skeleton-responsive-text/Component";
-import { source as skeletonResponsiveTextSource } from "./skeleton/skeleton-responsive-text/source";
-import { css as skeletonResponsiveTextCss } from "./skeleton/skeleton-responsive-text/css";
-import { SkeletonForceOverlayDemo } from "./skeleton/skeleton-force-overlay/Component";
-import { source as skeletonForceOverlaySource } from "./skeleton/skeleton-force-overlay/source";
-import { css as skeletonForceOverlayCss } from "./skeleton/skeleton-force-overlay/css";
-import { RevealSectionsDemo } from "./reveal/reveal-sections/Component";
-import { source as revealSectionsSource } from "./reveal/reveal-sections/source";
-import { css as revealSectionsCss } from "./reveal/reveal-sections/css";
-import { RevealImageReadyDemo } from "./reveal/reveal-image-ready/Component";
-import { source as revealImageReadySource } from "./reveal/reveal-image-ready/source";
-import { css as revealImageReadyCss } from "./reveal/reveal-image-ready/css";
-import { ZoomPanStandaloneDemo } from "./zoom-pan/standalone/Component";
-import { source as zoomPanStandaloneSource } from "./zoom-pan/standalone/source";
-import { css as zoomPanStandaloneCss } from "./zoom-pan/standalone/css";
-import { ZoomPanSliderDemo } from "./zoom-pan/slider/Component";
-import { source as zoomPanSliderSource } from "./zoom-pan/slider/source";
-import { css as zoomPanSliderCss } from "./zoom-pan/slider/css";
-import { ZoomPanGridDemo } from "./zoom-pan/grid/Component";
-import { source as zoomPanGridSource } from "./zoom-pan/grid/source";
-import { css as zoomPanGridCss } from "./zoom-pan/grid/css";
-import { ZoomPanMasonryDemo } from "./zoom-pan/masonry/Component";
-import { source as zoomPanMasonrySource } from "./zoom-pan/masonry/source";
-import { css as zoomPanMasonryCss } from "./zoom-pan/masonry/css";
-import { ZoomPanImageHoverDemo } from "./zoom-pan/image-hover/Component";
-import { source as zoomPanImageHoverSource } from "./zoom-pan/image-hover/source";
-import { css as zoomPanImageHoverCss } from "./zoom-pan/image-hover/css";
 
 type DemoRuntimeProps = Record<string, never>;
 
-type DemoComponent = (props: DemoRuntimeProps) => ReactElement | null;
+type DemoComponent = ComponentType<DemoRuntimeProps>;
+
+const CodeBlock = dynamic(
+  () => import("@/components/ui/code-block").then((module) => module.CodeBlock),
+  {
+    loading: () => (
+      <div className={styles.codeBlockPlaceholder} aria-hidden="true" />
+    ),
+  }
+);
+
+const DEMO_COMPONENT_IMPORTERS = {
+  "slider-default": () =>
+    import("./slider/slider-default/Component").then((module) => module.SliderDefaultDemo),
+  "slider-loop": () =>
+    import("./slider/slider-loop/Component").then((module) => module.SliderLoopDemo),
+  "slider-video-html5": () =>
+    import("./slider/slider-video-html5/Component").then((module) => module.SliderVideoHtml5Demo),
+  "slider-video-html5-loop": () =>
+    import("./slider/slider-video-html5-loop/Component").then((module) => module.SliderVideoHtml5LoopDemo),
+  "slider-video-youtube": () =>
+    import("./slider/slider-video-youtube/Component").then((module) => module.SliderVideoYoutubeDemo),
+  "slider-video-youtube-loop": () =>
+    import("./slider/slider-video-youtube-loop/Component").then((module) => module.SliderVideoYoutubeLoopDemo),
+  "slider-video-vimeo": () =>
+    import("./slider/slider-video-vimeo/Component").then((module) => module.SliderVideoVimeoDemo),
+  "slider-video-vimeo-loop": () =>
+    import("./slider/slider-video-vimeo-loop/Component").then((module) => module.SliderVideoVimeoLoopDemo),
+  "slider-right-to-left": () =>
+    import("./slider/slider-right-to-left/Component").then((module) => module.SliderRightToLeftDemo),
+  "slider-group-cells": () =>
+    import("./slider/slider-group-cells/Component").then((module) => module.SliderGroupCellsDemo),
+  "slider-free-scroll": () =>
+    import("./slider/slider-free-scroll/Component").then((module) => module.SliderFreeScrollDemo),
+  "slider-skip-snaps": () =>
+    import("./slider/slider-skip-snaps/Component").then((module) => module.SliderSkipSnapsDemo),
+  "slider-strict-snaps": () =>
+    import("./slider/slider-strict-snaps/Component").then((module) => module.SliderStrictSnapsDemo),
+  "slider-center-align": () =>
+    import("./slider/slider-center-align/Component").then((module) => module.SliderCenterAlignDemo),
+  "slider-variable-widths": () =>
+    import("./slider/slider-variable-widths/Component").then((module) => module.SliderVariableWidthsDemo),
+  "slider-y-axis": () =>
+    import("./slider/slider-y-axis/Component").then((module) => module.SliderYAxisDemo),
+  "slider-cells-per-slide": () =>
+    import("./slider/slider-cells-per-slide/Component").then((module) => module.SliderCellsPerSlideDemo),
+  "slider-thumbnails": () =>
+    import("./slider/slider-thumbnails/Component").then((module) => module.SliderThumbnailsDemo),
+  "slider-lazy-load": () =>
+    import("./slider/slider-lazy-load/Component").then((module) => module.SliderLazyLoadDemo),
+  "slider-auto-scroll": () =>
+    import("./slider/slider-auto-scroll/Component").then((module) => module.SliderAutoScrollDemo),
+  "slider-auto-play": () =>
+    import("./slider/slider-auto-play/Component").then((module) => module.SliderAutoPlayDemo),
+  "slider-auto-height": () =>
+    import("./slider/slider-auto-height/Component").then((module) => module.SliderAutoHeightDemo),
+  "slider-parallax": () =>
+    import("./slider/slider-parallax/Component").then((module) => module.SliderParallaxDemo),
+  "slider-scale": () =>
+    import("./slider/slider-scale/Component").then((module) => module.SliderScaleDemo),
+  "slider-fade": () =>
+    import("./slider/slider-fade/Component").then((module) => module.SliderFadeDemo),
+  "slider-crossfade": () =>
+    import("./slider/slider-crossfade/Component").then((module) => module.SliderCrossfadeDemo),
+  "slider-cards": () =>
+    import("./slider/slider-cards/Component").then((module) => module.SliderCardsDemo),
+  "slider-interactive": () =>
+    import("./slider/slider-interactive/Component").then((module) => module.SliderInteractiveDemo),
+  "grid-columns": () =>
+    import("./grid/grid-columns/Component").then((module) => module.GridColumnsDemo),
+  "grid-template-columns": () =>
+    import("./grid/grid-template-columns/Component").then((module) => module.GridTemplateColumnsDemo),
+  "grid-min-column-width": () =>
+    import("./grid/grid-min-column-width/Component").then((module) => module.GridMinColumnWidthDemo),
+  "grid-lazy-load": () =>
+    import("./grid/grid-lazy-load/Component").then((module) => module.GridLazyLoadDemo),
+  "grid-pagination": () =>
+    import("./grid/grid-pagination/Component").then((module) => module.GridPaginationDemo),
+  "grid-pagination-client": () =>
+    import("./grid/grid-pagination-client/Component").then((module) => module.GridPaginationClientDemo),
+  "grid-load-more": () =>
+    import("./grid/grid-load-more/Component").then((module) => module.GridLoadMoreDemo),
+  "grid-infinite-scroll": () =>
+    import("./grid/grid-infinite-scroll/Component").then((module) => module.GridInfiniteScrollDemo),
+  "grid-virtualization": () =>
+    import("./grid/grid-virtualization/Component").then((module) => module.GridVirtualizationDemo),
+  "grid-video-html5": () =>
+    import("./grid/grid-video-html5/Component").then((module) => module.GridVideoHtml5Demo),
+  "grid-video-youtube": () =>
+    import("./grid/grid-video-youtube/Component").then((module) => module.GridVideoYoutubeDemo),
+  "grid-video-vimeo": () =>
+    import("./grid/grid-video-vimeo/Component").then((module) => module.GridVideoVimeoDemo),
+  "masonry-core-balanced": () =>
+    import("./masonry/masonry-core-balanced/Component").then((module) => module.MasonryCoreBalancedDemo),
+  "masonry-core-spans": () =>
+    import("./masonry/masonry-core-spans/Component").then((module) => module.MasonryCoreSpansDemo),
+  "masonry-core-horizontal-order": () =>
+    import("./masonry/masonry-core-horizontal-order/Component").then((module) => module.MasonryCoreHorizontalOrderDemo),
+  "masonry-core-round-robin": () =>
+    import("./masonry/masonry-core-round-robin/Component").then((module) => module.MasonryCoreRoundRobinDemo),
+  "masonry-core-lazy-load": () =>
+    import("./masonry/masonry-core-lazy-load/Component").then((module) => module.MasonryCoreLazyLoadDemo),
+  "masonry-pagination": () =>
+    import("./masonry/masonry-pagination/Component").then((module) => module.MasonryPaginationDemo),
+  "masonry-pagination-client": () =>
+    import("./masonry/masonry-pagination-client/Component").then((module) => module.MasonryPaginationClientDemo),
+  "masonry-load-more": () =>
+    import("./masonry/masonry-load-more/Component").then((module) => module.MasonryLoadMoreDemo),
+  "masonry-infinite-scroll": () =>
+    import("./masonry/masonry-infinite-scroll/Component").then((module) => module.MasonryInfiniteScrollDemo),
+  "masonry-virtualization": () =>
+    import("./masonry/masonry-virtualization/Component").then((module) => module.MasonryVirtualizationDemo),
+  "masonry-balanced": () =>
+    import("./masonry/masonry-balanced/Component").then((module) => module.MasonryBalancedDemo),
+  "masonry-spans": () =>
+    import("./masonry/masonry-spans/Component").then((module) => module.MasonrySpansDemo),
+  "masonry-horizontal-order": () =>
+    import("./masonry/masonry-horizontal-order/Component").then((module) => module.MasonryHorizontalOrderDemo),
+  "masonry-round-robin": () =>
+    import("./masonry/masonry-round-robin/Component").then((module) => module.MasonryRoundRobinDemo),
+  "masonry-lazy-load": () =>
+    import("./masonry/masonry-lazy-load/Component").then((module) => module.MasonryLazyLoadDemo),
+  "masonry-video-html5": () =>
+    import("./masonry/masonry-video-html5/Component").then((module) => module.MasonryVideoHtml5Demo),
+  "masonry-video-youtube": () =>
+    import("./masonry/masonry-video-youtube/Component").then((module) => module.MasonryVideoYoutubeDemo),
+  "masonry-video-vimeo": () =>
+    import("./masonry/masonry-video-vimeo/Component").then((module) => module.MasonryVideoVimeoDemo),
+  "entries-slider": () =>
+    import("./entries/entries-slider/Component").then((module) => module.EntriesSliderDemo),
+  "entries-slider-html5": () =>
+    import("./entries/entries-slider-html5/Component").then((module) => module.EntriesSliderHtml5Demo),
+  "entries-grid": () =>
+    import("./entries/entries-grid/Component").then((module) => module.EntriesGridDemo),
+  "entries-masonry": () =>
+    import("./entries/entries-masonry/Component").then((module) => module.EntriesMasonryDemo),
+  "entries-pagination": () =>
+    import("./entries/entries-pagination/Component").then((module) => module.EntriesPaginationDemo),
+  "entries-pagination-client": () =>
+    import("./entries/entries-pagination-client/Component").then((module) => module.EntriesPaginationClientDemo),
+  "entries-load-more": () =>
+    import("./entries/entries-load-more/Component").then((module) => module.EntriesLoadMoreDemo),
+  "entries-infinite-scroll": () =>
+    import("./entries/entries-infinite-scroll/Component").then((module) => module.EntriesInfiniteScrollDemo),
+  "entries-virtualization": () =>
+    import("./entries/entries-virtualization/Component").then((module) => module.EntriesVirtualizationDemo),
+  "entries-pagination-grid": () =>
+    import("./entries/entries-pagination-grid/Component").then((module) => module.EntriesPaginationGridDemo),
+  "entries-pagination-grid-client": () =>
+    import("./entries/entries-pagination-grid-client/Component").then((module) => module.EntriesPaginationGridClientDemo),
+  "entries-load-more-grid": () =>
+    import("./entries/entries-load-more-grid/Component").then((module) => module.EntriesLoadMoreGridDemo),
+  "entries-infinite-scroll-grid": () =>
+    import("./entries/entries-infinite-scroll-grid/Component").then((module) => module.EntriesInfiniteScrollGridDemo),
+  "entries-virtualization-grid": () =>
+    import("./entries/entries-virtualization-grid/Component").then((module) => module.EntriesVirtualizationGridDemo),
+  "fullscreen-slide-bound-caption": () =>
+    import("./fullscreen/fullscreen-slide-bound-caption/Component").then((module) => module.FullscreenSlideBoundCaptionDemo),
+  "fullscreen-thumbnails": () =>
+    import("./fullscreen/fullscreen-thumbnails/Component").then((module) => module.FullscreenThumbnailsDemo),
+  "fullscreen-caption-thumbnails": () =>
+    import("./fullscreen/fullscreen-caption-thumbnails/Component").then((module) => module.FullscreenCaptionThumbnailsDemo),
+  "fullscreen-fade-effects": () =>
+    import("./fullscreen/fullscreen-fade-effects/Component").then((module) => module.FullscreenFadeEffectsDemo),
+  "fullscreen-viewport-overlay-caption": () =>
+    import("./fullscreen/fullscreen-viewport-overlay-caption/Component").then((module) => module.FullscreenViewportOverlayCaptionDemo),
+  "fullscreen-viewport-overlay-caption-sized": () =>
+    import("./fullscreen/fullscreen-viewport-overlay-caption-sized/Component").then((module) => module.FullscreenViewportOverlayCaptionSizedDemo),
+  "fullscreen-lazy-load": () =>
+    import("./fullscreen/fullscreen-lazy-load/Component").then((module) => module.FullscreenLazyLoadDemo),
+  "fullscreen-image-hover": () =>
+    import("./fullscreen/fullscreen-image-hover/Component").then((module) => module.FullscreenImageHoverDemo),
+  "fullscreen-layout-agnostic": () =>
+    import("./fullscreen/fullscreen-layout-agnostic/Component").then((module) => module.FullscreenLayoutAgnosticDemo),
+  "skeleton-flex-cards": () =>
+    import("./skeleton/skeleton-flex-cards/Component").then((module) => module.SkeletonFlexCardsDemo),
+  "skeleton-app-shell": () =>
+    import("./skeleton/skeleton-app-shell/Component").then((module) => module.SkeletonAppShellDemo),
+  "skeleton-responsive-text": () =>
+    import("./skeleton/skeleton-responsive-text/Component").then((module) => module.SkeletonResponsiveTextDemo),
+  "skeleton-force-overlay": () =>
+    import("./skeleton/skeleton-force-overlay/Component").then((module) => module.SkeletonForceOverlayDemo),
+  "reveal-sections": () =>
+    import("./reveal/reveal-sections/Component").then((module) => module.RevealSectionsDemo),
+  "reveal-image-ready": () =>
+    import("./reveal/reveal-image-ready/Component").then((module) => module.RevealImageReadyDemo),
+  "zoom-pan-standalone": () =>
+    import("./zoom-pan/standalone/Component").then((module) => module.ZoomPanStandaloneDemo),
+  "zoom-pan-slider": () =>
+    import("./zoom-pan/slider/Component").then((module) => module.ZoomPanSliderDemo),
+  "zoom-pan-grid": () =>
+    import("./zoom-pan/grid/Component").then((module) => module.ZoomPanGridDemo),
+  "zoom-pan-masonry": () =>
+    import("./zoom-pan/masonry/Component").then((module) => module.ZoomPanMasonryDemo),
+  "zoom-pan-image-hover": () =>
+    import("./zoom-pan/image-hover/Component").then((module) => module.ZoomPanImageHoverDemo),
+} satisfies Record<string, () => Promise<DemoComponent>>;
+
+const SliderDefaultDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-default/Component").then((module) => module.SliderDefaultDemo)
+);
+const SliderLoopDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-loop/Component").then((module) => module.SliderLoopDemo)
+);
+const SliderVideoHtml5Demo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-video-html5/Component").then((module) => module.SliderVideoHtml5Demo)
+);
+const SliderVideoHtml5LoopDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-video-html5-loop/Component").then((module) => module.SliderVideoHtml5LoopDemo)
+);
+const SliderVideoYoutubeDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-video-youtube/Component").then((module) => module.SliderVideoYoutubeDemo)
+);
+const SliderVideoYoutubeLoopDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-video-youtube-loop/Component").then((module) => module.SliderVideoYoutubeLoopDemo)
+);
+const SliderVideoVimeoDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-video-vimeo/Component").then((module) => module.SliderVideoVimeoDemo)
+);
+const SliderVideoVimeoLoopDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-video-vimeo-loop/Component").then((module) => module.SliderVideoVimeoLoopDemo)
+);
+const SliderRightToLeftDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-right-to-left/Component").then((module) => module.SliderRightToLeftDemo)
+);
+const SliderGroupCellsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-group-cells/Component").then((module) => module.SliderGroupCellsDemo)
+);
+const SliderFreeScrollDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-free-scroll/Component").then((module) => module.SliderFreeScrollDemo)
+);
+const SliderSkipSnapsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-skip-snaps/Component").then((module) => module.SliderSkipSnapsDemo)
+);
+const SliderStrictSnapsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-strict-snaps/Component").then((module) => module.SliderStrictSnapsDemo)
+);
+const SliderCenterAlignDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-center-align/Component").then((module) => module.SliderCenterAlignDemo)
+);
+const SliderVariableWidthsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-variable-widths/Component").then((module) => module.SliderVariableWidthsDemo)
+);
+const SliderYAxisDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-y-axis/Component").then((module) => module.SliderYAxisDemo)
+);
+const SliderCellsPerSlideDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-cells-per-slide/Component").then((module) => module.SliderCellsPerSlideDemo)
+);
+const SliderThumbnailsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-thumbnails/Component").then((module) => module.SliderThumbnailsDemo)
+);
+const SliderLazyLoadDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-lazy-load/Component").then((module) => module.SliderLazyLoadDemo)
+);
+const SliderAutoScrollDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-auto-scroll/Component").then((module) => module.SliderAutoScrollDemo)
+);
+const SliderAutoPlayDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-auto-play/Component").then((module) => module.SliderAutoPlayDemo)
+);
+const SliderAutoHeightDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-auto-height/Component").then((module) => module.SliderAutoHeightDemo)
+);
+const SliderParallaxDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-parallax/Component").then((module) => module.SliderParallaxDemo)
+);
+const SliderScaleDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-scale/Component").then((module) => module.SliderScaleDemo)
+);
+const SliderFadeDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-fade/Component").then((module) => module.SliderFadeDemo)
+);
+const SliderCrossfadeDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-crossfade/Component").then((module) => module.SliderCrossfadeDemo)
+);
+const SliderCardsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-cards/Component").then((module) => module.SliderCardsDemo)
+);
+const SliderInteractiveDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-interactive/Component").then((module) => module.SliderInteractiveDemo)
+);
+const GridColumnsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-columns/Component").then((module) => module.GridColumnsDemo)
+);
+const GridTemplateColumnsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-template-columns/Component").then((module) => module.GridTemplateColumnsDemo)
+);
+const GridMinColumnWidthDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-min-column-width/Component").then((module) => module.GridMinColumnWidthDemo)
+);
+const GridLazyLoadDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-lazy-load/Component").then((module) => module.GridLazyLoadDemo)
+);
+const GridPaginationDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-pagination/Component").then((module) => module.GridPaginationDemo)
+);
+const GridPaginationClientDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-pagination-client/Component").then((module) => module.GridPaginationClientDemo)
+);
+const GridLoadMoreDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-load-more/Component").then((module) => module.GridLoadMoreDemo)
+);
+const GridInfiniteScrollDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-infinite-scroll/Component").then((module) => module.GridInfiniteScrollDemo)
+);
+const GridVirtualizationDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-virtualization/Component").then((module) => module.GridVirtualizationDemo)
+);
+const GridVideoHtml5Demo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-video-html5/Component").then((module) => module.GridVideoHtml5Demo)
+);
+const GridVideoYoutubeDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-video-youtube/Component").then((module) => module.GridVideoYoutubeDemo)
+);
+const GridVideoVimeoDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./grid/grid-video-vimeo/Component").then((module) => module.GridVideoVimeoDemo)
+);
+const MasonryCoreBalancedDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-core-balanced/Component").then((module) => module.MasonryCoreBalancedDemo)
+);
+const MasonryCoreSpansDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-core-spans/Component").then((module) => module.MasonryCoreSpansDemo)
+);
+const MasonryCoreHorizontalOrderDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-core-horizontal-order/Component").then((module) => module.MasonryCoreHorizontalOrderDemo)
+);
+const MasonryCoreRoundRobinDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-core-round-robin/Component").then((module) => module.MasonryCoreRoundRobinDemo)
+);
+const MasonryCoreLazyLoadDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-core-lazy-load/Component").then((module) => module.MasonryCoreLazyLoadDemo)
+);
+const MasonryPaginationDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-pagination/Component").then((module) => module.MasonryPaginationDemo)
+);
+const MasonryPaginationClientDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-pagination-client/Component").then((module) => module.MasonryPaginationClientDemo)
+);
+const MasonryLoadMoreDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-load-more/Component").then((module) => module.MasonryLoadMoreDemo)
+);
+const MasonryInfiniteScrollDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-infinite-scroll/Component").then((module) => module.MasonryInfiniteScrollDemo)
+);
+const MasonryVirtualizationDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-virtualization/Component").then((module) => module.MasonryVirtualizationDemo)
+);
+const MasonryBalancedDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-balanced/Component").then((module) => module.MasonryBalancedDemo)
+);
+const MasonrySpansDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-spans/Component").then((module) => module.MasonrySpansDemo)
+);
+const MasonryHorizontalOrderDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-horizontal-order/Component").then((module) => module.MasonryHorizontalOrderDemo)
+);
+const MasonryRoundRobinDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-round-robin/Component").then((module) => module.MasonryRoundRobinDemo)
+);
+const MasonryLazyLoadDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-lazy-load/Component").then((module) => module.MasonryLazyLoadDemo)
+);
+const MasonryVideoHtml5Demo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-video-html5/Component").then((module) => module.MasonryVideoHtml5Demo)
+);
+const MasonryVideoYoutubeDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-video-youtube/Component").then((module) => module.MasonryVideoYoutubeDemo)
+);
+const MasonryVideoVimeoDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./masonry/masonry-video-vimeo/Component").then((module) => module.MasonryVideoVimeoDemo)
+);
+const EntriesSliderDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-slider/Component").then((module) => module.EntriesSliderDemo)
+);
+const EntriesSliderHtml5Demo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-slider-html5/Component").then((module) => module.EntriesSliderHtml5Demo)
+);
+const EntriesGridDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-grid/Component").then((module) => module.EntriesGridDemo)
+);
+const EntriesMasonryDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-masonry/Component").then((module) => module.EntriesMasonryDemo)
+);
+const EntriesPaginationDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-pagination/Component").then((module) => module.EntriesPaginationDemo)
+);
+const EntriesPaginationClientDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-pagination-client/Component").then((module) => module.EntriesPaginationClientDemo)
+);
+const EntriesLoadMoreDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-load-more/Component").then((module) => module.EntriesLoadMoreDemo)
+);
+const EntriesInfiniteScrollDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-infinite-scroll/Component").then((module) => module.EntriesInfiniteScrollDemo)
+);
+const EntriesVirtualizationDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-virtualization/Component").then((module) => module.EntriesVirtualizationDemo)
+);
+const EntriesPaginationGridDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-pagination-grid/Component").then((module) => module.EntriesPaginationGridDemo)
+);
+const EntriesPaginationGridClientDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-pagination-grid-client/Component").then((module) => module.EntriesPaginationGridClientDemo)
+);
+const EntriesLoadMoreGridDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-load-more-grid/Component").then((module) => module.EntriesLoadMoreGridDemo)
+);
+const EntriesInfiniteScrollGridDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-infinite-scroll-grid/Component").then((module) => module.EntriesInfiniteScrollGridDemo)
+);
+const EntriesVirtualizationGridDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./entries/entries-virtualization-grid/Component").then((module) => module.EntriesVirtualizationGridDemo)
+);
+const FullscreenSlideBoundCaptionDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-slide-bound-caption/Component").then((module) => module.FullscreenSlideBoundCaptionDemo)
+);
+const FullscreenThumbnailsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-thumbnails/Component").then((module) => module.FullscreenThumbnailsDemo)
+);
+const FullscreenCaptionThumbnailsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-caption-thumbnails/Component").then((module) => module.FullscreenCaptionThumbnailsDemo)
+);
+const FullscreenFadeEffectsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-fade-effects/Component").then((module) => module.FullscreenFadeEffectsDemo)
+);
+const FullscreenViewportOverlayCaptionDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-viewport-overlay-caption/Component").then((module) => module.FullscreenViewportOverlayCaptionDemo)
+);
+const FullscreenViewportOverlayCaptionSizedDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-viewport-overlay-caption-sized/Component").then((module) => module.FullscreenViewportOverlayCaptionSizedDemo)
+);
+const FullscreenLazyLoadDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-lazy-load/Component").then((module) => module.FullscreenLazyLoadDemo)
+);
+const FullscreenImageHoverDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-image-hover/Component").then((module) => module.FullscreenImageHoverDemo)
+);
+const FullscreenLayoutAgnosticDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-layout-agnostic/Component").then((module) => module.FullscreenLayoutAgnosticDemo)
+);
+const SkeletonFlexCardsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./skeleton/skeleton-flex-cards/Component").then((module) => module.SkeletonFlexCardsDemo)
+);
+const SkeletonAppShellDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./skeleton/skeleton-app-shell/Component").then((module) => module.SkeletonAppShellDemo)
+);
+const SkeletonResponsiveTextDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./skeleton/skeleton-responsive-text/Component").then((module) => module.SkeletonResponsiveTextDemo)
+);
+const SkeletonForceOverlayDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./skeleton/skeleton-force-overlay/Component").then((module) => module.SkeletonForceOverlayDemo)
+);
+const RevealSectionsDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./reveal/reveal-sections/Component").then((module) => module.RevealSectionsDemo)
+);
+const RevealImageReadyDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./reveal/reveal-image-ready/Component").then((module) => module.RevealImageReadyDemo)
+);
+const ZoomPanStandaloneDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./zoom-pan/standalone/Component").then((module) => module.ZoomPanStandaloneDemo)
+);
+const ZoomPanSliderDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./zoom-pan/slider/Component").then((module) => module.ZoomPanSliderDemo)
+);
+const ZoomPanGridDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./zoom-pan/grid/Component").then((module) => module.ZoomPanGridDemo)
+);
+const ZoomPanMasonryDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./zoom-pan/masonry/Component").then((module) => module.ZoomPanMasonryDemo)
+);
+const ZoomPanImageHoverDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./zoom-pan/image-hover/Component").then((module) => module.ZoomPanImageHoverDemo)
+);
+
+const DEMO_IDS_WITH_GENERATED_CODE_TABS = new Set<string>([
+  "entries-grid",
+  "entries-masonry",
+  "entries-slider",
+  "entries-slider-html5",
+  "grid-columns",
+  "grid-lazy-load",
+  "grid-min-column-width",
+  "grid-template-columns",
+  "grid-video-html5",
+  "grid-video-vimeo",
+  "grid-video-youtube",
+  "masonry-balanced",
+  "masonry-horizontal-order",
+  "masonry-lazy-load",
+  "masonry-round-robin",
+  "masonry-spans",
+  "masonry-video-html5",
+  "masonry-video-vimeo",
+  "masonry-video-youtube",
+  "skeleton-force-overlay",
+  "skeleton-responsive-text",
+  "slider-auto-height",
+  "slider-cards",
+]);
+
+let generatedCodeTabsPromise: Promise<Record<string, DemoCodeFileTab[]>> | null = null;
+
+function loadGeneratedCodeTabs() {
+  generatedCodeTabsPromise ??= import("./generated-code-tabs").then(
+    (module) => module.generatedCodeTabsByDemoId
+  );
+
+  return generatedCodeTabsPromise;
+}
+
+function loadDemoCode(
+  sourceLoader: () => Promise<{ source: string }>,
+  cssLoader: () => Promise<{ css: string }>,
+  demoId: string
+): DemoCodeLoader {
+  let codePromise: Promise<LoadedDemoCode> | null = null;
+
+  return () => {
+    codePromise ??= Promise.all([
+      sourceLoader(),
+      cssLoader(),
+      DEMO_IDS_WITH_GENERATED_CODE_TABS.has(demoId)
+        ? loadGeneratedCodeTabs().then((tabsByDemoId) => tabsByDemoId[demoId] ?? [])
+        : Promise.resolve([]),
+    ]).then(([sourceModule, cssModule, extraCodeTabs]) => ({
+      source: sourceModule.source,
+      css: cssModule.css,
+      extraCodeTabs,
+    }));
+
+    return codePromise;
+  };
+}
+
 type DemoCategoryId =
   | "slider"
   | "grid"
@@ -348,12 +605,19 @@ type DemoDefinition = {
   tags: string[];
   categoryId: DemoCategoryId;
   Component: DemoComponent;
-  source: string;
-  css: string;
+  loadComponent: () => Promise<DemoComponent>;
+  loadCode: DemoCodeLoader;
   sourceFilename?: string;
   cssFilename?: string;
+};
+
+type LoadedDemoCode = {
+  source: string;
+  css: string;
   extraCodeTabs?: DemoCodeFileTab[];
 };
+
+type DemoCodeLoader = () => Promise<LoadedDemoCode>;
 
 export type DemoCodeFileTab = {
   id: string;
@@ -420,19 +684,16 @@ function basename(path: string) {
 }
 
 function applyDemoCodeOverride(
-  demo: DemoDefinition,
+  loadedCode: LoadedDemoCode,
   override: DemoCodeBlockOverride | undefined
-): DemoDefinition {
-  if (!override) return demo;
+): LoadedDemoCode {
+  if (!override) return loadedCode;
 
   return {
-    ...demo,
-    source: override.source ?? demo.source,
-    css: override.css ?? demo.css,
-    sourceFilename: override.sourceFilename ?? demo.sourceFilename,
-    cssFilename: override.cssFilename ?? demo.cssFilename,
+    source: override.source ?? loadedCode.source,
+    css: override.css ?? loadedCode.css,
     extraCodeTabs: [
-      ...(demo.extraCodeTabs ?? []),
+      ...(loadedCode.extraCodeTabs ?? []),
       ...(override.extraCodeTabs ?? []),
     ],
   };
@@ -449,23 +710,46 @@ function getSidebarDemoLinkTitle(
   return demo.title;
 }
 
+function preloadDemo(demo: DemoDefinition) {
+  void demo.loadComponent();
+}
+
 const DemoCodeBlock = memo(function DemoCodeBlock(props: {
   demo: DemoDefinition;
-  typescriptCode: string;
+  codeBlockOverride?: DemoCodeBlockOverride;
 }): JSX.Element {
-  const { demo, typescriptCode } = props;
-  const normalizedTypescriptCode = normalizeDemoSource(typescriptCode);
-  const normalizedCssCode = normalizeDemoSource(demo.css);
-  const generatedCodeTabs = generatedCodeTabsByDemoId[demo.id] ?? [];
-  const normalizedExtraTabs = [
-    ...generatedCodeTabs,
-    ...(demo.extraCodeTabs ?? []),
-  ].map((tab) => ({
+  const { demo, codeBlockOverride } = props;
+  const [loadedCode, setLoadedCode] = useState<LoadedDemoCode | null>(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    demo.loadCode().then((nextLoadedCode) => {
+      if (isCurrent) {
+        setLoadedCode(nextLoadedCode);
+      }
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [demo]);
+
+  if (!loadedCode) {
+    return <div className={styles.codeBlockPlaceholder} aria-hidden="true" />;
+  }
+
+  const resolvedCode = applyDemoCodeOverride(loadedCode, codeBlockOverride);
+  const normalizedTypescriptCode = normalizeDemoSource(resolvedCode.source);
+  const normalizedCssCode = normalizeDemoSource(resolvedCode.css);
+  const normalizedExtraTabs = (resolvedCode.extraCodeTabs ?? []).map((tab) => ({
     ...tab,
     code: normalizeDemoSource(tab.code),
   }));
-  const sourceFilename = demo.sourceFilename ?? `${demo.title}.tsx`;
-  const cssFilename = demo.cssFilename ?? `${demo.title}.css`;
+  const sourceFilename =
+    codeBlockOverride?.sourceFilename ?? demo.sourceFilename ?? `${demo.title}.tsx`;
+  const cssFilename =
+    codeBlockOverride?.cssFilename ?? demo.cssFilename ?? `${demo.title}.css`;
 
   return (
     <CodeBlock
@@ -499,13 +783,13 @@ const SelectedDemoPane = memo(function SelectedDemoPane(props: {
   selectedCategoryLabel: string;
   selectedDemo: DemoDefinition;
   selectedDemoCanvasClassName: string;
-  selectedDemoSource: string;
+  selectedDemoCodeOverride?: DemoCodeBlockOverride;
 }): JSX.Element {
   const {
     selectedCategoryLabel,
     selectedDemo,
     selectedDemoCanvasClassName,
-    selectedDemoSource,
+    selectedDemoCodeOverride,
   } = props;
   const [displayedTab, setDisplayedTab] = useState<DemoCanvasTab>("preview");
   const SelectedDemoComponent = selectedDemo.Component;
@@ -564,7 +848,7 @@ const SelectedDemoPane = memo(function SelectedDemoPane(props: {
             <DemoCodeBlock
               key={selectedDemo.id}
               demo={selectedDemo}
-              typescriptCode={selectedDemoSource}
+              codeBlockOverride={selectedDemoCodeOverride}
             />
           )}
         </div>
@@ -804,8 +1088,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderDefaultDemo,
-    source: sliderDefaultSource,
-    css: sliderDefaultCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-default"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-default/source"),
+      () => import("./slider/slider-default/css"),
+      "slider-default"
+    ),
   },
   {
     id: "slider-loop",
@@ -814,8 +1102,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["center", "initialIndex", "fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderLoopDemo,
-    source: sliderLoopSource,
-    css: sliderLoopCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-loop"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-loop/source"),
+      () => import("./slider/slider-loop/css"),
+      "slider-loop"
+    ),
   },
   {
     id: "slider-video-html5",
@@ -824,8 +1116,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderVideoHtml5Demo,
-    source: sliderVideoHtml5Source,
-    css: sliderVideoHtml5Css,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-video-html5"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-video-html5/source"),
+      () => import("./slider/slider-video-html5/css"),
+      "slider-video-html5"
+    ),
   },
   {
     id: "slider-video-html5-loop",
@@ -834,8 +1130,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["center","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderVideoHtml5LoopDemo,
-    source: sliderVideoHtml5LoopSource,
-    css: sliderVideoHtml5LoopCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-video-html5-loop"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-video-html5-loop/source"),
+      () => import("./slider/slider-video-html5-loop/css"),
+      "slider-video-html5-loop"
+    ),
   },
   {
     id: "slider-video-youtube",
@@ -844,8 +1144,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["scroll-bar","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderVideoYoutubeDemo,
-    source: sliderVideoYoutubeSource,
-    css: sliderVideoYoutubeCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-video-youtube"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-video-youtube/source"),
+      () => import("./slider/slider-video-youtube/css"),
+      "slider-video-youtube"
+    ),
   },
   {
     id: "slider-video-youtube-loop",
@@ -854,8 +1158,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["scroll-bar","center","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderVideoYoutubeLoopDemo,
-    source: sliderVideoYoutubeLoopSource,
-    css: sliderVideoYoutubeLoopCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-video-youtube-loop"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-video-youtube-loop/source"),
+      () => import("./slider/slider-video-youtube-loop/css"),
+      "slider-video-youtube-loop"
+    ),
   },
   {
     id: "slider-video-vimeo",
@@ -864,8 +1172,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["scroll-bar","fulscreen","skeleton"],
     categoryId: "slider",
     Component: SliderVideoVimeoDemo,
-    source: sliderVideoVimeoSource,
-    css: sliderVideoVimeoCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-video-vimeo"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-video-vimeo/source"),
+      () => import("./slider/slider-video-vimeo/css"),
+      "slider-video-vimeo"
+    ),
   },
   {
     id: "slider-video-vimeo-loop",
@@ -874,8 +1186,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["scroll-bar","center","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderVideoVimeoLoopDemo,
-    source: sliderVideoVimeoLoopSource,
-    css: sliderVideoVimeoLoopCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-video-vimeo-loop"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-video-vimeo-loop/source"),
+      () => import("./slider/slider-video-vimeo-loop/css"),
+      "slider-video-vimeo-loop"
+    ),
   },
   {
     id: "slider-right-to-left",
@@ -884,8 +1200,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderRightToLeftDemo,
-    source: sliderRightToLeftSource,
-    css: sliderRightToLeftCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-right-to-left"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-right-to-left/source"),
+      () => import("./slider/slider-right-to-left/css"),
+      "slider-right-to-left"
+    ),
   },
   {
     id: "slider-group-cells",
@@ -894,8 +1214,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderGroupCellsDemo,
-    source: sliderGroupCellsSource,
-    css: sliderGroupCellsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-group-cells"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-group-cells/source"),
+      () => import("./slider/slider-group-cells/css"),
+      "slider-group-cells"
+    ),
   },
   {
     id: "slider-free-scroll",
@@ -904,8 +1228,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["group-cells","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderFreeScrollDemo,
-    source: sliderFreeScrollSource,
-    css: sliderFreeScrollCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-free-scroll"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-free-scroll/source"),
+      () => import("./slider/slider-free-scroll/css"),
+      "slider-free-scroll"
+    ),
   },
   {
     id: "slider-skip-snaps",
@@ -914,8 +1242,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderSkipSnapsDemo,
-    source: sliderSkipSnapsSource,
-    css: sliderSkipSnapsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-skip-snaps"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-skip-snaps/source"),
+      () => import("./slider/slider-skip-snaps/css"),
+      "slider-skip-snaps"
+    ),
   },
   {
     id: "slider-strict-snaps",
@@ -924,8 +1256,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["loop","align-center","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderStrictSnapsDemo,
-    source: sliderStrictSnapsSource,
-    css: sliderStrictSnapsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-strict-snaps"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-strict-snaps/source"),
+      () => import("./slider/slider-strict-snaps/css"),
+      "slider-strict-snaps"
+    ),
   },
   {
     id: "slider-center-align",
@@ -934,8 +1270,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderCenterAlignDemo,
-    source: sliderCenterAlignSource,
-    css: sliderCenterAlignCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-center-align"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-center-align/source"),
+      () => import("./slider/slider-center-align/css"),
+      "slider-center-align"
+    ),
   },
   {
     id: "slider-variable-widths",
@@ -944,8 +1284,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["center", "contain-scroll", "fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderVariableWidthsDemo,
-    source: sliderVariableWidthsSource,
-    css: sliderVariableWidthsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-variable-widths"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-variable-widths/source"),
+      () => import("./slider/slider-variable-widths/css"),
+      "slider-variable-widths"
+    ),
   },
   {
     id: "slider-y-axis",
@@ -954,8 +1298,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderYAxisDemo,
-    source: sliderYAxisSource,
-    css: sliderYAxisCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-y-axis"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-y-axis/source"),
+      () => import("./slider/slider-y-axis/css"),
+      "slider-y-axis"
+    ),
   },
   {
     id: "slider-cells-per-slide",
@@ -964,8 +1312,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["group-cells","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderCellsPerSlideDemo,
-    source: sliderCellsPerSlideSource,
-    css: sliderCellsPerSlideCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-cells-per-slide"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-cells-per-slide/source"),
+      () => import("./slider/slider-cells-per-slide/css"),
+      "slider-cells-per-slide"
+    ),
   },
   {
     id: "slider-thumbnails",
@@ -974,8 +1326,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton","fullscreen-thumbnails"],
     categoryId: "slider",
     Component: SliderThumbnailsDemo,
-    source: sliderThumbnailsSource,
-    css: sliderThumbnailsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-thumbnails"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-thumbnails/source"),
+      () => import("./slider/slider-thumbnails/css"),
+      "slider-thumbnails"
+    ),
   },
   {
     id: "slider-lazy-load",
@@ -984,8 +1340,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton","fullscreen-lazy-load"],
     categoryId: "slider",
     Component: SliderLazyLoadDemo,
-    source: sliderLazyLoadSource,
-    css: sliderLazyLoadCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-lazy-load"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-lazy-load/source"),
+      () => import("./slider/slider-lazy-load/css"),
+      "slider-lazy-load"
+    ),
   },
   {
     id: "slider-auto-scroll",
@@ -994,8 +1354,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["progress","center","loop","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderAutoScrollDemo,
-    source: sliderAutoScrollSource,
-    css: sliderAutoScrollCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-auto-scroll"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-auto-scroll/source"),
+      () => import("./slider/slider-auto-scroll/css"),
+      "slider-auto-scroll"
+    ),
   },
   {
     id: "slider-auto-play",
@@ -1004,8 +1368,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["center","loop","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderAutoPlayDemo,
-    source: sliderAutoPlaySource,
-    css: sliderAutoPlayCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-auto-play"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-auto-play/source"),
+      () => import("./slider/slider-auto-play/css"),
+      "slider-auto-play"
+    ),
   },
   {
     id: "slider-auto-height",
@@ -1014,8 +1382,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["center","loop","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderAutoHeightDemo,
-    source: sliderAutoHeightSource,
-    css: sliderAutoHeightCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-auto-height"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-auto-height/source"),
+      () => import("./slider/slider-auto-height/css"),
+      "slider-auto-height"
+    ),
   },
   {
     id: "slider-parallax",
@@ -1024,8 +1396,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["free-scroll","center","loop","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderParallaxDemo,
-    source: sliderParallaxSource,
-    css: sliderParallaxCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-parallax"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-parallax/source"),
+      () => import("./slider/slider-parallax/css"),
+      "slider-parallax"
+    ),
   },
   {
     id: "slider-scale",
@@ -1034,8 +1410,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["center","loop","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderScaleDemo,
-    source: sliderScaleSource,
-    css: sliderScaleCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-scale"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-scale/source"),
+      () => import("./slider/slider-scale/css"),
+      "slider-scale"
+    ),
   },
   {
     id: "slider-fade",
@@ -1044,8 +1424,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["center","loop","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderFadeDemo,
-    source: sliderFadeSource,
-    css: sliderFadeCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-fade"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-fade/source"),
+      () => import("./slider/slider-fade/css"),
+      "slider-fade"
+    ),
   },
   {
     id: "slider-crossfade",
@@ -1054,8 +1438,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["center","loop","drag","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderCrossfadeDemo,
-    source: sliderCrossfadeSource,
-    css: sliderCrossfadeCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-crossfade"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-crossfade/source"),
+      () => import("./slider/slider-crossfade/css"),
+      "slider-crossfade"
+    ),
   },
   {
     id: "slider-cards",
@@ -1064,8 +1452,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["cells-per-slide","group-cells","loop","fullscreen","skeleton"],
     categoryId: "slider",
     Component: SliderCardsDemo,
-    source: sliderCardsSource,
-    css: sliderCardsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-cards"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-cards/source"),
+      () => import("./slider/slider-cards/css"),
+      "slider-cards"
+    ),
   },
   {
     id: "slider-interactive",
@@ -1074,8 +1466,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["gallery-api","append","prepend","insert","remove","replace","set-items"],
     categoryId: "slider",
     Component: SliderInteractiveDemo,
-    source: sliderInteractiveSource,
-    css: sliderInteractiveCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-interactive"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-interactive/source"),
+      () => import("./slider/slider-interactive/css"),
+      "slider-interactive"
+    ),
   },
   {
     id: "grid-columns",
@@ -1084,8 +1480,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","responsive","skeleton","span","grid.item"],
     categoryId: "grid",
     Component: GridColumnsDemo,
-    source: gridColumnsSource,
-    css: gridColumnsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-columns"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-columns/source"),
+      () => import("./grid/grid-columns/css"),
+      "grid-columns"
+    ),
   },
   {
     id: "grid-template-columns",
@@ -1094,8 +1494,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton","template-columns","span"],
     categoryId: "grid",
     Component: GridTemplateColumnsDemo,
-    source: gridTemplateColumnsSource,
-    css: gridTemplateColumnsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-template-columns"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-template-columns/source"),
+      () => import("./grid/grid-template-columns/css"),
+      "grid-template-columns"
+    ),
   },
   {
     id: "grid-min-column-width",
@@ -1104,8 +1508,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "grid",
     Component: GridMinColumnWidthDemo,
-    source: gridMinColumnWidthSource,
-    css: gridMinColumnWidthCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-min-column-width"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-min-column-width/source"),
+      () => import("./grid/grid-min-column-width/css"),
+      "grid-min-column-width"
+    ),
   },
   {
     id: "grid-lazy-load",
@@ -1114,8 +1522,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton","fullscreen-lazy-load"],
     categoryId: "grid",
     Component: GridLazyLoadDemo,
-    source: gridLazyLoadSource,
-    css: gridLazyLoadCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-lazy-load"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-lazy-load/source"),
+      () => import("./grid/grid-lazy-load/css"),
+      "grid-lazy-load"
+    ),
   },
   {
     id: "grid-pagination",
@@ -1124,8 +1536,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","pagination","server","dummyjson"],
     categoryId: "grid",
     Component: GridPaginationDemo,
-    source: gridPaginationSource,
-    css: gridPaginationCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-pagination"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-pagination/source"),
+      () => import("./grid/grid-pagination/css"),
+      "grid-pagination"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "grid-pagination-demo.module.css",
   },
@@ -1136,8 +1552,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","pagination","client","dummyjson"],
     categoryId: "grid",
     Component: GridPaginationClientDemo,
-    source: gridPaginationClientSource,
-    css: gridPaginationClientCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-pagination-client"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-pagination-client/source"),
+      () => import("./grid/grid-pagination-client/css"),
+      "grid-pagination-client"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "grid-pagination-demo.module.css",
   },
@@ -1148,8 +1568,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","load-more","dummyjson"],
     categoryId: "grid",
     Component: GridLoadMoreDemo,
-    source: gridLoadMoreSource,
-    css: gridLoadMoreCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-load-more"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-load-more/source"),
+      () => import("./grid/grid-load-more/css"),
+      "grid-load-more"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "grid-load-more-demo.module.css",
   },
@@ -1160,8 +1584,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","infinite-scroll","dummyjson"],
     categoryId: "grid",
     Component: GridInfiniteScrollDemo,
-    source: gridInfiniteScrollSource,
-    css: gridInfiniteScrollCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-infinite-scroll"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-infinite-scroll/source"),
+      () => import("./grid/grid-infinite-scroll/css"),
+      "grid-infinite-scroll"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "grid-infinite-scroll-demo.module.css",
   },
@@ -1172,8 +1600,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","virtualization","dummyjson"],
     categoryId: "grid",
     Component: GridVirtualizationDemo,
-    source: gridVirtualizationSource,
-    css: gridVirtualizationCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-virtualization"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-virtualization/source"),
+      () => import("./grid/grid-virtualization/css"),
+      "grid-virtualization"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "grid-virtualization-demo.module.css",
   },
@@ -1184,8 +1616,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "grid",
     Component: GridVideoHtml5Demo,
-    source: gridVideoHtml5Source,
-    css: gridVideoHtml5Css,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-video-html5"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-video-html5/source"),
+      () => import("./grid/grid-video-html5/css"),
+      "grid-video-html5"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "grid-video-html5-demo.module.css",
   },
@@ -1196,8 +1632,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "grid",
     Component: GridVideoYoutubeDemo,
-    source: gridVideoYoutubeSource,
-    css: gridVideoYoutubeCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-video-youtube"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-video-youtube/source"),
+      () => import("./grid/grid-video-youtube/css"),
+      "grid-video-youtube"
+    ),
   },
   {
     id: "grid-video-vimeo",
@@ -1206,8 +1646,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["fullscreen","skeleton"],
     categoryId: "grid",
     Component: GridVideoVimeoDemo,
-    source: gridVideoVimeoSource,
-    css: gridVideoVimeoCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["grid-video-vimeo"],
+    loadCode: loadDemoCode(
+      () => import("./grid/grid-video-vimeo/source"),
+      () => import("./grid/grid-video-vimeo/css"),
+      "grid-video-vimeo"
+    ),
   },
   {
     id: "masonry-core-balanced",
@@ -1216,8 +1660,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["images","balanced","fullscreen","skeleton","core"],
     categoryId: "masonry",
     Component: MasonryCoreBalancedDemo,
-    source: masonryCoreBalancedSource,
-    css: masonryCoreBalancedCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-core-balanced"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-core-balanced/source"),
+      () => import("./masonry/masonry-core-balanced/css"),
+      "masonry-core-balanced"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-core-balanced-demo.module.css",
   },
@@ -1228,8 +1676,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["images","balanced","span","fullscreen","skeleton","core"],
     categoryId: "masonry",
     Component: MasonryCoreSpansDemo,
-    source: masonryCoreSpansSource,
-    css: masonryCoreSpansCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-core-spans"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-core-spans/source"),
+      () => import("./masonry/masonry-core-spans/css"),
+      "masonry-core-spans"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-core-spans-demo.module.css",
   },
@@ -1240,8 +1692,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["images","horizontal-order","span","fullscreen","skeleton","core"],
     categoryId: "masonry",
     Component: MasonryCoreHorizontalOrderDemo,
-    source: masonryCoreHorizontalOrderSource,
-    css: masonryCoreHorizontalOrderCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-core-horizontal-order"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-core-horizontal-order/source"),
+      () => import("./masonry/masonry-core-horizontal-order/css"),
+      "masonry-core-horizontal-order"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-core-horizontal-order-demo.module.css",
   },
@@ -1252,8 +1708,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["images","round-robin","fullscreen","skeleton","core"],
     categoryId: "masonry",
     Component: MasonryCoreRoundRobinDemo,
-    source: masonryCoreRoundRobinSource,
-    css: masonryCoreRoundRobinCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-core-round-robin"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-core-round-robin/source"),
+      () => import("./masonry/masonry-core-round-robin/css"),
+      "masonry-core-round-robin"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-core-round-robin-demo.module.css",
   },
@@ -1264,8 +1724,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["images","lazy-load","fullscreen","skeleton","core"],
     categoryId: "masonry",
     Component: MasonryCoreLazyLoadDemo,
-    source: masonryCoreLazyLoadSource,
-    css: masonryCoreLazyLoadCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-core-lazy-load"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-core-lazy-load/source"),
+      () => import("./masonry/masonry-core-lazy-load/css"),
+      "masonry-core-lazy-load"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-core-lazy-load-demo.module.css",
   },
@@ -1276,8 +1740,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","pagination","server","dummyjson"],
     categoryId: "masonry",
     Component: MasonryPaginationDemo,
-    source: masonryPaginationSource,
-    css: masonryPaginationCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-pagination"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-pagination/source"),
+      () => import("./masonry/masonry-pagination/css"),
+      "masonry-pagination"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-pagination-demo.module.css",
   },
@@ -1288,8 +1756,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","pagination","client","dummyjson"],
     categoryId: "masonry",
     Component: MasonryPaginationClientDemo,
-    source: masonryPaginationClientSource,
-    css: masonryPaginationClientCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-pagination-client"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-pagination-client/source"),
+      () => import("./masonry/masonry-pagination-client/css"),
+      "masonry-pagination-client"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-pagination-demo.module.css",
   },
@@ -1300,8 +1772,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","load-more","dummyjson"],
     categoryId: "masonry",
     Component: MasonryLoadMoreDemo,
-    source: masonryLoadMoreSource,
-    css: masonryLoadMoreCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-load-more"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-load-more/source"),
+      () => import("./masonry/masonry-load-more/css"),
+      "masonry-load-more"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-load-more-demo.module.css",
   },
@@ -1312,8 +1788,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","infinite-scroll","dummyjson"],
     categoryId: "masonry",
     Component: MasonryInfiniteScrollDemo,
-    source: masonryInfiniteScrollSource,
-    css: masonryInfiniteScrollCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-infinite-scroll"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-infinite-scroll/source"),
+      () => import("./masonry/masonry-infinite-scroll/css"),
+      "masonry-infinite-scroll"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-infinite-scroll-demo.module.css",
   },
@@ -1324,8 +1804,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","virtualization","dummyjson"],
     categoryId: "masonry",
     Component: MasonryVirtualizationDemo,
-    source: masonryVirtualizationSource,
-    css: masonryVirtualizationCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-virtualization"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-virtualization/source"),
+      () => import("./masonry/masonry-virtualization/css"),
+      "masonry-virtualization"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-virtualization-demo.module.css",
   },
@@ -1336,8 +1820,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["balanced","video","fullscreen","skeleton","text","itemWrapStyle"],
     categoryId: "masonry",
     Component: MasonryBalancedDemo,
-    source: masonryBalancedSource,
-    css: masonryBalancedCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-balanced"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-balanced/source"),
+      () => import("./masonry/masonry-balanced/css"),
+      "masonry-balanced"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-balanced-demo.module.css",
   },
@@ -1348,8 +1836,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["balanced","span","video","fullscreen","skeleton","masonry.item"],
     categoryId: "masonry",
     Component: MasonrySpansDemo,
-    source: masonrySpansSource,
-    css: masonrySpansCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-spans"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-spans/source"),
+      () => import("./masonry/masonry-spans/css"),
+      "masonry-spans"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-spans-demo.module.css",
   },
@@ -1360,8 +1852,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["horizontal-order","span","video","fullscreen","skeleton"],
     categoryId: "masonry",
     Component: MasonryHorizontalOrderDemo,
-    source: masonryHorizontalOrderSource,
-    css: masonryHorizontalOrderCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-horizontal-order"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-horizontal-order/source"),
+      () => import("./masonry/masonry-horizontal-order/css"),
+      "masonry-horizontal-order"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "masonry-horizontal-order-demo.module.css",
   },
@@ -1372,8 +1868,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["round-robin","video","fullscreen","skeleton"],
     categoryId: "masonry",
     Component: MasonryRoundRobinDemo,
-    source: masonryRoundRobinSource,
-    css: masonryRoundRobinCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-round-robin"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-round-robin/source"),
+      () => import("./masonry/masonry-round-robin/css"),
+      "masonry-round-robin"
+    ),
   },
   {
     id: "masonry-lazy-load",
@@ -1382,8 +1882,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["video","fullscreen","skeleton","fullscreen-lazy-load"],
     categoryId: "masonry",
     Component: MasonryLazyLoadDemo,
-    source: masonryLazyLoadSource,
-    css: masonryLazyLoadCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-lazy-load"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-lazy-load/source"),
+      () => import("./masonry/masonry-lazy-load/css"),
+      "masonry-lazy-load"
+    ),
   },
   {
     id: "masonry-video-html5",
@@ -1392,8 +1896,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["html5","video","fullscreen","skeleton"],
     categoryId: "masonry",
     Component: MasonryVideoHtml5Demo,
-    source: masonryVideoHtml5Source,
-    css: masonryVideoHtml5Css,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-video-html5"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-video-html5/source"),
+      () => import("./masonry/masonry-video-html5/css"),
+      "masonry-video-html5"
+    ),
   },
   {
     id: "masonry-video-youtube",
@@ -1402,8 +1910,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["youtube","video","fullscreen","skeleton"],
     categoryId: "masonry",
     Component: MasonryVideoYoutubeDemo,
-    source: masonryVideoYoutubeSource,
-    css: masonryVideoYoutubeCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-video-youtube"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-video-youtube/source"),
+      () => import("./masonry/masonry-video-youtube/css"),
+      "masonry-video-youtube"
+    ),
   },
   {
     id: "masonry-video-vimeo",
@@ -1412,8 +1924,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["vimeo","video","fullscreen","skeleton"],
     categoryId: "masonry",
     Component: MasonryVideoVimeoDemo,
-    source: masonryVideoVimeoSource,
-    css: masonryVideoVimeoCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["masonry-video-vimeo"],
+    loadCode: loadDemoCode(
+      () => import("./masonry/masonry-video-vimeo/source"),
+      () => import("./masonry/masonry-video-vimeo/css"),
+      "masonry-video-vimeo"
+    ),
   },
   {
     id: "entries-slider",
@@ -1422,8 +1938,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["slider","fullscreen"],
     categoryId: "entries",
     Component: EntriesSliderDemo,
-    source: entriesSliderSource,
-    css: entriesSliderCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-slider"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-slider/source"),
+      () => import("./entries/entries-slider/css"),
+      "entries-slider"
+    ),
   },
   {
     id: "entries-slider-html5",
@@ -1432,8 +1952,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["slider","html5","video","fullscreen"],
     categoryId: "entries",
     Component: EntriesSliderHtml5Demo,
-    source: entriesSliderHtml5Source,
-    css: entriesSliderHtml5Css,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-slider-html5"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-slider-html5/source"),
+      () => import("./entries/entries-slider-html5/css"),
+      "entries-slider-html5"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-slider-html5-demo.module.css",
   },
@@ -1444,8 +1968,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["grid","fullscreen"],
     categoryId: "entries",
     Component: EntriesGridDemo,
-    source: entriesGridSource,
-    css: entriesGridCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-grid"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-grid/source"),
+      () => import("./entries/entries-grid/css"),
+      "entries-grid"
+    ),
   },
   {
     id: "entries-masonry",
@@ -1454,8 +1982,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["masonry","fullscreen"],
     categoryId: "entries",
     Component: EntriesMasonryDemo,
-    source: entriesMasonrySource,
-    css: entriesMasonryCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-masonry"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-masonry/source"),
+      () => import("./entries/entries-masonry/css"),
+      "entries-masonry"
+    ),
   },
   {
     id: "entries-pagination",
@@ -1464,8 +1996,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","pagination","server","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesPaginationDemo,
-    source: entriesPaginationSource,
-    css: entriesPaginationCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-pagination"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-pagination/source"),
+      () => import("./entries/entries-pagination/css"),
+      "entries-pagination"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-pagination-demo.module.css",
   },
@@ -1476,8 +2012,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","pagination","client","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesPaginationClientDemo,
-    source: entriesPaginationClientSource,
-    css: entriesPaginationClientCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-pagination-client"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-pagination-client/source"),
+      () => import("./entries/entries-pagination-client/css"),
+      "entries-pagination-client"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-pagination-demo.module.css",
   },
@@ -1488,8 +2028,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","load-more","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesLoadMoreDemo,
-    source: entriesLoadMoreSource,
-    css: entriesLoadMoreCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-load-more"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-load-more/source"),
+      () => import("./entries/entries-load-more/css"),
+      "entries-load-more"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-load-more-demo.module.css",
   },
@@ -1500,8 +2044,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","infinite-scroll","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesInfiniteScrollDemo,
-    source: entriesInfiniteScrollSource,
-    css: entriesInfiniteScrollCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-infinite-scroll"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-infinite-scroll/source"),
+      () => import("./entries/entries-infinite-scroll/css"),
+      "entries-infinite-scroll"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-infinite-scroll-demo.module.css",
   },
@@ -1512,8 +2060,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","virtualization","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesVirtualizationDemo,
-    source: entriesVirtualizationSource,
-    css: entriesVirtualizationCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-virtualization"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-virtualization/source"),
+      () => import("./entries/entries-virtualization/css"),
+      "entries-virtualization"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-virtualization-demo.module.css",
   },
@@ -1524,8 +2076,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","pagination","server","grid","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesPaginationGridDemo,
-    source: entriesPaginationGridSource,
-    css: entriesPaginationGridCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-pagination-grid"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-pagination-grid/source"),
+      () => import("./entries/entries-pagination-grid/css"),
+      "entries-pagination-grid"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-pagination-grid-demo.module.css",
   },
@@ -1536,8 +2092,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","pagination","client","grid","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesPaginationGridClientDemo,
-    source: entriesPaginationGridClientSource,
-    css: entriesPaginationGridClientCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-pagination-grid-client"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-pagination-grid-client/source"),
+      () => import("./entries/entries-pagination-grid-client/css"),
+      "entries-pagination-grid-client"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-pagination-grid-demo.module.css",
   },
@@ -1548,8 +2108,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","load-more","grid","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesLoadMoreGridDemo,
-    source: entriesLoadMoreGridSource,
-    css: entriesLoadMoreGridCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-load-more-grid"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-load-more-grid/source"),
+      () => import("./entries/entries-load-more-grid/css"),
+      "entries-load-more-grid"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-load-more-grid-demo.module.css",
   },
@@ -1560,8 +2124,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","infinite-scroll","grid","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesInfiniteScrollGridDemo,
-    source: entriesInfiniteScrollGridSource,
-    css: entriesInfiniteScrollGridCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-infinite-scroll-grid"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-infinite-scroll-grid/source"),
+      () => import("./entries/entries-infinite-scroll-grid/css"),
+      "entries-infinite-scroll-grid"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-infinite-scroll-grid-demo.module.css",
   },
@@ -1572,8 +2140,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["api","virtualization","grid","ready","dummyjson"],
     categoryId: "entries",
     Component: EntriesVirtualizationGridDemo,
-    source: entriesVirtualizationGridSource,
-    css: entriesVirtualizationGridCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["entries-virtualization-grid"],
+    loadCode: loadDemoCode(
+      () => import("./entries/entries-virtualization-grid/source"),
+      () => import("./entries/entries-virtualization-grid/css"),
+      "entries-virtualization-grid"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "entries-virtualization-grid-demo.module.css",
   },
@@ -1584,8 +2156,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["openFullscreenAt","api","scale","custom-markup"],
     categoryId: "fullscreen",
     Component: FullscreenLayoutAgnosticDemo,
-    source: fullscreenLayoutAgnosticSource,
-    css: fullscreenLayoutAgnosticCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-layout-agnostic"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-layout-agnostic/source"),
+      () => import("./fullscreen/fullscreen-layout-agnostic/css"),
+      "fullscreen-layout-agnostic"
+    ),
   },
   {
     id: "fullscreen-slide-bound-caption",
@@ -1594,8 +2170,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["captions","slide","responsive"],
     categoryId: "fullscreen",
     Component: FullscreenSlideBoundCaptionDemo,
-    source: fullscreenSlideBoundCaptionSource,
-    css: fullscreenSlideBoundCaptionCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-slide-bound-caption"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-slide-bound-caption/source"),
+      () => import("./fullscreen/fullscreen-slide-bound-caption/css"),
+      "fullscreen-slide-bound-caption"
+    ),
   },
   {
     id: "fullscreen-thumbnails",
@@ -1604,8 +2184,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["thumbnails","navigation","sync"],
     categoryId: "fullscreen",
     Component: FullscreenThumbnailsDemo,
-    source: fullscreenThumbnailsSource,
-    css: fullscreenThumbnailsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-thumbnails"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-thumbnails/source"),
+      () => import("./fullscreen/fullscreen-thumbnails/css"),
+      "fullscreen-thumbnails"
+    ),
   },
   {
     id: "fullscreen-caption-thumbnails",
@@ -1614,8 +2198,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["captions","overlay","thumbnails","responsive"],
     categoryId: "fullscreen",
     Component: FullscreenCaptionThumbnailsDemo,
-    source: fullscreenCaptionThumbnailsSource,
-    css: fullscreenCaptionThumbnailsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-caption-thumbnails"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-caption-thumbnails/source"),
+      () => import("./fullscreen/fullscreen-caption-thumbnails/css"),
+      "fullscreen-caption-thumbnails"
+    ),
     sourceFilename: "CaptionThumbnails.tsx",
     cssFilename: "caption-thumbnails-demo.module.css",
   },
@@ -1626,8 +2214,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["intro-fade","slide-fade","thumbnails"],
     categoryId: "fullscreen",
     Component: FullscreenFadeEffectsDemo,
-    source: fullscreenFadeEffectsSource,
-    css: fullscreenFadeEffectsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-fade-effects"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-fade-effects/source"),
+      () => import("./fullscreen/fullscreen-fade-effects/css"),
+      "fullscreen-fade-effects"
+    ),
   },
   {
     id: "fullscreen-viewport-overlay-caption",
@@ -1636,8 +2228,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["overlay","captions","viewport"],
     categoryId: "fullscreen",
     Component: FullscreenViewportOverlayCaptionDemo,
-    source: fullscreenViewportOverlayCaptionSource,
-    css: fullscreenViewportOverlayCaptionCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-viewport-overlay-caption"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-viewport-overlay-caption/source"),
+      () => import("./fullscreen/fullscreen-viewport-overlay-caption/css"),
+      "fullscreen-viewport-overlay-caption"
+    ),
   },
   {
     id: "fullscreen-viewport-overlay-caption-sized",
@@ -1646,8 +2242,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["overlay","captions","responsive"],
     categoryId: "fullscreen",
     Component: FullscreenViewportOverlayCaptionSizedDemo,
-    source: fullscreenViewportOverlayCaptionSizedSource,
-    css: fullscreenViewportOverlayCaptionSizedCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-viewport-overlay-caption-sized"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-viewport-overlay-caption-sized/source"),
+      () => import("./fullscreen/fullscreen-viewport-overlay-caption-sized/css"),
+      "fullscreen-viewport-overlay-caption-sized"
+    ),
   },
   {
     id: "fullscreen-lazy-load",
@@ -1656,8 +2256,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["lazy-load","media"],
     categoryId: "fullscreen",
     Component: FullscreenLazyLoadDemo,
-    source: fullscreenLazyLoadSource,
-    css: fullscreenLazyLoadCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-lazy-load"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-lazy-load/source"),
+      () => import("./fullscreen/fullscreen-lazy-load/css"),
+      "fullscreen-lazy-load"
+    ),
   },
   {
     id: "fullscreen-image-hover",
@@ -1666,8 +2270,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["zoom-pan","hover","lazy-load","thumbnails"],
     categoryId: "fullscreen",
     Component: FullscreenImageHoverDemo,
-    source: fullscreenImageHoverSource,
-    css: fullscreenImageHoverCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-image-hover"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-image-hover/source"),
+      () => import("./fullscreen/fullscreen-image-hover/css"),
+      "fullscreen-image-hover"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "fullscreen-image-hover-demo.module.css",
   },
@@ -1678,8 +2286,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["standalone","flex","text","responsive"],
     categoryId: "skeleton",
     Component: SkeletonFlexCardsDemo,
-    source: skeletonFlexCardsSource,
-    css: skeletonFlexCardsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["skeleton-flex-cards"],
+    loadCode: loadDemoCode(
+      () => import("./skeleton/skeleton-flex-cards/source"),
+      () => import("./skeleton/skeleton-flex-cards/css"),
+      "skeleton-flex-cards"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "skeleton-flex-cards-demo.module.css",
   },
@@ -1690,8 +2302,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["standalone","flex","dashboard","nested"],
     categoryId: "skeleton",
     Component: SkeletonAppShellDemo,
-    source: skeletonAppShellSource,
-    css: skeletonAppShellCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["skeleton-app-shell"],
+    loadCode: loadDemoCode(
+      () => import("./skeleton/skeleton-app-shell/source"),
+      () => import("./skeleton/skeleton-app-shell/css"),
+      "skeleton-app-shell"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "skeleton-app-shell-demo.module.css",
   },
@@ -1702,8 +2318,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["standalone","text","container-query","responsive"],
     categoryId: "skeleton",
     Component: SkeletonResponsiveTextDemo,
-    source: skeletonResponsiveTextSource,
-    css: skeletonResponsiveTextCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["skeleton-responsive-text"],
+    loadCode: loadDemoCode(
+      () => import("./skeleton/skeleton-responsive-text/source"),
+      () => import("./skeleton/skeleton-responsive-text/css"),
+      "skeleton-responsive-text"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "skeleton-responsive-text-demo.module.css",
   },
@@ -1714,8 +2334,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["standalone","force","compare","opacity"],
     categoryId: "skeleton",
     Component: SkeletonForceOverlayDemo,
-    source: skeletonForceOverlaySource,
-    css: skeletonForceOverlayCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["skeleton-force-overlay"],
+    loadCode: loadDemoCode(
+      () => import("./skeleton/skeleton-force-overlay/source"),
+      () => import("./skeleton/skeleton-force-overlay/css"),
+      "skeleton-force-overlay"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "skeleton-force-overlay-demo.module.css",
   },
@@ -1726,8 +2350,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["standalone","fade","transform","stagger"],
     categoryId: "reveal",
     Component: RevealSectionsDemo,
-    source: revealSectionsSource,
-    css: revealSectionsCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["reveal-sections"],
+    loadCode: loadDemoCode(
+      () => import("./reveal/reveal-sections/source"),
+      () => import("./reveal/reveal-sections/css"),
+      "reveal-sections"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "reveal-sections-demo.module.css",
   },
@@ -1738,8 +2366,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["useReveal","image","decode","ready"],
     categoryId: "reveal",
     Component: RevealImageReadyDemo,
-    source: revealImageReadySource,
-    css: revealImageReadyCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["reveal-image-ready"],
+    loadCode: loadDemoCode(
+      () => import("./reveal/reveal-image-ready/source"),
+      () => import("./reveal/reveal-image-ready/css"),
+      "reveal-image-ready"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "reveal-image-ready-demo.module.css",
   },
@@ -1750,8 +2382,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["zoom-pan","image","standalone","crop"],
     categoryId: "zoom-pan",
     Component: ZoomPanStandaloneDemo,
-    source: zoomPanStandaloneSource,
-    css: zoomPanStandaloneCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["zoom-pan-standalone"],
+    loadCode: loadDemoCode(
+      () => import("./zoom-pan/standalone/source"),
+      () => import("./zoom-pan/standalone/css"),
+      "zoom-pan-standalone"
+    ),
   },
   {
     id: "zoom-pan-slider",
@@ -1760,8 +2396,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["zoom-pan","slider","images"],
     categoryId: "zoom-pan",
     Component: ZoomPanSliderDemo,
-    source: zoomPanSliderSource,
-    css: zoomPanSliderCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["zoom-pan-slider"],
+    loadCode: loadDemoCode(
+      () => import("./zoom-pan/slider/source"),
+      () => import("./zoom-pan/slider/css"),
+      "zoom-pan-slider"
+    ),
   },
   {
     id: "zoom-pan-grid",
@@ -1770,8 +2410,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["zoom-pan","grid","images"],
     categoryId: "zoom-pan",
     Component: ZoomPanGridDemo,
-    source: zoomPanGridSource,
-    css: zoomPanGridCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["zoom-pan-grid"],
+    loadCode: loadDemoCode(
+      () => import("./zoom-pan/grid/source"),
+      () => import("./zoom-pan/grid/css"),
+      "zoom-pan-grid"
+    ),
   },
   {
     id: "zoom-pan-masonry",
@@ -1780,8 +2424,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["zoom-pan","masonry","images"],
     categoryId: "zoom-pan",
     Component: ZoomPanMasonryDemo,
-    source: zoomPanMasonrySource,
-    css: zoomPanMasonryCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["zoom-pan-masonry"],
+    loadCode: loadDemoCode(
+      () => import("./zoom-pan/masonry/source"),
+      () => import("./zoom-pan/masonry/css"),
+      "zoom-pan-masonry"
+    ),
   },
   {
     id: "zoom-pan-image-hover",
@@ -1790,8 +2438,12 @@ const DEMOS: DemoDefinition[] = [
     tags: ["zoom-pan","hover","image"],
     categoryId: "zoom-pan",
     Component: ZoomPanImageHoverDemo,
-    source: zoomPanImageHoverSource,
-    css: zoomPanImageHoverCss,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["zoom-pan-image-hover"],
+    loadCode: loadDemoCode(
+      () => import("./zoom-pan/image-hover/source"),
+      () => import("./zoom-pan/image-hover/css"),
+      "zoom-pan-image-hover"
+    ),
     sourceFilename: "Component.tsx",
     cssFilename: "image-hover-demo.module.css",
   },
@@ -1841,12 +2493,8 @@ function DemosPageContent(props: {
     selectedDemo.id,
     selectedCategory.id
   );
-  const selectedDemoForCode = applyDemoCodeOverride(
-    selectedDemo,
-    codeBlockOverrides?.[selectedDemo.id]
-  );
+  const selectedDemoCodeOverride = codeBlockOverrides?.[selectedDemo.id];
   const selectedDemoCanvasClassName = styles[toDemoCanvasClassName(selectedDemo.id)];
-  const selectedDemoSource = selectedDemoForCode.source;
   const pageHeading = requestedDemo
     ? getDemoTitle(requestedDemo)
     : "React Motion Gallery demos";
@@ -1936,6 +2584,8 @@ function DemosPageContent(props: {
                           event.preventDefault();
                           selectDemo(demo);
                         }}
+                        onFocus={() => preloadDemo(demo)}
+                        onMouseEnter={() => preloadDemo(demo)}
                         aria-current={isActive ? "page" : undefined}
                       >
                         <strong className={styles.demoLinkTitle}>{demo.title}</strong>
@@ -1970,6 +2620,8 @@ function DemosPageContent(props: {
                                 event.preventDefault();
                                 selectDemo(demo);
                               }}
+                              onFocus={() => preloadDemo(demo)}
+                              onMouseEnter={() => preloadDemo(demo)}
                               aria-current={isActive ? "page" : undefined}
                             >
                               <strong className={styles.demoLinkTitle}>
@@ -2018,9 +2670,9 @@ function DemosPageContent(props: {
             <SelectedDemoPane
               key={selectedDemo.id}
               selectedCategoryLabel={selectedCategory.label}
-              selectedDemo={selectedDemoForCode}
+              selectedDemo={selectedDemo}
               selectedDemoCanvasClassName={selectedDemoCanvasClassName}
-              selectedDemoSource={selectedDemoSource}
+              selectedDemoCodeOverride={selectedDemoCodeOverride}
             />
           </main>
         </div>

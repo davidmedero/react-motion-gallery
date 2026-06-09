@@ -200,7 +200,7 @@ describe("useGridReady", () => {
     }
 
     const { root, container } = mount(<ReadyProbe />);
-    await settle();
+    await flushGridReveal();
 
     const image = container.querySelector("img[alt='Image A']") as HTMLImageElement;
     expect(container.querySelector("[data-ready='true']")).not.toBeNull();

@@ -248,6 +248,18 @@ describe("loading layer stacking", () => {
     expect(gridCss).toMatch(
       /\.gridItem\[data-rmg-grid-item-stage="1"\]\s*>\s*\.itemInner\s*\{[^}]*opacity:\s*0;[^}]*transition:/s,
     );
+    expect(gridCss).toMatch(
+      /\.gridItem\[data-rmg-grid-item-stage="1"\]\s*>\s*\.itemInner\s*\{[^}]*visibility:\s*hidden;/s,
+    );
+    expect(gridCss).toMatch(
+      /\.gridItem\[data-rmg-grid-item-stage="1"\]\[data-rmg-grid-item-reveal="1"\]\s*>\s*\.itemInner\s*\{[^}]*opacity:\s*1;[^}]*visibility:\s*visible;/s,
+    );
+    expect(gridCss).toMatch(
+      /\.gridItem\[data-rmg-grid-item-stage="1"\]\[data-rmg-grid-item-reveal="1"\]\s*>\s*\.itemInner\s*\{[^}]*transition-delay:\s*calc\([^}]*var\(--rmg-reveal-index,\s*0\)[^}]*var\(--rmg-reveal-stagger,\s*0ms\)/s,
+    );
+    expect(gridCss).toMatch(
+      /\.gridItem\[data-rmg-grid-item-reveal="1"\]:not\(\[data-rmg-grid-item-compare="1"\]\)\s*>\s*\.itemSkeleton\s*\{[^}]*transition-delay:\s*calc\([^}]*var\(--rmg-reveal-index,\s*0\)[^}]*var\(--rmg-reveal-stagger,\s*0ms\)/s,
+    );
     expect(masonryCss).toMatch(
       /\.masonryItem\[data-rmg-masonry-item-stage="1"\]\s*>\s*:not\(\[data-rmg-masonry-item-skeleton\]\)\s*\{[^}]*opacity:\s*0;[^}]*transition:/s,
     );
@@ -258,7 +270,7 @@ describe("loading layer stacking", () => {
     expect(sliderCss).not.toContain("data-rmg-skeleton-reveal-gate");
   });
 
-  test("stretches per-item grid skeletons to the measured grid item height", () => {
+  test("lets per-item grid skeletons reserve intrinsic height and stretch", () => {
     const gridCss = readCss("../../grid/Grid.module.css");
     const masonryCss = readCss("../../masonry/Masonry.module.css");
     const skeletonCss = readCss("../../skeleton/GridSkeleton.module.css");
@@ -272,21 +284,23 @@ describe("loading layer stacking", () => {
     expect(gridCss).not.toMatch(
       /\.gridItem\[data-rmg-grid-item-stage="1"\]\s*>\s*\.itemInner\s*>\s*\*\s*\{[^}]*height:\s*100%;/s,
     );
+    expect(gridCss).not.toContain("gridStructuredSkeletonPlane");
+    expect(gridCss).not.toContain("gridPlaneStack");
     expect(gridCss).toMatch(
-      /\.itemSkeleton\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*stretch;[^}]*height:\s*100%;/s,
+      /\.itemSkeleton\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*stretch;[^}]*min-height:\s*100%;/s,
     );
     expect(gridCss).toMatch(
-      /\.itemSkeleton\s*>\s*\*\s*\{[^}]*flex:\s*1 1 auto;[^}]*width:\s*100%;[^}]*min-height:\s*0;[^}]*height:\s*100%;/s,
+      /\.itemSkeleton\s*>\s*\*\s*\{[^}]*flex:\s*1 1 auto;[^}]*width:\s*100%;[^}]*min-height:\s*100%;[^}]*height:\s*auto;/s,
     );
     expect(masonryCss).toMatch(
       /\.masonryItem\[data-rmg-masonry-item-compare="1"\]\s*>\s*\.itemSkeleton\s*\{[^}]*opacity:\s*var\(--rmg-masonry-item-skeleton-opacity,\s*1\);/s,
     );
     expect(masonryCss).not.toContain("rmgMasonryItemSkeletonEnter");
     expect(skeletonCss).toMatch(
-      /\.gridSkeletonItem\s*\{[^}]*height:\s*100%;[^}]*box-sizing:\s*border-box;/s,
+      /\.gridSkeletonItem\s*\{[^}]*min-height:\s*100%;[^}]*height:\s*auto;[^}]*box-sizing:\s*border-box;/s,
     );
     expect(skeletonCss).toMatch(
-      /\.gridSkeletonItemInner\s*\{[^}]*height:\s*100%;[^}]*box-sizing:\s*border-box;/s,
+      /\.gridSkeletonItemInner\s*\{[^}]*min-height:\s*100%;[^}]*height:\s*auto;[^}]*box-sizing:\s*border-box;/s,
     );
   });
 

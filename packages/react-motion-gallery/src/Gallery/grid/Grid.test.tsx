@@ -122,7 +122,7 @@ describe("Grid item spans and template columns", () => {
     expect(markup).not.toContain('data-rmg-grid-item-skeleton="true"');
   });
 
-  test("renders structured loading skeletons as the SSR layout owner inside Grid", () => {
+  test("renders structured skeleton slots as first-paint grid items in SSR", () => {
     const skeleton: GridSkeletonSpec = {
       shimmer: {
         durationMs: 1444,
@@ -165,27 +165,87 @@ describe("Grid item spans and template columns", () => {
       </Grid>
     );
 
-    const loadingLayerIndex = markup.indexOf('data-rmg-skeleton-loading-layer="true"');
-    const contentLayerIndex = markup.indexOf('data-rmg-skeleton-content-layer="true"');
     const liveGridIndex = markup.indexOf('data-rmg-grid-node="true"');
+    const firstSkeletonIndex = markup.indexOf('data-rmg-grid-item-skeleton="true"');
+    const firstContentIndex = markup.indexOf('data-rmg-grid-item-content="true"');
 
-    expect(markup).toContain('data-rmg-skeleton-wrapper="true"');
-    expect(markup).toContain('data-rmg-skeleton-layout-owner="skeleton"');
-    expect(markup).toContain('data-rmg-skeleton-ready="false"');
-    expect(loadingLayerIndex).toBeGreaterThan(-1);
-    expect(contentLayerIndex).toBeGreaterThan(loadingLayerIndex);
-    expect(liveGridIndex).toBeGreaterThan(contentLayerIndex);
+    expect(markup).not.toContain('data-rmg-skeleton-wrapper="true"');
+    expect(markup).not.toContain('data-rmg-skeleton-layout-owner="skeleton"');
+    expect(markup).not.toContain('data-rmg-skeleton-loading-layer="true"');
+    expect(markup).not.toContain('data-rmg-grid-structured-skeleton-plane="true"');
+    expect(markup).not.toContain('data-rmg-grid-structured-skeleton-mounted="true"');
+    expect(markup).toContain('data-rmg-grid-skeleton-owner="items"');
+    expect(liveGridIndex).toBeGreaterThan(-1);
+    expect(firstSkeletonIndex).toBeGreaterThan(liveGridIndex);
     expect(markup.match(/<div[^>]+data-rmg-grid-item-skeleton="true"/g) ?? []).toHaveLength(2);
     expect(markup.match(/data-rmg-grid-item-layered="1"/g) ?? []).toHaveLength(2);
     expect(markup).toContain('data-rmg-grid-item-content="true"');
+    expect(markup).not.toContain(">alpha<");
+    expect(markup).not.toContain(">beta<");
     expect(markup).toContain(sharedSkeletonStyles.skelCardShimmer);
     expect(markup).toContain("--rmg-skel-shimmer-duration:1444ms");
     expect(markup).not.toContain('data-rmg-grid-item-shimmer="off"');
     expect(markup).not.toContain("data-rmg-grid-item-layout-seed");
     expect(markup).not.toContain("--rmg-grid-item-seed-height");
-    expect(markup.indexOf('data-rmg-grid-item-skeleton="true"')).toBeLessThan(
-      markup.indexOf('data-rmg-grid-item-content="true"')
+    expect(firstSkeletonIndex).toBeLessThan(firstContentIndex);
+  });
+
+  test("fills first-paint structured skeleton slots before live items catch up", () => {
+    const skeleton: GridSkeletonSpec = {
+      layout: {
+        kind: "grid",
+        count: 3,
+        item: {
+          kind: "rect",
+          style: { width: "100%", height: 120 },
+        },
+        slots: [
+          {
+            span: "full",
+            item: {
+              kind: "rect",
+              style: { width: "100%", height: 180 },
+            },
+          },
+          {
+            span: 6,
+            item: {
+              kind: "rect",
+              style: { width: "100%", height: 140 },
+            },
+          },
+          {
+            span: 6,
+            item: {
+              kind: "rect",
+              style: { width: "100%", height: 160 },
+            },
+          },
+        ],
+      },
+    };
+
+    const markup = renderToStaticMarkup(
+      <Grid columns={12} loading={{ skeleton }}>
+        <Grid.Item span="full">
+          <article>alpha</article>
+        </Grid.Item>
+      </Grid>
     );
+
+    expect(markup).not.toContain('data-rmg-grid-structured-skeleton-plane="true"');
+    expect(markup).toContain('data-rmg-grid-item-key="rmg-1"');
+    expect(markup).toContain('data-rmg-grid-item-key="rmg-grid-loading-1"');
+    expect(markup).toContain('data-rmg-grid-item-key="rmg-grid-loading-2"');
+    expect(markup.match(/<div[^>]+data-rmg-grid-item-skeleton="true"/g) ?? []).toHaveLength(3);
+    expect(markup.match(/data-rmg-grid-item-content="true"/g) ?? []).toHaveLength(3);
+    expect(markup).not.toContain(">alpha<");
+    expect(markup).toContain('aria-hidden="true"');
+    expect(markup).toContain("grid-column:1 / -1");
+    expect(markup).toContain("grid-column:span 6 / span 6");
+    expect(markup).toContain("height:180px");
+    expect(markup).toContain("height:140px");
+    expect(markup).toContain("height:160px");
   });
 
   test("renders empty active placeholders through structured inner skeleton slots", () => {
@@ -221,8 +281,10 @@ describe("Grid item spans and template columns", () => {
 
     expect(markup).toContain('data-rmg-grid-item-key="rmg-grid-loading-0"');
     expect(markup).toContain('data-rmg-grid-item-key="rmg-grid-loading-1"');
-    expect(markup).toContain('data-rmg-skeleton-wrapper="true"');
-    expect(markup).toContain('data-rmg-skeleton-layout-owner="skeleton"');
+    expect(markup).not.toContain('data-rmg-skeleton-wrapper="true"');
+    expect(markup).not.toContain('data-rmg-skeleton-layout-owner="skeleton"');
+    expect(markup).not.toContain('data-rmg-grid-structured-skeleton-plane="true"');
+    expect(markup).toContain('data-rmg-grid-skeleton-owner="items"');
     expect(markup).toContain('aria-hidden="true"');
     expect(markup.match(/<div[^>]+data-rmg-grid-item-skeleton="true"/g) ?? []).toHaveLength(2);
     expect(markup.match(/data-rmg-grid-item-layered="1"/g) ?? []).toHaveLength(2);
@@ -234,7 +296,7 @@ describe("Grid item spans and template columns", () => {
     expect(markup).not.toContain("--rmg-grid-item-seed-height");
   });
 
-  test("keeps container-responsive skeleton CSS without per-item height seeds", () => {
+  test("keeps container-responsive structured skeleton CSS without height seeds", () => {
     const skeleton: GridSkeletonSpec = {
       layout: {
         kind: "grid",
@@ -264,7 +326,10 @@ describe("Grid item spans and template columns", () => {
       </Grid>
     );
 
-    expect(markup).toContain('data-rmg-skeleton-wrapper="true"');
+    expect(markup).not.toContain('data-rmg-skeleton-wrapper="true"');
+    expect(markup).not.toContain('data-rmg-grid-structured-skeleton-plane="true"');
+    expect(markup).toContain('data-rmg-grid-skeleton-owner="items"');
+    expect(markup).toContain('data-rmg-grid-item-skeleton="true"');
     expect(markup).toContain("container-type:inline-size");
     expect(markup).toContain("@container (min-width:300px)");
     expect(markup).not.toContain("100cqw");

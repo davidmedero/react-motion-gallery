@@ -323,6 +323,20 @@ function resolveGridSlot(
   };
 }
 
+function resolveGridSlotContent(
+  source: GridSkeletonNode,
+  slotIndex: number
+): { item: SkeletonNode; itemWrapStyle: GridSkeletonWrapStyle | undefined } {
+  if ((source as GridSkeletonLayoutNode).kind === "grid") {
+    return resolveGridSlot(source as GridSkeletonLayoutNode, slotIndex);
+  }
+
+  return {
+    item: source as SkeletonNode,
+    itemWrapStyle: undefined,
+  };
+}
+
 function splitGridItemWrapStyles(
   itemWrapStyle: GridSkeletonWrapStyle | undefined
 ): {
@@ -594,12 +608,13 @@ export function GridSkeletonSlotContent({
       disableShimmer,
     });
   }, [count, disableShimmer, effectiveBreakpoints, index, spec]);
-  const { layout, responsiveCss } = React.useMemo(() => {
+  const { item, itemWrapStyle, responsiveCss } = React.useMemo(() => {
     let n = 0;
     const allocId = () => `n${++n}`;
     const collected: SkeletonResponsiveCssEntry[] = [];
+    const slot = resolveGridSlotContent(layoutSource, index);
     const withIds = collectResponsiveCss(
-      layoutSource,
+      slot.item,
       allocId,
       collected,
       "grid",
@@ -611,10 +626,12 @@ export function GridSkeletonSlotContent({
       rules: collected,
     });
 
-    return { layout: withIds, responsiveCss: cssText };
-  }, [effectiveBreakpoints, layoutSource, scopeId]);
-  const gridNode = layout as GridSkeletonLayoutNode;
-  const { item, itemWrapStyle } = resolveGridSlot(gridNode, index);
+    return {
+      item: withIds as SkeletonNode,
+      itemWrapStyle: slot.itemWrapStyle,
+      responsiveCss: cssText,
+    };
+  }, [effectiveBreakpoints, index, layoutSource, scopeId]);
   const { outerStyle, innerStyle } = splitGridItemWrapStyles(itemWrapStyle);
   const rootStyle: React.CSSProperties = {
     ...(s.backgroundColor ? { ["--rmg-skel-bg" as any]: s.backgroundColor } : null),

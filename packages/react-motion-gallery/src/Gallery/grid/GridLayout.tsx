@@ -20,6 +20,7 @@ import {
   useElementInViewOnce,
   waitForElementMediaReady,
 } from '../shared/itemLifecycle';
+import { useItemRevealScheduler } from '../shared/itemRevealScheduler';
 import { RmgSlideProvider } from '../shared/slideContext';
 import { createRmgSlideStoreBag } from '../shared/slideStoreBag';
 import { buildStableScopeId } from '../shared/stableScope';
@@ -38,11 +39,9 @@ import {
   type GridItemLayoutMeta,
 } from './item';
 import {
-  GridSkeletonCard,
   GridSkeletonSlotContent,
   type GridSkeletonSpec,
 } from '../skeleton/GridSkeleton';
-import { SkeletonFrame } from '../skeleton/base';
 import {
   type GridFullscreenTrigger,
   type GridHandle,
@@ -75,11 +74,6 @@ type GridOptions = {
 
 type RenderableGridCell = GridCell & {
   placeholder?: boolean;
-};
-
-type GridRevealQueueItem = {
-  key: React.Key;
-  reveal: () => void;
 };
 
 type NormalizedGridLoading = {
@@ -118,6 +112,7 @@ type GridItemHostProps = {
   className?: string;
   style?: React.CSSProperties;
   originalProps?: Record<string, unknown>;
+  deferContent?: boolean;
   children: React.ReactNode;
   renderSkeleton: (ready: boolean) => React.ReactNode;
   loading: NormalizedGridLoading;
@@ -646,6 +641,28 @@ function getPlaceholderCells(
   }));
 }
 
+function getStructuredSkeletonPlaceholderCells(
+  loading: NormalizedGridLoading,
+  count: number,
+  startIndex = 0
+): RenderableGridCell[] {
+  if (!loading.enabled || count <= startIndex) return [];
+
+  return Array.from({ length: count - startIndex }, (_, offset) => {
+    const index = startIndex + offset;
+
+    return {
+      id: `rmg-grid-loading-${index}`,
+      node: null,
+      placeholder: true,
+      sourceIndex: index,
+      layoutMeta: {
+        span: getGridSkeletonSlotSpan(loading.skeleton, index),
+      },
+    };
+  });
+}
+
 function resolveSkeletonNode(args: {
   skeleton: GridLoadingOptions['skeleton'] | undefined;
   index: number;
@@ -691,6 +708,7 @@ function GridItemHost({
   className,
   style,
   originalProps,
+  deferContent,
   children,
   renderSkeleton,
   loading,
@@ -743,6 +761,7 @@ function GridItemHost({
     rootMargin: loading.rootMargin,
     threshold: loading.threshold,
     resetKey: stateKey,
+    preferObserver: true,
   });
   const painted = useDoublePaintReady(stage && !wasPreviouslyRevealed, stateKey);
   const readyPainted = useDoublePaintReady(
@@ -754,12 +773,13 @@ function GridItemHost({
     () => resolveLoadingForceOptions(loadingForcePropResolved),
     [loadingForcePropResolved]
   );
-  const contentReady = effectiveMediaReady || effectiveRevealed || effectiveSettled;
+  const contentReady =
+    !deferContent && (effectiveMediaReady || effectiveRevealed || effectiveSettled);
   const defaultReveal = !stage || effectiveRevealed || effectiveSettled;
   const loadingVisualState = resolveGridLoadingVisualState({
     loadingActive: loading.active,
     loadingForced: loadingForcePropResolved,
-    shouldMountContent: !placeholder || contentNode != null,
+    shouldMountContent: !deferContent && (!placeholder || contentNode != null),
     contentReady,
     defaultReveal,
   });
@@ -845,7 +865,9 @@ function GridItemHost({
   }, [loading.active, stage, stateKey]);
 
   React.useEffect(() => {
-    if (!stage || !contentNode || !inView || !painted || mediaReady) return;
+    if (deferContent || !stage || !contentNode || !inView || !painted || mediaReady) {
+      return;
+    }
 
     if (!loading.waitForMedia) {
       const timeout = globalThis.setTimeout(() => setMediaReady(true), 0);
@@ -869,6 +891,7 @@ function GridItemHost({
     loading.waitForMedia,
     mediaReady,
     contentNode,
+    deferContent,
     painted,
     stage,
     stateKey,
@@ -876,9 +899,20 @@ function GridItemHost({
 
   const markRevealed = React.useCallback(() => {
     setRevealed(true);
+    if (!hasSkeleton || loading.exitMs <= 0) {
+      setSettled(true);
+      setSkeletonSettled(true);
+    }
     revealedIndicesRef.current.add(index);
     revealedKeysRef.current.add(stateKey);
-  }, [index, revealedIndicesRef, revealedKeysRef, stateKey]);
+  }, [
+    hasSkeleton,
+    index,
+    loading.exitMs,
+    revealedIndicesRef,
+    revealedKeysRef,
+    stateKey,
+  ]);
 
   React.useEffect(() => {
     if (
@@ -1006,7 +1040,7 @@ function GridItemHost({
       data-rmg-grid-item-content="true"
       ref={setContentNode}
     >
-      {children}
+      {deferContent ? null : children}
     </div>
   );
 }
@@ -1032,11 +1066,6 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   const [clientReady, setClientReady] = React.useState(false);
   const revealedIndicesRef = React.useRef(new Set<number>());
   const revealedKeysRef = React.useRef(new Set<React.Key>());
-  const queuedRevealKeysRef = React.useRef(new Set<React.Key>());
-  const revealQueueRef = React.useRef<GridRevealQueueItem[]>([]);
-  const revealSchedulerActiveRef = React.useRef(false);
-  const revealSchedulerTimerRef = React.useRef<number | null>(null);
-  const revealSchedulerFrameIdsRef = React.useRef<number[]>([]);
   const previousPluginsLoadingRef = React.useRef(false);
   const readySubsRef = React.useRef(new Set<(nodes: HTMLElement[]) => void>());
   const readyRef = React.useRef(false);
@@ -1095,11 +1124,51 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       })),
     [cells, pluginEntries]
   );
+  const structuredSkeleton = isGridSkeletonSpec(loading.skeleton)
+    ? loading.skeleton
+    : undefined;
   const skeletonDefaultCount = getGridSkeletonDefaultCount(loading.skeleton);
+  const firstPaintSkeletonCount = Math.max(
+    dataWindowCells.length,
+    loading.count,
+    skeletonDefaultCount
+  );
   const renderCells = React.useMemo<RenderableGridCell[]>(() => {
-    if (dataWindowCells.length > 0) return dataWindowCells;
+    if (dataWindowCells.length > 0) {
+      if (
+        !clientReady &&
+        structuredSkeleton != null &&
+        firstPaintSkeletonCount > dataWindowCells.length
+      ) {
+        return [
+          ...dataWindowCells,
+          ...getStructuredSkeletonPlaceholderCells(
+            loading,
+            firstPaintSkeletonCount,
+            dataWindowCells.length
+          ),
+        ];
+      }
+
+      return dataWindowCells;
+    }
+
+    if (!clientReady && structuredSkeleton != null && firstPaintSkeletonCount > 0) {
+      return getStructuredSkeletonPlaceholderCells(
+        loading,
+        firstPaintSkeletonCount
+      );
+    }
+
     return getPlaceholderCells(loading, skeletonDefaultCount);
-  }, [dataWindowCells, loading, skeletonDefaultCount]);
+  }, [
+    clientReady,
+    dataWindowCells,
+    firstPaintSkeletonCount,
+    loading,
+    skeletonDefaultCount,
+    structuredSkeleton,
+  ]);
   const allCellRevealKeys = React.useMemo(
     () => cells.map(getGridCellRevealKey),
     [cells]
@@ -1116,145 +1185,17 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     (_index: number, _node: HTMLImageElement | null) => {},
     []
   );
+  const revealStaggerMs = loading.animate ? reveal.staggerMs : 0;
+  const deferStructuredSkeletonContent = !clientReady && structuredSkeleton != null;
 
-  const clearRevealScheduler = React.useCallback(() => {
-    if (typeof window !== 'undefined') {
-      if (revealSchedulerTimerRef.current != null) {
-        window.clearTimeout(revealSchedulerTimerRef.current);
-      }
-
-      if (typeof window.cancelAnimationFrame === 'function') {
-        revealSchedulerFrameIdsRef.current.forEach((frameId) => {
-          window.cancelAnimationFrame(frameId);
-        });
-      }
-    }
-
-    revealSchedulerTimerRef.current = null;
-    revealSchedulerFrameIdsRef.current = [];
-    revealSchedulerActiveRef.current = false;
-  }, []);
-
-  const scheduleQueuedReveal = React.useCallback(
-    (delayMs = 0) => {
-      if (revealSchedulerActiveRef.current || revealQueueRef.current.length === 0) {
-        return;
-      }
-
-      const releaseNextItem = () => {
-        revealSchedulerActiveRef.current = false;
-        revealSchedulerTimerRef.current = null;
-        revealSchedulerFrameIdsRef.current = [];
-
-        const item = revealQueueRef.current.shift();
-        if (!item) return;
-
-        queuedRevealKeysRef.current.delete(item.key);
-        item.reveal();
-
-        if (revealQueueRef.current.length > 0) {
-          scheduleQueuedReveal(Math.max(0, reveal.staggerMs));
-        }
-      };
-
-      const releaseAfterPaint = () => {
-        if (
-          typeof window === 'undefined' ||
-          typeof window.requestAnimationFrame !== 'function'
-        ) {
-          releaseNextItem();
-          return;
-        }
-
-        const firstFrame = window.requestAnimationFrame(() => {
-          const secondFrame = window.requestAnimationFrame(releaseNextItem);
-          revealSchedulerFrameIdsRef.current = [firstFrame, secondFrame];
-        });
-        revealSchedulerFrameIdsRef.current = [firstFrame];
-      };
-
-      revealSchedulerActiveRef.current = true;
-
-      if (delayMs > 0 && typeof window !== 'undefined') {
-        revealSchedulerTimerRef.current = window.setTimeout(releaseAfterPaint, delayMs);
-        return;
-      }
-
-      releaseAfterPaint();
-    },
-    [reveal.staggerMs]
-  );
-
-  const scheduleGridItemReveal = React.useCallback(
-    (key: React.Key, revealItem: () => void) => {
-      if (revealedKeysRef.current.has(key)) {
-        revealItem();
-        return () => {};
-      }
-
-      if (Math.max(0, reveal.staggerMs) <= 0) {
-        let cancelled = false;
-        let firstFrame: number | null = null;
-        let secondFrame: number | null = null;
-        let timeout: ReturnType<typeof globalThis.setTimeout> | null = null;
-
-        const releaseItem = () => {
-          if (cancelled) return;
-          revealItem();
-        };
-
-        if (
-          typeof window === 'undefined' ||
-          typeof window.requestAnimationFrame !== 'function'
-        ) {
-          timeout = globalThis.setTimeout(releaseItem, 0);
-        } else {
-          firstFrame = window.requestAnimationFrame(() => {
-            secondFrame = window.requestAnimationFrame(releaseItem);
-          });
-        }
-
-        return () => {
-          cancelled = true;
-          if (timeout != null) {
-            globalThis.clearTimeout(timeout);
-          }
-          if (
-            typeof window !== 'undefined' &&
-            typeof window.cancelAnimationFrame === 'function'
-          ) {
-            if (firstFrame != null) window.cancelAnimationFrame(firstFrame);
-            if (secondFrame != null) window.cancelAnimationFrame(secondFrame);
-          }
-        };
-      }
-
-      if (queuedRevealKeysRef.current.has(key)) {
-        return () => {};
-      }
-
-      revealQueueRef.current.push({ key, reveal: revealItem });
-      queuedRevealKeysRef.current.add(key);
-      scheduleQueuedReveal();
-
-      return () => {
-        if (revealedKeysRef.current.has(key)) return;
-
-        queuedRevealKeysRef.current.delete(key);
-        revealQueueRef.current = revealQueueRef.current.filter((item) => item.key !== key);
-
-        if (revealQueueRef.current.length === 0) {
-          clearRevealScheduler();
-        }
-      };
-    },
-    [clearRevealScheduler, reveal.staggerMs, scheduleQueuedReveal]
-  );
+  const { clearRevealScheduler, pruneRevealQueue, scheduleReveal } =
+    useItemRevealScheduler({
+      staggerMs: revealStaggerMs,
+      revealedKeysRef,
+    });
 
   React.useEffect(() => {
     if (pluginsLoading && !previousPluginsLoadingRef.current) {
-      revealQueueRef.current = [];
-      queuedRevealKeysRef.current.clear();
       clearRevealScheduler();
     }
 
@@ -1273,33 +1214,13 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       }
     });
 
-    queuedRevealKeysRef.current.forEach((key) => {
-      if (!currentKeys.has(key)) {
-        queuedRevealKeysRef.current.delete(key);
-      }
-    });
-
-    revealQueueRef.current = revealQueueRef.current.filter((item) =>
-      currentKeys.has(item.key)
-    );
-
-    if (revealQueueRef.current.length === 0) {
-      clearRevealScheduler();
-    }
+    pruneRevealQueue(currentKeys);
   }, [
     allCellRevealKeys,
-    clearRevealScheduler,
     loading.rememberRevealed,
+    pruneRevealQueue,
     renderCellRevealKeys,
   ]);
-
-  React.useEffect(() => {
-    return () => {
-      revealQueueRef.current = [];
-      queuedRevealKeysRef.current.clear();
-      clearRevealScheduler();
-    };
-  }, [clearRevealScheduler]);
 
   React.useEffect(() => {
     return () => {
@@ -1468,10 +1389,6 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     [gridScope, renderCells, breakpointMap, hasExplicitTracks]
   );
 
-  const structuredSkeleton = isGridSkeletonSpec(loading.skeleton)
-    ? loading.skeleton
-    : undefined;
-
   const responsiveCssText = React.useMemo(
     () =>
       [responsiveGridCssText, responsiveItemCssText]
@@ -1558,14 +1475,6 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
   }, [getItemNodes, gridReady]);
 
   const skeletonCount = Math.max(renderCells.length, loading.count, skeletonDefaultCount);
-  const structuredSkeletonLayoutItems = React.useMemo(
-    () =>
-      renderCells.map((cell) => ({
-        id: cell.id,
-        span: cell.layoutMeta?.span,
-      })),
-    [renderCells]
-  );
 
   const gridChildren = React.useMemo(() => {
     return visibleCells.map((cell, virtualIndex) => {
@@ -1680,12 +1589,13 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
           className={itemClassName}
           style={baseItemStyle}
           originalProps={originalProps}
+          deferContent={deferStructuredSkeletonContent && !cell.placeholder}
           renderSkeleton={renderSkeleton}
           loading={loading}
           loadingForce={paginationLoadingForce}
           reveal={reveal}
           revealGateActive={revealGateActive}
-          scheduleReveal={scheduleGridItemReveal}
+          scheduleReveal={scheduleReveal}
           revealedIndicesRef={revealedIndicesRef}
           revealedKeysRef={revealedKeysRef}
         >
@@ -1705,7 +1615,8 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
     renderModeProp,
     reveal,
     revealGateActive,
-    scheduleGridItemReveal,
+    scheduleReveal,
+    deferStructuredSkeletonContent,
     skeletonCount,
     virtualRows.firstCellByRow,
     virtualRows.rowByCell,
@@ -1719,9 +1630,11 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       'data-rmg-grid-node': 'true',
       'data-rmg-grid-reveal-active': revealGateActive ? 'true' : undefined,
       'data-rmg-grid-loading': loading.enabled ? 'true' : undefined,
+      'data-rmg-grid-skeleton-owner':
+        loading.enabled && structuredSkeleton != null ? 'items' : undefined,
       style: {
         ...gridStyle,
-        ['--rmg-reveal-stagger' as any]: `${reveal.staggerMs}ms`,
+        ['--rmg-reveal-stagger' as any]: `${revealStaggerMs}ms`,
         ['--rmg-reveal-duration' as any]: `${reveal.durationMs}ms`,
         ['--rmg-reveal-easing' as any]: reveal.easing,
       },
@@ -1732,9 +1645,10 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
       gridStyle,
       gridReady,
       loading.enabled,
+      structuredSkeleton,
       reveal.durationMs,
       reveal.easing,
-      reveal.staggerMs,
+      revealStaggerMs,
       revealGateActive,
     ]
   );
@@ -1772,46 +1686,6 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
           />
         ) : null}
       </div>
-    </>
-  );
-  const structuredSkeletonLayoutOwner =
-    loading.enabled && structuredSkeleton ? (
-      <SkeletonFrame
-        skeletonNode={
-          <GridSkeletonCard
-            count={skeletonCount}
-            spec={structuredSkeleton}
-            breakpoints={breakpointMap}
-            columns={grid.columns}
-            templateColumns={grid.templateColumns}
-            minColumnWidth={grid.minColumnWidth}
-            gap={grid.gap}
-            items={structuredSkeletonLayoutItems}
-            allowItemSpans={hasExplicitTracks}
-          />
-        }
-        ready={gridReady}
-        enabled
-        force={loading.force}
-        timing={{
-          enterMs: loading.enterMs,
-          exitMs: loading.exitMs,
-          minVisibleMs: loading.minVisibleMs,
-        }}
-        contentOwnsWrapperLayout
-        lockContentLayoutWhileLoading
-        loadingLayerFirst
-      >
-        {gridNode}
-      </SkeletonFrame>
-    ) : null;
-
-  return (
-    <div
-      className={styles.gridShell}
-      data-rmg-grid-scope={gridScope}
-    >
-      {structuredSkeletonLayoutOwner ?? gridNode}
       {pluginEntries.map((plugin, index) => {
         const Runtime = plugin.Runtime;
         return Runtime ? (
@@ -1822,6 +1696,14 @@ export const GridLayout = React.forwardRef<GridHandle, GridLayoutProps>(function
           />
         ) : null;
       })}
+    </>
+  );
+  return (
+    <div
+      className={styles.gridShell}
+      data-rmg-grid-scope={gridScope}
+    >
+      {gridNode}
     </div>
   );
 });
