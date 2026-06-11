@@ -5,7 +5,6 @@ import {
   type CSSProperties,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -22,6 +21,11 @@ import {
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { gridLoadMore } from "react-motion-gallery/grid/load-more";
 import { RatingStars } from "react-motion-gallery/rating-stars";
+import {
+  GridSkeleton,
+  type GridSkeletonSpec,
+  type SkeletonNode,
+} from "react-motion-gallery/skeleton/grid";
 import styles from "./grid-load-more-demo.module.css";
 
 type ProductImage = { src: string; alt: string; width: number; height: number };
@@ -150,11 +154,16 @@ const PRODUCT_SKELETON_STOCK_WIDTHS = [
   "88px",
   "88px",
 ];
-const PRODUCT_SKELETON_SHIMMER_MS = 1200;
-const productSkeletonShimmerEpoch =
-  typeof performance === "undefined" ? 0 : performance.now();
-const useIsoLayoutEffect =
-  typeof window === "undefined" ? useEffect : useLayoutEffect;
+const PRODUCT_SKELETON_SLOT_COUNT = PAGE_SIZE;
+const PRODUCT_PLACEHOLDER_SKELETON_GRID = {
+  count: 1,
+  columns: 1,
+  gap: 0,
+};
+const PRODUCT_PENDING_SKELETON_GRID = {
+  columns: { 0: 1, 640: 2, 1060: 3 },
+  gap: { 0: 12, 900: 18 },
+};
 const revealOptions = {
   durationMs: 700,
   easing: "cubic-bezier(.2,.7,.2,1)",
@@ -226,6 +235,204 @@ function createPlaceholderProducts(
 function isPlaceholderProduct(product: Product) {
   return product.id.startsWith("product-placeholder-");
 }
+function createProductSkeletonItem(index: number): SkeletonNode {
+  const categoryWidth =
+    PRODUCT_SKELETON_CATEGORY_WIDTHS[
+      index % PRODUCT_SKELETON_CATEGORY_WIDTHS.length
+    ];
+  const titleWidth =
+    PRODUCT_SKELETON_TITLE_WIDTHS[
+      index % PRODUCT_SKELETON_TITLE_WIDTHS.length
+    ];
+  const stockWidth =
+    PRODUCT_SKELETON_STOCK_WIDTHS[
+      index % PRODUCT_SKELETON_STOCK_WIDTHS.length
+    ];
+
+  return {
+    kind: "col",
+    style: {
+      height: "100%",
+      minHeight: 480,
+    },
+    children: [
+      {
+        kind: "rect",
+        style: {
+          width: "100%",
+          aspectRatio: "1 / 1",
+          flex: "0 0 auto",
+          overflow: "hidden",
+          backgroundColor: "#e4e9ec",
+          borderRadius: 0,
+        },
+      },
+      {
+        kind: "col",
+        style: {
+          flex: "0 0 auto",
+          alignItems: "flex-start",
+          gap: 8,
+          minWidth: 0,
+          minHeight: 194,
+          padding: "14px 14px 22px",
+        },
+        children: [
+          {
+            kind: "rect",
+            style: {
+              width: categoryWidth,
+              height: "calc(0.72rem * 1.2)",
+              backgroundColor: "#e4e9ec",
+              borderRadius: 999,
+            },
+          },
+          {
+            kind: "rect",
+            style: {
+              width: titleWidth,
+              height: "calc(1rem * 1.25)",
+              backgroundColor: "#e4e9ec",
+              borderRadius: 999,
+            },
+          },
+          {
+            kind: "row",
+            style: {
+              alignItems: "center",
+              gap: 8,
+              minHeight: "calc(0.88rem * 1.2)",
+            },
+            children: [
+              {
+                kind: "rect",
+                style: {
+                  width: 86,
+                  height: "1rem",
+                  backgroundColor: "#e4e9ec",
+                  borderRadius: 6,
+                },
+              },
+              {
+                kind: "rect",
+                style: {
+                  width: 92,
+                  height: "calc(0.88rem * 1.2)",
+                  backgroundColor: "#e4e9ec",
+                  borderRadius: 6,
+                },
+              },
+            ],
+          },
+          {
+            kind: "rect",
+            style: {
+              width: 64,
+              height: "calc(1.14rem * 1.1)",
+              backgroundColor: "#e4e9ec",
+              borderRadius: 7,
+            },
+          },
+          {
+            kind: "row",
+            style: {
+              alignItems: "center",
+              gap: 6,
+              minHeight: 26,
+              maxWidth: "100%",
+              boxSizing: "border-box",
+              padding: "0 9px",
+              border: "1px solid var(--product-demo-line)",
+              borderRadius: 999,
+              backgroundColor: "rgba(var(--rmg-logo-cyan-rgb), 0.08)",
+            },
+            children: [
+              {
+                kind: "circle",
+                style: {
+                  width: 6,
+                  height: 6,
+                  flex: "0 0 auto",
+                  backgroundColor: "rgba(var(--rmg-logo-blue-rgb), 0.22)",
+                },
+              },
+              {
+                kind: "rect",
+                style: {
+                  width: stockWidth,
+                  height: "calc(0.74rem * 1)",
+                  backgroundColor: "#e4e9ec",
+                  borderRadius: 999,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        kind: "row",
+        style: {
+          width: "calc(100% - 28px)",
+          minHeight: 40,
+          margin: "auto 14px 14px",
+          border: "1px solid rgba(var(--rmg-logo-blue-rgb), 0.18)",
+          borderRadius: 8,
+          backgroundColor: "#e4e9ec",
+        },
+        children: [],
+      },
+    ],
+  };
+}
+const PRODUCT_GRID_SKELETON_ITEM_WRAP_STYLE = {
+  height: "100%",
+  minHeight: 480,
+  overflow: "hidden",
+  border: "1px solid var(--product-demo-line)",
+  borderRadius: 8,
+  backgroundColor: "var(--product-demo-surface)",
+};
+const PRODUCT_PENDING_GRID_SKELETON_ITEM_WRAP_STYLE = {
+  ...PRODUCT_GRID_SKELETON_ITEM_WRAP_STYLE,
+  boxShadow:
+    "0 14px 30px rgba(var(--rmg-logo-shadow-rgb), 0.07), 0 8px 22px rgba(var(--rmg-logo-cyan-rgb), 0.09)",
+};
+function createProductGridSkeletonSpec({
+  count = PRODUCT_SKELETON_SLOT_COUNT,
+  startIndex = 0,
+  withShadow = false,
+}: {
+  count?: number;
+  startIndex?: number;
+  withShadow?: boolean;
+} = {}): GridSkeletonSpec {
+  return {
+    radius: 8,
+    shimmer: {
+      durationMs: 1200,
+      angleDeg: 90,
+      timing: "linear",
+      c1: "rgba(255, 255, 255, 0.24)",
+      c2: "rgba(255, 255, 255, 0.48)",
+      c3: "rgba(255, 255, 255, 0.24)",
+    },
+    layout: {
+      kind: "grid",
+      itemWrapStyle: withShadow
+        ? PRODUCT_PENDING_GRID_SKELETON_ITEM_WRAP_STYLE
+        : PRODUCT_GRID_SKELETON_ITEM_WRAP_STYLE,
+      item: createProductSkeletonItem(startIndex),
+      slots: Array.from({ length: count }, (_, index) => ({
+        item: createProductSkeletonItem(startIndex + index),
+      })),
+    },
+  };
+}
+const PRODUCT_GRID_SKELETON = createProductGridSkeletonSpec();
+const PRODUCT_GRID_SKELETON_SLOT_SPECS = Array.from(
+  { length: PRODUCT_SKELETON_SLOT_COUNT },
+  (_, index) => createProductGridSkeletonSpec({ count: 1, startIndex: index }),
+);
 function ProductCard({ product, index }: { product: Product; index: number }) {
   const image = productImage(product);
   return (
@@ -280,84 +487,18 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
     </article>
   );
 }
-function ProductSkeleton({
-  index,
-  ariaHidden,
-}: {
-  index: number;
-  ariaHidden?: boolean;
-}) {
-  const skeletonRef = useRef<HTMLElement | null>(null);
-  useIsoLayoutEffect(() => {
-    const node = skeletonRef.current;
-    if (!node || typeof performance === "undefined") return;
-
-    const elapsed = performance.now() - productSkeletonShimmerEpoch;
-    const phase = elapsed % PRODUCT_SKELETON_SHIMMER_MS;
-    node.style.setProperty(
-      "--product-skeleton-animation-delay",
-      "-" + String(phase) + "ms",
-    );
-  }, []);
+function ProductSkeletonSlot({ index }: { index: number }) {
+  const spec =
+    PRODUCT_GRID_SKELETON_SLOT_SPECS[index % PRODUCT_SKELETON_SLOT_COUNT] ??
+    PRODUCT_GRID_SKELETON;
 
   return (
-    <article
-      ref={skeletonRef}
-      aria-hidden={ariaHidden ? true : undefined}
-      className={[styles.skeletonCard, styles.skeletonGridCard].join(" ")}
-    >
-      <div className={styles.skeletonImage} />
-      <div className={styles.skeletonCopy}>
-        <span
-          className={[styles.skeletonBlock, styles.skeletonCategory].join(" ")}
-          style={{
-            width:
-              PRODUCT_SKELETON_CATEGORY_WIDTHS[
-                index % PRODUCT_SKELETON_CATEGORY_WIDTHS.length
-              ],
-          }}
-        />
-        <span
-          className={[styles.skeletonBlock, styles.skeletonTitle].join(" ")}
-          style={{
-            width:
-              PRODUCT_SKELETON_TITLE_WIDTHS[
-                index % PRODUCT_SKELETON_TITLE_WIDTHS.length
-              ],
-          }}
-        />
-        <span className={styles.skeletonRating}>
-          <span
-            className={[styles.skeletonBlock, styles.skeletonStars].join(" ")}
-          />
-          <span
-            className={[styles.skeletonBlock, styles.skeletonRatingLabel].join(
-              " ",
-            )}
-          />
-        </span>
-        <span
-          className={[styles.skeletonBlock, styles.skeletonPrice].join(" ")}
-        />
-        <span className={styles.skeletonStockBadge}>
-          <span className={styles.skeletonStockDot} aria-hidden="true" />
-          <span
-            className={[styles.skeletonBlock, styles.skeletonStockLabel].join(
-              " ",
-            )}
-            style={{
-              width:
-                PRODUCT_SKELETON_STOCK_WIDTHS[
-                  index % PRODUCT_SKELETON_STOCK_WIDTHS.length
-                ],
-            }}
-          />
-        </span>
-      </div>
-      <span
-        className={[styles.skeletonBlock, styles.skeletonAction].join(" ")}
+    <div aria-hidden="true">
+      <GridSkeleton
+        layout={spec}
+        grid={PRODUCT_PLACEHOLDER_SKELETON_GRID}
       />
-    </article>
+    </div>
   );
 }
 function productKey(product: Product, index: number) {
@@ -437,7 +578,7 @@ function GridGallery({
               revealKey={productRevealKey(product)}
             >
               {placeholder ? (
-                <ProductSkeleton ariaHidden index={index} />
+                <ProductSkeletonSlot index={index} />
               ) : (
                 <ProductCard product={product} index={index} />
               )}
@@ -459,15 +600,15 @@ function PendingSkeletonGrid({
   if (count <= 0) return null;
 
   return (
-    <div className={styles.pendingSkeletonGrid} aria-hidden="true">
-      {Array.from({ length: count }, (_, index) => (
-        <ProductSkeleton
-          key={"pending-product-skeleton-" + String(startIndex + index)}
-          ariaHidden
-          index={startIndex + index}
-        />
-      ))}
-    </div>
+    <GridSkeleton
+      className={styles.pendingSkeletonGrid}
+      layout={createProductGridSkeletonSpec({
+        count,
+        startIndex,
+        withShadow: true,
+      })}
+      grid={{ ...PRODUCT_PENDING_SKELETON_GRID, count }}
+    />
   );
 }
 
@@ -496,7 +637,7 @@ export function GridLoadMoreDemo() {
       timing: { enterMs: 360 },
       keepSkeletonMounted: true,
       rememberRevealed: true,
-      skeleton: ({ index }) => <ProductSkeleton index={index} />,
+      skeleton: PRODUCT_GRID_SKELETON,
     }),
     [isInitialBusy],
   );

@@ -8,7 +8,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type ReactNode,
   type Ref,
 } from "react";
@@ -30,6 +29,7 @@ import { createEntriesSliderMedia } from "react-motion-gallery/entries/media/sli
 import { entriesLoadMore } from "react-motion-gallery/entries/load-more";
 import { useEntriesReady } from "react-motion-gallery/entries/ready";
 import { RatingStars } from "react-motion-gallery/rating-stars";
+import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
@@ -199,16 +199,153 @@ function isProductPlaceholderEntry(entry: ProductEntry) {
   return entry.id.startsWith("product-placeholder-");
 }
 
+const PRODUCT_SKELETON_TITLE_WIDTHS = ["96%", "94%", "62%"];
+const PRODUCT_SKELETON_BODY_WIDTHS = [
+  ["96%", "92%", "94%", "88%", "72%"],
+  ["92%", "88%", "86%", "84%", "58%"],
+  ["96%", "92%", "90%", "84%", "64%"],
+];
+type ProductSkeletonRectStyle = Extract<
+  SkeletonNode,
+  { kind: "rect" | "square" | "circle" }
+>["style"];
+
+function productSkeletonRect(
+  style: ProductSkeletonRectStyle = {},
+): SkeletonNode {
+  return {
+    kind: "rect",
+    style: {
+      flex: "0 0 auto",
+      backgroundColor: "#e4e9ec",
+      borderRadius: 8,
+      overflow: "hidden",
+      ...style,
+    },
+  };
+}
+
+function productInventorySkeletonItem(): SkeletonNode {
+  return {
+    kind: "col",
+    style: {
+      minWidth: 78,
+      minHeight: 42,
+      justifyContent: "center",
+      gap: 5,
+      padding: "7px 9px",
+      borderRadius: 8,
+      backgroundColor: "#edf3f2",
+      boxSizing: "border-box",
+    },
+    children: [
+      productSkeletonRect({ width: 48, height: 10, borderRadius: 4 }),
+      productSkeletonRect({ width: 62, height: 14, borderRadius: 5 }),
+    ],
+  };
+}
+
+function createProductListSkeletonLayout(entryIndex: number): SkeletonNode {
+  const titleWidth =
+    PRODUCT_SKELETON_TITLE_WIDTHS[
+      entryIndex % PRODUCT_SKELETON_TITLE_WIDTHS.length
+    ]!;
+  const bodyWidths =
+    PRODUCT_SKELETON_BODY_WIDTHS[
+      entryIndex % PRODUCT_SKELETON_BODY_WIDTHS.length
+    ]!;
+
+  return {
+    kind: "row",
+    style: {
+      width: "100%",
+      height: "100%",
+      minHeight: 0,
+      alignItems: "stretch",
+    },
+    children: [
+      productSkeletonRect({
+        width: "100%",
+        height: "100%",
+        minHeight: 0,
+        borderRadius: 8,
+        boxSizing: "border-box",
+      }),
+      {
+        kind: "col",
+        style: {
+          minWidth: 0,
+          minHeight: 0,
+          justifyContent: "flex-start",
+          gap: 20,
+          padding: "2px 0",
+        },
+        children: [
+          {
+            kind: "col",
+            style: {
+              width: "100%",
+              alignItems: "flex-start",
+              gap: 12,
+            },
+            children: [
+              productSkeletonRect({
+                width: titleWidth,
+                height: "calc(clamp(1.28rem, 2vw, 1.85rem) * 1.08)",
+              }),
+              {
+                kind: "row",
+                style: { alignItems: "center", gap: 8, minHeight: 17 },
+                children: [
+                  productSkeletonRect({
+                    width: 86,
+                    height: 17,
+                    borderRadius: 6,
+                  }),
+                  productSkeletonRect({
+                    width: 118,
+                    height: 17,
+                    borderRadius: 6,
+                  }),
+                ],
+              },
+              productSkeletonRect({ width: 56, height: 20 }),
+              {
+                kind: "col",
+                style: { width: "100%", gap: 7.8, padding: "3.9px 0" },
+                children: bodyWidths.map((width) =>
+                  productSkeletonRect({
+                    width,
+                    height: 17,
+                    borderRadius: 999,
+                  }),
+                ),
+              },
+            ],
+          },
+          {
+            kind: "row",
+            style: {
+              width: "100%",
+              gap: 8,
+              marginTop: "auto",
+              wrap: true,
+            },
+            children: [
+              productInventorySkeletonItem(),
+              productInventorySkeletonItem(),
+              productInventorySkeletonItem(),
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function ProductSkeletonCard({ entryIndex }: { entryIndex: number }) {
   const skeletonRef = useRef<HTMLElement | null>(null);
-  const titleWidths = ["96%", "94%", "62%"];
-  const bodyWidths = [
-    ["96%", "92%", "94%", "88%", "72%"],
-    ["92%", "88%", "86%", "84%", "58%"],
-    ["96%", "92%", "90%", "84%", "64%"],
-  ];
-  const titleWidth = titleWidths[entryIndex % titleWidths.length]!;
-  const body = bodyWidths[entryIndex % bodyWidths.length]!;
+  const layout = createProductListSkeletonLayout(entryIndex);
 
   useIsoLayoutEffect(() => {
     const node = skeletonRef.current;
@@ -224,68 +361,14 @@ function ProductSkeletonCard({ entryIndex }: { entryIndex: number }) {
 
   return (
     <article ref={skeletonRef} className={styles.skeletonCard}>
-      <div className={styles.skeletonMedia} />
-
-      <div className={styles.skeletonCopy}>
-        <div className={styles.skeletonCopyMain}>
-          <span
-            className={[styles.skeletonBlock, styles.skeletonTitle].join(" ")}
-            style={
-              { "--product-skeleton-title-width": titleWidth } as CSSProperties
-            }
-          />
-          <div className={styles.skeletonRatingRow}>
-            <span
-              className={[styles.skeletonBlock, styles.skeletonStars].join(" ")}
-            />
-            <span
-              className={[
-                styles.skeletonBlock,
-                styles.skeletonRatingLabel,
-              ].join(" ")}
-            />
-          </div>
-          <span
-            className={[styles.skeletonBlock, styles.skeletonPrice].join(" ")}
-          />
-          <div className={styles.skeletonBody}>
-            {body.map((width, index) => (
-              <span
-                key={index}
-                className={[styles.skeletonBlock, styles.skeletonBodyLine].join(
-                  " ",
-                )}
-                style={
-                  { "--product-skeleton-line-width": width } as CSSProperties
-                }
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.skeletonInventory}>
-          {["category", "brand", "stock"].map((label) => (
-            <span key={label} className={styles.skeletonInventoryItem}>
-              <span
-                className={[
-                  styles.skeletonBlock,
-                  styles.skeletonInventoryLabel,
-                ].join(" ")}
-              />
-              <span
-                className={[
-                  styles.skeletonBlock,
-                  styles.skeletonInventoryValue,
-                ].join(" ")}
-              />
-            </span>
-          ))}
-        </div>
-      </div>
+      <Skeleton
+        className={styles.skeletonLayout}
+        layout={layout}
+        disableShimmer
+      />
     </article>
   );
 }
-
 function ProductCard({ entry, media }: EntryCardRenderArgs) {
   const product = entry as ProductEntry;
   if (isProductPlaceholderEntry(product)) return null;

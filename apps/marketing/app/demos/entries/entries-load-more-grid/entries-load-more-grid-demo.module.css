@@ -489,78 +489,17 @@
   pointer-events: none;
 }
 
-.skeletonMedia {
-  height: auto;
-  aspect-ratio: var(--product-image-aspect-ratio);
-  background: #edf3f7;
-}
-
-.skeletonCopy {
-  display: flex;
+.skeletonLayout {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
   flex: 1 1 auto;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  min-height: var(--entries-data-grid-copy-min-height);
-  padding: 14px;
 }
 
-.skeletonBlock {
-  display: block;
-  height: 12px;
-  border-radius: 999px;
-  background: #dde7ee;
-}
-
-.skeletonCategory {
-  width: var(--product-skeleton-category-width);
-}
-
-.skeletonTitle {
-  width: var(--product-skeleton-title-width);
-  height: 18px;
-}
-
-.skeletonRatingRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.skeletonStars {
-  width: 82px;
-}
-
-.skeletonRatingLabel {
-  width: 62px;
-}
-
-.skeletonPrice {
-  width: 72px;
-  height: 16px;
-}
-
-.skeletonStockBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 28px;
-  margin-top: auto;
-  padding: 0 9px;
-  border-radius: 999px;
-  background: #eef5f8;
-}
-
-.skeletonStockDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #bdd0dc;
-}
-
-.skeletonStockLabel {
-  width: var(--product-skeleton-stock-width);
-  height: 10px;
+.skeletonLayout > div {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
 }
 
 .overlay {

@@ -296,9 +296,6 @@
   position: relative;
   height: 100%;
   min-height: calc(var(--entries-data-row-height) - 2px);
-  display: grid;
-  grid-template-columns: minmax(260px, 0.92fr) minmax(0, 1.08fr);
-  gap: 18px;
   padding: 18px;
   box-sizing: border-box;
   background: #fff;
@@ -325,126 +322,43 @@
   pointer-events: none;
 }
 
-.skeletonMedia {
+.skeletonLayout {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.skeletonLayout > div {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.92fr) minmax(0, 1.08fr);
+  align-items: stretch;
+  gap: 18px;
+}
+
+.skeletonLayout > div > div:first-child {
   position: relative;
   min-width: 0;
   min-height: 0;
   height: 100%;
-  display: block;
-  border-radius: 8px;
-  background: #e4e9ec;
-  box-sizing: border-box;
   box-shadow: inset 0 0 0 1px rgba(23, 33, 38, 0.1);
-  overflow: hidden;
 }
 
-.skeletonCopy {
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 20px;
-  padding: 2px 0;
+.skeletonLayout > div > div:nth-child(2) {
   container: product-skeleton-copy / inline-size;
 }
 
-.skeletonCopyMain {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.skeletonBlock {
-  position: relative;
-  display: block;
-  flex: 0 0 auto;
-  background: #e4e9ec;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.skeletonTitle {
-  width: var(--product-skeleton-title-width);
-  height: calc(clamp(1.28rem, 2vw, 1.85rem) * 1.08);
-}
-
-.skeletonRatingRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 17px;
-}
-
-.skeletonStars {
-  width: 86px;
-  height: 17px;
-  border-radius: 6px;
-}
-
-.skeletonRatingLabel {
-  width: 118px;
-  height: 17px;
-  border-radius: 6px;
-}
-
-.skeletonPrice {
-  width: 56px;
-  height: 20px;
-  border-radius: 8px;
-}
-
-.skeletonBody {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 7.8px;
-  padding: 3.9px 0;
-}
-
-.skeletonBodyLine {
-  width: var(--product-skeleton-line-width);
-  height: 17px;
-  border-radius: 999px;
-}
-
 @container product-skeleton-copy (min-width: 420px) {
-  .skeletonBodyLine:nth-child(n + 4) {
+  .skeletonLayout
+    > div
+    > div:nth-child(2)
+    > div:first-child
+    > div:nth-child(4)
+    > div:nth-child(n + 4) {
     display: none;
   }
-}
-
-.skeletonInventory {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: auto 0 0;
-}
-
-.skeletonInventoryItem {
-  min-width: 78px;
-  min-height: 42px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  padding: 7px 9px;
-  border-radius: 8px;
-  background: #edf3f2;
-  box-sizing: border-box;
-}
-
-.skeletonInventoryLabel {
-  width: 48px;
-  height: 10px;
-  border-radius: 4px;
-}
-
-.skeletonInventoryValue {
-  width: 62px;
-  height: 14px;
-  border-radius: 5px;
 }
 
 @keyframes productSkeletonShimmer {
@@ -476,11 +390,14 @@
   }
 
   .skeletonCard {
+    padding: 14px;
+  }
+
+  .skeletonLayout > div {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
     align-content: start;
     gap: 18px;
-    padding: 14px;
   }
 
   .media {
@@ -488,7 +405,7 @@
     height: auto;
   }
 
-  .skeletonMedia {
+  .skeletonLayout > div > div:first-child {
     min-height: var(--entries-data-media-height);
     height: auto;
   }
@@ -585,11 +502,14 @@
   }
 
   .skeletonCard {
+    padding: 14px;
+  }
+
+  .skeletonLayout > div {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
     align-content: start;
     gap: 18px;
-    padding: 14px;
   }
 
   .media {
@@ -597,7 +517,7 @@
     height: auto;
   }
 
-  .skeletonMedia {
+  .skeletonLayout > div > div:first-child {
     min-height: var(--entries-data-media-height);
     height: auto;
   }

@@ -69,13 +69,23 @@
   pointer-events: none;
 }
 .productRoot .card,
-.productRoot .skeletonCard {
+.productRoot :global([data-rmg-grid-skel-scope] > div),
+.productRoot :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div) {
   box-shadow: none;
 }
+.productRoot :global([data-rmg-grid-skel-scope] > div),
+.productRoot :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div),
+.pendingSkeletonGrid :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div) {
+  contain: paint;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.98),
+      rgba(var(--rmg-logo-cyan-rgb), 0.035)
+    ),
+    var(--product-demo-surface);
+}
 .pendingSkeletonGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
   overflow-anchor: none;
 }
 .card {
@@ -103,52 +113,6 @@
 .gridCard {
   min-height: 480px;
 }
-.skeletonCard {
-  --product-image-aspect-ratio: 1 / 1;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  height: 100%;
-  min-height: 100%;
-  overflow: hidden;
-  contain: paint;
-  border: 1px solid var(--product-demo-line);
-  border-radius: 8px;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.98),
-      rgba(var(--rmg-logo-cyan-rgb), 0.035)
-    ),
-    var(--product-demo-surface);
-  box-shadow:
-    0 14px 30px rgba(var(--rmg-logo-shadow-rgb), 0.07),
-    0 8px 22px rgba(var(--rmg-logo-cyan-rgb), 0.09);
-}
-.skeletonGridCard {
-  min-height: 480px;
-}
-.skeletonCard::after {
-  --product-skeleton-sheen: rgba(255, 255, 255, 0.48);
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.24) 22%,
-    var(--product-skeleton-sheen, rgba(255, 255, 255, 0.48)) 50%,
-    rgba(255, 255, 255, 0.24) 78%,
-    transparent 100%
-  );
-  animation: productDataSkeletonShimmer 1200ms linear infinite;
-  animation-delay: var(--product-skeleton-animation-delay, 0ms);
-  transform: translateX(-100%) translateZ(0);
-  will-change: transform, opacity;
-  backface-visibility: hidden;
-  pointer-events: none;
-}
 .imageFrame {
   position: relative;
   flex: 0 0 auto;
@@ -163,8 +127,7 @@
   object-fit: contain;
   object-position: center;
 }
-.copy,
-.skeletonCopy {
+.copy {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
@@ -239,8 +202,7 @@
   line-height: 1;
   white-space: nowrap;
 }
-.stockDot,
-.skeletonStockDot {
+.stockDot {
   width: 6px;
   height: 6px;
   flex: 0 0 auto;
@@ -299,73 +261,6 @@
   outline: 3px solid rgba(var(--rmg-logo-cyan-rgb), 0.26);
   outline-offset: 2px;
 }
-.skeletonImage,
-.skeletonBlock {
-  display: block;
-  background: #e4e9ec;
-}
-.skeletonImage {
-  position: relative;
-  flex: 0 0 auto;
-  aspect-ratio: var(--product-image-aspect-ratio);
-  overflow: hidden;
-  background: #e4e9ec;
-}
-.skeletonCategory {
-  height: calc(0.72rem * 1.2);
-  border-radius: 999px;
-}
-.skeletonTitle {
-  height: calc(1rem * 1.25);
-  border-radius: 999px;
-}
-.skeletonRating {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: calc(0.88rem * 1.2);
-}
-.skeletonStars {
-  width: 86px;
-  height: 1rem;
-  border-radius: 6px;
-}
-.skeletonRatingLabel {
-  width: 92px;
-  height: calc(0.88rem * 1.2);
-  border-radius: 6px;
-}
-.skeletonPrice {
-  width: 64px;
-  height: calc(1.14rem * 1.1);
-  border-radius: 7px;
-}
-.skeletonStockBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 26px;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: 0 9px;
-  border: 1px solid var(--product-demo-line);
-  border-radius: 999px;
-  background: rgba(var(--rmg-logo-cyan-rgb), 0.08);
-}
-.skeletonStockDot {
-  background: rgba(var(--rmg-logo-blue-rgb), 0.22);
-}
-.skeletonStockLabel {
-  height: calc(0.74rem * 1);
-  border-radius: 999px;
-}
-.skeletonAction {
-  width: calc(100% - 28px);
-  min-height: 40px;
-  margin: auto 14px 14px;
-  border: 1px solid rgba(var(--rmg-logo-blue-rgb), 0.18);
-  border-radius: 8px;
-}
 .sentinel {
   display: grid;
   place-items: center;
@@ -374,36 +269,6 @@
   color: var(--product-demo-accent-deep);
   font-size: 0.88rem;
   font-weight: 800;
-}
-@keyframes productDataSkeletonShimmer {
-  0% {
-    transform: translateX(-100%) translateZ(0);
-  }
-  100% {
-    transform: translateX(100%) translateZ(0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .skeletonCard::after {
-    animation: none;
-    opacity: 0;
-    will-change: auto;
-  }
-}
-@media (min-width: 640px) {
-  .pendingSkeletonGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 900px) {
-  .pendingSkeletonGrid {
-    gap: 18px;
-  }
-}
-@media (min-width: 1060px) {
-  .pendingSkeletonGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 @media (max-width: 760px) {
   .toolbar {

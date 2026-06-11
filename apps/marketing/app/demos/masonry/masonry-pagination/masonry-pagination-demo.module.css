@@ -116,6 +116,10 @@
 .skeletonMasonryCard {
   height: 100%;
 }
+.skeletonCard > :global([data-rmg-skel-node]) {
+  height: 100%;
+  min-height: 100%;
+}
 .skeletonCard.skeletonSpacerCard {
   box-shadow: none;
 }
@@ -157,8 +161,7 @@
   object-fit: contain;
   object-position: center;
 }
-.copy,
-.skeletonCopy {
+.copy {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
@@ -233,8 +236,7 @@
   line-height: 1;
   white-space: nowrap;
 }
-.stockDot,
-.skeletonStockDot {
+.stockDot {
   width: 6px;
   height: 6px;
   flex: 0 0 auto;
@@ -293,73 +295,7 @@
   outline: 3px solid rgba(var(--rmg-logo-cyan-rgb), 0.26);
   outline-offset: 2px;
 }
-.skeletonImage,
-.skeletonBlock {
-  display: block;
-  background: #e4e9ec;
-}
-.skeletonImage {
-  position: relative;
-  flex: 0 0 auto;
-  aspect-ratio: var(--product-image-aspect-ratio);
-  overflow: hidden;
-  background: #e4e9ec;
-}
-.skeletonCategory {
-  height: calc(0.72rem * 1.2);
-  border-radius: 999px;
-}
-.skeletonTitle {
-  height: calc(1rem * 1.25);
-  border-radius: 999px;
-}
-.skeletonRating {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: calc(0.88rem * 1.2);
-}
-.skeletonStars {
-  width: 86px;
-  height: 1rem;
-  border-radius: 6px;
-}
-.skeletonRatingLabel {
-  width: 92px;
-  height: calc(0.88rem * 1.2);
-  border-radius: 6px;
-}
-.skeletonPrice {
-  width: 64px;
-  height: calc(1.14rem * 1.1);
-  border-radius: 7px;
-}
-.skeletonStockBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 26px;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: 0 9px;
-  border: 1px solid var(--product-demo-line);
-  border-radius: 999px;
-  background: rgba(var(--rmg-logo-cyan-rgb), 0.08);
-}
-.skeletonStockDot {
-  background: rgba(var(--rmg-logo-blue-rgb), 0.22);
-}
-.skeletonStockLabel {
-  height: calc(0.74rem * 1);
-  border-radius: 999px;
-}
-.skeletonAction {
-  width: calc(100% - 28px);
-  min-height: 40px;
-  margin: auto 14px 14px;
-  border: 1px solid rgba(var(--rmg-logo-blue-rgb), 0.18);
-  border-radius: 8px;
-}
+
 .pageButtons {
   width: 100%;
   display: grid;

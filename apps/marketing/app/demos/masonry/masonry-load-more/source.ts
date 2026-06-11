@@ -20,6 +20,11 @@ import {
 import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import { masonryLoadMore } from "react-motion-gallery/masonry/load-more";
 import { RatingStars } from "react-motion-gallery/rating-stars";
+import {
+  Skeleton,
+  type SkeletonBaseStyle,
+  type SkeletonNode,
+} from "react-motion-gallery/skeleton/base";
 import styles from "./masonry-load-more-demo.module.css";
 
 type ProductImage = { src: string; alt: string; width: number; height: number };
@@ -312,18 +317,177 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
     </article>
   );
 }
+function skeletonBlockStyle(args: {
+  width?: string;
+  height: string;
+  borderRadius: string | number;
+  flex?: string;
+}): SkeletonBaseStyle {
+  return {
+    width: args.width,
+    height: args.height,
+    borderRadius: args.borderRadius,
+    backgroundColor: "#e4e9ec",
+    flex: args.flex,
+  };
+}
+function createProductSkeletonNode(index: number): SkeletonNode {
+  const categoryWidth =
+    PRODUCT_SKELETON_CATEGORY_WIDTHS[
+      index % PRODUCT_SKELETON_CATEGORY_WIDTHS.length
+    ];
+  const titleWidth =
+    PRODUCT_SKELETON_TITLE_WIDTHS[
+      index % PRODUCT_SKELETON_TITLE_WIDTHS.length
+    ];
+  const stockWidth =
+    PRODUCT_SKELETON_STOCK_WIDTHS[
+      index % PRODUCT_SKELETON_STOCK_WIDTHS.length
+    ];
+
+  return {
+    kind: "col",
+    style: {
+      width: "100%",
+      height: "100%",
+      minHeight: "100%",
+      flex: "1 1 auto",
+    },
+    children: [
+      {
+        kind: "rect",
+        style: {
+          width: "100%",
+          aspectRatio: "var(--product-image-aspect-ratio)",
+          flex: "0 0 auto",
+          overflow: "hidden",
+          backgroundColor: "#e4e9ec",
+          borderRadius: 0,
+        },
+      },
+      {
+        kind: "col",
+        style: {
+          flex: "0 0 auto",
+          alignItems: "flex-start",
+          gap: 8,
+          minWidth: 0,
+          minHeight: 194,
+          padding: "14px 14px 22px",
+          width: "100%",
+        },
+        children: [
+          {
+            kind: "rect",
+            style: skeletonBlockStyle({
+              width: categoryWidth,
+              height: "calc(0.72rem * 1.2)",
+              borderRadius: 999,
+            }),
+          },
+          {
+            kind: "rect",
+            style: skeletonBlockStyle({
+              width: titleWidth,
+              height: "calc(1rem * 1.25)",
+              borderRadius: 999,
+            }),
+          },
+          {
+            kind: "row",
+            style: {
+              alignItems: "center",
+              gap: 8,
+              minHeight: "calc(0.88rem * 1.2)",
+            },
+            children: [
+              {
+                kind: "rect",
+                style: skeletonBlockStyle({
+                  width: "86px",
+                  height: "1rem",
+                  borderRadius: 6,
+                }),
+              },
+              {
+                kind: "rect",
+                style: skeletonBlockStyle({
+                  width: "92px",
+                  height: "calc(0.88rem * 1.2)",
+                  borderRadius: 6,
+                }),
+              },
+            ],
+          },
+          {
+            kind: "rect",
+            style: skeletonBlockStyle({
+              width: "64px",
+              height: "calc(1.14rem * 1.1)",
+              borderRadius: 7,
+            }),
+          },
+          {
+            kind: "row",
+            style: {
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              minHeight: 26,
+              maxWidth: "100%",
+              boxSizing: "border-box",
+              padding: "0 9px",
+              border: "1px solid var(--product-demo-line)",
+              borderRadius: 999,
+              backgroundColor: "rgba(var(--rmg-logo-cyan-rgb), 0.08)",
+            },
+            children: [
+              {
+                kind: "circle",
+                style: {
+                  width: 6,
+                  height: 6,
+                  flex: "0 0 auto",
+                  backgroundColor: "rgba(var(--rmg-logo-blue-rgb), 0.22)",
+                },
+              },
+              {
+                kind: "rect",
+                style: skeletonBlockStyle({
+                  width: stockWidth,
+                  height: "calc(0.74rem * 1)",
+                  borderRadius: 999,
+                }),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        kind: "row",
+        style: {
+          width: "calc(100% - 28px)",
+          minHeight: 40,
+          margin: "auto 14px 14px",
+          border: "1px solid rgba(var(--rmg-logo-blue-rgb), 0.18)",
+          borderRadius: 8,
+          backgroundColor: "#e4e9ec",
+        },
+        children: [],
+      },
+    ],
+  };
+}
+
 function ProductSkeleton({
   index,
-  ariaHidden,
   shimmer = true,
 }: {
   index: number;
-  ariaHidden?: boolean;
   shimmer?: boolean;
 }) {
   return (
-    <article
-      aria-hidden={ariaHidden ? true : undefined}
+    <Skeleton
       className={[
         styles.skeletonCard,
         styles.skeletonMasonryCard,
@@ -332,59 +496,9 @@ function ProductSkeleton({
         .filter(Boolean)
         .join(" ")}
       style={skeletonImageStyle(index)}
-    >
-      <div className={styles.skeletonImage} />
-      <div className={styles.skeletonCopy}>
-        <span
-          className={[styles.skeletonBlock, styles.skeletonCategory].join(" ")}
-          style={{
-            width:
-              PRODUCT_SKELETON_CATEGORY_WIDTHS[
-                index % PRODUCT_SKELETON_CATEGORY_WIDTHS.length
-              ],
-          }}
-        />
-        <span
-          className={[styles.skeletonBlock, styles.skeletonTitle].join(" ")}
-          style={{
-            width:
-              PRODUCT_SKELETON_TITLE_WIDTHS[
-                index % PRODUCT_SKELETON_TITLE_WIDTHS.length
-              ],
-          }}
-        />
-        <span className={styles.skeletonRating}>
-          <span
-            className={[styles.skeletonBlock, styles.skeletonStars].join(" ")}
-          />
-          <span
-            className={[styles.skeletonBlock, styles.skeletonRatingLabel].join(
-              " ",
-            )}
-          />
-        </span>
-        <span
-          className={[styles.skeletonBlock, styles.skeletonPrice].join(" ")}
-        />
-        <span className={styles.skeletonStockBadge}>
-          <span className={styles.skeletonStockDot} aria-hidden="true" />
-          <span
-            className={[styles.skeletonBlock, styles.skeletonStockLabel].join(
-              " ",
-            )}
-            style={{
-              width:
-                PRODUCT_SKELETON_STOCK_WIDTHS[
-                  index % PRODUCT_SKELETON_STOCK_WIDTHS.length
-                ],
-            }}
-          />
-        </span>
-      </div>
-      <span
-        className={[styles.skeletonBlock, styles.skeletonAction].join(" ")}
-      />
-    </article>
+      layout={createProductSkeletonNode(index)}
+      disableShimmer
+    />
   );
 }
 function productKey(product: Product, index: number) {
@@ -471,7 +585,7 @@ function MasonryGallery({
               className={placeholder ? styles.placeholderItem : undefined}
             >
               {placeholder ? (
-                <ProductSkeleton ariaHidden index={index} shimmer={false} />
+                <ProductSkeleton index={index} shimmer={false} />
               ) : (
                 <ProductCard product={product} index={index} />
               )}

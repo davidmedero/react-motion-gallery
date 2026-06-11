@@ -26,6 +26,7 @@ import {
 } from "react-motion-gallery/entries";
 import { createEntriesSliderMedia } from "react-motion-gallery/entries/media/slider";
 import { RatingStars } from "react-motion-gallery/rating-stars";
+import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
@@ -209,65 +210,120 @@ function isProductPlaceholderEntry(entry: ProductEntry) {
   return entry.id.startsWith("product-grid-placeholder-");
 }
 
+const PRODUCT_GRID_SKELETON_CATEGORY_WIDTHS = ["64px", "74px", "58px", "82px"];
+const PRODUCT_GRID_SKELETON_TITLE_WIDTHS = ["82%", "92%", "68%", "76%"];
+const PRODUCT_GRID_SKELETON_STOCK_WIDTHS = ["76px", "88px", "94px", "82px"];
+type ProductSkeletonRectStyle = Extract<
+  SkeletonNode,
+  { kind: "rect" | "square" | "circle" }
+>["style"];
+
+function productSkeletonRect(
+  style: ProductSkeletonRectStyle = {},
+): SkeletonNode {
+  return {
+    kind: "rect",
+    style: {
+      flex: "0 0 auto",
+      backgroundColor: "#dde7ee",
+      borderRadius: 999,
+      overflow: "hidden",
+      ...style,
+    },
+  };
+}
+
+function createProductGridSkeletonLayout(entryIndex: number): SkeletonNode {
+  const categoryWidth =
+    PRODUCT_GRID_SKELETON_CATEGORY_WIDTHS[
+      entryIndex % PRODUCT_GRID_SKELETON_CATEGORY_WIDTHS.length
+    ]!;
+  const titleWidth =
+    PRODUCT_GRID_SKELETON_TITLE_WIDTHS[
+      entryIndex % PRODUCT_GRID_SKELETON_TITLE_WIDTHS.length
+    ]!;
+  const stockWidth =
+    PRODUCT_GRID_SKELETON_STOCK_WIDTHS[
+      entryIndex % PRODUCT_GRID_SKELETON_STOCK_WIDTHS.length
+    ]!;
+
+  return {
+    kind: "col",
+    style: {
+      width: "100%",
+      height: "100%",
+      minHeight: "100%",
+    },
+    children: [
+      productSkeletonRect({
+        width: "100%",
+        height: "auto",
+        aspectRatio: "var(--product-image-aspect-ratio)",
+        backgroundColor: "#edf3f7",
+        borderRadius: 0,
+      }),
+      {
+        kind: "col",
+        style: {
+          flex: "1 1 auto",
+          width: "100%",
+          alignItems: "flex-start",
+          gap: 10,
+          minHeight: "var(--entries-data-grid-copy-min-height)",
+          padding: 14,
+          boxSizing: "border-box",
+        },
+        children: [
+          productSkeletonRect({ width: categoryWidth, height: 12 }),
+          productSkeletonRect({ width: titleWidth, height: 18 }),
+          {
+            kind: "row",
+            style: { alignItems: "center", gap: 8 },
+            children: [
+              productSkeletonRect({ width: 82, height: 12 }),
+              productSkeletonRect({ width: 62, height: 12 }),
+            ],
+          },
+          productSkeletonRect({ width: 72, height: 16 }),
+          {
+            kind: "row",
+            style: {
+              alignItems: "center",
+              gap: 6,
+              minHeight: 28,
+              marginTop: "auto",
+              padding: "0 9px",
+              borderRadius: 999,
+              backgroundColor: "#eef5f8",
+            },
+            children: [
+              productSkeletonRect({
+                width: 7,
+                height: 7,
+                backgroundColor: "#bdd0dc",
+              }),
+              productSkeletonRect({ width: stockWidth, height: 10 }),
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function ProductSkeletonCard({ entryIndex }: { entryIndex: number }) {
-  const categoryWidths = ["64px", "74px", "58px", "82px"];
-  const titleWidths = ["82%", "92%", "68%", "76%"];
-  const stockWidths = ["76px", "88px", "94px", "82px"];
+  const layout = createProductGridSkeletonLayout(entryIndex);
 
   return (
     <article className={styles.skeletonCard}>
-      <div className={styles.skeletonMedia} />
-      <div className={styles.skeletonCopy}>
-        <span
-          className={[styles.skeletonBlock, styles.skeletonCategory].join(" ")}
-          style={
-            {
-              "--product-skeleton-category-width":
-                categoryWidths[entryIndex % categoryWidths.length]!,
-            } as CSSProperties
-          }
-        />
-        <span
-          className={[styles.skeletonBlock, styles.skeletonTitle].join(" ")}
-          style={
-            {
-              "--product-skeleton-title-width":
-                titleWidths[entryIndex % titleWidths.length]!,
-            } as CSSProperties
-          }
-        />
-        <span className={styles.skeletonRatingRow}>
-          <span
-            className={[styles.skeletonBlock, styles.skeletonStars].join(" ")}
-          />
-          <span
-            className={[styles.skeletonBlock, styles.skeletonRatingLabel].join(
-              " ",
-            )}
-          />
-        </span>
-        <span
-          className={[styles.skeletonBlock, styles.skeletonPrice].join(" ")}
-        />
-        <span className={styles.skeletonStockBadge}>
-          <span className={styles.skeletonStockDot} />
-          <span
-            className={[styles.skeletonBlock, styles.skeletonStockLabel].join(
-              " ",
-            )}
-            style={
-              {
-                "--product-skeleton-stock-width":
-                  stockWidths[entryIndex % stockWidths.length]!,
-              } as CSSProperties
-            }
-          />
-        </span>
-      </div>
+      <Skeleton
+        className={styles.skeletonLayout}
+        layout={layout}
+        disableShimmer
+      />
     </article>
   );
 }
-
 function stockLabel(stock: number) {
   if (stock <= 24) return \`Only \${stock} left\`;
   if (stock <= 72) return \`\${stock} in stock\`;
