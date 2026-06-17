@@ -131,13 +131,6 @@ export const css = String.raw`.shell {
 .productRoot :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div),
 .pendingSkeletonGrid :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div) {
   contain: paint;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.98),
-      rgba(var(--rmg-logo-cyan-rgb), 0.035)
-    ),
-    var(--product-demo-surface);
 }
 .pendingSkeletonGrid {
   overflow-anchor: none;
