@@ -22,7 +22,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `entries/virtualization` | 236.0B |
 | `rating-stars` | 1.3kB |
 | `FullscreenThumbnailSlider` | 20.4kB |
-| `GalleryCore` | 2.6kB |
+| `GalleryCore` | 2.7kB |
 | `Grid` | 18.0kB |
 | `grid/ready` | 323.0B |
 | `grid/lazy-load` | 3.7kB |
@@ -57,7 +57,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `slider/scale` | 1.2kB |
 | `slider/fade` | 1.2kB |
 | `slider/crossfade` | 2.8kB |
-| `slider/fullscreen` | 996.0B |
+| `slider/fullscreen` | 1.4kB |
 | `ThumbnailSlider` | 18.9kB |
 | `useFullscreenController` | 5.0kB |
 | `fullscreen/slider` | 39.7kB |

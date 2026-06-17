@@ -526,10 +526,40 @@ function useGalleryCoreInternal(props: GalleryCoreProps): GalleryCore {
     ]
   );
 
-  const baseVisibleSub = React.useMemo(() => createSub<BaseVisibleIndexEvent>(), []);
+  const baseVisibleIndicesRef = React.useRef(new Set<number>());
+  const baseVisibleItemsSignature = React.useMemo(
+    () =>
+      normalizedItems
+        .map((item) => {
+          const any = item as any;
+          return `${item.kind}|${any.src ?? ""}|${any.srcSet ?? ""}|${any.sizes ?? ""}|${any.poster ?? ""}|${any.videoSrc ?? ""}`;
+        })
+        .join("||"),
+    [normalizedItems]
+  );
+  const baseVisibleItemsSignatureRef = React.useRef(baseVisibleItemsSignature);
+  if (baseVisibleItemsSignatureRef.current !== baseVisibleItemsSignature) {
+    baseVisibleItemsSignatureRef.current = baseVisibleItemsSignature;
+    baseVisibleIndicesRef.current.clear();
+  }
+
+  const baseVisibleSourceSub = React.useMemo(() => createSub<BaseVisibleIndexEvent>(), []);
+
+  const baseVisibleSub = React.useMemo(
+    () => ({
+      emit: baseVisibleSourceSub.emit,
+      subscribe(fn: (v: BaseVisibleIndexEvent) => void) {
+        const off = baseVisibleSourceSub.subscribe(fn);
+        baseVisibleIndicesRef.current.forEach((index) => fn({ index, reason: "io" }));
+        return off;
+      },
+    }),
+    [baseVisibleSourceSub]
+  );
 
   const notifyBaseVisibleIndex = React.useCallback((index: number) => {
-    if (typeof index !== "number") return;
+    if (typeof index !== "number" || !Number.isFinite(index)) return;
+    baseVisibleIndicesRef.current.add(index);
     baseVisibleSub.emit({ index, reason: "io" });
   }, [baseVisibleSub]);
 

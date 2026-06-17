@@ -8,6 +8,7 @@ import { createSliderPlugin } from "./create";
 const DRAG_CLICK_THRESHOLD = 6;
 const FULLSCREEN_TRIGGER_SELECTOR = "[data-rmg-fullscreen-trigger]";
 const VIDEO_SURFACE_SELECTOR = "[data-rmg-plyr='true'],.plyr,video,iframe";
+const BASE_VISIBLE_ROOT_MARGIN = "200px";
 
 function getElement(target: EventTarget | null) {
   return target instanceof Element ? target : null;
@@ -19,6 +20,22 @@ function getFullscreenTrigger(target: EventTarget | null) {
 
 function hasVideoSurface(slide: HTMLElement) {
   return !!slide.querySelector(VIDEO_SURFACE_SELECTOR);
+}
+
+function parseSlideIndex(slide: HTMLElement) {
+  const index = Number.parseInt(slide.getAttribute("data-rmg-idx") ?? "", 10);
+  return Number.isFinite(index) ? index : null;
+}
+
+function getRenderedSliderSlides(
+  handle: NonNullable<SliderPluginRuntimeProps["host"]["handle"]>
+) {
+  const container = handle.getContainerNode();
+  if (!container) return handle.getSlideNodes();
+
+  return Array.from(
+    container.querySelectorAll<HTMLElement>('[data-rmg-slide="true"]')
+  );
 }
 
 function getOriginImage(
@@ -68,8 +85,8 @@ export function resolveSliderFullscreenClick(target: EventTarget | null) {
   if (!slide) return null;
   if (hasVideoSurface(slide) && !trigger) return null;
 
-  const index = Number.parseInt(slide.getAttribute("data-rmg-idx") ?? "", 10);
-  if (!Number.isFinite(index)) return null;
+  const index = parseSlideIndex(slide);
+  if (index == null) return null;
 
   const image = getOriginImage(target, slide, trigger);
   if (!image) return null;
@@ -80,6 +97,11 @@ export function resolveSliderFullscreenClick(target: EventTarget | null) {
 function FullscreenRuntime({ host }: SliderPluginRuntimeProps) {
   const core = useOptionalGalleryCore();
   const pointerDownRef = React.useRef<{ x: number; y: number; id: number } | null>(null);
+  const visibleSeenRef = React.useRef(new Set<number>());
+
+  React.useEffect(() => {
+    visibleSeenRef.current.clear();
+  }, [host.slideCount]);
 
   React.useEffect(() => {
     if (!core || core.layout !== "slider" || !core.sliderApiRef) return;
@@ -135,6 +157,71 @@ function FullscreenRuntime({ host }: SliderPluginRuntimeProps) {
       root.removeEventListener("click", onClick, true);
     };
   }, [core, core?.fsEnabled, host.handle]);
+
+  React.useEffect(() => {
+    if (!core || core.layout !== "slider" || !host.handle || !core.fsEnabled) return;
+
+    const handle = host.handle;
+    const viewport = handle.getViewportNode();
+    if (!viewport) return;
+
+    const seen = visibleSeenRef.current;
+    const emitIndex = (index: number | null) => {
+      if (index == null || !Number.isFinite(index)) return;
+      core.notifyBaseVisibleIndex(index);
+    };
+
+    const notifyIndex = (index: number | null) => {
+      if (index == null || seen.has(index)) return;
+      seen.add(index);
+      emitIndex(index);
+    };
+
+    core.registerFullscreenAdapter("slider", {
+      closestSelector: '[data-rmg-slide="true"]',
+      syncBeforeOpen: (index) => emitIndex(index),
+    });
+
+    try {
+      handle.cellsInView().forEach((index) => notifyIndex(index));
+    } catch {}
+
+    const slides = getRenderedSliderSlides(handle);
+    if (!slides.length) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      slides.forEach((slide) => notifyIndex(parseSlideIndex(slide)));
+      return;
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+
+          const slide = entry.target;
+          if (slide instanceof HTMLElement) {
+            notifyIndex(parseSlideIndex(slide));
+          }
+
+          io.unobserve(entry.target);
+        }
+      },
+      {
+        root: viewport,
+        rootMargin: BASE_VISIBLE_ROOT_MARGIN,
+        threshold: 0,
+      }
+    );
+
+    slides.forEach((slide) => {
+      const index = parseSlideIndex(slide);
+      if (index != null && seen.has(index)) return;
+      io.observe(slide);
+    });
+
+    return () => io.disconnect();
+  }, [core, core?.fsEnabled, host.handle, host.slideCount]);
 
   return null;
 }
