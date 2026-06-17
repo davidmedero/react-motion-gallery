@@ -69,10 +69,6 @@
 }
 
 .itemSkeleton {
-  --rmg-grid-item-skeleton-transition-duration: var(
-    --rmg-grid-item-skeleton-enter-duration,
-    var(--rmg-grid-item-skeleton-exit-duration, 220ms)
-  );
   position: relative;
   z-index: 0;
   display: flex;
@@ -81,7 +77,12 @@
   opacity: var(--rmg-grid-item-skeleton-opacity, 1);
   pointer-events: none;
   transition:
-    opacity var(--rmg-grid-item-skeleton-transition-duration) ease;
+    opacity
+      var(
+        --rmg-grid-item-skeleton-enter-duration,
+        var(--rmg-grid-item-skeleton-exit-duration, 220ms)
+      )
+      ease;
   will-change: opacity;
   backface-visibility: hidden;
 }
@@ -95,11 +96,8 @@
 }
 
 .gridItem[data-rmg-grid-item-reveal="1"]:not([data-rmg-grid-item-compare="1"]) > .itemSkeleton {
-  --rmg-grid-item-skeleton-transition-duration: var(
-    --rmg-grid-item-skeleton-exit-duration,
-    220ms
-  );
   opacity: 0;
+  transition-duration: var(--rmg-grid-item-skeleton-exit-duration, 220ms);
   transition-delay: calc(
     var(--rmg-reveal-index, 0) * var(--rmg-reveal-stagger, 0ms)
   );

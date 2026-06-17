@@ -129,7 +129,7 @@ async function fetchProducts(args: {
 }
 
 const PAGE_SIZE = 6;
-const INITIAL_PRODUCT_SLOT_PREFIX = "product-initial-slot";
+const PRODUCT_SLOT_PREFIX = "product-slot";
 const PRODUCT_SKELETON_CATEGORY_WIDTHS = [
   "68%",
   "62%",
@@ -159,10 +159,6 @@ const PRODUCT_PLACEHOLDER_SKELETON_GRID = {
   count: 1,
   columns: 1,
   gap: 0,
-};
-const PRODUCT_PENDING_SKELETON_GRID = {
-  columns: { 0: 1, 640: 2, 1060: 3 },
-  gap: { 0: 12, 900: 18 },
 };
 const revealOptions = {
   durationMs: 700,
@@ -204,8 +200,8 @@ function productImageStyle(image: ProductImage) {
       String(image.width) + " / " + String(image.height),
   } as CSSProperties;
 }
-function getInitialProductSlotKey(index: number) {
-  return INITIAL_PRODUCT_SLOT_PREFIX + "-" + String(index);
+function getProductSlotKey(index: number) {
+  return PRODUCT_SLOT_PREFIX + "-" + String(index);
 }
 function createPlaceholderProducts(
   count: number,
@@ -392,19 +388,12 @@ const PRODUCT_GRID_SKELETON_ITEM_WRAP_STYLE = {
   borderRadius: 8,
   backgroundColor: "var(--product-demo-surface)",
 };
-const PRODUCT_PENDING_GRID_SKELETON_ITEM_WRAP_STYLE = {
-  ...PRODUCT_GRID_SKELETON_ITEM_WRAP_STYLE,
-  boxShadow:
-    "0 14px 30px rgba(var(--rmg-logo-shadow-rgb), 0.07), 0 8px 22px rgba(var(--rmg-logo-cyan-rgb), 0.09)",
-};
 function createProductGridSkeletonSpec({
   count = PRODUCT_SKELETON_SLOT_COUNT,
   startIndex = 0,
-  withShadow = false,
 }: {
   count?: number;
   startIndex?: number;
-  withShadow?: boolean;
 } = {}): GridSkeletonSpec {
   return {
     radius: 8,
@@ -418,9 +407,7 @@ function createProductGridSkeletonSpec({
     },
     layout: {
       kind: "grid",
-      itemWrapStyle: withShadow
-        ? PRODUCT_PENDING_GRID_SKELETON_ITEM_WRAP_STYLE
-        : PRODUCT_GRID_SKELETON_ITEM_WRAP_STYLE,
+      itemWrapStyle: PRODUCT_GRID_SKELETON_ITEM_WRAP_STYLE,
       item: createProductSkeletonItem(startIndex),
       slots: Array.from({ length: count }, (_, index) => ({
         item: createProductSkeletonItem(startIndex + index),
@@ -590,35 +577,12 @@ function GridGallery({
     </GalleryCore>
   );
 }
-function PendingSkeletonGrid({
-  count,
-  startIndex,
-}: {
-  count: number;
-  startIndex: number;
-}) {
-  if (count <= 0) return null;
-
-  return (
-    <GridSkeleton
-      className={styles.pendingSkeletonGrid}
-      layout={createProductGridSkeletonSpec({
-        count,
-        startIndex,
-        withShadow: true,
-      })}
-      grid={{ ...PRODUCT_PENDING_SKELETON_GRID, count }}
-    />
-  );
-}
-
 export function GridInfiniteScrollDemo() {
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
-  const [useInitialSlots] = useState(() => loading && products.length === 0);
   const requestRef = useRef<AbortController | null>(null);
   const lengthRef = useRef(0);
   useEffect(() => {
@@ -637,7 +601,7 @@ export function GridInfiniteScrollDemo() {
       timing: { enterMs: 360 },
       keepSkeletonMounted: true,
       rememberRevealed: true,
-      skeleton: PRODUCT_GRID_SKELETON,
+      skeleton: ({ index }) => <ProductSkeletonSlot index={index} />,
     }),
     [isInitialBusy],
   );
@@ -716,21 +680,25 @@ export function GridInfiniteScrollDemo() {
   );
   const displayProducts = useMemo(() => {
     if (isInitialBusy) {
-      return createPlaceholderProducts(PAGE_SIZE, 0, getInitialProductSlotKey);
+      return createPlaceholderProducts(PAGE_SIZE, 0, getProductSlotKey);
     }
 
-    if (!useInitialSlots) return products;
+    const keyedProducts: Product[] = products.map((product, index) => ({
+      ...product,
+      key: getProductSlotKey(index),
+      revealKey: product.id,
+    }));
 
-    return products.map((product, index) =>
-      index < PAGE_SIZE
-        ? {
-            ...product,
-            key: getInitialProductSlotKey(index),
-            revealKey: product.id,
-          }
-        : product,
+    if (pendingCount <= 0) return keyedProducts;
+
+    return keyedProducts.concat(
+      createPlaceholderProducts(
+        pendingCount,
+        products.length,
+        getProductSlotKey,
+      ),
     );
-  }, [isInitialBusy, products, useInitialSlots]);
+  }, [isInitialBusy, pendingCount, products]);
   return (
     <section className={styles.shell}>
       <header className={styles.toolbar}>
@@ -750,7 +718,6 @@ export function GridInfiniteScrollDemo() {
           plugins={plugins}
         />
       )}
-      <PendingSkeletonGrid count={pendingCount} startIndex={products.length} />
       {error && products.length === 0 ? null : (
         <div className={styles.footer}>
           <span className={styles.sentinel} aria-live="polite">

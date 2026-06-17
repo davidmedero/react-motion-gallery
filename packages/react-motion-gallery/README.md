@@ -23,7 +23,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `rating-stars` | 1.3kB |
 | `FullscreenThumbnailSlider` | 20.4kB |
 | `GalleryCore` | 2.7kB |
-| `Grid` | 18.0kB |
+| `Grid` | 17.9kB |
 | `grid/ready` | 323.0B |
 | `grid/lazy-load` | 3.7kB |
 | `grid/fullscreen` | 1.6kB |

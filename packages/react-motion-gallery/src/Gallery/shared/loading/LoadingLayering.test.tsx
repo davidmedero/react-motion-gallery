@@ -260,6 +260,15 @@ describe("loading layer stacking", () => {
     expect(gridCss).toMatch(
       /\.gridItem\[data-rmg-grid-item-reveal="1"\]:not\(\[data-rmg-grid-item-compare="1"\]\)\s*>\s*\.itemSkeleton\s*\{[^}]*transition-delay:\s*calc\([^}]*var\(--rmg-reveal-index,\s*0\)[^}]*var\(--rmg-reveal-stagger,\s*0ms\)/s,
     );
+    expect(gridCss).toMatch(
+      /\.itemSkeleton\s*\{[^}]*transition:\s*opacity\s+var\(\s*--rmg-grid-item-skeleton-enter-duration,/s,
+    );
+    expect(gridCss).toMatch(
+      /\.gridItem\[data-rmg-grid-item-reveal="1"\]:not\(\[data-rmg-grid-item-compare="1"\]\)\s*>\s*\.itemSkeleton\s*\{[^}]*transition-duration:\s*var\(--rmg-grid-item-skeleton-exit-duration,\s*220ms\);/s,
+    );
+    expect(gridCss).not.toContain(
+      "--rmg-grid-item-skeleton-transition-duration",
+    );
     expect(masonryCss).toMatch(
       /\.masonryItem\[data-rmg-masonry-item-stage="1"\]\s*>\s*:not\(\[data-rmg-masonry-item-skeleton\]\)\s*\{[^}]*opacity:\s*0;[^}]*transition:/s,
     );

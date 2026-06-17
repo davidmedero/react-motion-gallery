@@ -637,7 +637,7 @@ export function GridLoadMoreDemo() {
       timing: { enterMs: 360 },
       keepSkeletonMounted: true,
       rememberRevealed: true,
-      skeleton: PRODUCT_GRID_SKELETON,
+      skeleton: ({ index }) => <ProductSkeletonSlot index={index} />,
     }),
     [isInitialBusy],
   );

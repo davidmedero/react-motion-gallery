@@ -1248,6 +1248,105 @@ describe("Grid data plugins", () => {
     ).not.toBeNull();
   });
 
+  test("structured grid skeleton slot scopes stay stable when reveal keys change and items append", async () => {
+    const skeleton: GridSkeletonSpec = {
+      shimmer: {
+        durationMs: 1200,
+      },
+      layout: {
+        kind: "grid",
+        item: {
+          kind: "col",
+          style: { gap: 10 },
+          children: [
+            {
+              kind: "rect",
+              style: { width: "100%", aspectRatio: "4 / 5" },
+            },
+            {
+              kind: "text",
+              barHeight: 14,
+              lineHeight: 1.5,
+              lines: 2,
+            },
+          ],
+        },
+      },
+    };
+
+    const render = (count: number, ready = false) => (
+      <Grid
+        columns={1}
+        loading={{
+          keepSkeletonMounted: true,
+          waitForMedia: false,
+          timing: { minVisibleMs: 0 },
+          skeleton,
+        }}
+      >
+        {Array.from({ length: count }, (_, index) => (
+          <article
+            key={`slot-${index}`}
+            data-rmg-grid-reveal-key={
+              ready ? `product-${index}` : `slot-${index}`
+            }
+          >
+            product {index}
+          </article>
+        ))}
+      </Grid>
+    );
+
+    const host = mount(render(2));
+    const firstSkeletonLayer = host.querySelector<HTMLElement>(
+      "[data-rmg-grid-item-skeleton]",
+    );
+    const firstSlotScope = firstSkeletonLayer?.querySelector<HTMLElement>(
+      "[data-rmg-grid-skel-scope]",
+    );
+    const firstScopeId = firstSlotScope?.getAttribute("data-rmg-grid-skel-scope");
+
+    expect(firstSkeletonLayer).not.toBeNull();
+    expect(firstSlotScope).not.toBeNull();
+    expect(firstScopeId).toBeTruthy();
+
+    await React.act(async () => {
+      mountedRoot?.render(render(2, true));
+      await Promise.resolve();
+    });
+
+    const readyFirstSkeletonLayer = host.querySelector<HTMLElement>(
+      "[data-rmg-grid-item-skeleton]",
+    );
+    const readyFirstSlotScope = readyFirstSkeletonLayer?.querySelector<HTMLElement>(
+      "[data-rmg-grid-skel-scope]",
+    );
+
+    expect(readyFirstSkeletonLayer).toBe(firstSkeletonLayer);
+    expect(readyFirstSlotScope).toBe(firstSlotScope);
+    expect(readyFirstSlotScope?.getAttribute("data-rmg-grid-skel-scope")).toBe(
+      firstScopeId,
+    );
+
+    await React.act(async () => {
+      mountedRoot?.render(render(3, true));
+      await Promise.resolve();
+    });
+
+    const nextFirstSkeletonLayer = host.querySelector<HTMLElement>(
+      "[data-rmg-grid-item-skeleton]",
+    );
+    const nextFirstSlotScope = nextFirstSkeletonLayer?.querySelector<HTMLElement>(
+      "[data-rmg-grid-skel-scope]",
+    );
+
+    expect(nextFirstSkeletonLayer).toBe(firstSkeletonLayer);
+    expect(nextFirstSlotScope).toBe(firstSlotScope);
+    expect(nextFirstSlotScope?.getAttribute("data-rmg-grid-skel-scope")).toBe(
+      firstScopeId,
+    );
+  });
+
   test("item reveal settles immediately when there is no item skeleton", async () => {
     vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
 

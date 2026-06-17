@@ -577,7 +577,6 @@ export function GridSkeletonCard({
 
 export function GridSkeletonSlotContent({
   index,
-  count,
   spec,
   breakpoints,
   disableShimmer,
@@ -602,12 +601,11 @@ export function GridSkeletonSlotContent({
   const scopeId = React.useMemo(() => {
     return buildStableScopeId("gskel_slot_", {
       index,
-      count,
       breakpoints: effectiveBreakpoints,
       spec,
       disableShimmer,
     });
-  }, [count, disableShimmer, effectiveBreakpoints, index, spec]);
+  }, [disableShimmer, effectiveBreakpoints, index, spec]);
   const { item, itemWrapStyle, responsiveCss } = React.useMemo(() => {
     let n = 0;
     const allocId = () => `n${++n}`;
