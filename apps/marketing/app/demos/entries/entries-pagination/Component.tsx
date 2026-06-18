@@ -96,6 +96,7 @@ const cachedRevealOptions = {
   ...revealOptions,
   staggerMs: 80,
 };
+const CACHED_PAGE_SKELETON_MS = 0;
 function productImages(product: DummyProduct) {
   const urls = [
     ...(product.images ?? []),
@@ -176,6 +177,7 @@ type EntriesProductsViewProps = {
   placeholderCount?: number;
   pendingAppendCount?: number;
   loadingEnabled?: boolean;
+  loadingEnterMs?: number;
 };
 
 const INITIAL_ENTRY_SLOT_PREFIX = "product-initial-slot";
@@ -462,6 +464,7 @@ function EntriesProductsView({
   placeholderCount = 6,
   pendingAppendCount = 0,
   loadingEnabled = true,
+  loadingEnterMs = 360,
 }: EntriesProductsViewProps) {
   const [useInitialSlots] = useState(() => !!busy && entries.length === 0);
   const isInitialBusy = busy && entries.length === 0;
@@ -527,7 +530,8 @@ function EntriesProductsView({
             loading: {
               enabled: loadingEnabled,
               waitForDecode: true,
-              enterMs: 360,
+              rememberRevealed: false,
+              enterMs: loadingEnterMs,
               force: isInitialBusy ? true : undefined,
               skeletonWrap: {
                 className: styles.skeletonWrap,
@@ -586,6 +590,7 @@ export function EntriesPaginationDemo() {
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [usingCachedPage, setUsingCachedPage] = useState(false);
+  const [instantSkeletonEnter, setInstantSkeletonEnter] = useState(false);
   const [retainingPageSizeContent, setRetainingPageSizeContent] =
     useState(false);
   const pageCacheRef = useRef(new Map<string, ProductEntryPage>());
@@ -605,17 +610,24 @@ export function EntriesPaginationDemo() {
     const cachedPage = pageCacheRef.current.get(cacheKey);
 
     if (cachedPage) {
-      setEntries(cachedPage.entries);
       setTotal(cachedPage.total);
       setUsingCachedPage(true);
       setError(null);
-      setLoading(false);
+      setLoading(true);
       setRetainingPageSizeContent(false);
-      return;
+
+      const cachedTransitionTimeout = window.setTimeout(() => {
+        setEntries(cachedPage.entries);
+        setLoading(false);
+        setInstantSkeletonEnter(false);
+      }, CACHED_PAGE_SKELETON_MS);
+
+      return () => window.clearTimeout(cachedTransitionTimeout);
     }
 
     const ac = new AbortController();
     setUsingCachedPage(false);
+    setInstantSkeletonEnter(false);
 
     fetchEntriesProductPage({
       limit: pageSize,
@@ -658,6 +670,7 @@ export function EntriesPaginationDemo() {
   const retry = useCallback(() => {
     pageCacheRef.current.delete(paginationCacheKey(pageSize, pageIndex));
     setUsingCachedPage(false);
+    setInstantSkeletonEnter(false);
     setRetainingPageSizeContent(false);
     setLoading(true);
     setError(null);
@@ -666,18 +679,28 @@ export function EntriesPaginationDemo() {
   const setPaginationPage = useCallback(
     (nextPageIndex: number) => {
       if (nextPageIndex === pageIndex) return;
+      const nextPageIsCached = pageCacheRef.current.has(
+        paginationCacheKey(pageSize, nextPageIndex),
+      );
+
       setUsingCachedPage(false);
+      setInstantSkeletonEnter(nextPageIsCached);
       setRetainingPageSizeContent(false);
       setLoading(true);
       setError(null);
       setPageIndex(nextPageIndex);
     },
-    [pageIndex, setPageIndex],
+    [pageIndex, pageSize, setPageIndex],
   );
   const setItemsPerPage = useCallback(
     (nextPageSize: number) => {
       if (nextPageSize === pageSize) return;
+      const nextPageIsCached = pageCacheRef.current.has(
+        paginationCacheKey(nextPageSize, pageIndex),
+      );
+
       setUsingCachedPage(false);
+      setInstantSkeletonEnter(nextPageIsCached);
       setRetainingPageSizeContent(entries.length > 0 && pageIndex === 0);
       setLoading(true);
       setError(null);
@@ -696,6 +719,7 @@ export function EntriesPaginationDemo() {
       ready={entriesReady.ready}
       total={total}
       placeholderCount={pageSize}
+      loadingEnterMs={instantSkeletonEnter ? 0 : 360}
       pendingAppendCount={
         retainingPageSizeContent ? Math.max(0, pageSize - entries.length) : 0
       }
