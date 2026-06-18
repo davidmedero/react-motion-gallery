@@ -128,12 +128,24 @@
   box-shadow: none;
 }
 .productRoot :global([data-rmg-grid-skel-scope] > div),
-.productRoot :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div),
-.pendingSkeletonGrid :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div) {
+.productRoot :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div) {
   contain: paint;
 }
-.pendingSkeletonGrid {
-  overflow-anchor: none;
+.placeholderSlot:global([data-rmg-grid-item-reveal="1"]:not([data-rmg-grid-item-compare="1"]))
+  > :global([data-rmg-grid-item-skeleton="true"]) {
+  opacity: 1 !important;
+  transition-delay: 0ms !important;
+  transition-duration: 0ms !important;
+}
+.placeholderSlot:global([data-rmg-grid-item-layered="1"])
+  > :global([data-rmg-grid-item-content="true"]) {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+.placeholderContent {
+  display: block;
+  min-height: 480px;
 }
 .card {
   --product-image-aspect-ratio: 1 / 1;

@@ -1,6 +1,6 @@
 {
   "name": "react-motion-gallery",
-  "version": "2.0.92",
+  "version": "2.0.93",
   "description": "React gallery primitives for sliders, carousels, grid, masonry, fullscreen lightbox, entries, video, zoom/pan/pinch, skeleton loading and reveal animations",
   "keywords": [
     "react",
