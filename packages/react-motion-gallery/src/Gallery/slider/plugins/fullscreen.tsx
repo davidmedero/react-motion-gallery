@@ -8,7 +8,7 @@ import { createSliderPlugin } from "./create";
 const DRAG_CLICK_THRESHOLD = 6;
 const FULLSCREEN_TRIGGER_SELECTOR = "[data-rmg-fullscreen-trigger]";
 const VIDEO_SURFACE_SELECTOR = "[data-rmg-plyr='true'],.plyr,video,iframe";
-const BASE_VISIBLE_ROOT_MARGIN = "200px";
+export const BASE_VISIBLE_IO_THRESHOLD = 0.25;
 
 function getElement(target: EventTarget | null) {
   return target instanceof Element ? target : null;
@@ -92,6 +92,15 @@ export function resolveSliderFullscreenClick(target: EventTarget | null) {
   if (!image) return null;
 
   return { index, image };
+}
+
+export function shouldNotifyBaseVisibleEntry(
+  entry: Pick<IntersectionObserverEntry, "isIntersecting" | "intersectionRatio">
+) {
+  return (
+    entry.isIntersecting &&
+    entry.intersectionRatio >= BASE_VISIBLE_IO_THRESHOLD
+  );
 }
 
 function FullscreenRuntime({ host }: SliderPluginRuntimeProps) {
@@ -182,22 +191,27 @@ function FullscreenRuntime({ host }: SliderPluginRuntimeProps) {
       syncBeforeOpen: (index) => emitIndex(index),
     });
 
-    try {
-      handle.cellsInView().forEach((index) => notifyIndex(index));
-    } catch {}
-
     const slides = getRenderedSliderSlides(handle);
     if (!slides.length) return;
 
     if (typeof IntersectionObserver === "undefined") {
-      slides.forEach((slide) => notifyIndex(parseSlideIndex(slide)));
+      let visibleIndices: number[] = [];
+      try {
+        visibleIndices = handle.cellsInView();
+      } catch {}
+
+      if (visibleIndices.length) {
+        visibleIndices.forEach((index) => notifyIndex(index));
+      } else {
+        slides.forEach((slide) => notifyIndex(parseSlideIndex(slide)));
+      }
       return;
     }
 
     const io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
+          if (!shouldNotifyBaseVisibleEntry(entry)) continue;
 
           const slide = entry.target;
           if (slide instanceof HTMLElement) {
@@ -209,8 +223,8 @@ function FullscreenRuntime({ host }: SliderPluginRuntimeProps) {
       },
       {
         root: viewport,
-        rootMargin: BASE_VISIBLE_ROOT_MARGIN,
-        threshold: 0,
+        rootMargin: "0px",
+        threshold: [0, BASE_VISIBLE_IO_THRESHOLD, 0.5, 1],
       }
     );
 

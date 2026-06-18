@@ -265,6 +265,13 @@ export function shouldPlayFullscreenVideoOnOpen(args: {
   );
 }
 
+export function resolveAllowedFullscreenImageIndices(
+  activeCanonicalIndex: number,
+  baseVisibleIndices: Iterable<number>
+) {
+  return new Set<number>([activeCanonicalIndex, ...baseVisibleIndices]);
+}
+
 function playPlyrApi(api: APITypes | null) {
   const player: APITypes["plyr"] | null = api?.plyr ?? null;
   if (!player || typeof player.play !== 'function') return false;
@@ -459,6 +466,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const fsAllowedVideosRef = React.useRef<Set<number>>(new Set());
   const fsLazyImageListenersRef = React.useRef(new Set<() => void>());
   const fsLazyVideoListenersRef = React.useRef(new Set<() => void>());
+  const fsBaseVisibleImagesRef = React.useRef<Set<number>>(new Set());
   const fsActiveIndexRef = React.useRef<number>(0);
   const fsDecodedImagesRef = React.useRef(new Set<string>());
   const fsCustomDecodedImagesRef = React.useRef(new Set<string>());
@@ -508,7 +516,10 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       }
 
       if (fsLazyImagesEnabled) {
-        fsAllowedImagesRef.current = new Set<number>([c]);
+        fsAllowedImagesRef.current = resolveAllowedFullscreenImageIndices(
+          c,
+          fsBaseVisibleImagesRef.current
+        );
         notifyFsLazyImages();
       }
     },
@@ -518,7 +529,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const resetFsSessionState = React.useCallback(() => {
     fsForceMountVideosRef.current.clear();
     fsAllowedVideosRef.current = new Set<number>();
-    fsAllowedImagesRef.current = new Set<number>();
+    fsAllowedImagesRef.current = new Set<number>(fsBaseVisibleImagesRef.current);
   }, []);
 
   const syncFsSessionToCurrentIndex = React.useCallback(() => {
@@ -629,6 +640,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     if (prevMediaSignatureRef.current === mediaSignature) return;
 
     prevMediaSignatureRef.current = mediaSignature;
+    fsBaseVisibleImagesRef.current.clear();
     fsPreparedVideosRef.current.clear();
     fsPreloadedVideosRef.current.clear();
     resetFsSessionState();
@@ -1327,6 +1339,10 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     async (canonicalIndex: number) => {
       const item = normalizedItems[canonicalIndex];
       if (!item || item.kind !== 'image') return;
+
+      fsBaseVisibleImagesRef.current.add(canonicalIndex);
+      fsAllowedImagesRef.current.add(canonicalIndex);
+      notifyFsLazyImages();
 
       const key = mediaKey(item);
       if (fsDecodedImagesRef.current.has(key)) return;

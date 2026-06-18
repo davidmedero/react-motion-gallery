@@ -20,6 +20,7 @@ import {
 } from "./transforms";
 import {
   getFullscreenVideoOpenRefIndex,
+  resolveAllowedFullscreenImageIndices,
   shouldPlayFullscreenVideoOnOpen,
 } from "./FullscreenRuntime";
 
@@ -192,6 +193,14 @@ describe("fullscreen slider intro opacity timing", () => {
         introEasing: "ease-in-out",
       })
     ).toBe("opacity 460ms ease-in-out");
+  });
+});
+
+describe("fullscreen lazy image allow state", () => {
+  test("keeps base-visible fullscreen images allowed alongside the active slide", () => {
+    expect(
+      Array.from(resolveAllowedFullscreenImageIndices(2, new Set([0, 1, 4])))
+    ).toEqual([2, 0, 1, 4]);
   });
 });
 

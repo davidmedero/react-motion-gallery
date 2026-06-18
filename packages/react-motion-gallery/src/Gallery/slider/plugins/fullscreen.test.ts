@@ -2,7 +2,11 @@
 
 import { describe, expect, test } from "vitest";
 
-import { resolveSliderFullscreenClick } from "./fullscreen";
+import {
+  BASE_VISIBLE_IO_THRESHOLD,
+  resolveSliderFullscreenClick,
+  shouldNotifyBaseVisibleEntry,
+} from "./fullscreen";
 
 function createSlide({
   index,
@@ -32,5 +36,23 @@ describe("slider fullscreen click resolution", () => {
     const request = resolveSliderFullscreenClick(image);
 
     expect(request).toEqual({ index: 0, image });
+  });
+});
+
+describe("slider fullscreen base visibility", () => {
+  test("uses the lazy-load IO threshold before preloading fullscreen media", () => {
+    expect(
+      shouldNotifyBaseVisibleEntry({
+        isIntersecting: true,
+        intersectionRatio: BASE_VISIBLE_IO_THRESHOLD - 0.01,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldNotifyBaseVisibleEntry({
+        isIntersecting: true,
+        intersectionRatio: BASE_VISIBLE_IO_THRESHOLD,
+      })
+    ).toBe(true);
   });
 });
