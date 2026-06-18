@@ -158,8 +158,12 @@ function waitForDocumentFontsReady() {
   return Promise.resolve(fonts.ready).catch(() => undefined);
 }
 
-async function waitForEntryContentReady(row: HTMLElement) {
-  const images = getBlockingEntryImages(row);
+async function waitForEntryContentReady(
+  row: HTMLElement,
+  options?: { waitForImages?: boolean },
+) {
+  const images =
+    options?.waitForImages === false ? [] : getBlockingEntryImages(row);
 
   await Promise.all([
     waitForDocumentFontsReady(),
@@ -1524,7 +1528,9 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
           const row = entryRowNodesRef.current.get(entryKey);
           if (!row) return null;
 
-          await waitForEntryContentReady(row);
+          await waitForEntryContentReady(row, {
+            waitForImages: loadingN.waitForDecode,
+          });
           return entryKey;
         }),
       ).then((entryKeys) => {

@@ -1189,6 +1189,103 @@ describe("entries data plugins", () => {
     rootEl.remove();
   });
 
+  test("waitForDecode false does not hold reveal verification on image decode", async () => {
+    const rootEl = document.createElement("div");
+    document.body.appendChild(rootEl);
+    const root = createRoot(rootEl);
+    const decodeDescriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLImageElement.prototype,
+      "decode",
+    );
+    const completeDescriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLImageElement.prototype,
+      "complete",
+    );
+    const decode = vi.fn(() => new Promise<void>(() => undefined));
+
+    Object.defineProperty(window.HTMLImageElement.prototype, "decode", {
+      configurable: true,
+      value: decode,
+    });
+    Object.defineProperty(window.HTMLImageElement.prototype, "complete", {
+      configurable: true,
+      get: () => false,
+    });
+
+    try {
+      entryDecodeMock.decodedReady = [false];
+
+      await React.act(async () => {
+        root.render(
+          <EntryList
+            enabled
+            entries={{
+              items: [
+                {
+                  id: "entry-skip-decode",
+                  media: [
+                    { kind: "image", src: "/skip-decode.jpg", alt: "Skip" },
+                  ],
+                },
+              ],
+              loading: { enabled: true, waitForDecode: false },
+              reveal: { durationMs: 60, staggerMs: 0 },
+            }}
+            fsEnabled={false}
+            openFullscreenAt={() => undefined}
+            entryFlatIndex={[[0]]}
+            entryFlatIndexRef={React.createRef<number[][] | null>()}
+            nodeFromMedia={(media: any) =>
+              React.createElement("img", {
+                src: media.src,
+                alt: media.alt ?? "",
+              })
+            }
+            renderMediaContainer={({ mediaNodes }) =>
+              React.createElement("div", null, mediaNodes)
+            }
+            breakpoints={{}}
+          />,
+        );
+      });
+
+      const row = () => rootEl.querySelector("[data-rmg-entry-owner]");
+
+      expect(row()?.getAttribute("data-rmg-entry-mounted")).toBe("1");
+      expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("0");
+
+      await flushEntryRevealFrames();
+
+      expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("1");
+      expect(decode).not.toHaveBeenCalled();
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      rootEl.remove();
+
+      if (decodeDescriptor) {
+        Object.defineProperty(
+          window.HTMLImageElement.prototype,
+          "decode",
+          decodeDescriptor,
+        );
+      } else {
+        delete (window.HTMLImageElement.prototype as any).decode;
+      }
+
+      if (completeDescriptor) {
+        Object.defineProperty(
+          window.HTMLImageElement.prototype,
+          "complete",
+          completeDescriptor,
+        );
+      } else {
+        delete (window.HTMLImageElement.prototype as any).complete;
+      }
+    }
+  });
+
   test("does not mount or decode near-only rows before viewport entry", async () => {
     const rootEl = document.createElement("div");
     document.body.appendChild(rootEl);

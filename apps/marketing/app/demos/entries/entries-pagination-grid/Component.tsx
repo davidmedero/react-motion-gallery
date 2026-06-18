@@ -92,6 +92,8 @@ export type ProductEntriesGridViewProps = {
   placeholderCount?: number;
   pendingAppendCount?: number;
   loadingEnabled?: boolean;
+  loadingEnterMs?: number;
+  loadingWaitForDecode?: boolean;
 };
 
 const PRODUCT_SELECT =
@@ -113,6 +115,7 @@ const cachedRevealOptions = {
   ...revealOptions,
   staggerMs: 80,
 };
+const CACHED_PAGE_SKELETON_MS = 0;
 export const PAGE_SIZE = 6;
 const ITEMS_PER_PAGE_OPTIONS = [6, 9, 12];
 function paginationCacheKey(pageSize: number, pageIndex: number) {
@@ -463,6 +466,8 @@ export function ProductEntriesGridView({
   placeholderCount = PAGE_SIZE,
   pendingAppendCount = 0,
   loadingEnabled = true,
+  loadingEnterMs = 360,
+  loadingWaitForDecode = true,
 }: ProductEntriesGridViewProps) {
   const [useInitialSlots] = useState(() => !!busy && entries.length === 0);
   const isInitialBusy = busy && entries.length === 0;
@@ -527,8 +532,9 @@ export function ProductEntriesGridView({
             },
             loading: {
               enabled: loadingEnabled,
-              waitForDecode: true,
-              enterMs: 360,
+              waitForDecode: loadingWaitForDecode,
+              rememberRevealed: false,
+              enterMs: loadingEnterMs,
               force: isInitialBusy ? true : undefined,
               skeletonWrap: {
                 className: styles.skeletonWrap,
@@ -569,6 +575,7 @@ export function EntriesPaginationGridDemo() {
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [usingCachedPage, setUsingCachedPage] = useState(false);
+  const [instantSkeletonEnter, setInstantSkeletonEnter] = useState(false);
   const [retainingPageSizeContent, setRetainingPageSizeContent] =
     useState(false);
   const pageCacheRef = useRef(new Map<string, ProductEntryPage>());
@@ -589,17 +596,24 @@ export function EntriesPaginationGridDemo() {
     const cachedPage = pageCacheRef.current.get(cacheKey);
 
     if (cachedPage) {
-      setEntries(cachedPage.entries);
       setTotal(cachedPage.total);
       setUsingCachedPage(true);
       setError(null);
-      setLoading(false);
+      setLoading(true);
       setRetainingPageSizeContent(false);
-      return;
+
+      const cachedTransitionTimeout = window.setTimeout(() => {
+        setEntries(cachedPage.entries);
+        setLoading(false);
+        setInstantSkeletonEnter(false);
+      }, CACHED_PAGE_SKELETON_MS);
+
+      return () => window.clearTimeout(cachedTransitionTimeout);
     }
 
     const ac = new AbortController();
     setUsingCachedPage(false);
+    setInstantSkeletonEnter(false);
 
     fetchEntriesProductPage({
       limit: pagination.pageSize,
@@ -633,6 +647,7 @@ export function EntriesPaginationGridDemo() {
       paginationCacheKey(pagination.pageSize, pagination.pageIndex),
     );
     setUsingCachedPage(false);
+    setInstantSkeletonEnter(false);
     setRetainingPageSizeContent(false);
     setLoading(true);
     setError(null);
@@ -641,7 +656,12 @@ export function EntriesPaginationGridDemo() {
   const setPaginationPage = useCallback(
     (nextPageIndex: number) => {
       if (nextPageIndex === pagination.pageIndex) return;
+      const nextPageIsCached = pageCacheRef.current.has(
+        paginationCacheKey(pagination.pageSize, nextPageIndex),
+      );
+
       setUsingCachedPage(false);
+      setInstantSkeletonEnter(nextPageIsCached);
       setRetainingPageSizeContent(false);
       setLoading(true);
       setError(null);
@@ -652,7 +672,12 @@ export function EntriesPaginationGridDemo() {
   const setItemsPerPage = useCallback(
     (nextPageSize: number) => {
       if (nextPageSize === pagination.pageSize) return;
+      const nextPageIsCached = pageCacheRef.current.has(
+        paginationCacheKey(nextPageSize, pagination.pageIndex),
+      );
+
       setUsingCachedPage(false);
+      setInstantSkeletonEnter(nextPageIsCached);
       setRetainingPageSizeContent(
         entries.length > 0 && pagination.pageIndex === 0,
       );
@@ -673,6 +698,8 @@ export function EntriesPaginationGridDemo() {
       ready={entriesReady.ready}
       total={total}
       placeholderCount={pagination.pageSize}
+      loadingEnterMs={instantSkeletonEnter ? 0 : 360}
+      loadingWaitForDecode={!usingCachedPage}
       pendingAppendCount={
         retainingPageSizeContent
           ? Math.max(0, pagination.pageSize - entries.length)
