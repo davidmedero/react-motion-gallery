@@ -2,6 +2,21 @@
 
 import * as React from "react";
 import type { MediaItem } from "../shared/types/media";
+import {
+  BREAKPOINT_MAP,
+  effectiveViewportHeight,
+  effectiveViewportWidth,
+  resolveLengthFromResponsive,
+} from "../shared/responsive";
+import {
+  shouldHydrateFullscreenSlide,
+  updateFullscreenCellRef,
+} from "./slideWindow";
+
+function subtractReservedSpace(base: string, reservedPx: number): string {
+  if (!(reservedPx > 0)) return base;
+  return `calc(${base} - ${reservedPx}px)`;
+}
 
 function isWrappedItems(itemsLen: number, canonicalLen: number) {
   return canonicalLen > 1 && itemsLen === canonicalLen + 2;
@@ -77,6 +92,13 @@ function BaseSlide(props: {
   renderMode?: "track" | "crossfade";
   interactive?: boolean;
   registerCell?: boolean;
+  isHorizontal?: boolean;
+  isVertical?: boolean;
+  reservedBefore?: number;
+  reservedAfter?: number;
+  mediaViewportWidth?: string;
+  mediaViewportHeight?: string;
+  hydrateContent?: boolean;
 }) {
   const {
     item,
@@ -98,8 +120,16 @@ function BaseSlide(props: {
     renderMode = "track",
     interactive = showFullscreenSlider,
     registerCell = true,
+    isHorizontal = false,
+    isVertical = false,
+    reservedBefore = 0,
+    reservedAfter = 0,
+    mediaViewportWidth = "100%",
+    mediaViewportHeight = "100%",
+    hydrateContent = true,
   } = props;
 
+  const isInteractive = interactive && hydrateContent;
   const isNode = item.kind === "node";
   const baseImgStyle: React.CSSProperties = {
     maxWidth: "100%",
@@ -107,20 +137,21 @@ function BaseSlide(props: {
     objectFit: "contain",
     touchAction: "manipulation",
     transformOrigin: "0 0",
-    cursor: interactive ? (isZoomed ? "grab" : "zoom-in") : "default",
+    cursor: isInteractive ? (isZoomed ? "grab" : "zoom-in") : "default",
     userSelect: "none",
     WebkitUserSelect: "none",
   };
 
-  const mediaNode =
-    isNode ? (
+  const mediaNode = !hydrateContent
+    ? null
+    : isNode ? (
       <div
         data-rmg-fs-node="true"
         style={{
           width: "100%",
           height: "100%",
           position: "relative",
-          pointerEvents: interactive ? "auto" : "none",
+          pointerEvents: isInteractive ? "auto" : "none",
           userSelect: "none",
           WebkitUserSelect: "none",
           display: "flex",
@@ -174,8 +205,8 @@ function BaseSlide(props: {
         className={styles.fullscreenImages}
         draggable="false"
         decoding="async"
-        loading={isClone ? "lazy" : "eager"}
-        fetchPriority={isClone ? "low" : "high"}
+        loading={showFullscreenSlider && !isClone ? "eager" : "lazy"}
+        fetchPriority={showFullscreenSlider && !isClone ? "high" : "low"}
         src={(item as any).src ?? ""}
         srcSet={(item as any).srcSet ?? undefined}
         sizes={(item as any).sizes ?? undefined}
@@ -195,15 +226,8 @@ function BaseSlide(props: {
       data-rmg-clone={isClone ? "true" : "false"}
       data-rmg-fs-render-mode={renderMode}
       ref={(el: HTMLDivElement | null) => {
-        if (
-          registerCell &&
-          el &&
-          !cells.current.some((c) => c.element === el)
-        ) {
-          cells.current.push({
-            element: el as unknown as HTMLElement,
-            index,
-          });
+        if (registerCell) {
+          updateFullscreenCellRef(cells, index, el);
         }
       }}
       style={{
@@ -219,55 +243,89 @@ function BaseSlide(props: {
         minWidth: "100%",
         height: "100%",
         margin: "auto",
-        touchAction: interactive ? "none" : "manipulation",
+        touchAction: isInteractive ? "none" : "manipulation",
         userSelect: "none",
         WebkitUserSelect: "none",
-        pointerEvents: interactive ? "auto" : "none",
+        pointerEvents: isInteractive ? "auto" : "none",
       }}
       className={styles.imgMargin}
     >
       <div
-        ref={imageRef}
-        data-rmg-zoom-pan-root="true"
-        data-rmg-fs-media="true"
-        data-rmg-fs-media-viewport="true"
-        onPointerDown={
-          isNode || !interactive
-            ? undefined
-            : (e) => onPanPointerDown(e, imageRef)
-        }
-        onPointerEnter={
-          isNode || !interactive || !onHoverPointerEnter
-            ? undefined
-            : (e) => onHoverPointerEnter(e, imageRef)
-        }
-        onPointerMove={
-          isNode || !interactive || !onHoverPointerMove
-            ? undefined
-            : (e) => onHoverPointerMove(e, imageRef)
-        }
-        onPointerLeave={
-          isNode || !interactive || !onHoverPointerLeave
-            ? undefined
-            : (e) => onHoverPointerLeave(e, imageRef)
-        }
-        onClickCapture={onSuppressNextClickCapture as any}
         style={{
-          overflow: "visible",
-          touchAction: "none",
           width: "100%",
           height: "100%",
-          minWidth: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
           position: "relative",
+          display: "flex",
+          flexDirection: isHorizontal ? "row" : "column",
+          justifyContent: "center",
           userSelect: "none",
           WebkitUserSelect: "none",
-          pointerEvents: interactive ? "auto" : "none",
         }}
       >
-        {mediaNode}
+        {reservedBefore > 0 && (
+          <div
+            aria-hidden
+            style={{
+              flex: `0 0 ${reservedBefore}px`,
+              pointerEvents: "none",
+              visibility: "hidden",
+            }}
+          />
+        )}
+        <div
+          ref={imageRef}
+          data-rmg-zoom-pan-root="true"
+          data-rmg-fs-media="true"
+          data-rmg-fs-media-viewport="true"
+          onPointerDown={
+            isNode || !isInteractive
+              ? undefined
+              : (e) => onPanPointerDown(e, imageRef)
+          }
+          onPointerEnter={
+            isNode || !isInteractive || !onHoverPointerEnter
+              ? undefined
+              : (e) => onHoverPointerEnter(e, imageRef)
+          }
+          onPointerMove={
+            isNode || !isInteractive || !onHoverPointerMove
+              ? undefined
+              : (e) => onHoverPointerMove(e, imageRef)
+          }
+          onPointerLeave={
+            isNode || !isInteractive || !onHoverPointerLeave
+              ? undefined
+              : (e) => onHoverPointerLeave(e, imageRef)
+          }
+          onClickCapture={onSuppressNextClickCapture as any}
+          style={{
+            overflow: "visible",
+            touchAction: "none",
+            width: mediaViewportWidth,
+            height: mediaViewportHeight,
+            minWidth: 0,
+            minHeight: isVertical ? 0 : undefined,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            pointerEvents: isInteractive ? "auto" : "none",
+          }}
+        >
+          {mediaNode}
+        </div>
+        {reservedAfter > 0 && (
+          <div
+            aria-hidden
+            style={{
+              flex: `0 0 ${reservedAfter}px`,
+              pointerEvents: "none",
+              visibility: "hidden",
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -289,14 +347,93 @@ export function renderFullscreenBaseSlides(opts: any) {
     styles,
     renderImage,
     canonicalLength,
+    activeCanonicalIndex,
     renderMode = "track",
+    fsViewportOverlayPlacement,
+    fsViewportOverlayWidth,
+    fsViewportOverlayHeight,
+    fsViewportOverlayBreakpoint,
+    breakpointMap,
+    viewportWidth,
+    viewportHeight,
+    resolveFsCaptionPlacement,
   } = opts;
 
   const canonLen = canonicalLength ?? items.length;
+  const vw = effectiveViewportWidth(
+    viewportWidth ?? (typeof window !== "undefined" ? window.innerWidth : 0)
+  );
+  const vh = effectiveViewportHeight(
+    viewportHeight ?? (typeof window !== "undefined" ? window.innerHeight : 0)
+  );
+  const effectiveViewportOverlayPlacement =
+    typeof resolveFsCaptionPlacement === "function"
+      ? resolveFsCaptionPlacement(
+          fsViewportOverlayPlacement,
+          fsViewportOverlayBreakpoint,
+          vw
+        )
+      : null;
+  const activeBreakpointMap = breakpointMap ?? BREAKPOINT_MAP;
+  const viewportOverlaySideWidth = resolveLengthFromResponsive(
+    fsViewportOverlayWidth,
+    280,
+    vw,
+    vw,
+    activeBreakpointMap
+  );
+  const viewportOverlayTopBottomHeight = resolveLengthFromResponsive(
+    fsViewportOverlayHeight,
+    200,
+    vw,
+    vh,
+    activeBreakpointMap
+  );
+  const isHorizontal =
+    effectiveViewportOverlayPlacement === "left" ||
+    effectiveViewportOverlayPlacement === "right";
+  const isVertical =
+    effectiveViewportOverlayPlacement === "top" ||
+    effectiveViewportOverlayPlacement === "bottom";
+  const reservedLeft =
+    effectiveViewportOverlayPlacement === "left" && fsViewportOverlayWidth != null
+      ? viewportOverlaySideWidth
+      : 0;
+  const reservedRight =
+    effectiveViewportOverlayPlacement === "right" && fsViewportOverlayWidth != null
+      ? viewportOverlaySideWidth
+      : 0;
+  const reservedTop =
+    effectiveViewportOverlayPlacement === "top" && fsViewportOverlayHeight != null
+      ? viewportOverlayTopBottomHeight
+      : 0;
+  const reservedBottom =
+    effectiveViewportOverlayPlacement === "bottom" && fsViewportOverlayHeight != null
+      ? viewportOverlayTopBottomHeight
+      : 0;
+  const reservedBefore = isHorizontal ? reservedLeft : reservedTop;
+  const reservedAfter = isHorizontal ? reservedRight : reservedBottom;
+  const mediaViewportWidth = subtractReservedSpace(
+    "100%",
+    reservedLeft + reservedRight
+  );
+  const mediaViewportHeight = subtractReservedSpace(
+    "100%",
+    reservedTop + reservedBottom
+  );
 
   return items.map((item: MediaItem, index: number) => {
     const canonicalIndex = toCanonicalIndex(index, items.length, canonLen);
     const isClone = isCloneIndex(index, items.length, canonLen);
+    const hydrateContent = shouldHydrateFullscreenSlide({
+      renderedIndex: index,
+      itemsLength: items.length,
+      canonicalLength: canonLen,
+      activeCanonicalIndex,
+      renderMode,
+    });
+
+    if (!hydrateContent) return null;
 
     return (
       <BaseSlide
@@ -320,6 +457,13 @@ export function renderFullscreenBaseSlides(opts: any) {
         renderMode={renderMode}
         interactive={renderMode === "track" && showFullscreenSlider}
         registerCell={renderMode === "track"}
+        isHorizontal={isHorizontal}
+        isVertical={isVertical}
+        reservedBefore={reservedBefore}
+        reservedAfter={reservedAfter}
+        mediaViewportWidth={mediaViewportWidth}
+        mediaViewportHeight={mediaViewportHeight}
+        hydrateContent={hydrateContent}
       />
     );
   });

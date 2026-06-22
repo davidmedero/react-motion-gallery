@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { resolveFullscreenControllerOpenMethod } from "./openMethod";
 
 describe("resolveFullscreenControllerOpenMethod", () => {
-  test("forces fade when introFade is enabled", () => {
+  test("forces fade when transitionFade is enabled", () => {
     expect(
       resolveFullscreenControllerOpenMethod(
         { kind: "image", src: "/image.jpg", alt: "Image" },
@@ -23,7 +23,7 @@ describe("resolveFullscreenControllerOpenMethod", () => {
     ).toBe("fade");
   });
 
-  test("defaults images to scale without introFade", () => {
+  test("defaults images to scale without transitionFade", () => {
     expect(
       resolveFullscreenControllerOpenMethod(
         { kind: "image", src: "/image.jpg", alt: "Image" },
@@ -33,7 +33,7 @@ describe("resolveFullscreenControllerOpenMethod", () => {
     ).toBe("scale");
   });
 
-  test("defaults non-images to fade without introFade", () => {
+  test("defaults non-images to fade without transitionFade", () => {
     expect(
       resolveFullscreenControllerOpenMethod(
         { kind: "video", src: "/video.mp4" },

@@ -16,6 +16,10 @@ export type FullscreenCaptionZoomSettings = {
   zoomOutTransform: string;
 };
 
+export type FullscreenCaptionZoomSettingsOptions = {
+  disabled?: boolean;
+};
+
 export type FullscreenCaptionZoomMotion = {
   phase: FullscreenCaptionZoomPhase;
   isZoomed: boolean;
@@ -28,10 +32,11 @@ export const DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_EASING =
   "cubic-bezier(.4,0,.22,1)";
 
 export function resolveFullscreenCaptionZoomSettings(
-  caption: FullscreenCaptionOptions | undefined
+  caption: FullscreenCaptionOptions | undefined,
+  options?: FullscreenCaptionZoomSettingsOptions
 ): FullscreenCaptionZoomSettings {
   return {
-    enabled: caption?.zoomFade !== false,
+    enabled: !options?.disabled && caption?.zoomFade !== false,
     durationMs:
       caption?.zoomFadeDurationMs ??
       DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_DURATION_MS,
@@ -109,12 +114,14 @@ export function buildFullscreenCaptionZoomMotion(args: {
 export function useFullscreenCaptionZoomMotion(args: {
   caption: FullscreenCaptionOptions | undefined;
   isZoomed: boolean;
+  disabled?: boolean;
 }): FullscreenCaptionZoomMotion {
-  const { caption, isZoomed } = args;
+  const { caption, disabled, isZoomed } = args;
 
   const settings = React.useMemo(
-    () => resolveFullscreenCaptionZoomSettings(caption),
+    () => resolveFullscreenCaptionZoomSettings(caption, { disabled }),
     [
+      disabled,
       caption?.zoomFade,
       caption?.zoomFadeDurationMs,
       caption?.zoomFadeEasing,

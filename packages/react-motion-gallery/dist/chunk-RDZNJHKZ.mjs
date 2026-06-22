@@ -1,0 +1,6 @@
+import {i}from'./chunk-WHWHN5CG.mjs';function w(S){let{scopeId:C,responsiveCount:M,fallbackCount:a,breakpointMap:g,maxSlots:t,visibleSlotsForCount:m,slotOrderForCount:k}=S,c=i(M,a,g),u=e=>Math.max(0,Math.floor(e)),p=u(c[0]?.count??a),b=`[data-rmg-scope="${C}"]`,d=`${b} [data-rmg-skel-slot]`,s=[];s.push(`${d}{ display:none; }`);let $=e=>{let r=u(e);if(r<=0)return [];let i=m?m(r,t):Array.from({length:Math.min(t,r)},(n,o)=>o+1);return Array.from(new Set(i.map(n=>Math.floor(n)).filter(n=>Number.isFinite(n)&&n>=1&&n<=t)))},f=e=>{let r=k?.(u(e),t),i=r?.length?r.map(({slot:o})=>Math.floor(o)).filter(o=>Number.isFinite(o)&&o>=1&&o<=t):$(e);if(!i.length)return "";let n=new Map((r??[]).map(({slot:o,order:l})=>[Math.floor(o),l]));return Array.from(new Set(i)).map(o=>{let l=n.get(o),v=Number.isFinite(l)?` order:${l};`:"";return `${b} [data-rmg-skel-slot="${o}"]{ display:block;${v} }`}).join(`
+`)};s.push(f(p));for(let e of c.slice(1))s.push(`@media (min-width:${e.minWidth}px){
+${d}{ display:none; }
+${f(e.count)}
+}`);return {cssText:s.join(`
+`),ssrBaseCount:p}}export{w as a};

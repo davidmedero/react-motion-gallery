@@ -8,12 +8,13 @@ import createIndexChannel, { normalizeSliderInitialIndex } from "./sliderSub";
 import { DEFAULT_SLIDER } from "./defaults";
 import {
   BREAKPOINT_MAP,
+  resolveBooleanFromResponsive,
   resolveNumberFromResponsive,
-} from "../shared/responsiveNumber";
+} from "../shared/responsive";
 import { useViewportWidth } from "../shared/hooks/useViewportWidth";
 import { useSkeletonRevealGate } from "../shared/loading/skeletonRevealGate";
 import { resolveResponsiveSliderGroupCells } from "./groupCells";
-import type { BreakpointMap } from "../shared/responsiveNumber";
+import type { BreakpointMap } from "../shared/responsive";
 import type {
   SliderAutoPlayTimer,
   SliderCoreHandle,
@@ -425,6 +426,19 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
     return Math.max(0, raw | 0);
   }, [sliderObject.layout.gap, vw, effectiveBreakpoints]);
 
+  const resolvedCenterInsufficientSlides = React.useMemo(() => {
+    return resolveBooleanFromResponsive(
+      sliderObject.layout.centerInsufficientSlides,
+      true,
+      vw,
+      effectiveBreakpoints
+    );
+  }, [
+    sliderObject.layout.centerInsufficientSlides,
+    vw,
+    effectiveBreakpoints,
+  ]);
+
   const resolvedGroupCells = React.useMemo<boolean | number>(() => {
     return resolveResponsiveSliderGroupCells(
       sliderObject.scroll.groupCells,
@@ -517,6 +531,8 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
           ? resolvedCellsPerSlide ?? 1
           : undefined
       }
+      preserveCellSize={sliderObject.layout.preserveCellSize}
+      centerInsufficientSlides={resolvedCenterInsufficientSlides}
       direction={sliderObject.direction}
       align={sliderObject.align}
       scroll={resolvedScroll}

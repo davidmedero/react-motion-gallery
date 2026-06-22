@@ -5,6 +5,7 @@
 import {
   useRef,
   useEffect,
+  useLayoutEffect,
   useState,
   ReactNode,
   Children,
@@ -57,6 +58,10 @@ import {
   resolveFullscreenIntroDurationMs,
   resolveFullscreenIntroEasing,
 } from './introTiming'
+import {
+  DEFAULT_FULLSCREEN_SLIDE_WINDOW_MIN_ITEMS,
+  DEFAULT_FULLSCREEN_SLIDE_WINDOW_RADIUS,
+} from './slideWindow'
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
 function DragTracker(axis: AxisLike, ownerWindow: WindowType) {
@@ -170,16 +175,16 @@ export function resolveFullscreenReleaseSnapForce(args: {
 
 export function resolveFullscreenIntroOpacityTransition(args: {
   shouldFadeIntro: boolean;
-  introDuration?: FullscreenIntroPathTiming<number>;
-  introEasing?: FullscreenIntroPathTiming<string>;
+  transitionDuration?: FullscreenIntroPathTiming<number>;
+  transitionEasing?: FullscreenIntroPathTiming<string>;
 }) {
   if (!args.shouldFadeIntro) return undefined;
 
   const durationMs = resolveFullscreenIntroDurationMs(
-    args.introDuration,
+    args.transitionDuration,
     "fade"
   );
-  const easing = resolveFullscreenIntroEasing(args.introEasing, "fade");
+  const easing = resolveFullscreenIntroEasing(args.transitionEasing, "fade");
 
   return `opacity ${durationMs}ms ${easing}`;
 }
@@ -240,7 +245,7 @@ interface FullscreenSliderProps {
   strictSnaps?: boolean;
   suppressLoopRef: React.RefObject<boolean>;
   fadeOpening: boolean;
-  introFade?: boolean;
+  transitionFade?: boolean;
   controlsFade?: boolean;
   dragFade?: boolean;
   wheelFade?: CrossFadeWheel;
@@ -248,8 +253,8 @@ interface FullscreenSliderProps {
   slideFadeEasing?: string;
   normalizedItems: MediaItem[];
   crossfadeSlides?: ReactNode[];
-  introDuration?: FullscreenIntroPathTiming<number>;
-  introEasing?: FullscreenIntroPathTiming<string>;
+  transitionDuration?: FullscreenIntroPathTiming<number>;
+  transitionEasing?: FullscreenIntroPathTiming<string>;
   resetAllZoomDom: () => void;
   requestFsCloseRef: React.RefObject<null | (() => void)>;
   introMethod?: "fade" | "scale" | null;
@@ -293,7 +298,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       strictSnaps,
       suppressLoopRef,
       fadeOpening,
-      introFade,
+      transitionFade,
       controlsFade = false,
       dragFade = false,
       wheelFade,
@@ -301,8 +306,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       slideFadeEasing = 'cubic-bezier(.4,0,.22,1)',
       normalizedItems,
       crossfadeSlides,
-      introDuration,
-      introEasing,
+      transitionDuration,
+      transitionEasing,
       resetAllZoomDom,
       requestFsCloseRef,
       introMethod,
@@ -331,6 +336,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const FADE_DISTANCE = 300
     const selectedIndex = useRef(0)
     const hasPositioned = useRef<boolean>(false)
+    const prepaintPositionedForOpenRef = useRef(false)
     const perSlideRef = useRef(0)
     const contentSizeRef = useRef(0)
     const loopLimitRef = useRef<ReturnType<typeof Limit> | null>(null)
@@ -424,6 +430,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       fs?.controls?.arrows?.enabled !== false && cellCount > 1;
 
     const arrows = fs?.controls?.arrows;
+    const gapPxRef = useRef(gapPx);
+    gapPxRef.current = gapPx;
 
     const renderArrowNode = (dir: 'prev' | 'next', side: 'left' | 'right') => {
       const explicit =
@@ -461,7 +469,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     } = useWheelLock()
 
     function measureSlideStep(track: HTMLElement | null) {
-      return (track?.clientWidth || 1) + gapPx
+      return (track?.clientWidth || 1) + gapPxRef.current
     }
 
     function syncLoopGeometry(per: number, len: number) {
@@ -533,7 +541,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       setAllX(nx);
       setTranslateX(nx, 0);
       animRef.current?.resetBlend();
-    }, []);
+    }, [sign]);
     
     useEffect(() => {
       const el = slider.current;
@@ -552,18 +560,23 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     }, [show, recenterWithAnchor]);
 
     useEffect(() => {
-      const childrenArray = Children.toArray(children)
-      slides.current = []
-      if (cellCount > 1) {
-        for (let i = 1; i < childrenArray.length - 1; i++) {
-          slides.current.push({ cells: [cells.current[i]] as any })
-        }
-      } else {
-        for (let i = 0; i < childrenArray.length; i++) {
-          slides.current.push({ cells: [cells.current[i]] as any })
-        }
-      }
-    }, [children])
+      const fallbackCount = Children.count(children) || 1
+      const logicalCount = Math.max(1, cellCount || fallbackCount)
+      const cellByRenderedIndex = new Map(
+        cells.current
+          .filter((cell) => cell?.element)
+          .map((cell) => [cell.index, cell])
+      )
+
+      slides.current = Array.from({ length: logicalCount }, (_, canonicalIndex) => {
+        const renderedIndex = cellCount > 1 ? canonicalIndex + 1 : canonicalIndex
+        const cell = cellByRenderedIndex.get(renderedIndex)
+
+        return {
+          cells: cell ? [{ element: cell.element }] : [],
+        } as any
+      })
+    }, [children, cellCount])
 
     function publishVisibleIndex(idx: number) {
       if (publishedIndexRef.current === idx) return
@@ -1213,6 +1226,56 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       const safeLen = Math.max(1, len)
       return ((requestedIndex % safeLen) + safeLen) % safeLen
     }
+
+    function circularIndexDistance(a: number, b: number, len: number) {
+      const direct = Math.abs(a - b)
+      return Math.min(direct, Math.max(0, len - direct))
+    }
+
+    function shouldJumpSparseRequest(requestedIndex: number) {
+      const len = slideCount()
+      if (len < DEFAULT_FULLSCREEN_SLIDE_WINDOW_MIN_ITEMS) return false
+
+      const from = resolveStartIndex(selectedIndex.current || 0, len)
+      const to = resolveStartIndex(requestedIndex, len)
+
+      return (
+        circularIndexDistance(from, to, len) >
+        DEFAULT_FULLSCREEN_SLIDE_WINDOW_RADIUS
+      )
+    }
+
+    useLayoutEffect(() => {
+      const track = slider.current;
+      if (!track) return;
+
+      if (!show) {
+        prepaintPositionedForOpenRef.current = false;
+        delete track.dataset.rmgFsTrackPositioned;
+        return;
+      }
+
+      if (prepaintPositionedForOpenRef.current) return;
+
+      const len = Math.max(1, cellCount || 1);
+      const startIndex = resolveStartIndex(slideIndex, len);
+      const per = measureSlideStep(track);
+      const startX = -per * startIndex;
+      const sx = Math.round(startX) * sign;
+
+      selectedIndex.current = startIndex;
+      indexCurrentRef.current?.set(startIndex);
+      indexPreviousRef.current?.set(startIndex);
+      publishVisibleIndex(startIndex);
+      updateCounterFromIndex(startIndex);
+      perSlideRef.current = per;
+      x.current = startX;
+      y.current = 0;
+      track.style.transform = `translate3d(${sx}px, 0, 0)`;
+      track.dataset.rmgFsTrackPositioned = "true";
+      prepaintPositionedForOpenRef.current = true;
+      hasPositioned.current = true;
+    }, [show, slideIndex, cellCount, sign]);
 
     function commitXY(canonicalX: number, ny: number) {
       const nx = Math.round(canonicalX) * sign;
@@ -2533,7 +2596,11 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
               : null;
 
             if (thumbTransition === "scroll") {
-              scrollToIndex(req.index, { jump: false });
+              if (shouldJumpSparseRequest(req.index)) {
+                jumpToIndexInstant(resolveStartIndex(req.index, slideCount()));
+              } else {
+                scrollToIndex(req.index, { jump: false });
+              }
               break;
             }
 
@@ -2544,7 +2611,11 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
                 easing: req.meta?.crossfade?.easing,
               })
             ) {
-              scrollToIndex(req.index, { jump: false });
+              if (shouldJumpSparseRequest(req.index)) {
+                jumpToIndexInstant(resolveStartIndex(req.index, slideCount()));
+              } else {
+                scrollToIndex(req.index, { jump: false });
+              }
             }
 
             break;
@@ -2610,11 +2681,11 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const isVideoSlide =
       isVideoItem(normalizedItems?.[openingIndex]);
 
-    const shouldFadeIntro = introMethod === "fade" || introFade || isVideoSlide;
+    const shouldFadeIntro = introMethod === "fade" || transitionFade || isVideoSlide;
     const introOpacityTransition = resolveFullscreenIntroOpacityTransition({
       shouldFadeIntro,
-      introDuration,
-      introEasing,
+      transitionDuration,
+      transitionEasing,
     });
     const crossfadeSourceNode =
       crossfadeState != null

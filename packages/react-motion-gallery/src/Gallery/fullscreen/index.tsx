@@ -11,7 +11,6 @@ import { useWindowSize } from "../shared/hooks/useWindowSize";
 import type {
   FsCaptionPlacement,
   FsIntroRequest,
-  FullscreenEffectsOptions,
   FullscreenOptions,
   FullscreenPlugin,
   FullscreenPluginOptions,
@@ -117,6 +116,21 @@ function mergeFullscreenOptionLayer(
     merged.controls = { ...(base.controls ?? {}), ...(layer.controls ?? {}) };
   }
 
+  if (base.dialog || layer.dialog) {
+    merged.dialog = {
+      ...(base.dialog ?? {}),
+      ...(layer.dialog ?? {}),
+      media:
+        base.dialog?.media || layer.dialog?.media
+          ? { ...(base.dialog?.media ?? {}), ...(layer.dialog?.media ?? {}) }
+          : undefined,
+      caption:
+        base.dialog?.caption || layer.dialog?.caption
+          ? { ...(base.dialog?.caption ?? {}), ...(layer.dialog?.caption ?? {}) }
+          : undefined,
+    };
+  }
+
   if (base.caption || layer.caption) {
     merged.caption = { ...(base.caption ?? {}), ...(layer.caption ?? {}) };
   }
@@ -156,13 +170,13 @@ function mergeFullscreenOptionLayer(
     merged.effects = {
       ...(base.effects ?? {}),
       ...(layer.effects ?? {}),
-      introDuration: mergeFullscreenIntroPathTiming(
-        base.effects?.introDuration,
-        layer.effects?.introDuration
+      transitionDuration: mergeFullscreenIntroPathTiming(
+        base.effects?.transitionDuration,
+        layer.effects?.transitionDuration
       ),
-      introEasing: mergeFullscreenIntroPathTiming(
-        base.effects?.introEasing,
-        layer.effects?.introEasing
+      transitionEasing: mergeFullscreenIntroPathTiming(
+        base.effects?.transitionEasing,
+        layer.effects?.transitionEasing
       ),
       crossfade:
         base.effects?.crossfade || layer.effects?.crossfade
@@ -360,7 +374,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
 
     const fullscreenEffects = {
       ...(configuredFullscreen?.effects ?? {}),
-    } as FullscreenEffectsOptions & {
+    } as NonNullable<FullscreenOptions["effects"]> & {
       thumbnailsFadeDuration?: number;
       thumbnailsFadeEasing?: string;
     };
@@ -384,7 +398,6 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       caption: { ...DEFAULT_FULLSCREEN.caption, ...(configuredFullscreen?.caption ?? {}) },
     };
   }, [configuredFullscreen]);
-
   const setScale = useCallback((newScale: number) => {
     scaleRef.current = newScale;
     const prev = isZoomedRef.current;
@@ -593,7 +606,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       const method = resolveFullscreenControllerOpenMethod(
         item,
         requestedMethod,
-        !!fs.effects?.introFade
+        !!fs.effects?.transitionFade
       );
 
       const introImg = method === "scale" ? originImg : null;
@@ -736,9 +749,9 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         resolveLayoutlessTarget={resolveLayoutlessTarget}
         entryMapRef={safeEntryMapRef}
         entryMediaLayout={safeEntryMediaLayout}
-        introFade={fs.effects.introFade}
-        introDuration={fs.effects.introDuration}
-        introEasing={fs.effects.introEasing}
+        transitionFade={fs.effects.transitionFade}
+        transitionDuration={fs.effects.transitionDuration}
+        transitionEasing={fs.effects.transitionEasing}
         fullscreenSliderApi={fullscreenSliderApi}
         slideIndex={slideIndex}
         isZoomClick={isZoomClick}

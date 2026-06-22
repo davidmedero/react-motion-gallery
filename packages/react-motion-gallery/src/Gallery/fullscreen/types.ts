@@ -76,6 +76,14 @@ export type FullscreenControlsOptions = {
   counter?: FullscreenCounter;
 };
 
+export type FullscreenDialogOptions = ElementStyle & {
+  enabled?: boolean;
+  opacityDuration?: number;
+  opacityEasing?: string;
+  media?: ElementStyle;
+  caption?: ElementStyle;
+};
+
 export type FsCaptionRenderArgs = {
   item: MediaItem;
   index: number;
@@ -111,10 +119,10 @@ export type FullscreenIntroPathTiming<T> =
     };
 
 export type FullscreenEffectsOptions = {
-  introDuration?: FullscreenIntroPathTiming<number>;
-  introEasing?: FullscreenIntroPathTiming<string>;
-  introFade?: boolean;
-  introStickyNavSelector?: string;
+  transitionDuration?: FullscreenIntroPathTiming<number>;
+  transitionEasing?: FullscreenIntroPathTiming<string>;
+  transitionFade?: boolean;
+  StickyNavSelector?: string;
   crossfade?: FullscreenCrossfadeOptions;
 };
 
@@ -191,6 +199,7 @@ export type FullscreenCloseScrollOptions = {
 export type FullscreenOptions = {
   enabled?: boolean;
   items?: MediaItem[] | string[];
+  dialog?: FullscreenDialogOptions;
   renderImage?: FSImageRender;
   video?: FullscreenVideoOptions;
   controls?: FullscreenControlsOptions;

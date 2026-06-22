@@ -53,6 +53,29 @@ export function getSliderCenterOffset(args: {
   return (viewport - alignSize) / 2;
 }
 
+export function getSliderInsufficientContentOffset(args: {
+  viewport: number;
+  contentSpan: number;
+  centerInsufficientSlides?: boolean;
+}): number {
+  const {
+    viewport,
+    contentSpan,
+    centerInsufficientSlides = true,
+  } = args;
+
+  if (
+    !centerInsufficientSlides ||
+    viewport <= 0 ||
+    contentSpan <= 0 ||
+    contentSpan > viewport
+  ) {
+    return 0;
+  }
+
+  return Math.round((viewport - contentSpan) / 2);
+}
+
 export type SliderGroupCellsInput = boolean | number | undefined;
 
 export function normalizeSliderGroupCellCount(

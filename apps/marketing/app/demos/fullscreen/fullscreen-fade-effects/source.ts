@@ -58,9 +58,9 @@ function FullscreenFadeEffectsAddon() {
       fullscreen: {
         enabled: true,
         effects: {
-          introFade: true,
-          introDuration: 700,
-          introEasing: CROSSFADE_EASING,
+          transitionFade: true,
+          transitionDuration: 700,
+          transitionEasing: CROSSFADE_EASING,
           crossfade: {
             controls: true,
             drag: true,

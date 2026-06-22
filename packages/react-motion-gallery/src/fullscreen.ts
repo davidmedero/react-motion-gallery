@@ -9,6 +9,7 @@ export type {
   FullscreenCloseScrollTiming,
   FullscreenControlsOptions,
   FullscreenCrossfadeOptions,
+  FullscreenDialogOptions,
   FullscreenEffectsOptions,
   FullscreenIntroPathTiming,
   FullscreenLazyLoadOptions,

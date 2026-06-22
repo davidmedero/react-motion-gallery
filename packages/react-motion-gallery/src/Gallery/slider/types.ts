@@ -1,4 +1,4 @@
-import type { ResponsiveNumber } from "../shared/responsive";
+import type { ResponsiveBoolean, ResponsiveNumber } from "../shared/responsive";
 import type {
   ArrowRenderArgs,
   DotsRenderArgs,
@@ -32,6 +32,8 @@ export type ResponsiveHeightRule = { query: string; height: string };
 export type SliderLayout = {
   gap?: number;
   cellsPerSlide?: ResponsiveNumber;
+  preserveCellSize?: boolean;
+  centerInsufficientSlides?: ResponsiveBoolean;
 };
 
 export type SliderDirection = {

@@ -1,14 +1,10 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { s as FullscreenOptions, t as FullscreenPlugin, p as FullscreenIntroPathTiming, U as FullscreenClose, V as FullscreenArrows, W as FullscreenCounter, A as ResponsiveLength, R as ResponsiveCaptionPlacement, X as FsCaptionRenderArgs, Y as FSImageRender, w as FullscreenVideoOptions, q as FullscreenLazyLoadOptions, k as FullscreenCloseScrollOptions } from './responsive-BgOmwHgG.mjs';
-export { y as FsCaptionPlacement, z as FsIntroRequest, F as FullscreenCaptionOptions, i as FullscreenCloseScrollContext, j as FullscreenCloseScrollEnabled, l as FullscreenCloseScrollTiming, m as FullscreenControlsOptions, n as FullscreenCrossfadeOptions, o as FullscreenEffectsOptions, r as FullscreenMobileDetectionContext, u as FullscreenPluginKind, v as FullscreenSliderOptions, x as FullscreenZoomPanOptions } from './responsive-BgOmwHgG.mjs';
+import { W as FullscreenOptions, X as FullscreenPlugin, h as SliderSkipSnaps, d as CrossFadeWheel, T as FullscreenIntroPathTiming, aG as FullscreenClose, aH as FullscreenArrows, aI as FullscreenCounter, af as ResponsiveLength, ae as ResponsiveCaptionPlacement, aJ as FsCaptionRenderArgs, O as FullscreenDialogOptions, aK as FSImageRender, _ as FullscreenVideoOptions, U as FullscreenLazyLoadOptions, J as FullscreenCloseScrollOptions, a3 as FullscreenThumbnailBridge, aF as FullscreenOpenRequest } from './responsive-DRmZH1Q2.mjs';
+export { a0 as FsCaptionPlacement, a1 as FsIntroRequest, F as FullscreenCaptionOptions, D as FullscreenCloseScrollContext, H as FullscreenCloseScrollEnabled, K as FullscreenCloseScrollTiming, L as FullscreenControlsOptions, N as FullscreenCrossfadeOptions, Q as FullscreenEffectsOptions, V as FullscreenMobileDetectionContext, Y as FullscreenPluginKind, Z as FullscreenSliderOptions, $ as FullscreenZoomPanOptions, G as GalleryApi, a as GalleryCoreApi, I as IndexMode } from './responsive-DRmZH1Q2.mjs';
 import { c as ZoomPanPlugin } from './types-CLMzNXt4.mjs';
 import React__default from 'react';
 import { MediaItem } from './media.mjs';
-import { h as SliderSkipSnaps, d as CrossFadeWheel, J as FullscreenOpenRequest } from './types-D9WBOrx6.mjs';
-export { G as GalleryApi, a as GalleryCoreApi, I as IndexMode } from './types-D9WBOrx6.mjs';
-import { a as FullscreenThumbnailBridge } from './types-bZ-lDlKM.mjs';
 import { R as ResponsiveNumber } from './responsiveNumber-CouEMJ9O.mjs';
-import './types-uhDRb0mo.mjs';
 import './force-C5m1QpdF.mjs';
 import './transitions-ChhEdSB6.mjs';
 import './plyrTypes-B3vioQaS.mjs';
@@ -45,13 +41,13 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
                 durationMs: number;
                 easing: string;
             };
-            introDuration: FullscreenIntroPathTiming<number> | {
+            transitionDuration: FullscreenIntroPathTiming<number> | {
                 readonly transform: 300;
                 readonly fade: 500;
             };
-            introEasing: FullscreenIntroPathTiming<string>;
-            introFade: boolean;
-            introStickyNavSelector?: string;
+            transitionEasing: FullscreenIntroPathTiming<string>;
+            transitionFade: boolean;
+            StickyNavSelector?: string;
             thumbnailsFadeDuration?: number;
             thumbnailsFadeEasing?: string;
         };
@@ -80,6 +76,7 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
         };
         enabled: boolean;
         items?: MediaItem[] | string[];
+        dialog?: FullscreenDialogOptions;
         renderImage?: FSImageRender;
         video?: FullscreenVideoOptions;
         lazyLoad?: FullscreenLazyLoadOptions;
@@ -125,4 +122,4 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
     closingModal: boolean;
 };
 
-export { FullscreenCloseScrollOptions, FullscreenIntroPathTiming, FullscreenLazyLoadOptions, FullscreenOptions, FullscreenPlugin, FullscreenVideoOptions, useFullscreenController };
+export { FullscreenCloseScrollOptions, FullscreenDialogOptions, FullscreenIntroPathTiming, FullscreenLazyLoadOptions, FullscreenOptions, FullscreenPlugin, FullscreenVideoOptions, useFullscreenController };

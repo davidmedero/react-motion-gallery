@@ -19,10 +19,13 @@ import {
   resolveFullscreenSliderGap,
 } from "./transforms";
 import {
+  areFullscreenIndexSetsEqual,
   getFullscreenVideoOpenRefIndex,
   resolveAllowedFullscreenImageIndices,
+  shouldRenderFullscreenCrossfadeSlides,
   shouldPlayFullscreenVideoOnOpen,
 } from "./FullscreenRuntime";
+import { shouldHydrateFullscreenSlide } from "./slideWindow";
 
 function createTarget(currentTarget: number, loop = false) {
   const snaps = [0, -100, -200, -300];
@@ -65,6 +68,20 @@ function createTarget(currentTarget: number, loop = false) {
 }
 
 describe("fullscreen slide crossfade trigger rules", () => {
+  test("only builds fullscreen crossfade slide layers when an effect needs them", () => {
+    expect(shouldRenderFullscreenCrossfadeSlides()).toBe(false);
+    expect(shouldRenderFullscreenCrossfadeSlides({})).toBe(false);
+    expect(shouldRenderFullscreenCrossfadeSlides({ controls: true })).toBe(true);
+    expect(shouldRenderFullscreenCrossfadeSlides({ drag: true })).toBe(true);
+    expect(shouldRenderFullscreenCrossfadeSlides({ wheel: true })).toBe(true);
+    expect(
+      shouldRenderFullscreenCrossfadeSlides({ wheel: { enabled: false } })
+    ).toBe(false);
+    expect(
+      shouldRenderFullscreenCrossfadeSlides({ wheel: { sensitivity: 0.4 } })
+    ).toBe(true);
+  });
+
   test("allows arrow-triggered crossfades when controls crossfade is enabled", () => {
     expect(
       shouldStartFullscreenCrossfade({
@@ -179,8 +196,8 @@ describe("fullscreen slider intro opacity timing", () => {
     expect(
       resolveFullscreenIntroOpacityTransition({
         shouldFadeIntro: true,
-        introDuration: { transform: 500, fade: 180 },
-        introEasing: { transform: "ease-out", fade: "linear" },
+        transitionDuration: { transform: 500, fade: 180 },
+        transitionEasing: { transform: "ease-out", fade: "linear" },
       })
     ).toBe("opacity 180ms linear");
   });
@@ -189,8 +206,8 @@ describe("fullscreen slider intro opacity timing", () => {
     expect(
       resolveFullscreenIntroOpacityTransition({
         shouldFadeIntro: true,
-        introDuration: 460,
-        introEasing: "ease-in-out",
+        transitionDuration: 460,
+        transitionEasing: "ease-in-out",
       })
     ).toBe("opacity 460ms ease-in-out");
   });
@@ -201,6 +218,97 @@ describe("fullscreen lazy image allow state", () => {
     expect(
       Array.from(resolveAllowedFullscreenImageIndices(2, new Set([0, 1, 4])))
     ).toEqual([2, 0, 1, 4]);
+  });
+
+  test("compares allowed fullscreen index sets by value", () => {
+    expect(areFullscreenIndexSetsEqual(new Set([2, 0, 1]), new Set([1, 2, 0]))).toBe(true);
+    expect(areFullscreenIndexSetsEqual(new Set([2, 0, 1]), new Set([2, 0]))).toBe(false);
+    expect(areFullscreenIndexSetsEqual(new Set([2, 0, 1]), new Set([2, 0, 4]))).toBe(false);
+  });
+});
+
+describe("fullscreen slide windowing", () => {
+  test("keeps small fullscreen tracks fully hydrated", () => {
+    expect(
+      shouldHydrateFullscreenSlide({
+        renderedIndex: 2,
+        itemsLength: 3,
+        canonicalLength: 3,
+        activeCanonicalIndex: 0,
+      })
+    ).toBe(true);
+  });
+
+  test("windows medium fullscreen tracks", () => {
+    expect(
+      shouldHydrateFullscreenSlide({
+        renderedIndex: 3,
+        itemsLength: 6,
+        canonicalLength: 4,
+        activeCanonicalIndex: 0,
+      })
+    ).toBe(false);
+  });
+
+  test("hydrates only active and adjacent wrapped slides for large tracks", () => {
+    expect(
+      shouldHydrateFullscreenSlide({
+        renderedIndex: 11,
+        itemsLength: 48,
+        canonicalLength: 46,
+        activeCanonicalIndex: 10,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldHydrateFullscreenSlide({
+        renderedIndex: 12,
+        itemsLength: 48,
+        canonicalLength: 46,
+        activeCanonicalIndex: 10,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldHydrateFullscreenSlide({
+        renderedIndex: 14,
+        itemsLength: 48,
+        canonicalLength: 46,
+        activeCanonicalIndex: 10,
+      })
+    ).toBe(false);
+  });
+
+  test("hydrates wrapped edge clones near the active canonical slide", () => {
+    expect(
+      shouldHydrateFullscreenSlide({
+        renderedIndex: 0,
+        itemsLength: 48,
+        canonicalLength: 46,
+        activeCanonicalIndex: 0,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldHydrateFullscreenSlide({
+        renderedIndex: 47,
+        itemsLength: 48,
+        canonicalLength: 46,
+        activeCanonicalIndex: 45,
+      })
+    ).toBe(true);
+  });
+
+  test("keeps crossfade slides fully hydrated", () => {
+    expect(
+      shouldHydrateFullscreenSlide({
+        renderedIndex: 20,
+        itemsLength: 48,
+        canonicalLength: 46,
+        activeCanonicalIndex: 0,
+        renderMode: "crossfade",
+      })
+    ).toBe(true);
   });
 });
 

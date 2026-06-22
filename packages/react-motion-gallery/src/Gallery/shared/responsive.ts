@@ -30,6 +30,11 @@ export type ResponsiveLength =
   | ResponsiveLengthValue
   | Record<string, ResponsiveLengthValue>;
 
+export type ResponsiveBoolean =
+  | boolean
+  | Array<boolean>
+  | Record<string, boolean>;
+
 export type ResponsivePosition =
   | ThumbnailPosition
   | Array<ThumbnailPosition>
@@ -96,6 +101,39 @@ export function resolveLengthFromResponsive(
   for (const bp of entries) {
     if (vw >= bp.minWidth) {
       result = resolveLengthFromResponsive(bp.value as any, result, vw, referenceSize, breakpointMap);
+    }
+  }
+
+  return result;
+}
+
+export function resolveBooleanFromResponsive(
+  value: ResponsiveBoolean | undefined,
+  fallback: boolean,
+  viewportWidth: number,
+  breakpointMap: BreakpointMap = BREAKPOINT_MAP
+): boolean {
+  const vw = effectiveViewportWidth(viewportWidth);
+
+  if (value == null) return fallback;
+  if (typeof value === "boolean") return value;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? fallback;
+  }
+
+  const entries = Object.entries(value)
+    .map(([key, v]) => {
+      const bp = breakpointMap[key] ?? (Number.isNaN(parseFloat(key)) ? 0 : parseFloat(key));
+      return { minWidth: bp, value: v };
+    })
+    .sort((a, b) => a.minWidth - b.minWidth);
+
+  let result = fallback;
+
+  for (const bp of entries) {
+    if (vw >= bp.minWidth) {
+      result = resolveBooleanFromResponsive(bp.value, result, vw, breakpointMap);
     }
   }
 

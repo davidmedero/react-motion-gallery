@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   normalizeResponsiveNumberRules,
   parseLengthLike,
+  resolveBooleanFromResponsive,
   resolveLengthFromResponsive,
   resolveNumberFromResponsive,
   resolveResponsiveNumberRuleValue,
@@ -100,5 +101,19 @@ describe("responsive length helpers", () => {
 
     expect(resolveResponsiveNumberRuleValue(rules, 899)).toBeUndefined();
     expect(resolveResponsiveNumberRuleValue(rules, 900)).toBe(640);
+  });
+
+  test("resolves responsive booleans from named and numeric breakpoints", () => {
+    const value = {
+      xs: false,
+      md: true,
+      1200: false,
+    };
+
+    expect(resolveBooleanFromResponsive(undefined, true, 500)).toBe(true);
+    expect(resolveBooleanFromResponsive(false, true, 500)).toBe(false);
+    expect(resolveBooleanFromResponsive(value, true, 500)).toBe(false);
+    expect(resolveBooleanFromResponsive(value, false, 960)).toBe(true);
+    expect(resolveBooleanFromResponsive(value, true, 1280)).toBe(false);
   });
 });

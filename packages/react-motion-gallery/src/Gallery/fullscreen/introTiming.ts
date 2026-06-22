@@ -44,7 +44,7 @@ export function resolveFullscreenIntroPathTiming<T>(
 }
 
 export function resolveFullscreenIntroDurationMs(
-  value: FullscreenEffectsOptions["introDuration"] | undefined,
+  value: FullscreenEffectsOptions["transitionDuration"] | undefined,
   path: FullscreenIntroPath
 ) {
   const fallback =
@@ -60,7 +60,7 @@ export function resolveFullscreenIntroDurationMs(
 }
 
 export function resolveFullscreenIntroEasing(
-  value: FullscreenEffectsOptions["introEasing"] | undefined,
+  value: FullscreenEffectsOptions["transitionEasing"] | undefined,
   path: FullscreenIntroPath
 ) {
   return resolveFullscreenIntroPathTiming(

@@ -1,6 +1,6 @@
-export { E as Entries, d as EntriesCore, c as EntriesCoreProps, a as EntriesMediaContainerRender, b as EntriesProps, E as default, f as flattenEntries, n as nodeFromMediaDefault } from './index-DUT57ncN.mjs';
-import { d as EntriesOptions, E as EntriesHandle } from './responsive-BgOmwHgG.mjs';
-export { Q as EntriesDataMode, a as EntriesInfiniteScrollOptions, b as EntriesLayout, c as EntriesLoadMoreOptions, L as EntriesLoadingOptions, e as EntriesPaginationOptions, f as EntriesPlugin, g as EntriesPluginKind, T as EntriesPluginOptionsByKind, h as EntriesVirtualizationOptions, J as EntryCardRenderArgs, C as EntryItem, I as EntryMediaLayout, D as EntryMediaRenderArgs, G as EntryOverlayRenderArgs, H as EntryOverlayStyle, O as EntrySkeletonRenderArgs, K as EntrySkeletonResolverArgs, M as MediaEntryLink, N as RevealOptions, S as SlideOwner } from './responsive-BgOmwHgG.mjs';
+export { E as Entries, d as EntriesCore, c as EntriesCoreProps, a as EntriesMediaContainerRender, b as EntriesProps, E as default, f as flattenEntries, n as nodeFromMediaDefault } from './index-DWKBlQMl.mjs';
+import { w as EntriesOptions, k as SliderHandle, s as EntriesHandle } from './responsive-DRmZH1Q2.mjs';
+export { aD as EntriesDataMode, t as EntriesInfiniteScrollOptions, u as EntriesLayout, v as EntriesLoadMoreOptions, aA as EntriesLoadingOptions, x as EntriesPaginationOptions, y as EntriesPlugin, z as EntriesPluginKind, aE as EntriesPluginOptionsByKind, A as EntriesVirtualizationOptions, ay as EntryCardRenderArgs, ah as EntryItem, ax as EntryMediaLayout, au as EntryMediaRenderArgs, av as EntryOverlayRenderArgs, aw as EntryOverlayStyle, aC as EntrySkeletonRenderArgs, az as EntrySkeletonResolverArgs, M as MediaEntryLink, aB as RevealOptions, B as SlideOwner } from './responsive-DRmZH1Q2.mjs';
 export { EntriesItemsPerPageOption, EntriesPageControlItem, EntriesPageItemsOptions, EntriesPageRangeItem, EntriesPageRangeOptions, EntriesPaginationController, EntriesPaginationControls, EntriesPaginationControlsProps, EntriesPaginationRippleOptions, EntriesPaginationRippleProp, EntriesPaginationSessionStorageOptions, EntriesPaginationUrlSyncOptions, UseEntriesPaginationOptions, entriesPagination, getEntriesPageItems, getEntriesPageRange, useEntriesPagination } from './entries-pagination.mjs';
 export { EntriesLoadMoreController, UseEntriesLoadMoreOptions, entriesLoadMore, useEntriesLoadMore } from './entries-load-more.mjs';
 export { UseEntriesInfiniteScrollOptions, entriesInfiniteScroll, useEntriesInfiniteScroll } from './entries-infinite-scroll.mjs';
@@ -10,13 +10,10 @@ import * as React from 'react';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
 import { L as LoadingForceOptions } from './force-C5m1QpdF.mjs';
 import { MediaItem } from './media.mjs';
-import { k as SliderHandle } from './types-D9WBOrx6.mjs';
-import './types-uhDRb0mo.mjs';
 import './transitions-ChhEdSB6.mjs';
 import './plyrTypes-B3vioQaS.mjs';
 import './types-CLMzNXt4.mjs';
 import './text-BBcRGVzn.mjs';
-import './types-bZ-lDlKM.mjs';
 import 'react-dom/client';
 import './dataPlugins-C91mlyu6.mjs';
 
@@ -37,6 +34,7 @@ type EntryLike = {
     media?: Array<{
         kind?: string;
         src?: string;
+        poster?: string;
     }>;
 };
 type DecodePriority = "all" | "first";

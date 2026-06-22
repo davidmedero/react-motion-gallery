@@ -44,11 +44,6 @@ const normalizeFsItems = (v: FullscreenItemsInput | undefined): MediaItem[] => {
   return isStringArray(v) ? toMediaItems(v) : v;
 };
 
-const isImageItem = (m: MediaItem | undefined | null): boolean => {
-  if (!m) return false;
-  return (m as any).kind === "image";
-};
-
 export function nodeFromMediaDefault(m: MediaItem): React.ReactNode {
   if ((m as any).kind === "image") return <img src={(m as any).src} alt={(m as any).alt ?? ""} />;
   if ((m as any).kind === "video") return <video src={(m as any).src} controls preload="metadata" />;
@@ -212,14 +207,12 @@ function EntriesCore(props, forwardedRef) {
       if (!core?.requestFullscreenOpen) return;
 
       const item = normalizedItems[globalIndex] ?? flattenedMedia[globalIndex];
-      if (!isImageItem(item)) return;
-
       const img =
         getOriginImage(originEl ?? null) ??
         (expandableImageRefs.current[globalIndex] as HTMLImageElement | null) ??
         null;
 
-      if (!img) return;
+      if (item?.kind === "image" && !img) return;
 
       core.requestFullscreenOpen({
         source: "entries",

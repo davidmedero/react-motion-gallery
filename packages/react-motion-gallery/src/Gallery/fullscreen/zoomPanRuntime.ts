@@ -86,6 +86,7 @@ export function useFullscreenZoomPanRuntime(args: any) {
     () => resolveZoomPanHoverOptions(fs.zoom),
     [fs.zoom]
   );
+  const fullscreenDialogEnabled = !!fs.dialog && fs.dialog.enabled !== false;
 
   const boundsForCurrent = React.useCallback(
     (
@@ -526,11 +527,13 @@ export function useFullscreenZoomPanRuntime(args: any) {
       zoomOutTransform: entriesObject.overlay?.zoomOutTransform,
     },
     isZoomed,
+    disabled: fullscreenDialogEnabled,
   });
 
   const captionZoomMotion = useFullscreenCaptionZoomMotion({
     caption: fs.caption,
     isZoomed,
+    disabled: fullscreenDialogEnabled,
   });
 
   const pan = usePanRuntime({

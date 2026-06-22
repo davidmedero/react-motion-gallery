@@ -109,7 +109,7 @@ function FullscreenAddon() {
       fullscreen: {
         enabled: true,
         effects: {
-          introStickyNavSelector: ".rmg-intro-sticky-nav",
+          StickyNavSelector: ".rmg-intro-sticky-nav",
         },
       },
     },

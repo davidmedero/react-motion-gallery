@@ -36,12 +36,12 @@ export const DEFAULT_FULLSCREEN = {
     }
   },
   effects: {
-    introDuration: {
+    transitionDuration: {
       transform: DEFAULT_FULLSCREEN_INTRO_TRANSFORM_DURATION_MS,
       fade: DEFAULT_FULLSCREEN_INTRO_FADE_DURATION_MS,
     },
-    introEasing: DEFAULT_FULLSCREEN_INTRO_EASING,
-    introFade: false,
+    transitionEasing: DEFAULT_FULLSCREEN_INTRO_EASING,
+    transitionFade: false,
     crossfade: {
       controls: false,
       drag: false,

@@ -20,6 +20,10 @@ export type EntryMediaRenderArgs = {
   entryIndex: number;
   media: MediaItem;
   mediaIndex: number;
+  mediaPriority: boolean;
+  mediaLoading: "eager" | "lazy";
+  mediaDecoding: "async" | "sync" | "auto";
+  mediaFetchPriority: "high" | "low" | "auto";
 };
 
 export type MediaEntryLink = {

@@ -13,6 +13,7 @@ import {
   shouldUseFsStaticInactiveVideo,
   shouldUseFsStaticVideoPreview,
 } from "./renderFullscreenSlides";
+import { renderFullscreenBaseSlides } from "./renderFullscreenBaseSlides";
 
 function createEmptyVideoSnapshotStore(): VideoSnapshotStore {
   return {
@@ -25,7 +26,176 @@ function createEmptyVideoSnapshotStore(): VideoSnapshotStore {
   };
 }
 
+function createImageRefs(count: number) {
+  return Array.from({ length: count }, () =>
+    React.createRef<HTMLDivElement | null>()
+  );
+}
+
+function countOccurrences(haystack: string, needle: string) {
+  return haystack.split(needle).length - 1;
+}
+
 describe("fullscreen crossfade slide rendering", () => {
+  test("base fullscreen slides reserve media width for entries overlays", () => {
+    const slides = renderFullscreenBaseSlides({
+      items: [{ kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any],
+      getTransform: () => "translateX(0%)",
+      imageRefs: { current: [React.createRef<HTMLDivElement>()] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      fsViewportOverlayPlacement: {
+        xs: "bottom",
+        lg: "right",
+      },
+      fsViewportOverlayWidth: {
+        lg: "32%",
+        xl: "28%",
+      },
+      viewportWidth: 1440,
+      viewportHeight: 900,
+      resolveFsCaptionPlacement: () => "right",
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).toContain('data-rmg-fs-media-viewport="true"');
+    expect(markup).toContain("flex-direction:row");
+    expect(markup).toContain("flex:0 0 460.8px");
+    expect(markup).toContain("width:calc(100% - 460.8px)");
+  });
+
+  test("base fullscreen slides stay low priority while the fullscreen slider is hidden", () => {
+    const slides = renderFullscreenBaseSlides({
+      items: [
+        { kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any,
+        { kind: "image", src: "https://example.com/beta.jpg", alt: "Beta" } as any,
+      ],
+      getTransform: (index: number) => `translateX(${index * 100}%)`,
+      imageRefs: {
+        current: [
+          React.createRef<HTMLDivElement>(),
+          React.createRef<HTMLDivElement>(),
+          React.createRef<HTMLDivElement>(),
+          React.createRef<HTMLDivElement>(),
+        ],
+      },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: false,
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      resolveFsCaptionPlacement: () => null,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).toContain('loading="lazy"');
+    expect(markup).toContain('fetchPriority="low"');
+    expect(markup).not.toContain('loading="eager"');
+    expect(markup).not.toContain('fetchPriority="high"');
+  });
+
+  test("base fullscreen windowing omits inactive slide shells", () => {
+    const items = [
+      { kind: "image", src: "https://example.com/delta-clone.jpg", alt: "Delta clone" },
+      { kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" },
+      { kind: "image", src: "https://example.com/bravo.jpg", alt: "Bravo" },
+      { kind: "image", src: "https://example.com/charlie.jpg", alt: "Charlie" },
+      { kind: "image", src: "https://example.com/delta.jpg", alt: "Delta" },
+      { kind: "image", src: "https://example.com/alpha-clone.jpg", alt: "Alpha clone" },
+    ] as any;
+
+    const slides = renderFullscreenBaseSlides({
+      items,
+      getTransform: (index: number) => `translateX(${index * 100}%)`,
+      imageRefs: { current: createImageRefs(items.length) },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      resolveFsCaptionPlacement: () => null,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      canonicalLength: 4,
+      activeCanonicalIndex: 0,
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(countOccurrences(markup, 'data-rmg-fs-slide="true"')).toBe(5);
+    expect(markup).not.toContain('data-index="3"');
+    expect(markup).not.toContain("https://example.com/charlie.jpg");
+    expect(markup).toContain("https://example.com/alpha.jpg");
+    expect(markup).toContain("https://example.com/bravo.jpg");
+  });
+
+  test("rich fullscreen windowing omits inactive slide shells, media, and captions", () => {
+    const items = [
+      { kind: "image", src: "https://example.com/delta-clone.jpg", alt: "Delta clone" },
+      { kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" },
+      { kind: "image", src: "https://example.com/bravo.jpg", alt: "Bravo" },
+      { kind: "image", src: "https://example.com/charlie.jpg", alt: "Charlie" },
+      { kind: "image", src: "https://example.com/delta.jpg", alt: "Delta" },
+      { kind: "image", src: "https://example.com/alpha-clone.jpg", alt: "Alpha clone" },
+    ] as any;
+    const renderCaption = vi.fn(({ index }: { index: number }) => (
+      <span>{`Caption ${index}`}</span>
+    ));
+
+    const slides = renderFullscreenSlides({
+      items,
+      plyrList: [],
+      getTransform: (index: number) => `translateX(${index * 100}%)`,
+      imageRefs: { current: createImageRefs(items.length) },
+      playerRefs: { current: [] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      defaultPlayerStyle: {},
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      renderCaption,
+      fsCaptionLayout: "slide",
+      resolveFsCaptionPlacement: () => "bottom",
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      fsDecodedImagesRef: { current: new Set() },
+      fsCustomDecodedImagesRef: { current: new Set() },
+      fsCustomResolvedSrcByKeyRef: { current: new Map() },
+      fsPreparedVideosRef: { current: new Set() },
+      canonicalLength: 4,
+      activeCanonicalIndex: 0,
+      getMediaKey: (item) => String((item as any).src ?? ""),
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(countOccurrences(markup, 'data-rmg-fs-slide="true"')).toBe(5);
+    expect(markup).not.toContain('data-index="3"');
+    expect(markup).not.toContain("https://example.com/charlie.jpg");
+    expect(markup).not.toContain("Caption 2");
+    expect(renderCaption).not.toHaveBeenCalledWith(
+      expect.objectContaining({ index: 2 })
+    );
+  });
+
   test("marks crossfade slide layers as inert fullscreen slides", () => {
     const slides = renderFullscreenCrossfadeSlides({
       items: [{ kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any],
@@ -167,6 +337,16 @@ describe("fullscreen crossfade slide rendering", () => {
   });
 
   test("uses static video previews for inactive lazy track video slides", () => {
+    expect(
+      shouldUseFsStaticInactiveVideo({
+        activeCanonicalIndex: 0,
+        canonicalIndex: 0,
+        lazyAllowed: false,
+        lazyEnabled: true,
+        liveReady: false,
+      })
+    ).toBe(false);
+
     expect(
       shouldUseFsStaticInactiveVideo({
         activeCanonicalIndex: 0,

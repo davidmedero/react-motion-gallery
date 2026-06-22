@@ -36,6 +36,10 @@ import {
   ResponsiveLength,
 } from "../shared/responsive";
 import { readViewportWidth } from "../shared/hooks/useViewportWidth";
+import {
+  shouldHydrateFullscreenSlide,
+  updateFullscreenCellRef,
+} from "./slideWindow";
 
 type ResolvedPlyrOptions = NonNullable<PlyrProp>["options"];
 export type RenderFullscreenSlidesMode = "track" | "crossfade";
@@ -1562,6 +1566,7 @@ function FsSlide(props: {
   renderMode?: RenderFullscreenSlidesMode;
   interactive?: boolean;
   registerCell?: boolean;
+  hydrateContent?: boolean;
 }) {
   const {
     item,
@@ -1620,8 +1625,10 @@ function FsSlide(props: {
     renderMode = "track",
     interactive = showFullscreenSlider,
     registerCell = true,
+    hydrateContent = true,
   } = props;
 
+  const isInteractive = interactive && hydrateContent;
   const isNode = item.kind === "node";
   const shouldDeferLiveVideo = !!deferLiveVideoUntilVisible && !showFullscreenSlider;
   const liveVideoKey =
@@ -1651,11 +1658,11 @@ function FsSlide(props: {
     objectFit: "contain",
     touchAction: "manipulation",
     transformOrigin: "0 0",
-    cursor: interactive ? (isZoomed ? "grab" : "zoom-in") : "default",
+    cursor: isInteractive ? (isZoomed ? "grab" : "zoom-in") : "default",
     userSelect: "none",
     WebkitUserSelect: "none",
   };
-  const captionInteractive = interactive && (captionZoomMotion?.interactive ?? true);
+  const captionInteractive = isInteractive && (captionZoomMotion?.interactive ?? true);
   const captionContentStyle = captionZoomMotion?.contentStyle;
   const captionContent = captionNode ? (
     <div
@@ -1734,15 +1741,8 @@ function FsSlide(props: {
       data-rmg-clone={isClone ? "true" : "false"}
       data-rmg-fs-render-mode={renderMode}
       ref={(el: HTMLDivElement | null) => {
-        if (
-          registerCell &&
-          el &&
-          !cells.current.some((c) => c.element === el)
-        ) {
-          cells.current.push({
-            element: el as unknown as HTMLElement,
-            index,
-          });
+        if (registerCell) {
+          updateFullscreenCellRef(cells, index, el);
         }
       }}
       style={{
@@ -1758,10 +1758,10 @@ function FsSlide(props: {
         minWidth: "100%",
         height: "100%",
         margin: "auto",
-        touchAction: interactive ? "none" : "manipulation",
+        touchAction: isInteractive ? "none" : "manipulation",
         userSelect: "none",
         WebkitUserSelect: "none",
-        pointerEvents: interactive ? "auto" : "none",
+        pointerEvents: isInteractive ? "auto" : "none",
       }}
       className={styles.imgMargin}
     >
@@ -1821,22 +1821,22 @@ function FsSlide(props: {
           data-rmg-fs-media="true"
           data-rmg-fs-media-viewport="true"
           onPointerDown={
-            isNode || !interactive
+            isNode || !isInteractive
               ? undefined
               : (e) => onPanPointerDown(e, imageRef)
           }
           onPointerEnter={
-            isNode || !interactive || !onHoverPointerEnter
+            isNode || !isInteractive || !onHoverPointerEnter
               ? undefined
               : (e) => onHoverPointerEnter(e, imageRef)
           }
           onPointerMove={
-            isNode || !interactive || !onHoverPointerMove
+            isNode || !isInteractive || !onHoverPointerMove
               ? undefined
               : (e) => onHoverPointerMove(e, imageRef)
           }
           onPointerLeave={
-            isNode || !interactive || !onHoverPointerLeave
+            isNode || !isInteractive || !onHoverPointerLeave
               ? undefined
               : (e) => onHoverPointerLeave(e, imageRef)
           }
@@ -1851,48 +1851,32 @@ function FsSlide(props: {
             alignItems: "center",
             justifyContent: "center",
             position: "relative",
-            pointerEvents: interactive ? "auto" : "none",
+            pointerEvents: isInteractive ? "auto" : "none",
             userSelect: "none",
             WebkitUserSelect: "none",
           }}
         >
-          {isNode ? (
-            <div
-              data-rmg-fs-node="true"
-              style={{
-                width: "100%",
-                height: "100%",
-                position: "relative",
-                pointerEvents: interactive ? "auto" : "none",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                userSelect: "none",
-                WebkitUserSelect: "none",
-              }}
-            >
-              {(item as any).node}
-            </div>
-          ) : item.kind === "video" ? (
-            shouldRenderStaticVideo ? (
-              <FsCloneVideoPreview
-                item={item as any}
-                renderedIndex={index}
-                canonicalIndex={canonicalIndex}
-                plyr={plyr!}
-                videoSnapshotStore={videoSnapshotStore}
-                playerRefs={playerRefs}
-                defaultPlayerStyle={defaultPlayerStyle}
-                fsVideoStyle={fsVideoStyle}
-                fsVideoClassName={fsVideoClassName}
-                fsLazy={renderMode === "crossfade" ? undefined : fsLazy?.videos}
-                showFullscreenSlider={
-                  showFullscreenSlider || renderMode === "crossfade"
-                }
-              />
-            ) : (
-              shouldDeferLiveVideo ? null : (
-                <FsLiveVideoContent
+          {hydrateContent ? (
+            isNode ? (
+              <div
+                data-rmg-fs-node="true"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  position: "relative",
+                  pointerEvents: isInteractive ? "auto" : "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                }}
+              >
+                {(item as any).node}
+              </div>
+            ) : item.kind === "video" ? (
+              shouldRenderStaticVideo ? (
+                <FsCloneVideoPreview
                   item={item as any}
                   renderedIndex={index}
                   canonicalIndex={canonicalIndex}
@@ -1902,36 +1886,54 @@ function FsSlide(props: {
                   defaultPlayerStyle={defaultPlayerStyle}
                   fsVideoStyle={fsVideoStyle}
                   fsVideoClassName={fsVideoClassName}
-                  fsLazy={fsLazy?.videos}
-                  fsLazyAllowedRef={fsLazyAllowedVideosRef}
-                  fsLazyListenersRef={fsLazyListenersVideosRef}
-                  fsPreparedVideosRef={fsPreparedVideosRef}
-                  getMediaKey={getMediaKey}
-                  showFullscreenSlider={showFullscreenSlider}
+                  fsLazy={renderMode === "crossfade" ? undefined : fsLazy?.videos}
+                  showFullscreenSlider={
+                    showFullscreenSlider || renderMode === "crossfade"
+                  }
                 />
+              ) : (
+                shouldDeferLiveVideo ? null : (
+                  <FsLiveVideoContent
+                    item={item as any}
+                    renderedIndex={index}
+                    canonicalIndex={canonicalIndex}
+                    plyr={plyr!}
+                    videoSnapshotStore={videoSnapshotStore}
+                    playerRefs={playerRefs}
+                    defaultPlayerStyle={defaultPlayerStyle}
+                    fsVideoStyle={fsVideoStyle}
+                    fsVideoClassName={fsVideoClassName}
+                    fsLazy={fsLazy?.videos}
+                    fsLazyAllowedRef={fsLazyAllowedVideosRef}
+                    fsLazyListenersRef={fsLazyListenersVideosRef}
+                    fsPreparedVideosRef={fsPreparedVideosRef}
+                    getMediaKey={getMediaKey}
+                    showFullscreenSlider={showFullscreenSlider}
+                  />
+                )
               )
+            ) : (
+              <FsImageContent
+                item={item as any}
+                renderedIndex={index}
+                canonicalIndex={canonicalIndex}
+                isClone={isClone}
+                openingCanonicalIndex={openingCanonicalIndex}
+                openingInProgress={openingInProgress}
+                isZoomed={isZoomed}
+                className={styles.fullscreenImages}
+                baseStyle={baseImgStyle}
+                renderImage={renderImage}
+                fsLazy={renderMode === "crossfade" ? undefined : fsLazy?.images}
+                fsLazyAllowedRef={fsLazyAllowedImagesRef}
+                fsLazyListenersRef={fsLazyListenersImagesRef}
+                fsDecodedImagesRef={fsDecodedImagesRef}
+                fsCustomDecodedImagesRef={fsCustomDecodedImagesRef}
+                fsCustomResolvedSrcByKeyRef={fsCustomResolvedSrcByKeyRef}
+                getMediaKey={getMediaKey}
+              />
             )
-          ) : (
-            <FsImageContent
-              item={item as any}
-              renderedIndex={index}
-              canonicalIndex={canonicalIndex}
-              isClone={isClone}
-              openingCanonicalIndex={openingCanonicalIndex}
-              openingInProgress={openingInProgress}
-              isZoomed={isZoomed}
-              className={styles.fullscreenImages}
-              baseStyle={baseImgStyle}
-              renderImage={renderImage}
-              fsLazy={renderMode === "crossfade" ? undefined : fsLazy?.images}
-              fsLazyAllowedRef={fsLazyAllowedImagesRef}
-              fsLazyListenersRef={fsLazyListenersImagesRef}
-              fsDecodedImagesRef={fsDecodedImagesRef}
-              fsCustomDecodedImagesRef={fsCustomDecodedImagesRef}
-              fsCustomResolvedSrcByKeyRef={fsCustomResolvedSrcByKeyRef}
-              getMediaKey={getMediaKey}
-            />
-          )}
+          ) : null}
         </div>
 
         {captionNode && !captionFirst && captionLayout !== "overlay" && (
@@ -2099,12 +2101,21 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
     const imageRef = imageRefs.current[index];
     const plyr = plyrList[index];
     const canonicalIndex = toCanonicalIndex(index, items.length, canonLen);
+    const hydrateContent = shouldHydrateFullscreenSlide({
+      renderedIndex: index,
+      itemsLength: items.length,
+      canonicalLength: canonLen,
+      activeCanonicalIndex,
+      renderMode,
+    });
 
-    const captionNode = renderCaption
+    const captionNode = hydrateContent && renderCaption
       ? renderCaption({ item, index: canonicalIndex, isZoomed })
       : null;
 
     const isClone = isCloneIndex(index, items.length, canonLen);
+
+    if (!hydrateContent) return null;
 
     return (
       <FsSlide
@@ -2162,6 +2173,7 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
         renderMode={renderMode}
         interactive={renderMode === "track" && showFullscreenSlider}
         registerCell={renderMode === "track"}
+        hydrateContent={hydrateContent}
       />
     );
   });

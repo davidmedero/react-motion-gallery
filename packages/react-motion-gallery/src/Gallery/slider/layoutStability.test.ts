@@ -4,6 +4,7 @@ import {
   buildSliderScrollSnaps,
   fitsWithinSliderViewport,
   getSliderCenterOffset,
+  getSliderInsufficientContentOffset,
   mergeDuplicateContainedSliderPages,
   resolveSliderGroupCells,
   resolveSliderMeasuredSize,
@@ -101,6 +102,31 @@ describe("slider layout stability helpers", () => {
         centerAlign: true,
       })
     ).toBe(100);
+  });
+
+  test("can opt out of centering insufficient slider content", () => {
+    expect(
+      getSliderInsufficientContentOffset({
+        viewport: 472,
+        contentSpan: 352,
+      })
+    ).toBe(60);
+
+    expect(
+      getSliderInsufficientContentOffset({
+        viewport: 472,
+        contentSpan: 352,
+        centerInsufficientSlides: false,
+      })
+    ).toBe(0);
+
+    expect(
+      getSliderInsufficientContentOffset({
+        viewport: 472,
+        contentSpan: 472,
+        centerInsufficientSlides: false,
+      })
+    ).toBe(0);
   });
 
   test("builds fresh center-aligned snap positions after resize", () => {

@@ -46,6 +46,8 @@ type FullscreenCaptionState = {
   computedStyle: CSSStyleDeclaration;
 };
 
+const FULL_VIEWPORT_INSET = "inset(0px 0px 0px 0px)";
+
 export type FullscreenIntroArgs = {
   originalImage: HTMLImageElement | null;
   method?: FullscreenOpenMethod;
@@ -103,7 +105,7 @@ function resolveIntroMethod(args: {
 }): "fade" | "scale" {
   const { requested, item, fs, isVideoSlide } = args;
 
-  if (fs.effects?.introFade) return "fade";
+  if (fs.effects?.transitionFade) return "fade";
   if (isVideoSlide) return "fade";
   if (requested === "fade") return "fade";
   if (item?.kind !== "image" && item?.type !== "image") return "fade";
@@ -314,6 +316,23 @@ function computeContentRect(args: {
   );
 
   return { rect, effectivePlacement, thumbPos, sideWidth, topBottomHeight };
+}
+
+function readFullscreenDialogMediaRect(
+  fullscreenRoot: HTMLElement | null
+): DOMRect | null {
+  if (!fullscreenRoot) return null;
+
+  const mediaPane = fullscreenRoot.querySelector<HTMLElement>(
+    '[data-rmg-fs-dialog-media="true"]'
+  );
+  if (!mediaPane) return null;
+
+  const rect = mediaPane.getBoundingClientRect();
+  if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height)) return null;
+  if (rect.width <= 0 || rect.height <= 0) return null;
+
+  return new DOMRect(rect.left, rect.top, rect.width, rect.height);
 }
 
 function mountOverlayCaption(args: {
@@ -722,6 +741,51 @@ function rectsOverlapOnX(a: DOMRect, b: DOMRect) {
   return Math.min(a.right, b.right) > Math.max(a.left, b.left);
 }
 
+function rectContainsRect(outer: DOMRect, inner: DOMRect, epsilon = 0.5) {
+  return (
+    inner.left >= outer.left - epsilon &&
+    inner.top >= outer.top - epsilon &&
+    inner.right <= outer.right + epsilon &&
+    inner.bottom <= outer.bottom + epsilon
+  );
+}
+
+function rectsIntersect(a: DOMRect, b: DOMRect, epsilon = 0.5) {
+  return (
+    Math.min(a.right, b.right) > Math.max(a.left, b.left) - epsilon &&
+    Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top) - epsilon
+  );
+}
+
+function isUsableOpeningTargetState(
+  state: FullscreenImageState | null,
+  contentRect: DOMRect
+) {
+  if (!state) return false;
+
+  const rect = state.rect;
+  if (rect.width <= 0 || rect.height <= 0) return false;
+
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const centerInContent =
+    centerX >= contentRect.left - 1 &&
+    centerX <= contentRect.right + 1 &&
+    centerY >= contentRect.top - 1 &&
+    centerY <= contentRect.bottom + 1;
+  const centerTolerance = Math.max(
+    6,
+    Math.min(contentRect.width, contentRect.height) * 0.04
+  );
+  const centeredInContent =
+    Math.abs(centerX - (contentRect.left + contentRect.width / 2)) <=
+      centerTolerance &&
+    Math.abs(centerY - (contentRect.top + contentRect.height / 2)) <=
+      centerTolerance;
+
+  return centerInContent && centeredInContent && rectsIntersect(rect, contentRect, 1);
+}
+
 function findStickyNav(
   selector?: string | null,
   sourceRect?: DOMRect | null
@@ -756,18 +820,6 @@ function findStickyNav(
 
   if (bestMatch || query) {
     return bestMatch;
-  }
-
-  for (const candidate of Array.from(document.body.querySelectorAll("*"))) {
-    if (!isVisibleTopStickyNavCandidate(candidate)) continue;
-
-    const rect = candidate.getBoundingClientRect();
-    if (sourceRect && !rectsOverlapOnX(rect, sourceRect)) continue;
-
-    if (rect.bottom > bestBottom) {
-      bestBottom = rect.bottom;
-      bestMatch = candidate;
-    }
   }
 
   return bestMatch;
@@ -807,8 +859,19 @@ function createViewportClipper(startInset: string, zIndex: number) {
     transition: "none",
     pointerEvents: "none",
     zIndex: String(zIndex),
+    contain: "layout paint style",
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    backfaceVisibility: "hidden",
   } as CSSStyleDeclaration);
+  clipper.style.setProperty("-webkit-clip-path", startInset);
   return clipper;
+}
+
+function setClipperInset(clipper: HTMLElement | null, inset: string) {
+  if (!clipper) return;
+  clipper.style.clipPath = inset;
+  clipper.style.setProperty("-webkit-clip-path", inset);
 }
 
 function clipsOverflow(style: CSSStyleDeclaration | null | undefined) {
@@ -1008,7 +1071,7 @@ function runScaleIntro(args: {
     fit === "contain"
       ? objectFitContentRect(sourceNatW, sourceNatH, imgRect, "contain", startObjPos)
       : imgRect;
-  const navEl = findStickyNav(fs.effects?.introStickyNavSelector, imgRect);
+  const navEl = findStickyNav(fs.effects?.StickyNavSelector, imgRect);
   const navRect = navEl?.getBoundingClientRect();
   const occlusionAdjustedRect =
     navRect != null
@@ -1021,7 +1084,9 @@ function runScaleIntro(args: {
     introZ
   );
 
-  const overflowRects = findOverflowClipAncestorRects(originalImage, 2);
+  const overflowRects = findOverflowClipAncestorRects(originalImage, 2).filter(
+    (rect) => !rectContainsRect(rect, startVisibleImgRect)
+  );
   const parentOverflowRect = overflowRects[0] ?? null;
   const grandparentOverflowRect = overflowRects[1] ?? null;
 
@@ -1053,6 +1118,8 @@ function runScaleIntro(args: {
     display: "block",
     zIndex: String(introZ),
     backfaceVisibility: "hidden",
+    contain: "paint",
+    isolation: "isolate",
   } as CSSStyleDeclaration);
 
   duplicateImgRef.current = dup;
@@ -1125,6 +1192,11 @@ function runScaleIntro(args: {
   };
 
   function startAnimation(targetImageState: FullscreenImageState | null) {
+    const canSkipImageClipper =
+      fit === "contain" &&
+      !occlusionAdjustedRect &&
+      overflowRects.length === 0 &&
+      (targetImageState?.fit ?? "contain") === "contain";
     const {
       startT,
       endT,
@@ -1137,14 +1209,16 @@ function runScaleIntro(args: {
     overlay.style.opacity = "0";
     overlay.style.pointerEvents = "none";
 
-    void dup.offsetWidth;
-    void imageClipper.offsetWidth;
-    void parentClipper?.offsetWidth;
-    void grandparentClipper?.offsetWidth;
-    void overlay.offsetWidth;
+    if (canSkipImageClipper) {
+      setClipperInset(imageClipper, FULL_VIEWPORT_INSET);
+    }
+
+    void outermostClipper.offsetWidth;
 
     requestAnimationFrame(() => {
-      imageClipper.style.transition = `clip-path ${durationMs}ms ${easing}`;
+      if (!canSkipImageClipper) {
+        imageClipper.style.transition = `clip-path ${durationMs}ms ${easing}`;
+      }
       if (parentClipper) {
         parentClipper.style.transition = `clip-path ${durationMs}ms ${easing}`;
       }
@@ -1155,13 +1229,11 @@ function runScaleIntro(args: {
       overlay.style.transition = `opacity ${durationMs}ms ${easing}`;
 
       requestAnimationFrame(() => {
-        imageClipper.style.clipPath = "inset(0px 0px 0px 0px)";
-        if (parentClipper) {
-          parentClipper.style.clipPath = "inset(0px 0px 0px 0px)";
+        if (!canSkipImageClipper) {
+          setClipperInset(imageClipper, FULL_VIEWPORT_INSET);
         }
-        if (grandparentClipper) {
-          grandparentClipper.style.clipPath = "inset(0px 0px 0px 0px)";
-        }
+        setClipperInset(parentClipper, FULL_VIEWPORT_INSET);
+        setClipperInset(grandparentClipper, FULL_VIEWPORT_INSET);
         applyTransform(endT, proxyRasterW, proxyRasterH);
         overlay.style.opacity = "1";
         overlay.style.pointerEvents = "none";
@@ -1183,7 +1255,12 @@ function runScaleIntro(args: {
     fullscreenRoot
   );
 
-  startAnimationOnce(readMountedFullscreenImageState(index, fullscreenRoot));
+  const mountedTargetState = readMountedFullscreenImageState(index, fullscreenRoot);
+  startAnimationOnce(
+    isUsableOpeningTargetState(mountedTargetState, contentRect)
+      ? mountedTargetState
+      : null
+  );
 
   void fullscreenCaptionPromise.then((captionState) => {
     requestAnimationFrame(() => {
@@ -1262,23 +1339,33 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
   const item = normalizedItems[index];
 
   const computedBaseZ = baseZ ?? 9999;
-  const INTRO_DUP_Z = computedBaseZ - 1;
+  const INTRO_DUP_Z = computedBaseZ + 10;
   const fullscreenRoot = fullscreenRootRef?.current ?? null;
 
+  setShowFullscreenSlider(false);
+  const liveTrack = queryFullscreenRoot<HTMLElement>(
+    fullscreenRoot,
+    ".fullscreen_slider"
+  );
+  if (liveTrack) {
+    liveTrack.style.transition = "none";
+    liveTrack.style.opacity = "0";
+  }
+
   const transformDurationMs = resolveFullscreenIntroDurationMs(
-    fs.effects?.introDuration,
+    fs.effects?.transitionDuration,
     "transform"
   );
   const transformEasing = resolveFullscreenIntroEasing(
-    fs.effects?.introEasing,
+    fs.effects?.transitionEasing,
     "transform"
   );
   const fadeDurationMs = resolveFullscreenIntroDurationMs(
-    fs.effects?.introDuration,
+    fs.effects?.transitionDuration,
     "fade"
   );
   const fadeEasing = resolveFullscreenIntroEasing(
-    fs.effects?.introEasing,
+    fs.effects?.transitionEasing,
     "fade"
   );
 
@@ -1319,10 +1406,9 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     willRunScaleIntro ? transformDurationMs : fadeDurationMs,
     willRunScaleIntro ? transformEasing : fadeEasing
   );
+  overlay.style.setProperty("--rmg-fs-z", String(computedBaseZ));
 
-  const {
-    rect: contentRect,
-  } = computeContentRect({
+  const computedContentRect = computeContentRect({
     vw,
     vh,
     fs,
@@ -1330,7 +1416,13 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     fsThumbContainerRef,
     fullscreenThumbnailPosition,
     resolveFsCaptionPlacement,
-  });
+  }).rect;
+
+  const dialogContentRect =
+    fs.dialog && fs.dialog.enabled !== false
+      ? readFullscreenDialogMediaRect(fullscreenRoot)
+      : null;
+  const contentRect = dialogContentRect ?? computedContentRect;
 
   mountOverlayCaption({
     overlay,

@@ -32,6 +32,8 @@ export type SliderCoreProps = {
   indexChannel: SliderIndexChannel;
   indexChannelControlled?: boolean;
   elements?: SliderElements;
+  preserveCellSize?: boolean;
+  centerInsufficientSlides?: boolean;
 };
 
 function assignRef<T>(ref: React.ForwardedRef<T>, value: T | null) {
@@ -56,6 +58,8 @@ const SliderCore = React.forwardRef<SliderCoreHandle, SliderCoreProps>(
       indexChannel,
       indexChannelControlled,
       elements,
+      preserveCellSize,
+      centerInsufficientSlides,
     } = props;
 
     const [isReady, setIsReady] = React.useState(false);
@@ -91,6 +95,8 @@ const SliderCore = React.forwardRef<SliderCoreHandle, SliderCoreProps>(
         sliderContainerStyles={elements?.container?.style}
         sliderContainerClassName={elements?.container?.className}
         cellsPerSlide={cellsPerSlide}
+        preserveCellSize={preserveCellSize}
+        centerInsufficientSlides={centerInsufficientSlides}
         direction={direction?.dir ?? "ltr"}
         axis={direction?.axis ?? "x"}
         skipSnaps={scroll?.skipSnaps}

@@ -13,7 +13,6 @@ import type {
 } from "../types";
 import type { BreakpointMap } from "../../shared/responsive";
 import { useEntryInView } from "../hooks/useEntryInView";
-import { useEntryDecodeReady } from "../hooks/useEntryDecodeReady";
 import { isEntriesPlugin } from "../plugins/create";
 import { usePrefersReducedMotion } from "../../shared/hooks/usePrefersReducedMotion";
 import { EntrySkeletonCard, EntrySkeletonSpec } from "./EntrySkeleton";
@@ -136,39 +135,44 @@ function getBlockingEntryImages(row: HTMLElement) {
   return Array.from(imageSet);
 }
 
-function waitForImageElementReady(image: HTMLImageElement) {
+function waitForImageElementReady(
+  image: HTMLImageElement,
+  timeoutMs?: number,
+) {
   if (image.complete) return Promise.resolve();
 
   const decode = (image as any).decode;
-  if (typeof decode === "function") {
-    return decode.call(image).catch(() => undefined);
+  const readyPromise =
+    typeof decode === "function"
+      ? decode.call(image).catch(() => undefined)
+      : Promise.resolve();
+
+  if (
+    timeoutMs == null ||
+    timeoutMs <= 0 ||
+    typeof window === "undefined"
+  ) {
+    return readyPromise;
   }
 
-  return Promise.resolve();
-}
-
-function waitForDocumentFontsReady() {
-  if (typeof document === "undefined") return Promise.resolve();
-
-  const fonts = (document as any).fonts;
-  if (!fonts || fonts.status === "loaded" || !fonts.ready) {
-    return Promise.resolve();
-  }
-
-  return Promise.resolve(fonts.ready).catch(() => undefined);
+  return Promise.race([
+    readyPromise,
+    new Promise<void>((resolve) => {
+      window.setTimeout(resolve, timeoutMs);
+    }),
+  ]);
 }
 
 async function waitForEntryContentReady(
   row: HTMLElement,
-  options?: { waitForImages?: boolean },
+  options?: { waitForImages?: boolean; timeoutMs?: number },
 ) {
   const images =
     options?.waitForImages === false ? [] : getBlockingEntryImages(row);
 
-  await Promise.all([
-    waitForDocumentFontsReady(),
-    ...images.map((image) => waitForImageElementReady(image)),
-  ]);
+  await Promise.all(
+    images.map((image) => waitForImageElementReady(image, options?.timeoutMs)),
+  );
 }
 
 type Props = {
@@ -967,25 +971,14 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
       !prefersReducedMotion &&
       (revealN.durationMs > 0 || revealN.staggerMs > 0);
 
-    const { everInView, setEntryRef } = useEntryInView(len, {
-      root: null,
-      nearMargin: loadingN.nearMargin,
-      viewMargin: loadingN.viewMargin,
-      threshold: loadingN.threshold,
-      keys: entryStateKeys,
-    });
-
-    const decodeGateEnabled =
-      loadingActive && (!loadingForce.enabled || loadingForce.showContent);
-    const decodePriority = entries.mediaLayout === "slider" ? "first" : "all";
-
-    const { decodedReady } = useEntryDecodeReady(
-      decodeGateEnabled,
-      items as any,
-      everInView,
+    const { nearView, everInView, setEntryRef } = useEntryInView(
+      len,
       {
-        timeoutMs: loadingN.decodeTimeoutMs,
-        priority: decodePriority,
+        root: null,
+        nearMargin: loadingN.nearMargin,
+        viewMargin: loadingN.viewMargin,
+        threshold: loadingN.threshold,
+        keys: entryStateKeys,
       },
     );
 
@@ -1024,8 +1017,8 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
           const shouldMeasureVirtualRow =
             virtualWindow.layout !== "grid" ||
             virtualIndex % virtualWindow.columnCount === 0;
+          const hasNear = nearView[entryIndex] ?? false;
           const hasEver = everInView[entryIndex] ?? false;
-          const isDecoded = decodedReady[entryIndex] ?? false;
           const entryRenderKey =
             entryRenderKeys[entryIndex] ?? getEntryKey(entry, entryIndex);
           const entryStateKey =
@@ -1044,13 +1037,11 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
             entryWasRevealed ||
             verifiedReadyContentEntryKeys.has(entryStateKey);
 
-          const shouldMountContent = entryWasRevealed || hasEver;
-          const mountedContentReady =
-            entryWasRevealed ||
-            (shouldMountContent && (loadingN.waitForDecode ? isDecoded : true));
+          const shouldMountContent = entryWasRevealed || hasNear;
+          const shouldRenderMedia = hasNear || entryWasRevealed;
+          const mountedContentReady = entryWasRevealed || shouldMountContent;
           const defaultReveal = loadingActive
-            ? entryWasRevealed ||
-              (hasEver && (loadingN.waitForDecode ? isDecoded : true))
+            ? entryWasRevealed || hasEver
             : shouldMountContent;
           const entryLoadingVisualState = resolveEntryLoadingVisualState({
             loadingActive,
@@ -1110,156 +1101,189 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
           if (shouldMountContent) {
             const mediaArray = entry.media ?? [];
 
-            const mediaNodes = mediaArray.map((media, mediaIndex) => {
-              const globalIndex =
-                entryFlatIndex?.[entryIndex]?.[mediaIndex] ?? 0;
-              const mediaIsRevealBlocking =
-                entries.mediaLayout === "slider" ? mediaIndex === 0 : true;
-              const mediaReadinessProps = {
-                "data-rmg-entry-media-index": String(mediaIndex),
-                "data-rmg-entry-media-priority": mediaIsRevealBlocking
-                  ? "true"
-                  : undefined,
-              };
-
-              const rawContent =
-                typeof entries.render?.media === "function"
-                  ? entries.render.media({
-                      entry,
-                      entryIndex,
-                      media,
-                      mediaIndex,
-                    })
-                  : nodeFromMedia(media);
-
-              const reg = (
-                node: HTMLImageElement | HTMLVideoElement | null,
-              ) => {
-                registerExpandableImage?.(globalIndex, node);
-              };
-
-              const handleClick: React.MouseEventHandler<HTMLElement> = (e) => {
-                e.preventDefault();
-                if (!fsEnabled) return;
-                openFullscreenAt(globalIndex, e.currentTarget as HTMLElement);
-              };
-
-              if (React.isValidElement(rawContent)) {
-                const original = rawContent as React.ReactElement<any>;
-                const origOnClick = original.props?.onClick;
-                const origRef = (original as any).ref as
-                  | React.Ref<HTMLElement>
-                  | undefined;
-                const fullscreenImageStyle =
-                  fsEnabled && media.kind === "image"
-                    ? { ...(original.props?.style ?? {}), cursor: "zoom-in" }
-                    : original.props?.style;
-
-                const mergedOnClick: React.MouseEventHandler<any> = (e) => {
-                  if (typeof origOnClick === "function") origOnClick(e);
-                  if (e.defaultPrevented) return;
-                  handleClick(e);
-                };
-
-                if (typeof original.type === "string") {
-                  const mergedRef: React.RefCallback<
-                    HTMLImageElement | HTMLVideoElement | null
-                  > = (node) => {
-                    if (typeof origRef === "function") origRef(node);
-                    else if (origRef && typeof origRef === "object")
-                      (origRef as any).current = node;
-                    reg(node);
+            const mediaNodes = shouldRenderMedia
+              ? mediaArray.map((media, mediaIndex) => {
+                  const globalIndex =
+                    entryFlatIndex?.[entryIndex]?.[mediaIndex] ?? 0;
+                  const mediaIsRevealBlocking =
+                    entries.mediaLayout === "slider" ? mediaIndex === 0 : true;
+                  const mediaLoading = mediaIsRevealBlocking ? "eager" : "lazy";
+                  const mediaFetchPriority = mediaIsRevealBlocking
+                    ? "high"
+                    : "low";
+                  const mediaDecoding = "async";
+                  const mediaReadinessProps = {
+                    "data-rmg-entry-media-index": String(mediaIndex),
+                    "data-rmg-entry-media-priority": mediaIsRevealBlocking
+                      ? "true"
+                      : undefined,
                   };
 
-                  return React.cloneElement(original, {
-                    key: `${entryIndex}-${mediaIndex}`,
-                    ...mediaReadinessProps,
-                    onClick: (e: any) => {
-                      if (shouldBlockClick()) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return;
-                      }
-                      mergedOnClick(e);
-                    },
-                    onPointerDownCapture,
-                    onPointerMoveCapture,
-                    onPointerUpCapture,
-                    ref: mergedRef,
-                    style: fullscreenImageStyle,
-                  });
-                }
+                  const rawContent =
+                    typeof entries.render?.media === "function"
+                      ? entries.render.media({
+                          entry,
+                          entryIndex,
+                          media,
+                          mediaIndex,
+                          mediaPriority: mediaIsRevealBlocking,
+                          mediaLoading,
+                          mediaDecoding,
+                          mediaFetchPriority,
+                        })
+                      : nodeFromMedia(media);
 
-                if (isTransparentMasonryItemElement(original)) {
-                  return React.cloneElement(original, {
-                    key: `${entryIndex}-${mediaIndex}`,
-                    children: (
-                      <span
-                        ref={reg as any}
-                        style={{ display: "contents" }}
-                        {...mediaReadinessProps}
-                        onClick={(e: any) => {
+                  const reg = (
+                    node: HTMLImageElement | HTMLVideoElement | null,
+                  ) => {
+                    registerExpandableImage?.(globalIndex, node);
+                  };
+
+                  const handleClick: React.MouseEventHandler<HTMLElement> = (
+                    e,
+                  ) => {
+                    e.preventDefault();
+                    if (!fsEnabled) return;
+                    openFullscreenAt(
+                      globalIndex,
+                      e.currentTarget as HTMLElement,
+                    );
+                  };
+
+                  if (React.isValidElement(rawContent)) {
+                    const original = rawContent as React.ReactElement<any>;
+                    const origOnClick = original.props?.onClick;
+                    const origRef = (original as any).ref as
+                      | React.Ref<HTMLElement>
+                      | undefined;
+                    const fullscreenImageStyle =
+                      fsEnabled && media.kind === "image"
+                        ? {
+                            ...(original.props?.style ?? {}),
+                            cursor: "zoom-in",
+                          }
+                        : original.props?.style;
+
+                    const mergedOnClick: React.MouseEventHandler<any> = (e) => {
+                      if (typeof origOnClick === "function") origOnClick(e);
+                      if (e.defaultPrevented) return;
+                      handleClick(e);
+                    };
+
+                    if (typeof original.type === "string") {
+                      const intrinsicMediaProps =
+                        original.type.toLowerCase() === "img"
+                          ? {
+                              loading: original.props?.loading ?? mediaLoading,
+                              decoding:
+                                original.props?.decoding ?? mediaDecoding,
+                              fetchPriority:
+                                original.props?.fetchPriority ??
+                                mediaFetchPriority,
+                            }
+                          : null;
+                      const mergedRef: React.RefCallback<
+                        HTMLImageElement | HTMLVideoElement | null
+                      > = (node) => {
+                        if (typeof origRef === "function") origRef(node);
+                        else if (origRef && typeof origRef === "object")
+                          (origRef as any).current = node;
+                        reg(node);
+                      };
+
+                      return React.cloneElement(original, {
+                        key: `${entryIndex}-${mediaIndex}`,
+                        ...mediaReadinessProps,
+                        ...(intrinsicMediaProps ?? {}),
+                        onClick: (e: any) => {
                           if (shouldBlockClick()) {
                             e.preventDefault();
                             e.stopPropagation();
                             return;
                           }
                           mergedOnClick(e);
-                        }}
+                        },
+                        onPointerDownCapture,
+                        onPointerMoveCapture,
+                        onPointerUpCapture,
+                        ref: mergedRef,
+                        style: fullscreenImageStyle,
+                      });
+                    }
+
+                    if (isTransparentMasonryItemElement(original)) {
+                      return React.cloneElement(original, {
+                        key: `${entryIndex}-${mediaIndex}`,
+                        children: (
+                          <span
+                            ref={reg as any}
+                            style={{ display: "contents" }}
+                            {...mediaReadinessProps}
+                            onClick={(e: any) => {
+                              if (shouldBlockClick()) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                              }
+                              mergedOnClick(e);
+                            }}
+                            onPointerDownCapture={onPointerDownCapture as any}
+                            onPointerMoveCapture={onPointerMoveCapture as any}
+                            onPointerUpCapture={onPointerUpCapture as any}
+                          >
+                            {original.props.children}
+                          </span>
+                        ),
+                      });
+                    }
+
+                    return (
+                      <span
+                        key={`${entryIndex}-${mediaIndex}`}
+                        ref={reg as any}
+                        style={{ display: "contents" }}
+                        {...mediaReadinessProps}
                         onPointerDownCapture={onPointerDownCapture as any}
                         onPointerMoveCapture={onPointerMoveCapture as any}
                         onPointerUpCapture={onPointerUpCapture as any}
                       >
-                        {original.props.children}
+                        {React.cloneElement(original, {
+                          onClick: (e: any) => {
+                            if (shouldBlockClick()) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              return;
+                            }
+                            mergedOnClick(e);
+                          },
+                        })}
                       </span>
-                    ),
-                  });
-                }
-
-                return (
-                  <span
-                    key={`${entryIndex}-${mediaIndex}`}
-                    ref={reg as any}
-                    style={{ display: "contents" }}
-                    {...mediaReadinessProps}
-                    onPointerDownCapture={onPointerDownCapture as any}
-                    onPointerMoveCapture={onPointerMoveCapture as any}
-                    onPointerUpCapture={onPointerUpCapture as any}
-                  >
-                    {React.cloneElement(original, {
-                      onClick: (e: any) => {
-                        if (shouldBlockClick()) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          return;
-                        }
-                        mergedOnClick(e);
-                      },
-                    })}
-                  </span>
-                );
-              }
-
-              return (
-                <div
-                  key={`${entryIndex}-${mediaIndex}`}
-                  className={styles.entryMediaButton}
-                  data-rmg-fullscreen-enabled={fsEnabled ? "true" : undefined}
-                  data-rmg-fullscreen-trigger-mode={
-                    fsEnabled ? "media" : undefined
+                    );
                   }
-                  {...mediaReadinessProps}
-                  onClick={handleClick}
-                  ref={reg as any}
-                >
-                  {rawContent as any}
-                </div>
-              );
-            });
+
+                  return (
+                    <div
+                      key={`${entryIndex}-${mediaIndex}`}
+                      className={styles.entryMediaButton}
+                      data-rmg-fullscreen-enabled={
+                        fsEnabled ? "true" : undefined
+                      }
+                      data-rmg-fullscreen-trigger-mode={
+                        fsEnabled ? "media" : undefined
+                      }
+                      {...mediaReadinessProps}
+                      onClick={handleClick}
+                      ref={reg as any}
+                    >
+                      {rawContent as any}
+                    </div>
+                  );
+                })
+              : [];
 
             const mediaContainer = renderMediaContainer({
               entryIndex,
-              entryInView: entryReady,
+              entryInView: entryReady && shouldRenderMedia,
               mediaNodes,
               entrySliderRefs,
             });
@@ -1523,34 +1547,30 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
 
       let cancelled = false;
 
-      void Promise.all(
-        readyPaintedEntryKeys.map(async (entryKey) => {
-          const row = entryRowNodesRef.current.get(entryKey);
-          if (!row) return null;
+      readyPaintedEntryKeys.forEach((entryKey) => {
+        const row = entryRowNodesRef.current.get(entryKey);
+        if (!row) return;
 
-          await waitForEntryContentReady(row, {
-            waitForImages: loadingN.waitForDecode,
-          });
-          return entryKey;
-        }),
-      ).then((entryKeys) => {
-        if (cancelled) return;
+        void waitForEntryContentReady(row, {
+          waitForImages: loadingN.waitForDecode,
+          timeoutMs: loadingN.decodeTimeoutMs,
+        }).then(() => {
+          if (cancelled) return;
 
-        const verifiedEntryKeys = entryKeys.filter(
-          (entryKey): entryKey is string => typeof entryKey === "string",
-        );
-
-        if (!verifiedEntryKeys.length) return;
-
-        setVerifiedReadyContentEntryKeys((prev) =>
-          addEntryKeysToSet(prev, verifiedEntryKeys),
-        );
+          setVerifiedReadyContentEntryKeys((prev) =>
+            addEntryKeysToSet(prev, [entryKey]),
+          );
+        });
       });
 
       return () => {
         cancelled = true;
       };
-    }, [currentlyReadyPaintedContentEntryKeySignature, shouldStageEntryReveal]);
+    }, [
+      currentlyReadyPaintedContentEntryKeySignature,
+      loadingN.waitForDecode,
+      shouldStageEntryReveal,
+    ]);
 
     React.useEffect(() => {
       const revealableEntryKeys = splitEntryKeySignature(

@@ -2,16 +2,13 @@ import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
 import { MediaItem } from './media.mjs';
-import { a as GalleryCoreApi, n as SliderNodeInput, o as SliderRemoveTarget, k as SliderHandle, J as FullscreenOpenRequest } from './types-D9WBOrx6.mjs';
-export { G as GalleryApi, b as GalleryLayoutApi } from './types-D9WBOrx6.mjs';
-import { M as MediaEntryLink } from './responsive-BgOmwHgG.mjs';
+import { a as GalleryCoreApi, n as SliderNodeInput, o as SliderRemoveTarget, k as SliderHandle, aF as FullscreenOpenRequest, M as MediaEntryLink } from './responsive-DRmZH1Q2.mjs';
+export { G as GalleryApi, b as GalleryLayoutApi } from './responsive-DRmZH1Q2.mjs';
 import './force-C5m1QpdF.mjs';
-import './types-uhDRb0mo.mjs';
 import './transitions-ChhEdSB6.mjs';
 import './plyrTypes-B3vioQaS.mjs';
 import './types-CLMzNXt4.mjs';
 import './text-BBcRGVzn.mjs';
-import './types-bZ-lDlKM.mjs';
 import 'react-dom/client';
 
 type LayoutlessTarget = {

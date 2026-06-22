@@ -37,6 +37,7 @@ type UseFsCaptionOverlayArgs = {
   captionZoomMotion: FullscreenCaptionZoomMotion;
   viewportWidth: number;
   viewportHeight: number;
+  wrapperBaseStyle?: React.CSSProperties;
   interactive?: boolean;
   closing?: boolean;
   fadeOutMs?: number;
@@ -75,6 +76,7 @@ type RenderFsCaptionOverlayTreeArgs = {
   captionZoomMotion: FullscreenCaptionZoomMotion;
   viewportWidth: number;
   viewportHeight: number;
+  wrapperBaseStyle?: React.CSSProperties;
   fadeOutMs: number;
   fadeOutEasing: string;
   overlayOpacity?: number;
@@ -125,6 +127,7 @@ function buildCaptionOverlayShellStyle(args: {
   caption: FullscreenCaptionOptions | undefined;
   viewportWidth: number;
   viewportHeight: number;
+  wrapperBaseStyle?: React.CSSProperties;
   placement: FsCaptionPlacement | null | undefined;
   fadeOutMs: number;
   fadeOutEasing: string;
@@ -134,6 +137,7 @@ function buildCaptionOverlayShellStyle(args: {
     caption,
     viewportWidth,
     viewportHeight,
+    wrapperBaseStyle,
     placement,
     fadeOutMs,
     fadeOutEasing,
@@ -150,13 +154,14 @@ function buildCaptionOverlayShellStyle(args: {
       viewportWidth,
       viewportHeight,
     }),
+    pointerEvents: 'none',
+    ...(wrapperBaseStyle ?? {}),
     opacity: opacity as any,
     transition:
       fadeOutMs > 0
         ? `opacity ${fadeOutMs}ms ${fadeOutEasing}`
         : undefined,
     willChange: fadeOutMs > 0 ? 'opacity' : undefined,
-    pointerEvents: 'none',
   };
 }
 
@@ -278,6 +283,7 @@ export function renderFsCaptionOverlayTree(
     captionZoomMotion,
     viewportWidth,
     viewportHeight,
+    wrapperBaseStyle,
     fadeOutMs,
     fadeOutEasing,
     resolveFsCaptionPlacement,
@@ -346,6 +352,7 @@ export function renderFsCaptionOverlayTree(
           caption,
           viewportWidth,
           viewportHeight,
+          wrapperBaseStyle,
           placement: effectivePlacement,
           fadeOutMs,
           fadeOutEasing,
@@ -451,6 +458,7 @@ export function renderFsCaptionOverlayTree(
               caption,
               viewportWidth,
               viewportHeight,
+              wrapperBaseStyle,
               placement: effectivePlacement,
               fadeOutMs,
               fadeOutEasing,
@@ -499,6 +507,7 @@ export function FsCaptionOverlay(props: FsCaptionOverlayProps) {
     captionZoomMotion,
     viewportWidth,
     viewportHeight,
+    wrapperBaseStyle,
     closing,
     fadeOutMs: fadeOutMsProp,
     resolveFsCaptionPlacement,
@@ -698,6 +707,7 @@ export function FsCaptionOverlay(props: FsCaptionOverlayProps) {
         captionZoomMotion,
         viewportWidth,
         viewportHeight,
+        wrapperBaseStyle,
         fadeOutMs,
         fadeOutEasing,
         overlayOpacity,
@@ -787,6 +797,7 @@ export function useFsCaptionOverlay(
     captionZoomMotion,
     viewportWidth,
     viewportHeight,
+    wrapperBaseStyle,
     interactive,
     closing,
     fadeOutMs: fadeOutMsProp,
@@ -927,6 +938,7 @@ export function useFsCaptionOverlay(
         captionZoomMotion,
         viewportWidth,
         viewportHeight,
+        wrapperBaseStyle,
         fadeOutMs,
         fadeOutEasing,
         resolveFsCaptionPlacement,
@@ -942,6 +954,7 @@ export function useFsCaptionOverlay(
       items,
       isZoomed,
       captionZoomMotion,
+      wrapperBaseStyle,
       resolveFsCaptionPlacement,
       restorePendingRootForMount,
       scheduleRootUnmount,

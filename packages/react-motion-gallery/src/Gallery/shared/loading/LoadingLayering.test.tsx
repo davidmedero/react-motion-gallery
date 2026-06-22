@@ -27,12 +27,6 @@ vi.mock("../../entries/hooks/useEntryInView", () => ({
   }),
 }));
 
-vi.mock("../../entries/hooks/useEntryDecodeReady", () => ({
-  useEntryDecodeReady: () => ({
-    decodedReady: [true],
-  }),
-}));
-
 vi.mock("../hooks/usePrefersReducedMotion", () => ({
   usePrefersReducedMotion: () => false,
 }));

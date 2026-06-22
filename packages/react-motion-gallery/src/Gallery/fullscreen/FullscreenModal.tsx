@@ -61,9 +61,9 @@ interface FullscreenModalProps {
   };
   entryMapRef?: RefObject<MediaEntryLink[] | null>;
   entryMediaLayout?: string;
-  introFade?: boolean;
-  introDuration?: FullscreenIntroPathTiming<number>;
-  introEasing?: FullscreenIntroPathTiming<string>;
+  transitionFade?: boolean;
+  transitionDuration?: FullscreenIntroPathTiming<number>;
+  transitionEasing?: FullscreenIntroPathTiming<string>;
   requestFsCloseRef: React.RefObject<null | (() => void)>;
   cancelFsCloseRef: React.RefObject<null | (() => void)>;
   fs: FullscreenOptions;
@@ -97,13 +97,13 @@ const CLOSE_POINTER_GUARD_MS = 80;
 const CLOSE_SCROLL_MOBILE_MAX_VIEWPORT_WIDTH = 767;
 
 export function shouldUseFadeClose(args: {
-  introFade?: boolean;
+  transitionFade?: boolean;
   isVideoSlide: boolean;
   introMethod?: FullscreenOpenMethod | null;
   isLatchedIntroIndex?: boolean;
   hasTransformTarget?: boolean;
 }) {
-  if (args.introFade || args.isVideoSlide) return true;
+  if (args.transitionFade || args.isVideoSlide) return true;
   if (args.introMethod === 'fade' && args.isLatchedIntroIndex) return true;
   if (args.hasTransformTarget === false) return true;
   if (args.hasTransformTarget) return false;
@@ -301,6 +301,8 @@ type ObjectFitMode = "contain" | "cover";
 type ObjectPosition = { x: number; y: number };
 type RectTransform = { cx: number; cy: number; scale: number };
 
+const FULL_VIEWPORT_INSET = "inset(0px 0px 0px 0px)";
+
 function parseScaleCssValue(value: string | null | undefined): number | null {
   const parsed = Number.parseFloat(value?.trim() ?? '');
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
@@ -384,8 +386,19 @@ function createViewportClipper(startInset: string, zIndex: number) {
     transition: "none",
     pointerEvents: "none",
     zIndex: String(zIndex),
+    contain: "layout paint style",
+    isolation: "isolate",
+    transform: "translateZ(0)",
+    backfaceVisibility: "hidden",
   } as CSSStyleDeclaration);
+  clipper.style.setProperty("-webkit-clip-path", startInset);
   return clipper;
+}
+
+function setClipperInset(clipper: HTMLElement | null, inset: string) {
+  if (!clipper) return;
+  clipper.style.clipPath = inset;
+  clipper.style.setProperty("-webkit-clip-path", inset);
 }
 
 function isVisibleTopStickyNavCandidate(el: Element | null): el is HTMLElement {
@@ -406,6 +419,28 @@ function isVisibleTopStickyNavCandidate(el: Element | null): el is HTMLElement {
 
 function rectsOverlapOnX(a: DOMRect, b: DOMRect) {
   return Math.min(a.right, b.right) > Math.max(a.left, b.left);
+}
+
+function rectContainsRect(outer: DOMRect, inner: DOMRect, epsilon = 0.5) {
+  return (
+    inner.left >= outer.left - epsilon &&
+    inner.top >= outer.top - epsilon &&
+    inner.right <= outer.right + epsilon &&
+    inner.bottom <= outer.bottom + epsilon
+  );
+}
+
+function rectMatchesNaturalAspect(
+  rect: DOMRect,
+  natW: number,
+  natH: number,
+  epsilon = 0.01
+) {
+  if (rect.width <= 0 || rect.height <= 0 || natW <= 0 || natH <= 0) {
+    return false;
+  }
+
+  return Math.abs(rect.width / rect.height - natW / natH) <= epsilon;
 }
 
 function findStickyNav(
@@ -442,18 +477,6 @@ function findStickyNav(
 
   if (bestMatch || query) {
     return bestMatch;
-  }
-
-  for (const candidate of Array.from(document.body.querySelectorAll("*"))) {
-    if (!isVisibleTopStickyNavCandidate(candidate)) continue;
-
-    const rect = candidate.getBoundingClientRect();
-    if (sourceRect && !rectsOverlapOnX(rect, sourceRect)) continue;
-
-    if (rect.bottom > bestBottom) {
-      bestBottom = rect.bottom;
-      bestMatch = candidate;
-    }
   }
 
   return bestMatch;
@@ -546,7 +569,12 @@ function createClipper({ DURATION_MS, EASING }: ClipperArgs): HTMLDivElement {
     transition: `clip-path ${DURATION_MS}ms ${EASING}`,
     zIndex: '9998',
     background: 'transparent',
+    contain: 'layout paint style',
+    isolation: 'isolate',
+    transform: 'translateZ(0)',
+    backfaceVisibility: 'hidden',
   } as CSSStyleDeclaration)
+  clipper.style.setProperty('-webkit-clip-path', 'inset(0px 0px 0px 0px)')
   document.body.appendChild(clipper)
   void clipper.offsetWidth
   return clipper
@@ -1051,6 +1079,9 @@ async function animateVideoCloseProxy({
     zIndex: '2147483601',
     opacity: '1',
     transition: 'none',
+    backfaceVisibility: 'hidden',
+    contain: 'paint',
+    isolation: 'isolate',
   } as CSSStyleDeclaration);
 
   movingProxy.style.transform =
@@ -1059,7 +1090,7 @@ async function animateVideoCloseProxy({
     ` scale(${startT.scale})`;
 
   const clipper = createClipper({DURATION_MS, EASING});
-  clipper.style.clipPath = insetForRect(fsRect);
+  setClipperInset(clipper, insetForRect(fsRect));
   clipper.appendChild(movingProxy);
 
   void movingProxy.offsetWidth;
@@ -1082,7 +1113,7 @@ async function animateVideoCloseProxy({
   };
 
   requestAnimationFrame(() => {
-    clipper.style.clipPath = insetForRect(endClipRect ?? thumbCropRect);
+    setClipperInset(clipper, insetForRect(endClipRect ?? thumbCropRect));
     (movingProxy as HTMLElement).style.transition = `transform ${DURATION_MS}ms ${EASING}`;
     (movingProxy as HTMLElement).style.transform =
       `translate3d(${endT.cx}px, ${endT.cy}px, 0)` +
@@ -1125,9 +1156,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   resolveLayoutlessTarget,
   entryMapRef,
   entryMediaLayout,
-  introFade,
-  introDuration,
-  introEasing,
+  transitionFade,
+  transitionDuration,
+  transitionEasing,
   requestFsCloseRef,
   cancelFsCloseRef,
   fs,
@@ -1141,18 +1172,18 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 }) => {
 
   const TRANSFORM_DURATION_MS = resolveFullscreenIntroDurationMs(
-    introDuration,
+    transitionDuration,
     'transform'
   );
   const TRANSFORM_EASING = resolveFullscreenIntroEasing(
-    introEasing,
+    transitionEasing,
     'transform'
   );
   const FADE_DURATION_MS = resolveFullscreenIntroDurationMs(
-    introDuration,
+    transitionDuration,
     'fade'
   );
-  const FADE_EASING = resolveFullscreenIntroEasing(introEasing, 'fade');
+  const FADE_EASING = resolveFullscreenIntroEasing(transitionEasing, 'fade');
 
   const modalRef = React.useRef<HTMLDivElement | null>(null);
   const pointerDownX = React.useRef<number>(0)
@@ -1793,7 +1824,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       const sourceRect = args.destImg
         ? (getScaleSettledRect(args.destImg) ?? args.destImg.getBoundingClientRect())
         : args.thumbCropRect;
-      const navEl = findStickyNav(fs.effects?.introStickyNavSelector, sourceRect);
+      const navEl = findStickyNav(fs.effects?.StickyNavSelector, sourceRect);
       const navRect = navEl?.getBoundingClientRect();
 
       if (!navRect) return args.thumbCropRect;
@@ -1900,9 +1931,17 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
       const endT = coverTransformForRect(natW, natH, args.thumbCropRect, args.endObjPos);
 
-      const overflowRects = findOverflowClipAncestorRectsFromEl(args.destImg ?? null, 2);
+      const overflowRects = findOverflowClipAncestorRectsFromEl(
+        args.destImg ?? null,
+        2
+      ).filter((rect) => !rectContainsRect(rect, args.thumbCropRect));
       const parentOverflowRect = overflowRects[0] ?? null;
       const grandparentOverflowRect = overflowRects[1] ?? null;
+      const canSkipImageClipper =
+        fsFit === "contain" &&
+        endClipRect === args.thumbCropRect &&
+        overflowRects.length === 0 &&
+        rectMatchesNaturalAspect(args.thumbCropRect, natW, natH);
       const closeLayerRoot = modalRef.current;
       const closeMediaZ = closeLayerRoot ? 1 : computedBaseZ + 1;
 
@@ -1910,16 +1949,18 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       const vh = window.innerHeight;
 
       const imageClipper = createViewportClipper(
-        insetForViewportRect(curRect, vw, vh),
+        canSkipImageClipper
+          ? FULL_VIEWPORT_INSET
+          : insetForViewportRect(curRect, vw, vh),
         closeMediaZ
       );
 
       const parentClipper = parentOverflowRect
-        ? createViewportClipper('inset(0px 0px 0px 0px)', closeMediaZ)
+        ? createViewportClipper(FULL_VIEWPORT_INSET, closeMediaZ)
         : null;
 
       const grandparentClipper = grandparentOverflowRect
-        ? createViewportClipper('inset(0px 0px 0px 0px)', closeMediaZ)
+        ? createViewportClipper(FULL_VIEWPORT_INSET, closeMediaZ)
         : null;
 
       const prevStyle = {
@@ -1934,6 +1975,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         transform: movingEl.style.transform,
         transition: movingEl.style.transition,
         willChange: movingEl.style.willChange,
+        backfaceVisibility: movingEl.style.backfaceVisibility,
+        contain: movingEl.style.contain,
+        isolation: movingEl.style.isolation,
         zIndex: movingEl.style.zIndex,
         pointerEvents: movingEl.style.pointerEvents,
       };
@@ -1951,6 +1995,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         transition: 'none',
         zIndex: '1',
         pointerEvents: 'none',
+        backfaceVisibility: 'hidden',
+        contain: 'paint',
+        isolation: 'isolate',
       } as CSSStyleDeclaration);
 
       imageClipper.appendChild(movingEl);
@@ -1974,12 +2021,11 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
         ` scale(${startT.scale})`;
 
-      void movingEl.offsetWidth;
-      void imageClipper.offsetWidth;
-      void parentClipper?.offsetWidth;
-      void grandparentClipper?.offsetWidth;
+      void outermostClipper.offsetWidth;
 
-      imageClipper.style.transition = `clip-path ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
+      if (!canSkipImageClipper) {
+        imageClipper.style.transition = `clip-path ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
+      }
       if (parentClipper) {
         parentClipper.style.transition = `clip-path ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
       }
@@ -1989,12 +2035,14 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       movingEl.style.transition = `transform ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
 
       requestAnimationFrame(() => {
-        imageClipper.style.clipPath = insetForViewportRect(endClipRect, vw, vh);
+        if (!canSkipImageClipper) {
+          setClipperInset(imageClipper, insetForViewportRect(endClipRect, vw, vh));
+        }
         if (parentClipper && parentOverflowRect) {
-          parentClipper.style.clipPath = insetForViewportRect(parentOverflowRect, vw, vh);
+          setClipperInset(parentClipper, insetForViewportRect(parentOverflowRect, vw, vh));
         }
         if (grandparentClipper && grandparentOverflowRect) {
-          grandparentClipper.style.clipPath = insetForViewportRect(grandparentOverflowRect, vw, vh);
+          setClipperInset(grandparentClipper, insetForViewportRect(grandparentOverflowRect, vw, vh));
         }
 
         movingEl.style.transform =
@@ -2249,7 +2297,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     if (
       shouldUseFadeClose({
-        introFade,
+        transitionFade,
         isVideoSlide,
         introMethod,
         isLatchedIntroIndex,
@@ -2356,7 +2404,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       modal.style.removeProperty('transition');
     }
 
-    if (!introFade) {
+    if (!transitionFade) {
       if (fsSlider) fsSlider.style.opacity = '0';
 
       if (modal) {

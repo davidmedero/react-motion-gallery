@@ -97,4 +97,37 @@ describe("fullscreen caption zoom motion", () => {
       contentStyle: {},
     });
   });
+
+  test("lets callers disable zoom fades while preserving caption options", () => {
+    const settings = resolveFullscreenCaptionZoomSettings(
+      {
+        zoomFade: true,
+        zoomFadeDurationMs: 180,
+        zoomFadeEasing: "linear",
+        zoomInTransform: "translateY(18px)",
+        zoomOutTransform: "translateY(-12px)",
+      },
+      { disabled: true }
+    );
+
+    expect(settings).toEqual({
+      enabled: false,
+      durationMs: 180,
+      easing: "linear",
+      zoomInTransform: "translateY(18px)",
+      zoomOutTransform: "translateY(-12px)",
+    });
+
+    expect(
+      buildFullscreenCaptionZoomMotion({
+        phase: "hidden",
+        isZoomed: true,
+        settings,
+      })
+    ).toMatchObject({
+      phase: "visible",
+      interactive: true,
+      contentStyle: {},
+    });
+  });
 });

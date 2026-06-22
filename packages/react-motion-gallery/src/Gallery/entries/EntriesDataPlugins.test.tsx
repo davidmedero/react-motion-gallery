@@ -5,6 +5,8 @@ import { createRoot, hydrateRoot } from "react-dom/client";
 import { renderToStaticMarkup, renderToString } from "react-dom/server";
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { GalleryCore, useGalleryCore } from "../core";
+import { Entries } from ".";
 import { EntryList } from "./components/EntryList";
 import { entriesLoadMore } from "./plugins/loadMore";
 import {
@@ -21,31 +23,12 @@ const entryVisibilityMock = vi.hoisted(() => ({
   everInView: [true, true, true] as boolean[],
 }));
 
-const entryDecodeMock = vi.hoisted(() => ({
-  decodedReady: [true, true, true] as boolean[],
-  inViewCalls: [] as boolean[][],
-}));
-
 vi.mock("./hooks/useEntryInView", () => ({
   useEntryInView: () => ({
     nearView: entryVisibilityMock.nearView,
     everInView: entryVisibilityMock.everInView,
     setEntryRef: () => () => undefined,
   }),
-}));
-
-vi.mock("./hooks/useEntryDecodeReady", () => ({
-  useEntryDecodeReady: (
-    _enabled: boolean,
-    _entries: unknown,
-    inView: boolean[],
-  ) => {
-    entryDecodeMock.inViewCalls.push([...inView]);
-
-    return {
-      decodedReady: entryDecodeMock.decodedReady,
-    };
-  },
 }));
 
 vi.mock("../shared/hooks/usePrefersReducedMotion", () => ({
@@ -65,8 +48,6 @@ beforeAll(() => {
 beforeEach(() => {
   entryVisibilityMock.nearView = [true, true, true];
   entryVisibilityMock.everInView = [true, true, true];
-  entryDecodeMock.decodedReady = [true, true, true];
-  entryDecodeMock.inViewCalls = [];
 });
 
 async function flushAnimationFrames(count: number) {
@@ -659,7 +640,6 @@ function virtualEntryListNode(args: {
   const items = virtualEntries(args.count ?? 8);
   entryVisibilityMock.nearView = items.map(() => true);
   entryVisibilityMock.everInView = items.map(() => true);
-  entryDecodeMock.decodedReady = items.map(() => true);
 
   return (
     <EntryList
@@ -692,6 +672,18 @@ function mountEntryList(node: React.ReactNode) {
   });
 
   return { rootEl, root };
+}
+
+function FullscreenRequestProbe({
+  onRequest,
+}: {
+  onRequest: ReturnType<typeof vi.fn>;
+}) {
+  const core = useGalleryCore();
+
+  React.useEffect(() => core.fsOpenSub.subscribe(onRequest), [core, onRequest]);
+
+  return null;
 }
 
 describe("entries data plugins", () => {
@@ -750,7 +742,6 @@ describe("entries data plugins", () => {
 
     entryVisibilityMock.nearView = [true, true];
     entryVisibilityMock.everInView = [true, true];
-    entryDecodeMock.decodedReady = [true, true];
 
     const rootEl = document.createElement("div");
     document.body.appendChild(rootEl);
@@ -1101,7 +1092,6 @@ describe("entries data plugins", () => {
     ).toBe(false);
     entryVisibilityMock.nearView = [false];
     entryVisibilityMock.everInView = [false];
-    entryDecodeMock.decodedReady = [false];
 
     await React.act(async () => {
       renderList();
@@ -1117,10 +1107,106 @@ describe("entries data plugins", () => {
     rootEl.remove();
   });
 
-  test("stages dynamic reveals again after decode readiness flips", async () => {
+  test("keeps entry media rendered after a revealed row leaves the near threshold", async () => {
     const rootEl = document.createElement("div");
     document.body.appendChild(rootEl);
     const root = createRoot(rootEl);
+    const renderMedia = vi.fn(({ media }: any) =>
+      React.createElement("img", {
+        src: media.src,
+        alt: media.alt ?? "",
+      }),
+    );
+
+    const renderList = () => {
+      root.render(
+        <EntryList
+          enabled
+          entries={{
+            items: [
+              {
+                id: "entry-media-gate",
+                media: [
+                  {
+                    kind: "image",
+                    src: "/media-gate.jpg",
+                    alt: "Media gate",
+                  },
+                ],
+              },
+            ],
+            render: { media: renderMedia },
+            loading: { enabled: true, waitForDecode: false },
+            reveal: { durationMs: 60, staggerMs: 0 },
+          }}
+          fsEnabled={false}
+          openFullscreenAt={() => undefined}
+          entryFlatIndex={[[0]]}
+          entryFlatIndexRef={React.createRef<number[][] | null>()}
+          nodeFromMedia={() => null}
+          renderMediaContainer={({ mediaNodes }) =>
+            React.createElement("div", null, mediaNodes)
+          }
+          breakpoints={{}}
+        />,
+      );
+    };
+
+    entryVisibilityMock.nearView = [true];
+    entryVisibilityMock.everInView = [true];
+
+    await React.act(async () => {
+      renderList();
+    });
+
+    await flushEntryRevealFrames();
+
+    expect(renderMedia).toHaveBeenCalled();
+    expect(rootEl.querySelector<HTMLImageElement>("img")?.src).toContain(
+      "/media-gate.jpg",
+    );
+
+    renderMedia.mockClear();
+    entryVisibilityMock.nearView = [false];
+    entryVisibilityMock.everInView = [false];
+
+    await React.act(async () => {
+      renderList();
+    });
+
+    const row = rootEl.querySelector("[data-rmg-entry-owner]");
+    expect(row?.getAttribute("data-rmg-entry-ready")).toBe("1");
+    expect(row?.getAttribute("data-rmg-entry-mounted")).toBe("1");
+    expect(renderMedia).toHaveBeenCalled();
+    expect(rootEl.querySelector<HTMLImageElement>("img")?.src).toContain(
+      "/media-gate.jpg",
+    );
+
+    await React.act(async () => {
+      root.unmount();
+    });
+    rootEl.remove();
+  });
+
+  test("stages dynamic reveals again after mounted image decode resolves", async () => {
+    const rootEl = document.createElement("div");
+    document.body.appendChild(rootEl);
+    const root = createRoot(rootEl);
+    const decodeDescriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLImageElement.prototype,
+      "decode",
+    );
+    const completeDescriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLImageElement.prototype,
+      "complete",
+    );
+    let resolveDecode: (() => void) | null = null;
+    const decode = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveDecode = resolve;
+        }),
+    );
 
     const renderList = () => {
       root.render(
@@ -1154,40 +1240,66 @@ describe("entries data plugins", () => {
       );
     };
 
-    entryDecodeMock.decodedReady = [false];
-
-    await React.act(async () => {
-      renderList();
+    Object.defineProperty(window.HTMLImageElement.prototype, "decode", {
+      configurable: true,
+      value: decode,
+    });
+    Object.defineProperty(window.HTMLImageElement.prototype, "complete", {
+      configurable: true,
+      get: () => false,
     });
 
-    const row = () => rootEl.querySelector("[data-rmg-entry-owner]");
+    try {
+      await React.act(async () => {
+        renderList();
+      });
 
-    expect(row()?.getAttribute("data-rmg-entry-mounted")).toBe("1");
-    expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("0");
+      const row = () => rootEl.querySelector("[data-rmg-entry-owner]");
 
-    await flushAnimationFrames(2);
+      expect(row()?.getAttribute("data-rmg-entry-mounted")).toBe("1");
+      expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("0");
 
-    expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("0");
+      await flushEntryRevealFrames();
 
-    entryDecodeMock.decodedReady = [true];
+      expect(decode).toHaveBeenCalledTimes(1);
+      expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("0");
 
-    await React.act(async () => {
-      renderList();
-    });
+      await React.act(async () => {
+        resolveDecode?.();
+        await Promise.resolve();
+      });
 
-    await flushAnimationFrames(2);
+      await flushEntryRevealFrames();
 
-    expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("0");
+      expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("1");
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      rootEl.remove();
 
-    await flushAnimationFrames(4);
+      if (decodeDescriptor) {
+        Object.defineProperty(
+          window.HTMLImageElement.prototype,
+          "decode",
+          decodeDescriptor,
+        );
+      } else {
+        delete (window.HTMLImageElement.prototype as any).decode;
+      }
 
-    expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("1");
-
-    await React.act(async () => {
-      root.unmount();
-    });
-    rootEl.remove();
+      if (completeDescriptor) {
+        Object.defineProperty(
+          window.HTMLImageElement.prototype,
+          "complete",
+          completeDescriptor,
+        );
+      } else {
+        delete (window.HTMLImageElement.prototype as any).complete;
+      }
+    }
   });
+
 
   test("waitForDecode false does not hold reveal verification on image decode", async () => {
     const rootEl = document.createElement("div");
@@ -1213,8 +1325,6 @@ describe("entries data plugins", () => {
     });
 
     try {
-      entryDecodeMock.decodedReady = [false];
-
       await React.act(async () => {
         root.render(
           <EntryList
@@ -1286,7 +1396,107 @@ describe("entries data plugins", () => {
     }
   });
 
-  test("does not mount or decode near-only rows before viewport entry", async () => {
+  test("verifies ready rows independently when another row media decode is pending", async () => {
+    const rootEl = document.createElement("div");
+    document.body.appendChild(rootEl);
+    const root = createRoot(rootEl);
+    const decodeDescriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLImageElement.prototype,
+      "decode",
+    );
+    const completeDescriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLImageElement.prototype,
+      "complete",
+    );
+    const decode = vi.fn(() => new Promise<void>(() => undefined));
+
+    Object.defineProperty(window.HTMLImageElement.prototype, "decode", {
+      configurable: true,
+      value: decode,
+    });
+    Object.defineProperty(window.HTMLImageElement.prototype, "complete", {
+      configurable: true,
+      get: () => false,
+    });
+
+    try {
+      await React.act(async () => {
+        root.render(
+          <EntryList
+            enabled
+            entries={{
+              items: [
+                {
+                  id: "entry-pending-media",
+                  media: [
+                    {
+                      kind: "image",
+                      src: "/pending-media.jpg",
+                      alt: "Pending media",
+                    },
+                  ],
+                },
+                { id: "entry-ready-no-media", media: [] },
+              ],
+              loading: { enabled: true, waitForDecode: true },
+              reveal: { durationMs: 60, staggerMs: 0 },
+            }}
+            fsEnabled={false}
+            openFullscreenAt={() => undefined}
+            entryFlatIndex={[[0], []]}
+            entryFlatIndexRef={React.createRef<number[][] | null>()}
+            nodeFromMedia={(media: any) =>
+              React.createElement("img", {
+                src: media.src,
+                alt: media.alt ?? "",
+              })
+            }
+            renderMediaContainer={({ mediaNodes }) =>
+              React.createElement("div", null, mediaNodes)
+            }
+            breakpoints={{}}
+          />,
+        );
+      });
+
+      const readyStates = () =>
+        Array.from(rootEl.querySelectorAll("[data-rmg-entry-owner]")).map(
+          (row) => row.getAttribute("data-rmg-entry-ready"),
+        );
+
+      await flushEntryRevealFrames();
+
+      expect(decode).toHaveBeenCalled();
+      expect(readyStates()).toEqual(["0", "1"]);
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      rootEl.remove();
+
+      if (decodeDescriptor) {
+        Object.defineProperty(
+          window.HTMLImageElement.prototype,
+          "decode",
+          decodeDescriptor,
+        );
+      } else {
+        delete (window.HTMLImageElement.prototype as any).decode;
+      }
+
+      if (completeDescriptor) {
+        Object.defineProperty(
+          window.HTMLImageElement.prototype,
+          "complete",
+          completeDescriptor,
+        );
+      } else {
+        delete (window.HTMLImageElement.prototype as any).complete;
+      }
+    }
+  });
+
+  test("pre-stages near rows before viewport entry", async () => {
     const rootEl = document.createElement("div");
     document.body.appendChild(rootEl);
     const root = createRoot(rootEl);
@@ -1313,7 +1523,6 @@ describe("entries data plugins", () => {
 
     entryVisibilityMock.nearView = [true];
     entryVisibilityMock.everInView = [false];
-    entryDecodeMock.decodedReady = [true];
 
     await React.act(async () => {
       renderList();
@@ -1321,11 +1530,8 @@ describe("entries data plugins", () => {
 
     const row = () => rootEl.querySelector("[data-rmg-entry-owner]");
 
-    expect(row()?.getAttribute("data-rmg-entry-mounted")).toBe("0");
+    expect(row()?.getAttribute("data-rmg-entry-mounted")).toBe("1");
     expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("0");
-    expect(
-      entryDecodeMock.inViewCalls[entryDecodeMock.inViewCalls.length - 1],
-    ).toEqual([false]);
 
     entryVisibilityMock.everInView = [true];
 
@@ -1334,14 +1540,74 @@ describe("entries data plugins", () => {
     });
 
     expect(row()?.getAttribute("data-rmg-entry-mounted")).toBe("1");
-    expect(
-      entryDecodeMock.inViewCalls[entryDecodeMock.inViewCalls.length - 1],
-    ).toEqual([true]);
+
+    await flushEntryRevealFrames();
+
+    expect(row()?.getAttribute("data-rmg-entry-ready")).toBe("1");
 
     await React.act(async () => {
       root.unmount();
     });
     rootEl.remove();
+  });
+
+  test("does not block entry reveal on pending document fonts when decode waiting is disabled", async () => {
+    const originalFontsDescriptor = Object.getOwnPropertyDescriptor(
+      document,
+      "fonts",
+    );
+    Object.defineProperty(document, "fonts", {
+      configurable: true,
+      value: {
+        status: "loading",
+        ready: new Promise(() => undefined),
+      },
+    });
+
+    const rootEl = document.createElement("div");
+    document.body.appendChild(rootEl);
+    const root = createRoot(rootEl);
+
+    try {
+      await React.act(async () => {
+        root.render(
+          <EntryList
+            enabled
+            entries={{
+              items: [{ id: "entry-0", media: [] }],
+              loading: { enabled: true, waitForDecode: false },
+              reveal: { durationMs: 60, staggerMs: 0 },
+            }}
+            fsEnabled={false}
+            openFullscreenAt={() => undefined}
+            entryFlatIndex={[]}
+            entryFlatIndexRef={React.createRef<number[][] | null>()}
+            nodeFromMedia={() => null}
+            renderMediaContainer={() => null}
+            breakpoints={{}}
+          />,
+        );
+      });
+
+      await flushEntryRevealFrames();
+
+      expect(
+        rootEl
+          .querySelector("[data-rmg-entry-owner]")
+          ?.getAttribute("data-rmg-entry-ready"),
+      ).toBe("1");
+    } finally {
+      await React.act(async () => {
+        root.unmount();
+      });
+      rootEl.remove();
+
+      if (originalFontsDescriptor) {
+        Object.defineProperty(document, "fonts", originalFontsDescriptor);
+      } else {
+        delete (document as any).fonts;
+      }
+    }
   });
 
   test("queues simultaneously revealable rows through the entry reveal scheduler", async () => {
@@ -1360,7 +1626,7 @@ describe("entries data plugins", () => {
               { id: "entry-2", media: [] },
             ],
             loading: { enabled: true, waitForDecode: true },
-            reveal: { durationMs: 60, staggerMs: 40 },
+            reveal: { durationMs: 60, staggerMs: 120 },
           }}
           fsEnabled={false}
           openFullscreenAt={() => undefined}
@@ -1388,12 +1654,12 @@ describe("entries data plugins", () => {
 
     expect(readyStates()).toEqual(["1", "0", "0"]);
 
-    await waitMs(45);
+    await waitMs(125);
     await flushAnimationFrames(2);
 
     expect(readyStates()).toEqual(["1", "1", "0"]);
 
-    await waitMs(45);
+    await waitMs(125);
     await flushAnimationFrames(2);
 
     expect(readyStates()).toEqual(["1", "1", "1"]);
@@ -1457,6 +1723,64 @@ describe("entries data plugins", () => {
     expect(openFullscreenAt).toHaveBeenCalledWith(
       3,
       expect.any(HTMLImageElement),
+    );
+
+    await React.act(async () => {
+      root.unmount();
+    });
+    rootEl.remove();
+  });
+
+  test("lets built-in fullscreen triggers request video entries", async () => {
+    const rootEl = document.createElement("div");
+    document.body.appendChild(rootEl);
+    const root = createRoot(rootEl);
+    const onRequest = vi.fn();
+
+    await React.act(async () => {
+      root.render(
+        <GalleryCore layout="entries">
+          <FullscreenRequestProbe onRequest={onRequest} />
+          <Entries
+            entries={{
+              items: [
+                {
+                  id: "entry-video",
+                  media: [
+                    {
+                      kind: "video",
+                      src: "/clip.mp4",
+                      poster: "/poster.jpg",
+                      alt: "Clip",
+                    },
+                  ],
+                },
+              ],
+              loading: { enabled: false },
+              render: {
+                media: ({ media }) =>
+                  media.kind === "video" ? (
+                    <video aria-label={media.alt} src={media.src} />
+                  ) : null,
+              },
+            }}
+            fullscreen={{ enabled: true }}
+            renderMediaContainer={({ mediaNodes }) => <div>{mediaNodes}</div>}
+          />
+        </GalleryCore>,
+      );
+    });
+
+    await React.act(async () => {
+      rootEl.querySelector<HTMLVideoElement>('video[aria-label="Clip"]')?.click();
+    });
+
+    expect(onRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "entries",
+        index: 0,
+        image: null,
+      }),
     );
 
     await React.act(async () => {

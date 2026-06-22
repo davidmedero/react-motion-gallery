@@ -54,6 +54,7 @@ import {
   containSliderScrollSnap,
   fitsWithinSliderViewport,
   getSliderCenterOffset,
+  getSliderInsufficientContentOffset,
   mergeDuplicateContainedSliderPages,
   resolveSliderGroupCells,
   roundSliderLayoutMetric,
@@ -126,6 +127,8 @@ interface SliderProps {
   sliderContainerStyles?: React.CSSProperties;
   sliderContainerClassName?: string;
   cellsPerSlide?: number;
+  preserveCellSize?: boolean;
+  centerInsufficientSlides?: boolean;
   direction?: 'ltr' | 'rtl';
   axis?: 'x' | 'y';
   skipSnaps?: SliderSkipSnaps;
@@ -219,6 +222,8 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     sliderContainerStyles,
     sliderContainerClassName,
     cellsPerSlide,
+    preserveCellSize,
+    centerInsufficientSlides = true,
     direction,
     axis,
     skipSnaps,
@@ -1081,7 +1086,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   }
 
   function computeCloneSig(originals: number, per: number, useCols: boolean) {
-    return `${originals}|per=${per}|cols=${useCols ? cellsPerSlide : 0}|group=${groupCells ?? 0}|wrap=${wrap ? 1 : 0}`;
+    return `${originals}|per=${per}|cols=${useCols ? cellsPerSlide : 0}|preserve=${preserveCellSize ? 1 : 0}|group=${groupCells ?? 0}|wrap=${wrap ? 1 : 0}`;
   }
 
   useEffect(() => {
@@ -1148,7 +1153,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         let cellSize: number | undefined;
 
         if (useCols) {
-          cols = Math.max(1, Math.min(originals, cellsPerSlide as number));
+          const requestedCols = Math.max(1, cellsPerSlide as number);
+          cols = preserveCellSize
+            ? requestedCols
+            : Math.min(originals, requestedCols);
           const totalGap = gap * Math.max(0, cols - 1);
           cellSize = (cw - totalGap) / cols;
         }
@@ -1303,6 +1311,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     groupCells,
     buildKey,
     childrenKey,
+    preserveCellSize,
     autoHeight,
     indexChannel,
     slideStoreBag,
@@ -1444,14 +1453,18 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     if (containerSize <= 0) return;
 
     if (!wrap && sliderWidth.current <= containerSize) {
-      trackCenterOffsetRef.current = Math.round((containerSize - sliderWidth.current) / 2);
+      trackCenterOffsetRef.current = getSliderInsufficientContentOffset({
+        viewport: containerSize,
+        contentSpan: sliderWidth.current,
+        centerInsufficientSlides,
+      });
     } else {
       trackCenterOffsetRef.current = 0;
     }
 
     positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slidesState, wrap]);
+  }, [slidesState, wrap, centerInsufficientSlides]);
 
   useEffect(() => {
     const containerEl = slider.current
@@ -1703,7 +1716,17 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       if (retryTimer != null) window.clearTimeout(retryTimer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cellCount, childrenKey, clonedChildren, visibleImages, cellsPerSlide, groupCells, wrap, containScroll]);
+  }, [
+    cellCount,
+    childrenKey,
+    clonedChildren,
+    visibleImages,
+    cellsPerSlide,
+    preserveCellSize,
+    groupCells,
+    wrap,
+    containScroll,
+  ]);
 
   const programNavRef = useRef(false);
 
@@ -2488,6 +2511,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     slidesState.length,
     wrap,
     cellsPerSlide,
+    preserveCellSize,
     layoutReady,
     isMeasured,
     containScroll,
@@ -2909,7 +2933,11 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         // otherwise resizing from scrollable -> non-scrollable while on index != 0
         // can freeze after onUp (snap logic runs with stale multi-snap state).
         if (contentW <= cw) {
-          const center = Math.round((cw - contentW) / 2);
+          const center = getSliderInsufficientContentOffset({
+            viewport: cw,
+            contentSpan: contentW,
+            centerInsufficientSlides,
+          });
           trackCenterOffsetRef.current = center;
 
           // If engine isn't ready yet, just re-position (don't touch null refs).
@@ -2989,7 +3017,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     }
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wrap, layoutReady, isMeasured, isReady, shouldReanchorOnResize, autoHeight, containScroll]);
+  }, [wrap, layoutReady, isMeasured, isReady, shouldReanchorOnResize, autoHeight, containScroll, centerInsufficientSlides]);
 
   function onTouchStart(e: TouchEvent) {
     const t0 = e.touches[0]

@@ -80,7 +80,7 @@ describe("shouldUseFadeClose", () => {
   test("keeps a fade-opened item on the fade close path even when a transform target is available", () => {
     expect(
       shouldUseFadeClose({
-        introFade: false,
+        transitionFade: false,
         isVideoSlide: false,
         introMethod: "fade",
         isLatchedIntroIndex: true,
@@ -92,7 +92,7 @@ describe("shouldUseFadeClose", () => {
   test("uses the transform close path for a fade-opened image after navigating to a different transform target", () => {
     expect(
       shouldUseFadeClose({
-        introFade: false,
+        transitionFade: false,
         isVideoSlide: false,
         introMethod: "fade",
         isLatchedIntroIndex: false,
@@ -104,7 +104,7 @@ describe("shouldUseFadeClose", () => {
   test("keeps fade-opened images on the fade close path when there is no transform target", () => {
     expect(
       shouldUseFadeClose({
-        introFade: false,
+        transitionFade: false,
         isVideoSlide: false,
         introMethod: "fade",
         isLatchedIntroIndex: false,
@@ -116,7 +116,7 @@ describe("shouldUseFadeClose", () => {
   test("keeps scale-opened images on the scale close path", () => {
     expect(
       shouldUseFadeClose({
-        introFade: false,
+        transitionFade: false,
         isVideoSlide: false,
         introMethod: "scale",
         isLatchedIntroIndex: true,
@@ -128,7 +128,7 @@ describe("shouldUseFadeClose", () => {
   test("uses fade close when a transform target is unavailable", () => {
     expect(
       shouldUseFadeClose({
-        introFade: false,
+        transitionFade: false,
         isVideoSlide: false,
         introMethod: "scale",
         isLatchedIntroIndex: true,
@@ -137,10 +137,10 @@ describe("shouldUseFadeClose", () => {
     ).toBe(true);
   });
 
-  test("uses fade close for introFade and video slides", () => {
+  test("uses fade close for transitionFade and video slides", () => {
     expect(
       shouldUseFadeClose({
-        introFade: true,
+        transitionFade: true,
         isVideoSlide: false,
         introMethod: "scale",
         isLatchedIntroIndex: false,
@@ -150,7 +150,7 @@ describe("shouldUseFadeClose", () => {
 
     expect(
       shouldUseFadeClose({
-        introFade: false,
+        transitionFade: false,
         isVideoSlide: true,
         introMethod: "scale",
         isLatchedIntroIndex: false,
@@ -359,8 +359,8 @@ describe("fullscreen close scroll policy", () => {
 describe("fullscreen close sequencing", () => {
   function setupGridCloseScenario(
     closeScroll?: any,
-    introDuration?: any,
-    introEasing: any = "linear",
+    transitionDuration?: any,
+    transitionEasing: any = "linear",
     options: {
       destDocumentTop?: number;
       layout?: "grid" | "slider";
@@ -552,9 +552,9 @@ describe("fullscreen close sequencing", () => {
             image: destImg,
             media: destHost,
           }),
-          introFade: false,
-          introDuration,
-          introEasing,
+          transitionFade: false,
+          transitionDuration,
+          transitionEasing,
           requestFsCloseRef,
           cancelFsCloseRef,
           fs: {
@@ -925,9 +925,9 @@ describe("fullscreen close sequencing", () => {
             image: null,
             media: null,
           }),
-          introFade: false,
-          introDuration: { fade: 80, transform: 80 },
-          introEasing: "linear",
+          transitionFade: false,
+          transitionDuration: { fade: 80, transform: 80 },
+          transitionEasing: "linear",
           requestFsCloseRef,
           cancelFsCloseRef,
           fs: {

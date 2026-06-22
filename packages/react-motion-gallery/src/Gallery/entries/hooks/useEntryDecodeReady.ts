@@ -3,7 +3,7 @@ import * as React from "react";
 type EntryLike = {
   key?: string;
   id?: string;
-  media?: Array<{ kind?: string; src?: string }>;
+  media?: Array<{ kind?: string; src?: string; poster?: string }>;
 };
 
 type DecodePriority = "all" | "first";
@@ -19,7 +19,10 @@ function safeEntriesKey(entries: EntryLike[] | undefined) {
   for (let i = 0; i < list.length; i++) {
     const e = list[i] as any;
     const mediaKey = (e?.media ?? [])
-      .map((media: any) => `${media?.kind ?? ""}:${media?.src ?? ""}`)
+      .map(
+        (media: any) =>
+          `${media?.kind ?? ""}:${media?.src ?? ""}:${media?.poster ?? ""}`,
+      )
       .join(",");
     key += `${e?.key ?? e?.id ?? `i${i}`}[${mediaKey}]|`;
   }
@@ -34,14 +37,23 @@ function decodeImageUrl(url: string, signal?: AbortSignal): Promise<void> {
     const finish = () => {
       if (done) return;
       done = true;
-      signal?.removeEventListener("abort", finish);
+      signal?.removeEventListener("abort", abort);
       img.onload = null;
       img.onerror = null;
       resolve();
     };
 
-    if (signal?.aborted) return finish();
-    signal?.addEventListener("abort", finish, { once: true });
+    const abort = () => {
+      try {
+        img.src = "";
+      } catch {
+        // Ignore abort cleanup errors from browser image loaders.
+      }
+      finish();
+    };
+
+    if (signal?.aborted) return abort();
+    signal?.addEventListener("abort", abort, { once: true });
 
     img.decoding = "async";
     img.src = url;
@@ -73,8 +85,16 @@ export function useEntryDecodeReady(
     const list = entries ?? [];
     return list.map((entry) =>
       (entry.media ?? [])
-        .filter((m: any) => m?.kind === "image" && typeof m?.src === "string")
-        .map((m: any) => m.src as string)
+        .map((m: any) => {
+          if (m?.kind === "image" && typeof m?.src === "string") {
+            return m.src as string;
+          }
+          if (m?.kind === "video" && typeof m?.poster === "string") {
+            return m.poster as string;
+          }
+          return null;
+        })
+        .filter((src): src is string => typeof src === "string")
     );
   }, [entries]);
 
@@ -134,6 +154,18 @@ export function useEntryDecodeReady(
       const alreadyReady = decodedReady[entryIndex] ?? false;
       const alreadyStarted = startedRef.current[entryIndex] ?? false;
 
+      if (!shouldStart) {
+        const controller = controllersRef.current.get(entryIndex);
+        if (controller) {
+          controller.abort();
+          controllersRef.current.delete(entryIndex);
+        }
+        if (!alreadyReady && alreadyStarted) {
+          startedRef.current[entryIndex] = false;
+        }
+        continue;
+      }
+
       if (!shouldStart || alreadyReady || alreadyStarted) continue;
 
       startedRef.current[entryIndex] = true;
@@ -174,25 +206,31 @@ export function useEntryDecodeReady(
         }
       };
 
-      (async () => {
-        await decodeUrls(priorityUrls);
+      void (async () => {
+        try {
+          await decodeUrls(priorityUrls);
 
-        if (ac.signal.aborted) return;
+          if (ac.signal.aborted) return;
 
-        setDecodedReady((prev) => {
-          if (!prev || entryIndex < 0 || entryIndex >= prev.length) return prev;
-          if (prev[entryIndex]) return prev;
-          const next = prev.slice();
-          next[entryIndex] = true;
-          return next;
-        });
+          setDecodedReady((prev) => {
+            if (!prev || entryIndex < 0 || entryIndex >= prev.length) return prev;
+            if (prev[entryIndex]) return prev;
+            const next = prev.slice();
+            next[entryIndex] = true;
+            return next;
+          });
 
-        const remainingUrls =
-          priorityUrls.length >= allUrls.length
-            ? []
-            : allUrls.slice(priorityUrls.length);
-        if (remainingUrls.length) {
-          await decodeUrls(remainingUrls);
+          const remainingUrls =
+            priorityUrls.length >= allUrls.length
+              ? []
+              : allUrls.slice(priorityUrls.length);
+          if (remainingUrls.length) {
+            await decodeUrls(remainingUrls);
+          }
+        } finally {
+          if (controllersRef.current.get(entryIndex) === ac) {
+            controllersRef.current.delete(entryIndex);
+          }
         }
       })();
     }

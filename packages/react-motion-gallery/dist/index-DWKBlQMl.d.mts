@@ -1,7 +1,6 @@
-import { d as EntriesOptions, M as MediaEntryLink, S as SlideOwner, E as EntriesHandle, C as EntryItem } from './responsive-BgOmwHgG.mjs';
+import { k as SliderHandle, w as EntriesOptions, M as MediaEntryLink, B as SlideOwner, s as EntriesHandle, ah as EntryItem } from './responsive-DRmZH1Q2.mjs';
 import * as React from 'react';
 import { MediaItem } from './media.mjs';
-import { k as SliderHandle } from './types-D9WBOrx6.mjs';
 
 type EntriesMediaContainerRender = (args: {
     entryIndex: number;
