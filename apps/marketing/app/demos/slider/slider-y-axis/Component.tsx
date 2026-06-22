@@ -16,21 +16,21 @@ import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-y-axis-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/162/1600/900",
-  "https://picsum.photos/id/164/1600/900",
-  "https://picsum.photos/id/165/1600/900",
-  "https://picsum.photos/id/166/1600/900",
-  "https://picsum.photos/id/167/1600/900",
-  "https://picsum.photos/id/168/1600/900",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/162/2400/1350",
-  "https://picsum.photos/id/164/2400/1350",
-  "https://picsum.photos/id/165/2400/1350",
-  "https://picsum.photos/id/166/2400/1350",
-  "https://picsum.photos/id/167/2400/1350",
-  "https://picsum.photos/id/168/2400/1350",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?auto=format&fit=crop&w=2400&h=1350&q=80",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {

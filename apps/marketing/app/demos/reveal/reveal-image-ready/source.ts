@@ -8,19 +8,19 @@ import styles from "./reveal-image-ready-demo.module.css";
 
 const IMAGES = [
   {
-    src: "https://picsum.photos/id/1067/1400/980",
+    src: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=1400&h=980&q=80",
     alt: "A mountain ridge above a lake at dusk.",
     label: "Alpine study",
     detail: "Decode the image first, then let the figure enter.",
   },
   {
-    src: "https://picsum.photos/id/1039/1400/980",
+    src: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=1400&h=980&q=80",
     alt: "A winding road through a forest.",
     label: "Route frame",
     detail: "The reveal waits for the off-DOM image decode gate.",
   },
   {
-    src: "https://picsum.photos/id/1043/1400/980",
+    src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1400&h=980&q=80",
     alt: "A coastline with cliffs and open water.",
     label: "Coast pass",
     detail: "The figure owns the hook output without an extra wrapper.",

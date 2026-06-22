@@ -48,7 +48,7 @@ export function ZoomPanStandaloneDemo() {
       >
         <ZoomPanImage
           ref={zoomPanRef}
-          src="https://picsum.photos/id/779/1920/1160"
+          src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&h=1160&q=80"
           alt="A hiker looking over a canyon at dusk"
           className={styles.zoomPan}
           imageClassName={styles.image}

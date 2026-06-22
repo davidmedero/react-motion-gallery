@@ -11,27 +11,27 @@ import styles from "./fullscreen-lazy-load-demo.module.css";
 
 const FULLSCREEN_ITEMS = toMediaItems([
   {
-    src: "https://picsum.photos/id/928/2400/1350",
+    src: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?auto=format&fit=crop&w=2400&h=1350&q=80",
     alt: "Forest ridge under soft morning light",
   },
   {
-    src: "https://picsum.photos/id/929/2400/1350",
+    src: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=2400&h=1350&q=80",
     alt: "Rocky coastline with rolling surf",
   },
   {
-    src: "https://picsum.photos/id/930/2400/1350",
+    src: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2400&h=1350&q=80",
     alt: "Mountain lake reflecting a clear sky",
   },
   {
-    src: "https://picsum.photos/id/931/2400/1350",
+    src: "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=2400&h=1350&q=80",
     alt: "Desert road passing through red stone",
   },
   {
-    src: "https://picsum.photos/id/932/2400/1350",
+    src: "https://images.unsplash.com/photo-1498855926480-d98e83099315?auto=format&fit=crop&w=2400&h=1350&q=80",
     alt: "City architecture framed by evening light",
   },
   {
-    src: "https://picsum.photos/id/933/2400/1350",
+    src: "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=2400&h=1350&q=80",
     alt: "Snow field below a quiet peak",
   },
 ]);

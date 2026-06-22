@@ -62,8 +62,8 @@ const SLIDES = [
     footer: "Lorem ipsum",
     mediaHeight: 198,
     accent: "#3b82f6",
-    src: "https://picsum.photos/id/982/1200/900",
-    fullscreenSrc: "https://picsum.photos/id/982/2400/1800",
+    src: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1200&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=2400&h=1800&q=80",
   },
   {
     id: "autoHeightTwo",
@@ -73,8 +73,8 @@ const SLIDES = [
     footer: "Dolor sit",
     mediaHeight: 238,
     accent: "#f97316",
-    src: "https://picsum.photos/id/986/1200/900",
-    fullscreenSrc: "https://picsum.photos/id/986/2400/1800",
+    src: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1200&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=2400&h=1800&q=80",
   },
   {
     id: "autoHeightThree",
@@ -84,8 +84,8 @@ const SLIDES = [
     footer: "Amet elit",
     mediaHeight: 216,
     accent: "#14b8a6",
-    src: "https://picsum.photos/id/987/1200/900",
-    fullscreenSrc: "https://picsum.photos/id/987/2400/1800",
+    src: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=1200&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=2400&h=1800&q=80",
   },
   {
     id: "autoHeightFour",
@@ -95,8 +95,8 @@ const SLIDES = [
     footer: "Eiusmod",
     mediaHeight: 264,
     accent: "#a855f7",
-    src: "https://picsum.photos/id/988/1200/900",
-    fullscreenSrc: "https://picsum.photos/id/988/2400/1800",
+    src: "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?auto=format&fit=crop&w=1200&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?auto=format&fit=crop&w=2400&h=1800&q=80",
   },
   {
     id: "autoHeightFive",
@@ -106,8 +106,8 @@ const SLIDES = [
     footer: "Labore",
     mediaHeight: 206,
     accent: "#22c55e",
-    src: "https://picsum.photos/id/990/1200/900",
-    fullscreenSrc: "https://picsum.photos/id/990/2400/1800",
+    src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=2400&h=1800&q=80",
   },
 ];
 

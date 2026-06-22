@@ -85,7 +85,7 @@
   max-width: min(100%, 42rem);
 }
 
-@media(max-width: 1199) {
+@media(max-width: 1199px) {
   .entryOverlay {
     height: 100%;
   }

@@ -18,28 +18,28 @@ import styles from "./slider-scale-demo.module.css";
 
 const SLIDES = [
   {
-    src: "https://picsum.photos/id/299/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/299/2400/1350",
+    src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2400&h=1350&q=80",
   },
   {
-    src: "https://picsum.photos/id/301/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/301/2400/1350",
+    src: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=2400&h=1350&q=80",
   },
   {
-    src: "https://picsum.photos/id/305/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/305/2400/1350",
+    src: "https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=2400&h=1350&q=80",
   },
   {
-    src: "https://picsum.photos/id/306/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/306/2400/1350",
+    src: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=2400&h=1350&q=80",
   },
   {
-    src: "https://picsum.photos/id/315/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/315/2400/1350",
+    src: "https://images.unsplash.com/photo-1520962922320-2038eebab146?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1520962922320-2038eebab146?auto=format&fit=crop&w=2400&h=1350&q=80",
   },
   {
-    src: "https://picsum.photos/id/316/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/316/2400/1350",
+    src: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=2400&h=1350&q=80",
   },
 ];
 

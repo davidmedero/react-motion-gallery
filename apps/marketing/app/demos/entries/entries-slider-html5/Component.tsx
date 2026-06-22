@@ -177,7 +177,7 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/1018/1600/900",
+        src: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1600&h=900&q=80",
         alt: "Lorem ipsum image 1",
         width: 1600,
         height: 900,
@@ -192,7 +192,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/1015/1600/900",
+        src: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&h=900&q=80",
         alt: "Lorem ipsum image 2",
         width: 1600,
         height: 900,
@@ -216,7 +216,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/1039/1600/900",
+        src: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=1600&h=900&q=80",
         alt: "Lorem ipsum image 3",
         width: 1600,
         height: 900,
@@ -240,7 +240,7 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/1043/1600/900",
+        src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&h=900&q=80",
         alt: "Lorem ipsum image 4",
         width: 1600,
         height: 900,

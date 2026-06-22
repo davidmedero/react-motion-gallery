@@ -17,21 +17,21 @@ import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-fade-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/317/1600/900",
-  "https://picsum.photos/id/320/1600/900",
-  "https://picsum.photos/id/322/1600/900",
-  "https://picsum.photos/id/323/1600/900",
-  "https://picsum.photos/id/324/1600/900",
-  "https://picsum.photos/id/327/1600/900",
+  "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/317/2400/1350",
-  "https://picsum.photos/id/320/2400/1350",
-  "https://picsum.photos/id/322/2400/1350",
-  "https://picsum.photos/id/323/2400/1350",
-  "https://picsum.photos/id/324/2400/1350",
-  "https://picsum.photos/id/327/2400/1350",
+  "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=2400&h=1350&q=80",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {

@@ -16,21 +16,21 @@ import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-right-to-left-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/33/1600/900",
-  "https://picsum.photos/id/37/1600/900",
-  "https://picsum.photos/id/42/1600/900",
-  "https://picsum.photos/id/43/1600/900",
-  "https://picsum.photos/id/46/1600/900",
-  "https://picsum.photos/id/49/1600/900",
+  "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/33/2400/1350",
-  "https://picsum.photos/id/37/2400/1350",
-  "https://picsum.photos/id/42/2400/1350",
-  "https://picsum.photos/id/43/2400/1350",
-  "https://picsum.photos/id/46/2400/1350",
-  "https://picsum.photos/id/49/2400/1350",
+  "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=2400&h=1350&q=80",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {

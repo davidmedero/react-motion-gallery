@@ -8,27 +8,27 @@ import styles from "./grid-demo.module.css";
 
 const IMAGES = [
   {
-    src: "https://picsum.photos/id/807/1200/1500",
+    src: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1200&h=1500&q=80",
     alt: "A portrait framed against a sandstone wall",
   },
   {
-    src: "https://picsum.photos/id/808/1200/1500",
+    src: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?auto=format&fit=crop&w=1200&h=1500&q=80",
     alt: "A bright apartment interior with clean lines",
   },
   {
-    src: "https://picsum.photos/id/824/1200/1500",
+    src: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1200&h=1500&q=80",
     alt: "A harbor scene with layered blue tones",
   },
   {
-    src: "https://picsum.photos/id/825/1200/1500",
+    src: "https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=1200&h=1500&q=80",
     alt: "A dinner table lit by warm sunset light",
   },
   {
-    src: "https://picsum.photos/id/827/1200/1500",
+    src: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=1200&h=1500&q=80",
     alt: "A reading nook with linen and soft shadows",
   },
   {
-    src: "https://picsum.photos/id/829/1200/1500",
+    src: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=1200&h=1500&q=80",
     alt: "A canvas bag styled with small travel objects",
   },
 ];

@@ -15,21 +15,21 @@ import { useSyncExternalStore } from "react";
 
 const SLIDES = [
   {
-    previewSrc: "https://picsum.photos/id/887/900/580",
-    fullscreenSrc: "https://picsum.photos/id/887/2400/1547",
-    thumbSrc: "https://picsum.photos/id/887/240/154",
+    previewSrc: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=900&h=580&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=2400&h=1547&q=80",
+    thumbSrc: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=240&h=154&q=80",
     alt: "A green valley opening toward distant ridges",
   },
   {
-    previewSrc: "https://picsum.photos/id/892/900/580",
-    fullscreenSrc: "https://picsum.photos/id/892/2400/1547",
-    thumbSrc: "https://picsum.photos/id/892/240/154",
+    previewSrc: "https://images.unsplash.com/photo-1498855926480-d98e83099315?auto=format&fit=crop&w=900&h=580&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1498855926480-d98e83099315?auto=format&fit=crop&w=2400&h=1547&q=80",
+    thumbSrc: "https://images.unsplash.com/photo-1498855926480-d98e83099315?auto=format&fit=crop&w=240&h=154&q=80",
     alt: "Layered hills under a pale blue sky",
   },
   {
-    previewSrc: "https://picsum.photos/id/896/900/580",
-    fullscreenSrc: "https://picsum.photos/id/896/2400/1547",
-    thumbSrc: "https://picsum.photos/id/896/240/154",
+    previewSrc: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=900&h=580&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=2400&h=1547&q=80",
+    thumbSrc: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=240&h=154&q=80",
     alt: "A calm inlet bordered by dark forest",
   },
 ];

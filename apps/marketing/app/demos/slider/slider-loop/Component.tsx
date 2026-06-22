@@ -16,19 +16,19 @@ import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-loop-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/16/1600/900",
-  "https://picsum.photos/id/17/1600/900",
-  "https://picsum.photos/id/18/1600/900",
-  "https://picsum.photos/id/19/1600/900",
-  "https://picsum.photos/id/28/1600/900",
+  "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/16/2400/1350",
-  "https://picsum.photos/id/17/2400/1350",
-  "https://picsum.photos/id/18/2400/1350",
-  "https://picsum.photos/id/19/2400/1350",
-  "https://picsum.photos/id/28/2400/1350",
+  "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?auto=format&fit=crop&w=2400&h=1350&q=80",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {

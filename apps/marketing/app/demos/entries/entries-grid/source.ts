@@ -138,21 +138,21 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/667/1400/1100",
+        src: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 1",
         description:
           "A lone runner follows a hillside road into warm sunset light.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/675/1400/1100",
+        src: "https://images.unsplash.com/photo-1520962922320-2038eebab146?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 2",
         description:
           "Windblown surf breaks under a dark sky and low coastal sun.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/676/1400/1100",
+        src: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 3",
         description: "Snowy ridges tower above dense evergreen slopes.",
       },
@@ -166,13 +166,13 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/677/1400/1100",
+        src: "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 4",
         description: "Concrete towers frame a clean rectangle of pale sky.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/678/1400/1100",
+        src: "https://images.unsplash.com/photo-1494783367193-149034c05e8f?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 5",
         description:
           "Two hikers pause below massive alpine walls and autumn trees.",
@@ -187,26 +187,26 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/681/1400/1100",
+        src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 6",
         description:
           "A dense field of stars hangs above dark tree silhouettes.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/683/1400/1100",
+        src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 7",
         description: "Long star trails sweep over a shadowed mountain horizon.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/684/1400/1100",
+        src: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 8",
         description: "Trekkers cross snow beneath sharp peaks and a dark sky.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/693/1400/1100",
+        src: "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 9",
         description:
           "The Golden Gate Bridge disappears into rolling fog over the bay.",

@@ -67,8 +67,8 @@ const ITEMS = [
   {
     displayIndex: 1,
     kind: "image" as const,
-    src: "https://picsum.photos/id/546/1200/1500",
-    fullscreenSrc: "https://picsum.photos/id/546/2400/3000",
+    src: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1200&h=1500&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=2400&h=3000&q=80",
     label: "Lorem",
     title: "Lorem ipsum dolor sit amet",
     body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
@@ -88,8 +88,8 @@ const ITEMS = [
   {
     displayIndex: 3,
     kind: "image" as const,
-    src: "https://picsum.photos/id/547/1200/1440",
-    fullscreenSrc: "https://picsum.photos/id/547/2400/2880",
+    src: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=1200&h=1440&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=2400&h=2880&q=80",
     label: "Dolor",
     title: "Duis aute irure dolor",
     body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
@@ -98,8 +98,8 @@ const ITEMS = [
   {
     displayIndex: 6,
     kind: "image" as const,
-    src: "https://picsum.photos/id/549/1200/1800",
-    fullscreenSrc: "https://picsum.photos/id/549/2400/3600",
+    src: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=1200&h=1800&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=2400&h=3600&q=80",
     label: "Amet",
     title: "Excepteur sint occaecat",
     body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
@@ -119,8 +119,8 @@ const ITEMS = [
   {
     displayIndex: 4,
     kind: "image" as const,
-    src: "https://picsum.photos/id/557/1200/1560",
-    fullscreenSrc: "https://picsum.photos/id/557/2400/3120",
+    src: "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?auto=format&fit=crop&w=1200&h=1560&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?auto=format&fit=crop&w=2400&h=3120&q=80",
     label: "Magna",
     title: "Nemo enim ipsam voluptatem",
     body: "Quia voluptas sit aspernatur aut odit aut fugit sed quia consequuntur magni dolores.",

@@ -16,21 +16,21 @@ import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-default-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/10/1600/900",
-  "https://picsum.photos/id/11/1600/900",
-  "https://picsum.photos/id/12/1600/900",
-  "https://picsum.photos/id/13/1600/900",
-  "https://picsum.photos/id/14/1600/900",
-  "https://picsum.photos/id/15/1600/900",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1498855926480-d98e83099315?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/10/2400/1350",
-  "https://picsum.photos/id/11/2400/1350",
-  "https://picsum.photos/id/12/2400/1350",
-  "https://picsum.photos/id/13/2400/1350",
-  "https://picsum.photos/id/14/2400/1350",
-  "https://picsum.photos/id/15/2400/1350",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1498855926480-d98e83099315?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=2400&h=1350&q=80",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {

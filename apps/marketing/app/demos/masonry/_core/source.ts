@@ -65,8 +65,8 @@ function getSourceImages(variant: string): SourceImageItem[] {
   if (variant === "spans") {
     return [
       {
-        src: "https://picsum.photos/id/558/1600/1100",
-        fullscreenSrc: "https://picsum.photos/id/558/3200/2200",
+        src: "https://images.unsplash.com/photo-1494783367193-149034c05e8f?auto=format&fit=crop&w=1600&h=1100&q=80",
+        fullscreenSrc: "https://images.unsplash.com/photo-1494783367193-149034c05e8f?auto=format&fit=crop&w=3200&h=2200&q=80",
         ratio: "16 / 11",
         width: 1600,
         alt: "Lorem ipsum dolor sit amet",
@@ -78,8 +78,8 @@ function getSourceImages(variant: string): SourceImageItem[] {
         alt: "Ut enim ad minim veniam",
       },
       {
-        src: "https://picsum.photos/id/563/1600/1200",
-        fullscreenSrc: "https://picsum.photos/id/563/3200/2400",
+        src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&h=1200&q=80",
+        fullscreenSrc: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=3200&h=2400&q=80",
         ratio: "4 / 3",
         width: 1600,
         alt: "Excepteur sint occaecat",
@@ -91,8 +91,8 @@ function getSourceImages(variant: string): SourceImageItem[] {
   if (variant === "horizontalOrder") {
     return [
       {
-        src: "https://picsum.photos/id/569/1600/2000",
-        fullscreenSrc: "https://picsum.photos/id/569/3200/4000",
+        src: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1600&h=2000&q=80",
+        fullscreenSrc: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=3200&h=4000&q=80",
         ratio: "4 / 5",
         width: 1600,
         alt: "Lorem ipsum dolor sit amet",
@@ -104,8 +104,8 @@ function getSourceImages(variant: string): SourceImageItem[] {
         alt: "Ut enim ad minim veniam",
       },
       {
-        src: "https://picsum.photos/id/574/1600/1000",
-        fullscreenSrc: "https://picsum.photos/id/574/3200/2000",
+        src: "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?auto=format&fit=crop&w=1600&h=1000&q=80",
+        fullscreenSrc: "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?auto=format&fit=crop&w=3200&h=2000&q=80",
         ratio: "16 / 10",
         width: 1600,
         alt: "Excepteur sint occaecat",
@@ -117,8 +117,8 @@ function getSourceImages(variant: string): SourceImageItem[] {
   if (variant === "roundRobin") {
     return [
       {
-        src: "https://picsum.photos/id/583/1200/1440",
-        fullscreenSrc: "https://picsum.photos/id/583/2400/2880",
+        src: "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=1200&h=1440&q=80",
+        fullscreenSrc: "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=2400&h=2880&q=80",
         ratio: "5 / 4",
         alt: "Lorem ipsum dolor sit amet",
       },
@@ -128,8 +128,8 @@ function getSourceImages(variant: string): SourceImageItem[] {
         alt: "Ut enim ad minim veniam",
       },
       {
-        src: "https://picsum.photos/id/588/1200/1620",
-        fullscreenSrc: "https://picsum.photos/id/588/2400/3240",
+        src: "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?auto=format&fit=crop&w=1200&h=1620&q=80",
+        fullscreenSrc: "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?auto=format&fit=crop&w=2400&h=3240&q=80",
         ratio: "3 / 5",
         alt: "Duis aute irure dolor",
       },
@@ -139,20 +139,20 @@ function getSourceImages(variant: string): SourceImageItem[] {
   if (variant === "lazyLoad") {
     return [
       {
-        src: "https://picsum.photos/id/603/1200/1680",
-        fullscreenSrc: "https://picsum.photos/id/603/2400/3360",
+        src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&h=1680&q=80",
+        fullscreenSrc: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=2400&h=3360&q=80",
         ratio: "3 / 5",
         alt: "Lorem ipsum dolor sit amet",
       },
       {
-        src: "https://picsum.photos/id/621/1200/1500",
-        fullscreenSrc: "https://picsum.photos/id/621/2400/3000",
+        src: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&h=1500&q=80",
+        fullscreenSrc: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=2400&h=3000&q=80",
         ratio: "4 / 5",
         alt: "Ut enim ad minim veniam",
       },
       {
-        src: "https://picsum.photos/id/626/1200/1920",
-        fullscreenSrc: "https://picsum.photos/id/626/2400/3840",
+        src: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1200&h=1920&q=80",
+        fullscreenSrc: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=2400&h=3840&q=80",
         ratio: "5 / 4",
         alt: "Duis aute irure dolor",
       },
@@ -161,8 +161,8 @@ function getSourceImages(variant: string): SourceImageItem[] {
 
   return [
     {
-      src: "https://picsum.photos/id/546/1200/1500",
-      fullscreenSrc: "https://picsum.photos/id/546/2400/3000",
+      src: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1200&h=1500&q=80",
+      fullscreenSrc: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=2400&h=3000&q=80",
       ratio: "5 / 4",
       alt: "Lorem ipsum dolor sit amet",
     },
@@ -172,8 +172,8 @@ function getSourceImages(variant: string): SourceImageItem[] {
       alt: "Ut enim ad minim veniam",
     },
     {
-      src: "https://picsum.photos/id/547/1200/1440",
-      fullscreenSrc: "https://picsum.photos/id/547/2400/2880",
+      src: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=1200&h=1440&q=80",
+      fullscreenSrc: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=2400&h=2880&q=80",
       ratio: "3 / 5",
       alt: "Duis aute irure dolor",
     },

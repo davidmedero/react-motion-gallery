@@ -15,40 +15,40 @@ import styles from "./fullscreen-slide-bound-caption-demo.module.css";
 
 const SLIDES = [
   {
-    src: "https://picsum.photos/id/857/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/857/2400/1350",
+    src: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Lorem ipsum dolor sit amet",
     location: "Consectetur adipiscing",
     description:
       "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   },
   {
-    src: "https://picsum.photos/id/865/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/865/2400/1350",
+    src: "https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Ut enim ad minim veniam",
     location: "Quis nostrud",
     description:
       "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   },
   {
-    src: "https://picsum.photos/id/866/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/866/2400/1350",
+    src: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Duis aute irure dolor",
     location: "In reprehenderit",
     description:
       "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
   },
   {
-    src: "https://picsum.photos/id/869/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/869/2400/1350",
+    src: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Excepteur sint occaecat",
     location: "Cupidatat non proident",
     description:
       "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
   },
   {
-    src: "https://picsum.photos/id/871/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/871/2400/1350",
+    src: "https://images.unsplash.com/photo-1495344517868-8ebaf0a2044a?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1495344517868-8ebaf0a2044a?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Sed ut perspiciatis unde",
     location: "Omnis iste natus",
     description:

@@ -49,7 +49,7 @@ export function ZoomPanImageHoverDemo() {
       >
         <ZoomPanImage
           ref={zoomPanRef}
-          src="https://picsum.photos/id/889/1920/1160"
+          src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1920&h=1160&q=80"
           alt="Sunlit cliffs above a winding alpine road"
           className={styles.zoomPan}
           imageClassName={styles.image}

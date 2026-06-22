@@ -141,7 +141,7 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/701/1400/900",
+        src: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1400&h=900&q=80",
         width: 1400,
         height: 900,
         alt: "Lorem ipsum image 1",
@@ -150,7 +150,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/702/1200/1200",
+        src: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1200&h=1200&q=80",
         width: 1200,
         height: 1200,
         alt: "Lorem ipsum image 2",
@@ -159,7 +159,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/704/1300/1600",
+        src: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1300&h=1600&q=80",
         width: 1300,
         height: 1600,
         alt: "Lorem ipsum image 3",
@@ -168,7 +168,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/715/1000/1350",
+        src: "https://images.unsplash.com/photo-1520962922320-2038eebab146?auto=format&fit=crop&w=1000&h=1350&q=80",
         width: 1000,
         height: 1350,
         alt: "Lorem ipsum image 4",
@@ -185,7 +185,7 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/717/1100/800",
+        src: "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?auto=format&fit=crop&w=1100&h=800&q=80",
         width: 1100,
         height: 800,
         alt: "Lorem ipsum image 5",
@@ -194,7 +194,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/723/1200/1000",
+        src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&h=1000&q=80",
         width: 1200,
         height: 1000,
         alt: "Lorem ipsum image 6",
@@ -202,7 +202,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/732/900/1300",
+        src: "https://images.unsplash.com/photo-1498855926480-d98e83099315?auto=format&fit=crop&w=900&h=1300&q=80",
         width: 900,
         height: 1300,
         alt: "Lorem ipsum image 7",
@@ -211,7 +211,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/733/1400/850",
+        src: "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1400&h=850&q=80",
         width: 1400,
         height: 850,
         alt: "Lorem ipsum image 8",
@@ -227,7 +227,7 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/741/1000/1500",
+        src: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1000&h=1500&q=80",
         width: 1000,
         height: 1500,
         alt: "Lorem ipsum image 9",
@@ -236,7 +236,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/744/1400/1100",
+        src: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1400&h=1100&q=80",
         width: 1400,
         height: 1100,
         alt: "Lorem ipsum image 10",
@@ -245,7 +245,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/756/1100/900",
+        src: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=1100&h=900&q=80",
         width: 1100,
         height: 900,
         alt: "Lorem ipsum image 11",
@@ -254,7 +254,7 @@ const ENTRIES: DemoEntry[] = [
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/767/1500/1300",
+        src: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1500&h=1300&q=80",
         width: 1500,
         height: 1300,
         alt: "Lorem ipsum image 12",

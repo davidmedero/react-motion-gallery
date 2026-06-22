@@ -42,8 +42,8 @@ type GeneratedSkeletonTextEntry = {
 const ITEMS = [
   {
     kind: "image" as const,
-    src: "https://picsum.photos/id/603/1200/1680",
-    fullscreenSrc: "https://picsum.photos/id/603/2400/3360",
+    src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&h=1680&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=2400&h=3360&q=80",
     label: "Lorem",
     title: "Lorem ipsum dolor sit amet",
     body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
@@ -51,8 +51,8 @@ const ITEMS = [
   },
   {
     kind: "image" as const,
-    src: "https://picsum.photos/id/621/1200/1500",
-    fullscreenSrc: "https://picsum.photos/id/621/2400/3000",
+    src: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&h=1500&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=2400&h=3000&q=80",
     label: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -60,8 +60,8 @@ const ITEMS = [
   },
   {
     kind: "image" as const,
-    src: "https://picsum.photos/id/626/1200/1920",
-    fullscreenSrc: "https://picsum.photos/id/626/2400/3840",
+    src: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1200&h=1920&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=2400&h=3840&q=80",
     label: "Dolor",
     title: "Duis aute irure dolor",
     body: "In reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
@@ -69,8 +69,8 @@ const ITEMS = [
   },
   {
     kind: "image" as const,
-    src: "https://picsum.photos/id/629/1200/1500",
-    fullscreenSrc: "https://picsum.photos/id/629/2400/3000",
+    src: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=1200&h=1500&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=2400&h=3000&q=80",
     label: "Amet",
     title: "Excepteur sint occaecat",
     body: "Cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
@@ -78,8 +78,8 @@ const ITEMS = [
   },
   {
     kind: "image" as const,
-    src: "https://picsum.photos/id/630/1200/1600",
-    fullscreenSrc: "https://picsum.photos/id/630/2400/3200",
+    src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&h=1600&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=2400&h=3200&q=80",
     label: "Elit",
     title: "Sed ut perspiciatis unde",
     body: "Omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam.",
@@ -87,8 +87,8 @@ const ITEMS = [
   },
   {
     kind: "image" as const,
-    src: "https://picsum.photos/id/638/1200/1380",
-    fullscreenSrc: "https://picsum.photos/id/638/2400/2760",
+    src: "https://images.unsplash.com/photo-1494783367193-149034c05e8f?auto=format&fit=crop&w=1200&h=1380&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1494783367193-149034c05e8f?auto=format&fit=crop&w=2400&h=2760&q=80",
     label: "Magna",
     title: "Nemo enim ipsam voluptatem",
     body: "Quia voluptas sit aspernatur aut odit aut fugit sed quia consequuntur magni dolores.",

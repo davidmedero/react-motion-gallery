@@ -24,8 +24,22 @@ const INITIAL_IMAGE_IDS = [478, 479, 480, 481, 482, 483];
 
 type RemoveMode = "index" | "even" | "odd";
 
-function buildPicsumSrc(imageId: number) {
-  return `https://picsum.photos/id/${imageId}/1200/900`;
+const INTERACTIVE_PHOTO_IDS = [
+  "photo-1500530855697-b586d89ba3ee",
+  "photo-1506744038136-46273834b3fb",
+  "photo-1519681393784-d120267933ba",
+  "photo-1469474968028-56623f02e42e",
+  "photo-1493246507139-91e8fad9978e",
+  "photo-1500534314209-a25ddb2bd429",
+  "photo-1501785888041-af3ef285b470",
+  "photo-1447752875215-b2761acb3c5d",
+];
+
+function buildPhotoSrc(imageId: number) {
+  const photoId =
+    INTERACTIVE_PHOTO_IDS[Math.abs(imageId) % INTERACTIVE_PHOTO_IDS.length];
+
+  return `https://images.unsplash.com/${photoId}?auto=format&fit=crop&w=1200&h=900&q=80`;
 }
 
 function parseImageIds(value: string) {
@@ -41,12 +55,12 @@ function InteractiveSlide(props: { imageId: number }) {
   return (
     <article className={styles.slideCard}>
       <img
-        src={buildPicsumSrc(imageId)}
-        alt={`Picsum ${imageId}`}
+        src={buildPhotoSrc(imageId)}
+        alt={`Photo ${imageId}`}
         className={styles.slideImage}
       />
       <div className={styles.slideMeta}>
-        <span className={styles.slideEyebrow}>Picsum #{imageId}</span>
+        <span className={styles.slideEyebrow}>Photo #{imageId}</span>
       </div>
     </article>
   );
@@ -406,8 +420,8 @@ function InteractiveSliderCanvas() {
                 value={appendValue}
                 onChange={(event) => setAppendValue(event.target.value)}
                 className={styles.textInput}
-                placeholder="picsum ids"
-                aria-label="Append picsum ids"
+                placeholder="photo ids"
+                aria-label="Append photo ids"
               />
               <button type="submit" className={styles.actionButton}>
                 append
@@ -423,8 +437,8 @@ function InteractiveSliderCanvas() {
                 value={prependValue}
                 onChange={(event) => setPrependValue(event.target.value)}
                 className={styles.textInput}
-                placeholder="picsum ids"
-                aria-label="Prepend picsum ids"
+                placeholder="photo ids"
+                aria-label="Prepend photo ids"
               />
               <button type="submit" className={styles.actionButton}>
                 prepend
@@ -448,8 +462,8 @@ function InteractiveSliderCanvas() {
                 value={insertValue}
                 onChange={(event) => setInsertValue(event.target.value)}
                 className={styles.textInput}
-                placeholder="picsum ids"
-                aria-label="Insert picsum ids"
+                placeholder="photo ids"
+                aria-label="Insert photo ids"
               />
               <button type="submit" className={styles.actionButton}>
                 insert
@@ -504,8 +518,8 @@ function InteractiveSliderCanvas() {
                 value={replaceValue}
                 onChange={(event) => setReplaceValue(event.target.value)}
                 className={styles.textInput}
-                placeholder="picsum id"
-                aria-label="Replace picsum id"
+                placeholder="photo id"
+                aria-label="Replace photo id"
               />
               <button type="submit" className={styles.actionButton}>
                 replace
@@ -521,8 +535,8 @@ function InteractiveSliderCanvas() {
                 value={setItemsValue}
                 onChange={(event) => setSetItemsValue(event.target.value)}
                 className={styles.textInput}
-                placeholder="picsum ids"
-                aria-label="Set items picsum ids"
+                placeholder="photo ids"
+                aria-label="Set items photo ids"
               />
               <button type="submit" className={styles.actionButton}>
                 setItems

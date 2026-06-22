@@ -15,32 +15,32 @@ import styles from "./fullscreen-viewport-overlay-caption-demo.module.css";
 
 const SLIDES = [
   {
-    src: "https://picsum.photos/id/872/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/872/2400/1350",
+    src: "https://images.unsplash.com/photo-1511300636408-a63a89df3482?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1511300636408-a63a89df3482?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Lorem ipsum dolor sit amet",
     location: "Consectetur adipiscing",
   },
   {
-    src: "https://picsum.photos/id/873/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/873/2400/1350",
+    src: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Ut enim ad minim veniam",
     location: "Quis nostrud",
   },
   {
-    src: "https://picsum.photos/id/875/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/875/2400/1350",
+    src: "https://images.unsplash.com/photo-1520962922320-2038eebab146?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1520962922320-2038eebab146?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Duis aute irure dolor",
     location: "In reprehenderit",
   },
   {
-    src: "https://picsum.photos/id/879/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/879/2400/1350",
+    src: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Excepteur sint occaecat",
     location: "Cupidatat non proident",
   },
   {
-    src: "https://picsum.photos/id/890/1600/900",
-    fullscreenSrc: "https://picsum.photos/id/890/2400/1350",
+    src: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&h=900&q=80",
+    fullscreenSrc: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2400&h=1350&q=80",
     title: "Sed ut perspiciatis unde",
     location: "Omnis iste natus",
   },

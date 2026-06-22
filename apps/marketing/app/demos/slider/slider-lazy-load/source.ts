@@ -18,21 +18,21 @@ import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import styles from "./slider-lazy-load-demo.module.css";
 
 const URLS = [
-  "https://picsum.photos/id/218/1600/900",
-  "https://picsum.photos/id/221/1600/900",
-  "https://picsum.photos/id/222/1600/900",
-  "https://picsum.photos/id/227/1600/900",
-  "https://picsum.photos/id/231/1600/900",
-  "https://picsum.photos/id/234/1600/900",
+  "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1495344517868-8ebaf0a2044a?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/218/2400/1350",
-  "https://picsum.photos/id/221/2400/1350",
-  "https://picsum.photos/id/222/2400/1350",
-  "https://picsum.photos/id/227/2400/1350",
-  "https://picsum.photos/id/231/2400/1350",
-  "https://picsum.photos/id/234/2400/1350",
+  "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1495344517868-8ebaf0a2044a?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?auto=format&fit=crop&w=2400&h=1350&q=80",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {

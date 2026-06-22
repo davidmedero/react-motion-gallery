@@ -13,6 +13,7 @@ import {
   shouldUseFsStaticInactiveVideo,
   shouldUseFsStaticVideoPreview,
 } from "./renderFullscreenSlides";
+import { renderFullscreenBaseSlides } from "./renderFullscreenBaseSlides";
 
 function createEmptyVideoSnapshotStore(): VideoSnapshotStore {
   return {
@@ -539,6 +540,72 @@ describe("fullscreen crossfade slide rendering", () => {
 
     expect(markup).toContain('data-rmg-fs-media-viewport="true"');
     expect(markup).toContain("flex-direction:column");
+    expect(markup).toContain("height:calc(100% - 225px)");
+  });
+
+  test("base renderer reserves media width for entries overlays with explicit side widths", () => {
+    const slides = renderFullscreenBaseSlides({
+      items: [{ kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any],
+      getTransform: () => "translateX(0%)",
+      imageRefs: { current: [React.createRef<HTMLDivElement>()] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      fsViewportOverlayPlacement: {
+        xs: "bottom",
+        lg: "right",
+      },
+      fsViewportOverlayWidth: {
+        lg: "32%",
+        xl: "28%",
+      },
+      viewportWidth: 1440,
+      viewportHeight: 900,
+      resolveFsCaptionPlacement: () => "right",
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      canonicalLength: 1,
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).toContain('data-rmg-fs-media-viewport="true"');
+    expect(markup).toContain("flex-direction:row");
+    expect(markup).toContain("flex:0 0 460.8px");
+    expect(markup).toContain("width:calc(100% - 460.8px)");
+  });
+
+  test("base renderer reserves media height for entries overlays with explicit top and bottom heights", () => {
+    const slides = renderFullscreenBaseSlides({
+      items: [{ kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any],
+      getTransform: () => "translateX(0%)",
+      imageRefs: { current: [React.createRef<HTMLDivElement>()] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      fsViewportOverlayPlacement: "bottom",
+      fsViewportOverlayHeight: "25%",
+      viewportWidth: 1440,
+      viewportHeight: 900,
+      resolveFsCaptionPlacement: () => "bottom",
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      canonicalLength: 1,
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).toContain('data-rmg-fs-media-viewport="true"');
+    expect(markup).toContain("flex-direction:column");
+    expect(markup).toContain("flex:0 0 225px");
     expect(markup).toContain("height:calc(100% - 225px)");
   });
 });

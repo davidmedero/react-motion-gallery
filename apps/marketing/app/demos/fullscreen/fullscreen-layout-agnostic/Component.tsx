@@ -61,14 +61,14 @@ const SCENARIOS: Scenario[] = [
     eyebrow: "Lorem",
     title: "Lorem ipsum dolor sit amet",
     body: "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    previewSrc: "https://picsum.photos/id/938/1200/900",
+    previewSrc: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1200&h=900&q=80",
   },
   {
     kind: "figure",
     eyebrow: "Ipsum",
     title: "Ut enim ad minim veniam",
     body: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-    previewSrc: "https://picsum.photos/id/944/1200/900",
+    previewSrc: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1200&h=900&q=80",
   },
   {
     kind: "posterVideo",
@@ -90,11 +90,11 @@ const SCENARIOS: Scenario[] = [
 
 const FULLSCREEN_MEDIA = toMediaItems([
   {
-    src: "https://picsum.photos/id/938/2400/1800",
+    src: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=2400&h=1800&q=80",
     alt: "Lorem ipsum dolor sit amet",
   },
   {
-    src: "https://picsum.photos/id/944/2400/1800",
+    src: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=2400&h=1800&q=80",
     alt: "Ut enim ad minim veniam",
   },
   POSTER_VIDEO,

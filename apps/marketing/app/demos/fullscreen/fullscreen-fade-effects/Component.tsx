@@ -21,30 +21,30 @@ const CROSSFADE_DURATION_MS = 560;
 const CROSSFADE_EASING = "cubic-bezier(.22,1,.36,1)";
 
 const URLS = [
-  "https://picsum.photos/id/919/1600/900",
-  "https://picsum.photos/id/921/1600/900",
-  "https://picsum.photos/id/923/1600/900",
-  "https://picsum.photos/id/924/1600/900",
-  "https://picsum.photos/id/925/1600/900",
-  "https://picsum.photos/id/927/1600/900",
+  "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 const FS_URLS = [
-  "https://picsum.photos/id/919/2400/1350",
-  "https://picsum.photos/id/921/2400/1350",
-  "https://picsum.photos/id/923/2400/1350",
-  "https://picsum.photos/id/924/2400/1350",
-  "https://picsum.photos/id/925/2400/1350",
-  "https://picsum.photos/id/927/2400/1350",
+  "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=2400&h=1350&q=80",
+  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=2400&h=1350&q=80",
 ];
 
 const THUMB_URLS = [
-  "https://picsum.photos/id/919/320/200",
-  "https://picsum.photos/id/921/320/200",
-  "https://picsum.photos/id/923/320/200",
-  "https://picsum.photos/id/924/320/200",
-  "https://picsum.photos/id/925/320/200",
-  "https://picsum.photos/id/927/320/200",
+  "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=320&h=200&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=320&h=200&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=320&h=200&q=80",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=320&h=200&q=80",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=320&h=200&q=80",
+  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=320&h=200&q=80",
 ];
 
 function Slide({ src, i }: { src: string; i: number }) {

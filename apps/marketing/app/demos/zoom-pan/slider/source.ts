@@ -9,19 +9,19 @@ import styles from "./slider-demo.module.css";
 
 const IMAGES = [
   {
-    src: "https://picsum.photos/id/787/1600/900",
+    src: "https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?auto=format&fit=crop&w=1600&h=900&q=80",
     alt: "An alpine lake between steep mountain walls",
   },
   {
-    src: "https://picsum.photos/id/788/1600/900",
+    src: "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?auto=format&fit=crop&w=1600&h=900&q=80",
     alt: "A ridge line lit by late afternoon sun",
   },
   {
-    src: "https://picsum.photos/id/791/1600/900",
+    src: "https://images.unsplash.com/photo-1495344517868-8ebaf0a2044a?auto=format&fit=crop&w=1600&h=900&q=80",
     alt: "Snow patches scattered across a dark mountain face",
   },
   {
-    src: "https://picsum.photos/id/806/1600/900",
+    src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&h=900&q=80",
     alt: "A winding trail through highland grass",
   },
 ];

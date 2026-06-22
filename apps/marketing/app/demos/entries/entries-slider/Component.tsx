@@ -138,21 +138,21 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/640/1400/1100",
+        src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 1",
         description:
           "Foamy turquoise waves roll diagonally across a wide sandy beach.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/643/1400/1100",
+        src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 2",
         description:
           "A surfboard rests on wet sand as sunset flares over the shoreline.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/645/1400/1100",
+        src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 3",
         description:
           "Palm crowns lean into a soft tropical sky lit by late-day sun.",
@@ -167,14 +167,14 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/649/1400/1100",
+        src: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 4",
         description:
           "Dry golden grass catches light in a shallow-focus woodland clearing.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/651/1400/1100",
+        src: "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 5",
         description:
           "Waterfalls cut through rocky highlands beneath a low bank of cloud.",
@@ -189,28 +189,28 @@ const ENTRIES: DemoEntry[] = [
     media: [
       {
         kind: "image",
-        src: "https://picsum.photos/id/653/1400/1100",
+        src: "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 6",
         description:
           "Silhouettes sit on a glowing beach as surf wraps around distant headlands.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/658/1400/1100",
+        src: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 7",
         description:
           "Storm clouds gather over pale cliffs and dark, sheltered water.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/664/1400/1100",
+        src: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 8",
         description:
           "Snowy alpine peaks rise above a shadowed valley at blue hour.",
       },
       {
         kind: "image",
-        src: "https://picsum.photos/id/666/1400/1100",
+        src: "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1400&h=1100&q=80",
         alt: "Lorem ipsum image 9",
         description: "Tall bamboo stems frame a bright green canopy overhead.",
       },

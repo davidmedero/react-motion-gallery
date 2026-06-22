@@ -60,7 +60,7 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `slider/fullscreen` | 1.5kB |
 | `ThumbnailSlider` | 18.9kB |
 | `useFullscreenController` | 5.0kB |
-| `fullscreen/slider` | 39.8kB |
+| `fullscreen/slider` | 40.3kB |
 | `fullscreen/controls` | 173.0B |
 | `fullscreen/captions` | 13.6kB |
 | `fullscreen/zoom-pan` | 12.4kB |
@@ -128,8 +128,8 @@ import { toMediaItems, type MediaItem } from "react-motion-gallery/media";
 import { Slider } from "react-motion-gallery/slider";
 
 const items: MediaItem[] = toMediaItems([
-  "https://picsum.photos/id/1015/1600/900",
-  { src: "https://picsum.photos/id/1018/1600/900", alt: "Mountains" },
+  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&h=900&q=80",
+  { src: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1600&h=900&q=80", alt: "Mountains" },
   { kind: "node", node: <div>Custom slide</div> },
 ]);
 
@@ -696,9 +696,9 @@ import { Slider } from "react-motion-gallery/slider";
 import { sliderArrows } from "react-motion-gallery/slider/arrows";
 
 const slides = [
-  "https://picsum.photos/id/1015/1600/900",
-  "https://picsum.photos/id/1018/1600/900",
-  "https://picsum.photos/id/1024/1600/900",
+  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 export function BasicSlider() {
@@ -867,9 +867,9 @@ import { Slider } from "react-motion-gallery/slider";
 import { useSliderReady } from "react-motion-gallery/slider/ready";
 
 const slides = [
-  { src: "https://picsum.photos/id/1020/660/960", width: 220, height: 320 },
-  { src: "https://picsum.photos/id/1029/1020/630", width: 340, height: 320 },
-  { src: "https://picsum.photos/id/1039/780/840", width: 260, height: 320 },
+  { src: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=660&h=960&q=80", width: 220, height: 320 },
+  { src: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=1020&h=630&q=80", width: 340, height: 320 },
+  { src: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=780&h=840&q=80", width: 260, height: 320 },
 ];
 
 export function VariableWidthSkeletonSlider() {
@@ -1078,9 +1078,9 @@ import {
 } from "react-motion-gallery";
 
 const slides = [
-  "https://picsum.photos/id/1015/1600/900",
-  "https://picsum.photos/id/1018/1600/900",
-  "https://picsum.photos/id/1024/1600/900",
+  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 const channel = createSliderIndexChannel();
@@ -1210,8 +1210,17 @@ For thumbnails, `transitions.loading.timing.exitMs` controls both the mounted ex
 ```typescript
 import { Grid } from "react-motion-gallery";
 
-const images = Array.from({ length: 6 }, (_, index) => ({
-  src: `https://picsum.photos/seed/grid-${index}/1200/1200`,
+const imageUrls = [
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&h=1200&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&h=1200&q=80",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&h=1200&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&h=1200&q=80",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1200&h=1200&q=80",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&h=1200&q=80",
+];
+
+const images = imageUrls.map((src, index) => ({
+  src,
   alt: `Grid item ${index + 1}`,
 }));
 
@@ -1429,10 +1438,10 @@ function GridWithSkeleton({ images }: { images: { src: string; alt: string }[] }
 import { Masonry } from "react-motion-gallery";
 
 const images = [
-  { src: "https://picsum.photos/id/1018/1200/1600", width: 1200, height: 1600 },
-  { src: "https://picsum.photos/id/1025/1200/900", width: 1200, height: 900 },
-  { src: "https://picsum.photos/id/1036/1200/1500", width: 1200, height: 1500, span: { 0: 1, 1100: 2 } },
-  { src: "https://picsum.photos/id/1041/1200/800", width: 1200, height: 800 },
+  { src: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1200&h=1600&q=80", width: 1200, height: 1600 },
+  { src: "https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=1200&h=900&q=80", width: 1200, height: 900 },
+  { src: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=1200&h=1500&q=80", width: 1200, height: 1500, span: { 0: 1, 1100: 2 } },
+  { src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&h=800&q=80", width: 1200, height: 800 },
 ];
 
 export function BasicMasonry() {
@@ -1718,14 +1727,14 @@ const entries = [
     id: "a",
     title: "Entry A",
     media: [
-      { kind: "image", src: "https://picsum.photos/seed/a1/1400/900", alt: "A1" },
-      { kind: "image", src: "https://picsum.photos/seed/a2/1400/900", alt: "A2" },
+      { kind: "image", src: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=1400&h=900&q=80", alt: "A1" },
+      { kind: "image", src: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=1400&h=900&q=80", alt: "A2" },
     ],
   },
   {
     id: "b",
     title: "Entry B",
-    media: [{ kind: "image", src: "https://picsum.photos/seed/b1/1400/900", alt: "B1" }],
+    media: [{ kind: "image", src: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1400&h=900&q=80", alt: "B1" }],
   },
 ] as const;
 
@@ -2195,11 +2204,11 @@ import { toMediaItems } from "react-motion-gallery/media";
 
 const images = [
   {
-    src: "https://picsum.photos/id/1015/1600/900",
+    src: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&h=900&q=80",
     alt: "Mountain lake",
   },
   {
-    src: "https://picsum.photos/id/1018/1600/900",
+    src: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1600&h=900&q=80",
     alt: "Forest path",
   },
 ];
@@ -2265,9 +2274,9 @@ import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
 import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
 
 const slides = [
-  "https://picsum.photos/id/1015/1600/900",
-  "https://picsum.photos/id/1018/1600/900",
-  "https://picsum.photos/id/1024/1600/900",
+  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=1600&h=900&q=80",
+  "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1600&h=900&q=80",
 ];
 
 function FullscreenAddon() {
@@ -2702,7 +2711,7 @@ import { zoomPanHover } from "react-motion-gallery/zoomPan/hover";
 export function ZoomPanCard() {
   return (
     <ZoomPanImage
-      src="https://picsum.photos/id/1035/1600/1200"
+      src="https://images.unsplash.com/photo-1520962922320-2038eebab146?auto=format&fit=crop&w=1600&h=1200&q=80"
       alt="A hiker looking over a canyon at dusk"
       className="zoomCard"
       zoom={{
@@ -2766,7 +2775,7 @@ export function BasicVideo() {
     <div style={{ width: "100%", aspectRatio: "16 / 9", overflow: "hidden" }}>
       <Video
         src="https://cdn.plyr.io/static/blank.mp4"
-        poster="https://picsum.photos/seed/video-poster/1600/900"
+        poster="https://images.unsplash.com/photo-1495344517868-8ebaf0a2044a?auto=format&fit=crop&w=1600&h=900&q=80"
         options={{ controls: ["play", "progress", "mute", "fullscreen"] } as any}
         lazyLoad={{ enabled: true, spinner: true }}
       />
