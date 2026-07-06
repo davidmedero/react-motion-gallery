@@ -28,10 +28,15 @@ class MockIntersectionObserver {
   static instances: MockIntersectionObserver[] = [];
 
   callback: IntersectionObserverCallback;
+  options: IntersectionObserverInit | undefined;
   target: Element | null = null;
 
-  constructor(callback: IntersectionObserverCallback) {
+  constructor(
+    callback: IntersectionObserverCallback,
+    options?: IntersectionObserverInit,
+  ) {
     this.callback = callback;
+    this.options = options;
     MockIntersectionObserver.instances.push(this);
   }
 
@@ -725,7 +730,7 @@ describe("Grid data plugins", () => {
     expect(onLoadMore).toHaveBeenCalledTimes(2);
   });
 
-  test("infinite-scroll re-arms when the rendered grid window grows", async () => {
+  test("infinite-scroll continues when the rendered grid window grows while visible", async () => {
     vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
     const onLoadMore = vi.fn();
 
@@ -776,18 +781,143 @@ describe("Grid data plugins", () => {
     React.act(() => {
       getSentinelObserver()?.trigger(true);
     });
-    await React.act(async () => {});
 
     expect(onLoadMore).toHaveBeenCalledTimes(1);
     expect(host.querySelector("[data-rmg-idx='1']")?.textContent).toBe("beta");
 
-    React.act(() => {
-      getSentinelObserver()?.trigger(true);
+    await React.act(async () => {
+      await nextFrame();
     });
-    await React.act(async () => {});
 
     expect(onLoadMore).toHaveBeenCalledTimes(2);
     expect(host.querySelector("[data-rmg-idx='2']")?.textContent).toBe("gamma");
+  });
+
+  test("infinite-scroll fires after loading clears while the sentinel is still visible", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+    const onLoadMore = vi.fn();
+
+    function LoadingProbe() {
+      const [loading, setLoading] = React.useState(true);
+
+      return (
+        <>
+          <button type="button" onClick={() => setLoading(false)}>
+            Done
+          </button>
+          <Grid
+            columns={1}
+            plugins={[
+              gridInfiniteScroll({
+                hasMore: true,
+                loading,
+                onLoadMore,
+              }),
+            ]}
+          >
+            <article>alpha</article>
+          </Grid>
+        </>
+      );
+    }
+
+    const host = mount(<LoadingProbe />);
+    await React.act(async () => {});
+    const observer = MockIntersectionObserver.instances.find(
+      (entry) =>
+        entry.target instanceof HTMLElement &&
+        entry.target.getAttribute("data-rmg-data-sentinel") === "grid",
+    );
+
+    React.act(() => {
+      observer?.trigger(true);
+    });
+    expect(onLoadMore).not.toHaveBeenCalled();
+
+    await React.act(async () => {
+      host.querySelector("button")?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+      await nextFrame();
+    });
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  test("infinite-scroll does not repeat for an unchanged request key", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+    const onLoadMore = vi.fn();
+
+    mount(
+      <Grid
+        columns={1}
+        plugins={[
+          gridInfiniteScroll({
+            hasMore: true,
+            loading: false,
+            onLoadMore,
+          }),
+        ]}
+      >
+        <article>alpha</article>
+      </Grid>,
+    );
+    await React.act(async () => {});
+
+    const observer = MockIntersectionObserver.instances.find(
+      (entry) =>
+        entry.target instanceof HTMLElement &&
+        entry.target.getAttribute("data-rmg-data-sentinel") === "grid",
+    );
+
+    React.act(() => {
+      observer?.trigger(true);
+    });
+    await React.act(async () => {
+      await nextFrame();
+      await nextFrame();
+    });
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  test("infinite-scroll observes a provided scroll root", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+
+    function ScrollRootProbe() {
+      const rootRef = React.useRef<HTMLDivElement | null>(null);
+
+      return (
+        <div ref={rootRef} data-scroll-root>
+          <Grid
+            columns={1}
+            plugins={[
+              gridInfiniteScroll({
+                hasMore: true,
+                scrollRoot: () => rootRef.current,
+              }),
+            ]}
+          >
+            <article>alpha</article>
+          </Grid>
+        </div>
+      );
+    }
+
+    const host = mount(<ScrollRootProbe />);
+    await React.act(async () => {});
+
+    const scrollRoot = host.querySelector("[data-scroll-root]");
+    const observer = MockIntersectionObserver.instances
+      .slice()
+      .reverse()
+      .find(
+        (entry) =>
+          entry.target instanceof HTMLElement &&
+          entry.target.getAttribute("data-rmg-data-sentinel") === "grid",
+      );
+
+    expect(observer?.options?.root).toBe(scrollRoot);
   });
 
   test("loading data plugins keep the grid busy until loading clears", async () => {

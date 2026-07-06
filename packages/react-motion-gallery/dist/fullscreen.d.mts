@@ -1,18 +1,19 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { s as FullscreenOptions, t as FullscreenPlugin, p as FullscreenIntroPathTiming, U as FullscreenClose, V as FullscreenArrows, W as FullscreenCounter, A as ResponsiveLength, R as ResponsiveCaptionPlacement, X as FsCaptionRenderArgs, Y as FSImageRender, w as FullscreenVideoOptions, q as FullscreenLazyLoadOptions, k as FullscreenCloseScrollOptions } from './responsive-BgOmwHgG.mjs';
-export { y as FsCaptionPlacement, z as FsIntroRequest, F as FullscreenCaptionOptions, i as FullscreenCloseScrollContext, j as FullscreenCloseScrollEnabled, l as FullscreenCloseScrollTiming, m as FullscreenControlsOptions, n as FullscreenCrossfadeOptions, o as FullscreenEffectsOptions, r as FullscreenMobileDetectionContext, u as FullscreenPluginKind, v as FullscreenSliderOptions, x as FullscreenZoomPanOptions } from './responsive-BgOmwHgG.mjs';
+import { w as FullscreenOptions, x as FullscreenPlugin, B as FullscreenZoomPanBoundsMode, s as FullscreenIntroPathTiming, Z as FullscreenClose, _ as FullscreenArrows, $ as FullscreenCounter, H as ResponsiveLength, R as ResponsiveCaptionPlacement, a0 as FsCaptionRenderArgs, v as FullscreenMountStrategy, q as FullscreenDialogOptions, a1 as FSImageRender, A as FullscreenVideoOptions, t as FullscreenLazyLoadOptions, l as FullscreenCloseScrollOptions, i as FullscreenCloseOptions, p as FullscreenDialogTransitionOptions } from './responsive-Bq9VSmbl.mjs';
+export { D as FsCaptionPlacement, G as FsIntroRequest, F as FullscreenCaptionOptions, j as FullscreenCloseScrollContext, k as FullscreenCloseScrollEnabled, m as FullscreenCloseScrollTiming, n as FullscreenControlsOptions, o as FullscreenCrossfadeOptions, r as FullscreenEffectsOptions, u as FullscreenMobileDetectionContext, y as FullscreenPluginKind, z as FullscreenSliderOptions, C as FullscreenZoomPanOptions } from './responsive-Bq9VSmbl.mjs';
 import { c as ZoomPanPlugin } from './types-CLMzNXt4.mjs';
 import React__default from 'react';
-import { MediaItem } from './media.mjs';
-import { h as SliderSkipSnaps, d as CrossFadeWheel, J as FullscreenOpenRequest } from './types-D9WBOrx6.mjs';
-export { G as GalleryApi, a as GalleryCoreApi, I as IndexMode } from './types-D9WBOrx6.mjs';
-import { a as FullscreenThumbnailBridge } from './types-bZ-lDlKM.mjs';
 import { R as ResponsiveNumber } from './responsiveNumber-CouEMJ9O.mjs';
-import './types-uhDRb0mo.mjs';
+import { h as SliderSkipSnaps, k as SliderVirtualizationOptions, d as CrossFadeWheel, L as FullscreenOpenRequest } from './types-CGPPAn9i.mjs';
+export { G as GalleryApi, a as GalleryCoreApi, I as IndexMode } from './types-CGPPAn9i.mjs';
+import { MediaItem } from './media.mjs';
+import { a as FullscreenThumbnailBridge } from './types-BtQK91-K.mjs';
+import './types-DTSXOwzF.mjs';
 import './force-C5m1QpdF.mjs';
 import './transitions-ChhEdSB6.mjs';
 import './plyrTypes-B3vioQaS.mjs';
 import './text-BBcRGVzn.mjs';
+import './infiniteScrollTrigger-BluBDW9o.mjs';
 import 'react-dom/client';
 
 type FullscreenOpenMethod = "fade" | "scale";
@@ -29,6 +30,7 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
             direction: "ltr" | "rtl";
             skipSnaps: SliderSkipSnaps;
             strictSnaps: boolean;
+            virtualization?: SliderVirtualizationOptions;
         };
         zoom: {
             clickZoomLevel: number;
@@ -36,6 +38,7 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
             panDuration: number;
             panFriction: number;
             plugins?: ZoomPanPlugin[];
+            panBounds?: FullscreenZoomPanBoundsMode;
         };
         effects: {
             crossfade: {
@@ -79,7 +82,10 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
             zoomOutTransform: string;
         };
         enabled: boolean;
+        mountStrategy: FullscreenMountStrategy;
+        overlaysAboveIntroMedia: boolean;
         items?: MediaItem[] | string[];
+        dialog?: FullscreenDialogOptions;
         renderImage?: FSImageRender;
         video?: FullscreenVideoOptions;
         lazyLoad?: FullscreenLazyLoadOptions;
@@ -119,10 +125,14 @@ declare function useFullscreenController(args: UseFullscreenArgs): {
     setShowFullscreenModal: React__default.Dispatch<React__default.SetStateAction<boolean>>;
     setShowFullscreenSlider: React__default.Dispatch<React__default.SetStateAction<boolean>>;
     setFsFadeOpening: React__default.Dispatch<React__default.SetStateAction<boolean>>;
+    closeFullscreen: (options?: FullscreenCloseOptions) => Promise<void>;
+    transitionDialogTo: (openNext: () => void, options?: FullscreenDialogTransitionOptions) => Promise<void>;
+    restoreDialog: (options?: FullscreenDialogTransitionOptions) => void;
     showFullscreenModal: boolean;
     showFullscreenSlider: boolean;
     fsFadeOpening: boolean;
     closingModal: boolean;
 };
+type UseFullscreenControllerReturn = ReturnType<typeof useFullscreenController>;
 
-export { FullscreenCloseScrollOptions, FullscreenIntroPathTiming, FullscreenLazyLoadOptions, FullscreenOptions, FullscreenPlugin, FullscreenVideoOptions, useFullscreenController };
+export { FullscreenCloseOptions, FullscreenCloseScrollOptions, FullscreenDialogOptions, FullscreenDialogTransitionOptions, FullscreenIntroPathTiming, FullscreenLazyLoadOptions, FullscreenMountStrategy, FullscreenOptions, FullscreenPlugin, FullscreenVideoOptions, FullscreenZoomPanBoundsMode, type UseFullscreenControllerReturn, useFullscreenController };

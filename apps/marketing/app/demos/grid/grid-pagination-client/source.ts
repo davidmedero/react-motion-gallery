@@ -136,6 +136,7 @@ function fetchAllProducts(signal?: AbortSignal) {
 
 const PAGE_SIZE = 6;
 const ITEMS_PER_PAGE_OPTIONS = [6, 9, 12];
+const INITIAL_PRODUCT_SLOT_PREFIX = "product-grid-initial-slot";
 const PRODUCT_SKELETON_CATEGORY_WIDTHS = [
   "68%",
   "62%",
@@ -176,6 +177,14 @@ const clientRevealOptions = {
   ...revealOptions,
   staggerMs: 80,
 };
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
+function getInitialProductSlotKey(index: number) {
+  return INITIAL_PRODUCT_SLOT_PREFIX + "-" + String(index);
+}
 function stockLabel(stock: number) {
   if (stock <= 24) return "Only " + String(stock) + " left";
   if (stock <= 72) return String(stock) + " in stock";
@@ -188,7 +197,10 @@ function stockClassName(stock: number) {
 }
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: { enabled: true, closeScroll: true },
   });
   return <>{fullscreenNode}</>;
@@ -210,11 +222,15 @@ function productImageStyle(image: ProductImage) {
       String(image.width) + " / " + String(image.height),
   } as CSSProperties;
 }
-function createPlaceholderProducts(count: number, startIndex = 0): Product[] {
+function createPlaceholderProducts(
+  count: number,
+  startIndex = 0,
+  keyStartIndex = startIndex,
+): Product[] {
   return Array.from({ length: count }, (_, index) => {
     const slotIndex = startIndex + index;
     return {
-      key: "product-placeholder-slot-" + String(slotIndex),
+      key: getInitialProductSlotKey(keyStartIndex + index),
       id: "product-placeholder-" + String(slotIndex),
       section: "Loading",
       title: "Loading product",
@@ -228,6 +244,14 @@ function createPlaceholderProducts(count: number, startIndex = 0): Product[] {
       images: [],
     };
   });
+}
+function createInitialPlaceholderProducts(pageSize: number, offset: number) {
+  if (offset <= 0) return createPlaceholderProducts(pageSize);
+
+  return [
+    ...createPlaceholderProducts(offset, 0, pageSize),
+    ...createPlaceholderProducts(pageSize, offset, 0),
+  ];
 }
 function isPlaceholderProduct(product: Product) {
   return product.id.startsWith("product-placeholder-");
@@ -592,6 +616,7 @@ export function GridPaginationClientDemo() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [useInitialSlots] = useState(() => loading && products.length === 0);
   const pagination = useGridPagination({
     mode: "client",
     initialPageSize: PAGE_SIZE,
@@ -599,6 +624,7 @@ export function GridPaginationClientDemo() {
     loading,
     urlSync: { param: "gridClientPage" },
   });
+  const isInitialBusy = loading && products.length === 0;
   const pagePlugin = useMemo(
     () =>
       gridPagination({
@@ -612,22 +638,19 @@ export function GridPaginationClientDemo() {
   );
   const loadingOptions = useMemo<GridLoadingOptions>(
     () => ({
-      active: loading && products.length > 0,
-      count: 0,
-      force:
-        loading && products.length > 0
-          ? { enabled: true, showContent: true, skeletonOpacity: 1 }
-          : undefined,
+      active: loading,
+      count: pagination.pageSize,
+      force: isInitialBusy ? true : undefined,
       animate: true,
       waitForMedia: true,
       rootMargin: "0px",
       threshold: 0,
-      timing: { minVisibleMs: 0 },
+      timing: { enterMs: 360 },
       keepSkeletonMounted: true,
       rememberRevealed: false,
-      skeleton: PRODUCT_GRID_SKELETON,
+      skeleton: ({ index }) => <ProductSkeletonSlot index={index} />,
     }),
-    [loading, products.length],
+    [isInitialBusy, loading, pagination.pageSize],
   );
 
   useEffect(() => {
@@ -651,10 +674,35 @@ export function GridPaginationClientDemo() {
     return () => ac.abort();
   }, [retryKey]);
 
-  const displayProducts =
-    loading && products.length === 0
-      ? createPlaceholderProducts(pagination.pageSize)
-      : products;
+  const displayProducts = useMemo(() => {
+    if (isInitialBusy) {
+      return createInitialPlaceholderProducts(
+        pagination.pageSize,
+        pagination.offset,
+      );
+    }
+
+    if (!useInitialSlots) return products;
+
+    const visibleStart = pagination.offset;
+    const visibleEnd = visibleStart + pagination.pageSize;
+
+    return products.map((product, index) =>
+      index >= visibleStart && index < visibleEnd
+        ? {
+            ...product,
+            key: getInitialProductSlotKey(index - visibleStart),
+            revealKey: product.id,
+          }
+        : product,
+    );
+  }, [
+    isInitialBusy,
+    pagination.offset,
+    pagination.pageSize,
+    products,
+    useInitialSlots,
+  ]);
   const setPage = useCallback(
     (nextPageIndex: number) => {
       if (nextPageIndex === pagination.pageIndex) return;

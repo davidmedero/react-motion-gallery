@@ -1,1 +1,1 @@
-export{a as entriesVirtualization,b as useEntriesVirtualizer}from'./chunk-D2ERSLYS.mjs';import'./chunk-ODBPQRVS.mjs';
+export{a as entriesVirtualization,b as useEntriesVirtualizer}from'./chunk-Y4PYRBU6.mjs';import'./chunk-ODBPQRVS.mjs';

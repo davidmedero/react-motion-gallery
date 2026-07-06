@@ -44,6 +44,7 @@ export function useGridInfiniteScroll(
       options.loading,
       options.onLoadMore,
       options.rootMargin,
+      options.scrollRoot,
       options.sentinel,
       options.threshold,
     ]

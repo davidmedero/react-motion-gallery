@@ -11,6 +11,8 @@ import type {
   SliderElements,
   SliderMotion,
   SliderScroll,
+  SliderUnderflowAlign,
+  SliderVirtualizationOptions,
 } from "./types";
 import type { SliderIndexChannel } from "./sliderSub";
 
@@ -23,11 +25,13 @@ export type SliderCoreProps = {
   cellCount: number;
   gap: number;
   cellsPerSlide?: number;
+  underflowAlign?: SliderUnderflowAlign;
   direction?: SliderDirection;
   align?: "start" | "center";
   scroll?: SliderCoreScroll;
   autoHeight?: boolean;
   motion?: SliderMotion;
+  virtualization?: SliderVirtualizationOptions;
   initialIndex?: number;
   indexChannel: SliderIndexChannel;
   indexChannelControlled?: boolean;
@@ -47,11 +51,13 @@ const SliderCore = React.forwardRef<SliderCoreHandle, SliderCoreProps>(
       cellCount,
       gap,
       cellsPerSlide,
+      underflowAlign,
       direction,
       align,
       scroll,
       autoHeight,
       motion,
+      virtualization,
       initialIndex,
       indexChannel,
       indexChannelControlled,
@@ -91,6 +97,7 @@ const SliderCore = React.forwardRef<SliderCoreHandle, SliderCoreProps>(
         sliderContainerStyles={elements?.container?.style}
         sliderContainerClassName={elements?.container?.className}
         cellsPerSlide={cellsPerSlide}
+        underflowAlign={underflowAlign}
         direction={direction?.dir ?? "ltr"}
         axis={direction?.axis ?? "x"}
         skipSnaps={scroll?.skipSnaps}
@@ -99,6 +106,7 @@ const SliderCore = React.forwardRef<SliderCoreHandle, SliderCoreProps>(
         selectDuration={resolvedMotion.selectDuration}
         freeScrollDuration={resolvedMotion.freeScrollDuration}
         sliderFriction={resolvedMotion.friction}
+        virtualization={virtualization}
         initialIndex={initialIndex}
         indexChannel={indexChannel ?? internalIndexChannel}
         indexChannelControlled={indexChannelControlled}

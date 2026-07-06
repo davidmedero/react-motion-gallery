@@ -1,7 +1,12 @@
 import type * as React from 'react';
 import type { BreakpointMap } from '../shared/responsive';
-import type { ThumbnailCrossfadeOptions, ThumbnailPosition } from '../thumbnails/types';
+import type {
+  ThumbnailCrossfadeOptions,
+  ThumbnailPosition,
+  ThumbnailFadeOnSyncOptions,
+} from '../thumbnails/types';
 import type { FullscreenSliderSub } from '../fullscreen/fullscreenSliderSub';
+import type { SliderVirtualizationOptions } from '../shared/virtualTrack';
 
 type ArrowRenderArgs = {
   ref: React.RefObject<HTMLDivElement | null>;
@@ -57,6 +62,7 @@ export type FullscreenThumbnailSliderProps = {
   axis?: 'x' | 'y';
   skipSnaps?: boolean;
   centerActiveThumb?: boolean;
+  fadeOnSync?: boolean | ThumbnailFadeOnSyncOptions;
   selectDuration?: number;
   freeScrollDuration?: number;
   sliderFriction?: number;
@@ -74,4 +80,5 @@ export type FullscreenThumbnailSliderProps = {
   renderPrevArrow?: (args: ArrowRenderArgs) => React.ReactNode;
   renderNextArrow?: (args: ArrowRenderArgs) => React.ReactNode;
   thumbnailCrossfade?: ThumbnailCrossfadeOptions;
+  virtualization?: SliderVirtualizationOptions;
 };

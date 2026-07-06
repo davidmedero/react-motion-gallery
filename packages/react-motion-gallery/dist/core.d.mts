@@ -2,16 +2,17 @@ import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as React from 'react';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
 import { MediaItem } from './media.mjs';
-import { a as GalleryCoreApi, n as SliderNodeInput, o as SliderRemoveTarget, k as SliderHandle, J as FullscreenOpenRequest } from './types-D9WBOrx6.mjs';
-export { G as GalleryApi, b as GalleryLayoutApi } from './types-D9WBOrx6.mjs';
-import { M as MediaEntryLink } from './responsive-BgOmwHgG.mjs';
+import { a as GalleryCoreApi, p as SliderNodeInput, q as SliderRemoveTarget, m as SliderHandle, L as FullscreenOpenRequest } from './types-CGPPAn9i.mjs';
+export { G as GalleryApi, b as GalleryLayoutApi } from './types-CGPPAn9i.mjs';
+import { M as MediaEntryLink } from './responsive-Bq9VSmbl.mjs';
 import './force-C5m1QpdF.mjs';
-import './types-uhDRb0mo.mjs';
+import './types-DTSXOwzF.mjs';
 import './transitions-ChhEdSB6.mjs';
 import './plyrTypes-B3vioQaS.mjs';
 import './types-CLMzNXt4.mjs';
 import './text-BBcRGVzn.mjs';
-import './types-bZ-lDlKM.mjs';
+import './infiniteScrollTrigger-BluBDW9o.mjs';
+import './types-BtQK91-K.mjs';
 import 'react-dom/client';
 
 type LayoutlessTarget = {
@@ -38,6 +39,7 @@ type FullscreenEntryContext = {
     entryMediaLayout?: "slider" | "grid" | "masonry";
     entriesObject?: any;
     entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
+    entryListRef?: React.RefObject<HTMLDivElement | null>;
     expandableImageRefs?: React.RefObject<Array<HTMLImageElement | null>>;
 };
 type FullscreenSourceAdapter = {

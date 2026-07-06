@@ -26,6 +26,7 @@ import {
 import { createEntriesSliderMedia } from "react-motion-gallery/entries/media/slider";
 import {
   EntriesPaginationControls,
+  entriesPagination,
   useEntriesPagination,
 } from "react-motion-gallery/entries/pagination";
 import { useEntriesReady } from "react-motion-gallery/entries/ready";
@@ -85,15 +86,14 @@ const ENTRY_MEDIA_SLIDER_PLUGINS = [
   sliderArrows(),
   sliderDots(),
 ];
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
 const revealOptions = {
   durationMs: 700,
   easing: "cubic-bezier(.2,.7,.2,1)",
-  staggerMs: 200,
-  staggerLimit: 6,
-};
-const clientRevealOptions = {
-  ...revealOptions,
-  staggerMs: 80,
 };
 
 function productImages(product: DummyProduct) {
@@ -178,6 +178,7 @@ type EntriesProductsViewProps = {
   controls?: ReactNode;
   footer?: ReactNode;
   placeholderCount?: number;
+  initialSlotOffset?: number;
   pendingAppendCount?: number;
   loadingEnabled?: boolean;
 };
@@ -188,10 +189,14 @@ function getInitialEntrySlotKey(index: number) {
   return \`\${INITIAL_ENTRY_SLOT_PREFIX}-\${index}\`;
 }
 
-function createProductPlaceholderEntries(count: number): ProductEntry[] {
+function createProductPlaceholderEntries(
+  count: number,
+  startIndex = 0,
+  keyStartIndex = startIndex,
+): ProductEntry[] {
   return Array.from({ length: count }, (_, index) => ({
-    key: getInitialEntrySlotKey(index),
-    id: \`product-placeholder-\${index}\`,
+    key: getInitialEntrySlotKey(keyStartIndex + index),
+    id: \`product-placeholder-\${startIndex + index}\`,
     section: "Loading",
     title: "Loading product",
     body: "Loading product details.",
@@ -200,9 +205,18 @@ function createProductPlaceholderEntries(count: number): ProductEntry[] {
     rating: 0,
     stock: 0,
     reviewCount: 0,
-    revealKey: \`product-placeholder-\${index}\`,
+    revealKey: \`product-placeholder-\${startIndex + index}\`,
     media: [],
   }));
+}
+
+function createInitialPlaceholderEntries(pageSize: number, offset: number) {
+  if (offset <= 0) return createProductPlaceholderEntries(pageSize);
+
+  return [
+    ...createProductPlaceholderEntries(offset, 0, pageSize),
+    ...createProductPlaceholderEntries(pageSize, offset, 0),
+  ];
 }
 
 function isProductPlaceholderEntry(entry: ProductEntry) {
@@ -442,7 +456,10 @@ function ProductOverlay({ entry, mediaIndex }: EntryOverlayRenderArgs) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: {
       enabled: true,
       closeScroll: true,
@@ -464,26 +481,42 @@ function EntriesProductsView({
   controls,
   footer,
   placeholderCount = 6,
+  initialSlotOffset = 0,
   pendingAppendCount = 0,
   loadingEnabled = true,
 }: EntriesProductsViewProps) {
   const [useInitialSlots] = useState(() => !!busy && entries.length === 0);
   const isInitialBusy = busy && entries.length === 0;
+  const initialSlotStart = Math.max(0, Math.trunc(initialSlotOffset));
   const displayEntries = useMemo(() => {
-    if (isInitialBusy) return createProductPlaceholderEntries(placeholderCount);
+    if (isInitialBusy) {
+      return createInitialPlaceholderEntries(
+        placeholderCount,
+        initialSlotStart,
+      );
+    }
 
     if (!useInitialSlots) return entries;
 
+    const visibleStart = initialSlotStart;
+    const visibleEnd = visibleStart + placeholderCount;
+
     return entries.map((entry, index) =>
-      index < placeholderCount
+      index >= visibleStart && index < visibleEnd
         ? {
             ...entry,
-            key: getInitialEntrySlotKey(index),
+            key: getInitialEntrySlotKey(index - visibleStart),
             revealKey: entry.id,
           }
         : entry,
     );
-  }, [entries, isInitialBusy, placeholderCount, useInitialSlots]);
+  }, [
+    entries,
+    initialSlotStart,
+    isInitialBusy,
+    placeholderCount,
+    useInitialSlots,
+  ]);
 
   const fullscreenMedia = useMemo(
     () => flattenEntries(displayEntries).flattenedMedia,
@@ -530,7 +563,7 @@ function EntriesProductsView({
             },
             loading: {
               enabled: loadingEnabled,
-              waitForDecode: true,
+              waitForMedia: true,
               rememberRevealed: false,
               enterMs: 360,
               force: isInitialBusy ? true : undefined,
@@ -595,7 +628,20 @@ export function EntriesPaginationClientDemo() {
     loading,
     urlSync: { param: "entriesClientPage" },
   });
-  const { pageIndex, pageSize, setPageIndex, setPageSize } = pagination;
+  const { pageIndex, pageSize, offset, setPageIndex, setPageSize } =
+    pagination;
+  const pagePlugin = useMemo(
+    () =>
+      entriesPagination({
+        mode: "client",
+        pageIndex,
+        pageSize,
+        total,
+        loading: false,
+      }),
+    [pageIndex, pageSize, total],
+  );
+  const plugins = useMemo(() => [pagePlugin], [pagePlugin]);
   const entriesReady = useEntriesReady({ dataReady: !loading && !error });
 
   useEffect(() => {
@@ -644,12 +690,13 @@ export function EntriesPaginationClientDemo() {
     <EntriesProductsView
       entries={entries}
       entriesRef={entriesReady.ref}
-      plugins={[pagination.plugin]}
-      reveal={clientRevealOptions}
+      plugins={plugins}
+      reveal={revealOptions}
       busy={loading}
       ready={entriesReady.ready}
       total={total}
       placeholderCount={pageSize}
+      initialSlotOffset={offset}
       status={
         error ? (
           <>

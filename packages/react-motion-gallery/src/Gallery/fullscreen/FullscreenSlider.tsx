@@ -5,15 +5,19 @@
 import {
   useRef,
   useEffect,
+  useLayoutEffect,
   useState,
   ReactNode,
+  ReactElement,
   Children,
+  cloneElement,
   RefObject,
   useCallback,
   useImperativeHandle,
+  isValidElement,
   forwardRef
 } from 'react'
-import { flushSync } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 import type { APITypes } from '../video/plyrTypes'
 import styles from './Fullscreen.module.css'
 import type { FullscreenSliderSub, FSRequest } from './fullscreenSliderSub'
@@ -49,14 +53,29 @@ import {
 } from '../shared/crossfade'
 import { DefaultChevronIcon } from './controls/DefaultChevronIcon'
 import type { FullscreenIntroPathTiming, FullscreenOptions } from './types'
+import type { RenderFullscreenSlideWindowItem } from './renderFullscreenSlides'
 import { getFsMediaContainer, getPrimaryImgEl } from '../zoomPan/core/dom'
 import { normalizeFullscreenSliderGap } from './transforms'
 import { resolveSliderReleaseSnapForce } from '../slider/snapRelease'
 import type { CrossFadeWheel, SliderSkipSnaps } from '../slider/types'
 import {
+  accumulateFixedVirtualTrackRebaseOffset,
+  buildFixedVirtualTrackWindow,
+  resolveFixedVirtualTrackMetrics,
+  resolveSliderVirtualizationOptions,
+  sameFixedVirtualTrackWindow,
+  type FixedVirtualTrackMetrics,
+  type FixedVirtualTrackWindow,
+  type SliderVirtualizationOptions,
+} from '../shared/virtualTrack'
+import {
   resolveFullscreenIntroDurationMs,
   resolveFullscreenIntroEasing,
 } from './introTiming'
+import {
+  FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX,
+  FULLSCREEN_TOP_CHROME_Z_INDEX,
+} from './layering'
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
 function DragTracker(axis: AxisLike, ownerWindow: WindowType) {
@@ -86,7 +105,23 @@ type PendingCloneToggleState = {
   deadlineTs: number
 }
 
+type FullscreenVirtualMetrics = {
+  enabled: boolean
+  metrics: FixedVirtualTrackMetrics
+  shouldLoop: boolean
+}
+
+type FullscreenArrowFrame = {
+  left: number
+  right: number
+  top: number
+  width: number
+  height: number
+  centerY: number
+}
+
 export type FullscreenCrossfadeTrigger = 'arrow' | 'requestSet' | 'wheel' | 'drag'
+type FullscreenCrossfadeSourceMode = 'slide' | 'track'
 
 type FullscreenCrossfadeState = {
   id: number;
@@ -95,6 +130,7 @@ type FullscreenCrossfadeState = {
   progress: number;
   delta: number;
   animate: boolean;
+  sourceMode?: FullscreenCrossfadeSourceMode;
   durationMs?: number;
   easing?: string;
 };
@@ -184,6 +220,59 @@ export function resolveFullscreenIntroOpacityTransition(args: {
   return `opacity ${durationMs}ms ${easing}`;
 }
 
+export function resolveFullscreenTrackOpacity(args: {
+  hasActiveCrossfade: boolean;
+  crossfadeTrackRevealed?: boolean;
+  crossfadeSourceMode?: "slide" | "track";
+  crossfadeSourceOpacity?: number;
+  showFullscreenSlider: boolean;
+  shouldFadeIntro: boolean;
+  fadeOpening: boolean;
+}) {
+  if (args.hasActiveCrossfade) {
+    if (args.crossfadeTrackRevealed) return 1;
+    if (args.crossfadeSourceMode === 'track') {
+      return clamp01(args.crossfadeSourceOpacity ?? 1);
+    }
+    return 0;
+  }
+  if (!args.showFullscreenSlider) return 0;
+  if (!args.shouldFadeIntro) return 1;
+  return args.fadeOpening ? 0 : 1;
+}
+
+export function shouldRevealFullscreenTrackBeforeCrossfadeFinish(args: {
+  show: boolean;
+  showFullscreenSlider: boolean;
+  closingModal: boolean;
+  closeRequested?: boolean;
+}) {
+  return (
+    args.show &&
+    args.showFullscreenSlider &&
+    !args.closingModal &&
+    !args.closeRequested
+  );
+}
+
+export function shouldUseFullscreenLiveTrackSourceCrossfade(args: {
+  sourceIsVideo: boolean;
+  sourceVideoPlaying: boolean;
+  trigger: FullscreenCrossfadeTrigger;
+  hasSourceSnapshot: boolean;
+}) {
+  if (!args.sourceIsVideo || !args.sourceVideoPlaying) return false;
+  if (args.hasSourceSnapshot) return false;
+
+  return args.trigger === 'arrow' || args.trigger === 'requestSet';
+}
+
+export function shouldDeferFullscreenCrossfadeIndexCommit(args: {
+  crossfadeSourceMode?: "slide" | "track";
+}) {
+  return args.crossfadeSourceMode === "track";
+}
+
 export type FullscreenVideoClickSnapAction = {
   snapIndex: number;
   settle: "instant";
@@ -191,20 +280,58 @@ export type FullscreenVideoClickSnapAction = {
 };
 
 export function resolveFullscreenVideoClickSnapAction(
-  clickedVideo: { canonicalIndex: number; isClone: boolean } | null
+  clickedVideo: {
+    canonicalIndex: number;
+    isClone: boolean;
+    isAtSnap?: boolean;
+  } | null
 ): FullscreenVideoClickSnapAction | null {
   if (!clickedVideo) return null;
 
   return {
     snapIndex: clickedVideo.canonicalIndex,
     settle: "instant",
-    playWhenVisible: clickedVideo.isClone,
+    playWhenVisible: clickedVideo.isClone || clickedVideo.isAtSnap === false,
   };
+}
+
+export function isFullscreenVirtualWindowStableForOffset(args: {
+  virtualWindow: FixedVirtualTrackWindow | null | undefined;
+  metrics: FixedVirtualTrackMetrics | null | undefined;
+  options?: SliderVirtualizationOptions;
+  scrollOffset: number;
+  loop?: boolean;
+}) {
+  const { virtualWindow, metrics } = args;
+  if (!virtualWindow?.enabled || !metrics || !args.loop) return false;
+  if (!Number.isFinite(args.scrollOffset) || metrics.stride <= 0) return false;
+
+  const options = resolveSliderVirtualizationOptions(args.options);
+  const overscanPx = options.overscan * metrics.stride;
+  const scrollOffset = args.scrollOffset;
+
+  const fromMin = virtualWindow.from * metrics.stride + overscanPx;
+  const fromMax = (virtualWindow.from + 1) * metrics.stride + overscanPx;
+  const toMin = virtualWindow.to * metrics.stride - metrics.viewport - overscanPx;
+  const toMax =
+    (virtualWindow.to + 1) * metrics.stride -
+    metrics.viewport -
+    overscanPx;
+
+  return (
+    scrollOffset >= fromMin &&
+    scrollOffset < fromMax &&
+    scrollOffset > toMin &&
+    scrollOffset <= toMax
+  );
 }
 
 interface FullscreenSliderProps {
   sub: FullscreenSliderSub
-  children: ReactNode
+  children?: ReactNode
+  renderChildren?: (
+    renderWindow: RenderFullscreenSlideWindowItem[] | null
+  ) => ReactNode
   cellCount: number
   slideIndex: number
   isClick: React.RefObject<boolean>
@@ -238,6 +365,7 @@ interface FullscreenSliderProps {
   sliderFriction: number;
   skipSnaps?: SliderSkipSnaps;
   strictSnaps?: boolean;
+  virtualization?: SliderVirtualizationOptions;
   suppressLoopRef: React.RefObject<boolean>;
   fadeOpening: boolean;
   introFade?: boolean;
@@ -247,12 +375,14 @@ interface FullscreenSliderProps {
   slideFadeDuration?: number;
   slideFadeEasing?: string;
   normalizedItems: MediaItem[];
-  crossfadeSlides?: ReactNode[];
+  renderCrossfadeSlides?: (indexes: number[]) => ReactNode[];
   introDuration?: FullscreenIntroPathTiming<number>;
   introEasing?: FullscreenIntroPathTiming<string>;
   resetAllZoomDom: () => void;
   requestFsCloseRef: React.RefObject<null | (() => void)>;
+  onCloseDragLayerChange?: (active: boolean) => void;
   introMethod?: "fade" | "scale" | null;
+  chromeHidden?: boolean;
   fs: FullscreenOptions;
   chromeStyles: Record<string, string>;
 }
@@ -266,6 +396,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     {
       sub,
       children,
+      renderChildren,
       cellCount,
       slideIndex,
       isClick,
@@ -291,6 +422,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       sliderFriction,
       skipSnaps,
       strictSnaps,
+      virtualization,
       suppressLoopRef,
       fadeOpening,
       introFade,
@@ -300,12 +432,14 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       slideFadeDuration = 120,
       slideFadeEasing = 'cubic-bezier(.4,0,.22,1)',
       normalizedItems,
-      crossfadeSlides,
+      renderCrossfadeSlides,
       introDuration,
       introEasing,
       resetAllZoomDom,
       requestFsCloseRef,
+      onCloseDragLayerChange,
       introMethod,
+      chromeHidden = false,
       fs,
       chromeStyles
     },
@@ -371,10 +505,37 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const povRef    = useRef<PercentOfViewType | null>(null)
     const boundsRef = useRef<ScrollBoundsType | null>(null)
     const pendingCloneToggleRef = useRef<PendingCloneToggleState | null>(null)
+    const pendingVideoClickSwallowRef = useRef<(() => void) | null>(null)
+    const closeDragLayerActiveRef = useRef(false)
+    const [closeDragLayerActive, setCloseDragLayerActive] = useState(false)
+    const [arrowPortalReady, setArrowPortalReady] = useState(false)
+    const [arrowFrame, setArrowFrame] = useState<FullscreenArrowFrame | null>(null)
+    function setCloseDragLayer(
+      next: boolean,
+      options: { sync?: boolean } = {}
+    ) {
+      if (closeDragLayerActiveRef.current === next) return
+
+      const apply = () => {
+        closeDragLayerActiveRef.current = next
+        setCloseDragLayerActive(next)
+        onCloseDragLayerChange?.(next)
+      }
+
+      if (options.sync) {
+        flushSync(apply)
+        return
+      }
+
+      apply()
+    }
+
     const [crossfadeState, setCrossfadeState] =
       useState<FullscreenCrossfadeState | null>(null)
     const [crossfadeSourceSnapshotHtml, setCrossfadeSourceSnapshotHtml] =
       useState<string | null>(null)
+    const [crossfadeTrackRevealId, setCrossfadeTrackRevealId] =
+      useState<number | null>(null)
     const crossfadeStateRef = useRef<FullscreenCrossfadeState | null>(null)
     const wheelCrossfadeStateRef = useRef<{
       id: number;
@@ -391,14 +552,134 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const crossfadeSeqRef = useRef(0)
     const crossfadeRaf1Ref = useRef<number | null>(null)
     const crossfadeRaf2Ref = useRef<number | null>(null)
+    const crossfadeTrackRevealRafRef = useRef<number | null>(null)
     const crossfadeTimeoutRef = useRef<number | null>(null)
+    const [fullscreenVirtualWindow, setFullscreenVirtualWindow] =
+      useState<FixedVirtualTrackWindow | null>(null)
+    const fullscreenVirtualWindowRef = useRef<FixedVirtualTrackWindow | null>(null)
+    const fullscreenVirtualMetricsRef = useRef<FullscreenVirtualMetrics | null>(null)
+    const fullscreenVirtualOptionsCacheRef = useRef<{
+      key: string
+      options: ReturnType<typeof resolveSliderVirtualizationOptions>
+    } | null>(null)
+    const fullscreenVirtualMetricsCacheRef = useRef<{
+      key: string
+      value: FullscreenVirtualMetrics | null
+    } | null>(null)
+    const fullscreenVirtualRebaseOffsetRef = useRef(0)
+    const fullscreenVirtualRebaseClearPendingRef = useRef(false)
 
     const showFullscreenSliderRef = useRef(showFullscreenSlider)
     showFullscreenSliderRef.current = showFullscreenSlider
+    const showRef = useRef(show)
+    showRef.current = show
+    const closingModalRef = useRef(closingModal)
+    closingModalRef.current = closingModal
+
+    useLayoutEffect(() => {
+      setArrowPortalReady(true)
+    }, [])
+
+    function readFullscreenArrowFrame(): FullscreenArrowFrame | null {
+      const viewport = viewportRef.current
+      if (!viewport) return null
+
+      const rect = viewport.getBoundingClientRect()
+      if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height)) {
+        return null
+      }
+      if (rect.width <= 0 || rect.height <= 0) {
+        return null
+      }
+
+      const viewportWidth =
+        window.innerWidth ||
+        document.documentElement?.clientWidth ||
+        windowSize.width ||
+        rect.right
+
+      return {
+        left: rect.left,
+        right: Math.max(0, viewportWidth - rect.right),
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        centerY: rect.top + rect.height / 2,
+      }
+    }
+
+    function sameFullscreenArrowFrame(
+      a: FullscreenArrowFrame | null,
+      b: FullscreenArrowFrame | null
+    ) {
+      if (a === b) return true
+      if (!a || !b) return false
+      return (
+        Math.abs(a.left - b.left) < 0.5 &&
+        Math.abs(a.right - b.right) < 0.5 &&
+        Math.abs(a.top - b.top) < 0.5 &&
+        Math.abs(a.width - b.width) < 0.5 &&
+        Math.abs(a.height - b.height) < 0.5 &&
+        Math.abs(a.centerY - b.centerY) < 0.5
+      )
+    }
+
+    const updateFullscreenArrowFrame = useCallback(() => {
+      const next = readFullscreenArrowFrame()
+      setArrowFrame((current) =>
+        sameFullscreenArrowFrame(current, next) ? current : next
+      )
+    }, [windowSize.width])
+
+    useLayoutEffect(() => {
+      if (!show) {
+        return
+      }
+
+      updateFullscreenArrowFrame()
+
+      const viewport = viewportRef.current
+      let raf1 = 0
+      let raf2 = 0
+      let observer: ResizeObserver | null = null
+
+      raf1 = requestAnimationFrame(() => {
+        updateFullscreenArrowFrame()
+        raf2 = requestAnimationFrame(updateFullscreenArrowFrame)
+      })
+
+      if (typeof ResizeObserver !== 'undefined' && viewport) {
+        observer = new ResizeObserver(updateFullscreenArrowFrame)
+        observer.observe(viewport)
+      }
+
+      window.addEventListener('resize', updateFullscreenArrowFrame)
+      window.addEventListener('scroll', updateFullscreenArrowFrame, true)
+
+      return () => {
+        cancelAnimationFrame(raf1)
+        cancelAnimationFrame(raf2)
+        observer?.disconnect()
+        window.removeEventListener('resize', updateFullscreenArrowFrame)
+        window.removeEventListener('scroll', updateFullscreenArrowFrame, true)
+      }
+    }, [show, arrowPortalReady, updateFullscreenArrowFrame])
+
+    useEffect(() => {
+      if (show) return
+      setCloseDragLayer(false)
+    }, [show])
+
+    useEffect(() => {
+      return () => {
+        closeDragLayerActiveRef.current = false
+        onCloseDragLayerChange?.(false)
+      }
+    }, [onCloseDragLayerChange])
     const dragFadeRef = useRef(dragFade)
     dragFadeRef.current = dragFade
-    const crossfadeSlidesRef = useRef(crossfadeSlides)
-    crossfadeSlidesRef.current = crossfadeSlides
+    const renderCrossfadeSlidesRef = useRef(renderCrossfadeSlides)
+    renderCrossfadeSlidesRef.current = renderCrossfadeSlides
     const dragFadeSessionStartedRef = useRef(false)
 
     type ElementStyleLike = { className?: string; style?: React.CSSProperties } | null | undefined;
@@ -452,6 +733,13 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       crossfadeStateRef.current = crossfadeState
     }, [crossfadeState])
 
+    useLayoutEffect(() => {
+      if (!fullscreenVirtualRebaseClearPendingRef.current) return
+      if (!fullscreenVirtualMetricsRef.current?.enabled) return
+
+      clearFullscreenVirtualRebaseOffset()
+    }, [fullscreenVirtualWindow])
+
     const {
       wheelLockMs: WHEEL_LOCK_MS,
       lockWheelFor,
@@ -460,8 +748,222 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       isWheelLocked,
     } = useWheelLock()
 
-    function measureSlideStep(track: HTMLElement | null) {
-      return (track?.clientWidth || 1) + gapPx
+    function measureViewportSpan() {
+      const viewportWidth = viewportRef.current?.clientWidth
+      if (viewportWidth && Number.isFinite(viewportWidth)) return viewportWidth
+
+      const trackWidth = slider.current?.clientWidth
+      if (trackWidth && Number.isFinite(trackWidth)) return trackWidth
+
+      return windowSize.width || 1
+    }
+
+    function measureSlideStep(_track: HTMLElement | null) {
+      return measureViewportSpan() + gapPx
+    }
+
+    function scrollOffsetFromLocation(location: number) {
+      return -location
+    }
+
+    function resolveFullscreenVirtualOptions() {
+      const key = [
+        virtualization?.enabled === true ? '1' : '0',
+        virtualization?.overscan ?? '',
+        virtualization?.threshold ?? '',
+      ].join('|')
+
+      const cached = fullscreenVirtualOptionsCacheRef.current
+      if (cached?.key === key) return cached.options
+
+      const options = resolveSliderVirtualizationOptions(virtualization)
+      fullscreenVirtualOptionsCacheRef.current = { key, options }
+      return options
+    }
+
+    function resolveFullscreenVirtualMetrics():
+      | FullscreenVirtualMetrics
+      | null {
+      const options = resolveFullscreenVirtualOptions()
+      const viewport = measureViewportSpan()
+      const cacheKey = [
+        options.enabled ? '1' : '0',
+        options.overscan,
+        options.threshold,
+        cellCount,
+        viewport,
+        gapPx,
+      ].join('|')
+
+      const cached = fullscreenVirtualMetricsCacheRef.current
+      if (cached?.key === cacheKey) return cached.value
+
+      const metrics = resolveFixedVirtualTrackMetrics({
+        count: cellCount,
+        viewport,
+        cellsPerSlide: 1,
+        gap: gapPx,
+        loop: cellCount > 1,
+      })
+
+      if (
+        !options.enabled ||
+        cellCount <= 1 ||
+        cellCount <= options.threshold ||
+        !metrics
+      ) {
+        fullscreenVirtualMetricsCacheRef.current = {
+          key: cacheKey,
+          value: null,
+        }
+        return null
+      }
+
+      const value = {
+        enabled: true,
+        metrics,
+        shouldLoop: cellCount > 1,
+      }
+      fullscreenVirtualMetricsCacheRef.current = { key: cacheKey, value }
+      return value
+    }
+
+    function setFullscreenVirtualRebaseOffset(offset: number) {
+      const track = slider.current
+      if (!track) return
+
+      if (Math.abs(offset) <= 0.01) {
+        track.style.removeProperty('--rmg-fs-virtual-rebase-offset')
+        return
+      }
+
+      track.style.setProperty(
+        '--rmg-fs-virtual-rebase-offset',
+        `${offset * sign}px`
+      )
+    }
+
+    function clearFullscreenVirtualRebaseOffset() {
+      if (
+        fullscreenVirtualRebaseOffsetRef.current === 0 &&
+        !fullscreenVirtualRebaseClearPendingRef.current
+      ) {
+        return
+      }
+
+      fullscreenVirtualRebaseOffsetRef.current = 0
+      fullscreenVirtualRebaseClearPendingRef.current = false
+      setFullscreenVirtualRebaseOffset(0)
+    }
+
+    function applyFullscreenVirtualLoopCompensation(loopShift: number) {
+      if (!fullscreenVirtualMetricsRef.current?.enabled || loopShift === 0) {
+        return
+      }
+
+      const nextOffset = accumulateFixedVirtualTrackRebaseOffset(
+        fullscreenVirtualRebaseOffsetRef.current,
+        loopShift
+      )
+      fullscreenVirtualRebaseOffsetRef.current = nextOffset
+      fullscreenVirtualRebaseClearPendingRef.current = true
+      setFullscreenVirtualRebaseOffset(nextOffset)
+    }
+
+    function clearFullscreenVirtualWindow() {
+      fullscreenVirtualMetricsRef.current = null
+      fullscreenVirtualWindowRef.current = null
+      clearFullscreenVirtualRebaseOffset()
+      setFullscreenVirtualWindow((current) => (current == null ? current : null))
+    }
+
+    function renderFullscreenVirtualWindow(
+      next: FixedVirtualTrackWindow,
+      force = false
+    ) {
+      if (
+        !force &&
+        sameFixedVirtualTrackWindow(fullscreenVirtualWindowRef.current, next)
+      ) {
+        return
+      }
+
+      fullscreenVirtualWindowRef.current = next
+      cells.current = []
+      setFullscreenVirtualWindow(next)
+    }
+
+    function syncFullscreenVirtualWindowForOffset(
+      scrollOffset: number,
+      force = false
+    ) {
+      const metrics = resolveFullscreenVirtualMetrics()
+      if (!metrics) {
+        clearFullscreenVirtualWindow()
+        return
+      }
+
+      fullscreenVirtualMetricsRef.current = metrics
+      if (
+        !force &&
+        isFullscreenVirtualWindowStableForOffset({
+          virtualWindow: fullscreenVirtualWindowRef.current,
+          metrics: metrics.metrics,
+          options: virtualization,
+          scrollOffset,
+          loop: metrics.shouldLoop,
+        })
+      ) {
+        return
+      }
+
+      renderFullscreenVirtualWindow(
+        buildFixedVirtualTrackWindow({
+          metrics: metrics.metrics,
+          scrollOffset,
+          loop: metrics.shouldLoop,
+          options: virtualization,
+        }),
+        force
+      )
+    }
+
+    function syncFullscreenVirtualWindowForLocation(
+      location: number,
+      force = false
+    ) {
+      syncFullscreenVirtualWindowForOffset(
+        scrollOffsetFromLocation(location),
+        force
+      )
+    }
+
+    function syncFullscreenVirtualWindowForSlide(
+      slideIndex: number,
+      force = false
+    ) {
+      const metrics = fullscreenVirtualMetricsRef.current?.metrics
+      const stride = metrics?.stride ?? perSlide()
+      syncFullscreenVirtualWindowForOffset(slideIndex * stride, force)
+    }
+
+    function createFullscreenVirtualTransform(virtualIndex: number) {
+      const percent = virtualIndex * 100 * sign
+      const px = virtualIndex * gapPx * sign
+      const rebase = 'var(--rmg-fs-virtual-rebase-offset, 0px)'
+
+      if (percent === 0 && px === 0) {
+        return `translateX(${rebase})`
+      }
+
+      const percentPart = percent === 0 ? '' : `${percent}%`
+      const pxPart =
+        px === 0
+          ? ''
+          : `${px < 0 ? '-' : '+'} ${Math.abs(px)}px`
+      const base = [percentPart, pxPart].filter(Boolean).join(' ')
+
+      return `translateX(calc(${base} + ${rebase}))`
     }
 
     function syncLoopGeometry(per: number, len: number) {
@@ -533,7 +1035,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       setAllX(nx);
       setTranslateX(nx, 0);
       animRef.current?.resetBlend();
-    }, []);
+      clearFullscreenVirtualRebaseOffset();
+      syncFullscreenVirtualWindowForLocation(nx, true);
+    }, [gapPx]);
     
     useEffect(() => {
       const el = slider.current;
@@ -552,6 +1056,21 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     }, [show, recenterWithAnchor]);
 
     useEffect(() => {
+      if (renderChildren) {
+        slides.current = Array.from(
+          { length: Math.max(1, cellCount || 1) },
+          (_, index) => {
+            const renderedIndex = cellCount > 1 ? index + 1 : index
+            const cell = (cells.current as any[]).find(
+              (entry) =>
+                entry?.index === renderedIndex || entry?.index === index
+            )
+            return { cells: [cell] as any }
+          }
+        )
+        return
+      }
+
       const childrenArray = Children.toArray(children)
       slides.current = []
       if (cellCount > 1) {
@@ -563,7 +1082,16 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           slides.current.push({ cells: [cells.current[i]] as any })
         }
       }
-    }, [children])
+    }, [children, cellCount, cells, fullscreenVirtualWindow, renderChildren])
+
+    useEffect(() => {
+      if (!slider.current) return
+      const loc =
+        offsetLocationRef.current?.get() ??
+        locationRef.current?.get() ??
+        -perSlide() * (selectedIndex.current || 0)
+      syncFullscreenVirtualWindowForLocation(loc)
+    }, [virtualization, cellCount, gapPx, windowSize.width, show])
 
     function publishVisibleIndex(idx: number) {
       if (publishedIndexRef.current === idx) return
@@ -668,10 +1196,149 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         cancelAnimationFrame(crossfadeRaf2Ref.current)
         crossfadeRaf2Ref.current = null
       }
+      if (crossfadeTrackRevealRafRef.current != null) {
+        cancelAnimationFrame(crossfadeTrackRevealRafRef.current)
+        crossfadeTrackRevealRafRef.current = null
+      }
       if (crossfadeTimeoutRef.current != null) {
         window.clearTimeout(crossfadeTimeoutRef.current)
         crossfadeTimeoutRef.current = null
       }
+    }
+
+    function isMediaPlaying(media: HTMLMediaElement | null | undefined) {
+      if (!media) return false
+
+      try {
+        return !media.paused && !media.ended
+      } catch {
+        return false
+      }
+    }
+
+    function isPlyrApiPlaying(api: APITypes | null) {
+      if (!api) return false
+
+      const plyr = (api as any)?.plyr ?? api
+
+      try {
+        if (typeof plyr?.playing === 'boolean' && plyr.playing) return true
+      } catch {}
+
+      try {
+        return isMediaPlaying(plyr?.media as HTMLMediaElement | null | undefined)
+      } catch {
+        return false
+      }
+    }
+
+    function findFullscreenVideoSourceSlide(canonicalIndex: number) {
+      const track = slider.current
+      if (!track) return null
+
+      const slides = Array.from(
+        track.querySelectorAll<HTMLElement>(
+          `[data-rmg-fs-slide="true"][data-rmg-canonical-idx="${canonicalIndex}"]`
+        )
+      )
+
+      return (
+        slides.find(
+          (slide) =>
+            slide.getAttribute('data-rmg-clone') === 'false' &&
+            !!slide.querySelector('[data-rmg-live-video="true"], video, audio, .plyr')
+        ) ??
+        slides.find((slide) =>
+          !!slide.querySelector('[data-rmg-live-video="true"], video, audio, .plyr')
+        ) ??
+        null
+      )
+    }
+
+    function readPlyrApiForSourceSlide(sourceSlide: HTMLElement | null) {
+      if (!sourceSlide) return null
+
+      const renderedIndex = Number(sourceSlide.getAttribute('data-index'))
+      if (!Number.isFinite(renderedIndex)) return null
+
+      return plyrRefs.current[renderedIndex] ?? null
+    }
+
+    function isFullscreenVideoSourcePlaying(canonicalIndex: number) {
+      const sourceSlide = findFullscreenVideoSourceSlide(canonicalIndex)
+      if (!sourceSlide) return false
+
+      if (isPlyrApiPlaying(readPlyrApiForSourceSlide(sourceSlide))) return true
+
+      return Array.from(
+        sourceSlide.querySelectorAll<HTMLMediaElement>('video, audio')
+      ).some((media) => isMediaPlaying(media))
+    }
+
+    function pausePlyrApi(api: APITypes | null) {
+      if (!api) return
+
+      try {
+        ;(api as any)?.pause?.()
+      } catch {}
+
+      const plyr = (api as any)?.plyr ?? null
+
+      try {
+        plyr?.pause?.()
+      } catch {}
+
+      try {
+        const media: HTMLMediaElement | undefined = plyr?.media
+        media?.pause?.()
+      } catch {}
+    }
+
+    function pauseFullscreenVideoSourceForCrossfade(canonicalIndex: number) {
+      const sourceSlide = findFullscreenVideoSourceSlide(canonicalIndex)
+      if (!sourceSlide) return
+
+      pausePlyrApi(readPlyrApiForSourceSlide(sourceSlide))
+
+      sourceSlide
+        .querySelectorAll<HTMLMediaElement>('video, audio')
+        .forEach((media) => {
+          try {
+            media.pause()
+          } catch {}
+        })
+    }
+
+    function finishCrossfadeAfterTrackReveal(id: number) {
+      if (crossfadeSeqRef.current !== id) return
+
+      const fullscreenRoot = viewportRef.current?.closest(
+        '[data-rmg-fs-root="true"]'
+      ) as HTMLElement | null | undefined
+      const closeRequested =
+        fullscreenRoot?.getAttribute('data-rmg-fs-closing') === 'true'
+
+      if (
+        !shouldRevealFullscreenTrackBeforeCrossfadeFinish({
+          show: showRef.current,
+          showFullscreenSlider: showFullscreenSliderRef.current,
+          closingModal: closingModalRef.current,
+          closeRequested,
+        })
+      ) {
+        finishCrossfade(id, { sync: true })
+        return
+      }
+
+      flushSync(() => {
+        setCrossfadeTrackRevealId(id)
+      })
+
+      crossfadeTrackRevealRafRef.current = requestAnimationFrame(() => {
+        crossfadeTrackRevealRafRef.current = null
+        if (crossfadeSeqRef.current !== id) return
+        finishCrossfade(id)
+      })
     }
 
     function finishCrossfade(
@@ -688,6 +1355,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         }
 
         setCrossfadeSourceSnapshotHtml(null)
+        setCrossfadeTrackRevealId(null)
 
         setCrossfadeState((current) => {
           if (!current) return null
@@ -721,6 +1389,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       setAllX(nx);
       setTranslateX(nx, 0);
       animRef.current?.resetBlend();
+      clearFullscreenVirtualRebaseOffset();
+      syncFullscreenVirtualWindowForSlide(idx, true);
     }
 
     function stopTrackScrollAnimation() {
@@ -745,6 +1415,19 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       jumpTrackToIndexInstant(idx);
 
       commitIndexChange(idx, opts);
+    }
+
+    function isVideoClickAtCanonicalSnap(canonicalIndex: number) {
+      const per = perSlide();
+      if (!Number.isFinite(per) || per <= 0) return true;
+
+      const currentX =
+        offsetLocationRef.current?.get() ??
+        locationRef.current?.get() ??
+        x.current;
+      const snapX = -per * canonicalIndex;
+
+      return Math.abs(currentX - snapX) <= 1;
     }
 
     function snapVideoClickToCanonicalIndex(canonicalIndex: number) {
@@ -786,7 +1469,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     }
 
     function hasCrossfadeSlideNodes(len = slideCount()) {
-      return (crossfadeSlidesRef.current?.length ?? 0) >= len;
+      return len > 0 && typeof renderCrossfadeSlidesRef.current === 'function';
     }
 
     function startCrossfadeToIndex(
@@ -844,8 +1527,20 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       })
         ? cloneTrackSnapshotHtml()
         : null;
+      const sourceMode: FullscreenCrossfadeSourceMode =
+        shouldUseFullscreenLiveTrackSourceCrossfade({
+          sourceIsVideo: isVideoItem(normalizedItems?.[fromIdx]),
+          sourceVideoPlaying: isFullscreenVideoSourcePlaying(fromIdx),
+          trigger,
+          hasSourceSnapshot: !!sourceSnapshotHtml,
+        })
+          ? 'track'
+          : 'slide';
 
       const deferZoomReset = !!sourceSnapshotHtml;
+      const deferIndexCommit = shouldDeferFullscreenCrossfadeIndexCommit({
+        crossfadeSourceMode: sourceMode,
+      });
 
       clearPendingCrossfadeWork();
       const id = ++crossfadeSeqRef.current;
@@ -859,23 +1554,32 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         progress: 0,
         delta: 0,
         animate: false,
+        sourceMode,
         durationMs,
         easing,
       };
 
       crossfadeStateRef.current = nextState;
-      setCrossfadeSourceSnapshotHtml(sourceSnapshotHtml);
-      setCrossfadeState(nextState);
 
-      commitIndexChange(nextIdx, {
-        resetZoom: !deferZoomReset,
+      flushSync(() => {
+        setCrossfadeTrackRevealId(null);
+        setCrossfadeSourceSnapshotHtml(sourceSnapshotHtml);
+        setCrossfadeState(nextState);
       });
+
+      if (!deferIndexCommit) {
+        commitIndexChange(nextIdx, {
+          resetZoom: !deferZoomReset,
+        });
+      }
 
       crossfadeRaf1Ref.current = requestAnimationFrame(() => {
         crossfadeRaf1Ref.current = null;
         if (crossfadeSeqRef.current !== id) return;
 
-        jumpTrackToIndexInstant(nextIdx);
+        if (sourceMode !== 'track') {
+          jumpTrackToIndexInstant(nextIdx);
+        }
 
         if (deferZoomReset) {
           resetAllZoomDom();
@@ -900,7 +1604,17 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           });
 
           crossfadeTimeoutRef.current = window.setTimeout(() => {
-            finishCrossfade(id);
+            if (sourceMode === 'track') {
+              pauseFullscreenVideoSourceForCrossfade(fromIdx);
+              jumpTrackToIndexInstant(nextIdx);
+              flushSync(() => {
+                commitIndexChange(nextIdx, {
+                  resetZoom: !deferZoomReset,
+                });
+              });
+            }
+
+            finishCrossfadeAfterTrackReveal(id);
           }, durationMs + 48);
         });
       });
@@ -991,7 +1705,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       crossfadeTimeoutRef.current = window.setTimeout(() => {
         if (crossfadeSeqRef.current !== id) return
         jumpTrackToIndexInstant(state.targetIndex)
-        finishCrossfade(id)
+        finishCrossfadeAfterTrackReveal(id)
       }, durationMs + 48)
     }
 
@@ -1175,7 +1889,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         )
 
         crossfadeTimeoutRef.current = window.setTimeout(() => {
-          finishCrossfade(id)
+          finishCrossfadeAfterTrackReveal(id)
         }, CROSSFADE_MS + 48)
 
         return false
@@ -1197,7 +1911,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       crossfadeTimeoutRef.current = window.setTimeout(() => {
         if (crossfadeSeqRef.current !== id) return
         jumpTrackToIndexInstant(state.toIndex)
-        finishCrossfade(id)
+        finishCrossfadeAfterTrackReveal(id)
       }, CROSSFADE_MS + 48)
 
       return true
@@ -1234,6 +1948,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
     useEffect(() => {
       if (closingModal) {
+        setCloseDragLayer(true)
         animRef.current?.stop()
         pointerDownRef.current = false
         finishCrossfade()
@@ -1277,6 +1992,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           const sx = Math.round(startX) * sign
           slider.current.style.transform = `translate3d(${sx}px, 0, 0)`
         }
+        syncFullscreenVirtualWindowForLocation(startX, true)
       }, 100)
 
       hasPositioned.current = true
@@ -1302,6 +2018,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           appliedYRef.current = 0
           setOverlayOpacity(1)
           restoreOverlayTransition()
+          setCloseDragLayer(false)
           return
         }
         if (t < 1) requestAnimationFrame(step)
@@ -1414,6 +2131,9 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       const dir = typeof direction === 'number' ? direction : 0;
       fsScrollTo.index(targetIndex, dir);
+      if (jump) {
+        syncFullscreenVirtualWindowForSlide(targetIndex, true);
+      }
     }
 
     function previous() {
@@ -1763,6 +2483,64 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       };
     }
 
+    function cancelPendingVideoClickSwallow() {
+      pendingVideoClickSwallowRef.current?.()
+      pendingVideoClickSwallowRef.current = null
+    }
+
+    function swallowNextVideoClickForCanonical(canonicalIndex: number) {
+      cancelPendingVideoClickSwallow()
+
+      let timeoutId = 0
+      const onClick = (event: MouseEvent) => {
+        const targetEl =
+          event.target instanceof HTMLElement ? event.target : null
+        const targetSlide = targetEl?.closest?.(
+          '[data-rmg-fs-slide="true"]'
+        ) as HTMLElement | null
+        const targetCanonicalAttr =
+          targetSlide?.getAttribute('data-rmg-canonical-idx') ?? null
+        const targetCanonicalIndex =
+          targetCanonicalAttr != null ? parseInt(targetCanonicalAttr, 10) : NaN
+        const targetIsVideoSurface = !!targetEl?.closest?.(
+          '[data-rmg-video-snapshot="true"],[data-rmg-plyr="true"],.plyr__video-wrapper,video'
+        )
+        const targetMatches =
+          Number.isFinite(targetCanonicalIndex) &&
+          targetCanonicalIndex === canonicalIndex &&
+          targetIsVideoSurface &&
+          !targetEl?.closest?.('.plyr__controls')
+
+        if (!targetMatches) {
+          const clickedVideo = clickedVideoSurface(event)
+          if (clickedVideo?.canonicalIndex !== canonicalIndex) return
+        }
+
+        event.preventDefault()
+        event.stopPropagation()
+        event.stopImmediatePropagation?.()
+        cancelPendingVideoClickSwallow()
+      }
+
+      const cleanup = () => {
+        document.removeEventListener('click', onClick, true)
+        if (timeoutId) window.clearTimeout(timeoutId)
+        if (pendingVideoClickSwallowRef.current === cleanup) {
+          pendingVideoClickSwallowRef.current = null
+        }
+      }
+
+      pendingVideoClickSwallowRef.current = cleanup
+      document.addEventListener('click', onClick, true)
+      timeoutId = window.setTimeout(cleanup, 350)
+    }
+
+    useEffect(() => {
+      return () => {
+        cancelPendingVideoClickSwallow()
+      }
+    }, [])
+
     function resolveClickedImageTarget(
       target: HTMLElement | null,
       evt: MouseEvent | TouchEvent
@@ -1841,6 +2619,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
       translateRef.current = Translate(track);
       setTranslateX(initialSnap, 0);
+      syncFullscreenVirtualWindowForLocation(initialSnap, true);
 
       const indexCurrent  = Counter(counterMax, startIndex, true);
       const indexPrevious = Counter(counterMax, startIndex, true);
@@ -1944,7 +2723,11 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
           const dir  = body.direction() || Math.sign(target.get() - location.get()) || 0
           if (!suppressLoopRef.current && cellCount > 1 && contentSizeRef.current > 0) {
-            looperRef.current?.loop(dir);
+            const loopShift = looperRef.current?.loop(dir) ?? 0;
+            if (loopShift !== 0) {
+              applyFullscreenVirtualLoopCompensation(loopShift);
+              syncFullscreenVirtualWindowForLocation(location.get(), true);
+            }
           }
 
           x.current = location.get()
@@ -1959,6 +2742,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           y.current = isVerticalScroll.current ? yTemp.current : y.current
 
           positionSlider()
+          syncFullscreenVirtualWindowForLocation(loc)
 
           const oob = cellCount === 1 && (boundsRef.current?.reached() ?? false)
           const settled = bodyRef.current?.settled() && !oob
@@ -2042,6 +2826,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         isTouchPinching.current = false
         isClick.current = true
         dragMode.current = 'none'
+        setCloseDragLayer(false)
         yTemp.current = 0
         dragStartY.current = 0
         dragYForClose.current = 0
@@ -2083,6 +2868,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             isTouchPinching.current = true
             isClick.current = false
             dragMode.current = 'none'
+            setCloseDragLayer(false)
             animRef.current?.stop()
             if (t.cancelable)  {
               t.preventDefault()
@@ -2103,6 +2889,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             if (dragMode.current === 'y') {
               finishCrossfade(undefined, { sync: true })
               isVerticalScroll.current = true
+              setCloseDragLayer(true, { sync: true })
               dragStartY.current = lastCross
               yTemp.current = 0
             }
@@ -2175,6 +2962,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
           dragMode.current = 'none'
           isVerticalScroll.current = false
           yTemp.current = 0
+          setCloseDragLayer(false)
           moveStore.clear()
           preventScroll = false
           unlockWheelNow();
@@ -2192,11 +2980,23 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         if (isClick.current) {
           const target = evt.target as HTMLElement
           const clickedVideo = clickedVideoSurface(evt);
-          const videoClickAction = resolveFullscreenVideoClickSnapAction(clickedVideo);
+          const videoClickAction = resolveFullscreenVideoClickSnapAction(
+            clickedVideo
+              ? {
+                  ...clickedVideo,
+                  isAtSnap: isVideoClickAtCanonicalSnap(clickedVideo.canonicalIndex),
+                }
+              : null
+          );
           if (videoClickAction != null) {
             dragMode.current = 'none';
 
             if (videoClickAction.playWhenVisible) {
+              if (!clickedVideo?.isClone) {
+                if (evt.cancelable) evt.preventDefault()
+                evt.stopPropagation()
+                swallowNextVideoClickForCanonical(videoClickAction.snapIndex)
+              }
               armCloneToggleOnVisibility(videoClickAction.snapIndex);
             } else {
               snapVideoClickToCanonicalIndex(videoClickAction.snapIndex);
@@ -2425,6 +3225,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         animRef.current?.start()
         x.current = next
         positionSlider()
+        syncFullscreenVirtualWindowForLocation(next)
         syncInteractiveIndexFromX(next)
       }
       root.addEventListener('wheel', onWheel as any, { passive: false })
@@ -2521,6 +3322,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
               setAllX(nx);
               setTranslateX(nx, 0);
               animRef.current?.stop();
+              clearFullscreenVirtualRebaseOffset();
+              syncFullscreenVirtualWindowForSlide(req.index, true);
 
               const idx = ((req.index % slideCount()) + slideCount()) % slideCount();
               commitIndexChange(idx);
@@ -2616,17 +3419,29 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       introDuration,
       introEasing,
     });
+    const crossfadeUsesTrackSource = crossfadeState?.sourceMode === 'track'
+    const crossfadeSlideNodes =
+      crossfadeState != null && renderCrossfadeSlides
+        ? (() => {
+            const indexes = new Set<number>()
+            if (!crossfadeUsesTrackSource && !crossfadeSourceSnapshotHtml) {
+              indexes.add(crossfadeState.fromIndex)
+            }
+            indexes.add(crossfadeState.toIndex)
+            return renderCrossfadeSlides(Array.from(indexes))
+          })()
+        : null
     const crossfadeSourceNode =
       crossfadeState != null
-        ? crossfadeSlides?.[crossfadeState.fromIndex] ?? null
+        ? crossfadeSlideNodes?.[crossfadeState.fromIndex] ?? null
         : null
     const crossfadeTargetNode =
       crossfadeState != null
-        ? crossfadeSlides?.[crossfadeState.toIndex] ?? null
+        ? crossfadeSlideNodes?.[crossfadeState.toIndex] ?? null
         : null
     const hasActiveCrossfade =
       !!crossfadeState &&
-      (!!crossfadeSourceNode || !!crossfadeSourceSnapshotHtml) &&
+      (crossfadeUsesTrackSource || !!crossfadeSourceNode || !!crossfadeSourceSnapshotHtml) &&
       !!crossfadeTargetNode
     const crossfadeProgress = clamp01(crossfadeState?.progress ?? 0)
     
@@ -2639,6 +3454,25 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
     const crossfadeTransition = crossfadeState?.animate
       ? `opacity ${activeCrossfadeDurationMs}ms ${activeCrossfadeEasing}`
       : 'none';
+    const crossfadeTrackRevealed =
+      !!crossfadeState && crossfadeTrackRevealId === crossfadeState.id;
+    const fullscreenTrackOpacity = resolveFullscreenTrackOpacity({
+      hasActiveCrossfade,
+      crossfadeTrackRevealed,
+      crossfadeSourceMode: crossfadeState?.sourceMode,
+      crossfadeSourceOpacity: 1 - crossfadeProgress,
+      showFullscreenSlider,
+      shouldFadeIntro,
+      fadeOpening,
+    });
+    const fullscreenTrackTransition =
+      hasActiveCrossfade
+        ? crossfadeTrackRevealed
+          ? 'none'
+          : crossfadeUsesTrackSource
+            ? crossfadeTransition
+            : 'none'
+        : introOpacityTransition;
 
     function setChevronOpen(open: boolean) {
       const cls = chromeStyles?.open;
@@ -2648,11 +3482,173 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
       rightChevronRef.current?.classList.toggle(cls, open);
     }
 
+    function resolveRenderFullscreenVirtualWindow() {
+      if (fullscreenVirtualWindow?.enabled) return fullscreenVirtualWindow;
+
+      const options = resolveSliderVirtualizationOptions(virtualization);
+      if (
+        !options.enabled ||
+        cellCount <= 1 ||
+        cellCount <= options.threshold
+      ) {
+        return null;
+      }
+
+      const viewport = measureViewportSpan();
+      const metrics = resolveFixedVirtualTrackMetrics({
+        count: cellCount,
+        viewport,
+        cellsPerSlide: 1,
+        gap: gapPx,
+        loop: cellCount > 1,
+      });
+
+      if (!metrics) return null;
+
+      const rawIndex =
+        typeof slideIndex === 'number' && Number.isFinite(slideIndex)
+          ? slideIndex
+          : selectedIndex.current;
+      const activeIndex = ((rawIndex % cellCount) + cellCount) % cellCount;
+
+      return buildFixedVirtualTrackWindow({
+        metrics,
+        scrollOffset: activeIndex * metrics.stride,
+        loop: cellCount > 1,
+        options: virtualization,
+      });
+    }
+
+    function createFullscreenVirtualRenderWindow(
+      virtualWindow: FixedVirtualTrackWindow
+    ): RenderFullscreenSlideWindowItem[] {
+      const logicalCount = Math.max(1, cellCount || 1);
+
+      return virtualWindow.items.map((item) => {
+        const canonicalIndex =
+          ((item.canonicalIndex % logicalCount) + logicalCount) % logicalCount;
+        const renderedIndex = cellCount > 1 ? canonicalIndex + 1 : canonicalIndex;
+
+        return {
+          renderedIndex,
+          canonicalIndex,
+          virtualIndex: item.virtualIndex,
+          isClone: item.virtualIndex !== canonicalIndex,
+          getTransform: () => createFullscreenVirtualTransform(item.virtualIndex),
+        };
+      });
+    }
+
+    function renderFullscreenVirtualTrackChildren() {
+      const virtualWindow = resolveRenderFullscreenVirtualWindow();
+      const renderWindow = virtualWindow?.enabled
+        ? createFullscreenVirtualRenderWindow(virtualWindow)
+        : null;
+
+      if (renderChildren) return renderChildren(renderWindow);
+
+      if (!renderWindow) return children;
+
+      const childArray = Children.toArray(children);
+      const logicalCount = Math.max(1, cellCount || childArray.length || 1);
+
+      return renderWindow.map((item) => {
+        const rawCanonicalIndex = item.canonicalIndex ?? 0;
+        const canonicalIndex =
+          ((rawCanonicalIndex % logicalCount) + logicalCount) % logicalCount;
+        const template = childArray[item.renderedIndex];
+
+        if (!isValidElement(template)) return null;
+
+        return cloneElement(template as ReactElement<any>, {
+          key: `virtual-${item.virtualIndex}-${canonicalIndex}`,
+          index: item.renderedIndex,
+          canonicalIndex,
+          isClone: item.virtualIndex !== canonicalIndex,
+          getTransform: item.getTransform,
+        });
+      });
+    }
+
+    const renderedTrackChildren = renderFullscreenVirtualTrackChildren();
+    const closeMediaLayerActive = closeDragLayerActive || closingModal;
+    const closeMediaViewportClipPath = closeMediaLayerActive
+      ? 'inset(-200vmax 0 -200vmax 0)'
+      : undefined;
+    const arrowPortalRoot =
+      arrowPortalReady && typeof document !== 'undefined' ? document.body : null;
+    const arrowFrameStyle = {
+      ['--rmg-fs-slider-left' as any]: `${arrowFrame?.left ?? 0}px`,
+      ['--rmg-fs-slider-right' as any]: `${arrowFrame?.right ?? 0}px`,
+      ['--rmg-fs-slider-top' as any]: `${arrowFrame?.top ?? 0}px`,
+      ['--rmg-fs-slider-width' as any]: `${arrowFrame?.width ?? windowSize.width}px`,
+      ['--rmg-fs-slider-height' as any]: `${arrowFrame?.height ?? windowSize.height}px`,
+      ['--rmg-fs-slider-center-y' as any]:
+        arrowFrame ? `${arrowFrame.centerY}px` : '50%',
+    } as React.CSSProperties;
+    const arrowControls = allowFsArrows ? (
+      <>
+        <button
+          ref={leftChevronRef as any}
+          type="button"
+          aria-label={getArrowAction('left', isRtl) === 'prev' ? 'Previous' : 'Next'}
+          onClick={() => {
+            if (getArrowAction('left', isRtl) === 'prev') previous();
+            else next();
+          }}
+          className={mergeClassNames(
+            chromeStyles?.leftChevron,
+            classFromElementStyle(arrows?.arrow as any),
+            classFromElementStyle(arrows?.prev as any),
+          )}
+          style={{
+            ...arrowFrameStyle,
+            top: 'var(--rmg-fs-slider-center-y, 50%)',
+            left: 'calc(var(--rmg-fs-slider-left, 0px) + 16px)',
+            transform: 'translateY(-50%) rotate(180deg)',
+            ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
+            ...(styleFromElementStyle(arrows?.prev as any) ?? {}),
+            position: 'fixed',
+            zIndex: FULLSCREEN_TOP_CHROME_Z_INDEX,
+          }}
+        >
+          {renderArrowNode(getArrowAction('left', isRtl), 'left')}
+        </button>
+
+        <button
+          ref={rightChevronRef as any}
+          type="button"
+          aria-label={getArrowAction('right', isRtl) === 'prev' ? 'Previous' : 'Next'}
+          onClick={() => {
+            if (getArrowAction('right', isRtl) === 'prev') previous();
+            else next();
+          }}
+          className={mergeClassNames(
+            chromeStyles?.rightChevron,
+            classFromElementStyle(arrows?.arrow as any),
+            classFromElementStyle(arrows?.next as any),
+          )}
+          style={{
+            ...arrowFrameStyle,
+            top: 'var(--rmg-fs-slider-center-y, 50%)',
+            right: 'calc(var(--rmg-fs-slider-right, 0px) + 16px)',
+            transform: 'translateY(-50%)',
+            ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
+            ...(styleFromElementStyle(arrows?.next as any) ?? {}),
+            position: 'fixed',
+            zIndex: FULLSCREEN_TOP_CHROME_Z_INDEX,
+          }}
+        >
+          {renderArrowNode(getArrowAction('right', isRtl), 'right')}
+        </button>
+      </>
+    ) : null;
+
     useEffect(() => {
       let raf1 = 0;
       let raf2 = 0;
 
-      if (!show || closingModal) {
+      if (!show || closingModal || chromeHidden) {
         setChevronOpen(false);
         return;
       }
@@ -2669,73 +3665,29 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         cancelAnimationFrame(raf1);
         cancelAnimationFrame(raf2);
       };
-    }, [show, closingModal, chromeStyles]);
+    }, [show, closingModal, chromeHidden, chromeStyles]);
 
     return (
       <div
         ref={viewportRef}
         data-rmg-fs-viewport="true"
+        data-rmg-fs-close-layer-active={closeMediaLayerActive ? 'true' : undefined}
         className={`fs_viewport ${rtlCls}`}
         dir={isRtl ? 'rtl' : undefined}
         style={{
           position: 'absolute',
           inset: 0,
-          overflow: 'hidden',
+          overflow: closeMediaLayerActive ? 'visible' : 'hidden',
+          clipPath: closeMediaViewportClipPath,
+          WebkitClipPath: closeMediaViewportClipPath,
+          zIndex: closeMediaLayerActive
+            ? FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX
+            : undefined,
         }}
       >
-        {allowFsArrows && (
-          <>
-            <button
-              ref={leftChevronRef as any}
-              type="button"
-              aria-label={getArrowAction('left', isRtl) === 'prev' ? 'Previous' : 'Next'}
-              onClick={() => {
-                if (getArrowAction('left', isRtl) === 'prev') previous();
-                else next();
-              }}
-              className={mergeClassNames(
-                chromeStyles?.leftChevron,
-                classFromElementStyle(arrows?.arrow as any),
-                classFromElementStyle(arrows?.prev as any),
-              )}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '16px',
-                transform: 'translateY(-50%) rotate(180deg)',
-                ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
-                ...(styleFromElementStyle(arrows?.prev as any) ?? {}),
-              }}
-            >
-              {renderArrowNode(getArrowAction('left', isRtl), 'left')}
-            </button>
-
-            <button
-              ref={rightChevronRef as any}
-              type="button"
-              aria-label={getArrowAction('right', isRtl) === 'prev' ? 'Previous' : 'Next'}
-              onClick={() => {
-                if (getArrowAction('right', isRtl) === 'prev') previous();
-                else next();
-              }}
-              className={mergeClassNames(
-                chromeStyles?.rightChevron,
-                classFromElementStyle(arrows?.arrow as any),
-                classFromElementStyle(arrows?.next as any),
-              )}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                right: '16px',
-                transform: 'translateY(-50%)',
-                ...(styleFromElementStyle(arrows?.arrow as any) ?? {}),
-                ...(styleFromElementStyle(arrows?.next as any) ?? {}),
-              }}
-            >
-              {renderArrowNode(getArrowAction('right', isRtl), 'right')}
-            </button>
-          </>
-        )}
+        {arrowControls && arrowPortalRoot
+          ? createPortal(arrowControls, arrowPortalRoot)
+          : arrowControls}
         {hasActiveCrossfade && (
           <div
             key={crossfadeState!.id}
@@ -2747,27 +3699,29 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
               pointerEvents: 'none',
             }}
           >
-            <div
-              data-rmg-fs-crossfade-slide="source"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                overflow: 'hidden',
-                opacity: 1 - crossfadeProgress,
-                transition: crossfadeTransition,
-                willChange: 'opacity',
-              }}
-            >
-              {crossfadeSourceSnapshotHtml ? (
-                <div
-                  aria-hidden="true"
-                  style={{ position: 'absolute', inset: 0 }}
-                  dangerouslySetInnerHTML={{ __html: crossfadeSourceSnapshotHtml }}
-                />
-              ) : (
-                crossfadeSourceNode
-              )}
-            </div>
+            {!crossfadeUsesTrackSource ? (
+              <div
+                data-rmg-fs-crossfade-slide="source"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  overflow: 'hidden',
+                  opacity: 1 - crossfadeProgress,
+                  transition: crossfadeTransition,
+                  willChange: 'opacity',
+                }}
+              >
+                {crossfadeSourceSnapshotHtml ? (
+                  <div
+                    aria-hidden="true"
+                    style={{ position: 'absolute', inset: 0 }}
+                    dangerouslySetInnerHTML={{ __html: crossfadeSourceSnapshotHtml }}
+                  />
+                ) : (
+                  crossfadeSourceNode
+                )}
+              </div>
+            ) : null}
             <div
               data-rmg-fs-crossfade-slide="target"
               style={{
@@ -2791,20 +3745,20 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
             position: 'absolute',
             inset: 0,
             overflow: 'visible',
+            zIndex: closeMediaLayerActive
+              ? FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX
+              : undefined,
             cursor: 'grab',
             userSelect: 'none',
             WebkitUserSelect: 'none',
             willChange: 'opacity, transform',
             backfaceVisibility: 'hidden',
-            transition: introOpacityTransition,
-            opacity: showFullscreenSlider
-              ? shouldFadeIntro
-                ? (fadeOpening ? 0 : 1)
-                : 1
-              : 0,
+            transition: fullscreenTrackTransition,
+            opacity: fullscreenTrackOpacity,
+            pointerEvents: hasActiveCrossfade ? 'none' : undefined,
           }}
         >
-          {children}
+          {renderedTrackChildren}
         </div>
       </div>
     )

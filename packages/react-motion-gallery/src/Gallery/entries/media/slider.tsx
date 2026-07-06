@@ -9,7 +9,9 @@ import { useOptionalGalleryCore } from "../../core";
 import { BREAKPOINT_MAP } from "../../shared/responsive";
 import { sliderArrows } from "../../slider/plugins/arrows";
 import { sliderDots } from "../../slider/plugins/dots";
+import { useSliderReady } from "../../slider/useSliderReady";
 import type { SliderHandle, SliderOptions } from "../../slider/types";
+import { useReportMediaReady } from "./useReportMediaReady";
 
 const DEFAULT_SLIDER_OBJECT: SliderOptions = {
   align: 'start',
@@ -37,16 +39,28 @@ function EntriesSliderMediaContainer(props: {
   mediaNodes: React.ReactNode[];
   opts?: EntriesSliderMediaOptions;
   entrySliderRefs: React.RefObject<Array<SliderHandle | null>>;
+  mediaReadyKey?: React.Key;
+  onMediaReadyChange?: (ready: boolean) => void;
 }) {
-  const { entryIndex, entryInView, mediaNodes, opts, entrySliderRefs } = props;
+  const {
+    entryIndex,
+    entryInView,
+    mediaNodes,
+    opts,
+    entrySliderRefs,
+    onMediaReadyChange,
+  } = props;
 
   const hasMedia = Array.isArray(mediaNodes) && mediaNodes.length > 0;
-  if (!hasMedia) {
-    if (entrySliderRefs.current) entrySliderRefs.current[entryIndex] = null;
-    return null;
-  }
-
   const core = useOptionalGalleryCore();
+  const sliderReady = useSliderReady();
+
+  useReportMediaReady(hasMedia ? sliderReady.ready : true, onMediaReadyChange);
+
+  React.useEffect(() => {
+    if (hasMedia) return;
+    if (entrySliderRefs.current) entrySliderRefs.current[entryIndex] = null;
+  }, [entryIndex, entrySliderRefs, hasMedia]);
 
   const sliderObject = React.useMemo(() => {
     const src = opts?.sliderObject;
@@ -63,6 +77,16 @@ function EntriesSliderMediaContainer(props: {
 
   const effectiveBreakpoints = (core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP });
 
+  const setSliderRef = React.useCallback(
+    (node: any) => {
+      entrySliderRefs.current[entryIndex] = (node as SliderHandle) ?? null;
+      sliderReady.ref((node as SliderHandle) ?? null);
+    },
+    [entryIndex, entrySliderRefs, sliderReady.ref]
+  );
+
+  if (!hasMedia) return null;
+
   return (
     <div
       className={styles.sliderShell}
@@ -73,9 +97,7 @@ function EntriesSliderMediaContainer(props: {
       <Slider
         {...sliderObject}
         breakpoints={effectiveBreakpoints}
-        ref={(node: any) => {
-          entrySliderRefs.current[entryIndex] = (node as SliderHandle) ?? null;
-        }}
+        ref={setSliderRef}
       >
         {mediaNodes}
       </Slider>
@@ -89,7 +111,13 @@ export function createEntriesSliderMedia(
   const fallbackRefs =
     opts.entrySliderRefs ?? ({ current: [] } as React.RefObject<Array<SliderHandle | null>>);
 
-  return ({ entryIndex, entryInView, mediaNodes, entrySliderRefs }) => {
+  return ({
+    entryIndex,
+    entryInView,
+    mediaNodes,
+    entrySliderRefs,
+    onMediaReadyChange,
+  }) => {
     const refs = entrySliderRefs ?? fallbackRefs;
 
     return (
@@ -99,6 +127,7 @@ export function createEntriesSliderMedia(
         mediaNodes={mediaNodes}
         opts={opts}
         entrySliderRefs={refs}
+        onMediaReadyChange={onMediaReadyChange}
       />
     );
   };

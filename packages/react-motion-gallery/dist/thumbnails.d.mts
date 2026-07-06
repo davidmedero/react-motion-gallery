@@ -1,8 +1,9 @@
 import * as React from 'react';
-import { r as SliderIndexChannel, I as IndexMode } from './types-D9WBOrx6.mjs';
+import { t as SliderIndexChannel, I as IndexMode } from './types-CGPPAn9i.mjs';
+export { k as SliderVirtualizationOptions } from './types-CGPPAn9i.mjs';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
-import { f as ThumbnailsOptions, h as ThumbnailSelectMeta } from './types-uhDRb0mo.mjs';
-export { R as ResponsivePosition, j as ThumbnailContainerLayout, i as ThumbnailLayout, a as ThumbnailLoadingElements, c as ThumbnailLoadingOptions, b as ThumbnailLoadingRenderArgs, T as ThumbnailPosition, e as ThumbnailRevealOptions, d as ThumbnailSkeletonMode, p as ThumbnailsControls, l as ThumbnailsElements, k as ThumbnailsLayout, n as ThumbnailsMotion, o as ThumbnailsRipple, m as ThumbnailsScroll, q as ThumbnailsTransitions } from './types-uhDRb0mo.mjs';
+import { j as ThumbnailsOptions, l as ThumbnailSelectMeta } from './types-DTSXOwzF.mjs';
+export { R as ResponsivePosition, n as ThumbnailContainerLayout, e as ThumbnailFadeOnSyncOptions, i as ThumbnailItemKey, m as ThumbnailLayout, a as ThumbnailLoadingElements, c as ThumbnailLoadingOptions, b as ThumbnailLoadingRenderArgs, T as ThumbnailPosition, h as ThumbnailRenderItem, g as ThumbnailRenderItemArgs, f as ThumbnailRevealOptions, d as ThumbnailSkeletonMode, t as ThumbnailsControls, p as ThumbnailsElements, o as ThumbnailsLayout, r as ThumbnailsMotion, s as ThumbnailsRipple, q as ThumbnailsScroll, u as ThumbnailsTransitions } from './types-DTSXOwzF.mjs';
 import './force-C5m1QpdF.mjs';
 import './media.mjs';
 import './transitions-ChhEdSB6.mjs';

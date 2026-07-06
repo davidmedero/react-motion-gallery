@@ -134,6 +134,7 @@ var componentCatalog = [
     whenToUse: [
       "Use when the data model is an editorial entry rather than loose child nodes.",
       "Use when text and media need coordinated fullscreen overlays.",
+      "Use nested slider/grid/masonry lazy-load plugins when entry media should lazy-load; Entries owns row mount/reveal gating while nested media layouts own media readiness.",
       "Use entries data plugins when users own dynamic fetching but need pagination, load-more, infinite scroll, or row virtualization."
     ],
     relatedTags: [

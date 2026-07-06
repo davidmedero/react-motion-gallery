@@ -18,6 +18,8 @@ export type {
   SliderRevealOptions,
   SliderSkipSnaps,
   SliderSkipSnapsOptions,
+  SliderUnderflowAlign,
+  SliderVirtualizationOptions,
   SliderOptions,
   SliderHandle,
   SliderPlugin,

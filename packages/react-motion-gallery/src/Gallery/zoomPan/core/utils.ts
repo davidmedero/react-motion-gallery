@@ -49,6 +49,32 @@ export function baseFitSize(
   return { baseW: natW * fit, baseH: natH * fit };
 }
 
+export function imageLayoutMetrics(
+  imgEl: HTMLImageElement | null,
+  containerW: number,
+  containerH: number,
+  baseW: number,
+  baseH: number
+) {
+  const layoutW =
+    imgEl && Number.isFinite(imgEl.offsetWidth) && imgEl.offsetWidth > 0
+      ? imgEl.offsetWidth
+      : baseW;
+  const layoutH =
+    imgEl && Number.isFinite(imgEl.offsetHeight) && imgEl.offsetHeight > 0
+      ? imgEl.offsetHeight
+      : baseH;
+
+  return {
+    layoutW,
+    layoutH,
+    layoutOffsetX: (containerW - layoutW) / 2,
+    layoutOffsetY: (containerH - layoutH) / 2,
+    contentOffsetX: Math.max(0, (layoutW - baseW) / 2),
+    contentOffsetY: Math.max(0, (layoutH - baseH) / 2),
+  };
+}
+
 export function clampNum(val: number, min: number, max: number) {
   return Math.max(min, Math.min(max, val));
 }

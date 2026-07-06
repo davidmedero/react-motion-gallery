@@ -292,7 +292,7 @@ export function VideoCloneSnapshot(props: VideoCloneSnapshotProps) {
       style={{
         ...baseWrap,
         ...(props.style || {}),
-        position: 'relative',
+        position: props.style?.position ?? 'relative',
         overflow: 'hidden',
         background: 'transparent',
         pointerEvents: props.style?.pointerEvents ?? 'auto',
@@ -313,11 +313,12 @@ export function VideoCloneSnapshot(props: VideoCloneSnapshotProps) {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: '#000',
+            backgroundColor: 'transparent',
             backgroundImage: `url("${props.poster}")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            opacity: 0.92,
+            backgroundRepeat: 'no-repeat',
+            opacity: 1,
           }}
         />
       ) : null}

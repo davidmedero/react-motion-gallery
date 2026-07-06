@@ -4,6 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import {
   LAZY_ATTR,
+  LAZY_HOST_ATTR,
   LAZY_LOADED_ATTR,
   LAZY_LOADING_ATTR,
   LAZY_NESTED_IMAGE_ATTR,
@@ -17,6 +18,10 @@ import type { SliderLazyLoadOptions, SliderPluginRuntimeProps } from "../types";
 import { createSliderPlugin } from "./create";
 
 const INITIAL_LAZY_READY_TIMEOUT_MS = 4000;
+const EMPTY_SLIDE_NODES_STATE = {
+  nodes: [] as HTMLElement[],
+  signature: "",
+};
 
 function getRenderedSlideNodes(handle: NonNullable<SliderPluginRuntimeProps["host"]["handle"]>) {
   const container = handle.getContainerNode();
@@ -29,6 +34,22 @@ function getRenderedSlideNodes(handle: NonNullable<SliderPluginRuntimeProps["hos
 
 function sameNodes(a: HTMLElement[], b: HTMLElement[]) {
   return a.length === b.length && a.every((node, index) => node === b[index]);
+}
+
+function getSlideNodeSignature(slide: HTMLElement) {
+  return [
+    slide.getAttribute("data-rmg-idx") ?? "",
+    slide.getAttribute("data-rmg-rendered-idx") ?? "",
+    slide.getAttribute("data-rmg-clone") ?? "",
+    slide.hasAttribute(LAZY_HOST_ATTR) ? "lazy" : "",
+    slide.getAttribute(LAZY_LOADED_ATTR) ?? "",
+    slide.getAttribute(LAZY_LOADING_ATTR) ?? "",
+    String(slide.querySelectorAll(`[${LAZY_ATTR}]`).length),
+  ].join(":");
+}
+
+function getSlideNodesSignature(nodes: HTMLElement[]) {
+  return nodes.map(getSlideNodeSignature).join("|");
 }
 
 function detectSlideKind(slide: HTMLElement): "image" | "video" {
@@ -62,8 +83,15 @@ function parseSlideIndex(slide: HTMLElement) {
   return Number.isFinite(index) ? index : null;
 }
 
+function hasPendingLazyTargets(slide: HTMLElement) {
+  return slide.querySelector(`[${LAZY_ATTR}]`) != null;
+}
+
 function isSlideLoaded(slide: HTMLElement) {
-  return slide.getAttribute(LAZY_LOADED_ATTR) === "true";
+  return (
+    slide.getAttribute(LAZY_LOADED_ATTR) === "true" &&
+    !hasPendingLazyTargets(slide)
+  );
 }
 
 function isSlideLoading(slide: HTMLElement) {
@@ -183,6 +211,17 @@ function hydrateRevealedSlide(slide: HTMLElement, revealedCanonicals: Set<number
   });
 }
 
+function shouldHydrateReintroducedLazyTargets(
+  slide: HTMLElement,
+  revealedCanonicals: Set<number>
+) {
+  if (!hasPendingLazyTargets(slide)) return false;
+  if (slide.getAttribute(LAZY_LOADED_ATTR) === "true") return true;
+
+  const index = parseSlideIndex(slide);
+  return index != null && revealedCanonicals.has(index);
+}
+
 async function revealSlide(slide: HTMLElement, revealedCanonicals: Set<number>) {
   await revealLazyImageShell(slide, {
     shouldAbort: () => !slide.isConnected,
@@ -299,7 +338,8 @@ function LazyLoadRuntime({
 }: SliderPluginRuntimeProps & { options?: unknown }) {
   const lazyOptions = options as SliderLazyLoadOptions;
   const revealedCanonicalsRef = React.useRef(new Set<number>());
-  const [slideNodes, setSlideNodes] = React.useState<HTMLElement[]>([]);
+  const [slideNodesState, setSlideNodesState] = React.useState(EMPTY_SLIDE_NODES_STATE);
+  const slideNodes = slideNodesState.nodes;
   const setReadyRef = React.useRef(host.setPluginReady);
   const handle = host.handle;
   const handledByCore = handle?._usesLegacyEngine === true;
@@ -311,12 +351,19 @@ function LazyLoadRuntime({
 
   const syncSlideNodes = React.useCallback(() => {
     if (!handle || handledByCore) {
-      setSlideNodes([]);
+      setSlideNodesState((prev) =>
+        prev.nodes.length || prev.signature ? EMPTY_SLIDE_NODES_STATE : prev
+      );
       return;
     }
 
     const next = getRenderedSlideNodes(handle);
-    setSlideNodes((prev) => (sameNodes(prev, next) ? prev : next));
+    const nextSignature = getSlideNodesSignature(next);
+    setSlideNodesState((prev) =>
+      sameNodes(prev.nodes, next) && prev.signature === nextSignature
+        ? prev
+        : { nodes: next, signature: nextSignature }
+    );
   }, [handle, handledByCore]);
 
   React.useLayoutEffect(() => {
@@ -361,6 +408,49 @@ function LazyLoadRuntime({
       markLazyImageShell(slide);
     });
   }, [handledByCore, slideNodes]);
+
+  React.useLayoutEffect(() => {
+    if (!slideNodes.length || handledByCore) return;
+    if (typeof MutationObserver === "undefined") return;
+
+    let raf: number | null = null;
+    const revealedCanonicals = revealedCanonicalsRef.current;
+    const syncPendingHydration = () => {
+      raf = null;
+      let hydrated = false;
+
+      slideNodes.forEach((slide) => {
+        if (!slide.isConnected) return;
+        if (!shouldHydrateReintroducedLazyTargets(slide, revealedCanonicals)) return;
+
+        hydrateRevealedSlide(slide, revealedCanonicals);
+        hydrated = true;
+      });
+
+      if (hydrated) syncSlideNodes();
+    };
+
+    const schedule = () => {
+      if (raf != null) return;
+      raf = requestAnimationFrame(syncPendingHydration);
+    };
+
+    const observer = new MutationObserver(schedule);
+    slideNodes.forEach((slide) => {
+      observer.observe(slide, {
+        attributes: true,
+        attributeFilter: [LAZY_ATTR, "src", LAZY_LOADED_ATTR],
+        childList: true,
+        subtree: true,
+      });
+    });
+    schedule();
+
+    return () => {
+      observer.disconnect();
+      if (raf != null) cancelAnimationFrame(raf);
+    };
+  }, [handledByCore, slideNodes, syncSlideNodes]);
 
   React.useEffect(() => {
     if (handledByCore) {

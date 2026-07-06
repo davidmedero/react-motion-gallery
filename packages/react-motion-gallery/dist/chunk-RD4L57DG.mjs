@@ -1,1 +1,0 @@
-import {a}from'./chunk-ODBPQRVS.mjs';import*as n from'react';function t(e={}){return a("infinite-scroll",{...e,enabled:e.enabled??true,hasMore:e.hasMore??true,rootMargin:e.rootMargin??"600px 0px",threshold:e.threshold??0})}function l(e={}){return n.useMemo(()=>t(e),[e.enabled,e.hasMore,e.loading,e.onLoadMore,e.rootMargin,e.sentinel,e.threshold])}export{t as a,l as b};

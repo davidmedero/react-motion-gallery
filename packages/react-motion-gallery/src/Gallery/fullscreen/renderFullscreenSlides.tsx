@@ -39,11 +39,21 @@ import { readViewportWidth } from "../shared/hooks/useViewportWidth";
 
 type ResolvedPlyrOptions = NonNullable<PlyrProp>["options"];
 export type RenderFullscreenSlidesMode = "track" | "crossfade";
+export type RenderFullscreenSlideWindowItem = {
+  renderedIndex: number;
+  canonicalIndex?: number;
+  virtualIndex?: number;
+  isClone?: boolean;
+  key?: React.Key;
+  transform?: string;
+  getTransform?: (index: number) => string;
+};
 
-type RenderFullscreenSlidesArgs = {
+export type RenderFullscreenSlidesArgs = {
   items: MediaItem[];
   plyrList: PlyrProp[];
   getTransform: (index: number) => string;
+  renderWindow?: RenderFullscreenSlideWindowItem[] | null;
   imageRefs: React.RefObject<React.RefObject<HTMLDivElement | null>[]>;
   playerRefs: React.RefObject<(APITypes | null)[]>;
   cells: React.RefObject<{ element: HTMLElement; index: number }[]>;
@@ -215,6 +225,124 @@ function hideSpinnerEl(spinnerEl: HTMLElement | null) {
   spinnerEl.style.setProperty("pointer-events", "none", "important");
 }
 
+function shouldShowFsLazySpinner(args: {
+  activeCanonicalIndex?: number | null;
+  canonicalIndex: number;
+  isOpeningTarget?: boolean;
+  isExplicitlyVisible?: boolean;
+}) {
+  if (args.isOpeningTarget || args.isExplicitlyVisible) return true;
+  if (args.activeCanonicalIndex == null) return true;
+  return args.canonicalIndex === args.activeCanonicalIndex;
+}
+
+function resolveHiddenFsLazySpinnerStyle(
+  spinnerStyle: React.CSSProperties | undefined,
+  spinnerMayBeVisible: boolean
+): React.CSSProperties | undefined {
+  if (spinnerMayBeVisible) return spinnerStyle;
+
+  return {
+    ...spinnerStyle,
+    opacity: 0,
+    visibility: "hidden",
+    pointerEvents: "none",
+  };
+}
+
+type FullscreenPlyrLayoutSnapshot = {
+  ready: boolean;
+  hasHostSize: boolean;
+  key: string;
+};
+
+const FULLSCREEN_PLYR_LAYOUT_REVEAL_TIMEOUT_MS = 900;
+
+function readElementRect(el: HTMLElement | null): DOMRect | null {
+  if (!el) return null;
+
+  try {
+    return el.getBoundingClientRect();
+  } catch {
+    return null;
+  }
+}
+
+function roundedRectKey(rect: DOMRect | null) {
+  if (!rect) return "none";
+
+  return [
+    Math.round(rect.left),
+    Math.round(rect.top),
+    Math.round(rect.width),
+    Math.round(rect.height),
+  ].join(":");
+}
+
+function sampleFullscreenPlyrLayout(
+  hostEl: HTMLElement | null,
+  ratio: number | null
+): FullscreenPlyrLayoutSnapshot {
+  const hostRect = readElementRect(hostEl);
+  const hostWidth = Number(hostRect?.width ?? 0);
+  const hostHeight = Number(hostRect?.height ?? 0);
+  const hasHostSize = hostWidth >= 2 && hostHeight >= 2;
+
+  if (!hostEl || !hasHostSize) {
+    return { ready: false, hasHostSize, key: roundedRectKey(hostRect) };
+  }
+
+  const wrapper = hostEl.querySelector(".plyr__video-wrapper") as HTMLElement | null;
+  const root = hostEl.querySelector(".plyr") as HTMLElement | null;
+  const hasBuiltPlyrSurface = !!wrapper || !!hostEl.querySelector(".plyr__controls");
+  const surface = wrapper ?? root;
+  const rootRect = readElementRect(root);
+  const surfaceRect = readElementRect(surface);
+  const surfaceWidth = Number(surfaceRect?.width ?? 0);
+  const surfaceHeight = Number(surfaceRect?.height ?? 0);
+  const rootWidth = Number(rootRect?.width ?? surfaceWidth);
+  const rootHeight = Number(rootRect?.height ?? surfaceHeight);
+
+  const fillsHost =
+    surfaceWidth >= hostWidth * 0.75 &&
+    surfaceHeight >= hostHeight * 0.75 &&
+    rootWidth >= hostWidth * 0.75 &&
+    rootHeight >= hostHeight * 0.75;
+  const ratioIsPlausible =
+    ratio == null ||
+    !(surfaceWidth > 0 && surfaceHeight > 0) ||
+    Math.abs(surfaceWidth / surfaceHeight - ratio) / ratio <= 0.25;
+
+  return {
+    ready: hasBuiltPlyrSurface && fillsHost && ratioIsPlausible,
+    hasHostSize,
+    key: `${roundedRectKey(hostRect)}|${roundedRectKey(rootRect)}|${roundedRectKey(surfaceRect)}`,
+  };
+}
+
+export function isFullscreenPlyrLayoutStable(
+  hostEl: HTMLElement | null,
+  ratio: number | null = null
+) {
+  return sampleFullscreenPlyrLayout(hostEl, ratio).ready;
+}
+
+export function shouldRevealFullscreenPlyrLayout(args: {
+  hostEl: HTMLElement | null;
+  ratio?: number | null;
+  elapsedMs: number;
+  timeoutMs?: number;
+}) {
+  const timeoutMs =
+    args.timeoutMs ?? FULLSCREEN_PLYR_LAYOUT_REVEAL_TIMEOUT_MS;
+
+  if (sampleFullscreenPlyrLayout(args.hostEl, args.ratio ?? null).ready) {
+    return true;
+  }
+
+  return args.elapsedMs >= timeoutMs;
+}
+
 function pauseApi(api: APITypes | null) {
   if (!api) return;
 
@@ -266,6 +394,124 @@ function parsePlyrRatio(r: unknown): number | null {
   }
 
   return null;
+}
+
+function isHtml5VideoFrameReady(media: HTMLMediaElement | null | undefined) {
+  try {
+    return Number(media?.readyState ?? 0) >= 2;
+  } catch {
+    return false;
+  }
+}
+
+function bindHtml5PlyrReady(plyr: any, onReady: () => void) {
+  let active = true;
+  let plyrReady = false;
+  let mediaReady = false;
+  let raf1: number | null = null;
+  let raf2: number | null = null;
+  let fallbackId: number | null = null;
+
+  const media = plyr?.media as HTMLMediaElement | null | undefined;
+  const mediaEvents = ["loadeddata", "canplay", "canplaythrough"] as const;
+
+  const clearPending = () => {
+    if (raf1 != null) {
+      window.cancelAnimationFrame(raf1);
+      raf1 = null;
+    }
+
+    if (raf2 != null) {
+      window.cancelAnimationFrame(raf2);
+      raf2 = null;
+    }
+
+    if (fallbackId != null) {
+      window.clearTimeout(fallbackId);
+      fallbackId = null;
+    }
+  };
+
+  const detach = () => {
+    try {
+      plyr?.off?.("ready", handlePlyrReady);
+    } catch {}
+
+    if (media) {
+      for (const type of mediaEvents) {
+        try {
+          media.removeEventListener(type, handleMediaReady);
+        } catch {}
+      }
+    }
+  };
+
+  const cleanup = () => {
+    active = false;
+    detach();
+    clearPending();
+  };
+
+  const finish = () => {
+    if (!active) return;
+
+    active = false;
+    detach();
+
+    raf1 = window.requestAnimationFrame(() => {
+      raf1 = null;
+      raf2 = window.requestAnimationFrame(() => {
+        raf2 = null;
+        clearPending();
+        onReady();
+      });
+    });
+  };
+
+  const maybeFinish = () => {
+    if (plyrReady && mediaReady) finish();
+  };
+
+  function handlePlyrReady() {
+    plyrReady = true;
+    maybeFinish();
+  }
+
+  function handleMediaReady() {
+    mediaReady = true;
+    maybeFinish();
+  }
+
+  try {
+    plyr?.on?.("ready", handlePlyrReady);
+  } catch {}
+
+  if (media) {
+    for (const type of mediaEvents) {
+      try {
+        media.addEventListener(type, handleMediaReady, { once: true });
+      } catch {}
+    }
+  }
+
+  try {
+    if (plyr?.ready === true) {
+      handlePlyrReady();
+    }
+  } catch {}
+
+  if (isHtml5VideoFrameReady(media)) {
+    handleMediaReady();
+  }
+
+  if (active && !plyrReady && typeof window !== "undefined") {
+    fallbackId = window.setTimeout(() => {
+      plyrReady = true;
+      maybeFinish();
+    }, 1200);
+  }
+
+  return cleanup;
 }
 
 function resolveVideoPoster(item: Extract<MediaItem, { kind: "video" }>, plyr: PlyrProp): string | undefined {
@@ -356,6 +602,11 @@ function FsLazyCustomImageContent(props: {
     !!openingInProgress &&
     !isClone &&
     openingCanonicalIndex === canonicalIndex;
+  const spinnerMayBeVisible = shouldShowFsLazySpinner({
+    activeCanonicalIndex,
+    canonicalIndex,
+    isOpeningTarget,
+  });
 
   const computeAllowed = React.useCallback(() => {
     if (isOpeningTarget) return true;
@@ -371,9 +622,9 @@ function FsLazyCustomImageContent(props: {
   const showSpinner = React.useCallback((show: boolean) => {
     const sp = spinnerRef.current;
     if (!sp) return;
-    if (show) showSpinnerEl(sp);
+    if (show && spinnerMayBeVisible) showSpinnerEl(sp);
     else hideSpinnerEl(sp);
-  }, []);
+  }, [spinnerMayBeVisible]);
 
   const spinnerResolved = React.useMemo(() => {
     return resolveFsSpinnerNode(fsLazy.spinner, { kind: "image", isClone });
@@ -393,7 +644,10 @@ function FsLazyCustomImageContent(props: {
       <div
         ref={spinnerRef}
         className={spinnerClassName}
-        style={fsLazy.spinnerStyle}
+        style={resolveHiddenFsLazySpinnerStyle(
+          fsLazy.spinnerStyle,
+          spinnerMayBeVisible
+        )}
         data-rmg-image-spinner
       >
         {spinnerResolved.node}
@@ -402,7 +656,10 @@ function FsLazyCustomImageContent(props: {
       <div
         ref={spinnerRef}
         className={spinnerClassName}
-        style={fsLazy.spinnerStyle}
+        style={resolveHiddenFsLazySpinnerStyle(
+          fsLazy.spinnerStyle,
+          spinnerMayBeVisible
+        )}
         data-rmg-image-spinner
       />
     )
@@ -569,6 +826,7 @@ function FsImageContent(props: {
   item: Extract<MediaItem, { kind: "image" }>;
   renderedIndex: number;
   canonicalIndex: number;
+  activeCanonicalIndex?: number | null;
   isClone: boolean;
   openingCanonicalIndex?: number | null;
   openingInProgress?: boolean;
@@ -588,6 +846,7 @@ function FsImageContent(props: {
     item,
     renderedIndex,
     canonicalIndex,
+    activeCanonicalIndex,
     isClone,
     openingCanonicalIndex,
     openingInProgress,
@@ -622,6 +881,7 @@ function FsImageContent(props: {
         item={item}
         renderedIndex={renderedIndex}
         canonicalIndex={canonicalIndex}
+        activeCanonicalIndex={activeCanonicalIndex}
         isClone={isClone}
         openingCanonicalIndex={openingCanonicalIndex}
         openingInProgress={openingInProgress}
@@ -660,6 +920,11 @@ function FsImageContent(props: {
     !!openingInProgress &&
     !isClone &&
     openingCanonicalIndex === canonicalIndex;
+  const spinnerMayBeVisible = shouldShowFsLazySpinner({
+    activeCanonicalIndex,
+    canonicalIndex,
+    isOpeningTarget,
+  });
 
   const computeAllowed = React.useCallback(() => {
     if (isOpeningTarget) return true;
@@ -671,9 +936,9 @@ function FsImageContent(props: {
   const showSpinner = React.useCallback((show: boolean) => {
     const sp = spinnerRef.current;
     if (!sp) return;
-    if (show) showSpinnerEl(sp);
+    if (show && spinnerMayBeVisible) showSpinnerEl(sp);
     else hideSpinnerEl(sp);
-  }, []);
+  }, [spinnerMayBeVisible]);
 
   const spinnerResolved = React.useMemo(() => {
     return resolveFsSpinnerNode(fsLazy?.spinner, { kind: "image", isClone });
@@ -695,7 +960,10 @@ function FsImageContent(props: {
       <div
         ref={spinnerRef}
         className={spinnerClassName}
-        style={fsLazy?.spinnerStyle}
+        style={resolveHiddenFsLazySpinnerStyle(
+          fsLazy?.spinnerStyle,
+          spinnerMayBeVisible
+        )}
         data-rmg-image-spinner
       >
         {spinnerResolved.node}
@@ -704,7 +972,10 @@ function FsImageContent(props: {
       <div
         ref={spinnerRef}
         className={spinnerClassName}
-        style={fsLazy?.spinnerStyle}
+        style={resolveHiddenFsLazySpinnerStyle(
+          fsLazy?.spinnerStyle,
+          spinnerMayBeVisible
+        )}
         data-rmg-image-spinner
       />
     )
@@ -976,6 +1247,8 @@ function FsImageContent(props: {
         alt={item.alt ?? `cell-${renderedIndex}`}
         data-index={renderedIndex}
         className={className}
+        width={typeof any.width === "number" ? any.width : undefined}
+        height={typeof any.height === "number" ? any.height : undefined}
         draggable="false"
         decoding="async"
         loading={isOpeningTarget ? "eager" : "lazy"}
@@ -994,6 +1267,7 @@ function FsCloneVideoPreview(props: {
   item: Extract<MediaItem, { kind: "video" }>;
   renderedIndex: number;
   canonicalIndex: number;
+  activeCanonicalIndex?: number | null;
   plyr: PlyrProp;
   videoSnapshotStore?: VideoSnapshotStore;
   playerRefs: React.RefObject<(APITypes | null)[]>;
@@ -1007,6 +1281,7 @@ function FsCloneVideoPreview(props: {
     item,
     renderedIndex,
     canonicalIndex,
+    activeCanonicalIndex,
     plyr,
     videoSnapshotStore,
     playerRefs,
@@ -1018,13 +1293,18 @@ function FsCloneVideoPreview(props: {
   } = props;
 
   React.useEffect(() => {
-      playerRefs.current[renderedIndex] = null;
+    playerRefs.current[renderedIndex] = null;
     return () => {
       playerRefs.current[renderedIndex] = null;
     };
   }, [playerRefs, renderedIndex]);
 
   if (!videoSnapshotStore) return null;
+
+  const spinnerMayBeVisible = shouldShowFsLazySpinner({
+    activeCanonicalIndex,
+    canonicalIndex,
+  });
 
   return (
     <VideoCloneSnapshot
@@ -1045,7 +1325,7 @@ function FsCloneVideoPreview(props: {
         transition: "opacity 220ms ease",
         willChange: "opacity",
       }}
-      lazyLoad={fsLazy}
+      lazyLoad={spinnerMayBeVisible ? fsLazy : undefined}
     />
   );
 }
@@ -1111,6 +1391,7 @@ function FsLiveVideoContent(props: {
   const spinnerRef = React.useRef<HTMLDivElement | null>(null);
   const playerWrapRef = React.useRef<HTMLDivElement | null>(null);
   const apiRef = React.useRef<APITypes | null>(null);
+  const layoutRevealRafRef = React.useRef<number | null>(null);
 
   const mountedRef = React.useRef(false);
   const readyRef = React.useRef(false);
@@ -1174,6 +1455,13 @@ function FsLiveVideoContent(props: {
     [showFullscreenSlider]
   );
 
+  const clearPendingLayoutReveal = React.useCallback(() => {
+    if (layoutRevealRafRef.current == null) return;
+
+    window.cancelAnimationFrame(layoutRevealRafRef.current);
+    layoutRevealRafRef.current = null;
+  }, []);
+
   const syncRuntimeRegistration = React.useCallback(
     (api: APITypes | null) => {
       if (!videoSnapshotStore) return;
@@ -1197,19 +1485,79 @@ function FsLiveVideoContent(props: {
     [canonicalIndex, poster, provider, ratio, src, videoSnapshotStore]
   );
 
+  const revealReadyPlayer = React.useCallback(() => {
+    readyRef.current = true;
+    syncSpinner(false);
+    setWrapVisible(true);
+    fsPreparedVideosRef.current.add(key);
+    syncRuntimeRegistration(apiRef.current);
+  }, [
+    fsPreparedVideosRef,
+    key,
+    setWrapVisible,
+    syncRuntimeRegistration,
+    syncSpinner,
+  ]);
+
+  const scheduleLayoutStableReveal = React.useCallback(() => {
+    if (typeof window === "undefined") {
+      revealReadyPlayer();
+      return;
+    }
+
+    clearPendingLayoutReveal();
+
+    const startedAt =
+      window.performance?.now?.() ?? Date.now();
+
+    const check = () => {
+      layoutRevealRafRef.current = null;
+
+      const now = window.performance?.now?.() ?? Date.now();
+      if (
+        shouldRevealFullscreenPlyrLayout({
+          hostEl: playerWrapRef.current,
+          ratio,
+          elapsedMs: now - startedAt,
+        })
+      ) {
+        revealReadyPlayer();
+        return;
+      }
+
+      layoutRevealRafRef.current = window.requestAnimationFrame(check);
+    };
+
+    layoutRevealRafRef.current = window.requestAnimationFrame(check);
+  }, [
+    clearPendingLayoutReveal,
+    ratio,
+    revealReadyPlayer,
+  ]);
+
   React.useLayoutEffect(() => {
     if (seenBefore || readyRef.current) {
-      setWrapVisible(true);
       syncSpinner(false);
       revealedRef.current = true;
       setRevealed(true);
       if (!everMounted) setEverMounted(true);
+      if (apiRef.current) {
+        scheduleLayoutStableReveal();
+      } else {
+        setWrapVisible(false);
+      }
       return;
     }
 
     setWrapVisible(false);
     syncSpinner(true);
-  }, [seenBefore, setWrapVisible, syncSpinner, everMounted]);
+  }, [
+    everMounted,
+    scheduleLayoutStableReveal,
+    seenBefore,
+    setWrapVisible,
+    syncSpinner,
+  ]);
 
   React.useEffect(() => {
     if (seenBefore || readyRef.current) return;
@@ -1253,13 +1601,9 @@ function FsLiveVideoContent(props: {
     if (readyRef.current) return;
     readyRef.current = true;
 
-    requestAnimationFrame(() => {
-      syncSpinner(false);
-      setWrapVisible(true);
-      fsPreparedVideosRef.current.add(key);
-      syncRuntimeRegistration(apiRef.current);
-    });
-  }, [fsPreparedVideosRef, key, setWrapVisible, syncRuntimeRegistration, syncSpinner]);
+    syncSpinner(false);
+    scheduleLayoutStableReveal();
+  }, [scheduleLayoutStableReveal, syncSpinner]);
 
   const readyCleanupRef = React.useRef<(() => void) | null>(null);
   const guardedPlyrRef = React.useRef<any>(null);
@@ -1286,8 +1630,13 @@ function FsLiveVideoContent(props: {
       syncRuntimeRegistration(apiOrNull);
 
       requestAnimationFrame(() => {
-        setWrapVisible(readyRef.current || seenBefore);
-        syncSpinner(!(readyRef.current || seenBefore));
+        if (readyRef.current || seenBefore) {
+          syncSpinner(false);
+          scheduleLayoutStableReveal();
+        } else {
+          setWrapVisible(false);
+          syncSpinner(true);
+        }
       });
 
       if (!api) {
@@ -1312,33 +1661,7 @@ function FsLiveVideoContent(props: {
           return;
         }
 
-        const media: HTMLMediaElement | undefined = plyrInstance?.media;
-        if (media) {
-          const onCanPlay = () => markReady();
-
-          media.addEventListener("loadedmetadata", onCanPlay, { once: true });
-          media.addEventListener("loadeddata", onCanPlay, { once: true });
-          media.addEventListener("canplay", onCanPlay, { once: true });
-
-          readyCleanupRef.current = () => {
-            try {
-              media.removeEventListener("loadedmetadata", onCanPlay);
-            } catch {}
-            try {
-              media.removeEventListener("loadeddata", onCanPlay);
-            } catch {}
-            try {
-              media.removeEventListener("canplay", onCanPlay);
-            } catch {}
-          };
-
-          try {
-            const rs = media.readyState ?? 0;
-            const vw = (media as any).videoWidth ?? 0;
-            const vh = (media as any).videoHeight ?? 0;
-            if (rs >= 1 || (vw > 0 && vh > 0)) markReady();
-          } catch {}
-        }
+        readyCleanupRef.current = bindHtml5PlyrReady(plyrInstance, markReady);
       } catch {}
     },
     [
@@ -1347,6 +1670,7 @@ function FsLiveVideoContent(props: {
       playerRefs,
       provider,
       renderedIndex,
+      scheduleLayoutStableReveal,
       seenBefore,
       setWrapVisible,
       syncRuntimeRegistration,
@@ -1364,20 +1688,27 @@ function FsLiveVideoContent(props: {
 
   React.useEffect(() => {
     return () => {
+      clearPendingLayoutReveal();
       readyCleanupRef.current?.();
       readyCleanupRef.current = null;
       cleanupDragSwallowGuard();
     };
-  }, [cleanupDragSwallowGuard]);
+  }, [cleanupDragSwallowGuard, clearPendingLayoutReveal]);
 
   React.useEffect(() => {
     return () => {
+      clearPendingLayoutReveal();
       pauseApi(apiRef.current);
       apiRef.current = null;
       playerRefs.current[renderedIndex] = null;
       syncRuntimeRegistration(null);
     };
-  }, [playerRefs, renderedIndex, syncRuntimeRegistration]);
+  }, [
+    clearPendingLayoutReveal,
+    playerRefs,
+    renderedIndex,
+    syncRuntimeRegistration,
+  ]);
 
   React.useEffect(() => {
     const gateEl = gateRef.current;
@@ -1403,6 +1734,7 @@ function FsLiveVideoContent(props: {
         visibleRef.current = nowVisible;
 
         if (!nowVisible) {
+          clearPendingLayoutReveal();
           pauseApi(apiRef.current);
           if (!readyRef.current) setWrapVisible(false);
           return;
@@ -1411,8 +1743,13 @@ function FsLiveVideoContent(props: {
         promoteCanonicalWhenVisible();
 
         requestAnimationFrame(() => {
-          setWrapVisible(readyRef.current || seenBefore);
-          syncSpinner(!(readyRef.current || seenBefore));
+          if (readyRef.current || seenBefore) {
+            syncSpinner(false);
+            scheduleLayoutStableReveal();
+          } else {
+            setWrapVisible(false);
+            syncSpinner(true);
+          }
         });
       },
       {
@@ -1424,7 +1761,14 @@ function FsLiveVideoContent(props: {
 
     io.observe(gateEl);
     return () => io.disconnect();
-  }, [promoteCanonicalWhenVisible, seenBefore, setWrapVisible, syncSpinner]);
+  }, [
+    clearPendingLayoutReveal,
+    promoteCanonicalWhenVisible,
+    scheduleLayoutStableReveal,
+    seenBefore,
+    setWrapVisible,
+    syncSpinner,
+  ]);
 
   const spinnerEl = shouldRenderSpinner ? (
     spinnerResolved.isCustom ? (
@@ -1524,6 +1868,18 @@ function FsSlide(props: {
   fsVideoStyle?: React.CSSProperties;
   fsVideoClassName?: string;
   onPanPointerDown: (
+    e: React.PointerEvent<HTMLDivElement>,
+    imageRef: React.RefObject<HTMLDivElement | null>
+  ) => void;
+  onHoverPointerEnter?: (
+    e: React.PointerEvent<HTMLDivElement>,
+    imageRef: React.RefObject<HTMLDivElement | null>
+  ) => void;
+  onHoverPointerMove?: (
+    e: React.PointerEvent<HTMLDivElement>,
+    imageRef: React.RefObject<HTMLDivElement | null>
+  ) => void;
+  onHoverPointerLeave?: (
     e: React.PointerEvent<HTMLDivElement>,
     imageRef: React.RefObject<HTMLDivElement | null>
   ) => void;
@@ -1879,6 +2235,7 @@ function FsSlide(props: {
                 item={item as any}
                 renderedIndex={index}
                 canonicalIndex={canonicalIndex}
+                activeCanonicalIndex={activeCanonicalIndex}
                 plyr={plyr!}
                 videoSnapshotStore={videoSnapshotStore}
                 playerRefs={playerRefs}
@@ -1916,6 +2273,7 @@ function FsSlide(props: {
               item={item as any}
               renderedIndex={index}
               canonicalIndex={canonicalIndex}
+              activeCanonicalIndex={activeCanonicalIndex}
               isClone={isClone}
               openingCanonicalIndex={openingCanonicalIndex}
               openingInProgress={openingInProgress}
@@ -2025,6 +2383,7 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
     videoSnapshotStore,
     getMediaKey,
     renderMode = "track",
+    renderWindow,
   } = opts;
 
   const vw = effectiveViewportWidth(
@@ -2094,21 +2453,40 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
     layoutPlacement === "left" || layoutPlacement === "right";
   const isVertical =
     layoutPlacement === "top" || layoutPlacement === "bottom";
+  const windowItems: RenderFullscreenSlideWindowItem[] =
+    renderWindow && renderWindow.length > 0
+      ? renderWindow
+      : items.map((_, index) => ({ renderedIndex: index }));
 
-  return items.map((item, index) => {
+  return windowItems.map((windowItem) => {
+    const index = windowItem.renderedIndex;
+    const item = items[index];
+    if (!item) return null;
+
     const imageRef = imageRefs.current[index];
     const plyr = plyrList[index];
-    const canonicalIndex = toCanonicalIndex(index, items.length, canonLen);
+    const canonicalIndex =
+      windowItem.canonicalIndex ??
+      toCanonicalIndex(index, items.length, canonLen);
 
     const captionNode = renderCaption
       ? renderCaption({ item, index: canonicalIndex, isZoomed })
       : null;
 
-    const isClone = isCloneIndex(index, items.length, canonLen);
+    const isClone =
+      windowItem.isClone ?? isCloneIndex(index, items.length, canonLen);
+    const slideGetTransform =
+      windowItem.getTransform ??
+      (windowItem.transform ? () => windowItem.transform! : getTransform);
+    const key =
+      windowItem.key ??
+      (windowItem.virtualIndex != null
+        ? `virtual-${windowItem.virtualIndex}-${canonicalIndex}`
+        : `${(item as any).src ?? "slide"}-${index}`);
 
     return (
       <FsSlide
-        key={`${(item as any).src ?? "slide"}-${index}`}
+        key={key}
         item={item}
         index={index}
         canonicalIndex={canonicalIndex}
@@ -2145,7 +2523,7 @@ export function renderFullscreenSlides(opts: RenderFullscreenSlidesArgs) {
         viewportOverlayTopBottomHeight={viewportOverlayTopBottomHeight}
         sideWidth={sideWidth}
         topBottomHeight={topBottomHeight}
-        getTransform={getTransform}
+        getTransform={slideGetTransform}
         styles={styles}
         renderImage={renderImage}
         fsLazy={fsLazy}

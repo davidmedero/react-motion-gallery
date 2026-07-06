@@ -53,14 +53,14 @@ export function createFullscreenThumbnailSyncBridge(
     localChannel.set(index, mode);
   };
 
-  const applyFsStateToLocal = () => {
+  const applyFsStateToLocal = (mode: IndexMode = "animated") => {
     const nextIndexRaw = normalizeFiniteInt(fsSub.get());
     if (nextIndexRaw == null) return;
 
     const nextIndex = maybeClampIndex(nextIndexRaw, clampIndex);
     if (nextIndex == null) return;
 
-    setLocalIfChanged(nextIndex, "animated");
+    setLocalIfChanged(nextIndex, mode);
   };
 
   const stop = () => {
@@ -73,7 +73,7 @@ export function createFullscreenThumbnailSyncBridge(
     if (started) return stop;
     started = true;
 
-    applyFsStateToLocal();
+    applyFsStateToLocal("instant");
 
     if (
       typeof fsSub.onBasePointerDown === "function" &&

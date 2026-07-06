@@ -316,6 +316,11 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
     const [thumbsReady, setThumbsReady] = React.useState(false);
     const prefersReducedMotion = usePrefersReducedMotion();
 
+    const thumbItems = thumbsObject.items;
+    const renderThumbItem = thumbsObject.renderItem;
+    const getThumbItemKey = thumbsObject.getItemKey;
+    const usesItemRendering =
+      Array.isArray(thumbItems) && typeof renderThumbItem === "function";
     const thumbChildren = children ?? thumbsObject.children;
     const thumbChildArray = React.useMemo(
       () => React.Children.toArray(thumbChildren),
@@ -323,8 +328,17 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
     );
 
     const contentSignature = React.useMemo(
-      () =>
-        thumbChildArray
+      () => {
+        if (usesItemRendering) {
+          return (thumbItems ?? [])
+            .map((item, idx) => {
+              const rawKey = getThumbItemKey?.(item, idx);
+              return `item:${rawKey != null ? String(rawKey) : `idx:${idx}`}`;
+            })
+            .join("|");
+        }
+
+        return thumbChildArray
           .map((node, idx) => {
             if (React.isValidElement(node)) {
               return `el:${node.key != null ? String(node.key) : `idx:${idx}`}`;
@@ -335,8 +349,9 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
             }
             return `node:${idx}`;
           })
-          .join("|"),
-      [thumbChildArray]
+          .join("|");
+      },
+      [getThumbItemKey, thumbChildArray, thumbItems, usesItemRendering]
     );
 
     React.useEffect(() => {
@@ -441,7 +456,9 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
       },
     });
 
-    const childCount = thumbChildArray.filter(Boolean).length;
+    const childCount = usesItemRendering
+      ? thumbItems?.length ?? 0
+      : thumbChildArray.filter(Boolean).length;
     const persistedLoadingNodeRef = React.useRef<React.ReactNode>(thumbsSkeleton.node);
 
     if (thumbsSkeleton.node) {
@@ -579,6 +596,9 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
             ].filter(Boolean).join(" ")}
           >
             <ThumbnailSliderCore
+              items={usesItemRendering ? thumbItems : undefined}
+              renderItem={usesItemRendering ? renderThumbItem : undefined}
+              getItemKey={usesItemRendering ? getThumbItemKey : undefined}
               indexChannel={localChannel}
               position={resolvedThumbPos}
               direction={direction}
@@ -597,6 +617,7 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
               loop={thumbsObject.scroll?.loop}
               skipSnaps={thumbsObject.scroll?.skipSnaps}
               centerActiveThumb={thumbsObject.scroll?.centerActiveThumb}
+              fadeOnSync={thumbsObject.scroll?.fadeOnSync}
               selectDuration={thumbsObject.motion?.selectDuration}
               freeScrollDuration={thumbsObject.motion?.freeScrollDuration}
               sliderFriction={thumbsObject.motion?.friction}
@@ -616,6 +637,7 @@ export const ThumbnailSlider = React.forwardRef<HTMLDivElement, Props>(
               renderPrevArrow={thumbsObject.controls?.renderPrev}
               renderNextArrow={thumbsObject.controls?.renderNext}
               crossfade={thumbsObject.transitions?.crossfade}
+              virtualization={thumbsObject.virtualization}
               onReadyChange={handleThumbReadyChange}
               onSelectThumb={handleThumbSelect}
               revealUnlocked={revealUnlocked || loadingVisualState.compareMode}

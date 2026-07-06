@@ -40,6 +40,11 @@ export type ScrollbarRenderArgs = {
   max: number;
   step: number;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onInput?: (event: React.FormEvent<HTMLInputElement>) => void;
+  onPointerDown?: React.PointerEventHandler<HTMLInputElement>;
+  onPointerMove?: React.PointerEventHandler<HTMLInputElement>;
+  onPointerUp?: React.PointerEventHandler<HTMLInputElement>;
+  onPointerCancel?: React.PointerEventHandler<HTMLInputElement>;
   className?: string;
   style?: React.CSSProperties;
 };

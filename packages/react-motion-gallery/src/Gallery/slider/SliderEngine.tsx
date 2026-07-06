@@ -39,7 +39,7 @@ import { EventStore } from '../shared/motion/eventStore';
 import { Animations, AnimationsType } from '../shared/motion/animations';
 import type { APITypes } from '../video/plyrTypes';
 import { RmgSlideProvider } from '../shared/slideContext';
-import { SliderRevealOptions, SliderLazyLoadOptions, type CrossFadeWheel, type SliderAutoPlayTimer, type SliderCoreHandle, type SliderSkipSnaps } from './types';
+import { SliderRevealOptions, SliderLazyLoadOptions, type CrossFadeWheel, type SliderAutoPlayTimer, type SliderCoreHandle, type SliderSkipSnaps, type SliderUnderflowAlign } from './types';
 import type { ArrowRenderArgs, DotsRenderArgs, ProgressRenderArgs, ScrollbarRenderArgs } from '../shared/types/controls';
 import { BreakpointMap } from '../shared/responsive';
 import { IndexMode } from '../api/types';
@@ -69,6 +69,8 @@ import {
   buildSliderScrollSnaps,
   fitsWithinSliderViewport,
   getSliderCenterOffset,
+  resolveSliderFixedCellSize,
+  resolveSliderUnderflowOffset,
   roundSliderLayoutMetric,
   resolveSliderGroupCells,
   resolveSliderMeasuredSize,
@@ -115,6 +117,7 @@ const DEFAULT_SLIDER_CROSSFADE_EASING = 'cubic-bezier(.4,0,.22,1)';
 const SLIDER_LAYOUT_EPS = 0.75;
 const SLIDER_CELL_SIZE_STEP = 0.5;
 const SLIDER_WRAP_HYSTERESIS_PX = 6;
+const FULLSCREEN_SETTLE_GESTURE_WINDOW_MS = 750;
 
 function nowMs() {
   return typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -441,6 +444,7 @@ interface SliderProps {
   crossfadeDurationMs?: number;
   crossfadeEasing?: string;
   cellsPerSlide?: number;
+  underflowAlign?: SliderUnderflowAlign;
   direction?: 'ltr' | 'rtl';
   axis?: 'x' | 'y';
   skipSnaps?: SliderSkipSnaps;
@@ -487,6 +491,17 @@ function getCanonicalIndexFromSlide(slideEl: HTMLElement): number | null {
   return Number.isFinite(idx) ? idx : null;
 }
 
+function slideHasPendingLazyTargets(slideEl: HTMLElement) {
+  return slideEl.querySelector(`[${LAZY_ATTR}]`) != null;
+}
+
+function isLazySlideLoaded(slideEl: HTMLElement) {
+  return (
+    slideEl.getAttribute("data-rmg-lazyloaded") === "true" &&
+    !slideHasPendingLazyTargets(slideEl)
+  );
+}
+
 function rememberRevealedCanonical(slideEl: HTMLElement, revealedCanonicals?: Set<number>) {
   if (!revealedCanonicals) return;
   const idx = getCanonicalIndexFromSlide(slideEl);
@@ -505,7 +520,7 @@ async function revealCanonicalSlides(
   const pending = slides.filter(
     (slideEl) =>
       slideEl.hasAttribute("data-rmg-lazyload") &&
-      slideEl.getAttribute("data-rmg-lazyloaded") !== "true"
+      !isLazySlideLoaded(slideEl)
   );
 
   if (!pending.length) return;
@@ -879,6 +894,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     crossfadeDurationMs,
     crossfadeEasing,
     cellsPerSlide,
+    underflowAlign = "center",
     direction,
     axis,
     skipSnaps,
@@ -954,6 +970,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   const previousDragX = useRef(0)
   const dragMoveTime = useRef<number>(0)
   const dragStartIndexRef = useRef(0)
+  const fullscreenSettlePointerUpTimeRef = useRef<number>(Number.NEGATIVE_INFINITY)
   const dragStartLocationRef = useRef(0)
   const dragDisplacementRef = useRef(0)
   const boundsRef = useRef<ScrollBoundsType | null>(null)
@@ -1109,6 +1126,21 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
     const fallback = (track as any)[AX.clientKey] as number;
     return Number.isFinite(fallback) ? fallback : 0;
+  }
+
+  function setSlideMainSizeCssVar(value: number | null) {
+    const cssValue = value == null ? null : `${value}px`;
+    const targets = [slider.current, viewportRef.current, sliderContainer.current];
+
+    for (const target of targets) {
+      if (!target) continue;
+
+      if (cssValue == null) {
+        target.style.removeProperty("--rmg-slide-main-size");
+      } else {
+        target.style.setProperty("--rmg-slide-main-size", cssValue);
+      }
+    }
   }
 
   function createMainSizeStableResizeGuard(targets: Array<HTMLElement | null>) {
@@ -1784,6 +1816,41 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     snapToIndex(requested);
   }
 
+  function getFullscreenSettleIndex() {
+    const recentClick =
+      isClick.current &&
+      nowMs() - fullscreenSettlePointerUpTimeRef.current <=
+        FULLSCREEN_SETTLE_GESTURE_WINDOW_MS;
+
+    return recentClick ? dragStartIndexRef.current : selectedIndex.current;
+  }
+
+  function scrollToIndexForFullscreenOpen(requested: number) {
+    const len = slides.current?.length ?? 0;
+    if (!len) return;
+
+    const idx = clampIndex(requested, len);
+    if (!slides.current?.[idx]) return;
+
+    scrollToIndex(idx, { programmatic: true });
+  }
+
+  function settleForFullscreenOpen() {
+    const settleIndex = getFullscreenSettleIndex();
+
+    finishCrossfade();
+    pointerDownRef.current = false;
+    isPointerDown.current = false;
+    isScrolling.current = false;
+    isClick.current = false;
+    dragDisplacementRef.current = 0;
+    sliderVelocity.current = 0;
+    setDragCursor(false);
+    unlockWheelNow();
+
+    scrollToIndexForFullscreenOpen(settleIndex);
+  }
+
   useEffect(() => {
     const root = sliderContainer.current;
     if (!root) return;
@@ -2282,7 +2349,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
         const originals = rawKids.length;
         if (originals < 1) {
-          el.style.removeProperty("--rmg-slide-main-size");
+          setSlideMainSizeCssVar(null);
           clonesCountRef.current = 0;
           loopRenderOffsetRef.current = 0;
           lastCloneSigRef.current = "";
@@ -2319,15 +2386,20 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         let cellSize: number | undefined;
 
         if (useCols) {
-          cols = Math.max(1, Math.min(originals, cellsPerSlide as number));
-          const totalGap = gap * Math.max(0, cols - 1);
-          cellSize = (cw - totalGap) / cols;
+          const fixedCellsPerSlide = Math.max(1, cellsPerSlide as number);
+          cols = Math.max(1, Math.min(originals, fixedCellsPerSlide));
+          cellSize =
+            resolveSliderFixedCellSize({
+              viewport: cw,
+              cellsPerSlide: fixedCellsPerSlide,
+              gap,
+            }) ?? undefined;
         }
 
         if (useCols && cellSize != null) {
-          el.style.setProperty("--rmg-slide-main-size", `${cellSize}px`);
+          setSlideMainSizeCssVar(cellSize);
         } else {
-          el.style.removeProperty("--rmg-slide-main-size");
+          setSlideMainSizeCssVar(null);
         }
 
         let sum = 0;
@@ -2626,7 +2698,11 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     if (containerSize <= 0) return;
 
     if (!wrap && sliderWidth.current <= containerSize) {
-      trackCenterOffsetRef.current = Math.round((containerSize - sliderWidth.current) / 2);
+      trackCenterOffsetRef.current = resolveSliderUnderflowOffset({
+        viewport: containerSize,
+        contentSpan: sliderWidth.current,
+        align: underflowAlign,
+      });
     } else {
       trackCenterOffsetRef.current = 0;
     }
@@ -2634,7 +2710,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
     updateControlsImperatively();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slidesState, wrap]);
+  }, [slidesState, wrap, underflowAlign]);
 
   useEffect(() => {
     const containerEl = slider.current
@@ -2892,7 +2968,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         for (const ent of entries) {
           const slideEl = ent.target as HTMLElement;
 
-          if (slideEl.getAttribute('data-rmg-lazyloaded') === 'true') {
+          if (isLazySlideLoaded(slideEl)) {
             io.unobserve(slideEl);
             continue;
           }
@@ -3659,6 +3735,8 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     }
 
     function onUp(evt: PointerEvent) {
+      fullscreenSettlePointerUpTimeRef.current = nowMs();
+      lastPointerUpTime.current = fullscreenSettlePointerUpTimeRef.current;
       isPointerDown.current = false
       preventScroll = false
       pointerDownRef.current = false
@@ -3671,7 +3749,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       lockWheelFor(300);
 
       if (isClick.current) {
-        scrollToIndex(selectedIndex.current)
+        scrollToIndexForFullscreenOpen(dragStartIndexRef.current)
         const clickedVideo = clickedVideoSurface(evt);
         if (clickedVideo != null && (clickedVideo.isClone || !isYouTubeVideoEvent(evt))) {
 
@@ -3680,8 +3758,8 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
           } else {
             snapToIndex(clickedVideo.canonicalIndex);
           }
-          return;
         }
+        return;
       }
 
       autoScrollPauseUntil.current = performance.now() + autoScrollPause;
@@ -4684,6 +4762,8 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
         cellsInView: () => cellsInViewInternal(),
 
+        _settleForFullscreenOpen: () => settleForFullscreenOpen(),
+
         getInternals,
       } as SliderCoreHandle;
     },
@@ -4760,8 +4840,11 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         // otherwise resizing from scrollable -> non-scrollable while on index != 0
         // can freeze after onUp (snap logic runs with stale multi-snap state).
         if (contentW <= cw) {
-          const center = Math.round((cw - contentW) / 2);
-          trackCenterOffsetRef.current = center;
+          trackCenterOffsetRef.current = resolveSliderUnderflowOffset({
+            viewport: cw,
+            contentSpan: contentW,
+            align: underflowAlign,
+          });
 
           // If engine isn't ready yet, just re-position (don't touch null refs).
           if (
@@ -4848,7 +4931,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     }
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wrap, layoutReady, isMeasured, isReady, shouldReanchorOnResize, autoHeight]);
+  }, [wrap, layoutReady, isMeasured, isReady, shouldReanchorOnResize, autoHeight, underflowAlign]);
 
   function onTouchStart(e: TouchEvent) {
     const t0 = e.touches[0]

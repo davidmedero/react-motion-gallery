@@ -1,7 +1,8 @@
-import { f as DataItemsPerPageOption, o as DataPaginationOptions, i as DataPaginationSessionStorageOptions, U as UseDataPaginationOptions, D as DataPaginationControlsProps, a as DataPageItemsOptions, b as DataPageControlItem, c as DataPageRangeOptions, d as DataPageRangeItem, e as DataPaginationController, g as DataPaginationRippleOptions, h as DataPaginationRippleProp, j as DataPaginationUrlSyncOptions } from './dataPlugins-C91mlyu6.mjs';
+import { f as DataItemsPerPageOption, o as DataPaginationOptions, i as DataPaginationSessionStorageOptions, U as UseDataPaginationOptions, D as DataPaginationControlsProps, a as DataPageItemsOptions, b as DataPageControlItem, c as DataPageRangeOptions, d as DataPageRangeItem, e as DataPaginationController, g as DataPaginationRippleOptions, h as DataPaginationRippleProp, j as DataPaginationUrlSyncOptions } from './dataPlugins-CsUwdsuu.mjs';
 import * as React from 'react';
 import { M as MasonryPlugin } from './types-Bg0qLhxl.mjs';
 import { M as MasonryPlugin$1 } from './types-qMg7LB37.mjs';
+import './infiniteScrollTrigger-BluBDW9o.mjs';
 
 type MasonryPaginationOptions = DataPaginationOptions;
 type UseMasonryPaginationOptions = UseDataPaginationOptions;

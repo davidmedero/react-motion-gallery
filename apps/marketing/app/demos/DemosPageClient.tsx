@@ -84,6 +84,8 @@ const DEMO_COMPONENT_IMPORTERS = {
     import("./slider/slider-thumbnails/Component").then((module) => module.SliderThumbnailsDemo),
   "slider-lazy-load": () =>
     import("./slider/slider-lazy-load/Component").then((module) => module.SliderLazyLoadDemo),
+  "slider-virtualization": () =>
+    import("./slider/slider-virtualization/Component").then((module) => module.SliderVirtualizationDemo),
   "slider-auto-scroll": () =>
     import("./slider/slider-auto-scroll/Component").then((module) => module.SliderAutoScrollDemo),
   "slider-auto-play": () =>
@@ -196,6 +198,8 @@ const DEMO_COMPONENT_IMPORTERS = {
     import("./fullscreen/fullscreen-thumbnails/Component").then((module) => module.FullscreenThumbnailsDemo),
   "fullscreen-caption-thumbnails": () =>
     import("./fullscreen/fullscreen-caption-thumbnails/Component").then((module) => module.FullscreenCaptionThumbnailsDemo),
+  "fullscreen-dialog": () =>
+    import("./fullscreen/fullscreen-dialog/Component").then((module) => module.FullscreenDialogDemo),
   "fullscreen-fade-effects": () =>
     import("./fullscreen/fullscreen-fade-effects/Component").then((module) => module.FullscreenFadeEffectsDemo),
   "fullscreen-viewport-overlay-caption": () =>
@@ -288,6 +292,9 @@ const SliderThumbnailsDemo = dynamic<DemoRuntimeProps>(() =>
 );
 const SliderLazyLoadDemo = dynamic<DemoRuntimeProps>(() =>
   import("./slider/slider-lazy-load/Component").then((module) => module.SliderLazyLoadDemo)
+);
+const SliderVirtualizationDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./slider/slider-virtualization/Component").then((module) => module.SliderVirtualizationDemo)
 );
 const SliderAutoScrollDemo = dynamic<DemoRuntimeProps>(() =>
   import("./slider/slider-auto-scroll/Component").then((module) => module.SliderAutoScrollDemo)
@@ -456,6 +463,9 @@ const FullscreenThumbnailsDemo = dynamic<DemoRuntimeProps>(() =>
 );
 const FullscreenCaptionThumbnailsDemo = dynamic<DemoRuntimeProps>(() =>
   import("./fullscreen/fullscreen-caption-thumbnails/Component").then((module) => module.FullscreenCaptionThumbnailsDemo)
+);
+const FullscreenDialogDemo = dynamic<DemoRuntimeProps>(() =>
+  import("./fullscreen/fullscreen-dialog/Component").then((module) => module.FullscreenDialogDemo)
 );
 const FullscreenFadeEffectsDemo = dynamic<DemoRuntimeProps>(() =>
   import("./fullscreen/fullscreen-fade-effects/Component").then((module) => module.FullscreenFadeEffectsDemo)
@@ -1348,6 +1358,21 @@ const DEMOS: DemoDefinition[] = [
     ),
   },
   {
+    id: "slider-virtualization",
+    title: "Virtualization",
+    eyebrow: "Slider",
+    tags: ["virtualization","lazy-load","loop","scrollbar","crossfade","fullscreen"],
+    categoryId: "slider",
+    Component: SliderVirtualizationDemo,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["slider-virtualization"],
+    loadCode: loadDemoCode(
+      () => import("./slider/slider-virtualization/source"),
+      () => import("./slider/slider-virtualization/css"),
+      "slider-virtualization"
+    ),
+    cssFilename: "slider-virtualization-demo.module.css",
+  },
+  {
     id: "slider-auto-scroll",
     title: "Auto Scroll",
     eyebrow: "Slider",
@@ -2206,6 +2231,22 @@ const DEMOS: DemoDefinition[] = [
     ),
     sourceFilename: "CaptionThumbnails.tsx",
     cssFilename: "caption-thumbnails-demo.module.css",
+  },
+  {
+    id: "fullscreen-dialog",
+    title: "Dialog",
+    eyebrow: "Fullscreen",
+    tags: ["dialog","captions","thumbnails","transition"],
+    categoryId: "fullscreen",
+    Component: FullscreenDialogDemo,
+    loadComponent: DEMO_COMPONENT_IMPORTERS["fullscreen-dialog"],
+    loadCode: loadDemoCode(
+      () => import("./fullscreen/fullscreen-dialog/source"),
+      () => import("./fullscreen/fullscreen-dialog/css"),
+      "fullscreen-dialog"
+    ),
+    sourceFilename: "Dialog.tsx",
+    cssFilename: "dialog-demo.module.css",
   },
   {
     id: "fullscreen-fade-effects",

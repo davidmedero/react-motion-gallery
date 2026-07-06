@@ -1,4 +1,4 @@
-import { w as SliderFade, p as SliderPlugin } from './types-D9WBOrx6.mjs';
+import { y as SliderFade, r as SliderPlugin } from './types-CGPPAn9i.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 import 'react';
 import './force-C5m1QpdF.mjs';

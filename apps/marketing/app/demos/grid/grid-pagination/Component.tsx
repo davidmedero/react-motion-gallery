@@ -169,12 +169,12 @@ const PRODUCT_PLACEHOLDER_SKELETON_GRID = {
 const revealOptions = {
   durationMs: 700,
   easing: "cubic-bezier(.2,.7,.2,1)",
-  staggerMs: 200,
+  staggerMs: 40,
   staggerLimit: 6,
 };
 const cachedRevealOptions = {
   ...revealOptions,
-  staggerMs: 80,
+  staggerMs: 10,
 };
 function getInitialProductSlotKey(index: number) {
   return INITIAL_PRODUCT_SLOT_PREFIX + "-" + String(index);

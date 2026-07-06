@@ -1,5 +1,10 @@
 import type React from "react";
-import { getCurrentTransform, baseFitSize, clampNum } from "../core/utils";
+import {
+  getCurrentTransform,
+  baseFitSize,
+  clampNum,
+  imageLayoutMetrics,
+} from "../core/utils";
 import {
   gapAllEdges,
   getFsMediaViewportEl,
@@ -24,6 +29,10 @@ const smoothTransformTimers = new WeakMap<
   HTMLImageElement,
   ReturnType<typeof window.setTimeout>
 >();
+
+type SmoothTransformOptions = {
+  cleanupDelayMs?: number;
+};
 
 function readRenderedTransform(imgEl: HTMLImageElement) {
   const computedTransform =
@@ -86,14 +95,19 @@ export function applySmoothTransform(
   x: number,
   y: number,
   scale: number,
-  durationMs = 300
+  durationMs = 300,
+  options: SmoothTransformOptions = {}
 ) {
   const container = ctx.currentImage.current;
-  if (!container) return;
+  if (!container) return Promise.resolve();
 
   const twinImages = getFullscreenTwinImages(container);
-  if (!twinImages.length) return;
+  if (!twinImages.length) return Promise.resolve();
 
+  const cleanupDelayMs =
+    Number.isFinite(options.cleanupDelayMs)
+      ? Math.max(0, options.cleanupDelayMs ?? 0)
+      : 30;
   const transition = `transform ${durationMs}ms cubic-bezier(.4,0,.22,1)`;
   const toTransform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
 
@@ -113,7 +127,7 @@ export function applySmoothTransform(
       if (smoothTransformTimers.get(imgEl) !== timer) return;
       imgEl.style.transition = "";
       smoothTransformTimers.delete(imgEl);
-    }, durationMs + 30);
+    }, durationMs + cleanupDelayMs);
 
     smoothTransformTimers.set(imgEl, timer);
   });
@@ -130,6 +144,9 @@ export function applySmoothTransform(
   ctx.scaleRef.current = scale;
   ctx.setScale(scale);
 
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, durationMs + cleanupDelayMs);
+  });
 }
 
 export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
@@ -203,15 +220,20 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
   const cy = centerPoint.y - rect.top;
 
   const { baseW, baseH } = baseFitSize(imgEl, containerW, containerH);
-  const offXc = (containerW - baseW) / 2;
-  const offYc = (containerH - baseH) / 2;
+  const { layoutOffsetX, layoutOffsetY } = imageLayoutMetrics(
+    imgEl,
+    containerW,
+    containerH,
+    baseW,
+    baseH
+  );
 
   const tx0 = ctx.offX.current!.get();
   const ty0 = ctx.offY.current!.get();
 
   const k = s1 / s0;
-  let tx1 = tx0 + (1 - k) * (cx - offXc - tx0);
-  let ty1 = ty0 + (1 - k) * (cy - offYc - ty0);
+  let tx1 = tx0 + (1 - k) * (cx - layoutOffsetX - tx0);
+  let ty1 = ty0 + (1 - k) * (cy - layoutOffsetY - ty0);
 
   const { x: limX, y: limY, povX, povY } = ctx.boundsForCurrent(
     s1,
@@ -219,7 +241,7 @@ export function zoomTo(ctx: ZoomCtx, args: ZoomToArgs) {
     baseH,
     containerW,
     containerH,
-    { ignoreReserved: true }
+    willBeZoomed ? undefined : { ignoreReserved: true }
   );
   tx1 = limX.constrain(tx1);
   ty1 = limY.constrain(ty1);

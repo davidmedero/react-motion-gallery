@@ -327,17 +327,12 @@ function waitForDocumentFontsReady() {
 }
 
 function waitForLazyHostReady(host: HTMLElement, timeoutMs: number) {
-  if (host.getAttribute("data-rmg-lazyloaded") === "true")
-    return Promise.resolve();
   if (!host.querySelector("[data-rmg-lazy-src]")) return Promise.resolve();
 
   return withTimeout(
     new Promise<void>((resolve) => {
       const observer = new MutationObserver(() => {
-        if (
-          host.getAttribute("data-rmg-lazyloaded") === "true" ||
-          !host.querySelector("[data-rmg-lazy-src]")
-        ) {
+        if (!host.querySelector("[data-rmg-lazy-src]")) {
           observer.disconnect();
           resolve();
         }

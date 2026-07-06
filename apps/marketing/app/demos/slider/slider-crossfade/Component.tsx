@@ -92,7 +92,9 @@ export function SliderCrossfadeDemo() {
           plugins={[
             sliderFullscreen(),
             sliderRipple(),
-            sliderArrows(),
+            sliderArrows({
+              crossfade: true,
+            }),
             sliderDots(),
             sliderCrossfade({
               controls: true,

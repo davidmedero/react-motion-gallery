@@ -15,6 +15,8 @@ import {
   FsIntroRequest,
   FullscreenOptions,
   FullscreenIntroPathTiming,
+  FullscreenLazyLoadConfig,
+  FullscreenLazyLoadOptions,
   FullscreenPlugin,
   FullscreenRuntimeFeatures,
 } from './types';
@@ -24,6 +26,7 @@ import {
   renderFullscreenBaseCrossfadeSlides,
   renderFullscreenBaseSlides,
 } from './renderFullscreenBaseSlides';
+import type { RenderFullscreenSlideWindowItem } from './renderFullscreenSlides';
 import { createSingleTransform, createWrappedTransform } from './transforms';
 import { useWrappedItemsAndRefs } from './hooks/useWrappedItemsAndRefs';
 import type { ScrollBoundsType } from '../shared/motion/scrollBounds';
@@ -40,8 +43,22 @@ import {
   waitForEntryOwnerReady,
 } from './entryOwnerReady';
 import {
+  resolveFullscreenIntroDurationMs,
+  resolveFullscreenIntroEasing,
+  type FullscreenIntroPath,
+} from './introTiming';
+import {
+  BREAKPOINT_MAP,
   ResponsiveCaptionPlacement,
+  type ResponsiveLength,
+  effectiveViewportWidth,
 } from '../shared/responsive';
+import { DefaultCloseIcon } from './controls/DefaultCloseIcon';
+import {
+  FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX,
+  FULLSCREEN_THUMBNAIL_SLOT_Z_INDEX,
+} from './layering';
+import type { FullscreenDialogSwitch } from './dialogSwitch';
 
 export type FullscreenRuntimeProps = {
   fsEnabled: boolean;
@@ -76,6 +93,7 @@ export type FullscreenRuntimeProps = {
     media: HTMLElement | null;
   };
   entryMapRef: React.RefObject<MediaEntryLink[] | null>;
+  entryRootRef?: React.RefObject<HTMLDivElement | null>;
   entryMediaLayout: any;
   introFade: boolean;
   introDuration?: FullscreenIntroPathTiming<number>;
@@ -148,10 +166,124 @@ export type FullscreenRuntimeProps = {
   syncFullscreenSourceFromIndex: (nextIndex: number) => void;
   setFullscreenOpen: (open: boolean) => void;
   runtimePlugins?: FullscreenPlugin[];
+  dialogHidden?: boolean;
+  dialogTransitionDurationMs?: number;
+  dialogTransitionEasing?: string;
+  dialogTransitionSwitch?: FullscreenDialogSwitch | null;
+  onDialogSwitchClaim?: (durationMs: number) => void;
 };
 
 const EMPTY_RUNTIME_PLUGINS: FullscreenPlugin[] = [];
 const EMPTY_PLAYER_STYLE: React.CSSProperties = {};
+type DialogPaneRadiusKey =
+  | 'borderTopLeftRadius'
+  | 'borderTopRightRadius'
+  | 'borderBottomRightRadius'
+  | 'borderBottomLeftRadius';
+
+function setDialogPaneRadiusCorner(
+  style: React.CSSProperties,
+  corner: DialogPaneRadiusKey
+) {
+  style[corner] = 'inherit';
+}
+
+function createFullscreenDialogPaneRadiusStyles(
+  placement: FsCaptionPlacement | null,
+  hasCaptionPane: boolean,
+  headerOwnsTopCorners: boolean,
+  mediaPaneHidden: boolean
+) {
+  const header: React.CSSProperties = {};
+  const media: React.CSSProperties = {};
+  const caption: React.CSSProperties = {};
+
+  if (headerOwnsTopCorners) {
+    setDialogPaneRadiusCorner(header, 'borderTopLeftRadius');
+    setDialogPaneRadiusCorner(header, 'borderTopRightRadius');
+    header.overflow = 'hidden';
+  }
+
+  if (mediaPaneHidden && hasCaptionPane) {
+    if (!headerOwnsTopCorners) {
+      setDialogPaneRadiusCorner(caption, 'borderTopLeftRadius');
+      setDialogPaneRadiusCorner(caption, 'borderTopRightRadius');
+    }
+
+    setDialogPaneRadiusCorner(caption, 'borderBottomRightRadius');
+    setDialogPaneRadiusCorner(caption, 'borderBottomLeftRadius');
+    return { header, media, caption };
+  }
+
+  if (!hasCaptionPane) {
+    if (!headerOwnsTopCorners) {
+      setDialogPaneRadiusCorner(media, 'borderTopLeftRadius');
+      setDialogPaneRadiusCorner(media, 'borderTopRightRadius');
+    }
+
+    setDialogPaneRadiusCorner(media, 'borderBottomRightRadius');
+    setDialogPaneRadiusCorner(media, 'borderBottomLeftRadius');
+    return { header, media, caption };
+  }
+
+  switch (placement ?? 'bottom') {
+    case 'left':
+      if (!headerOwnsTopCorners) {
+        setDialogPaneRadiusCorner(caption, 'borderTopLeftRadius');
+        setDialogPaneRadiusCorner(media, 'borderTopRightRadius');
+      }
+      setDialogPaneRadiusCorner(caption, 'borderBottomLeftRadius');
+      setDialogPaneRadiusCorner(media, 'borderBottomRightRadius');
+      break;
+    case 'right':
+      if (!headerOwnsTopCorners) {
+        setDialogPaneRadiusCorner(media, 'borderTopLeftRadius');
+        setDialogPaneRadiusCorner(caption, 'borderTopRightRadius');
+      }
+      setDialogPaneRadiusCorner(media, 'borderBottomLeftRadius');
+      setDialogPaneRadiusCorner(caption, 'borderBottomRightRadius');
+      break;
+    case 'top':
+      if (!headerOwnsTopCorners) {
+        setDialogPaneRadiusCorner(caption, 'borderTopLeftRadius');
+        setDialogPaneRadiusCorner(caption, 'borderTopRightRadius');
+      }
+      setDialogPaneRadiusCorner(media, 'borderBottomRightRadius');
+      setDialogPaneRadiusCorner(media, 'borderBottomLeftRadius');
+      break;
+    case 'bottom':
+    default:
+      if (!headerOwnsTopCorners) {
+        setDialogPaneRadiusCorner(media, 'borderTopLeftRadius');
+        setDialogPaneRadiusCorner(media, 'borderTopRightRadius');
+      }
+      setDialogPaneRadiusCorner(caption, 'borderBottomRightRadius');
+      setDialogPaneRadiusCorner(caption, 'borderBottomLeftRadius');
+      break;
+  }
+
+  return { header, media, caption };
+}
+
+function dialogPaneDisplayNone(style: React.CSSProperties | undefined) {
+  return (
+    typeof style?.display === 'string' &&
+    style.display.trim().toLowerCase() === 'none'
+  );
+}
+
+function dialogHeaderOwnsTopCorners(
+  node: React.ReactNode,
+  style: React.CSSProperties | undefined
+) {
+  if (!node) return false;
+  const position =
+    typeof style?.position === 'string'
+      ? style.position.trim().toLowerCase()
+      : '';
+
+  return position !== 'absolute' && position !== 'fixed';
+}
 
 function useEmptyPlyrProps(_args?: unknown) {
   return React.useMemo(() => [], []);
@@ -173,6 +305,7 @@ function useNoopZoomPanRuntime() {
       resetAllZoomDom: noop,
       resetForSlideNavigation: noop,
       forceResetZoom: noop,
+      prepareZoomOutForClose: noop,
       handleHoverPointerEnter: noop,
       handleHoverPointerMove: noop,
       handleHoverPointerLeave: noop,
@@ -199,6 +332,32 @@ function fullscreenMediaSignature(items: MediaItem[]) {
       return `${item.kind}|${any.src ?? ''}|${any.srcSet ?? ''}|${any.sizes ?? ''}|${any.poster ?? ''}`;
     })
     .join('||');
+}
+
+function suppressDefaultFullscreenLazySpinner(
+  config: FullscreenLazyLoadConfig | undefined
+) {
+  if (!config || config.spinner !== undefined) return config;
+  return { ...config, spinner: false };
+}
+
+function suppressOpenStrategyDefaultLazySpinners(
+  lazyLoad: FullscreenLazyLoadOptions | undefined
+) {
+  if (!lazyLoad) return lazyLoad;
+
+  const images = suppressDefaultFullscreenLazySpinner(lazyLoad.images);
+  const videos = suppressDefaultFullscreenLazySpinner(lazyLoad.videos);
+
+  if (images === lazyLoad.images && videos === lazyLoad.videos) {
+    return lazyLoad;
+  }
+
+  return {
+    ...lazyLoad,
+    images,
+    videos,
+  };
 }
 
 function isCrossOriginMediaUrl(src: string) {
@@ -250,18 +409,39 @@ export function getFullscreenVideoOpenRefIndex(args: {
 }
 
 export function shouldPlayFullscreenVideoOnOpen(args: {
-  enabled?: boolean;
+  playOnOpen?: boolean;
+  playOnTransition?: boolean;
+  openingFromDialogTransition?: boolean;
   showFullscreenModal: boolean;
   showFullscreenSlider: boolean;
   closingModal: boolean;
   item?: MediaItem | null;
 }) {
+  const enabled = args.openingFromDialogTransition
+    ? args.playOnTransition
+    : args.playOnOpen;
+
   return (
-    !!args.enabled &&
+    !!enabled &&
     args.showFullscreenModal &&
     args.showFullscreenSlider &&
     !args.closingModal &&
     args.item?.kind === 'video'
+  );
+}
+
+export function shouldDeferFullscreenLiveVideo(args: {
+  showFullscreenModal: boolean;
+  fsLazyVideosEnabled: boolean;
+  openingInProgress: boolean;
+  openingTargetKind?: MediaItem["kind"] | null;
+}) {
+  if (!args.showFullscreenModal) return true;
+
+  return (
+    args.fsLazyVideosEnabled &&
+    args.openingInProgress &&
+    args.openingTargetKind !== "video"
   );
 }
 
@@ -346,6 +526,91 @@ function fullscreenThumbnailSlotLayoutStyle(
   };
 }
 
+function fullscreenDialogFlexDirection(
+  placement: FsCaptionPlacement | null | undefined
+): React.CSSProperties['flexDirection'] {
+  if (placement === 'left') return 'row-reverse';
+  if (placement === 'right') return 'row';
+  if (placement === 'top') return 'column-reverse';
+  return 'column';
+}
+
+function isFullscreenDialogSidePlacement(
+  placement: FsCaptionPlacement | null | undefined
+) {
+  return placement === 'left' || placement === 'right';
+}
+
+const FULLSCREEN_DIALOG_MEDIA_MIN_INLINE_SIZE = '45%';
+const FULLSCREEN_DIALOG_CAPTION_MAX_INLINE_SIZE = '55%';
+
+function finiteCssPx(value: number): number | null {
+  return Number.isFinite(value) ? value : null;
+}
+
+function parseDialogPaneLength(
+  value: string,
+  fallback: string | number
+): string | number {
+  const raw = value.trim();
+  if (!raw) return fallback;
+
+  if (raw.includes('%')) return raw;
+
+  const pxMatch = raw.match(/^([+-]?(?:\d+\.?\d*|\.\d+))(px)?$/i);
+  if (pxMatch) {
+    return finiteCssPx(Number.parseFloat(pxMatch[1])) ?? fallback;
+  }
+
+  return raw;
+}
+
+function resolveDialogPaneLengthFromResponsive(
+  value: ResponsiveLength | undefined,
+  fallback: string | number,
+  viewportWidth: number
+): string | number {
+  const vw = effectiveViewportWidth(viewportWidth);
+
+  if (value == null) return fallback;
+  if (typeof value === 'number') return finiteCssPx(value) ?? fallback;
+  if (typeof value === 'string') return parseDialogPaneLength(value, fallback);
+
+  if (Array.isArray(value)) {
+    return resolveDialogPaneLengthFromResponsive(
+      value[0] as any,
+      fallback,
+      vw
+    );
+  }
+
+  if (typeof value !== 'object') return fallback;
+
+  const entries = Object.entries(value)
+    .map(([key, v]) => {
+      const minWidth =
+        BREAKPOINT_MAP[key] ??
+        (Number.isNaN(Number.parseFloat(key)) ? 0 : Number.parseFloat(key));
+      return { minWidth, value: v };
+    })
+    .filter((entry) => Number.isFinite(entry.minWidth) && entry.minWidth >= 0)
+    .sort((a, b) => a.minWidth - b.minWidth);
+
+  let result = fallback;
+
+  for (const entry of entries) {
+    if (vw >= entry.minWidth) {
+      result = resolveDialogPaneLengthFromResponsive(
+        entry.value as any,
+        result,
+        vw
+      );
+    }
+  }
+
+  return result;
+}
+
 export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const {
     fsEnabled,
@@ -371,6 +636,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     expandableImageRefs,
     resolveLayoutlessTarget,
     entryMapRef,
+    entryRootRef,
     entryMediaLayout,
     introFade,
     introDuration,
@@ -442,6 +708,11 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     syncFullscreenSourceFromIndex,
     setFullscreenOpen,
     runtimePlugins = EMPTY_RUNTIME_PLUGINS,
+    dialogHidden = false,
+    dialogTransitionDurationMs,
+    dialogTransitionEasing,
+    dialogTransitionSwitch,
+    onDialogSwitchClaim,
   } = props;
 
   const runtimeFeatures = React.useMemo(
@@ -459,9 +730,20 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const fullscreenDefaultPlayerStyle =
     runtimeFeatures.defaultPlayerStyle ?? EMPTY_PLAYER_STYLE;
   const hasVideoRuntime = !!runtimeFeatures.usePlyrProps;
+  const hasLazyLoadRuntime = !!runtimeFeatures.lazyLoad;
+  const activeFsLazy = React.useMemo(() => {
+    if (!hasLazyLoadRuntime) return undefined;
+    if ((fs.mountStrategy ?? "always") !== "open") return fs.lazyLoad;
+    return suppressOpenStrategyDefaultLazySpinners(fs.lazyLoad);
+  }, [fs.lazyLoad, fs.mountStrategy, hasLazyLoadRuntime]);
+  const shouldMountFullscreenView =
+    (fs.mountStrategy ?? "always") !== "open" ||
+    showFullscreenModal ||
+    closingModal ||
+    !!fsIntroReq;
 
-  const fsLazyImagesEnabled = !!fs.lazyLoad?.images?.enabled;
-  const fsLazyVideosEnabled = hasVideoRuntime && !!fs.lazyLoad?.videos?.enabled;
+  const fsLazyImagesEnabled = !!activeFsLazy?.images?.enabled;
+  const fsLazyVideosEnabled = hasVideoRuntime && !!activeFsLazy?.videos?.enabled;
   const fsAllowedImagesRef = React.useRef<Set<number>>(new Set());
   const fsAllowedVideosRef = React.useRef<Set<number>>(new Set());
   const fsLazyImageListenersRef = React.useRef(new Set<() => void>());
@@ -479,6 +761,8 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     React.useState<FullscreenOpenMethod | null>(null);
   const [latchedIntroIndex, setLatchedIntroIndex] =
     React.useState<number>(0);
+  const [closeDragLayerActive, setCloseDragLayerActive] =
+    React.useState(false);
   const canonicalLen = normalizedItems.length || 0;
   const entryPrimeSeqRef = React.useRef(0);
   const mediaSignature = React.useMemo(
@@ -624,6 +908,11 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     }
   }, [showFullscreenModal]);
 
+  React.useEffect(() => {
+    if (showFullscreenModal) return;
+    setCloseDragLayerActive(false);
+  }, [showFullscreenModal]);
+
   const wasFullscreenOpenRef = React.useRef(showFullscreenModal);
   React.useEffect(() => {
     const wasOpen = wasFullscreenOpenRef.current;
@@ -657,14 +946,177 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fullscreenVideoSnapshotStore,
   ]);
 
-  const hasEntriesViewportOverlay =
+  const fullscreenDialog = fs.dialog;
+  const fullscreenDialogEnabled =
+    !!fullscreenDialog && fullscreenDialog.enabled !== false;
+  const fullscreenDialogMediaPaneHidden =
+    fullscreenDialogEnabled && dialogPaneDisplayNone(fullscreenDialog?.media?.style);
+  const fullscreenCloseEnabled = fs?.controls?.close?.enabled !== false;
+  const [fullscreenDialogVisible, setFullscreenDialogVisible] =
+    React.useState(false);
+  const fullscreenDialogIntroPathRef =
+    React.useRef<FullscreenIntroPath>('transform');
+  const activeDialogIntroIndex = fsIntroReq?.index ?? latchedIntroIndex;
+  const activeDialogIntroItem =
+    canonicalLen > 0
+      ? normalizedItems[canonicalIndexOf(activeDialogIntroIndex, canonicalLen)]
+      : normalizedItems[activeDialogIntroIndex];
+  const activeDialogIntroItemKind = activeDialogIntroItem
+    ? ((activeDialogIntroItem as any).kind ??
+        (activeDialogIntroItem as any).type ??
+        null)
+    : null;
+  const requestedDialogIntroMethod = fsIntroReq?.method ?? latchedIntroMethod;
+  const resolvedFullscreenDialogIntroPath: FullscreenIntroPath =
+    introFade ||
+    fsIntroReq?.originalImage === null ||
+    requestedDialogIntroMethod === 'fade' ||
+    activeDialogIntroItemKind === 'video'
+      ? 'fade'
+      : 'transform';
+
+  if (showFullscreenModal && fsIntroReq) {
+    fullscreenDialogIntroPathRef.current = resolvedFullscreenDialogIntroPath;
+  } else if (!showFullscreenModal) {
+    fullscreenDialogIntroPathRef.current = 'transform';
+  }
+
+  const fullscreenDialogIntroPath = fsIntroReq
+    ? resolvedFullscreenDialogIntroPath
+    : fullscreenDialogIntroPathRef.current;
+  const fullscreenDialogOpenDurationMs = resolveFullscreenIntroDurationMs(
+    introDuration,
+    fullscreenDialogIntroPath
+  );
+  const fullscreenDialogOpenEasing = resolveFullscreenIntroEasing(
+    introEasing,
+    fullscreenDialogIntroPath
+  );
+  const fullscreenDialogCloseDurationMs = resolveFullscreenIntroDurationMs(
+    introDuration,
+    'fade'
+  );
+  const fullscreenDialogCloseEasing = resolveFullscreenIntroEasing(
+    introEasing,
+    'fade'
+  );
+  const fullscreenDialogTransitionDurationMs = closingModal
+    ? fullscreenDialogCloseDurationMs
+    : fullscreenDialogOpenDurationMs;
+  const fullscreenDialogTransitionEasing = closingModal
+    ? fullscreenDialogCloseEasing
+    : fullscreenDialogOpenEasing;
+  const fullscreenDialogOpacityDurationMs =
+    typeof fullscreenDialog?.opacityDuration === 'number' &&
+    Number.isFinite(fullscreenDialog.opacityDuration)
+      ? Math.max(0, fullscreenDialog.opacityDuration)
+      : fullscreenDialogTransitionDurationMs;
+  const fullscreenDialogOpacityEasing =
+    typeof fullscreenDialog?.opacityEasing === 'string' &&
+    fullscreenDialog.opacityEasing.trim()
+      ? fullscreenDialog.opacityEasing
+      : fullscreenDialogTransitionEasing;
+  const activeDialogOpacityDurationMs =
+    typeof dialogTransitionDurationMs === 'number' &&
+    Number.isFinite(dialogTransitionDurationMs)
+      ? Math.max(0, dialogTransitionDurationMs)
+      : fullscreenDialogOpacityDurationMs;
+  const activeDialogOpacityEasing =
+    typeof dialogTransitionEasing === 'string' &&
+    dialogTransitionEasing.trim()
+      ? dialogTransitionEasing
+      : fullscreenDialogOpacityEasing;
+  const fullscreenDialogIsVisible =
+    fullscreenDialogVisible && !closingModal && !dialogHidden;
+  const fullscreenDialogScaleMotion =
+    fullscreenDialogIntroPath === 'fade' && !closingModal && !dialogHidden;
+  const fullscreenCloseLayerActive = closeDragLayerActive || closingModal;
+  const fullscreenDialogCloseMediaLayerActive =
+    fullscreenDialogEnabled &&
+    !fullscreenDialogMediaPaneHidden &&
+    fs.overlaysAboveIntroMedia === false &&
+    fullscreenCloseLayerActive;
+  const fullscreenNonDialogCloseMediaLayerActive =
+    !fullscreenDialogEnabled && fullscreenCloseLayerActive;
+  const fullscreenCloseMediaLayerActive =
+    fullscreenDialogCloseMediaLayerActive ||
+    fullscreenNonDialogCloseMediaLayerActive;
+  const fullscreenCloseMediaLayerStyle: React.CSSProperties | undefined =
+    fullscreenCloseMediaLayerActive
+      ? {
+          overflow: 'visible',
+          zIndex: FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX,
+          contain: 'none',
+          isolation: 'auto',
+        }
+      : undefined;
+  const fullscreenDialogUserTransform =
+    typeof fullscreenDialog?.style?.transform === 'string'
+      ? fullscreenDialog.style.transform.trim()
+      : '';
+  const fullscreenDialogVisibleTransform =
+    fullscreenDialogUserTransform || 'scale(1)';
+  const fullscreenDialogHiddenTransform = fullscreenDialogUserTransform
+    ? `${fullscreenDialogUserTransform} scale(0.985)`
+    : 'scale(0.985)';
+  const fullscreenDialogMotionStyle: React.CSSProperties | undefined =
+    fullscreenDialogEnabled
+      ? {
+          opacity: fullscreenDialogIsVisible ? 1 : 0,
+          pointerEvents: fullscreenDialogIsVisible ? undefined : 'none',
+          ...(fullscreenDialogScaleMotion
+            ? {
+                transform: fullscreenDialogIsVisible
+                  ? fullscreenDialogVisibleTransform
+                  : fullscreenDialogHiddenTransform,
+                transformOrigin:
+                  fullscreenDialog?.style?.transformOrigin ?? 'center',
+                transition: `opacity ${activeDialogOpacityDurationMs}ms ${activeDialogOpacityEasing}, transform ${fullscreenDialogTransitionDurationMs}ms ${fullscreenDialogTransitionEasing}`,
+                willChange: 'opacity, transform',
+              }
+            : {
+                transition: `opacity ${activeDialogOpacityDurationMs}ms ${activeDialogOpacityEasing}`,
+                willChange: 'opacity',
+              }),
+          contain: fullscreenDialog?.style?.contain ?? 'layout paint style',
+          isolation: fullscreenDialog?.style?.isolation ?? 'isolate',
+        }
+      : undefined;
+  const hasEntriesOverlay =
     layout === 'entries' &&
     typeof entriesObject.render?.overlay === 'function';
+  const hasEntriesViewportOverlay =
+    hasEntriesOverlay && !fullscreenDialogEnabled;
+
+  React.useEffect(() => {
+    if (!showFullscreenModal || !fullscreenDialogEnabled || closingModal) {
+      setFullscreenDialogVisible(false);
+      return;
+    }
+
+    setFullscreenDialogVisible(false);
+
+    if (typeof window === 'undefined' || !window.requestAnimationFrame) {
+      setFullscreenDialogVisible(true);
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      setFullscreenDialogVisible(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [showFullscreenModal, fullscreenDialogEnabled, closingModal]);
 
   React.useEffect(() => {
     if (!fsIntroReq) return;
 
-    const { originalImage, index, closestSelector, method } = fsIntroReq;
+    const {
+      originalImage,
+      index,
+      closestSelector,
+      method,
+    } = fsIntroReq;
 
     setLatchedIntroMethod(method ?? null);
     setLatchedIntroIndex(index);
@@ -686,6 +1138,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       fullscreenThumbnailPosition,
       setShowFullscreenSlider,
       setFsFadeOpening,
+      onDialogSwitchClaim,
       addShield,
       resolveFsCaptionPlacement,
       viewportOverlay: hasEntriesViewportOverlay
@@ -702,7 +1155,13 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     });
 
     clearFsIntroReq();
-  }, [entriesObject.overlay, fsIntroReq, fullscreenThumbnailSlot, hasEntriesViewportOverlay]);
+  }, [
+    entriesObject.overlay,
+    fsIntroReq,
+    fullscreenThumbnailSlot,
+    hasEntriesViewportOverlay,
+    onDialogSwitchClaim,
+  ]);
 
   useWrappedItemsAndRefs({
     normalizedItems,
@@ -777,11 +1236,12 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       if (!link) return;
 
       const seq = ++entryPrimeSeqRef.current;
+      const entryRoot = entryRootRef?.current ?? null;
 
-      if (!isEntryOwnerReady(link.entryIndex)) {
-        await scrollEntrySectionIntoView(link.entryIndex);
+      if (!isEntryOwnerReady(link.entryIndex, entryRoot)) {
+        await scrollEntrySectionIntoView(link.entryIndex, entryRoot);
       }
-      await waitForEntryOwnerReady(link.entryIndex);
+      await waitForEntryOwnerReady(link.entryIndex, undefined, entryRoot);
 
       if (cancelled) return;
       if (seq !== entryPrimeSeqRef.current) return;
@@ -805,6 +1265,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     fsSub,
     canonicalLen,
     entryMapRef,
+    entryRootRef,
     syncFullscreenSourceFromIndex,
   ]);
 
@@ -853,6 +1314,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const resetZoomForSlideNavigation = zoomRuntime.resetForSlideNavigation;
   const resetZoomForSlideChange = zoomRuntime.resetAllZoomDom;
   const onForceResetZoom = zoomRuntime.forceResetZoom ?? zoomRuntime.resetAllZoomDom;
+  const prepareZoomOutForClose = zoomRuntime.prepareZoomOutForClose;
   const handleHoverPointerEnter = zoomRuntime.handleHoverPointerEnter ?? (() => {});
   const handleHoverPointerMove = zoomRuntime.handleHoverPointerMove ?? (() => {});
   const handleHoverPointerLeave = zoomRuntime.handleHoverPointerLeave ?? (() => {});
@@ -890,7 +1352,12 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       ? normalizedItems[openingCanonicalIndex]?.kind ?? null
       : null;
   const deferLiveVideoUntilVisible =
-    fsLazyVideosEnabled && !!openingInProgress && openingTargetKind !== "video";
+    shouldDeferFullscreenLiveVideo({
+      showFullscreenModal,
+      fsLazyVideosEnabled,
+      openingInProgress: !!openingInProgress,
+      openingTargetKind,
+    });
   const playOnOpenKeyRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
@@ -903,10 +1370,13 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
 
     const canonicalIndex = canonicalIndexOf(latchedIntroIndex, canonicalLen);
     const item = normalizedItems[canonicalIndex] ?? null;
+    const openingFromDialogTransition = !!dialogTransitionSwitch;
 
     if (
       !shouldPlayFullscreenVideoOnOpen({
-        enabled: fs.video?.playOnOpen,
+        playOnOpen: fs.video?.playOnOpen,
+        playOnTransition: fs.video?.playOnTransition,
+        openingFromDialogTransition,
         showFullscreenModal,
         showFullscreenSlider,
         closingModal,
@@ -924,13 +1394,16 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
 
     const playRefs =
       canonicalLen > 1 ? wrappedModePlyrRefs : singleModePlyrRefs;
-    const sessionKey = `${mediaSignature}|${canonicalIndex}|${latchedIntroIndex}`;
+    const sessionKey = `${mediaSignature}|${canonicalIndex}|${latchedIntroIndex}|${
+      dialogTransitionSwitch?.id ?? "open"
+    }`;
     if (playOnOpenKeyRef.current === sessionKey) return;
     playOnOpenKeyRef.current = sessionKey;
 
     let cancelled = false;
     let rafId: number | null = null;
-    const deadline = performance.now() + 1600;
+    let delayId: number | null = null;
+    let deadline = 0;
 
     const attempt = () => {
       if (cancelled) return;
@@ -943,16 +1416,32 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       rafId = window.requestAnimationFrame(attempt);
     };
 
-    rafId = window.requestAnimationFrame(attempt);
+    const startAttempts = () => {
+      deadline = performance.now() + 1600;
+      rafId = window.requestAnimationFrame(attempt);
+    };
+
+    const transitionDelayMs = openingFromDialogTransition
+      ? Math.max(0, dialogTransitionSwitch?.durationMs ?? 0)
+      : 0;
+
+    if (transitionDelayMs > 0) {
+      delayId = window.setTimeout(startAttempts, transitionDelayMs);
+    } else {
+      startAttempts();
+    }
 
     return () => {
       cancelled = true;
+      if (delayId != null) window.clearTimeout(delayId);
       if (rafId != null) window.cancelAnimationFrame(rafId);
     };
   }, [
     canonicalLen,
     closingModal,
     fs.video?.playOnOpen,
+    fs.video?.playOnTransition,
+    dialogTransitionSwitch,
     latchedIntroIndex,
     mediaSignature,
     normalizedItems,
@@ -962,250 +1451,208 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     wrappedModePlyrRefs,
   ]);
 
-  const oneFullscreenSlide = renderSlides({
-    items: normalizedItems,
-    plyrList: singlePlyrProps,
-    getTransform: singleTransform,
-    imageRefs,
-    playerRefs: singleModePlyrRefs,
-    cells,
-    isZoomed,
-    showFullscreenSlider,
-    defaultPlayerStyle: fullscreenDefaultPlayerStyle,
-    fsVideoStyle: fs.video?.style,
-    fsVideoClassName: fs.video?.className,
-    onPanPointerDown: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handlePanPointerStart(e, imageRef),
-    onHoverPointerEnter: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handleHoverPointerEnter(e, imageRef),
-    onHoverPointerMove: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handleHoverPointerMove(e, imageRef),
-    onHoverPointerLeave: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handleHoverPointerLeave(e, imageRef),
-    onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
-      if (suppressNextClickRef.current) {
-        suppressNextClickRef.current = false;
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    },
-    renderCaption: fs.caption?.render,
-    captionClassName: fs.caption?.className,
-    captionStyle: fs.caption?.style,
-    captionZoomMotion,
-    fsCaptionPlacement: fs.caption?.placement,
-    fsCaptionWidth: fs.caption?.width,
-    fsCaptionHeight: fs.caption?.height,
-    fsCaptionBreakpoint: fs.caption?.breakpoint,
-    fsCaptionLayout: fs.caption?.layout,
-    fsViewportOverlayPlacement: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.placement
-      : undefined,
-    fsViewportOverlayWidth: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.width
-      : undefined,
-    fsViewportOverlayHeight: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.height
-      : undefined,
-    fsViewportOverlayBreakpoint: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.breakpoint
-      : undefined,
-    viewportWidth: windowSize.width,
-    viewportHeight: windowSize.height,
-    resolveFsCaptionPlacement,
-    styles: {
-      imgMargin: styles.imgMargin,
-      fullscreenImages: styles.fullscreenImages,
-    },
-    renderImage: fs.renderImage as any,
-    fsLazy: fs.lazyLoad,
-    fsLazyAllowedImagesRef: fsAllowedImagesRef,
-    fsLazyListenersImagesRef: fsLazyImageListenersRef,
-    fsLazyAllowedVideosRef: fsAllowedVideosRef,
-    fsLazyListenersVideosRef: fsLazyVideoListenersRef,
-    fsDecodedImagesRef: fsDecodedImagesRef,
-    fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
-    fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
-    fsPreparedVideosRef: fsPreparedVideosRef,
-    videoSnapshotStore: fullscreenVideoSnapshotStore,
-    canonicalLength: canonicalLen,
-    activeCanonicalIndex,
-    openingCanonicalIndex,
-    openingInProgress,
-    deferLiveVideoUntilVisible,
-    getMediaKey: mediaKey,
-  });
+  const renderFullscreenTrackChildren = (
+    renderWindow: RenderFullscreenSlideWindowItem[] | null
+  ) => {
+    if (!shouldMountFullscreenView) return null;
 
-  const wrappedFullscreenSlides = renderSlides({
-    items: wrappedItems,
-    plyrList: wrappedPlyrProps,
-    getTransform: wrappedTransform,
-    imageRefs,
-    playerRefs: wrappedModePlyrRefs,
-    cells,
-    isZoomed,
-    showFullscreenSlider,
-    defaultPlayerStyle: fullscreenDefaultPlayerStyle,
-    fsVideoStyle: fs.video?.style,
-    fsVideoClassName: fs.video?.className,
-    onPanPointerDown: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handlePanPointerStart(e, imageRef),
-    onHoverPointerEnter: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handleHoverPointerEnter(e, imageRef),
-    onHoverPointerMove: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handleHoverPointerMove(e, imageRef),
-    onHoverPointerLeave: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handleHoverPointerLeave(e, imageRef),
-    onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
-      if (suppressNextClickRef.current) {
-        suppressNextClickRef.current = false;
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    },
-    renderCaption: fs.caption?.render,
-    captionClassName: fs.caption?.className,
-    captionStyle: fs.caption?.style,
-    captionZoomMotion,
-    fsCaptionPlacement: fs.caption?.placement,
-    fsCaptionWidth: fs.caption?.width,
-    fsCaptionHeight: fs.caption?.height,
-    fsCaptionBreakpoint: fs.caption?.breakpoint,
-    fsCaptionLayout: fs.caption?.layout,
-    fsViewportOverlayPlacement: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.placement
-      : undefined,
-    fsViewportOverlayWidth: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.width
-      : undefined,
-    fsViewportOverlayHeight: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.height
-      : undefined,
-    fsViewportOverlayBreakpoint: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.breakpoint
-      : undefined,
-    viewportWidth: windowSize.width,
-    viewportHeight: windowSize.height,
-    resolveFsCaptionPlacement,
-    styles: {
-      imgMargin: styles.imgMargin,
-      fullscreenImages: styles.fullscreenImages,
-    },
-    renderImage: fs.renderImage as any,
-    fsLazy: fs.lazyLoad,
-    fsLazyAllowedImagesRef: fsAllowedImagesRef,
-    fsLazyListenersImagesRef: fsLazyImageListenersRef,
-    fsLazyAllowedVideosRef: fsAllowedVideosRef,
-    fsLazyListenersVideosRef: fsLazyVideoListenersRef,
-    fsDecodedImagesRef: fsDecodedImagesRef,
-    fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
-    fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
-    fsPreparedVideosRef: fsPreparedVideosRef,
-    videoSnapshotStore: fullscreenVideoSnapshotStore,
-    canonicalLength: canonicalLen,
-    activeCanonicalIndex,
-    openingCanonicalIndex,
-    openingInProgress,
-    deferLiveVideoUntilVisible,
-    getMediaKey: mediaKey,
-  });
+    const useWrappedSlides = normalizedItems.length > 1;
 
-  const fullscreenCrossfadeSlides = renderCrossfadeSlides({
-    items: normalizedItems,
-    plyrList: singlePlyrProps,
-    getTransform: singleTransform,
-    imageRefs: { current: crossfadeImageRefs },
-    playerRefs: crossfadePlayerRefs,
-    cells: crossfadeCellsRef,
-    isZoomed,
-    showFullscreenSlider: true,
-    defaultPlayerStyle: fullscreenDefaultPlayerStyle,
-    fsVideoStyle: fs.video?.style,
-    fsVideoClassName: fs.video?.className,
-    onPanPointerDown: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handlePanPointerStart(e, imageRef),
-    onHoverPointerEnter: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handleHoverPointerEnter(e, imageRef),
-    onHoverPointerMove: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handleHoverPointerMove(e, imageRef),
-    onHoverPointerLeave: (
-      e: React.PointerEvent<HTMLDivElement>,
-      imageRef: React.RefObject<HTMLDivElement | null>
-    ) => handleHoverPointerLeave(e, imageRef),
-    onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
-      if (suppressNextClickRef.current) {
-        suppressNextClickRef.current = false;
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    },
-    renderCaption: fs.caption?.render,
-    captionClassName: fs.caption?.className,
-    captionStyle: fs.caption?.style,
-    captionZoomMotion,
-    fsCaptionPlacement: fs.caption?.placement,
-    fsCaptionWidth: fs.caption?.width,
-    fsCaptionHeight: fs.caption?.height,
-    fsCaptionBreakpoint: fs.caption?.breakpoint,
-    fsCaptionLayout: fs.caption?.layout,
-    fsViewportOverlayPlacement: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.placement
-      : undefined,
-    fsViewportOverlayWidth: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.width
-      : undefined,
-    fsViewportOverlayHeight: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.height
-      : undefined,
-    fsViewportOverlayBreakpoint: hasEntriesViewportOverlay
-      ? entriesObject.overlay?.breakpoint
-      : undefined,
-    viewportWidth: windowSize.width,
-    viewportHeight: windowSize.height,
-    resolveFsCaptionPlacement,
-    styles: {
-      imgMargin: styles.imgMargin,
-      fullscreenImages: styles.fullscreenImages,
-    },
-    renderImage: fs.renderImage as any,
-    fsLazy: fs.lazyLoad,
-    fsLazyAllowedImagesRef: fsAllowedImagesRef,
-    fsLazyListenersImagesRef: fsLazyImageListenersRef,
-    fsLazyAllowedVideosRef: fsAllowedVideosRef,
-    fsLazyListenersVideosRef: fsLazyVideoListenersRef,
-    fsDecodedImagesRef: fsDecodedImagesRef,
-    fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
-    fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
-    fsPreparedVideosRef: fsPreparedVideosRef,
-    videoSnapshotStore: fullscreenVideoSnapshotStore,
-    canonicalLength: normalizedItems.length,
-    openingCanonicalIndex: null,
-    openingInProgress: false,
-    deferLiveVideoUntilVisible: false,
-    getMediaKey: mediaKey,
-  });
+    return renderSlides({
+      items: useWrappedSlides ? wrappedItems : normalizedItems,
+      plyrList: useWrappedSlides ? wrappedPlyrProps : singlePlyrProps,
+      getTransform: useWrappedSlides ? wrappedTransform : singleTransform,
+      renderWindow,
+      imageRefs,
+      playerRefs: useWrappedSlides ? wrappedModePlyrRefs : singleModePlyrRefs,
+      cells,
+      isZoomed,
+      showFullscreenSlider,
+      defaultPlayerStyle: fullscreenDefaultPlayerStyle,
+      fsVideoStyle: fs.video?.style,
+      fsVideoClassName: fs.video?.className,
+      onPanPointerDown: (
+        e: React.PointerEvent<HTMLDivElement>,
+        imageRef: React.RefObject<HTMLDivElement | null>
+      ) => handlePanPointerStart(e, imageRef),
+      onHoverPointerEnter: (
+        e: React.PointerEvent<HTMLDivElement>,
+        imageRef: React.RefObject<HTMLDivElement | null>
+      ) => handleHoverPointerEnter(e, imageRef),
+      onHoverPointerMove: (
+        e: React.PointerEvent<HTMLDivElement>,
+        imageRef: React.RefObject<HTMLDivElement | null>
+      ) => handleHoverPointerMove(e, imageRef),
+      onHoverPointerLeave: (
+        e: React.PointerEvent<HTMLDivElement>,
+        imageRef: React.RefObject<HTMLDivElement | null>
+      ) => handleHoverPointerLeave(e, imageRef),
+      onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
+        if (suppressNextClickRef.current) {
+          suppressNextClickRef.current = false;
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      },
+      renderCaption: fs.caption?.render,
+      captionClassName: fs.caption?.className,
+      captionStyle: fs.caption?.style,
+      captionZoomMotion,
+      fsCaptionPlacement: fs.caption?.placement,
+      fsCaptionWidth: fs.caption?.width,
+      fsCaptionHeight: fs.caption?.height,
+      fsCaptionBreakpoint: fs.caption?.breakpoint,
+      fsCaptionLayout: fs.caption?.layout,
+      fsViewportOverlayPlacement: hasEntriesViewportOverlay
+        ? entriesObject.overlay?.placement
+        : undefined,
+      fsViewportOverlayWidth: hasEntriesViewportOverlay
+        ? entriesObject.overlay?.width
+        : undefined,
+      fsViewportOverlayHeight: hasEntriesViewportOverlay
+        ? entriesObject.overlay?.height
+        : undefined,
+      fsViewportOverlayBreakpoint: hasEntriesViewportOverlay
+        ? entriesObject.overlay?.breakpoint
+        : undefined,
+      viewportWidth: windowSize.width,
+      viewportHeight: windowSize.height,
+      resolveFsCaptionPlacement,
+      styles: {
+        imgMargin: styles.imgMargin,
+        fullscreenImages: styles.fullscreenImages,
+      },
+      renderImage: fs.renderImage as any,
+      fsLazy: activeFsLazy,
+      fsLazyAllowedImagesRef: fsAllowedImagesRef,
+      fsLazyListenersImagesRef: fsLazyImageListenersRef,
+      fsLazyAllowedVideosRef: fsAllowedVideosRef,
+      fsLazyListenersVideosRef: fsLazyVideoListenersRef,
+      fsDecodedImagesRef: fsDecodedImagesRef,
+      fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
+      fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
+      fsPreparedVideosRef: fsPreparedVideosRef,
+      videoSnapshotStore: fullscreenVideoSnapshotStore,
+      canonicalLength: canonicalLen,
+      activeCanonicalIndex,
+      openingCanonicalIndex,
+      openingInProgress,
+      deferLiveVideoUntilVisible,
+      getMediaKey: mediaKey,
+    });
+  };
+
+  const renderFullscreenCrossfadeWindow = (indexes: number[]) => {
+    if (!shouldMountFullscreenView || !indexes.length) return [];
+
+    const seenIndexes = new Set<number>();
+    const renderWindow = indexes.reduce<RenderFullscreenSlideWindowItem[]>(
+      (items, index) => {
+        if (!Number.isFinite(index) || seenIndexes.has(index)) return items;
+        seenIndexes.add(index);
+        const canonicalIndex = canonicalIndexOf(index, canonicalLen || 1);
+        items.push({
+          renderedIndex: canonicalIndex,
+          canonicalIndex,
+          virtualIndex: index,
+          isClone: false,
+          key: `crossfade-${index}-${canonicalIndex}`,
+        });
+        return items;
+      },
+      []
+    );
+
+    const renderedNodes = renderCrossfadeSlides({
+      items: normalizedItems,
+      plyrList: singlePlyrProps,
+      getTransform: singleTransform,
+      renderWindow,
+      imageRefs: { current: crossfadeImageRefs },
+      playerRefs: crossfadePlayerRefs,
+      cells: crossfadeCellsRef,
+      isZoomed,
+      showFullscreenSlider: true,
+      defaultPlayerStyle: fullscreenDefaultPlayerStyle,
+      fsVideoStyle: fs.video?.style,
+      fsVideoClassName: fs.video?.className,
+      onPanPointerDown: (
+        e: React.PointerEvent<HTMLDivElement>,
+        imageRef: React.RefObject<HTMLDivElement | null>
+      ) => handlePanPointerStart(e, imageRef),
+      onHoverPointerEnter: (
+        e: React.PointerEvent<HTMLDivElement>,
+        imageRef: React.RefObject<HTMLDivElement | null>
+      ) => handleHoverPointerEnter(e, imageRef),
+      onHoverPointerMove: (
+        e: React.PointerEvent<HTMLDivElement>,
+        imageRef: React.RefObject<HTMLDivElement | null>
+      ) => handleHoverPointerMove(e, imageRef),
+      onHoverPointerLeave: (
+        e: React.PointerEvent<HTMLDivElement>,
+        imageRef: React.RefObject<HTMLDivElement | null>
+      ) => handleHoverPointerLeave(e, imageRef),
+      onSuppressNextClickCapture: (e: React.SyntheticEvent) => {
+        if (suppressNextClickRef.current) {
+          suppressNextClickRef.current = false;
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      },
+      renderCaption: fs.caption?.render,
+      captionClassName: fs.caption?.className,
+      captionStyle: fs.caption?.style,
+      captionZoomMotion,
+      fsCaptionPlacement: fs.caption?.placement,
+      fsCaptionWidth: fs.caption?.width,
+      fsCaptionHeight: fs.caption?.height,
+      fsCaptionBreakpoint: fs.caption?.breakpoint,
+      fsCaptionLayout: fs.caption?.layout,
+      fsViewportOverlayPlacement: hasEntriesViewportOverlay
+        ? entriesObject.overlay?.placement
+        : undefined,
+      fsViewportOverlayWidth: hasEntriesViewportOverlay
+        ? entriesObject.overlay?.width
+        : undefined,
+      fsViewportOverlayHeight: hasEntriesViewportOverlay
+        ? entriesObject.overlay?.height
+        : undefined,
+      fsViewportOverlayBreakpoint: hasEntriesViewportOverlay
+        ? entriesObject.overlay?.breakpoint
+        : undefined,
+      viewportWidth: windowSize.width,
+      viewportHeight: windowSize.height,
+      resolveFsCaptionPlacement,
+      styles: {
+        imgMargin: styles.imgMargin,
+        fullscreenImages: styles.fullscreenImages,
+      },
+      renderImage: fs.renderImage as any,
+      fsLazy: activeFsLazy,
+      fsLazyAllowedImagesRef: fsAllowedImagesRef,
+      fsLazyListenersImagesRef: fsLazyImageListenersRef,
+      fsLazyAllowedVideosRef: fsAllowedVideosRef,
+      fsLazyListenersVideosRef: fsLazyVideoListenersRef,
+      fsDecodedImagesRef: fsDecodedImagesRef,
+      fsCustomDecodedImagesRef: fsCustomDecodedImagesRef,
+      fsCustomResolvedSrcByKeyRef: fsCustomResolvedSrcByKeyRef,
+      fsPreparedVideosRef: fsPreparedVideosRef,
+      videoSnapshotStore: fullscreenVideoSnapshotStore,
+      canonicalLength: normalizedItems.length,
+      openingCanonicalIndex: null,
+      openingInProgress: false,
+      deferLiveVideoUntilVisible: false,
+      getMediaKey: mediaKey,
+    });
+
+    const byIndex: React.ReactNode[] = [];
+    renderWindow.forEach((item, offset) => {
+      byIndex[item.virtualIndex ?? item.renderedIndex] =
+        renderedNodes[offset] ?? null;
+    });
+
+    return byIndex;
+  };
 
   const pauseAllFullscreenPlayers = React.useCallback(() => {
     const seenApis = new Set<APITypes>();
@@ -1222,9 +1669,10 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
       pausePlyrApi(api);
     }
 
-    if (typeof document === 'undefined') return;
+    const fullscreenRoot = fullscreenRootRef.current;
+    if (!fullscreenRoot) return;
 
-    const medias = document.querySelectorAll<HTMLMediaElement>(
+    const medias = fullscreenRoot.querySelectorAll<HTMLMediaElement>(
       '[data-rmg-fs-slide="true"] video, [data-rmg-fs-slide="true"] audio'
     );
 
@@ -1421,6 +1869,31 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   );
 
   React.useEffect(() => {
+    if (!showFullscreenModal) return;
+    if (!canonicalLen) return;
+    if (!fsLazyImagesEnabled && !fsLazyVideosEnabled) return;
+
+    const current = fsSub.get?.();
+    const active =
+      typeof current === "number" && Number.isFinite(current)
+        ? current
+        : latchedIntroIndex;
+    const canonicalIndex = canonicalIndexOf(active, canonicalLen);
+
+    if (fsLazyImagesEnabled) void preloadFsImageAtIndex(canonicalIndex);
+    if (fsLazyVideosEnabled) void preloadFsVideoAtIndex(canonicalIndex);
+  }, [
+    canonicalLen,
+    fsLazyImagesEnabled,
+    fsLazyVideosEnabled,
+    fsSub,
+    latchedIntroIndex,
+    preloadFsImageAtIndex,
+    preloadFsVideoAtIndex,
+    showFullscreenModal,
+  ]);
+
+  React.useEffect(() => {
     if (!core) return;
 
     const shouldListen = fsLazyImagesEnabled || fsLazyVideosEnabled;
@@ -1458,10 +1931,315 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
   const fullscreenThumbnailSlotBaseStyle =
     fullscreenThumbnailSlotLayoutStyle(fullscreenThumbnailSlot?.style);
   const cellCount = normalizedItems.length;
+  const dialogHasCaptionPane =
+    fullscreenDialogEnabled &&
+    (showFsEntryOverlayMount || showFsCaptionOverlayMount);
+  const dialogCaptionPlacement = showFsEntryOverlayMount
+    ? resolveFsCaptionPlacement(
+        entriesObject.overlay?.placement,
+        entriesObject.overlay?.breakpoint,
+        windowSize.width
+      )
+    : showFsCaptionOverlayMount
+    ? resolveFsCaptionPlacement(
+        fs.caption?.placement,
+        fs.caption?.breakpoint,
+        windowSize.width
+      )
+    : null;
+  const dialogCaptionIsSidePlacement =
+    isFullscreenDialogSidePlacement(dialogCaptionPlacement);
+  const dialogCaptionWidth = resolveDialogPaneLengthFromResponsive(
+    showFsEntryOverlayMount ? entriesObject.overlay?.width : fs.caption?.width,
+    380,
+    windowSize.width
+  );
+  const dialogCaptionHeight = resolveDialogPaneLengthFromResponsive(
+    showFsEntryOverlayMount ? entriesObject.overlay?.height : fs.caption?.height,
+    240,
+    windowSize.width
+  );
+  const dialogCaptionPaneSizeStyle: React.CSSProperties =
+    dialogCaptionIsSidePlacement
+      ? {
+          width: dialogCaptionWidth,
+          flexBasis: dialogCaptionWidth,
+          maxWidth: FULLSCREEN_DIALOG_CAPTION_MAX_INLINE_SIZE,
+        }
+      : {
+          height: dialogCaptionHeight,
+          flexBasis: dialogCaptionHeight,
+        };
+  const fullscreenDialogOverlayWrapperStyle:
+    | React.CSSProperties
+    | undefined = fullscreenDialogEnabled
+    ? {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: 1,
+        pointerEvents: 'auto',
+      }
+    : undefined;
+  const requestFullscreenDialogClose = React.useCallback(() => {
+    if (!fullscreenCloseEnabled) return;
+
+    const requestClose = requestFsCloseRef.current;
+	    if (requestClose) {
+	      requestClose();
+	      return;
+	    }
+
+    setShowFullscreenModal(false);
+  }, [fullscreenCloseEnabled, requestFsCloseRef, setShowFullscreenModal]);
+  const backdropPointerDownRef = React.useRef(false);
+  const backdropPointerUpRef = React.useRef(false);
+  const isFullscreenDialogBackdropTarget = React.useCallback(
+    (target: EventTarget | null) =>
+      target instanceof HTMLElement &&
+      target.getAttribute("data-rmg-fs-dialog-backdrop") === "true",
+    []
+  );
+  const resetFullscreenDialogBackdropPress = React.useCallback(() => {
+    backdropPointerDownRef.current = false;
+    backdropPointerUpRef.current = false;
+  }, []);
+  const handleFullscreenDialogBackdropPointerDown = React.useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!fullscreenDialogEnabled || !fullscreenCloseEnabled || closingModal) {
+        resetFullscreenDialogBackdropPress();
+        return;
+      }
+
+      if (event.target === event.currentTarget) {
+        backdropPointerDownRef.current = true;
+        backdropPointerUpRef.current = false;
+        return;
+      }
+
+      if (isFullscreenDialogBackdropTarget(event.target)) return;
+      resetFullscreenDialogBackdropPress();
+    },
+    [
+      closingModal,
+      fullscreenCloseEnabled,
+      fullscreenDialogEnabled,
+      isFullscreenDialogBackdropTarget,
+      resetFullscreenDialogBackdropPress,
+    ]
+  );
+  const handleFullscreenDialogBackdropPointerUp = React.useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!backdropPointerDownRef.current) {
+        backdropPointerUpRef.current = false;
+        return;
+      }
+
+      if (event.target === event.currentTarget) {
+        backdropPointerUpRef.current = true;
+        return;
+      }
+
+      if (isFullscreenDialogBackdropTarget(event.target)) return;
+      resetFullscreenDialogBackdropPress();
+    },
+    [isFullscreenDialogBackdropTarget, resetFullscreenDialogBackdropPress]
+  );
+  const handleFullscreenDialogBackdropClick = React.useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!fullscreenDialogEnabled || !fullscreenCloseEnabled || closingModal) return;
+      if (event.target !== event.currentTarget) return;
+      if (!backdropPointerDownRef.current || !backdropPointerUpRef.current) {
+        resetFullscreenDialogBackdropPress();
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      resetFullscreenDialogBackdropPress();
+      requestFullscreenDialogClose();
+    },
+    [
+      closingModal,
+      fullscreenCloseEnabled,
+      fullscreenDialogEnabled,
+      requestFullscreenDialogClose,
+      resetFullscreenDialogBackdropPress,
+    ]
+  );
+  const fullscreenDialogCloseNode = fullscreenCloseEnabled ? (
+    <button
+      ref={closeButtonRef as any}
+      type="button"
+      aria-label="Close"
+      data-rmg-fs-dialog-close="true"
+      onClick={(event) => {
+        event.stopPropagation();
+        requestFullscreenDialogClose();
+      }}
+      className={[
+        fs?.controls?.close?.className ?? "",
+        fullscreenDialogVisible && !closingModal ? styles.open : "",
+      ].filter(Boolean).join(" ")}
+      style={{
+        appearance: 'none',
+        border: 0,
+        margin: 0,
+        padding: 0,
+        width: 36,
+        height: 36,
+        display: 'grid',
+        placeItems: 'center',
+        borderRadius: 999,
+        background: 'transparent',
+        color: 'inherit',
+        cursor: 'pointer',
+        transition: `opacity ${activeDialogOpacityDurationMs}ms ${activeDialogOpacityEasing}`,
+        ...(fs?.controls?.close?.style ?? {}),
+        position: 'static',
+        flex: '0 0 auto',
+        opacity: fullscreenDialogIsVisible ? 1 : 0,
+        pointerEvents:
+          fullscreenDialogIsVisible ? 'auto' : 'none',
+      }}
+    >
+      {typeof fs?.controls?.close?.render === 'function'
+        ? fs.controls.close.render()
+        : <DefaultCloseIcon />}
+    </button>
+  ) : null;
+  const fullscreenDialogPaneRadiusStyles =
+    createFullscreenDialogPaneRadiusStyles(
+      dialogCaptionPlacement,
+      dialogHasCaptionPane,
+      dialogHeaderOwnsTopCorners(
+        fullscreenDialogCloseNode,
+        fullscreenDialog?.header?.style
+      ),
+      fullscreenDialogMediaPaneHidden
+    );
+  const fullscreenSliderNode = shouldMountFullscreenView ? (
+    <FullscreenSlider
+      sub={fsSub}
+      ref={fullscreenSliderApi}
+      cellCount={cellCount}
+      slideIndex={slideIndex}
+      isClick={isZoomClick}
+      isZoomed={isZoomed}
+      windowSize={windowSize}
+      show={showFullscreenModal}
+      handleZoomToggle={handleZoomToggle}
+      imageRefs={imageRefs.current}
+      cells={cells}
+      isPinching={isPinching}
+      scale={scale}
+      isTouchPinching={isTouchPinching}
+      showFullscreenSlider={showFullscreenSlider}
+      isZooming={isZooming}
+      plyrRefs={
+        normalizedItems.length > 1 ? wrappedModePlyrRefs : singleModePlyrRefs
+      }
+      plyrRef={
+        normalizedItems.length > 1 ? wrappedModePlyrRefs : singleModePlyrRefs
+      }
+      closingModal={closingModal}
+      counterRef={counterRef}
+      leftChevronRef={leftChevronRef}
+      rightChevronRef={rightChevronRef}
+      overlayDivRef={overlayDivRef}
+      direction={direction}
+      isWrapping={isWrappingForFullscreen}
+      sliderGap={fullscreenSliderGap}
+      sliderDuration={sliderDuration}
+      sliderFriction={sliderFriction}
+      skipSnaps={sliderSkipSnaps}
+      strictSnaps={sliderStrictSnaps}
+      virtualization={fs.slider?.virtualization}
+      suppressLoopRef={suppressLoopRef}
+      fadeOpening={fsFadeOpening}
+      introFade={introFade}
+      controlsFade={!!fs.effects?.crossfade?.controls}
+      dragFade={!!fs.effects?.crossfade?.drag}
+      wheelFade={fs.effects?.crossfade?.wheel}
+      slideFadeDuration={fs.effects?.crossfade?.durationMs}
+      slideFadeEasing={fs.effects?.crossfade?.easing}
+      normalizedItems={normalizedItems}
+      renderChildren={renderFullscreenTrackChildren}
+      renderCrossfadeSlides={renderFullscreenCrossfadeWindow}
+      introDuration={introDuration}
+      introEasing={introEasing}
+      resetAllZoomDom={() => resetZoomForSlideNavigation()}
+      requestFsCloseRef={requestFsCloseRef}
+      onCloseDragLayerChange={setCloseDragLayerActive}
+      introMethod={latchedIntroMethod}
+      chromeHidden={dialogHidden}
+      fs={fs}
+      chromeStyles={styles}
+    />
+  ) : null;
+  const fullscreenThumbnailSlotNode = shouldMountFullscreenView && fullscreenThumbnailSlot ? (
+    <div
+      ref={setFullscreenThumbnailMountEl}
+	      style={{
+	        flex: '0 0 auto',
+	        position: 'relative',
+	        zIndex: fullscreenCloseMediaLayerActive
+	          ? FULLSCREEN_THUMBNAIL_SLOT_Z_INDEX - 1
+	          : FULLSCREEN_THUMBNAIL_SLOT_Z_INDEX,
+	        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'visible',
+        backgroundColor: 'transparent',
+        ...(fullscreenThumbnailSlotBaseStyle || {}),
+      }}
+    />
+  ) : null;
+  const fsCaptionOverlayNode = shouldMountFullscreenView && showFsCaptionOverlayMount ? (
+    <FsCaptionOverlay
+      enabled={showFsCaptionOverlayMount}
+      fsSub={fsSub}
+      items={normalizedItems}
+      caption={fs.caption}
+      isZoomed={isZoomed}
+      captionZoomMotion={captionZoomMotion}
+      viewportWidth={windowSize.width}
+      viewportHeight={windowSize.height}
+      wrapperBaseStyle={fullscreenDialogOverlayWrapperStyle}
+      interactive={!!showFullscreenSlider}
+      closing={!!closingModal}
+      resolveFsCaptionPlacement={resolveFsCaptionPlacement}
+    />
+  ) : null;
+  const showFsEntryOverlaySurface =
+    showFsEntryOverlayMount && typeof entriesObject.render?.overlay === 'function';
+  const fsEntryOverlayNode = shouldMountFullscreenView && showFsEntryOverlaySurface ? (
+    <FsEntryOverlay
+      enabled={showFsEntryOverlaySurface}
+      fsSub={fsSub}
+      entriesObject={entriesObject}
+      entryMapRef={entryMapRef}
+      syncFullscreenSourceFromIndex={syncFullscreenSourceFromIndex}
+      resetAllZoomDom={resetZoomForSlideChange}
+      wrapperBaseStyle={fullscreenDialogOverlayWrapperStyle}
+      closing={!!closingModal}
+      overlayZoomMotion={entryOverlayZoomMotion}
+      viewportWidth={windowSize.width}
+      viewportHeight={windowSize.height}
+      resolveFsCaptionPlacement={resolveFsCaptionPlacement}
+    />
+  ) : null;
+  const promoteRootAboveIntroMedia =
+    fs.overlaysAboveIntroMedia !== false &&
+    (showFsCaptionOverlayMount || showFsEntryOverlaySurface);
 
   return (
     <>
-      {fsEnabled && (
+      {fsEnabled && shouldMountFullscreenView && (
         <FullscreenModal
           fsSub={fsSub}
           open={showFullscreenModal}
@@ -1483,10 +2261,13 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           centerSlider={centerSliderForFullscreen}
           setSliderIndex={setSliderIndexForFullscreen}
           onForceResetZoom={() => onForceResetZoom()}
+          prepareZoomOutForClose={prepareZoomOutForClose}
+          isZoomed={isZoomed}
           layout={layout}
           expandableImageRefs={expandableImageRefs}
           resolveLayoutlessTarget={resolveLayoutlessTarget}
           entryMapRef={entryMapRef}
+          entryRootRef={entryRootRef}
           entryMediaLayout={entryMediaLayout}
           introFade={introFade}
           introDuration={introDuration}
@@ -1498,136 +2279,181 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
           syncFullscreenSourceFromIndex={syncFullscreenSourceFromIndex}
           baseZ={fsZRef.current}
           rootRef={fullscreenRootRef}
+          promoteRootAboveIntroMedia={promoteRootAboveIntroMedia}
           introMethod={latchedIntroMethod}
           setLatchedIntroMethod={setLatchedIntroMethod}
           latchedIntroIndex={latchedIntroIndex}
+          renderCloseButton={!fullscreenDialogEnabled}
         >
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              flexDirection: fullscreenLayoutDirection,
-            }}
-          >
-            <div
-              style={{
-                flex: '1 1 auto',
-                position: 'relative',
-                minHeight: 0,
-              }}
-            >
-              <FullscreenSlider
-                sub={fsSub}
-                ref={fullscreenSliderApi}
-                cellCount={cellCount}
-                slideIndex={slideIndex}
-                isClick={isZoomClick}
-                isZoomed={isZoomed}
-                windowSize={windowSize}
-                show={showFullscreenModal}
-                handleZoomToggle={handleZoomToggle}
-                imageRefs={imageRefs.current}
-                cells={cells}
-                isPinching={isPinching}
-                scale={scale}
-                isTouchPinching={isTouchPinching}
-                showFullscreenSlider={showFullscreenSlider}
-                isZooming={isZooming}
-                plyrRefs={
-                  normalizedItems.length > 1
-                    ? wrappedModePlyrRefs
-                    : singleModePlyrRefs
-                }
-                plyrRef={
-                  normalizedItems.length > 1
-                    ? wrappedModePlyrRefs
-                    : singleModePlyrRefs
-                }
-                closingModal={closingModal}
-                counterRef={counterRef}
-                leftChevronRef={leftChevronRef}
-                rightChevronRef={rightChevronRef}
-                overlayDivRef={overlayDivRef}
-                direction={direction}
-                isWrapping={isWrappingForFullscreen}
-                sliderGap={fullscreenSliderGap}
-                sliderDuration={sliderDuration}
-                sliderFriction={sliderFriction}
-                skipSnaps={sliderSkipSnaps}
-                strictSnaps={sliderStrictSnaps}
-                suppressLoopRef={suppressLoopRef}
-                fadeOpening={fsFadeOpening}
-                introFade={introFade}
-                controlsFade={!!fs.effects?.crossfade?.controls}
-                dragFade={!!fs.effects?.crossfade?.drag}
-                wheelFade={fs.effects?.crossfade?.wheel}
-                slideFadeDuration={fs.effects?.crossfade?.durationMs}
-                slideFadeEasing={fs.effects?.crossfade?.easing}
-                normalizedItems={normalizedItems}
-                crossfadeSlides={fullscreenCrossfadeSlides}
-                introDuration={introDuration}
-                introEasing={introEasing}
-                resetAllZoomDom={() => resetZoomForSlideNavigation()}
-                requestFsCloseRef={requestFsCloseRef}
-                introMethod={latchedIntroMethod}
-                fs={fs}
-                chromeStyles={styles}
-              >
-                {normalizedItems.length > 1
-                  ? wrappedFullscreenSlides
-                  : oneFullscreenSlide}
-              </FullscreenSlider>
+	          <div
+	            data-rmg-fs-dialog-backdrop={fullscreenDialogEnabled ? "true" : undefined}
+	            onPointerDown={
+	              fullscreenDialogEnabled
+	                ? handleFullscreenDialogBackdropPointerDown
+	                : undefined
+	            }
+	            onPointerUp={
+	              fullscreenDialogEnabled
+	                ? handleFullscreenDialogBackdropPointerUp
+	                : undefined
+	            }
+	            onPointerCancel={
+	              fullscreenDialogEnabled
+	                ? resetFullscreenDialogBackdropPress
+	                : undefined
+	            }
+	            onClick={fullscreenDialogEnabled ? handleFullscreenDialogBackdropClick : undefined}
+	            style={{
+	              position: 'absolute',
+	              inset: 0,
+	              display: 'flex',
+	              flexDirection: fullscreenLayoutDirection,
+	            }}
+	          >
+	            <div
+	              data-rmg-fs-dialog-backdrop={fullscreenDialogEnabled ? "true" : undefined}
+	              onPointerDown={
+	                fullscreenDialogEnabled
+	                  ? handleFullscreenDialogBackdropPointerDown
+	                  : undefined
+	              }
+	              onPointerUp={
+	                fullscreenDialogEnabled
+	                  ? handleFullscreenDialogBackdropPointerUp
+	                  : undefined
+	              }
+	              onPointerCancel={
+	                fullscreenDialogEnabled
+	                  ? resetFullscreenDialogBackdropPress
+	                  : undefined
+	              }
+	              onClick={fullscreenDialogEnabled ? handleFullscreenDialogBackdropClick : undefined}
+	              style={{
+	                flex: '1 1 auto',
+	                position: 'relative',
+	                minWidth: 0,
+	                minHeight: 0,
+	                ...(fullscreenDialogEnabled
+	                  ? {
+	                      display: 'flex',
+	                      alignItems: 'center',
+	                      justifyContent: 'center',
+	                      overflow: 'hidden',
+	                    }
+	                  : null),
+	                ...(fullscreenCloseMediaLayerStyle ?? {}),
+	              }}
+	            >
+              {fullscreenDialogEnabled ? (
+                <div
+                  data-rmg-fs-dialog="true"
+                  data-rmg-fs-dialog-placement={dialogCaptionPlacement ?? 'bottom'}
+                  className={fullscreenDialog?.className}
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+	                    flexDirection: 'column',
+	                    width: '100%',
+	                    height: '100%',
+	                    minWidth: 0,
+	                    minHeight: 0,
+	                    overflow: 'hidden',
+	                    ...(fullscreenDialog?.style ?? {}),
+	                    ...(fullscreenDialogMotionStyle ?? {}),
+	                    ...(fullscreenCloseMediaLayerStyle
+	                      ? {
+	                          ...fullscreenCloseMediaLayerStyle,
+	                          overflow: fullscreenDialog?.style?.overflow ?? 'visible',
+	                        }
+	                      : null),
+	                  }}
+                >
+                  {fullscreenDialogCloseNode ? (
+                    <div
+                      data-rmg-fs-dialog-header="true"
+                      className={fullscreenDialog?.header?.className}
+                      style={{
+                        flex: '0 0 auto',
+                        position: 'relative',
+                        zIndex: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        minHeight: 56,
+                        padding: 12,
+                        pointerEvents: 'none',
+                        ...fullscreenDialogPaneRadiusStyles.header,
+                        ...(fullscreenDialog?.header?.style ?? {}),
+                      }}
+                    >
+                      {fullscreenDialogCloseNode}
+                    </div>
+                  ) : null}
+                  <div
+                    data-rmg-fs-dialog-body="true"
+                    style={{
+                      flex: '1 1 auto',
+	                      position: 'relative',
+	                      display: 'flex',
+	                      flexDirection:
+	                        fullscreenDialogFlexDirection(dialogCaptionPlacement),
+	                      minWidth: 0,
+	                      minHeight: 0,
+	                      overflow: 'hidden',
+	                      ...(fullscreenCloseMediaLayerStyle ?? {}),
+	                    }}
+	                  >
+	                    <div
+	                      data-rmg-fs-dialog-media="true"
+	                      className={fullscreenDialog?.media?.className}
+	                      style={{
+	                        flex: '1 1 auto',
+	                        position: 'relative',
+	                        minWidth:
+	                          dialogHasCaptionPane && dialogCaptionIsSidePlacement
+	                            ? FULLSCREEN_DIALOG_MEDIA_MIN_INLINE_SIZE
+	                            : 0,
+	                        minHeight: 0,
+	                        overflow: 'hidden',
+	                        ...fullscreenDialogPaneRadiusStyles.media,
+	                        ...(fullscreenDialog?.media?.style ?? {}),
+	                        ...(fullscreenCloseMediaLayerStyle ?? {}),
+	                      }}
+	                    >
+                      {fullscreenSliderNode}
+                    </div>
+
+                    {dialogHasCaptionPane ? (
+                      <div
+                        data-rmg-fs-dialog-caption="true"
+                        className={fullscreenDialog?.caption?.className}
+                        style={{
+                          flex: '0 0 auto',
+                          position: 'relative',
+                          minWidth: 0,
+                          minHeight: 0,
+                          overflow: 'hidden',
+                          ...dialogCaptionPaneSizeStyle,
+                          ...fullscreenDialogPaneRadiusStyles.caption,
+                          ...(fullscreenDialog?.caption?.style ?? {}),
+                        }}
+                      >
+                        {fsCaptionOverlayNode}
+                        {fsEntryOverlayNode}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                fullscreenSliderNode
+              )}
             </div>
 
-            {fullscreenThumbnailSlot && (
-              <div
-                ref={setFullscreenThumbnailMountEl}
-                style={{
-                  flex: '0 0 auto',
-                  position: 'relative',
-                  zIndex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'visible',
-                  backgroundColor: 'transparent',
-                  ...(fullscreenThumbnailSlotBaseStyle || {}),
-                }}
-              />
-            )}
+            {fullscreenThumbnailSlotNode}
           </div>
 
-          {showFsCaptionOverlayMount ? (
-            <FsCaptionOverlay
-              enabled={showFsCaptionOverlayMount}
-              fsSub={fsSub}
-              items={normalizedItems}
-              caption={fs.caption}
-              isZoomed={isZoomed}
-              captionZoomMotion={captionZoomMotion}
-              viewportWidth={windowSize.width}
-              viewportHeight={windowSize.height}
-              interactive={!!showFullscreenSlider}
-              closing={!!closingModal}
-              resolveFsCaptionPlacement={resolveFsCaptionPlacement}
-            />
-          ) : null}
-          {showFsEntryOverlayMount ? (
-            <FsEntryOverlay
-              enabled={showFsEntryOverlayMount}
-              fsSub={fsSub}
-              entriesObject={entriesObject}
-              entryMapRef={entryMapRef}
-              syncFullscreenSourceFromIndex={syncFullscreenSourceFromIndex}
-              resetAllZoomDom={resetZoomForSlideChange}
-              closing={!!closingModal}
-              overlayZoomMotion={entryOverlayZoomMotion}
-              viewportWidth={windowSize.width}
-              viewportHeight={windowSize.height}
-              resolveFsCaptionPlacement={resolveFsCaptionPlacement}
-            />
-          ) : null}
+          {!fullscreenDialogEnabled ? fsCaptionOverlayNode : null}
+          {!fullscreenDialogEnabled ? fsEntryOverlayNode : null}
         </FullscreenModal>
       )}
     </>

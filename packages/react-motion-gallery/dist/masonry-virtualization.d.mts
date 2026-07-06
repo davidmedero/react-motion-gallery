@@ -1,7 +1,8 @@
-import { p as DataVirtualizationOptions } from './dataPlugins-C91mlyu6.mjs';
+import { p as DataVirtualizationOptions } from './dataPlugins-CsUwdsuu.mjs';
 import { M as MasonryPlugin } from './types-Bg0qLhxl.mjs';
 import { M as MasonryPlugin$1 } from './types-qMg7LB37.mjs';
 import 'react';
+import './infiniteScrollTrigger-BluBDW9o.mjs';
 
 type MasonryVirtualizationOptions = DataVirtualizationOptions;
 type UseMasonryVirtualizerOptions = MasonryVirtualizationOptions;

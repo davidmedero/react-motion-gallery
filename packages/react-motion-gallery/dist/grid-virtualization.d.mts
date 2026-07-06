@@ -1,10 +1,11 @@
 import { f as GridPlugin } from './types-BmnPcuoM.mjs';
-import { p as DataVirtualizationOptions } from './dataPlugins-C91mlyu6.mjs';
+import { p as DataVirtualizationOptions } from './dataPlugins-CsUwdsuu.mjs';
 import './force-C5m1QpdF.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 import './layout-BOy4geKv.mjs';
 import 'react';
 import './text-BBcRGVzn.mjs';
+import './infiniteScrollTrigger-BluBDW9o.mjs';
 
 type GridVirtualizationOptions = DataVirtualizationOptions;
 type UseGridVirtualizerOptions = GridVirtualizationOptions;

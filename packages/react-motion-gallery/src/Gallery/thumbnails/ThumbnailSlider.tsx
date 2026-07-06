@@ -9,10 +9,12 @@ import {
   isValidElement,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
+import { flushSync } from 'react-dom'
 import cls from './ThumbnailSlider.module.css'
 import { IndexMode } from '../api/types'
 import createIndexChannel from '../slider/sliderSub'
@@ -25,7 +27,16 @@ import { ScrollBounds, ScrollBoundsType, PercentOfView, PercentOfViewType } from
 import { BaseTarget, factorAbs, mathSign, ScrollTarget, ScrollTargetType } from '../shared/motion/scrollTarget'
 import { Animations, AnimationsType } from '../shared/motion/animations'
 import { EventStore } from '../shared/motion/eventStore'
-import { ThumbnailCrossfadeOptions, ThumbnailRevealOptions, ThumbnailLoadingOptions, ThumbnailPosition, ThumbnailSelectMeta } from './types'
+import {
+  ThumbnailCrossfadeOptions,
+  ThumbnailRevealOptions,
+  ThumbnailLoadingOptions,
+  ThumbnailPosition,
+  ThumbnailSelectMeta,
+  ThumbnailFadeOnSyncOptions,
+  type ThumbnailItemKey,
+  type ThumbnailRenderItem,
+} from './types'
 import { ArrowRenderArgs } from '../shared/types/controls'
 import { BreakpointMap } from '../shared/responsive'
 import { Counter, CounterType } from '../shared/motion/counter'
@@ -37,6 +48,7 @@ import { Axis, AxisType, AXSpec } from '../shared/types/axis'
 import { Translate } from '../shared/motion/translate'
 import { useWheelLock } from '../shared/hooks/useWheelLock'
 import { useInViewOnce } from '../shared/hooks/useInViewOnce'
+import { usePrefersReducedMotion } from '../shared/hooks/usePrefersReducedMotion'
 import { buildStableScopeId } from '../shared/stableScope'
 import { waitForImageDecode } from '../shared/lazy/imageLifecycle'
 import { computeSliderChildrenKey } from '../slider/childrenSignature';
@@ -45,8 +57,203 @@ import {
   resolveSliderContentSpan,
   shouldEnableSliderLoop,
 } from '../slider/layoutStability'
+import {
+  accumulateFixedVirtualTrackRebaseOffset,
+  buildFixedVirtualTrackWindow,
+  resolveFixedVirtualTrackMetricsFromCellSize,
+  resolveSliderVirtualizationOptions,
+  sameFixedVirtualTrackWindow,
+  warnSliderVirtualizationFallback,
+  type FixedVirtualTrackMetrics,
+  type FixedVirtualTrackWindow,
+  type SliderVirtualizationOptions,
+} from '../shared/virtualTrack'
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n))
+const wrapModulo = (n: number, m: number) => ((n % m) + m) % m
+const THUMBNAIL_FADE_ON_SYNC_DURATION_MS = 220
+const THUMBNAIL_FADE_ON_SYNC_EASING = 'cubic-bezier(.4,0,.22,1)'
+
+export function resolveThumbnailCrossfadeMinDistance(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.trunc(value));
+}
+
+export function resolveThumbnailIndexDistance(args: {
+  fromIndex: number;
+  toIndex: number;
+  count: number;
+  loop?: boolean;
+}) {
+  const { fromIndex, toIndex, count, loop = false } = args;
+  const distance = Math.abs(toIndex - fromIndex);
+  if (!loop || count <= 0) return distance;
+  return Math.min(distance, Math.max(0, count - distance));
+}
+
+export function shouldUseThumbnailCrossfade(args: {
+  crossfade?: ThumbnailCrossfadeOptions;
+  fromIndex: number;
+  toIndex: number;
+  count: number;
+  loop?: boolean;
+}) {
+  const { crossfade, fromIndex, toIndex, count, loop = false } = args;
+  if (!crossfade?.enabled) return false;
+
+  const minDistance = resolveThumbnailCrossfadeMinDistance(crossfade.minDistance);
+  if (minDistance == null) return true;
+
+  return (
+    resolveThumbnailIndexDistance({
+      fromIndex,
+      toIndex,
+      count,
+      loop,
+    }) >= minDistance
+  );
+}
+
+export function resolveThumbnailFadeOnSyncOptions(
+  value: boolean | ThumbnailFadeOnSyncOptions | undefined
+) {
+  if (value === true) {
+    return {
+      enabled: true,
+      minDistance: 0,
+      durationMs: THUMBNAIL_FADE_ON_SYNC_DURATION_MS,
+      easing: THUMBNAIL_FADE_ON_SYNC_EASING,
+    };
+  }
+
+  if (!value || value === false) {
+    return {
+      enabled: false,
+      minDistance: 0,
+      durationMs: THUMBNAIL_FADE_ON_SYNC_DURATION_MS,
+      easing: THUMBNAIL_FADE_ON_SYNC_EASING,
+    };
+  }
+
+  const minDistance =
+    typeof value.minDistance === 'number' && Number.isFinite(value.minDistance)
+      ? Math.max(0, Math.trunc(value.minDistance))
+      : 0;
+  const durationMs =
+    typeof value.durationMs === 'number' && Number.isFinite(value.durationMs)
+      ? Math.max(0, value.durationMs)
+      : THUMBNAIL_FADE_ON_SYNC_DURATION_MS;
+  const easing =
+    typeof value.easing === 'string' && value.easing.trim()
+      ? value.easing
+      : THUMBNAIL_FADE_ON_SYNC_EASING;
+
+  return {
+    enabled: value.enabled ?? true,
+    minDistance,
+    durationMs,
+    easing,
+  };
+}
+
+export function resolveThumbnailSyncCellDistance(args: {
+  targetIndex: number;
+  visibleIndices: readonly number[];
+  count: number;
+  loop?: boolean;
+}) {
+  const { targetIndex, visibleIndices, count, loop = false } = args;
+  if (count <= 0 || !Number.isFinite(targetIndex) || visibleIndices.length === 0) {
+    return 0;
+  }
+
+  return visibleIndices.reduce((minDistance, visibleIndex) => {
+    if (!Number.isFinite(visibleIndex)) return minDistance;
+
+    return Math.min(
+      minDistance,
+      resolveThumbnailIndexDistance({
+        fromIndex: visibleIndex,
+        toIndex: targetIndex,
+        count,
+        loop,
+      })
+    );
+  }, Number.POSITIVE_INFINITY);
+}
+
+export function shouldFadeThumbnailSync(args: {
+  fadeOnSync?: boolean | ThumbnailFadeOnSyncOptions;
+  targetIndex: number;
+  visibleIndices: readonly number[];
+  count: number;
+  loop?: boolean;
+}) {
+  const { fadeOnSync, targetIndex, visibleIndices, count, loop = false } = args;
+  const options = resolveThumbnailFadeOnSyncOptions(fadeOnSync);
+  if (!options.enabled || count <= 0 || visibleIndices.length === 0) return false;
+
+  return (
+    resolveThumbnailSyncCellDistance({
+      targetIndex,
+      visibleIndices,
+      count,
+      loop,
+    }) > options.minDistance
+  );
+}
+
+export function resolveThumbnailVisibleIndicesForScroll(args: {
+  items: readonly { index?: number; start: number; end: number }[];
+  scroll: number;
+  viewport: number;
+  trackSpan?: number;
+  loop?: boolean;
+  epsilon?: number;
+}) {
+  const {
+    items,
+    scroll,
+    viewport,
+    trackSpan = 0,
+    loop = false,
+    epsilon = 0.5,
+  } = args;
+
+  if (!items.length || viewport <= 0) return [];
+
+  const indexedItems = items.map((item, index) => ({
+    ...item,
+    index: item.index ?? index,
+  }));
+
+  if (loop && trackSpan > 0) {
+    if (viewport >= trackSpan - epsilon) {
+      return indexedItems.map((item) => item.index);
+    }
+
+    const normalizedScroll = wrapModulo(scroll, trackSpan);
+    const viewStart = normalizedScroll - epsilon;
+    const viewEnd = normalizedScroll + viewport + epsilon;
+
+    return indexedItems
+      .filter((item) =>
+        [0, trackSpan, -trackSpan].some((shift) => {
+          const start = item.start + shift;
+          const end = item.end + shift;
+          return start < viewEnd && end > viewStart;
+        })
+      )
+      .map((item) => item.index);
+  }
+
+  const viewStart = scroll - epsilon;
+  const viewEnd = scroll + viewport + epsilon;
+
+  return indexedItems
+    .filter((item) => item.start < viewEnd && item.end > viewStart)
+    .map((item) => item.index);
+}
 
 function DragTracker(axis: AxisType, ownerWindow: WindowType) {
   return createDragTracker({
@@ -78,17 +285,219 @@ type Page = {
   targetScroll: number
 }
 
+type CssLength = number | string;
+
 type BaseScrollTo = {
   distance: (n: number, snap: boolean) => void
   index: (n: number, direction: number) => void
 }
 
-type ThumbLayoutItem = { el: HTMLElement; start: number; end: number; size: number }
+type ThumbLayoutItem = { el: HTMLElement | null; start: number; end: number; size: number }
 
-type Slide = { target: number; cells: { element: HTMLElement; index: number }[] }
+type Slide = { target: number; cells: { element: HTMLElement | null; index: number }[] }
+
+type BoxSide = 'top' | 'right' | 'bottom' | 'left';
+
+type NativeThumbVirtualMetrics = {
+  enabled: boolean;
+  metrics: FixedVirtualTrackMetrics;
+  shouldLoop: boolean;
+};
+
+type SyncFadeOverlayItem = {
+  key: string;
+  index: number;
+  active: boolean;
+  node: ReactNode;
+  style: React.CSSProperties;
+};
+
+type SyncFadeState = {
+  id: number;
+  phase: 'hold' | 'fade';
+  items: SyncFadeOverlayItem[];
+  durationMs: number;
+  easing: string;
+};
+
+function splitCssShorthand(value: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let depth = 0;
+
+  for (const char of value.trim()) {
+    if (/\s/.test(char) && depth === 0) {
+      if (current) {
+        parts.push(current);
+        current = '';
+      }
+      continue;
+    }
+
+    if (char === '(') depth += 1;
+    if (char === ')') depth = Math.max(0, depth - 1);
+    current += char;
+  }
+
+  if (current) parts.push(current);
+  return parts;
+}
+
+function resolveQuadPart(parts: string[], side: BoxSide) {
+  if (!parts.length) return undefined;
+
+  switch (side) {
+    case 'top':
+      return parts[0];
+    case 'right':
+      return parts[1] ?? parts[0];
+    case 'bottom':
+      return parts[2] ?? parts[0];
+    case 'left':
+      return parts[3] ?? parts[1] ?? parts[0];
+  }
+}
+
+function resolvePairPart(parts: string[], end: boolean) {
+  if (!parts.length) return undefined;
+  return end ? parts[1] ?? parts[0] : parts[0];
+}
+
+function readCssLength(value: unknown): CssLength | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === 'auto') return null;
+  if (trimmed === '0') return 0;
+
+  const pxMatch = trimmed.match(/^(-?\d*\.?\d+)px$/i);
+  if (pxMatch) {
+    const parsed = Number.parseFloat(pxMatch[1] ?? '');
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  if (
+    /^-?\d*\.?\d+(?:%|em|rem|ch|ex|lh|rlh|vw|vh|vmin|vmax|dvw|dvh|svw|svh|lvw|lvh|cm|mm|q|in|pc|pt)$/i.test(trimmed) ||
+    /^(?:calc|min|max|clamp|var)\(/i.test(trimmed)
+  ) {
+    return trimmed;
+  }
+
+  return null;
+}
+
+function readShorthandLength(value: unknown, side: BoxSide) {
+  if (typeof value !== 'string') return null;
+  return readCssLength(resolveQuadPart(splitCssShorthand(value), side));
+}
+
+function readPairLength(value: unknown, end: boolean) {
+  if (typeof value !== 'string') return null;
+  return readCssLength(resolvePairPart(splitCssShorthand(value), end));
+}
+
+function readBorderShorthandWidth(value: unknown) {
+  if (typeof value !== 'string') return null;
+
+  for (const part of splitCssShorthand(value)) {
+    const length = readCssLength(part);
+    if (length != null) return length;
+  }
+
+  return null;
+}
+
+function readPaddingSide(style: React.CSSProperties, side: BoxSide) {
+  const physicalProp = `padding${side[0].toUpperCase()}${side.slice(1)}` as keyof React.CSSProperties;
+  const logicalProp =
+    side === 'top'
+      ? 'paddingBlockStart'
+      : side === 'bottom'
+        ? 'paddingBlockEnd'
+        : side === 'left'
+          ? 'paddingInlineStart'
+          : 'paddingInlineEnd';
+  const logicalPairProp =
+    side === 'top' || side === 'bottom' ? 'paddingBlock' : 'paddingInline';
+
+  return (
+    readCssLength(style[physicalProp]) ??
+    readCssLength(style[logicalProp as keyof React.CSSProperties]) ??
+    readPairLength(
+      style[logicalPairProp as keyof React.CSSProperties],
+      side === 'bottom' || side === 'right'
+    ) ??
+    readShorthandLength(style.padding, side)
+  );
+}
+
+function readBorderSide(style: React.CSSProperties, side: BoxSide) {
+  const capSide = `${side[0].toUpperCase()}${side.slice(1)}`;
+  const widthProp = `border${capSide}Width` as keyof React.CSSProperties;
+  const borderProp = `border${capSide}` as keyof React.CSSProperties;
+
+  return (
+    readCssLength(style[widthProp]) ??
+    readShorthandLength(style.borderWidth, side) ??
+    readBorderShorthandWidth(style[borderProp]) ??
+    readBorderShorthandWidth(style.border)
+  );
+}
+
+function addCssLengths(lengths: Array<CssLength | null | undefined>) {
+  let pxTotal = 0;
+  const parts: string[] = [];
+
+  for (const length of lengths) {
+    const normalized = readCssLength(length);
+    if (normalized == null) continue;
+    if (typeof normalized === 'number') {
+      pxTotal += normalized;
+    } else {
+      parts.push(normalized);
+    }
+  }
+
+  if (!parts.length) return pxTotal;
+
+  const calcParts = pxTotal ? [`${pxTotal}px`, ...parts] : parts;
+  return calcParts.length === 1 ? calcParts[0] : `calc(${calcParts.join(' + ')})`;
+}
+
+function resolveTrackCrossMinSize(args: {
+  isHorizontal: boolean;
+  measuredTrackCrossSize: React.CSSProperties['minHeight'];
+  style?: React.CSSProperties;
+  thumbnailsContainerStyle?: React.CSSProperties;
+}) {
+  const base = readCssLength(args.measuredTrackCrossSize);
+  if (base == null) return undefined;
+
+  const mergedStyle = {
+    ...(args.style || {}),
+    ...(args.thumbnailsContainerStyle || {}),
+  } as React.CSSProperties;
+
+  if (mergedStyle.boxSizing === 'content-box') return base;
+
+  const sides: BoxSide[] = args.isHorizontal ? ['top', 'bottom'] : ['left', 'right'];
+  const extra = sides.flatMap((side) => [
+    readPaddingSide(mergedStyle, side),
+    readBorderSide(mergedStyle, side),
+  ]);
+
+  return addCssLengths([base, ...extra]);
+}
 
 interface ThumbnailSliderProps {
-  children: ReactNode
+  children?: ReactNode
+  items?: readonly unknown[]
+  renderItem?: ThumbnailRenderItem
+  getItemKey?: ThumbnailItemKey
   position: ThumbnailPosition
   thumbSize?: number
   className?: string
@@ -112,6 +521,7 @@ interface ThumbnailSliderProps {
   axis?: 'x' | 'y';
   skipSnaps?: boolean;
   centerActiveThumb?: boolean;
+  fadeOnSync?: boolean | ThumbnailFadeOnSyncOptions;
   selectDuration?: number;
   freeScrollDuration?: number;
   sliderFriction?: number;
@@ -133,10 +543,14 @@ interface ThumbnailSliderProps {
   renderNextArrow?: (args: ArrowRenderArgs) => React.ReactNode;
   onReadyChange?: (ready: boolean) => void;
   crossfade?: ThumbnailCrossfadeOptions;
+  virtualization?: SliderVirtualizationOptions;
 }
 
 export default function ThumbnailSlider({
   children,
+  items,
+  renderItem,
+  getItemKey,
   position,
   thumbSize,
   className,
@@ -159,6 +573,7 @@ export default function ThumbnailSlider({
   direction = 'ltr',
   skipSnaps = false,
   centerActiveThumb = false,
+  fadeOnSync,
   selectDuration = 25,
   freeScrollDuration = 43,
   sliderFriction = 0.68,
@@ -179,7 +594,8 @@ export default function ThumbnailSlider({
   renderPrevArrow,
   renderNextArrow,
   onReadyChange,
-  crossfade
+  crossfade,
+  virtualization
 }: ThumbnailSliderProps) {
   const isHorizontal = position === 'top' || position === 'bottom'
   const axis = Axis(isHorizontal);
@@ -187,6 +603,7 @@ export default function ThumbnailSlider({
   const sign = isHorizontal && isRtl ? -1 : 1;
   const containerRef = useRef<HTMLDivElement | null>(null)
   const trackRef = useRef<HTMLDivElement | null>(null)
+  const prefersReducedMotion = usePrefersReducedMotion();
   const scopeId = useMemo(
     () =>
       buildStableScopeId('rmg-thumb-core-', {
@@ -229,9 +646,24 @@ export default function ThumbnailSlider({
   const sliderVelocity = useRef(0)
   const selectedSlideIndexRef = useRef<number>(0);
   const activeThumbIndexRef = useRef<number>(channelRef.current.get().index ?? 0);
+  const [virtualIndex, setVirtualIndex] = useState<number>(
+    channelRef.current.get().index ?? 0
+  );
   const programNavRef = useRef(false)
   const rawKids = Children.toArray(children).filter(isValidElement) as ReactElement<ThumbnailSliderProps>[]
-  const count = rawKids.length
+  const itemList = Array.isArray(items) && typeof renderItem === 'function' ? items : null
+  const usesItemRendering = !!itemList
+  const count = itemList?.length ?? rawKids.length
+  const explicitThumbLong = (() => {
+    const axisSize = isHorizontal ? thumbnailWidth : thumbnailHeight;
+    if (typeof axisSize === 'number' && Number.isFinite(axisSize) && axisSize > 0) {
+      return axisSize;
+    }
+    if (typeof thumbSize === 'number' && Number.isFinite(thumbSize) && thumbSize > 0) {
+      return thumbSize;
+    }
+    return 0;
+  })();
   const baseOffsetRef = useRef(0);
   const downTargetRef = useRef<EventTarget | null>(null)
   const [inView, setInView] = useState(false);
@@ -259,6 +691,11 @@ export default function ThumbnailSlider({
   const layoutRef = useRef<{ originals: ThumbLayoutItem[]; cw: number } | null>(null)
   const thumbCells = useRef<{ element: HTMLElement; index: number }[]>([]);
   const [clonedChildren, setClonedChildren] = useState<ReactElement<any>[]>([]);
+  const thumbVirtualWindowRef = useRef<FixedVirtualTrackWindow | null>(null);
+  const thumbVirtualMetricsRef = useRef<NativeThumbVirtualMetrics | null>(null);
+  const thumbVirtualRebaseOffsetRef = useRef(0);
+  const thumbVirtualRebaseClearPendingRef = useRef(false);
+  const pendingVirtualThumbsBuiltRef = useRef(false);
   const lastCloneSigRef = useRef<string>('');
   const slidesRef = useRef<Slide[]>([])
   const [isMeasured, setIsMeasured] = useState(false)
@@ -272,6 +709,10 @@ export default function ThumbnailSlider({
   const guardsStoreRef = useRef<ReturnType<typeof EventStore> | null>(null);
   const muteChannelRef = useRef(false);
   const onReadyChangeRef = useRef(onReadyChange);
+  const [syncFade, setSyncFade] = useState<SyncFadeState | null>(null);
+  const syncFadeIdRef = useRef(0);
+  const syncFadeRafRef = useRef<number[]>([]);
+  const syncFadeTimerRef = useRef<number | null>(null);
 
   const AX: AXSpec = useMemo(() => {
     const main = isHorizontal ? 'x' : 'y';
@@ -316,6 +757,24 @@ export default function ThumbnailSlider({
   function beginUiNavWheelTakeover() {
     unlockWheelNow()
     lockWheelFor(UI_NAV_WHEEL_LOCK_MS)
+  }
+
+  function readViewportMainSize(fallback?: HTMLElement | null) {
+    const container = containerRef.current;
+    const containerSize = container
+      ? ((container as any)[AX.clientKey] as number)
+      : 0;
+    if (containerSize > 0) {
+      const computed = window.getComputedStyle(container);
+      const start = AX.main === 'x' ? computed.paddingLeft : computed.paddingTop;
+      const end = AX.main === 'x' ? computed.paddingRight : computed.paddingBottom;
+      const padding =
+        (Number.parseFloat(start) || 0) + (Number.parseFloat(end) || 0);
+
+      return Math.max(0, containerSize - padding);
+    }
+
+    return fallback ? (((fallback as any)[AX.clientKey] as number) || 0) : 0;
   }
 
   useInViewOnce(
@@ -403,16 +862,47 @@ export default function ThumbnailSlider({
     tgt.set(best)
   }
 
+  function getThumbItemKey(canonicalIndex: number) {
+    const item = itemList?.[canonicalIndex];
+    if (item == null) return canonicalIndex;
+    return getItemKey?.(item, canonicalIndex) ?? canonicalIndex;
+  }
+
+  function renderThumbContent(
+    canonicalIndex: number,
+    virtualIndex?: number
+  ): ReactNode {
+    const item = itemList?.[canonicalIndex];
+    if (itemList && item != null && renderItem) {
+      return renderItem({
+        item,
+        index: canonicalIndex,
+        active: canonicalIndex === activeThumbIndexRef.current,
+        virtualIndex,
+      });
+    }
+
+    return rawKids[canonicalIndex] ?? null;
+  }
+
   function cloneThumb(
-    child: ReactElement<any>,
+    child: ReactNode,
     key: string,
     canonicalIndex: number,
-    elementIndex: number
+    elementIndex: number,
+    virtualOffset?: number
   ) {
+    if (child == null || typeof child === 'boolean') return null;
+
     return (
       <div
         key={key}
         data-rmg-thumb-index={String(canonicalIndex)}
+        data-rmg-thumb-rendered-index={String(elementIndex)}
+        data-rmg-thumb-virtual={virtualOffset != null ? "true" : undefined}
+        data-active={
+          canonicalIndex === activeThumbIndexRef.current ? 'true' : undefined
+        }
         ref={(el: HTMLElement | null) => {
           if (!el) return;
           if (!thumbCells.current.some((c) => c.element === el)) {
@@ -425,6 +915,9 @@ export default function ThumbnailSlider({
           left: 0,
           width: thumbnailWidth,
           height: thumbnailHeight,
+          ...(virtualOffset != null
+            ? { transform: getVirtualThumbTransform(virtualOffset) }
+            : null),
           cursor: 'pointer',
           userSelect: 'none',
           ...(thumbnailItemStyle || {}),
@@ -437,6 +930,102 @@ export default function ThumbnailSlider({
     );
   }
 
+  function getVirtualThumbTransform(offset: number) {
+    const signedOffset = offset * sign;
+    if (AX.main === 'x') {
+      return `translateX(calc(${signedOffset}px + var(--rmg-thumb-virtual-rebase-offset, 0px))) scale(var(--rmg-scale, 1))`;
+    }
+
+    return `translateY(calc(${signedOffset}px + var(--rmg-thumb-virtual-rebase-offset, 0px))) scale(var(--rmg-scale, 1))`;
+  }
+
+  function setThumbVirtualRebaseOffset(offset: number) {
+    const track = trackRef.current;
+    if (!track) return;
+
+    if (Math.abs(offset) <= 0.01) {
+      track.style.removeProperty('--rmg-thumb-virtual-rebase-offset');
+      return;
+    }
+
+    track.style.setProperty('--rmg-thumb-virtual-rebase-offset', `${offset * sign}px`);
+  }
+
+  function applyThumbVirtualLoopCompensation(loopShift: number) {
+    if (!thumbVirtualMetricsRef.current?.enabled || loopShift === 0) return;
+
+    const nextOffset = accumulateFixedVirtualTrackRebaseOffset(
+      thumbVirtualRebaseOffsetRef.current,
+      loopShift
+    );
+    thumbVirtualRebaseOffsetRef.current = nextOffset;
+    thumbVirtualRebaseClearPendingRef.current = true;
+    setThumbVirtualRebaseOffset(nextOffset);
+  }
+
+  function clearThumbVirtualRebaseOffset() {
+    if (
+      thumbVirtualRebaseOffsetRef.current === 0 &&
+      !thumbVirtualRebaseClearPendingRef.current
+    ) {
+      return;
+    }
+
+    thumbVirtualRebaseOffsetRef.current = 0;
+    thumbVirtualRebaseClearPendingRef.current = false;
+    setThumbVirtualRebaseOffset(0);
+  }
+
+  function renderThumbVirtualWindow(
+    next: FixedVirtualTrackWindow,
+    metrics: NativeThumbVirtualMetrics,
+    force = false
+  ) {
+    if (!force && sameFixedVirtualTrackWindow(thumbVirtualWindowRef.current, next)) return;
+
+    thumbVirtualWindowRef.current = next;
+    const slides: ReactElement<any>[] = [];
+    thumbCells.current = [];
+
+    next.items.forEach((item) => {
+      const child = renderThumbContent(item.canonicalIndex, item.virtualIndex);
+      if (!child) return;
+
+      const keyPart = getThumbItemKey(item.canonicalIndex);
+      const node = cloneThumb(
+        child,
+        `virtual-${item.virtualIndex}-${String(keyPart)}`,
+        item.canonicalIndex,
+        item.virtualIndex,
+        item.offset
+      );
+      if (node) slides.push(node as ReactElement<any>);
+    });
+
+    pendingVirtualThumbsBuiltRef.current = true;
+    setClonedChildren(slides);
+  }
+
+  function syncThumbVirtualWindowForOffset(scrollOffset: number, force = false) {
+    const virtual = thumbVirtualMetricsRef.current;
+    if (!virtual?.enabled) return;
+
+    renderThumbVirtualWindow(
+      buildFixedVirtualTrackWindow({
+        metrics: virtual.metrics,
+        scrollOffset,
+        loop: virtual.shouldLoop,
+        options: virtualization,
+      }),
+      virtual,
+      force
+    );
+  }
+
+  function syncThumbVirtualWindowForLocation(location: number, force = false) {
+    syncThumbVirtualWindowForOffset(-location, force);
+  }
+
   function computeCloneSig(originals: number, per: number) {
     return `${originals}|per=${per}|wrap=${wrap ? 1 : 0}`;
   }
@@ -446,11 +1035,7 @@ export default function ThumbnailSlider({
     if (!el) return;
 
     const ro = new ResizeObserver(() => {
-      const rawKids = Children
-        .toArray(children)
-        .filter(isValidElement) as ReactElement<any>[];
-
-      const originals = rawKids.length;
+      const originals = count;
 
       if (originals < 1) {
         clonesCountRef.current = 0;
@@ -471,10 +1056,127 @@ export default function ThumbnailSlider({
       const clonesAfter  = clonesBefore;
       const originalEls  = allEls.slice(clonesBefore, allEls.length - clonesAfter);
 
-      const cw = (el as any)[AX.clientKey] as number;
+      const cw = readViewportMainSize(el);
+
+      const virtualOptions = resolveSliderVirtualizationOptions(virtualization);
+      const measuredSizes = usesItemRendering
+        ? []
+        : originalEls.map((slot) => slot.getBoundingClientRect()[AX.sizeKey]);
+      const measuredFirstSize = usesItemRendering
+        ? explicitThumbLong
+        : measuredSizes.find((size) => size > 0) ?? thumbLong ?? thumbSize ?? 0;
+      const hasFullMeasurement = usesItemRendering || originalEls.length === originals;
+      const uniformMeasured =
+        usesItemRendering ||
+        !hasFullMeasurement ||
+        measuredSizes.every((size) => Math.abs(size - measuredFirstSize) <= 0.5);
+      const canUseVirtual =
+        virtualOptions.enabled &&
+        originals > virtualOptions.threshold &&
+        measuredFirstSize > 0 &&
+        cw > 0 &&
+        uniformMeasured;
+
+      if (canUseVirtual) {
+        const baseMetrics = resolveFixedVirtualTrackMetricsFromCellSize({
+          count: originals,
+          viewport: cw,
+          cellSize: measuredFirstSize,
+          gap,
+          loop,
+        });
+
+        if (baseMetrics) {
+          const shouldLoop = shouldEnableSliderLoop({
+            loop,
+            itemCount: originals,
+            span: baseMetrics.baseSpan,
+            viewport: cw,
+          });
+          const metrics =
+            baseMetrics.trackSpan === resolveSliderContentSpan({
+              baseSpan: baseMetrics.baseSpan,
+              gap,
+              shouldLoop,
+            })
+              ? baseMetrics
+              : resolveFixedVirtualTrackMetricsFromCellSize({
+                  count: originals,
+                  viewport: cw,
+                  cellSize: measuredFirstSize,
+                  gap,
+                  loop: shouldLoop,
+                });
+
+          if (metrics) {
+            thumbVirtualMetricsRef.current = {
+              enabled: true,
+              metrics,
+              shouldLoop,
+            };
+            clonesCountRef.current = 0;
+            clearThumbVirtualRebaseOffset();
+            if (visibleThumbsRef.current !== Math.max(1, metrics.cellsPerSlide)) {
+              visibleThumbsRef.current = Math.max(1, metrics.cellsPerSlide);
+            }
+
+            if (AX.main === "x") {
+              el.style.width = `${metrics.trackSpan}px`;
+              el.style.minWidth = `${metrics.trackSpan}px`;
+            } else {
+              el.style.height = `${metrics.trackSpan}px`;
+              el.style.minHeight = `${metrics.trackSpan}px`;
+            }
+
+            setContentLength(metrics.trackSpan);
+            setContainerLength(cw);
+            setThumbLong(measuredFirstSize);
+            if (hasFullMeasurement && !usesItemRendering) {
+              const first = originalEls[0];
+              if (first) {
+                const rect = first.getBoundingClientRect();
+                setThumbCross(AX.main === "x" ? rect.height : rect.width);
+              }
+            } else if (usesItemRendering) {
+              const crossSize = AX.main === "x" ? thumbnailHeight : thumbnailWidth;
+              if (
+                typeof crossSize === "number" &&
+                Number.isFinite(crossSize) &&
+                crossSize > 0
+              ) {
+                setThumbCross(crossSize);
+              }
+            }
+            setWrapSafe(shouldLoop);
+
+            const currentLocation =
+              offsetLocationRef.current?.get() ??
+              xRef.current ??
+              -activeThumbIndexRef.current * metrics.stride;
+            syncThumbVirtualWindowForLocation(currentLocation, true);
+            return;
+          }
+        }
+      }
+
+      if (virtualOptions.enabled && originals > virtualOptions.threshold) {
+        warnSliderVirtualizationFallback(
+          usesItemRendering
+            ? "[react-motion-gallery] Thumbnail item virtualization needs fixed thumbnail dimensions and fell back to full rendering."
+            : "[react-motion-gallery] Thumbnail virtualization needs uniform measured thumbnail sizes and fell back to full rendering."
+        );
+      }
+
+      thumbVirtualMetricsRef.current = null;
+      thumbVirtualWindowRef.current = null;
+      clearThumbVirtualRebaseOffset();
+      el.style.removeProperty('width');
+      el.style.removeProperty('height');
+      el.style.removeProperty('min-width');
+      el.style.removeProperty('min-height');
 
       let sum = 0;
-      let count = 0;
+      let visibleCount = 0;
       for (const slot of originalEls) {
         const w = slot.getBoundingClientRect()[AX.sizeKey];
         if (w === 0) {
@@ -483,14 +1185,14 @@ export default function ThumbnailSlider({
         }
         if (sum + w <= cw) {
           sum += w;
-          count++;
+          visibleCount++;
         } else {
-          count++;
+          visibleCount++;
           break;
         }
       }
 
-      const per = Math.max(2, Math.min(originals, count));
+      const per = Math.max(2, Math.min(originals, visibleCount));
 
       const shouldLoop = wrap;
       clonesCountRef.current = shouldLoop ? per : 0;
@@ -504,31 +1206,46 @@ export default function ThumbnailSlider({
       thumbCells.current = [];
 
       if (shouldLoop) {
-        slides.push(
-          ...rawKids.slice(-per).map((c, i) => {
-            const canonicalIndex = originals - per + i;
-            const elementIndex = -per + i;
-            return cloneThumb(c, `before-${i}`, canonicalIndex, elementIndex);
-          })
-        );
+        for (let i = 0; i < per; i += 1) {
+          const canonicalIndex = originals - per + i;
+          const elementIndex = -per + i;
+          const child = renderThumbContent(canonicalIndex, elementIndex);
+          const node = cloneThumb(
+            child,
+            `before-${String(getThumbItemKey(canonicalIndex))}-${i}`,
+            canonicalIndex,
+            elementIndex
+          );
+          if (node) slides.push(node as ReactElement<any>);
+        }
       }
 
-      slides.push(
-        ...rawKids.map((c, i) => {
-          const canonicalIndex = i;
-          const elementIndex = i;
-          return cloneThumb(c, `original-${i}`, canonicalIndex, elementIndex);
-        })
-      );
+      for (let i = 0; i < originals; i += 1) {
+        const canonicalIndex = i;
+        const elementIndex = i;
+        const child = renderThumbContent(canonicalIndex, elementIndex);
+        const node = cloneThumb(
+          child,
+          `original-${String(getThumbItemKey(canonicalIndex))}`,
+          canonicalIndex,
+          elementIndex
+        );
+        if (node) slides.push(node as ReactElement<any>);
+      }
 
       if (shouldLoop) {
-        slides.push(
-          ...rawKids.slice(0, per).map((c, i) => {
-            const canonicalIndex = i;
-            const elementIndex = i;
-            return cloneThumb(c, `after-${i}`, canonicalIndex, elementIndex);
-          })
-        );
+        for (let i = 0; i < per; i += 1) {
+          const canonicalIndex = i;
+          const elementIndex = i;
+          const child = renderThumbContent(canonicalIndex, elementIndex);
+          const node = cloneThumb(
+            child,
+            `after-${String(getThumbItemKey(canonicalIndex))}-${i}`,
+            canonicalIndex,
+            elementIndex
+          );
+          if (node) slides.push(node as ReactElement<any>);
+        }
       }
 
       setClonedChildren(slides);
@@ -539,6 +1256,7 @@ export default function ThumbnailSlider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     children,
+    virtualIndex,
     buildKey,
     wrap,
     gap,
@@ -549,6 +1267,10 @@ export default function ThumbnailSlider({
     thumbnailItemClassName,
     thumbnailItemStyle,
     position,
+    virtualization,
+    count,
+    usesItemRendering,
+    explicitThumbLong,
   ]);
 
   function getThumbIndexFromEventTarget(t: EventTarget | null): number {
@@ -573,6 +1295,14 @@ export default function ThumbnailSlider({
     beginUiNavWheelTakeover();
 
     const thumbSlideIndex = findThumbSlideIndexForBaseIndex(canonicalIndex);
+    const previousThumbIndex = activeThumbIndexRef.current;
+    const shouldCrossfade = shouldUseThumbnailCrossfade({
+      crossfade,
+      fromIndex: previousThumbIndex,
+      toIndex: canonicalIndex,
+      count,
+      loop: isWrapping.current,
+    });
 
     snapModeRef.current = "thumb";
     muteChannelRef.current = true;
@@ -588,8 +1318,6 @@ export default function ThumbnailSlider({
       : slidesRef.current[thumbSlideIndex]?.target ?? 0;
 
     animateToScroll(scroll);
-
-    const shouldCrossfade = !!crossfade?.enabled;
 
     onSelectThumb?.(canonicalIndex, {
       transition: shouldCrossfade ? "crossfade" : "scroll",
@@ -628,6 +1356,66 @@ export default function ThumbnailSlider({
       const slideEls = Array.from(trackEl.children) as HTMLElement[];
       if (slideEls.length === 0) return;
 
+      const virtual = thumbVirtualMetricsRef.current;
+      if (virtual?.enabled) {
+        const metrics = virtual.metrics;
+        const cw = readViewportMainSize(trackEl);
+        if (cw <= 0) return;
+
+        const originalsForLayout = Array.from({ length: metrics.count }, (_, index) => {
+          const start = index * metrics.stride;
+          return {
+            el: null,
+            start,
+            end: start + metrics.cellSize,
+            size: metrics.cellSize,
+          };
+        });
+        const wantLoop = shouldEnableSliderLoop({
+          loop,
+          itemCount: metrics.count,
+          span: metrics.baseSpan,
+          viewport: cw,
+        });
+
+        layoutRef.current = {
+          originals: originalsForLayout,
+          cw,
+        };
+
+        sliderWidth.current = resolveSliderContentSpan({
+          baseSpan: metrics.baseSpan,
+          gap,
+          shouldLoop: wantLoop,
+        });
+
+        setContentLength(sliderWidth.current);
+        setContainerLength(cw);
+        setThumbLong(metrics.cellSize);
+
+        const first = slideEls[0];
+        if (first) {
+          const rect = first.getBoundingClientRect();
+          setThumbCross(AX.main === 'x' ? rect.height : rect.width);
+        }
+
+        const sig =
+          `virtual|count=${metrics.count}` +
+          `|cw=${roundSliderLayoutMetric(cw)}` +
+          `|cell=${roundSliderLayoutMetric(metrics.cellSize)}` +
+          `|W=${roundSliderLayoutMetric(metrics.baseSpan)}` +
+          `|wrap=${wantLoop ? 1 : 0}`;
+
+        if (sig !== lastGeomSigRef.current) {
+          lastGeomSigRef.current = sig;
+          setGeomKey((k) => k + 1)
+        }
+
+        setWrapSafe(wantLoop);
+        setIsMeasured(true);
+        return;
+      }
+
       const sizes = slideEls.map((sl) => sl.getBoundingClientRect()[AX.sizeKey]);
       if (sizes.some((s) => s === 0)) {
         setTimeout(measureAndPosition, 0);
@@ -655,12 +1443,11 @@ export default function ThumbnailSlider({
           return { el: sl, start, end, size: s };
         });
 
+      const cw = readViewportMainSize(trackEl);
       layoutRef.current = {
         originals: originalsForLayout,
-        cw: (trackEl as any)[AX.clientKey] as number,
+        cw,
       };
-
-      const cw = (trackEl as any)[AX.clientKey] as number;
       const originalsCount = layoutRef.current?.originals?.length ?? 0;
       const baseSpan = originalsForLayout[originalsCount - 1]?.end ?? 0;
 
@@ -728,11 +1515,20 @@ export default function ThumbnailSlider({
   }, [clonedChildren, gap, wrap, loop, AX, sign, position]);
 
   const contentSig = useMemo(() => {
-    return computeSliderChildrenKey(children);
-  }, [children]);
+    if (usesItemRendering) {
+      return Array.from({ length: count }, (_, index) => {
+        const key = getThumbItemKey(index);
+        return `item:${String(key)}`;
+      }).join('|');
+    }
+    return computeSliderChildrenKey(rawKids);
+  }, [count, rawKids, usesItemRendering, itemList, getItemKey]);
 
   const mediaSig = useMemo(
-    () => `${contentSig}|build=${buildKey}|wrap=${wrap ? 1 : 0}|clones=${clonedChildren.length}`,
+    () =>
+      `${contentSig}|build=${buildKey}|wrap=${wrap ? 1 : 0}|clones=${
+        thumbVirtualMetricsRef.current?.enabled ? "virtual" : clonedChildren.length
+      }`,
     [buildKey, clonedChildren.length, contentSig, wrap]
   );
 
@@ -861,16 +1657,143 @@ export default function ThumbnailSlider({
       }, 0)
     }
 
-    const rawKids = Children.toArray(children).filter(isValidElement)
-    const childCount = rawKids.length
+    const childCount = count
     const clonesBefore = wrap ? visibleThumbsRef.current : 0
     const clonesAfter = clonesBefore
-    const cw = (containerEl as any)[AX.clientKey] as number
+    const cw = readViewportMainSize(containerEl)
 
     function buildPages() {
       if (canceled || !containerEl) return
 
       const allEls = Array.from(containerEl.children) as HTMLElement[]
+      const virtual = thumbVirtualMetricsRef.current;
+      if (virtual?.enabled) {
+        const L = layoutRef.current;
+        if (!L || !L.originals?.length) {
+          retry();
+          return;
+        }
+
+        const data = L.originals;
+        const cw = L.cw || readViewportMainSize(containerEl);
+        const renderedByCanonical = new Map<number, HTMLElement>();
+        allEls.forEach((el) => {
+          const raw = el.getAttribute('data-rmg-thumb-index');
+          const index = raw == null ? NaN : Number.parseInt(raw, 10);
+          if (Number.isFinite(index)) renderedByCanonical.set(index, el);
+        });
+
+        const maxTarget = Math.max(0, (sliderWidth.current || 0) - cw);
+        const EPS = 0.5;
+        const pages: Array<{
+          target: number;
+          indices: number[];
+        }> = [];
+
+        if (groupCells) {
+          let i = 0;
+          while (i < childCount) {
+            const startLeft = data[i]?.start ?? 0;
+            const viewRight = startLeft + cw;
+            let j = i;
+            while (j < childCount && (data[j]?.end ?? 0) <= viewRight + EPS) j++;
+            if (j === i) j++;
+
+            const isLast = j >= childCount;
+            let target = startLeft;
+            if (isLast && !wrap) target = maxTarget;
+            if (i === 0) target = 0;
+
+            pages.push({
+              target,
+              indices: Array.from({ length: j - i }, (_, offset) => i + offset),
+            });
+            i = j;
+          }
+        } else {
+          if (wrap) {
+            data.forEach((d, index) => {
+              pages.push({ target: index === 0 ? 0 : d.start, indices: [index] });
+            });
+          } else {
+            for (let index = 0; index < data.length; index++) {
+              const d = data[index];
+              let target = index === 0 ? 0 : d.start;
+              target = Math.min(target, maxTarget);
+              if (!pages.length || Math.abs(target - pages[pages.length - 1].target) > EPS) {
+                pages.push({ target, indices: [index] });
+              }
+              if (Math.abs(target - maxTarget) <= EPS) break;
+            }
+
+            const winStart = maxTarget - EPS;
+            const winEnd = maxTarget + cw + EPS;
+            const lastIndices = data
+              .map((d, index) => ({ d, index }))
+              .filter(({ d }) => d.start < winEnd && d.end > winStart)
+              .map(({ index }) => index);
+            if (lastIndices.length) {
+              const lastT = pages[pages.length - 1]?.target ?? -1;
+              if (Math.abs(lastT - maxTarget) > EPS) {
+                pages.push({ target: maxTarget, indices: lastIndices });
+              } else {
+                pages[pages.length - 1].indices = Array.from(
+                  new Set(pages[pages.length - 1].indices.concat(lastIndices))
+                );
+              }
+            }
+          }
+        }
+
+        const newSlides: Slide[] = pages.map((page) => ({
+          target: page.target,
+          cells: page.indices.map((index) => ({
+            element: renderedByCanonical.get(index) ?? null,
+            index,
+          })),
+        }));
+
+        pagesRef.current = pages.map((page) => ({
+          startIndex: Math.min(...page.indices),
+          endIndex: Math.max(...page.indices) + 1,
+          targetScroll: page.target,
+        }));
+
+        const hasNaN = newSlides.some((s) => Number.isNaN(s.target));
+        if (hasNaN || (wrap && newSlides.length === 1)) {
+          retry();
+          return;
+        }
+
+        const baseSpan = data[data.length - 1]?.end ?? 0;
+        const nextWrap = shouldEnableSliderLoop({
+          loop,
+          itemCount: data.length,
+          span: baseSpan,
+          viewport: cw,
+        });
+        if (nextWrap !== wrap) {
+          setWrapSafe(nextWrap);
+          return;
+        }
+
+        isWrapping.current = nextWrap;
+        slidesRef.current = newSlides;
+        if (!layoutReadyRef.current) {
+          layoutReadyRef.current = true;
+          setLayoutReady(true);
+        }
+
+        const map: number[] = [];
+        newSlides.forEach((slide, slideIdx) => {
+          slide.cells.forEach((cell) => {
+            map[cell.index] = slideIdx;
+          });
+        });
+        cellToSlideRef.current = map;
+        return;
+      }
+
       const originals = allEls.slice(clonesBefore, allEls.length - clonesAfter)
       const idxMap = new Map<HTMLElement, number>(originals.map((el, i) => [el, i]))
 
@@ -924,7 +1847,7 @@ export default function ThumbnailSlider({
         if (wrap) {
           data.forEach((d, idx) => {
             const t = idx === 0 ? 0 : d.start
-            pages.push({ els: [d.el], target: t })
+            if (d.el) pages.push({ els: [d.el], target: t })
           })
         } else {
           for (let idx = 0; idx < data.length; idx++) {
@@ -933,7 +1856,7 @@ export default function ThumbnailSlider({
             t = Math.min(t, maxTarget)
 
             if (!pages.length || Math.abs(t - pages[pages.length - 1].target) > EPS) {
-              pages.push({ els: [d.el], target: t })
+              if (d.el) pages.push({ els: [d.el], target: t })
             }
 
             if (Math.abs(t - maxTarget) <= EPS) break
@@ -945,6 +1868,7 @@ export default function ThumbnailSlider({
           const lastEls = data
             .filter((d) => d.start < winEnd && d.end > winStart)
             .map((d) => d.el)
+            .filter((el): el is HTMLElement => !!el)
 
           if (lastEls.length) {
             const lastT = pages[pages.length - 1]?.target ?? -1
@@ -963,7 +1887,7 @@ export default function ThumbnailSlider({
               }
             }
             const fallback = data[Math.max(0, safeIdx)]
-            if (fallback) {
+            if (fallback?.el) {
               const lastT = pages[pages.length - 1]?.target ?? -1
               if (Math.abs(lastT - maxTarget) > EPS) {
                 pages.push({ els: [fallback.el], target: maxTarget })
@@ -1046,6 +1970,14 @@ export default function ThumbnailSlider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clonedChildren, geomKey, position]);
 
+  useLayoutEffect(() => {
+    if (!pendingVirtualThumbsBuiltRef.current) return;
+    if (!thumbVirtualMetricsRef.current?.enabled) return;
+
+    pendingVirtualThumbsBuiltRef.current = false;
+    clearThumbVirtualRebaseOffset();
+  }, [clonedChildren]);
+
   function getPageForIndex(i: number) {
     const pages = pagesRef.current
     if (!pages.length) return null
@@ -1070,6 +2002,10 @@ export default function ThumbnailSlider({
   }
 
   function setActiveThumb(i: number) {
+    if (thumbVirtualMetricsRef.current?.enabled) {
+      setVirtualIndex(i);
+    }
+
     const track = trackRef.current
     if (!track) return
 
@@ -1151,6 +2087,210 @@ export default function ThumbnailSlider({
     return slidesRef.current[thumbSlideIndex]?.target ?? 0;
   }
 
+  function getCurrentVisibleThumbIndices() {
+    const slideIndices =
+      slidesRef.current[selectedSlideIndexRef.current]?.cells.map(
+        (cell) => cell.index
+      ) ?? [];
+    const layout = layoutRef.current;
+    const viewport = layout?.cw || containerLength || 0;
+
+    if (!layout?.originals?.length || viewport <= 0) return slideIndices;
+
+    const location =
+      offsetLocationRef.current?.get() ??
+      xRef.current ??
+      targetRef.current?.get() ??
+      0;
+    const visibleIndices = resolveThumbnailVisibleIndicesForScroll({
+      items: layout.originals.map((item, index) => ({
+        index,
+        start: item.start,
+        end: item.end,
+      })),
+      scroll: -location,
+      viewport,
+      trackSpan: sliderWidth.current || contentLength,
+      loop: isWrapping.current,
+    });
+
+    return visibleIndices.length ? visibleIndices : slideIndices;
+  }
+
+  function cancelSyncFadeTimers() {
+    syncFadeRafRef.current.forEach((rafId) => window.cancelAnimationFrame(rafId));
+    syncFadeRafRef.current = [];
+
+    if (syncFadeTimerRef.current != null) {
+      window.clearTimeout(syncFadeTimerRef.current);
+      syncFadeTimerRef.current = null;
+    }
+  }
+
+  function clearSyncFade() {
+    cancelSyncFadeTimers();
+    setSyncFade(null);
+  }
+
+  function getThumbSelector(index: number) {
+    const value = String(index);
+    const escaped =
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+        ? CSS.escape(value)
+        : value.replace(/"/g, '\\"');
+    return `[data-rmg-thumb-index="${escaped}"]`;
+  }
+
+  function captureSyncFadeOverlayItems(visibleIndices: readonly number[]) {
+    const container = containerRef.current;
+    const track = trackRef.current;
+    if (!container || !track || !visibleIndices.length) return [];
+
+    const containerRect = container.getBoundingClientRect();
+    const uniqueIndices = Array.from(new Set(visibleIndices));
+
+    return uniqueIndices.flatMap((index, order): SyncFadeOverlayItem[] => {
+      const child = renderThumbContent(index);
+      if (!child) return [];
+
+      const matches = Array.from(
+        track.querySelectorAll<HTMLElement>(getThumbSelector(index))
+      );
+      if (!matches.length) return [];
+
+      let bestEl: HTMLElement | null = null;
+      let bestArea = -1;
+
+      for (const el of matches) {
+        const rect = el.getBoundingClientRect();
+        const overlapX = Math.max(
+          0,
+          Math.min(rect.right, containerRect.right) -
+            Math.max(rect.left, containerRect.left)
+        );
+        const overlapY = Math.max(
+          0,
+          Math.min(rect.bottom, containerRect.bottom) -
+            Math.max(rect.top, containerRect.top)
+        );
+        const area = overlapX * overlapY;
+
+        if (area > bestArea) {
+          bestArea = area;
+          bestEl = el;
+        }
+      }
+
+      if (!bestEl) return [];
+
+      const rect = bestEl.getBoundingClientRect();
+      return [
+        {
+          key: `sync-fade-${syncFadeIdRef.current + 1}-${index}-${order}`,
+          index,
+          active: index === activeThumbIndexRef.current,
+          node: child,
+          style: {
+            ...(thumbnailItemStyle || {}),
+            position: 'absolute',
+            left: rect.left - containerRect.left,
+            top: rect.top - containerRect.top,
+            width: rect.width,
+            height: rect.height,
+            transform: 'none',
+            cursor: 'default',
+            pointerEvents: 'none',
+          },
+        },
+      ];
+    });
+  }
+
+  function applyInstantSyncScroll(scroll: number) {
+    bodyRef.current?.useDuration(0).useFriction(1);
+    setTargetToScroll(scroll);
+
+    const nextLocation = targetRef.current?.get();
+    if (typeof nextLocation !== 'number') {
+      animRef.current?.start();
+      return;
+    }
+
+    locationRef.current?.set(nextLocation);
+    previousLocationRef.current?.set(nextLocation);
+    offsetLocationRef.current?.set(nextLocation);
+    xRef.current = nextLocation;
+
+    positionSlider();
+    syncThumbVirtualWindowForLocation(nextLocation, true);
+    updateArrowsImperatively();
+
+    animRef.current?.start();
+  }
+
+  function beginFadeOnSyncScroll(
+    scroll: number,
+    options: ReturnType<typeof resolveThumbnailFadeOnSyncOptions>,
+    overlayItems: SyncFadeOverlayItem[]
+  ) {
+    const durationMs = prefersReducedMotion ? 0 : options.durationMs;
+    if (overlayItems.length === 0) return false;
+
+    cancelSyncFadeTimers();
+
+    if (durationMs <= 0) {
+      applyInstantSyncScroll(scroll);
+      setSyncFade(null);
+      return true;
+    }
+
+    const id = syncFadeIdRef.current + 1;
+    syncFadeIdRef.current = id;
+
+    flushSync(() => {
+      setSyncFade({
+        id,
+        phase: 'hold',
+        items: overlayItems,
+        durationMs,
+        easing: options.easing,
+      });
+    });
+
+    applyInstantSyncScroll(scroll);
+
+    const rafId = window.requestAnimationFrame(() => {
+      const nextRafId = window.requestAnimationFrame(() => {
+        syncFadeRafRef.current = syncFadeRafRef.current.filter(
+          (storedId) => storedId !== nextRafId
+        );
+
+        setSyncFade((current) =>
+          current?.id === id ? { ...current, phase: 'fade' } : current
+        );
+
+        syncFadeTimerRef.current = window.setTimeout(() => {
+          setSyncFade((current) => (current?.id === id ? null : current));
+          syncFadeTimerRef.current = null;
+        }, durationMs + 80);
+      });
+
+      syncFadeRafRef.current = syncFadeRafRef.current.filter(
+        (storedId) => storedId !== rafId
+      );
+      syncFadeRafRef.current.push(nextRafId);
+    });
+
+    syncFadeRafRef.current.push(rafId);
+    return true;
+  }
+
+  useEffect(() => {
+    return () => {
+      cancelSyncFadeTimers();
+    };
+  }, []);
+
   useEffect(() => {
     const ch = channelRef.current;
 
@@ -1158,6 +2298,7 @@ export default function ThumbnailSlider({
       const { index, mode } = ch.get();
       const canonicalIndex = clamp(index, 0, Math.max(0, count - 1));
       const thumbSlideIndex = findThumbSlideIndexForBaseIndex(canonicalIndex);
+      const currentVisibleIndices = getCurrentVisibleThumbIndices();
 
       if (snapModeRef.current === "thumb" || muteChannelRef.current) {
         return;
@@ -1170,6 +2311,18 @@ export default function ThumbnailSlider({
         setActiveThumb(canonicalIndex);
         return;
       }
+
+      const fadeOptions = resolveThumbnailFadeOnSyncOptions(fadeOnSync);
+      const shouldFadeSync = shouldFadeThumbnailSync({
+        fadeOnSync,
+        targetIndex: canonicalIndex,
+        visibleIndices: currentVisibleIndices,
+        count,
+        loop: isWrapping.current,
+      });
+      const syncFadeOverlayItems = shouldFadeSync
+        ? captureSyncFadeOverlayItems(currentVisibleIndices)
+        : [];
 
       activeThumbIndexRef.current = canonicalIndex;
       selectedSlideIndexRef.current = thumbSlideIndex;
@@ -1184,16 +2337,21 @@ export default function ThumbnailSlider({
       const scroll = getActiveSelectionScroll(canonicalIndex, thumbSlideIndex);
 
       if (mode === "instant") {
-        bodyRef.current?.useDuration(0).useFriction(1);
-        setTargetToScroll(scroll);
-        animRef.current?.start();
+        clearSyncFade();
+        applyInstantSyncScroll(scroll);
+      } else if (
+        shouldFadeSync &&
+        beginFadeOnSyncScroll(scroll, fadeOptions, syncFadeOverlayItems)
+      ) {
+        return;
       } else {
+        clearSyncFade();
         animateToScroll(scroll);
       }
     });
 
     return unsub;
-  }, [count, thumbnailsCenter, contentLength, containerLength]);
+  }, [count, thumbnailsCenter, contentLength, containerLength, fadeOnSync, prefersReducedMotion]);
 
   useEffect(() => {
     const ch = channelRef.current;
@@ -1215,7 +2373,7 @@ export default function ThumbnailSlider({
     setActiveThumb(i);
 
     animateToScroll(getScrollForIndex(i));
-  }, [layoutReady, isMeasured, clonedChildren.length, geomKey, buildKey, wrap, count]);
+  }, [layoutReady, isMeasured, geomKey, buildKey, wrap, count]);
 
   function getCenteredScroll(i: number) {
     const lay = layoutRef.current
@@ -1440,7 +2598,11 @@ export default function ThumbnailSlider({
 
     baseOffsetRef.current = base
 
-    const startIdx = selectedSlideIndexRef.current || 0;
+    const virtual = thumbVirtualMetricsRef.current;
+    const activeIndex = clamp(channelRef.current.get().index ?? 0, 0, Math.max(0, count - 1));
+    const startIdx = virtual?.enabled
+      ? findThumbSlideIndexForBaseIndex(activeIndex)
+      : selectedSlideIndexRef.current || 0;
 
     const location = Vector1D(0);
     const previousLocation = Vector1D(0);
@@ -1456,7 +2618,7 @@ export default function ThumbnailSlider({
 
     const len = slidesRef.current.length || 1
     const counterMax = len - 1
-    const startIndex = selectedSlideIndexRef.current || 0
+    const startIndex = startIdx
 
     const indexCurrent = Counter(counterMax, startIndex, true)
     const indexPrevious = Counter(counterMax, startIndex, true)
@@ -1472,17 +2634,27 @@ export default function ThumbnailSlider({
     })
     scrollSnapsRef.current = scrollSnaps
 
-    const initialSnap = scrollSnaps[startIdx] ?? 0
+    const initialSnap = virtual?.enabled
+      ? -(centerActiveThumb
+          ? getCenterScroll(activeIndex)
+          : slidesRef.current[startIdx]?.target ?? 0)
+      : scrollSnaps[startIdx] ?? 0
 
     location.set(initialSnap);
     previousLocation.set(initialSnap);
     offsetLocation.set(initialSnap);
     target.set(initialSnap);
     xRef.current = initialSnap;
+    if (virtual?.enabled) {
+      syncThumbVirtualWindowForLocation(initialSnap, true);
+    }
 
     translateRef.current = Translate(track, AX);
     translateRef.current?.to((initialSnap + base) * sign)
 
+    if (virtual?.enabled) {
+      activeThumbIndexRef.current = activeIndex;
+    }
     selectedSlideIndexRef.current = startIdx;
 
     const minSnap = Math.min(...scrollSnaps)
@@ -1564,7 +2736,7 @@ export default function ThumbnailSlider({
     bodyRef.current = body
 
     if (!wrap) {
-      const cw = (track as any)[AX.clientKey] as number;
+      const cw = readViewportMainSize(track);
       const min = -(Math.max(0, sliderWidth.current - cw))
       const max = 0
       limitRef.current = Limit(isNaN(min) ? 0 : min, max)
@@ -1597,7 +2769,11 @@ export default function ThumbnailSlider({
         if (wrap && W > 0) {
           const body = bodyRef.current!
           const dir = body.direction() || Math.sign(targetRef.current!.get() - locationRef.current!.get()) || 0
-          looper?.loop(dir)
+          const loopShift = looper?.loop(dir) ?? 0
+          if (loopShift !== 0) {
+            applyThumbVirtualLoopCompensation(loopShift)
+            syncThumbVirtualWindowForLocation(locationRef.current!.get(), true)
+          }
         }
 
         xRef.current = locationRef.current!.get()
@@ -1617,6 +2793,7 @@ export default function ThumbnailSlider({
         offsetLocationRef.current!.set(loc)
         xRef.current = loc
         positionSlider()
+        syncThumbVirtualWindowForLocation(loc)
         updateArrowsImperatively()
         updateActiveIndexFromX(loc)
       }
@@ -1865,7 +3042,7 @@ export default function ThumbnailSlider({
       const trackEl = trackRef.current;
       if (!trackEl) return;
 
-      const containerSize = (trackEl as any)[AX.clientKey] as number;
+      const containerSize = readViewportMainSize(trackEl);
       const contentSize = sliderWidth.current;
       const canScrollMain = contentSize > containerSize;
 
@@ -1884,9 +3061,13 @@ export default function ThumbnailSlider({
       bodyRef.current?.useDuration(0).useFriction(1);
 
       targetRef.current?.set(next);
+      locationRef.current?.set(next);
+      previousLocationRef.current?.set(next);
+      offsetLocationRef.current?.set(next);
       xRef.current = next;
 
       positionSlider();
+      syncThumbVirtualWindowForLocation(next);
       updateActiveIndexFromX(next);
 
       animRef.current?.start();
@@ -1950,10 +3131,30 @@ export default function ThumbnailSlider({
     };
   }, [revealOptions]);
 
-  const renderedThumbs = (clonedChildren.length
+  const shouldDelayItemFallbackForVirtualization = (() => {
+    if (!usesItemRendering) return false;
+    const options = resolveSliderVirtualizationOptions(virtualization);
+    return (
+      options.enabled &&
+      count > options.threshold &&
+      explicitThumbLong > 0 &&
+      !clonedChildren.length
+    );
+  })();
+
+  const renderedThumbs = clonedChildren.length
     ? clonedChildren
-    : rawKids.map((c, i) => cloneThumb(c, `fallback-${i}`, i, i))
-  );
+    : shouldDelayItemFallbackForVirtualization
+      ? []
+      : Array.from({ length: count }, (_, i) => {
+          const child = renderThumbContent(i, i);
+          return cloneThumb(
+            child,
+            `fallback-${String(getThumbItemKey(i))}`,
+            i,
+            i
+          );
+        }).filter(Boolean);
 
   const revealChildren = useMemo(() => {
     return renderedThumbs.map((child: any, i: number) => {
@@ -1981,22 +3182,57 @@ export default function ThumbnailSlider({
     className: [cls.fade_container, fadeClass].filter(Boolean).join(' ')
   };
 
+  const measuredTrackCrossSize =
+    AX.main === 'x'
+      ? (thumbnailHeight ?? (thumbCross > 0 ? thumbCross : undefined) ?? thumbSize)
+      : (thumbnailWidth ?? (thumbCross > 0 ? thumbCross : undefined) ?? thumbSize);
+  const resolvedTrackCrossMinSize = resolveTrackCrossMinSize({
+    isHorizontal,
+    measuredTrackCrossSize,
+    style,
+    thumbnailsContainerStyle,
+  });
+
   const outerStyle: React.CSSProperties = {
     boxSizing: 'border-box',
     overflow: 'hidden',
     ...(isHorizontal
-      ? { width: thumbnailsContainerWidth, height: thumbCross ? '100%' : 'auto' }
-      : { height: thumbnailsContainerHeight, width: thumbLong ? '100%' : 'auto' }),
+      ? {
+          width: thumbnailsContainerWidth,
+          height: thumbnailsContainerHeight,
+          minHeight: thumbnailsContainerHeight == null ? resolvedTrackCrossMinSize : undefined,
+        }
+      : {
+          height: thumbnailsContainerHeight,
+          width: thumbnailsContainerWidth,
+          minWidth: thumbnailsContainerWidth == null ? resolvedTrackCrossMinSize : undefined,
+        }),
     ...(style || {}),
   }
 
+  const thumbVirtualTrackMetrics = thumbVirtualMetricsRef.current?.metrics ?? null;
+  const trackCrossSize = measuredTrackCrossSize ?? '100%';
+  const trackMainSize =
+    AX.main === 'x'
+      ? (thumbVirtualTrackMetrics ? `${thumbVirtualTrackMetrics.trackSpan}px` : '100%')
+      : (thumbVirtualTrackMetrics
+          ? `${thumbVirtualTrackMetrics.trackSpan}px`
+          : contentLength > 0
+            ? `${contentLength}px`
+            : '100%');
   const trackStyle: React.CSSProperties = {
-    width: isHorizontal ? '100%' : (thumbnailWidth ?? '100%'),
-    height: isHorizontal ? (thumbnailHeight ?? '100%') : '100%',
+    position: 'relative',
+    width: isHorizontal ? trackMainSize : trackCrossSize,
+    height: isHorizontal ? trackCrossSize : trackMainSize,
     willChange: 'transform',
     backfaceVisibility: 'hidden',
     touchAction: 'none',
     visibility: isReady ? 'visible' : 'hidden',
+    opacity: syncFade?.phase === 'hold' ? 0 : 1,
+    transition:
+      syncFade?.phase === 'fade'
+        ? `opacity ${syncFade.durationMs}ms ${syncFade.easing}`
+        : undefined,
   }
 
   const effectiveRippleEnabled = rippleEnabled !== false;
@@ -2059,12 +3295,48 @@ export default function ThumbnailSlider({
     />
   );
 
+  const syncFadeOverlay = syncFade ? (
+    <div
+      aria-hidden="true"
+      className={cls.syncFadeOverlay}
+      data-rmg-thumb-sync-fade-overlay="true"
+      data-rmg-thumb-sync-fade-phase={syncFade.phase}
+      onTransitionEnd={(event) => {
+        if (event.currentTarget !== event.target) return;
+        if (syncFade.phase === 'fade') clearSyncFade();
+      }}
+      style={{
+        opacity: syncFade.phase === 'fade' ? 0 : 1,
+        transition:
+          syncFade.phase === 'fade'
+            ? `opacity ${syncFade.durationMs}ms ${syncFade.easing}`
+            : 'none',
+      }}
+    >
+      {syncFade.items.map((item) => (
+        <div
+          key={item.key}
+          className={[cls.thumb, cls.syncFadeThumb, thumbnailItemClassName]
+            .filter(Boolean)
+            .join(' ')}
+          data-active={item.active ? 'true' : undefined}
+          data-rmg-thumb-sync-fade-index={item.index}
+          style={item.style}
+          draggable={false}
+        >
+          {item.node}
+        </div>
+      ))}
+    </div>
+  ) : null;
+
   const inner = (
     <>
       {arrowNodes}
       <div ref={trackRef} style={trackStyle}>
         {revealChildren}
       </div>
+      {syncFadeOverlay}
     </>
   );
 

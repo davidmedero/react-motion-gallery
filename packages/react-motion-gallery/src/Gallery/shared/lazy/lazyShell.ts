@@ -98,6 +98,7 @@ function ensureLazyTargetHidden(target: HTMLElement) {
 
 export function markLazyImageShell(hostEl: HTMLElement) {
   hostEl.setAttribute(LAZY_HOST_ATTR, "");
+  hostEl.removeAttribute(LAZY_LOADED_ATTR);
   hostEl.setAttribute("aria-busy", "true");
 
   const images = Array.from(hostEl.querySelectorAll<HTMLImageElement>("img[src]")).filter(
@@ -202,7 +203,12 @@ export async function revealLazyImageShell(
   hostEl: HTMLElement,
   options?: { onRevealed?: () => void; shouldAbort?: () => boolean }
 ) {
-  if (hostEl.getAttribute(LAZY_LOADED_ATTR) === "true") return;
+  if (hostEl.getAttribute(LAZY_LOADED_ATTR) === "true") {
+    if (getLazyTargets(hostEl).length && !options?.shouldAbort?.()) {
+      hydrateLazyImageShell(hostEl, { onRevealed: options?.onRevealed });
+    }
+    return;
+  }
   if (options?.shouldAbort?.()) return;
 
   const spinnerEl = hostEl.querySelector<HTMLElement>("[data-rmg-spinner]");
@@ -243,32 +249,23 @@ export async function revealLazyImageShell(
   await nextFrame();
   if (options?.shouldAbort?.()) return;
 
-  await new Promise<void>((resolve) => {
-    hideSpinnerEl(spinnerEl, () => {
-      if (options?.shouldAbort?.()) {
-        resolve();
-        return;
-      }
+  for (const target of targets) {
+    const src = target.getAttribute(LAZY_ATTR);
+    if (!src) continue;
 
-      for (const target of targets) {
-        const src = target.getAttribute(LAZY_ATTR);
-        if (!src) continue;
+    target.removeAttribute(LAZY_ATTR);
+    target.removeAttribute(LAZY_NESTED_IMAGE_ATTR);
+    if (target instanceof HTMLImageElement) {
+      target.style.opacity = "1";
+    } else {
+      const img = findPrimaryTrackableImage(target);
+      if (img) img.style.opacity = "1";
+      else target.style.opacity = "1";
+    }
+  }
 
-        target.removeAttribute(LAZY_ATTR);
-        target.removeAttribute(LAZY_NESTED_IMAGE_ATTR);
-        if (target instanceof HTMLImageElement) {
-          target.style.opacity = "1";
-        } else {
-          const img = findPrimaryTrackableImage(target);
-          if (img) img.style.opacity = "1";
-          else target.style.opacity = "1";
-        }
-      }
-
-      hostEl.setAttribute(LAZY_LOADED_ATTR, "true");
-      hostEl.removeAttribute("aria-busy");
-      options?.onRevealed?.();
-      resolve();
-    });
-  });
+  hostEl.setAttribute(LAZY_LOADED_ATTR, "true");
+  hostEl.removeAttribute("aria-busy");
+  hideSpinnerEl(spinnerEl);
+  options?.onRevealed?.();
 }

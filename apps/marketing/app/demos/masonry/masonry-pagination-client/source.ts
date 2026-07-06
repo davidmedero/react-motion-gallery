@@ -18,6 +18,7 @@ import {
 } from "react-motion-gallery/masonry";
 import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import {
+  masonryPagination,
   MasonryPaginationControls,
   useMasonryPagination,
 } from "react-motion-gallery/masonry/pagination";
@@ -168,6 +169,11 @@ const clientRevealOptions = {
   ...revealOptions,
   staggerMs: 80,
 };
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
 function stockLabel(stock: number) {
   if (stock <= 24) return "Only " + String(stock) + " left";
   if (stock <= 72) return String(stock) + " in stock";
@@ -180,7 +186,10 @@ function stockClassName(stock: number) {
 }
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: { enabled: true, closeScroll: true },
   });
   return <>{fullscreenNode}</>;
@@ -612,6 +621,25 @@ export function MasonryPaginationClientDemo() {
     loading,
     urlSync: { param: "masonryClientPage" },
   });
+  const isInitialBusy = loading && products.length === 0;
+  const initialPaginationPlugin = useMemo(
+    () =>
+      masonryPagination({
+        mode: "server",
+        pageIndex: 0,
+        pageSize: PAGE_SIZE,
+        loading: false,
+      }),
+    [],
+  );
+  const paginationPlugin = isInitialBusy
+    ? initialPaginationPlugin
+    : pagination.plugin;
+  const fullscreenPlugin = useMemo(() => masonryFullscreen(), []);
+  const plugins = useMemo(
+    () => [paginationPlugin, fullscreenPlugin],
+    [fullscreenPlugin, paginationPlugin],
+  );
   const loadingOptions = useMemo<MasonryLoadingOptions>(
     () => ({
       active: loading && products.length > 0,
@@ -653,10 +681,11 @@ export function MasonryPaginationClientDemo() {
     return () => ac.abort();
   }, [retryKey]);
 
-  const displayProducts =
-    loading && products.length === 0
-      ? createPlaceholderProducts(pagination.pageSize)
-      : products;
+  const displayProducts = useMemo(
+    () =>
+      isInitialBusy ? createPlaceholderProducts(pagination.pageSize) : products,
+    [isInitialBusy, pagination.pageSize, products],
+  );
   const setPage = useCallback(
     (nextPageIndex: number) => {
       if (nextPageIndex === pagination.pageIndex) return;
@@ -708,7 +737,7 @@ export function MasonryPaginationClientDemo() {
         <MasonryGallery
           products={displayProducts}
           loadingOptions={loadingOptions}
-          plugins={[pagination.plugin, masonryFullscreen()] as never}
+          plugins={plugins}
           reveal={clientRevealOptions}
         />
       )}

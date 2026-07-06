@@ -1,6 +1,6 @@
-export { E as Entries, d as EntriesCore, c as EntriesCoreProps, a as EntriesMediaContainerRender, b as EntriesProps, E as default, f as flattenEntries, n as nodeFromMediaDefault } from './index-DUT57ncN.mjs';
-import { d as EntriesOptions, E as EntriesHandle } from './responsive-BgOmwHgG.mjs';
-export { Q as EntriesDataMode, a as EntriesInfiniteScrollOptions, b as EntriesLayout, c as EntriesLoadMoreOptions, L as EntriesLoadingOptions, e as EntriesPaginationOptions, f as EntriesPlugin, g as EntriesPluginKind, T as EntriesPluginOptionsByKind, h as EntriesVirtualizationOptions, J as EntryCardRenderArgs, C as EntryItem, I as EntryMediaLayout, D as EntryMediaRenderArgs, G as EntryOverlayRenderArgs, H as EntryOverlayStyle, O as EntrySkeletonRenderArgs, K as EntrySkeletonResolverArgs, M as MediaEntryLink, N as RevealOptions, S as SlideOwner } from './responsive-BgOmwHgG.mjs';
+export { E as Entries, d as EntriesCore, c as EntriesCoreProps, a as EntriesMediaContainerRender, b as EntriesProps, E as default, f as flattenEntries, n as nodeFromMediaDefault } from './index--Rr6axdJ.mjs';
+import { d as EntriesOptions, E as EntriesHandle } from './responsive-Bq9VSmbl.mjs';
+export { X as EntriesDataMode, a as EntriesInfiniteScrollOptions, b as EntriesLayout, c as EntriesLoadMoreOptions, U as EntriesLoadingOptions, e as EntriesPaginationOptions, f as EntriesPlugin, g as EntriesPluginKind, Y as EntriesPluginOptionsByKind, h as EntriesVirtualizationOptions, Q as EntryCardRenderArgs, J as EntryItem, O as EntryMediaLayout, K as EntryMediaRenderArgs, L as EntryOverlayRenderArgs, N as EntryOverlayStyle, W as EntrySkeletonRenderArgs, T as EntrySkeletonResolverArgs, M as MediaEntryLink, V as RevealOptions, S as SlideOwner } from './responsive-Bq9VSmbl.mjs';
 export { EntriesItemsPerPageOption, EntriesPageControlItem, EntriesPageItemsOptions, EntriesPageRangeItem, EntriesPageRangeOptions, EntriesPaginationController, EntriesPaginationControls, EntriesPaginationControlsProps, EntriesPaginationRippleOptions, EntriesPaginationRippleProp, EntriesPaginationSessionStorageOptions, EntriesPaginationUrlSyncOptions, UseEntriesPaginationOptions, entriesPagination, getEntriesPageItems, getEntriesPageRange, useEntriesPagination } from './entries-pagination.mjs';
 export { EntriesLoadMoreController, UseEntriesLoadMoreOptions, entriesLoadMore, useEntriesLoadMore } from './entries-load-more.mjs';
 export { UseEntriesInfiniteScrollOptions, entriesInfiniteScroll, useEntriesInfiniteScroll } from './entries-infinite-scroll.mjs';
@@ -10,15 +10,16 @@ import * as React from 'react';
 import { B as BreakpointMap } from './responsiveNumber-CouEMJ9O.mjs';
 import { L as LoadingForceOptions } from './force-C5m1QpdF.mjs';
 import { MediaItem } from './media.mjs';
-import { k as SliderHandle } from './types-D9WBOrx6.mjs';
-import './types-uhDRb0mo.mjs';
+import { m as SliderHandle } from './types-CGPPAn9i.mjs';
+import './types-DTSXOwzF.mjs';
 import './transitions-ChhEdSB6.mjs';
 import './plyrTypes-B3vioQaS.mjs';
 import './types-CLMzNXt4.mjs';
 import './text-BBcRGVzn.mjs';
-import './types-bZ-lDlKM.mjs';
+import './infiniteScrollTrigger-BluBDW9o.mjs';
+import './types-BtQK91-K.mjs';
 import 'react-dom/client';
-import './dataPlugins-C91mlyu6.mjs';
+import './dataPlugins-CsUwdsuu.mjs';
 
 type UseEntryInViewOpts = IntersectionObserverInit & {
     nearMargin?: string;
@@ -27,6 +28,7 @@ type UseEntryInViewOpts = IntersectionObserverInit & {
 };
 declare function useEntryInView(len: number, opts?: UseEntryInViewOpts): {
     nearView: boolean[];
+    inView: boolean[];
     everInView: boolean[];
     setEntryRef: (index: number) => (node: HTMLElement | null) => void;
 };
@@ -60,7 +62,7 @@ declare function useNormalizedEntriesLoading(entries: EntriesOptions): {
     nearMargin: any;
     viewMargin: any;
     threshold: any;
-    waitForDecode: boolean;
+    waitForMedia: any;
     decodeTimeoutMs: any;
     skeletonWrap: any;
     rememberRevealed: any;
@@ -70,10 +72,8 @@ declare function useNormalizedEntriesReveal(entries: EntriesOptions): {
         active: boolean;
         containerProps: React.HTMLAttributes<HTMLDivElement>;
     }, content: React.ReactNode) => React.ReactNode) | undefined;
-    staggerMs: number;
     durationMs: number;
     easing: string;
-    staggerLimit: number;
 };
 
 type Props = {
@@ -89,6 +89,9 @@ type Props = {
         entryInView?: boolean;
         mediaNodes: React.ReactNode[];
         entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
+        mediaReadyKey?: React.Key;
+        mediaReadyTimeoutMs?: number;
+        onMediaReadyChange?: (ready: boolean) => void;
     }) => React.ReactNode;
     breakpoints: BreakpointMap;
     registerExpandableImage?: (globalIndex: number, node: HTMLImageElement | HTMLVideoElement | null) => void;

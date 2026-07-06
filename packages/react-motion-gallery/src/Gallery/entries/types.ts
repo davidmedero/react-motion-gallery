@@ -9,6 +9,7 @@ import type {
   EntrySkeletonSpec,
   SkeletonLength,
 } from "./components/EntrySkeleton";
+import type { InfiniteScrollRootSource } from "../shared/infiniteScrollTrigger";
 
 export type EntryItem = {
   media?: MediaItem[];
@@ -83,8 +84,9 @@ export type EntriesLoadingOptions = {
   nearMargin?: string; // default "700px 0px"
   viewMargin?: string; // default "0px 0px"
   threshold?: number; // default 0.01
-  waitForDecode?: boolean; // default true
-  decodeTimeoutMs?: number; // default 8000
+  waitForMedia?: boolean; // default true
+  waitForDecode?: boolean; // legacy alias for waitForMedia
+  decodeTimeoutMs?: number; // default 8000, used by custom media fallback
   skeletonWrap?: ElementStyle;
   rememberRevealed?: boolean;
 };
@@ -97,10 +99,8 @@ export type RevealOptions = {
     },
     content: React.ReactNode,
   ) => React.ReactNode;
-  staggerMs?: number;
   durationMs?: number;
   easing?: string;
-  staggerLimit?: number;
 };
 
 export type EntrySkeletonRenderArgs = {
@@ -138,6 +138,7 @@ export type EntriesInfiniteScrollOptions = {
   hasMore?: boolean;
   loading?: boolean;
   rootMargin?: string;
+  scrollRoot?: InfiniteScrollRootSource;
   threshold?: number;
   onLoadMore?: () => void;
   sentinel?: React.ReactNode;
@@ -149,6 +150,11 @@ export type EntriesVirtualizationOptions = {
   estimateSize?: number;
   gap?: number;
   overscan?: number;
+  scrollRoot?:
+    | Element
+    | React.RefObject<Element | null>
+    | (() => Element | null)
+    | null;
 };
 
 export type EntriesPluginOptionsByKind = {

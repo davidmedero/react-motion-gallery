@@ -89,8 +89,6 @@ export function resolveSliderFullscreenClick(target: EventTarget | null) {
   if (index == null) return null;
 
   const image = getOriginImage(target, slide, trigger);
-  if (!image) return null;
-
   return { index, image };
 }
 
@@ -150,6 +148,8 @@ function FullscreenRuntime({ host }: SliderPluginRuntimeProps) {
       const request = resolveSliderFullscreenClick(event.target);
       if (!request) return;
 
+      host.handle?._settleForFullscreenOpen?.();
+
       core.requestFullscreenOpen({
         source: "slider",
         index: request.index,
@@ -188,7 +188,10 @@ function FullscreenRuntime({ host }: SliderPluginRuntimeProps) {
 
     core.registerFullscreenAdapter("slider", {
       closestSelector: '[data-rmg-slide="true"]',
-      syncBeforeOpen: (index) => emitIndex(index),
+      syncBeforeOpen: (index) => {
+        handle._settleForFullscreenOpen?.();
+        emitIndex(index);
+      },
     });
 
     const slides = getRenderedSliderSlides(handle);

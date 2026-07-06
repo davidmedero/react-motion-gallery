@@ -64,7 +64,7 @@ function ArrowRuntime({
       const raw = host.index + delta;
       const next = host.loop ? (raw < 0 ? max : raw > max ? 0 : raw) : raw;
       host.handle?.setIndexFromUi(Math.max(0, Math.min(max, next)), {
-        crossfade: host.hasPlugin("crossfade"),
+        crossfade: options.crossfade === true && host.hasPlugin("crossfade"),
       });
     };
     const className = [

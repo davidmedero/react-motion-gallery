@@ -68,13 +68,11 @@
     var(--rmg-entry-skeleton-enter-duration, 220ms)
   );
   opacity: 0;
-  transition-delay: var(--rmg-entry-intro-delay, 0ms);
 }
 
 .entryRow[data-rmg-entry-ready="1"] .entryInner {
   opacity: 1;
   pointer-events: auto;
-  transition-delay: var(--rmg-entry-intro-delay, 0ms);
 }
 
 .entryRow[data-rmg-entry-reveal-settled="1"] .entryInner {

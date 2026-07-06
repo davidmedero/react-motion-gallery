@@ -5,8 +5,10 @@ import {
   fitsWithinSliderViewport,
   getSliderCenterOffset,
   mergeDuplicateContainedSliderPages,
+  resolveSliderFixedCellSize,
   resolveSliderGroupCells,
   resolveSliderMeasuredSize,
+  resolveSliderUnderflowOffset,
   roundSliderLayoutMetric,
   resolveSliderContentSpan,
   shouldEnableSliderLoop,
@@ -83,6 +85,28 @@ describe("slider layout stability helpers", () => {
         shouldLoop: true,
       })
     ).toBe(664);
+  });
+
+  test("sizes fixed cells from cellsPerSlide even when fewer cells render", () => {
+    expect(
+      resolveSliderFixedCellSize({
+        viewport: 472,
+        cellsPerSlide: 4,
+        gap: 8,
+      })
+    ).toBe(112);
+  });
+
+  test("resolves underflow alignment offsets", () => {
+    const base = {
+      viewport: 472,
+      contentSpan: 232,
+    };
+
+    expect(resolveSliderUnderflowOffset({ ...base, align: "start" })).toBe(0);
+    expect(resolveSliderUnderflowOffset({ ...base, align: "center" })).toBe(120);
+    expect(resolveSliderUnderflowOffset({ ...base, align: "end" })).toBe(240);
+    expect(resolveSliderUnderflowOffset({ viewport: 200, contentSpan: 232 })).toBe(0);
   });
 
   test("recomputes center offsets from the live viewport width", () => {

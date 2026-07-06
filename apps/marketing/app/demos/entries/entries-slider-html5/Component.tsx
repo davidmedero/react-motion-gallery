@@ -536,11 +536,10 @@ export function EntriesSliderHtml5Demo() {
           reveal: showMeasuredContent
             ? {
                 durationMs: 0,
-                staggerMs: 0,
               }
             : undefined,
           loading: {
-            waitForDecode: showMeasuredContent ? false : undefined,
+            waitForMedia: showMeasuredContent ? false : undefined,
             skeletonWrap: {
               style: {
                 background: "#fff",

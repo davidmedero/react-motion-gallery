@@ -212,20 +212,25 @@ describe("lazy shell helpers", () => {
     expect(img.style.opacity).toBe("0");
   });
 
-  test("reveals a marked image only after decode and spinner fade", async () => {
+  test("reveals a marked image after decode while spinner fades out", async () => {
     vi.useFakeTimers();
     const { host, img, spinner, src } = createLazyHost();
 
     markLazyImageShell(host as unknown as HTMLElement);
     const revealPromise = revealLazyImageShell(host as unknown as HTMLElement);
 
-    await vi.advanceTimersByTimeAsync(LAZY_SPINNER_FADE_MS);
+    await vi.advanceTimersByTimeAsync(0);
     await revealPromise;
 
     expect(img.decode).toHaveBeenCalledTimes(1);
     expect(img.src).toBe(src);
     expect(img.getAttribute(LAZY_ATTR)).toBeNull();
+    expect(img.style.opacity).toBe("1");
     expect(host.getAttribute(LAZY_LOADED_ATTR)).toBe("true");
+    expect(spinner.style.getPropertyValue("visibility")).toBe("visible");
+    expect(spinner.style.getPropertyValue("opacity")).toBe("0");
+
+    await vi.advanceTimersByTimeAsync(LAZY_SPINNER_FADE_MS);
     expect(spinner.style.getPropertyValue("visibility")).toBe("hidden");
   });
 
@@ -238,6 +243,25 @@ describe("lazy shell helpers", () => {
 
     expect(img.src).toBe(src);
     expect(img.getAttribute(LAZY_ATTR)).toBeNull();
+    expect(host.getAttribute(LAZY_LOADED_ATTR)).toBe("true");
+    expect(onRevealed).toHaveBeenCalledTimes(1);
+  });
+
+  test("hydrates pending targets on a shell that is already marked loaded", async () => {
+    const { host, img, src } = createLazyHost();
+    const onRevealed = vi.fn();
+
+    markLazyImageShell(host as unknown as HTMLElement);
+    hydrateLazyImageShell(host as unknown as HTMLElement);
+    img.setAttribute(LAZY_ATTR, src);
+    img.src = RMG_BLANK;
+    img.style.opacity = "0";
+
+    await revealLazyImageShell(host as unknown as HTMLElement, { onRevealed });
+
+    expect(img.src).toBe(src);
+    expect(img.getAttribute(LAZY_ATTR)).toBeNull();
+    expect(img.style.opacity).toBe("1");
     expect(host.getAttribute(LAZY_LOADED_ATTR)).toBe("true");
     expect(onRevealed).toHaveBeenCalledTimes(1);
   });

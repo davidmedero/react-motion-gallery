@@ -10,7 +10,8 @@ export { GridVirtualizationOptions, UseGridVirtualizerOptions } from './grid-vir
 import './force-C5m1QpdF.mjs';
 import './layout-BOy4geKv.mjs';
 import './text-BBcRGVzn.mjs';
-import './dataPlugins-C91mlyu6.mjs';
+import './dataPlugins-CsUwdsuu.mjs';
+import './infiniteScrollTrigger-BluBDW9o.mjs';
 
 type GridItemComponent = React.FC<GridItemProps> & {
     __rmgGridItem: true;

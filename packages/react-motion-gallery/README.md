@@ -11,25 +11,25 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 <!-- bundle-size:start -->
 | Surface | JS gzip |
 | --- | --- |
-| `Entries` | 16.2kB |
-| `entries/media/slider` | 20.7kB |
-| `entries/media/grid` | 20.8kB |
-| `entries/media/masonry` | 18.7kB |
+| `Entries` | 16.1kB |
+| `entries/media/slider` | 24.6kB |
+| `entries/media/grid` | 21.0kB |
+| `entries/media/masonry` | 18.9kB |
 | `entries/ready` | 360.0B |
 | `entries/pagination` | 242.0B |
 | `entries/load-more` | 198.0B |
 | `entries/infinite-scroll` | 208.0B |
 | `entries/virtualization` | 236.0B |
 | `rating-stars` | 1.3kB |
-| `FullscreenThumbnailSlider` | 20.4kB |
+| `FullscreenThumbnailSlider` | 26.3kB |
 | `GalleryCore` | 2.7kB |
-| `Grid` | 17.9kB |
+| `Grid` | 18.0kB |
 | `grid/ready` | 323.0B |
 | `grid/lazy-load` | 3.7kB |
 | `grid/fullscreen` | 1.6kB |
 | `grid/pagination` | 246.0B |
 | `grid/load-more` | 236.0B |
-| `grid/infinite-scroll` | 667.0B |
+| `grid/infinite-scroll` | 1.7kB |
 | `grid/virtualization` | 256.0B |
 | `Masonry` | 12.2kB |
 | `masonry/ready` | 323.0B |
@@ -38,38 +38,38 @@ This table reports local gzip measurements for selected runtime surfaces. Type-o
 | `masonry/text-wrap` | 1.8kB |
 | `masonry/pagination` | 239.0B |
 | `masonry/load-more` | 227.0B |
-| `masonry/infinite-scroll` | 630.0B |
+| `masonry/infinite-scroll` | 1.7kB |
 | `masonry/virtualization` | 252.0B |
 | `Skeleton base` | 9.1kB |
 | `skeleton/slider` | 14.7kB |
 | `skeleton/slider/restore` | 25.3kB |
 | `skeleton/grid` | 11.4kB |
 | `skeleton/masonry` | 4.8kB |
-| `Slider core` | 19.0kB |
-| `slider/ready` | 894.0B |
+| `Slider core` | 22.2kB |
+| `slider/ready` | 983.0B |
 | `slider/arrows` | 1.2kB |
-| `slider/dots` | 928.0B |
+| `slider/dots` | 927.0B |
 | `slider/progress` | 892.0B |
-| `slider/scrollbar` | 1.2kB |
+| `slider/scrollbar` | 1.7kB |
 | `slider/auto-height` | 1.3kB |
-| `slider/lazy-load` | 3.9kB |
+| `slider/lazy-load` | 4.2kB |
 | `slider/parallax` | 1.4kB |
 | `slider/scale` | 1.2kB |
 | `slider/fade` | 1.2kB |
-| `slider/crossfade` | 2.8kB |
+| `slider/crossfade` | 3.0kB |
 | `slider/fullscreen` | 1.5kB |
-| `ThumbnailSlider` | 18.9kB |
-| `useFullscreenController` | 5.0kB |
-| `fullscreen/slider` | 40.3kB |
+| `ThumbnailSlider` | 24.6kB |
+| `useFullscreenController` | 6.2kB |
+| `fullscreen/slider` | 50.3kB |
 | `fullscreen/controls` | 173.0B |
-| `fullscreen/captions` | 13.6kB |
-| `fullscreen/zoom-pan` | 12.4kB |
-| `fullscreen/video` | 16.8kB |
-| `fullscreen/lazy-load` | 13.6kB |
+| `fullscreen/captions` | 14.4kB |
+| `fullscreen/zoom-pan` | 12.8kB |
+| `fullscreen/video` | 17.7kB |
+| `fullscreen/lazy-load` | 14.4kB |
 | `fullscreen/crossfade` | 181.0B |
 | `fullscreen/thumbnails` | 160.0B |
-| `Video` | 13.1kB |
-| `ZoomPanImage` | 11.0kB |
+| `Video` | 13.2kB |
+| `ZoomPanImage` | 11.2kB |
 | `zoomPan/hover` | 124.0B |
 | `media / toMediaItems` | 260.0B |
 | `media/ready` | 656.0B |
@@ -1146,6 +1146,7 @@ The component forwards a ref to its outer thumbnail shell.
 | `scroll.loop`              | `boolean`            | `false`    | Wraps thumbnails at the ends.                                         |
 | `scroll.skipSnaps`         | `boolean`            | `false`    | Allows momentum to skip snap points.                                  |
 | `scroll.centerActiveThumb` | `boolean`            | `false`    | Repositions the rail to keep the active thumbnail centered.           |
+| `scroll.fadeOnSync`        | `boolean \| { enabled?: boolean; minDistance?: number; durationMs?: number; easing?: string }` | `false` | Crossfades external base/fullscreen index sync when the target falls outside the current visible thumbnail window plus the `minDistance` cell margin. |
 
 `ResponsivePosition` accepts a single side, an array, or a breakpoint map. For arrays, the first entry is used.
 
@@ -1183,6 +1184,10 @@ The component forwards a ref to its outer thumbnail shell.
 | `transitions.loading.renderLoading`       | `({ count }) => ReactNode`                                                          | `—`                          | Replaces the built-in thumbnail loading skeleton and receives the resolved responsive count.                                                                                |
 | `transitions.loading.timing.exitMs`       | `number`                                                                            | `600`                        | Keeps the thumbnail loading layer mounted for this long after exit starts.                                                                                                  |
 | `transitions.loading.timing.minVisibleMs` | `number`                                                                            | `220`                        | Minimum time the loading layer stays visible before exit can begin.                                                                                                         |
+| `transitions.crossfade.enabled`           | `boolean`                                                                           | `false`                      | Emits crossfade selection metadata for thumbnail clicks.                                                                                                                    |
+| `transitions.crossfade.minDistance`       | `number`                                                                            | `—`                          | Minimum clicked-cell distance required before emitting crossfade metadata. The threshold is inclusive; omitted means every selection crossfades when enabled. Looping rails use the shortest circular distance. |
+| `transitions.crossfade.durationMs`        | `number`                                                                            | `—`                          | Optional crossfade duration forwarded in thumbnail selection metadata.                                                                                                      |
+| `transitions.crossfade.easing`            | `string`                                                                            | `—`                          | Optional crossfade easing forwarded in thumbnail selection metadata.                                                                                                        |
 | `reveal.renderReveal`                     | `({ active, containerProps }, inner) => ReactNode`                                  | `—`                          | Custom reveal wrapper for the thumbnail rail.                                                                                                                               |
 | `reveal.staggerMs`                        | `number`                                                                            | `40`                         | Delay between thumbnail reveal fades.                                                                                                                                       |
 | `reveal.durationMs`                       | `number`                                                                            | `300`                        | Reveal fade duration.                                                                                                                                                       |
@@ -1808,17 +1813,19 @@ export function EntryGrid({ entries }: { entries: EntriesOptions["items"] }) {
 
 The same pattern works with `createEntriesSliderMedia()` from `react-motion-gallery/entries/media/slider` and `createEntriesMasonryMedia()` from `react-motion-gallery/entries/media/masonry`.
 
-### Entry loading, decode, and reveal flow
+### Entry loading, media readiness, and reveal flow
 
-When `loading.enabled` is true, entries use two viewport gates instead of one generic fade-in. `loading.nearMargin` marks a row as near the viewport, mounts the real entry content, and starts the entry media work early. `loading.viewMargin` and `loading.threshold` record when the row has actually entered view.
+When `loading.enabled` is true, entries use two viewport gates instead of one generic fade-in. `loading.nearMargin` marks a row as near the viewport and mounts the real entry content so the chosen media layout can start its own work. `loading.viewMargin` and `loading.threshold` control the current in-view reveal gate.
 
-With `loading.waitForDecode` enabled, an entry does not reveal as soon as it intersects. The built-in gate waits for every trackable media URL in that entry to load and decode; in the current entry-level gate, that means image media in the entry’s `media` array. It falls back after `loading.decodeTimeoutMs`, and entries without image media are decode-ready immediately. The row fades from skeleton to content only after both conditions are true: the row has entered view and the entry media decode gate is ready.
+With `loading.waitForMedia` enabled, an entry does not reveal as soon as it intersects. The row waits for its media container to report ready. The built-in slider, grid, and masonry entry media helpers report readiness from their mounted media subtree; custom `renderMediaContainer` implementations can call `onMediaReadyChange(ready)` from the render args. If a custom container does not report readiness, Entries falls back to checking the mounted priority media elements for that row.
 
-Reveal timing is assigned when each entry becomes ready, so entries fade in by actual load/decode completion order as well as viewport intersection. A later row that loads quickly can take the next reveal slot while a slower row keeps its skeleton visible until its media is ready.
+Reveal is viewport-first and per row. Currently visible rows reveal as soon as their own paint and media readiness gates are ready; there is no global Entries reveal queue or row stagger. A slower visible row keeps its skeleton visible until its media is ready, but it does not block other visible rows.
+
+Entries does not lazy-load media by default. Use the lazy-load plugin for the nested media layout when needed: `sliderLazyLoad()` with `createEntriesSliderMedia()`, `gridLazyLoad()` with `createEntriesGridMedia()`, or `masonryLazyLoad()` with `createEntriesMasonryMedia()`.
 
 Entry reveal state is remembered by default. Set `loading.rememberRevealed: false` when rows that leave the rendered window should fade in again if they return, such as client-paginated entries revisiting an earlier page.
 
-Fullscreen close has a matching entry-aware path. If the user closes fullscreen from a slide whose owning entry has not been viewed yet, the runtime resolves the flattened fullscreen index back to the owner entry, shows a temporary loading spinner while that row mounts and decodes, scrolls the owner entry into view, forces the skeleton/content layers to their final revealed state, and then runs the close animation back to the now-visible entry media. This keeps the close animation from landing on an unrevealed skeleton or an offscreen row.
+Fullscreen close has a matching entry-aware path. If the user closes fullscreen from a slide whose owning entry has not been viewed yet, the runtime resolves the flattened fullscreen index back to the owner entry, shows a temporary loading spinner while that row mounts, scrolls the owner entry into view, forces the skeleton/content layers to their final revealed state, and then runs the close animation back to the now-visible entry media. This keeps the close animation from landing on an unrevealed skeleton or an offscreen row.
 
 ### `Entries` component props
 
@@ -1828,7 +1835,7 @@ Fullscreen close has a matching entry-aware path. If the user closes fullscreen 
 | `entries`              | `EntriesOptions`                                             | `—`                           | Structured entry configuration.                                        |
 | `fullscreen.enabled`   | `boolean`                                                    | `true`                        | Enables fullscreen opening for entry media.                            |
 | `fullscreen.items`     | `MediaItem[] \| string[]`                                    | flattened entry media         | Optional fullscreen media override.                                    |
-| `renderMediaContainer` | `({ entryIndex, mediaNodes, entrySliderRefs }) => ReactNode` | `—`                           | Chooses how each entry’s media nodes are laid out.                     |
+| `renderMediaContainer` | `({ entryIndex, mediaNodes, entryInView, entrySliderRefs, onMediaReadyChange }) => ReactNode` | `—`                           | Chooses how each entry’s media nodes are laid out and can report media readiness for row reveal. |
 | `nodeFromMedia`        | `(media: MediaItem) => ReactNode`                            | built-in image/video renderer | Fallback renderer when `entries.render.media` is omitted.              |
 | `entryFlatIndexRef`    | `React.RefObject<number[][] \| null>`                        | internal ref                  | Receives per-entry local-to-global media index maps.                   |
 | `entryMapRef`          | `React.RefObject<MediaEntryLink[] \| null>`                  | internal ref                  | Receives the flattened media-to-entry map.                             |
@@ -1851,7 +1858,7 @@ Fullscreen close has a matching entry-aware path. If the user closes fullscreen 
 | `overlay.overlayCrossfadeTarget`     | `"content" \| "overlay"`                                                                                 | `"overlay"`                  | Selects whether fullscreen entry changes fade only the rendered overlay content or the whole overlay layer.                                                                        |
 | `overlay.overlayCrossfadeDurationMs` | `number`                                                                                                 | `300`                        | Duration for fullscreen entry overlay crossfades.                                                                                                                                  |
 | `overlay.overlayCrossfadeEasing`     | `string`                                                                                                 | `"cubic-bezier(.4,0,.22,1)"` | Easing for fullscreen entry overlay crossfades.                                                                                                                                    |
-| `loading.enabled`                    | `boolean`                                                                                                | `—`                          | Enables entry loading and decode gating.                                                                                                                                           |
+| `loading.enabled`                    | `boolean`                                                                                                | `—`                          | Enables entry loading and media readiness gating.                                                                                                                                  |
 | `loading.force`                      | `boolean \| { enabled?: boolean; showContent?: boolean; skeletonOpacity?: number }`                      | `—`                          | Forces entry skeletons to remain visible. Set `showContent: true` to preview mounted, ready entry content under the skeleton, and tune the loading overlay with `skeletonOpacity`. |
 | `loading.skeleton`                   | `EntrySkeletonSpec \| ((args) => EntrySkeletonSpec \| null \| undefined)`                                | `—`                          | Built-in skeleton spec or resolver.                                                                                                                                                |
 | `loading.minHeight`                  | `number \| string`                                                                                       | `"260px"`                    | Minimum reserved height while loading.                                                                                                                                             |
@@ -1859,15 +1866,14 @@ Fullscreen close has a matching entry-aware path. If the user closes fullscreen 
 | `loading.nearMargin`                 | `string`                                                                                                 | `"700px 0px"`                | Preload margin used before entries enter view.                                                                                                                                     |
 | `loading.viewMargin`                 | `string`                                                                                                 | `"0px 0px"`                  | Margin used for the actual in-view gate.                                                                                                                                           |
 | `loading.threshold`                  | `number`                                                                                                 | `0.01`                       | Intersection threshold for view detection.                                                                                                                                         |
-| `loading.waitForDecode`              | `boolean`                                                                                                | `true`                       | Waits for image decode before revealing an entry.                                                                                                                                  |
-| `loading.decodeTimeoutMs`            | `number`                                                                                                 | `8000`                       | Decode timeout fallback.                                                                                                                                                           |
+| `loading.waitForMedia`               | `boolean`                                                                                                | `true`                       | Waits for nested media readiness before revealing an entry.                                                                                                                        |
+| `loading.waitForDecode`              | `boolean`                                                                                                | `true`                       | Legacy alias for `loading.waitForMedia`.                                                                                                                                           |
+| `loading.decodeTimeoutMs`            | `number`                                                                                                 | `8000`                       | Timeout fallback used by custom media readiness fallback.                                                                                                                          |
 | `loading.skeletonWrap`               | `ElementStyle`                                                                                           | `—`                          | Styles the skeleton wrapper.                                                                                                                                                       |
 | `loading.rememberRevealed`           | `boolean`                                                                                                | `true`                       | Keeps revealed entry rows revealed while they remain known. Set false to reveal rows again after they leave and later re-enter the rendered window.                                |
 | `reveal.renderReveal`                | `({ active, containerProps }, content) => ReactNode`                                                     | `—`                          | Custom reveal wrapper.                                                                                                                                                             |
-| `reveal.staggerMs`                   | `number`                                                                                                 | `200`                        | Delay between entry reveal fades.                                                                                                                                                  |
 | `reveal.durationMs`                  | `number`                                                                                                 | `700`                        | Entry reveal fade duration.                                                                                                                                                        |
 | `reveal.easing`                      | `string`                                                                                                 | `"cubic-bezier(.2,.7,.2,1)"` | Entry reveal fade easing.                                                                                                                                                          |
-| `reveal.staggerLimit`                | `number`                                                                                                 | `6`                          | Maximum number of entries that receive staggered delays.                                                                                                                           |
 | `entryList`                          | `ElementStyle`                                                                                           | `—`                          | Styles the entry list container.                                                                                                                                                   |
 | `entryRow`                           | `ElementStyle`                                                                                           | `—`                          | Styles each entry row container.                                                                                                                                                   |
 
@@ -2109,15 +2115,16 @@ Infinite scroll renders a sentinel and calls your append function when that sent
 
 These options apply to `gridInfiniteScroll()`, `masonryInfiniteScroll()`, `entriesInfiniteScroll()`, and their hooks.
 
-| Option       | Type              | Default       | Notes                                                                        |
-| ------------ | ----------------- | ------------- | ---------------------------------------------------------------------------- |
-| `enabled`    | `boolean`         | `true`        | Disables sentinel rendering when false.                                      |
-| `hasMore`    | `boolean`         | `true`        | Removes the sentinel when false.                                             |
-| `loading`    | `boolean`         | `—`           | Prevents repeated `onLoadMore` calls while a request is active.              |
-| `rootMargin` | `string`          | `"600px 0px"` | IntersectionObserver preload margin.                                         |
-| `threshold`  | `number`          | `0`           | IntersectionObserver threshold.                                              |
-| `onLoadMore` | `() => void`      | `—`           | Called when the sentinel intersects and loading gates allow another request. |
-| `sentinel`   | `React.ReactNode` | `—`           | Optional visual content inside the sentinel element.                         |
+| Option       | Type                                                                    | Default       | Notes                                                                        |
+| ------------ | ----------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| `enabled`    | `boolean`                                                               | `true`        | Disables sentinel rendering when false.                                      |
+| `hasMore`    | `boolean`                                                               | `true`        | Removes the sentinel when false.                                             |
+| `loading`    | `boolean`                                                               | `—`           | Prevents repeated `onLoadMore` calls while a request is active.              |
+| `rootMargin` | `string`                                                                | `"600px 0px"` | IntersectionObserver preload margin.                                         |
+| `scrollRoot` | `Element \| RefObject<Element \| null> \| (() => Element \| null)`      | `window`      | Optional nested scroll container used for sentinel visibility checks.        |
+| `threshold`  | `number`                                                                | `0`           | IntersectionObserver threshold.                                              |
+| `onLoadMore` | `() => void`                                                            | `—`           | Called when the sentinel intersects and loading gates allow another request. |
+| `sentinel`   | `React.ReactNode`                                                       | `—`           | Optional visual content inside the sentinel element.                         |
 
 The hook form memoizes the factory call and returns the plugin. Grid and Masonry sentinels render after the layout root so they do not disturb CSS grid tracks or masonry positioning. Entries sentinels render after the entry rows and span every column when `entries.layout` is `"grid"`.
 
@@ -2375,7 +2382,7 @@ useFullscreenController({
 });
 ```
 
-Import `fullscreenVideo` from `react-motion-gallery/fullscreen/video` for fullscreen video slides. Set `fullscreen.video.playOnOpen` to start a Plyr-backed fullscreen video when fullscreen opens directly onto that video slide:
+Import `fullscreenVideo` from `react-motion-gallery/fullscreen/video` for fullscreen video slides. Set `fullscreen.video.playOnOpen` to start a Plyr-backed fullscreen video when fullscreen opens directly onto that video slide. Use `fullscreen.video.playOnTransition` for dialog handoffs opened with `transitionDialogTo`:
 
 ```typescript
 useFullscreenController({
@@ -2384,6 +2391,7 @@ useFullscreenController({
     enabled: true,
     video: {
       playOnOpen: true,
+      playOnTransition: true,
     },
   },
 });
@@ -2402,10 +2410,12 @@ useFullscreenController({
 | `react-motion-gallery/fullscreen/controls`   | `fullscreenControls(options)`  | Option plugin for close, arrows, and counter options. Use with `fullscreenSlider()`.                      |
 | `react-motion-gallery/fullscreen/captions`   | `fullscreenCaptions(options)`  | Adds caption rendering, placement, and caption motion runtime. Use with `fullscreenSlider()`.             |
 | `react-motion-gallery/fullscreen/zoom-pan`   | `fullscreenZoomPan(options)`   | Adds fullscreen click zoom, pan, and pinch runtime. Use with `fullscreenSlider()`.                        |
-| `react-motion-gallery/fullscreen/video`      | `fullscreenVideo(options)`     | Adds fullscreen Plyr rendering, source/options, and `playOnOpen` runtime. Use with `fullscreenSlider()`.  |
+| `react-motion-gallery/fullscreen/video`      | `fullscreenVideo(options)`     | Adds fullscreen Plyr rendering, source/options, and video autoplay runtime. Use with `fullscreenSlider()`. |
 | `react-motion-gallery/fullscreen/lazy-load`  | `fullscreenLazyLoad(options)`  | Adds fullscreen image and video lazy-load gates. Use with `fullscreenSlider()`.                           |
 | `react-motion-gallery/fullscreen/crossfade`  | `fullscreenCrossfade(options)` | Option plugin for fullscreen crossfade controls, drag, and wheel behavior. Use with `fullscreenSlider()`. |
 | `react-motion-gallery/fullscreen/thumbnails` | `fullscreenThumbnails()`       | Option-only plugin for fullscreen thumbnail bridge behavior. Use with `fullscreenSlider()`.               |
+
+`fullscreenZoomPan({ panBounds: "media" })` constrains zoom and pan to the actual fullscreen media pane. This is the default when `fullscreen.dialog` is enabled. Use `panBounds: "layout"` to include reserved caption or overlay space in the fullscreen pan bounds.
 
 ### Recommended `useFullscreenController` return values
 
@@ -2426,8 +2436,14 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | Option                                    | Type                                                                               | Default                         | Notes                                                                                                                                                                                                                                                                |
 | ----------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `enabled`                                 | `boolean`                                                                          | `false`                         | Master switch for fullscreen UI.                                                                                                                                                                                                                                     |
+| `mountStrategy`                           | `"always" \| "open"`                                                               | `"always"`                      | Controls whether the fullscreen runtime keeps its modal DOM mounted while closed. Use `"open"` to mount the heavy fullscreen view only while opening, open, dialog-switching, or closing.                                                                             |
+| `overlaysAboveIntroMedia`                 | `boolean`                                                                          | `true`                          | Keeps fullscreen caption and entry overlays above the scale-intro media clone during open animations. Set `false` for custom dialog stacks that intentionally share the intro media layer.                                                                            |
 | `items`                                   | `MediaItem[] \| string[]`                                                          | `—`                             | Declared in the type, but current fullscreen media resolution comes from `GalleryCore.fullscreenItems`.                                                                                                                                                              |
 | `renderImage`                             | `({ item, index, isZoomed, className, baseStyle }) => ReactNode`                   | `—`                             | Custom fullscreen image renderer. Must render a real descendant `<img>`. With `lazyLoad.images.enabled`, the renderer is mounted only when the slide is allowed and the runtime watches that descendant image for load/decode readiness.                             |
+| `dialog.opacityDuration`                  | `number`                                                                           | intro fade duration             | Duration for dialog surface opacity on normal open and close transitions.                                                                                                                                                                                            |
+| `dialog.opacityEasing`                    | `string`                                                                           | intro fade easing               | Easing for dialog surface opacity on normal open and close transitions.                                                                                                                                                                                              |
+| `dialog.switchOpacityDuration`            | `number`                                                                           | `dialog.opacityDuration`        | Duration for dialog surface opacity when switching from one mounted dialog to another with `transitionDialogTo`. Per-call transition options still take precedence.                                                                                                   |
+| `dialog.switchOpacityEasing`              | `string`                                                                           | `dialog.opacityEasing`          | Easing for dialog surface opacity when switching from one mounted dialog to another with `transitionDialogTo`. Per-call transition options still take precedence.                                                                                                     |
 | `closeScroll`                             | `boolean \| FullscreenCloseScrollOptions`                                          | `false`                         | Scrolls the matching base item into the center of the viewport when fullscreen closes. `true` enables the default before-close scroll; object form defaults `enabled` to `true`.                                                                                     |
 | `closeScroll.enabled`                     | `boolean \| "desktop-only" \| "mobile-only" \| ((context) => boolean)`             | `true` in object form           | Enables close-scroll conditionally. Function form receives the current fullscreen index, layout, target element, viewport and pointer details, and the resolved `isMobile` flag.                                                                                     |
 | `closeScroll.timing`                      | `"before-close" \| "after-close"`                                                  | `"before-close"`                | Chooses whether to scroll before the close animation starts or after the modal has closed.                                                                                                                                                                           |
@@ -2435,6 +2451,7 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `video.source`                            | `(item: MediaItem, index: number) => Plyr.SourceInfo`                              | `—`                             | Builds fullscreen Plyr sources for video items.                                                                                                                                                                                                                      |
 | `video.options`                           | `Plyr.Options \| ((item: MediaItem, index: number) => Plyr.Options)`               | `—`                             | Builds fullscreen Plyr options.                                                                                                                                                                                                                                      |
 | `video.playOnOpen`                        | `boolean`                                                                          | `false`                         | Attempts to play the fullscreen Plyr video when fullscreen opens directly onto a video slide. Browser autoplay rules still apply.                                                                                                                                    |
+| `video.playOnTransition`                  | `boolean`                                                                          | `false`                         | Attempts to play the fullscreen Plyr video after opening onto a video slide through a mounted dialog handoff with `transitionDialogTo`. Browser autoplay rules still apply.                                                                                         |
 | `video.style`                             | `React.CSSProperties`                                                              | `—`                             | Fullscreen player inline style.                                                                                                                                                                                                                                      |
 | `video.className`                         | `string`                                                                           | `—`                             | Fullscreen player class.                                                                                                                                                                                                                                             |
 | `controls.close.enabled`                  | `boolean`                                                                          | `true`                          | Toggles the close button.                                                                                                                                                                                                                                            |
@@ -2663,6 +2680,7 @@ For overlay captions, style the rendered caption content to fill the reserved ca
 | `axis`                      | `"x" \| "y"`                             | `—`                                               | Declared in the prop type, but the current implementation does not wire it through. |
 | `skipSnaps`                 | `boolean`                                | `—`                                               | Allows momentum to skip snaps.                                                      |
 | `centerActiveThumb`         | `boolean`                                | `—`                                               | Keeps the active thumbnail centered.                                                |
+| `fadeOnSync`                | `boolean \| ThumbnailFadeOnSyncOptions`  | `—`                                               | Crossfades external fullscreen index sync when the target leaves the current thumbnail window plus the configured cell margin. |
 | `selectDuration`            | `number`                                 | `—`                                               | Selection motion duration.                                                          |
 | `freeScrollDuration`        | `number`                                 | `—`                                               | Free-scroll settling duration.                                                      |
 | `sliderFriction`            | `number`                                 | `—`                                               | Thumbnail slider friction.                                                          |
@@ -2679,6 +2697,8 @@ For overlay captions, style the rendered caption content to fill the reserved ca
 | `renderArrows`              | `(args) => ReactNode`                    | `—`                                               | Custom renderer for both arrows.                                                    |
 | `renderPrevArrow`           | `(args) => ReactNode`                    | `—`                                               | Custom previous arrow.                                                              |
 | `renderNextArrow`           | `(args) => ReactNode`                    | `—`                                               | Custom next arrow.                                                                  |
+| `thumbnailCrossfade`        | `ThumbnailCrossfadeOptions`              | `—`                                               | Passes base thumbnail crossfade options through, including `minDistance`, so fullscreen thumbnail clicks can choose scroll or fullscreen crossfade motion. |
+| `virtualization`            | `SliderVirtualizationOptions`            | `—`                                               | Windows large fullscreen thumbnail rails.                                            |
 
 #### `FullscreenThumbnailBridge`
 

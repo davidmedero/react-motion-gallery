@@ -57,6 +57,7 @@ function CrossfadeRuntime({
   const raf2Ref = React.useRef<number | null>(null);
   const timeoutRef = React.useRef<number | null>(null);
   const committedTrackIndexRef = React.useRef<number | null>(null);
+  const committedTrackLocationRef = React.useRef<number | null>(null);
   const wheelStateRef = React.useRef<{
     sourceIndex: number;
     targetIndex: number;
@@ -83,7 +84,7 @@ function CrossfadeRuntime({
     const durationMs = optionsRef.current.durationMs;
     return typeof durationMs === "number" && Number.isFinite(durationMs)
       ? Math.max(0, durationMs)
-      : 420;
+      : 360;
   }, []);
 
   const getEasing = React.useCallback(() => {
@@ -131,16 +132,20 @@ function CrossfadeRuntime({
   const finish = React.useCallback(() => {
     clearPending();
 
+    const committedLocation = committedTrackLocationRef.current;
     const committedIndex = committedTrackIndexRef.current;
-    if (committedIndex != null) {
-      committedTrackIndexRef.current = null;
+    committedTrackLocationRef.current = null;
+    committedTrackIndexRef.current = null;
+
+    if (committedLocation != null) {
+      coreRef.current?.renderTrackAtLocation(committedLocation, { syncVirtual: true });
+    } else if (committedIndex != null) {
       coreRef.current?.jumpTrackToIndexInstant(committedIndex);
     }
 
     busyRef.current = false;
     dragStateRef.current = null;
     wheelStateRef.current = null;
-    committedTrackIndexRef.current = null;
     clearSnapshots();
   }, [clearPending, clearSnapshots]);
 
@@ -168,11 +173,25 @@ function CrossfadeRuntime({
     if (!api) return null;
 
     const state = api.readMotionState();
-    api.renderTrackAtLocation(api.getSnapLocationForIndex(index));
+    api.renderTrackAtLocation(api.getSnapLocationForIndex(index), {
+      syncVirtual: true,
+    });
     const snapshot = cloneViewportSnapshot(api.getViewportNode());
-    api.restoreMotionState(state);
+    api.restoreMotionState(state, { syncVirtual: true });
     return snapshot;
   }, []);
+
+  const prepareSourceSnapshot = React.useCallback(() => {
+    if (!sourceRef.current || !targetRef.current) return false;
+
+    const sourceSnapshot = cloneViewportSnapshot(coreRef.current?.getViewportNode() ?? null);
+    if (!sourceSnapshot) return false;
+
+    sourceRef.current.replaceChildren(sourceSnapshot);
+    targetRef.current.replaceChildren();
+    setProgress(0, "none");
+    return true;
+  }, [setProgress]);
 
   const prepareSnapshots = React.useCallback(
     (targetIndex: number) => {
@@ -500,6 +519,64 @@ function CrossfadeRuntime({
 
         return true;
       },
+      startProgressUi: (
+        target: {
+          index: number;
+          location: number;
+          sourceIndex?: number;
+        },
+        uiOptions?: { durationMs?: number; easing?: string }
+      ) => {
+        const api = coreRef.current;
+        if (!api || optionsRef.current.controls === false) return false;
+
+        const len = api.getSlideCount();
+        if (!len || !Number.isFinite(target.location)) return false;
+
+        const nextIndex = normalizeIndex(target.index, len);
+        const fromIndex = normalizeIndex(target.sourceIndex ?? api.getIndex(), len);
+        const motionState = api.readMotionState();
+
+        if (
+          nextIndex === fromIndex &&
+          Math.abs(target.location - motionState.offset) < 0.5
+        ) {
+          return false;
+        }
+
+        const duration = uiOptions?.durationMs ?? getDuration();
+        const easing = uiOptions?.easing ?? getEasing();
+
+        finish();
+        if (!prepareSourceSnapshot()) return false;
+
+        const id = ++seqRef.current;
+        busyRef.current = true;
+        committedTrackIndexRef.current = null;
+        committedTrackLocationRef.current = target.location;
+
+        api.renderTrackAtLocation(target.location, { syncVirtual: true });
+        api.commitIndexOnly(nextIndex, "animated", fromIndex);
+
+        raf1Ref.current = requestAnimationFrame(() => {
+          raf1Ref.current = null;
+          if (seqRef.current !== id) return;
+
+          raf2Ref.current = requestAnimationFrame(() => {
+            raf2Ref.current = null;
+            if (seqRef.current !== id) return;
+
+            setProgress(1, `opacity ${duration}ms ${easing}`);
+
+            timeoutRef.current = window.setTimeout(() => {
+              if (seqRef.current !== id) return;
+              finish();
+            }, duration + 48);
+          });
+        });
+
+        return true;
+      },
     }),
     [
       canUseDrag,
@@ -511,6 +588,7 @@ function CrossfadeRuntime({
       getEasing,
       getWheelOptions,
       normalizeIndex,
+      prepareSourceSnapshot,
       prepareSnapshots,
       setProgress,
       shouldAbsorbWheelSession,

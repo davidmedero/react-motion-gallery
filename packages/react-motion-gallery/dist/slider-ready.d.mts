@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { k as SliderHandle } from './types-D9WBOrx6.mjs';
+import { m as SliderHandle } from './types-CGPPAn9i.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 import './force-C5m1QpdF.mjs';
 import './media.mjs';

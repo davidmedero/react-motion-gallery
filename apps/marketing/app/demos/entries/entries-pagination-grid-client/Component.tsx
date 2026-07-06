@@ -32,6 +32,7 @@ import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import {
   EntriesPaginationControls,
+  entriesPagination,
   useEntriesPagination,
 } from "react-motion-gallery/entries/pagination";
 import { useEntriesReady } from "react-motion-gallery/entries/ready";
@@ -89,6 +90,7 @@ export type ProductEntriesGridViewProps = {
   controls?: ReactNode;
   footer?: ReactNode;
   placeholderCount?: number;
+  initialSlotOffset?: number;
   pendingAppendCount?: number;
   loadingEnabled?: boolean;
 };
@@ -102,15 +104,14 @@ const ENTRY_MEDIA_SLIDER_PLUGINS = [
   sliderArrows(),
   sliderDots(),
 ];
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
 const revealOptions = {
   durationMs: 700,
   easing: "cubic-bezier(.2,.7,.2,1)",
-  staggerMs: 200,
-  staggerLimit: 6,
-};
-const clientRevealOptions = {
-  ...revealOptions,
-  staggerMs: 80,
 };
 
 export const PAGE_SIZE = 6;
@@ -189,10 +190,14 @@ function getInitialEntrySlotKey(index: number) {
   return `${INITIAL_ENTRY_SLOT_PREFIX}-${index}`;
 }
 
-function createProductPlaceholderEntries(count: number): ProductEntry[] {
+function createProductPlaceholderEntries(
+  count: number,
+  startIndex = 0,
+  keyStartIndex = startIndex,
+): ProductEntry[] {
   return Array.from({ length: count }, (_, index) => ({
-    key: getInitialEntrySlotKey(index),
-    id: `product-grid-placeholder-${index}`,
+    key: getInitialEntrySlotKey(keyStartIndex + index),
+    id: `product-grid-placeholder-${startIndex + index}`,
     section: "Loading",
     title: "Loading product",
     body: "Loading product details.",
@@ -201,9 +206,18 @@ function createProductPlaceholderEntries(count: number): ProductEntry[] {
     rating: 0,
     stock: 0,
     reviewCount: 0,
-    revealKey: `product-grid-placeholder-${index}`,
+    revealKey: `product-grid-placeholder-${startIndex + index}`,
     media: [],
   }));
+}
+
+function createInitialPlaceholderEntries(pageSize: number, offset: number) {
+  if (offset <= 0) return createProductPlaceholderEntries(pageSize);
+
+  return [
+    ...createProductPlaceholderEntries(offset, 0, pageSize),
+    ...createProductPlaceholderEntries(pageSize, offset, 0),
+  ];
 }
 
 function isProductPlaceholderEntry(entry: ProductEntry) {
@@ -417,7 +431,10 @@ function ProductOverlay({ entry, mediaIndex }: EntryOverlayRenderArgs) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: {
       enabled: true,
       closeScroll: true,
@@ -462,26 +479,42 @@ export function ProductEntriesGridView({
   controls,
   footer,
   placeholderCount = PAGE_SIZE,
+  initialSlotOffset = 0,
   pendingAppendCount = 0,
   loadingEnabled = true,
 }: ProductEntriesGridViewProps) {
   const [useInitialSlots] = useState(() => !!busy && entries.length === 0);
   const isInitialBusy = busy && entries.length === 0;
+  const initialSlotStart = Math.max(0, Math.trunc(initialSlotOffset));
   const displayEntries = useMemo(() => {
-    if (isInitialBusy) return createProductPlaceholderEntries(placeholderCount);
+    if (isInitialBusy) {
+      return createInitialPlaceholderEntries(
+        placeholderCount,
+        initialSlotStart,
+      );
+    }
 
     if (!useInitialSlots) return entries;
 
+    const visibleStart = initialSlotStart;
+    const visibleEnd = visibleStart + placeholderCount;
+
     return entries.map((entry, index) =>
-      index < placeholderCount
+      index >= visibleStart && index < visibleEnd
         ? {
             ...entry,
-            key: getInitialEntrySlotKey(index),
+            key: getInitialEntrySlotKey(index - visibleStart),
             revealKey: entry.id,
           }
         : entry,
     );
-  }, [entries, isInitialBusy, placeholderCount, useInitialSlots]);
+  }, [
+    entries,
+    initialSlotStart,
+    isInitialBusy,
+    placeholderCount,
+    useInitialSlots,
+  ]);
   const fullscreenMedia = useMemo(
     () => flattenEntries(displayEntries).flattenedMedia,
     [displayEntries],
@@ -528,7 +561,7 @@ export function ProductEntriesGridView({
             },
             loading: {
               enabled: loadingEnabled,
-              waitForDecode: true,
+              waitForMedia: true,
               rememberRevealed: false,
               enterMs: 360,
               force: isInitialBusy ? true : undefined,
@@ -577,6 +610,18 @@ export function EntriesPaginationGridClientDemo() {
     loading,
     urlSync: { param: "entriesGridClientPage" },
   });
+  const pagePlugin = useMemo(
+    () =>
+      entriesPagination({
+        mode: "client",
+        pageIndex: pagination.pageIndex,
+        pageSize: pagination.pageSize,
+        total,
+        loading: false,
+      }),
+    [pagination.pageIndex, pagination.pageSize, total],
+  );
+  const plugins = useMemo(() => [pagePlugin], [pagePlugin]);
   const entriesReady = useEntriesReady({ dataReady: !loading && !error });
 
   useEffect(() => {
@@ -625,12 +670,13 @@ export function EntriesPaginationGridClientDemo() {
     <ProductEntriesGridView
       entries={entries}
       entriesRef={entriesReady.ref}
-      plugins={[pagination.plugin]}
-      reveal={clientRevealOptions}
+      plugins={plugins}
+      reveal={revealOptions}
       busy={loading}
       ready={entriesReady.ready}
       total={total}
       placeholderCount={pagination.pageSize}
+      initialSlotOffset={pagination.offset}
       status={
         error ? (
           <>

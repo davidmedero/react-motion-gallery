@@ -1,7 +1,7 @@
 export const source = `/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { GalleryCore } from "react-motion-gallery/core";
 import { toMediaItems } from "react-motion-gallery/media";
 import { Slider, type SliderHandle } from "react-motion-gallery/slider";
@@ -127,10 +127,10 @@ export function SliderAutoPlayDemo() {
   );
 
   const { ref: sliderReadyRef, ready: sliderReady } = useSliderReady();
-  const setSliderRef = (handle: SliderHandle | null) => {
+  const setSliderRef = useCallback((handle: SliderHandle | null) => {
     sliderReadyRef(handle);
     sliderRef.current = handle;
-  };
+  }, [sliderReadyRef]);
 
   return (
     <GalleryCore layout="slider" fullscreenItems={fullscreenMedia}>

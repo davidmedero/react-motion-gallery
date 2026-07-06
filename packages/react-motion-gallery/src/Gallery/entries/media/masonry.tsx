@@ -11,6 +11,7 @@ import { normalizeMasonryChild } from "../../masonry/item";
 import type { MasonryItemProps as CoreMasonryItemProps } from "../../masonry/light";
 import type { RevealOptions } from "../../masonry/types";
 import type { MasonrySkeletonSpec } from "../../skeleton/masonry-structured";
+import { useReportElementMediaReady } from "./useReportMediaReady";
 import type {
   SkeletonForceOptions,
   SkeletonTimingOptions,
@@ -84,12 +85,24 @@ export function createEntriesMasonryMedia(args: {
   const normalizedReveal = normalizeReveal(masonryReveal ?? masonryConfig.reveal);
 
   function EntriesMasonryMediaInner(props: {
+    entryIndex: number;
     entryInView?: boolean;
     mediaNodes: React.ReactNode[];
+    mediaReadyKey?: React.Key;
+    mediaReadyTimeoutMs?: number;
+    onMediaReadyChange?: (ready: boolean) => void;
   }) {
-    const { entryInView, mediaNodes } = props;
+    const {
+      entryIndex,
+      entryInView,
+      mediaNodes,
+      mediaReadyKey,
+      mediaReadyTimeoutMs,
+      onMediaReadyChange,
+    } = props;
     const core = useOptionalGalleryCore();
     const breakpoints = core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP };
+    const mediaReadyRootRef = React.useRef<HTMLDivElement | null>(null);
     const coreMasonryItems = React.useMemo(() => {
       if (!Array.isArray(mediaNodes) || mediaNodes.length === 0) return [];
       return mediaNodes.filter(isCoreMasonryItemElement);
@@ -140,8 +153,22 @@ export function createEntriesMasonryMedia(args: {
       });
     }, [mediaNodes]);
     const filtered = normalized.filter((item) => item.node != null);
+    const hasMedia = filtered.length > 0;
+    const mediaReadyResetKey = React.useMemo(
+      () =>
+        `${entryIndex}:${String(mediaReadyKey ?? filtered.length)}:${useCoreMasonry ? "core" : "layout"}`,
+      [entryIndex, filtered.length, mediaReadyKey, useCoreMasonry],
+    );
 
-    if (filtered.length === 0) return null;
+    useReportElementMediaReady({
+      enabled: hasMedia,
+      rootRef: mediaReadyRootRef,
+      timeoutMs: mediaReadyTimeoutMs,
+      resetKey: mediaReadyResetKey,
+      onMediaReadyChange,
+    });
+
+    if (!hasMedia) return null;
 
     if (useCoreMasonry) {
       const coreLoading = normalizedLoading
@@ -152,15 +179,17 @@ export function createEntriesMasonryMedia(args: {
         : masonryConfig.loading;
 
       return (
-        <CoreMasonry
-          {...masonryConfig}
-          loading={coreLoading as any}
-          breakpoints={breakpoints}
-          reveal={normalizedReveal}
-          revealReady={entryInView ?? true}
-        >
-          {coreMasonryItems}
-        </CoreMasonry>
+        <div ref={mediaReadyRootRef} style={{ display: "contents" }}>
+          <CoreMasonry
+            {...masonryConfig}
+            loading={coreLoading as any}
+            breakpoints={breakpoints}
+            reveal={normalizedReveal}
+            revealReady={entryInView ?? true}
+          >
+            {coreMasonryItems}
+          </CoreMasonry>
+        </div>
       );
     }
 
@@ -172,21 +201,37 @@ export function createEntriesMasonryMedia(args: {
       : masonryConfig.loading;
 
     return (
-      <MasonryLayout
-        items={filtered.map((item) => (
-          <React.Fragment key={item.key}>{item.node}</React.Fragment>
-        ))}
-        itemSpans={filtered.map((item) => item.span)}
-        itemRevealKeys={filtered.map((item) => item.revealKey ?? item.key)}
-        masonry={{ ...masonryConfig, loading: layoutLoading } as any}
-        breakpoints={breakpoints}
-        reveal={normalizedReveal}
-        revealReady={entryInView ?? true}
-      />
+      <div ref={mediaReadyRootRef} style={{ display: "contents" }}>
+        <MasonryLayout
+          items={filtered.map((item) => (
+            <React.Fragment key={item.key}>{item.node}</React.Fragment>
+          ))}
+          itemSpans={filtered.map((item) => item.span)}
+          itemRevealKeys={filtered.map((item) => item.revealKey ?? item.key)}
+          masonry={{ ...masonryConfig, loading: layoutLoading } as any}
+          breakpoints={breakpoints}
+          reveal={normalizedReveal}
+          revealReady={entryInView ?? true}
+        />
+      </div>
     );
   }
 
-  return ({ entryInView, mediaNodes }) => (
-    <EntriesMasonryMediaInner entryInView={entryInView} mediaNodes={mediaNodes} />
+  return ({
+    entryIndex,
+    entryInView,
+    mediaNodes,
+    mediaReadyKey,
+    mediaReadyTimeoutMs,
+    onMediaReadyChange,
+  }) => (
+    <EntriesMasonryMediaInner
+      entryIndex={entryIndex}
+      entryInView={entryInView}
+      mediaNodes={mediaNodes}
+      mediaReadyKey={mediaReadyKey}
+      mediaReadyTimeoutMs={mediaReadyTimeoutMs}
+      onMediaReadyChange={onMediaReadyChange}
+    />
   );
 }

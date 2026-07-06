@@ -208,6 +208,7 @@ export type FullscreenEntryContext = {
   entryMediaLayout?: "slider" | "grid" | "masonry";
   entriesObject?: any;
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
+  entryListRef?: React.RefObject<HTMLDivElement | null>;
   expandableImageRefs?: React.RefObject<Array<HTMLImageElement | null>>;
 };
 

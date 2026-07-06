@@ -170,6 +170,235 @@ describe("default slider core", () => {
     unmount(root, container);
   });
 
+  test("keeps click-like releases on the gesture start index", async () => {
+    const ref = React.createRef<SliderHandle>();
+    const { root, container } = mount(
+      <Slider ref={ref}>
+        <article>One</article>
+        <article>Two</article>
+        <article>Three</article>
+        <article>Four</article>
+        <article>Five</article>
+        <article>Six</article>
+      </Slider>
+    );
+    await settle(3);
+
+    const rootNode = ref.current?.getRootNode();
+    expect(rootNode).toBeInstanceOf(HTMLElement);
+
+    React.act(() => {
+      rootNode?.dispatchEvent(
+        new MouseEvent("mousedown", {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientX: 100,
+          clientY: 20,
+        })
+      );
+      document.dispatchEvent(
+        new MouseEvent("mousemove", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 95,
+          clientY: 20,
+        })
+      );
+      document.dispatchEvent(
+        new MouseEvent("mouseup", {
+          bubbles: true,
+          cancelable: true,
+          clientX: 95,
+          clientY: 20,
+        })
+      );
+    });
+    await settle(2);
+
+    expect(ref.current?.getIndex()).toBe(0);
+
+    unmount(root, container);
+  });
+
+  test("virtualizes fixed-stride loop sliders with bounded shells", async () => {
+    const items = Array.from({ length: 30 }, (_, index) => (
+      <article key={index}>Slide {index}</article>
+    ));
+    const { container, root } = mount(
+      <Slider
+        layout={{ gap: 12, cellsPerSlide: 5 }}
+        scroll={{ loop: true, groupCells: true, skipSnaps: true }}
+        virtualization={{ enabled: true, overscan: 2, threshold: 5 }}
+      >
+        {items}
+      </Slider>
+    );
+    await settle(4);
+
+    const slides = Array.from(
+      container.querySelectorAll("[data-rmg-slide='true']")
+    ) as HTMLElement[];
+    const leadingClone = slides.find(
+      (slide) => slide.getAttribute("data-rmg-rendered-idx") === "-2"
+    );
+
+    expect(slides.length).toBeGreaterThan(0);
+    expect(slides.length).toBeLessThan(items.length);
+    expect(leadingClone?.getAttribute("data-rmg-idx")).toBe("28");
+
+    unmount(root, container);
+  });
+
+  test("publishes fixed slide main size to viewport and root scopes", async () => {
+    const ref = React.createRef<SliderHandle>();
+    const { container, root } = mount(
+      <Slider ref={ref} layout={{ gap: 12, cellsPerSlide: 3 }}>
+        {Array.from({ length: 8 }, (_, index) => (
+          <article key={index}>Slide {index}</article>
+        ))}
+      </Slider>
+    );
+    await settle(4);
+
+    const track = container.querySelector("[data-rmg-axis='x']") as HTMLElement;
+    const viewport = container.querySelector("[data-rmg-part='viewport']") as HTMLElement;
+    const rootNode = ref.current?.getRootNode();
+
+    expect(track.style.getPropertyValue("--rmg-slide-main-size")).not.toBe("");
+    expect(viewport.style.getPropertyValue("--rmg-slide-main-size")).toBe(
+      track.style.getPropertyValue("--rmg-slide-main-size")
+    );
+    expect(rootNode?.style.getPropertyValue("--rmg-slide-main-size")).toBe(
+      track.style.getPropertyValue("--rmg-slide-main-size")
+    );
+
+    unmount(root, container);
+  });
+
+  test("virtualized arrows preserve logical indexes without rendering every slide", async () => {
+    const ref = React.createRef<SliderHandle>();
+    const { container, root } = mount(
+      <Slider
+        ref={ref}
+        layout={{ gap: 12, cellsPerSlide: 5 }}
+        scroll={{ loop: true, groupCells: true }}
+        virtualization={{ enabled: true, overscan: 2, threshold: 5 }}
+      >
+        {Array.from({ length: 30 }, (_, index) => (
+          <article key={index}>Slide {index}</article>
+        ))}
+      </Slider>
+    );
+    await settle(4);
+
+    React.act(() => {
+      ref.current?.scrollNext();
+    });
+    await settle(4);
+
+    expect(ref.current?.getIndex()).toBe(1);
+    expect(container.querySelectorAll("[data-rmg-slide='true']").length).toBeLessThan(30);
+
+    unmount(root, container);
+  });
+
+  test("virtualized loop seam keeps mounted shells and reports built nodes", async () => {
+    const ref = React.createRef<SliderHandle>();
+    const builtCounts: number[] = [];
+    const { container, root } = mount(
+      <Slider
+        ref={ref}
+        layout={{ gap: 12, cellsPerSlide: 5 }}
+        scroll={{ loop: true, groupCells: true }}
+        virtualization={{ enabled: true, overscan: 2, threshold: 5 }}
+      >
+        {Array.from({ length: 30 }, (_, index) => (
+          <article key={index}>Slide {index}</article>
+        ))}
+      </Slider>
+    );
+    await settle(4);
+
+    const unsubscribe = ref.current?.onSlidesBuilt((nodes) => {
+      builtCounts.push(nodes.length);
+    });
+
+    React.act(() => {
+      ref.current?.setIndex(5, "instant");
+    });
+    await settle(4);
+
+    React.act(() => {
+      ref.current?.scrollNext();
+    });
+    await settle(4);
+
+    expect(container.querySelectorAll("[data-rmg-slide='true']").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll("[data-rmg-slide='true']").length).toBeLessThan(30);
+    expect(builtCounts.length).toBeGreaterThan(0);
+    expect(builtCounts.every((count) => count > 0)).toBe(true);
+
+    unsubscribe?.();
+    unmount(root, container);
+  });
+
+  test("virtualized free-scroll updates the rendered window from wheel coordinates", async () => {
+    const { container, root } = mount(
+      <Slider
+        layout={{ gap: 12, cellsPerSlide: 5 }}
+        scroll={{ freeScroll: true, loop: false }}
+        virtualization={{ enabled: true, overscan: 1, threshold: 5 }}
+      >
+        {Array.from({ length: 40 }, (_, index) => (
+          <article key={index}>Slide {index}</article>
+        ))}
+      </Slider>
+    );
+    await settle(4);
+
+    const viewport = container.querySelector("[data-rmg-part='viewport']");
+    expect(viewport).toBeInstanceOf(HTMLElement);
+
+    React.act(() => {
+      viewport?.dispatchEvent(
+        new WheelEvent("wheel", {
+          deltaX: 900,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+    await settle(2);
+
+    const renderedIndexes = Array.from(
+      container.querySelectorAll("[data-rmg-slide='true']")
+    ).map((slide) => Number(slide.getAttribute("data-rmg-rendered-idx")));
+
+    expect(renderedIndexes.some((index) => index > 5)).toBe(true);
+    expect(renderedIndexes.length).toBeLessThan(40);
+
+    unmount(root, container);
+  });
+
+  test("falls back to full rendering for variable slider layouts", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { container, root } = mount(
+      <Slider virtualization={{ enabled: true, threshold: 5 }}>
+        {Array.from({ length: 12 }, (_, index) => (
+          <article key={index}>Slide {index}</article>
+        ))}
+      </Slider>
+    );
+    await settle(4);
+
+    expect(container.querySelectorAll("[data-rmg-slide='true']")).toHaveLength(12);
+    expect(warnSpy).toHaveBeenCalledOnce();
+
+    warnSpy.mockRestore();
+    unmount(root, container);
+  });
+
   test("keeps mutation methods on the core ref", async () => {
     const ref = React.createRef<SliderHandle>();
     const { container, root } = mount(

@@ -511,6 +511,76 @@ describe("light Masonry public rendering", () => {
     expect(onLoadMore).toHaveBeenCalledTimes(2);
   });
 
+  test("infinite-scroll continues when light masonry item count grows while visible", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+    const onLoadMore = vi.fn();
+
+    function InfiniteProbe() {
+      const [visibleCount, setVisibleCount] = React.useState(1);
+
+      return (
+        <Masonry
+          columns={1}
+          gap={12}
+          plugins={[
+            masonryLoadMore({
+              visibleCount,
+              total: 3,
+              loading: false,
+            }),
+            masonryInfiniteScroll({
+              hasMore: visibleCount < 3,
+              loading: false,
+              onLoadMore: () => {
+                onLoadMore();
+                setVisibleCount((count) => Math.min(3, count + 1));
+              },
+            }),
+          ]}
+        >
+          <Masonry.Item width={1200} height={900}>
+            <img src="/a.jpg" alt="A" />
+          </Masonry.Item>
+          <Masonry.Item width={1200} height={900}>
+            <img src="/b.jpg" alt="B" />
+          </Masonry.Item>
+          <Masonry.Item width={1200} height={900}>
+            <img src="/c.jpg" alt="C" />
+          </Masonry.Item>
+        </Masonry>
+      );
+    }
+
+    const host = mount(<InfiniteProbe />);
+    await React.act(async () => {});
+    const getSentinelObserver = () =>
+      MockIntersectionObserver.instances
+        .slice()
+        .reverse()
+        .find(
+          (entry) =>
+            entry.target instanceof HTMLElement &&
+            entry.target.getAttribute("data-rmg-data-sentinel") === "masonry",
+        );
+
+    expect(host.querySelector("[data-rmg-idx='0']")).not.toBeNull();
+    expect(host.querySelector("[data-rmg-idx='1']")).toBeNull();
+
+    React.act(() => {
+      getSentinelObserver()?.trigger(true);
+    });
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+    expect(host.querySelector("[data-rmg-idx='1']")).not.toBeNull();
+
+    await React.act(async () => {
+      await nextFrame();
+    });
+
+    expect(onLoadMore).toHaveBeenCalledTimes(2);
+    expect(host.querySelector("[data-rmg-idx='2']")).not.toBeNull();
+  });
+
   test("loading data plugins keep light masonry busy until loading clears", async () => {
     const rectSpy = vi
       .spyOn(Element.prototype, "getBoundingClientRect")

@@ -345,6 +345,7 @@ export function renderFullscreenBaseSlides(opts: any) {
     renderImage,
     canonicalLength,
     renderMode = "track",
+    renderWindow,
   } = opts;
 
   const canonLen = canonicalLength ?? items.length;
@@ -412,13 +413,33 @@ export function renderFullscreenBaseSlides(opts: any) {
     reservedTopHeight + reservedBottomHeight
   );
 
-  return items.map((item: MediaItem, index: number) => {
-    const canonicalIndex = toCanonicalIndex(index, items.length, canonLen);
-    const isClone = isCloneIndex(index, items.length, canonLen);
+  const windowItems =
+    renderWindow && renderWindow.length > 0
+      ? renderWindow
+      : items.map((_: MediaItem, index: number) => ({ renderedIndex: index }));
+
+  return windowItems.map((windowItem: any) => {
+    const index = windowItem.renderedIndex;
+    const item = items[index] as MediaItem | undefined;
+    if (!item) return null;
+
+    const canonicalIndex =
+      windowItem.canonicalIndex ??
+      toCanonicalIndex(index, items.length, canonLen);
+    const isClone =
+      windowItem.isClone ?? isCloneIndex(index, items.length, canonLen);
+    const slideGetTransform =
+      windowItem.getTransform ??
+      (windowItem.transform ? () => windowItem.transform : getTransform);
+    const key =
+      windowItem.key ??
+      (windowItem.virtualIndex != null
+        ? `virtual-${windowItem.virtualIndex}-${canonicalIndex}`
+        : `${(item as any).src ?? "slide"}-${index}`);
 
     return (
       <BaseSlide
-        key={`${(item as any).src ?? "slide"}-${index}`}
+        key={key}
         item={item}
         index={index}
         canonicalIndex={canonicalIndex}
@@ -427,7 +448,6 @@ export function renderFullscreenBaseSlides(opts: any) {
         cells={cells}
         isZoomed={isZoomed}
         showFullscreenSlider={showFullscreenSlider}
-        getTransform={getTransform}
         onPanPointerDown={onPanPointerDown}
         onHoverPointerEnter={onHoverPointerEnter}
         onHoverPointerMove={onHoverPointerMove}
@@ -441,6 +461,7 @@ export function renderFullscreenBaseSlides(opts: any) {
         styles={styles}
         renderImage={renderImage}
         renderMode={renderMode}
+        getTransform={slideGetTransform}
         interactive={renderMode === "track" && showFullscreenSlider}
         registerCell={renderMode === "track"}
       />

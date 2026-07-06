@@ -20,6 +20,7 @@ import {
 } from "react-motion-gallery/grid";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useGridInfiniteScroll } from "react-motion-gallery/grid/infinite-scroll";
+import { gridVirtualization } from "react-motion-gallery/grid/virtualization";
 import { RatingStars } from "react-motion-gallery/rating-stars";
 import {
   GridSkeleton,
@@ -166,6 +167,16 @@ const revealOptions = {
   staggerMs: 200,
   staggerLimit: 6,
 };
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
+const GRID_VIRTUALIZATION = {
+  estimateSize: 600,
+  gap: 18,
+  overscan: 2,
+};
 function stockLabel(stock: number) {
   if (stock <= 24) return "Only " + String(stock) + " left";
   if (stock <= 72) return String(stock) + " in stock";
@@ -178,7 +189,10 @@ function stockClassName(stock: number) {
 }
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: { enabled: true, closeScroll: true },
   });
   return <>{fullscreenNode}</>;
@@ -563,9 +577,10 @@ function GridGallery({
             <Grid.Item
               key={key}
               revealKey={productRevealKey(product)}
+              className={placeholder ? styles.placeholderSlot : undefined}
             >
               {placeholder ? (
-                <ProductSkeletonSlot index={index} />
+                <span className={styles.placeholderContent} aria-hidden="true" />
               ) : (
                 <ProductCard product={product} index={index} />
               )}
@@ -585,9 +600,13 @@ export function GridInfiniteScrollDemo() {
   const [pendingCount, setPendingCount] = useState(0);
   const requestRef = useRef<AbortController | null>(null);
   const lengthRef = useRef(0);
+  const totalRef = useRef(0);
   useEffect(() => {
     lengthRef.current = products.length;
   }, [products.length]);
+  useEffect(() => {
+    totalRef.current = total;
+  }, [total]);
   const isInitialBusy = loading && products.length === 0;
   const loadingOptions = useMemo<GridLoadingOptions>(
     () => ({
@@ -612,7 +631,8 @@ export function GridInfiniteScrollDemo() {
         requestRef.current.abort();
       }
       const skip = mode === "replace" ? 0 : lengthRef.current;
-      if (mode === "append" && total > 0 && skip >= total) return;
+      const knownTotal = totalRef.current;
+      if (mode === "append" && knownTotal > 0 && skip >= knownTotal) return;
       const ac = new AbortController();
       requestRef.current = ac;
       setLoading(true);
@@ -621,13 +641,17 @@ export function GridInfiniteScrollDemo() {
         mode === "append" && skip > 0
           ? Math.max(
               0,
-              Math.min(PAGE_SIZE, total > 0 ? total - skip : PAGE_SIZE),
+              Math.min(
+                PAGE_SIZE,
+                knownTotal > 0 ? knownTotal - skip : PAGE_SIZE,
+              ),
             )
           : 0,
       );
       fetchProducts({ limit: PAGE_SIZE, skip, signal: ac.signal })
         .then((page) => {
           if (ac.signal.aborted || requestRef.current !== ac) return;
+          totalRef.current = page.total;
           setTotal(page.total);
           setPendingCount(0);
           setProducts((current) =>
@@ -650,7 +674,7 @@ export function GridInfiniteScrollDemo() {
           }
         });
     },
-    [total],
+    [],
   );
   useEffect(() => {
     const timeout = window.setTimeout(() => loadNext("replace"), 0);
@@ -660,19 +684,28 @@ export function GridInfiniteScrollDemo() {
     };
   }, [loadNext]);
   const hasMore = total === 0 || products.length < total;
-  const infinitePlugin = useGridInfiniteScroll({
-    hasMore,
-    loading,
-    onLoadMore: () => loadNext("append"),
-  });
   const sentinelLabel = loading
     ? "Loading products"
     : hasMore
       ? "More products"
       : "All loaded";
+  const infinitePlugin = useGridInfiniteScroll({
+    hasMore,
+    loading,
+    onLoadMore: () => loadNext("append"),
+    sentinel: (
+      <span className={styles.sentinel} aria-live="polite">
+        {sentinelLabel}
+      </span>
+    ),
+  });
+  const virtualizationPlugin = useMemo(
+    () => gridVirtualization(GRID_VIRTUALIZATION),
+    [],
+  );
   const plugins = useMemo(
-    () => [infinitePlugin, gridFullscreen()],
-    [infinitePlugin],
+    () => [infinitePlugin, virtualizationPlugin, gridFullscreen()],
+    [infinitePlugin, virtualizationPlugin],
   );
   const retry = useCallback(
     () => loadNext(products.length === 0 ? "replace" : "append"),
@@ -717,13 +750,6 @@ export function GridInfiniteScrollDemo() {
           loadingOptions={loadingOptions}
           plugins={plugins}
         />
-      )}
-      {error && products.length === 0 ? null : (
-        <div className={styles.footer}>
-          <span className={styles.sentinel} aria-live="polite">
-            {sentinelLabel}
-          </span>
-        </div>
       )}
     </section>
   );

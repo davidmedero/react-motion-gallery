@@ -22,7 +22,7 @@ export function useNormalizedEntriesLoading(entries: EntriesOptions) {
         ? src.threshold
         : 0.01;
 
-    const waitForDecode = src.waitForDecode !== false; // default true
+    const waitForMedia = src.waitForMedia ?? src.waitForDecode ?? true;
 
     const decodeTimeoutMs =
       typeof src.decodeTimeoutMs === "number" && src.decodeTimeoutMs > 0
@@ -49,7 +49,7 @@ export function useNormalizedEntriesLoading(entries: EntriesOptions) {
       nearMargin,
       viewMargin,
       threshold,
-      waitForDecode,
+      waitForMedia,
       decodeTimeoutMs,
       skeletonWrap: src.skeletonWrap,
       rememberRevealed: src.rememberRevealed ?? true,
@@ -62,10 +62,8 @@ export function useNormalizedEntriesReveal(entries: EntriesOptions) {
     const src = entries.reveal ?? {};
     return {
       renderReveal: src.renderReveal,
-      staggerMs: src.staggerMs ?? 200,
       durationMs: src.durationMs ?? 700,
       easing: src.easing ?? "cubic-bezier(.2,.7,.2,1)",
-      staggerLimit: Math.max(0, (src.staggerLimit ?? 6) | 0),
     };
   }, [entries.reveal]);
 }

@@ -20,6 +20,7 @@ import {
 } from "react-motion-gallery/grid";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { useGridInfiniteScroll } from "react-motion-gallery/grid/infinite-scroll";
+import { gridVirtualization } from "react-motion-gallery/grid/virtualization";
 import { RatingStars } from "react-motion-gallery/rating-stars";
 import {
   GridSkeleton,
@@ -163,8 +164,18 @@ const PRODUCT_PLACEHOLDER_SKELETON_GRID = {
 const revealOptions = {
   durationMs: 700,
   easing: "cubic-bezier(.2,.7,.2,1)",
-  staggerMs: 200,
-  staggerLimit: 6,
+  staggerMs: 0,
+  staggerLimit: 0,
+};
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
+const GRID_VIRTUALIZATION = {
+  estimateSize: 600,
+  gap: 18,
+  overscan: 2,
 };
 function stockLabel(stock: number) {
   if (stock <= 24) return "Only " + String(stock) + " left";
@@ -178,7 +189,10 @@ function stockClassName(stock: number) {
 }
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: { enabled: true, closeScroll: true },
   });
   return <>{fullscreenNode}</>;
@@ -211,7 +225,8 @@ function createPlaceholderProducts(
   return Array.from({ length: count }, (_, index) => {
     const slotIndex = startIndex + index;
     const slotKey =
-      keyForSlot?.(slotIndex) ?? "product-placeholder-slot-" + String(slotIndex);
+      keyForSlot?.(slotIndex) ??
+      "product-placeholder-slot-" + String(slotIndex);
     return {
       key: slotKey,
       id: "product-placeholder-" + String(slotIndex),
@@ -237,13 +252,9 @@ function createProductSkeletonItem(index: number): SkeletonNode {
       index % PRODUCT_SKELETON_CATEGORY_WIDTHS.length
     ];
   const titleWidth =
-    PRODUCT_SKELETON_TITLE_WIDTHS[
-      index % PRODUCT_SKELETON_TITLE_WIDTHS.length
-    ];
+    PRODUCT_SKELETON_TITLE_WIDTHS[index % PRODUCT_SKELETON_TITLE_WIDTHS.length];
   const stockWidth =
-    PRODUCT_SKELETON_STOCK_WIDTHS[
-      index % PRODUCT_SKELETON_STOCK_WIDTHS.length
-    ];
+    PRODUCT_SKELETON_STOCK_WIDTHS[index % PRODUCT_SKELETON_STOCK_WIDTHS.length];
 
   return {
     kind: "col",
@@ -481,10 +492,7 @@ function ProductSkeletonSlot({ index }: { index: number }) {
 
   return (
     <div aria-hidden="true">
-      <GridSkeleton
-        layout={spec}
-        grid={PRODUCT_PLACEHOLDER_SKELETON_GRID}
-      />
+      <GridSkeleton layout={spec} grid={PRODUCT_PLACEHOLDER_SKELETON_GRID} />
     </div>
   );
 }
@@ -563,9 +571,13 @@ function GridGallery({
             <Grid.Item
               key={key}
               revealKey={productRevealKey(product)}
+              className={placeholder ? styles.placeholderSlot : undefined}
             >
               {placeholder ? (
-                <ProductSkeletonSlot index={index} />
+                <span
+                  className={styles.placeholderContent}
+                  aria-hidden="true"
+                />
               ) : (
                 <ProductCard product={product} index={index} />
               )}
@@ -585,9 +597,13 @@ export function GridInfiniteScrollDemo() {
   const [pendingCount, setPendingCount] = useState(0);
   const requestRef = useRef<AbortController | null>(null);
   const lengthRef = useRef(0);
+  const totalRef = useRef(0);
   useEffect(() => {
     lengthRef.current = products.length;
   }, [products.length]);
+  useEffect(() => {
+    totalRef.current = total;
+  }, [total]);
   const isInitialBusy = loading && products.length === 0;
   const loadingOptions = useMemo<GridLoadingOptions>(
     () => ({
@@ -605,53 +621,50 @@ export function GridInfiniteScrollDemo() {
     }),
     [isInitialBusy],
   );
-  const loadNext = useCallback(
-    (mode: "replace" | "append" = "append") => {
-      if (requestRef.current) {
-        if (mode === "append") return;
-        requestRef.current.abort();
-      }
-      const skip = mode === "replace" ? 0 : lengthRef.current;
-      if (mode === "append" && total > 0 && skip >= total) return;
-      const ac = new AbortController();
-      requestRef.current = ac;
-      setLoading(true);
-      setError(null);
-      setPendingCount(
-        mode === "append" && skip > 0
-          ? Math.max(
-              0,
-              Math.min(PAGE_SIZE, total > 0 ? total - skip : PAGE_SIZE),
-            )
-          : 0,
-      );
-      fetchProducts({ limit: PAGE_SIZE, skip, signal: ac.signal })
-        .then((page) => {
-          if (ac.signal.aborted || requestRef.current !== ac) return;
-          setTotal(page.total);
-          setPendingCount(0);
-          setProducts((current) =>
-            mode === "replace" ? page.products : [...current, ...page.products],
-          );
-        })
-        .catch((reason) => {
-          if (ac.signal.aborted || requestRef.current !== ac) return;
-          setPendingCount(0);
-          setError(
-            reason instanceof Error
-              ? reason.message
-              : "Unable to load products",
-          );
-        })
-        .finally(() => {
-          if (!ac.signal.aborted && requestRef.current === ac) {
-            setLoading(false);
-            requestRef.current = null;
-          }
-        });
-    },
-    [total],
-  );
+  const loadNext = useCallback((mode: "replace" | "append" = "append") => {
+    if (requestRef.current) {
+      if (mode === "append") return;
+      requestRef.current.abort();
+    }
+    const skip = mode === "replace" ? 0 : lengthRef.current;
+    const knownTotal = totalRef.current;
+    if (mode === "append" && knownTotal > 0 && skip >= knownTotal) return;
+    const ac = new AbortController();
+    requestRef.current = ac;
+    setLoading(true);
+    setError(null);
+    setPendingCount(
+      mode === "append" && skip > 0
+        ? Math.max(
+            0,
+            Math.min(PAGE_SIZE, knownTotal > 0 ? knownTotal - skip : PAGE_SIZE),
+          )
+        : 0,
+    );
+    fetchProducts({ limit: PAGE_SIZE, skip, signal: ac.signal })
+      .then((page) => {
+        if (ac.signal.aborted || requestRef.current !== ac) return;
+        totalRef.current = page.total;
+        setTotal(page.total);
+        setPendingCount(0);
+        setProducts((current) =>
+          mode === "replace" ? page.products : [...current, ...page.products],
+        );
+      })
+      .catch((reason) => {
+        if (ac.signal.aborted || requestRef.current !== ac) return;
+        setPendingCount(0);
+        setError(
+          reason instanceof Error ? reason.message : "Unable to load products",
+        );
+      })
+      .finally(() => {
+        if (!ac.signal.aborted && requestRef.current === ac) {
+          setLoading(false);
+          requestRef.current = null;
+        }
+      });
+  }, []);
   useEffect(() => {
     const timeout = window.setTimeout(() => loadNext("replace"), 0);
     return () => {
@@ -660,19 +673,28 @@ export function GridInfiniteScrollDemo() {
     };
   }, [loadNext]);
   const hasMore = total === 0 || products.length < total;
-  const infinitePlugin = useGridInfiniteScroll({
-    hasMore,
-    loading,
-    onLoadMore: () => loadNext("append"),
-  });
   const sentinelLabel = loading
     ? "Loading products"
     : hasMore
       ? "More products"
       : "All loaded";
+  const infinitePlugin = useGridInfiniteScroll({
+    hasMore,
+    loading,
+    onLoadMore: () => loadNext("append"),
+    sentinel: (
+      <span className={styles.sentinel} aria-live="polite">
+        {sentinelLabel}
+      </span>
+    ),
+  });
+  const virtualizationPlugin = useMemo(
+    () => gridVirtualization(GRID_VIRTUALIZATION),
+    [],
+  );
   const plugins = useMemo(
-    () => [infinitePlugin, gridFullscreen()],
-    [infinitePlugin],
+    () => [infinitePlugin, virtualizationPlugin, gridFullscreen()],
+    [infinitePlugin, virtualizationPlugin],
   );
   const retry = useCallback(
     () => loadNext(products.length === 0 ? "replace" : "append"),
@@ -717,13 +739,6 @@ export function GridInfiniteScrollDemo() {
           loadingOptions={loadingOptions}
           plugins={plugins}
         />
-      )}
-      {error && products.length === 0 ? null : (
-        <div className={styles.footer}>
-          <span className={styles.sentinel} aria-live="polite">
-            {sentinelLabel}
-          </span>
-        </div>
       )}
     </section>
   );

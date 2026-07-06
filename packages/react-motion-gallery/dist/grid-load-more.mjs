@@ -1,1 +1,1 @@
-import {a as a$1}from'./chunk-QUY5FE75.mjs';import {b,j}from'./chunk-L4NJDMCU.mjs';function a(o){return a$1("load-more",{options:b(o)})}function i(o){return j(o,a)}export{a as gridLoadMore,i as useGridLoadMore};
+import {a as a$1}from'./chunk-QUY5FE75.mjs';import {c,k}from'./chunk-4OG3ZB7R.mjs';import'./chunk-CENFPA2Y.mjs';function a(o){return a$1("load-more",{options:c(o)})}function i(o){return k(o,a)}export{a as gridLoadMore,i as useGridLoadMore};

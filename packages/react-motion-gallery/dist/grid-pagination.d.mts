@@ -1,6 +1,7 @@
-import { D as DataPaginationControlsProps, a as DataPageItemsOptions, b as DataPageControlItem, c as DataPageRangeOptions, d as DataPageRangeItem, o as DataPaginationOptions, U as UseDataPaginationOptions, e as DataPaginationController, f as DataItemsPerPageOption, g as DataPaginationRippleOptions, h as DataPaginationRippleProp, i as DataPaginationSessionStorageOptions, j as DataPaginationUrlSyncOptions } from './dataPlugins-C91mlyu6.mjs';
+import { D as DataPaginationControlsProps, a as DataPageItemsOptions, b as DataPageControlItem, c as DataPageRangeOptions, d as DataPageRangeItem, o as DataPaginationOptions, U as UseDataPaginationOptions, e as DataPaginationController, f as DataItemsPerPageOption, g as DataPaginationRippleOptions, h as DataPaginationRippleProp, i as DataPaginationSessionStorageOptions, j as DataPaginationUrlSyncOptions } from './dataPlugins-CsUwdsuu.mjs';
 import { f as GridPlugin } from './types-BmnPcuoM.mjs';
 import * as React from 'react';
+import './infiniteScrollTrigger-BluBDW9o.mjs';
 import './force-C5m1QpdF.mjs';
 import './responsiveNumber-CouEMJ9O.mjs';
 import './layout-BOy4geKv.mjs';

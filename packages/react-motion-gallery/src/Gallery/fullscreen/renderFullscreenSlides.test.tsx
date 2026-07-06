@@ -26,7 +26,99 @@ function createEmptyVideoSnapshotStore(): VideoSnapshotStore {
   };
 }
 
+function createImageSlideRenderArgs(overrides: Record<string, unknown> = {}) {
+  const items = [
+    { kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" },
+    { kind: "image", src: "https://example.com/bravo.jpg", alt: "Bravo" },
+    { kind: "image", src: "https://example.com/charlie.jpg", alt: "Charlie" },
+  ] as any[];
+
+  return {
+    items,
+    plyrList: [],
+    getTransform: (index: number) => `translateX(${index * 100}%)`,
+    renderWindow: items.map((_, index) => ({
+      renderedIndex: index,
+      canonicalIndex: index,
+    })),
+    imageRefs: { current: items.map(() => React.createRef<HTMLDivElement>()) },
+    playerRefs: { current: [] },
+    cells: { current: [] },
+    isZoomed: false,
+    showFullscreenSlider: true,
+    defaultPlayerStyle: {},
+    onPanPointerDown: () => undefined,
+    onSuppressNextClickCapture: () => undefined,
+    resolveFsCaptionPlacement: () => null,
+    styles: {
+      imgMargin: "imgMargin",
+      fullscreenImages: "fullscreenImages",
+    },
+    fsDecodedImagesRef: { current: new Set() },
+    fsCustomDecodedImagesRef: { current: new Set() },
+    fsCustomResolvedSrcByKeyRef: { current: new Map() },
+    fsPreparedVideosRef: { current: new Set() },
+    getMediaKey: (item: any) => String(item.src ?? ""),
+    ...overrides,
+  } as any;
+}
+
 describe("fullscreen crossfade slide rendering", () => {
+  test("renders default fullscreen image dimensions for first-view intro measurement", () => {
+    const slides = renderFullscreenSlides({
+      items: [
+        {
+          kind: "image",
+          src: "https://example.com/alpha.jpg",
+          alt: "Alpha",
+          width: 1200,
+          height: 900,
+        } as any,
+      ],
+      plyrList: [],
+      getTransform: () => "translateX(0%)",
+      imageRefs: { current: [React.createRef<HTMLDivElement>()] },
+      playerRefs: { current: [] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: true,
+      defaultPlayerStyle: {},
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      resolveFsCaptionPlacement: () => null,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      fsDecodedImagesRef: { current: new Set() },
+      fsCustomDecodedImagesRef: { current: new Set() },
+      fsCustomResolvedSrcByKeyRef: { current: new Map() },
+      fsPreparedVideosRef: { current: new Set() },
+      getMediaKey: (item) => String((item as any).src ?? ""),
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).toContain('width="1200"');
+    expect(markup).toContain('height="900"');
+  });
+
+  test("renders captions for every window slide by default", () => {
+    const renderCaption = vi.fn(({ index }: { index: number }) => (
+      <span>Caption {index}</span>
+    ));
+
+    renderToStaticMarkup(
+      <>{renderFullscreenSlides(createImageSlideRenderArgs({ renderCaption }))}</>
+    );
+
+    expect(renderCaption.mock.calls.map(([args]) => args.index)).toEqual([
+      0,
+      1,
+      2,
+    ]);
+  });
+
   test("marks crossfade slide layers as inert fullscreen slides", () => {
     const slides = renderFullscreenCrossfadeSlides({
       items: [{ kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any],
@@ -167,6 +259,53 @@ describe("fullscreen crossfade slide rendering", () => {
     expect(markup).toContain('data-rmg-live-video="true"');
   });
 
+  test("omits live track video content when fullscreen is not visible and video is deferred", () => {
+    const slides = renderFullscreenSlides({
+      items: [
+        { kind: "image", src: "https://example.com/alpha.jpg", alt: "Alpha" } as any,
+        { kind: "video", src: "https://example.com/bravo.mp4", poster: "https://example.com/bravo.jpg" } as any,
+      ],
+      plyrList: [
+        {} as any,
+        {
+          source: {
+            type: "video",
+            poster: "https://example.com/bravo.jpg",
+            sources: [{ src: "https://example.com/bravo.mp4", type: "video/mp4" }],
+          },
+          options: {},
+        } as any,
+      ],
+      getTransform: () => "translateX(0%)",
+      imageRefs: { current: [React.createRef<HTMLDivElement>(), React.createRef<HTMLDivElement>()] },
+      playerRefs: { current: [] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: false,
+      defaultPlayerStyle: {},
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      resolveFsCaptionPlacement: () => null,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      fsDecodedImagesRef: { current: new Set() },
+      fsCustomDecodedImagesRef: { current: new Set() },
+      fsCustomResolvedSrcByKeyRef: { current: new Map() },
+      fsPreparedVideosRef: { current: new Set() },
+      videoSnapshotStore: createEmptyVideoSnapshotStore(),
+      canonicalLength: 2,
+      activeCanonicalIndex: 0,
+      deferLiveVideoUntilVisible: true,
+      getMediaKey: (item) => String((item as any).src ?? ""),
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup).not.toContain('data-rmg-live-video="true"');
+  });
+
   test("uses static video previews for inactive lazy track video slides", () => {
     expect(
       shouldUseFsStaticInactiveVideo({
@@ -222,6 +361,7 @@ describe("fullscreen crossfade slide rendering", () => {
     const markup = renderToStaticMarkup(<>{slides}</>);
 
     expect(markup).toContain('data-rmg-video-snapshot="true"');
+    expect(markup).not.toContain('data-rmg-video-spinner');
     expect(markup).not.toContain('data-rmg-live-video="true"');
   });
 

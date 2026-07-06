@@ -1,0 +1,619 @@
+.demoShell {
+  box-sizing: border-box;
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  color: #0f1111;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.railHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  border-bottom: 1px solid #d5d9d9;
+  padding-bottom: 14px;
+}
+
+.seeAllButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 34px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #0066c0;
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.seeAllButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.seeAllButton:hover {
+  color: #c45500;
+  text-decoration: underline;
+}
+
+.seeAllButton:focus-visible {
+  outline: 3px solid rgba(0, 113, 133, 0.32);
+  outline-offset: 4px;
+}
+
+.railViewport {
+  overflow: hidden;
+}
+
+.railCard {
+  box-sizing: border-box;
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #d5d9d9;
+  border-radius: 10px;
+  background: #f7f8f8;
+  cursor: zoom-in;
+}
+
+.railCard:focus-visible {
+  outline: 3px solid rgba(0, 113, 133, 0.32);
+  outline-offset: 3px;
+}
+
+.railMediaFrame,
+.allDialogMediaFrame {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: #e7ecec;
+}
+
+.railCard img,
+.allDialogTile img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.videoBadge {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(15, 17, 17, 0.74);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.videoBadge svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+  stroke-width: 2.4;
+}
+
+.railCard figcaption {
+  box-sizing: border-box;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 11px 12px 12px;
+  background: #fff;
+}
+
+.railCard figcaption span {
+  min-width: 0;
+  overflow: hidden;
+  color: #565959;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.railCard figcaption strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f1111;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.22;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.railArrow {
+  width: 42px !important;
+  height: 42px !important;
+  border: 1px solid rgba(15, 17, 17, 0.2) !important;
+  border-radius: 50% !important;
+  color: #0f1111 !important;
+  background: #fff !important;
+  box-shadow: 0 2px 8px rgba(15, 17, 17, 0.16) !important;
+}
+
+.sliderRipple {
+  background: rgba(0, 113, 133, 0.16);
+}
+
+.fullscreenDialog {
+  border-radius: 8px !important;
+  background: #fff !important;
+  box-shadow: 0 20px 64px rgba(15, 17, 17, 0.26) !important;
+}
+
+.fullscreenDialogHeader {
+  min-height: 58px !important;
+  border-bottom: 1px solid #d5d9d9;
+  background: #fff;
+}
+
+.fullscreenDialogMedia {
+  background: #f5f6f6;
+}
+
+.fullscreenDialogMedia :global([data-rmg-fs-media="true"]) {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: 100%;
+}
+
+.fullscreenDialogMedia :global([data-rmg-fs-slide="true"] > div > [aria-hidden]) {
+  display: none !important;
+  width: 0 !important;
+  flex-basis: 0 !important;
+}
+
+.fullscreenDialogMedia :global([data-rmg-fs-media="true"] .rmg__player) {
+  max-width: 100% !important;
+}
+
+.fullscreenDialogMedia :global([data-rmg-fs-media="true"] img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.fullscreenDialogMedia :global([data-rmg-video-snapshot="true"] .plyr__controls),
+.fullscreenDialogMedia :global([data-rmg-video-snapshot="true"] .plyr__control--overlaid),
+.fullscreenDialogMedia :global([data-rmg-video-snapshot="true"] [data-plyr="play"]) {
+  display: none !important;
+}
+
+.fullscreenDialogCaption {
+  background: #fff;
+  border-left: 1px solid #d5d9d9;
+}
+
+.fullscreenCaptionRoot,
+.fullscreenCaptionRoot :global([data-rmg-fs-caption-surface="true"]),
+.fullscreenCaptionRoot :global([data-rmg-fs-caption-content="true"]) {
+  width: 100%;
+  height: 100%;
+}
+
+.fullscreenCaptionRoot :global([data-rmg-fs-caption-content="true"]) {
+  box-sizing: border-box;
+  display: flex !important;
+  width: 100% !important;
+  min-height: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.72rem;
+  background: #fff;
+  color: #0f1111;
+}
+
+.fullscreenCaption {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.72rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(18px, 3vw, 34px);
+  background: #fff;
+  color: #0f1111;
+  pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fullscreenCaptionEyebrow {
+  color: #565959;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.fullscreenCaptionTitle {
+  color: #0f1111;
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1.08;
+}
+
+.fullscreenCaptionCopy {
+  margin: 0;
+  max-width: 34ch;
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.fullscreenClose {
+  top: 8px !important;
+  right: 12px !important;
+  display: grid !important;
+  width: 42px !important;
+  height: 42px !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  color: #0f1111 !important;
+  background: #fff !important;
+}
+
+.fullscreenClose:hover {
+  background: #eaeded !important;
+}
+
+.fullscreenAllButton {
+  appearance: none;
+  position: absolute;
+  left: 16px;
+  top: 0;
+  z-index: 1;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px;
+  min-width: 0;
+  min-height: 58px !important;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #0f1111 !important;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.fullscreenAllButton svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.4;
+}
+
+.fullscreenAllButton span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fullscreenAllButton:hover span {
+  text-decoration: underline;
+}
+
+.fullscreenAllButton:focus-visible,
+.fullscreenClose:focus-visible,
+.allDialogClose:focus-visible {
+  outline: 3px solid rgba(0, 113, 133, 0.32);
+  outline-offset: 3px;
+}
+
+.fullscreenArrow {
+  display: grid !important;
+  width: 50px !important;
+  height: 50px !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  color: #fff !important;
+  background: rgba(15, 17, 17, 0.64) !important;
+  box-shadow: 0 8px 20px rgba(15, 17, 17, 0.2) !important;
+}
+
+.fullscreenArrowPrev,
+.fullscreenArrowNext {
+  top: var(--rmg-fs-slider-center-y, 50%) !important;
+}
+
+.fullscreenArrowPrev {
+  left: calc(var(--rmg-fs-slider-left, 0px) + 14px) !important;
+}
+
+.fullscreenArrowNext {
+  right: calc(var(--rmg-fs-slider-right, 0px) + 14px) !important;
+}
+
+.fullscreenThumbs {
+  --fullscreen-thumb-edge-gutter: 56px;
+  box-sizing: border-box;
+  height: 88px !important;
+  padding: 10px max(var(--fullscreen-thumb-edge-gutter), 4vw);
+  background: transparent;
+}
+
+.fullscreenThumbItem {
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 17, 17, 0.22);
+}
+
+.fullscreenThumbItem[aria-current="true"],
+.fullscreenThumbItem[data-active="true"] {
+  border-color: #00a8b5;
+}
+
+.allDialog {
+  border-radius: 8px !important;
+  background: #fff !important;
+  box-shadow: 0 20px 64px rgba(15, 17, 17, 0.26) !important;
+}
+
+.allDialogMedia {
+  display: none;
+}
+
+.allDialogCaption,
+.allDialogOverlay,
+.allDialogContent {
+  height: 100%;
+  min-height: 0;
+  background: #fff;
+}
+
+.allDialog :global([data-rmg-fs-dialog-body="true"]),
+.allDialog :global([data-rmg-fs-dialog-caption="true"]),
+.allDialog :global([data-rmg-fs-caption-surface="true"]),
+.allDialog :global([data-rmg-fs-caption-content="true"]) {
+  block-size: 100% !important;
+  height: 100% !important;
+  min-block-size: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden;
+}
+
+.allDialogOverlay :global([data-rmg-fs-caption-surface="true"]),
+.allDialogOverlay :global([data-rmg-fs-caption-content="true"]) {
+  display: grid !important;
+  block-size: 100% !important;
+  min-block-size: 0 !important;
+}
+
+.allDialogChrome {
+  pointer-events: none;
+}
+
+.allDialogClose {
+  border-radius: 50% !important;
+  color: #0f1111 !important;
+  background: #fff !important;
+}
+
+.allDialogClose:hover {
+  background: #eaeded !important;
+}
+
+.allDialogContent {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  color: #0f1111;
+  pointer-events: auto;
+}
+
+.allDialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 82px;
+  padding: 18px 92px 18px 28px;
+  border-bottom: 1px solid #d5d9d9;
+  background: #f7f8f8;
+}
+
+.allDialogHeader h2 {
+  margin: 2px 0 0;
+  color: #0f1111;
+  font-size: clamp(1.28rem, 2vw, 1.72rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.allDialogHeader p {
+  max-width: 44ch;
+  margin: 0;
+  color: #565959;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.allDialogEyebrow {
+  color: #565959;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.allDialogGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  align-items: start;
+  gap: 14px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 28px 28px;
+}
+
+.allDialogTile {
+  appearance: none;
+  box-sizing: border-box;
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d5d9d9;
+  border-radius: 8px;
+  padding: 0;
+  background: #fff;
+  color: #0f1111;
+  text-align: left;
+  cursor: zoom-in;
+}
+
+.allDialogTile:hover {
+  border-color: #007185;
+}
+
+.allDialogTile:focus-visible {
+  outline: 3px solid rgba(0, 113, 133, 0.32);
+  outline-offset: 3px;
+}
+
+.allDialogTileText {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 11px 12px;
+}
+
+.allDialogTile strong,
+.allDialogTile small {
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.allDialogTile strong {
+  font-size: 0.94rem;
+  font-weight: 800;
+}
+
+.allDialogTile small {
+  color: #565959;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1199px) {
+  .fullscreenDialogCaption {
+    border-top: 1px solid #d5d9d9;
+    border-left: 0;
+  }
+
+  .fullscreenCaption,
+  .fullscreenCaptionRoot :global([data-rmg-fs-caption-content="true"]) {
+    justify-content: flex-start;
+    padding: 18px 20px;
+  }
+
+  .fullscreenCaptionCopy {
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .allDialogHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .railHeader {
+    gap: 10px;
+  }
+
+  .seeAllButton {
+    align-self: flex-end;
+  }
+
+  .fullscreenAllButton {
+    left: 12px;
+    max-width: calc(100vw - 104px);
+    font-size: 0.92rem;
+  }
+
+  .fullscreenClose {
+    right: 8px !important;
+  }
+
+  .fullscreenArrow {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .fullscreenArrowPrev {
+    left: calc(var(--rmg-fs-slider-left, 0px) + 8px) !important;
+  }
+
+  .fullscreenArrowNext {
+    right: calc(var(--rmg-fs-slider-right, 0px) + 8px) !important;
+  }
+
+  .fullscreenThumbs {
+    height: 80px !important;
+    padding-inline: var(--fullscreen-thumb-edge-gutter);
+  }
+
+  .allDialogHeader {
+    min-height: 0;
+    gap: 8px;
+    padding: 18px 82px 16px 18px;
+  }
+
+  .allDialogGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px 18px 20px;
+  }
+}
+
+@media (max-width: 440px) {
+  .allDialogGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

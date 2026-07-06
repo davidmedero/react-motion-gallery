@@ -29,6 +29,7 @@ export function useEntriesInfiniteScroll(
       options.loading,
       options.onLoadMore,
       options.rootMargin,
+      options.scrollRoot,
       options.sentinel,
       options.threshold,
     ]

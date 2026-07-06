@@ -13,7 +13,8 @@ export { MasonryInfiniteScrollOptions, UseMasonryInfiniteScrollOptions } from '.
 export { MasonryVirtualizationOptions, UseMasonryVirtualizerOptions } from './masonry-virtualization.mjs';
 import 'react/jsx-runtime';
 import './types-Bg0qLhxl.mjs';
-import './dataPlugins-C91mlyu6.mjs';
+import './dataPlugins-CsUwdsuu.mjs';
+import './infiniteScrollTrigger-BluBDW9o.mjs';
 
 type MasonryClassNames = {
     root?: string;

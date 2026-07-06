@@ -30,6 +30,7 @@ export function useEntriesVirtualizer(
       options.estimateSize,
       options.gap,
       options.overscan,
+      options.scrollRoot,
     ]
   );
 }

@@ -354,6 +354,26 @@ function resolveAspectRatio(runtime: VideoRuntimeRegistration): number | null {
   return null
 }
 
+function makeTransparentBackground(el: HTMLElement) {
+  el.style.setProperty('background', 'transparent', 'important')
+  el.style.setProperty('background-color', 'transparent', 'important')
+}
+
+function prepareCloneSurfaceForInjectedFrame(root: HTMLElement, wrapper: HTMLElement) {
+  root.style.setProperty('--plyr-video-background', 'transparent')
+
+  makeTransparentBackground(root)
+  makeTransparentBackground(wrapper)
+
+  root
+    .querySelectorAll<HTMLElement>(
+      '.plyr__video-wrapper, .plyr__video-embed, .plyr__poster'
+    )
+    .forEach((el) => {
+      makeTransparentBackground(el)
+    })
+}
+
 function injectFrameIntoClone(
   root: HTMLElement,
   runtime: VideoRuntimeRegistration,
@@ -362,6 +382,8 @@ function injectFrameIntoClone(
 ) {
   const wrapper = root.querySelector('.plyr__video-wrapper') as HTMLElement | null
   if (!wrapper || !frameSrc) return
+
+  prepareCloneSurfaceForInjectedFrame(root, wrapper)
 
   wrapper.querySelectorAll('[data-rmg-video-snapshot-frame="true"]').forEach((el) => el.remove())
 
@@ -383,9 +405,10 @@ function injectFrameIntoClone(
   frameEl.style.cssText = [
     'position:absolute',
     'inset:0',
+    'z-index:2',
     'overflow:hidden',
     'pointer-events:none',
-    'background:#000',
+    'background:transparent',
   ].join(';')
 
   const img = document.createElement('img')

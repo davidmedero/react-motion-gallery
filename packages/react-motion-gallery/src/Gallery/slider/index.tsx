@@ -8,4 +8,5 @@ export type {
   SliderOptions,
   SliderPlugin,
   SliderPluginKind,
+  SliderVirtualizationOptions,
 } from "./types";

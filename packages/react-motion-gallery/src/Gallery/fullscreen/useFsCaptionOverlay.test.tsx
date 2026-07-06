@@ -111,6 +111,18 @@ describe("overlay caption crossfade rendering", () => {
     expect(layers[1]?.props.style.zIndex).toBe(1);
   });
 
+  test("renders overlay captions without zoom motion state", () => {
+    const args: any = createBaseArgs();
+    args.captionZoomMotion = undefined;
+
+    const tree = renderFsCaptionOverlayTree(args) as React.ReactElement<any>;
+    const surface = tree.props.children as React.ReactElement<any>;
+
+    expect(tree.props["aria-hidden"]).toBeUndefined();
+    expect(surface.props.style.transform).toBeUndefined();
+    expect(surface.props.children).toBeTruthy();
+  });
+
   test("keeps outgoing layout height until the incoming caption starts fading in", () => {
     const tree = renderFsCaptionOverlayTree({
       ...createBaseArgs(),

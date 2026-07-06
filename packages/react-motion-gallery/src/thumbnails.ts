@@ -9,6 +9,7 @@ export type {
   ThumbnailLoadingRenderArgs,
   ThumbnailLoadingOptions,
   ThumbnailSkeletonMode,
+  ThumbnailFadeOnSyncOptions,
   ThumbnailRevealOptions,
   ThumbnailLayout,
   ThumbnailContainerLayout,
@@ -20,4 +21,8 @@ export type {
   ThumbnailsControls,
   ThumbnailsTransitions,
   ThumbnailsOptions,
+  ThumbnailRenderItemArgs,
+  ThumbnailRenderItem,
+  ThumbnailItemKey,
+  SliderVirtualizationOptions,
 } from "./Gallery/thumbnails/types";

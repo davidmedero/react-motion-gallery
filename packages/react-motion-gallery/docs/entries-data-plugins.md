@@ -234,15 +234,16 @@ const infiniteScroll = useEntriesInfiniteScroll({
 />;
 ```
 
-| Option       | Type         | Default       | Notes                                                                        |
-| ------------ | ------------ | ------------- | ---------------------------------------------------------------------------- |
-| `enabled`    | `boolean`    | `true`        | Disables sentinel rendering when false.                                      |
-| `hasMore`    | `boolean`    | `true`        | Removes the sentinel when false.                                             |
-| `loading`    | `boolean`    | `—`           | Prevents repeated `onLoadMore` calls while a request is active.              |
-| `rootMargin` | `string`     | `"600px 0px"` | IntersectionObserver preload margin.                                         |
-| `threshold`  | `number`     | `0`           | IntersectionObserver threshold.                                              |
-| `onLoadMore` | `() => void` | `—`           | Called when the sentinel intersects and loading gates allow another request. |
-| `sentinel`   | `ReactNode`  | `—`           | Optional visual content inside the sentinel element.                         |
+| Option       | Type                                                               | Default       | Notes                                                                        |
+| ------------ | ------------------------------------------------------------------ | ------------- | ---------------------------------------------------------------------------- |
+| `enabled`    | `boolean`                                                          | `true`        | Disables sentinel rendering when false.                                      |
+| `hasMore`    | `boolean`                                                          | `true`        | Removes the sentinel when false.                                             |
+| `loading`    | `boolean`                                                          | `—`           | Prevents repeated `onLoadMore` calls while a request is active.              |
+| `rootMargin` | `string`                                                           | `"600px 0px"` | IntersectionObserver preload margin.                                         |
+| `scrollRoot` | `Element \| RefObject<Element \| null> \| (() => Element \| null)` | `window`      | Optional nested scroll container used for sentinel visibility checks.        |
+| `threshold`  | `number`                                                           | `0`           | IntersectionObserver threshold.                                              |
+| `onLoadMore` | `() => void`                                                       | `—`           | Called when the sentinel intersects and loading gates allow another request. |
+| `sentinel`   | `ReactNode`                                                        | `—`           | Optional visual content inside the sentinel element.                         |
 
 `useEntriesInfiniteScroll(options)` memoizes `entriesInfiniteScroll(options)` and returns the plugin.
 
@@ -273,6 +274,7 @@ Virtualization is useful when the current item window is still large. Keep `esti
 | `estimateSize` | `number`           | `420`            | Initial row height estimate in pixels. Values below one clamp to one.                           |
 | `gap`          | `number`           | `24`             | Vertical gap included in spacer calculations. Values below zero clamp to zero.                  |
 | `overscan`     | `number`           | `3`              | Extra rows to mount before and after the visible range. Values below zero clamp to zero.        |
+| `scrollRoot`   | `Element \| RefObject<Element \| null> \| (() => Element \| null)` | `window` | Optional nested scroll container used for visible-range calculations.                           |
 
 `useEntriesVirtualizer(options)` memoizes `entriesVirtualization(options)` and returns the plugin.
 

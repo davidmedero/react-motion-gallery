@@ -1406,6 +1406,59 @@ describe("ZoomPanImage", () => {
     await view.cleanup();
   });
 
+  test("fullscreen ctrl-wheel zoom uses the image element layout box as the anchor", async () => {
+    const fullscreenPlugin = fullscreenZoomPan(zoomPanDefaults);
+    const view = await setup(
+      <FullscreenHoverRuntimeHarness
+        zoom={(fullscreenPlugin.options as any).zoom}
+      />
+    );
+    const root = view.getRoot();
+    const img = view.getImage();
+    setImageMetrics(root, img, {
+      width: 400,
+      height: 300,
+      naturalWidth: 1200,
+      naturalHeight: 600,
+      offsetWidth: 400,
+      offsetHeight: 300,
+    });
+
+    const previousElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: vi.fn(() => img as Element),
+    });
+
+    await React.act(async () => {
+      window.dispatchEvent(
+        new WheelEvent("wheel", {
+          bubbles: true,
+          cancelable: true,
+          ctrlKey: true,
+          clientX: 200,
+          clientY: 150,
+          deltaY: -120,
+        })
+      );
+    });
+
+    expect(parseScale(img.style.transform)).toBeCloseTo(2.2, 5);
+    const translate = parseTranslate(img.style.transform);
+    expect(translate.x).toBeCloseTo(-240, 5);
+    expect(translate.y).toBeCloseTo(-180, 5);
+
+    if (previousElementFromPoint) {
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: previousElementFromPoint,
+      });
+    } else {
+      Reflect.deleteProperty(document, "elementFromPoint");
+    }
+    await view.cleanup();
+  });
+
   test("resets zoom when src changes and when disabled becomes true", async () => {
     const view = await setup(<ZoomPanImage src="/alpha.jpg" alt="Alpha" />);
     let root = view.getRoot();

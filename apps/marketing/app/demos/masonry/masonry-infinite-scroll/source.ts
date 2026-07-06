@@ -20,6 +20,7 @@ import {
 import { masonryFullscreen } from "react-motion-gallery/masonry/fullscreen";
 import { masonryLoadMore } from "react-motion-gallery/masonry/load-more";
 import { useMasonryInfiniteScroll } from "react-motion-gallery/masonry/infinite-scroll";
+import { masonryVirtualization } from "react-motion-gallery/masonry/virtualization";
 import { RatingStars } from "react-motion-gallery/rating-stars";
 import {
   Skeleton,
@@ -160,6 +161,16 @@ const revealOptions = {
   staggerMs: 200,
   staggerLimit: 6,
 };
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
+const MASONRY_VIRTUALIZATION = {
+  estimateSize: 920,
+  gap: 18,
+  overscan: 1,
+};
 function stockLabel(stock: number) {
   if (stock <= 24) return "Only " + String(stock) + " left";
   if (stock <= 72) return String(stock) + " in stock";
@@ -172,7 +183,10 @@ function stockClassName(stock: number) {
 }
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: { enabled: true, closeScroll: true },
   });
   return <>{fullscreenNode}</>;
@@ -728,6 +742,10 @@ export function MasonryInfiniteScrollDemo() {
       </span>
     ),
   });
+  const virtualizationPlugin = useMemo(
+    () => masonryVirtualization(MASONRY_VIRTUALIZATION),
+    [],
+  );
   const plugins = useMemo(
     () => [
       masonryLoadMore({
@@ -737,9 +755,10 @@ export function MasonryInfiniteScrollDemo() {
         loading: false,
       }),
       infinitePlugin,
+      virtualizationPlugin,
       masonryFullscreen(),
     ],
-    [infinitePlugin, products.length, total],
+    [infinitePlugin, products.length, total, virtualizationPlugin],
   );
   const retry = useCallback(
     () => loadNext(products.length === 0 ? "replace" : "append"),

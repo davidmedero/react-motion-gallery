@@ -27,6 +27,7 @@ import {
 } from "react-motion-gallery/entries";
 import { createEntriesSliderMedia } from "react-motion-gallery/entries/media/slider";
 import { entriesLoadMore } from "react-motion-gallery/entries/load-more";
+import { entriesVirtualization } from "react-motion-gallery/entries/virtualization";
 import { useEntriesReady } from "react-motion-gallery/entries/ready";
 import { RatingStars } from "react-motion-gallery/rating-stars";
 import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
@@ -84,6 +85,16 @@ const ENTRY_MEDIA_SLIDER_PLUGINS = [
   sliderArrows(),
   sliderDots(),
 ];
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
+const ENTRIES_VIRTUALIZATION = {
+  estimateSize: 440,
+  gap: 24,
+  overscan: 1,
+};
 const PRODUCT_SKELETON_SHIMMER_MS = 1200;
 const productSkeletonShimmerEpoch =
   typeof performance === "undefined" ? 0 : performance.now();
@@ -445,7 +456,10 @@ function ProductOverlay({ entry, mediaIndex }: EntryOverlayRenderArgs) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: {
       enabled: true,
       closeScroll: true,
@@ -525,7 +539,7 @@ function EntriesProductsView({
             },
             loading: {
               enabled: true,
-              waitForDecode: true,
+              waitForMedia: true,
               force: isInitialBusy ? true : undefined,
               skeletonWrap: {
                 className: styles.skeletonWrap,
@@ -646,6 +660,7 @@ export function EntriesLoadMoreDemo() {
           total,
           loading,
         }),
+        entriesVirtualization(ENTRIES_VIRTUALIZATION),
       ]}
       busy={loading}
       ready={entriesReady.ready}

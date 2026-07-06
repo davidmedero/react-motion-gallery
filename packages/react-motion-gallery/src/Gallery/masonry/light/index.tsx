@@ -1279,10 +1279,10 @@ const MasonryImpl = React.forwardRef<MasonryHandle, MasonryOptions>(
     const pluginHost = React.useMemo(
       () => ({
         handle,
-        itemCount: cells.length,
+        itemCount: renderCells.length,
         ready,
       }),
-      [cells.length, handle, ready],
+      [handle, ready, renderCells.length],
     );
 
     React.useImperativeHandle(forwardedRef, () => handle, [handle]);

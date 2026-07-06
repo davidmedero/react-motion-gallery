@@ -15,7 +15,7 @@ import { forceResetZoom as forceResetZoomFn } from "../zoomPan/zoom/forceResetZo
 import { resetZoomForSlideChange as resetZoomForSlideChangeFn } from "../zoomPan/zoom/resetZoomForSlideChange";
 import { resetPanForScale1 as resetPanForScale1Fn } from "../zoomPan/pan/resetPanForScale1";
 import { baseFitSize, distance, midpoint } from "../zoomPan/core/utils";
-import { zoomTo } from "../zoomPan/zoom/zoomTo";
+import { applySmoothTransform, zoomTo } from "../zoomPan/zoom/zoomTo";
 import {
   isZoomPanHoverPointer,
   resolveZoomPanHoverOptions,
@@ -27,6 +27,7 @@ import {
 import {
   findImgAtPoint,
   getFullscreenTwinImages,
+  getPrimaryImgEl,
   readDataIndex,
 } from "../zoomPan/core/dom";
 import {
@@ -34,6 +35,18 @@ import {
   effectiveViewportWidth,
   resolveLengthFromResponsive,
 } from "../shared/responsive";
+import type { FullscreenZoomPanBoundsMode } from "./types";
+
+export function resolveFullscreenZoomPanBoundsMode(args: {
+  configured?: FullscreenZoomPanBoundsMode;
+  fullscreenDialogEnabled: boolean;
+}): FullscreenZoomPanBoundsMode {
+  if (args.configured === "media" || args.configured === "layout") {
+    return args.configured;
+  }
+
+  return args.fullscreenDialogEnabled ? "media" : "layout";
+}
 
 export function useFullscreenZoomPanRuntime(args: any) {
   const {
@@ -86,6 +99,11 @@ export function useFullscreenZoomPanRuntime(args: any) {
     () => resolveZoomPanHoverOptions(fs.zoom),
     [fs.zoom]
   );
+  const fullscreenDialogEnabled = !!fs.dialog && fs.dialog.enabled !== false;
+  const zoomPanBoundsMode = resolveFullscreenZoomPanBoundsMode({
+    configured: fs.zoom?.panBounds,
+    fullscreenDialogEnabled,
+  });
 
   const boundsForCurrent = React.useCallback(
     (
@@ -201,7 +219,8 @@ export function useFullscreenZoomPanRuntime(args: any) {
           ? resolvedEntryOverlayHeight ?? 0
           : 0);
 
-      const includeReserved = !options?.ignoreReserved;
+      const includeReserved =
+        zoomPanBoundsMode === "layout" && !options?.ignoreReserved;
 
       return boundsForCurrentFn({
         scale: scaleNum,
@@ -226,6 +245,7 @@ export function useFullscreenZoomPanRuntime(args: any) {
       resolveFsCaptionPlacement,
       windowSize.height,
       windowSize.width,
+      zoomPanBoundsMode,
     ]
   );
 
@@ -448,6 +468,55 @@ export function useFullscreenZoomPanRuntime(args: any) {
     ]
   );
 
+  const prepareZoomOutForClose = React.useCallback(
+    (options?: { durationMs?: number }) => {
+      resetHoverState();
+      prepareZoomToggleReset();
+
+      const container = currentImage.current;
+      const activeImg = getPrimaryImgEl(container);
+      const pan = panRef.current;
+      const hasZoomTransform =
+        scaleRef.current > 1.001 ||
+        Math.abs(pan.x) > 0.5 ||
+        Math.abs(pan.y) > 0.5;
+
+      if (!container || !activeImg || !hasZoomTransform) {
+        setScale(1);
+        previousZoom.current.x = 0;
+        previousZoom.current.y = 0;
+        panRef.current = { x: 0, y: 0 };
+        scaleRef.current = 1;
+        resetPanForScale1();
+        return Promise.resolve();
+      }
+
+      const durationMs = Math.max(0, options?.durationMs ?? 220);
+      const done = applySmoothTransform(zoomCtx as any, 0, 0, 1, durationMs, {
+        cleanupDelayMs: 0,
+      });
+
+      previousZoom.current.x = 0;
+      previousZoom.current.y = 0;
+      panRef.current = { x: 0, y: 0 };
+      scaleRef.current = 1;
+      resetPanForScale1();
+
+      return done;
+    },
+    [
+      currentImage,
+      panRef,
+      prepareZoomToggleReset,
+      previousZoom,
+      resetHoverState,
+      resetPanForScale1,
+      scaleRef,
+      setScale,
+      zoomCtx,
+    ]
+  );
+
   const rebuildPanBodies = React.useCallback(() => {
     rebuildPanBodiesFn({
       fs,
@@ -526,11 +595,13 @@ export function useFullscreenZoomPanRuntime(args: any) {
       zoomOutTransform: entriesObject.overlay?.zoomOutTransform,
     },
     isZoomed,
+    disabled: fullscreenDialogEnabled,
   });
 
   const captionZoomMotion = useFullscreenCaptionZoomMotion({
     caption: fs.caption,
     isZoomed,
+    disabled: fullscreenDialogEnabled,
   });
 
   const pan = usePanRuntime({
@@ -756,6 +827,7 @@ export function useFullscreenZoomPanRuntime(args: any) {
     resetAllZoomDom: resetZoomForSlideChange,
     resetForSlideNavigation: resetZoomForSlideNavigation,
     forceResetZoom: onForceResetZoom,
+    prepareZoomOutForClose,
     handleHoverPointerEnter,
     handleHoverPointerMove,
     handleHoverPointerLeave,

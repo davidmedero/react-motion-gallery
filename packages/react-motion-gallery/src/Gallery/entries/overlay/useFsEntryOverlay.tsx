@@ -81,7 +81,7 @@ export type UseFsEntryOverlayArgs<EntryT> = {
   wrapperBaseStyle?: React.CSSProperties;
   fadeOutMs?: number;
   closing?: boolean;
-  overlayZoomMotion: FullscreenCaptionZoomMotion;
+  overlayZoomMotion?: FullscreenCaptionZoomMotion;
   viewportWidth: number;
   viewportHeight: number;
   resolveFsCaptionPlacement: (
@@ -119,7 +119,7 @@ type RenderFsEntryOverlayTreeArgs<EntryT> = {
   entriesObject: EntriesObjectLike<EntryT>;
   entryMap: EntryLink[] | null | undefined;
   wrapperBaseStyle?: React.CSSProperties;
-  overlayZoomMotion: FullscreenCaptionZoomMotion;
+  overlayZoomMotion?: FullscreenCaptionZoomMotion;
   viewportWidth: number;
   viewportHeight: number;
   fadeOutMs: number;
@@ -245,7 +245,7 @@ function buildEntryOverlayShellStyle<EntryT>(args: {
 function buildEntryOverlaySurfaceStyle<EntryT>(args: {
   entriesObject: EntriesObjectLike<EntryT>;
   placement: FsCaptionPlacement | null | undefined;
-  overlayZoomMotion: FullscreenCaptionZoomMotion;
+  overlayZoomMotion?: FullscreenCaptionZoomMotion;
 }): React.CSSProperties {
   const { entriesObject, placement, overlayZoomMotion } = args;
 
@@ -258,7 +258,7 @@ function buildEntryOverlaySurfaceStyle<EntryT>(args: {
     color: '#fff',
     fontSize: '0.9rem',
     ...(entriesObject.overlay?.style ?? {}),
-    ...overlayZoomMotion.contentStyle,
+    ...(overlayZoomMotion?.contentStyle ?? {}),
   };
 }
 

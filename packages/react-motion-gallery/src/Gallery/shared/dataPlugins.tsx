@@ -8,6 +8,10 @@ import {
   type PaginationRippleOptions,
   type PaginationRippleProp,
 } from "./paginationRipple";
+import {
+  useReliableInfiniteTrigger,
+  type InfiniteScrollRootSource,
+} from "./infiniteScrollTrigger";
 
 export type DataMode = "client" | "server";
 
@@ -47,6 +51,7 @@ export type DataInfiniteScrollOptions = {
   hasMore?: boolean;
   loading?: boolean;
   rootMargin?: string;
+  scrollRoot?: InfiniteScrollRootSource;
   threshold?: number;
   onLoadMore?: () => void;
   sentinel?: React.ReactNode;
@@ -1389,7 +1394,6 @@ export function DataInfiniteSentinel({
   scope: string;
 }) {
   const sentinelRef = React.useRef<HTMLDivElement | null>(null);
-  const armedRef = React.useRef(true);
   const resolved = React.useMemo(
     () => normalizeDataInfiniteScrollOptions(options),
     [options],
@@ -1398,47 +1402,16 @@ export function DataInfiniteSentinel({
   const hasMore = resolved.hasMore ?? true;
   const loading = !!resolved.loading;
 
-  React.useEffect(() => {
-    armedRef.current = true;
-  }, [hasMore, resetKey]);
-
-  React.useEffect(() => {
-    if (!enabled || !hasMore || typeof IntersectionObserver === "undefined")
-      return;
-
-    const node = sentinelRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const intersecting = entries.some((entry) => entry.isIntersecting);
-        if (!intersecting) {
-          armedRef.current = true;
-          return;
-        }
-
-        if (!armedRef.current || loading) return;
-        armedRef.current = false;
-        resolved.onLoadMore?.();
-      },
-      {
-        root: null,
-        rootMargin: resolved.rootMargin ?? "600px 0px",
-        threshold: resolved.threshold ?? 0,
-      },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [
+  useReliableInfiniteTrigger(sentinelRef, {
     enabled,
     hasMore,
     loading,
-    resolved.onLoadMore,
-    resolved.rootMargin,
-    resolved.threshold,
+    onLoadMore: resolved.onLoadMore,
     resetKey,
-  ]);
+    rootMargin: resolved.rootMargin ?? "600px 0px",
+    scrollRoot: resolved.scrollRoot,
+    threshold: resolved.threshold ?? 0,
+  });
 
   if (!enabled || !hasMore) return null;
 

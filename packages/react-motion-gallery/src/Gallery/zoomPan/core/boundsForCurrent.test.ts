@@ -24,6 +24,56 @@ function makeRect(args: {
 }
 
 describe("boundsForCurrent", () => {
+  test("keeps max-sized centered images bounded from their layout box", () => {
+    const img = {
+      tagName: "img",
+      offsetWidth: 720,
+      offsetHeight: 360,
+    } as unknown as HTMLImageElement;
+
+    const mediaViewport = {
+      children: [img],
+      matches: (selector: string) => selector === "[data-rmg-fs-media-viewport='true']",
+      querySelector: () => null,
+      getBoundingClientRect: () => makeRect({ width: 720, height: 675 }),
+    } as unknown as HTMLElement;
+
+    const result = boundsForCurrent({
+      scale: 2,
+      imgW: 720,
+      imgH: 360,
+      currentImageEl: mediaViewport,
+    });
+
+    expect(result.y.min).toBe(-202.5);
+    expect(result.y.max).toBe(-157.5);
+  });
+
+  test("scales object-fit offsets when the image element fills the media viewport", () => {
+    const img = {
+      tagName: "img",
+      offsetWidth: 720,
+      offsetHeight: 675,
+    } as unknown as HTMLImageElement;
+
+    const mediaViewport = {
+      children: [img],
+      matches: (selector: string) => selector === "[data-rmg-fs-media-viewport='true']",
+      querySelector: () => null,
+      getBoundingClientRect: () => makeRect({ width: 720, height: 675 }),
+    } as unknown as HTMLElement;
+
+    const result = boundsForCurrent({
+      scale: 2,
+      imgW: 720,
+      imgH: 360,
+      currentImageEl: mediaViewport,
+    });
+
+    expect(result.y.min).toBe(-360);
+    expect(result.y.max).toBe(-315);
+  });
+
   test("uses the fullscreen media viewport width when the outer media box collapses", () => {
     const mediaViewport = {
       matches: (selector: string) => selector === "[data-rmg-fs-media-viewport='true']",

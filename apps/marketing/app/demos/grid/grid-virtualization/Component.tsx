@@ -131,6 +131,7 @@ const numberFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 const PRODUCT_COUNT = 60;
+const PRODUCT_SLOT_PREFIX = "product-grid-virtual-slot";
 const PRODUCT_SKELETON_CATEGORY_WIDTHS = [
   "68%",
   "62%",
@@ -164,8 +165,13 @@ const PRODUCT_PLACEHOLDER_SKELETON_GRID = {
 const revealOptions = {
   durationMs: 700,
   easing: "cubic-bezier(.2,.7,.2,1)",
-  staggerMs: 200,
-  staggerLimit: 6,
+  staggerMs: 0,
+  staggerLimit: 0,
+};
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
 };
 function stockLabel(stock: number) {
   if (stock <= 24) return "Only " + String(stock) + " left";
@@ -179,7 +185,10 @@ function stockClassName(stock: number) {
 }
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: { enabled: true, closeScroll: true },
   });
   return <>{fullscreenNode}</>;
@@ -201,11 +210,21 @@ function productImageStyle(image: ProductImage) {
       String(image.width) + " / " + String(image.height),
   } as CSSProperties;
 }
-function createPlaceholderProducts(count: number, startIndex = 0): Product[] {
+function getProductSlotKey(index: number) {
+  return PRODUCT_SLOT_PREFIX + "-" + String(index);
+}
+function createPlaceholderProducts(
+  count: number,
+  startIndex = 0,
+  keyForSlot?: (slotIndex: number) => string,
+): Product[] {
   return Array.from({ length: count }, (_, index) => {
     const slotIndex = startIndex + index;
+    const slotKey =
+      keyForSlot?.(slotIndex) ??
+      "product-placeholder-slot-" + String(slotIndex);
     return {
-      key: "product-placeholder-slot-" + String(slotIndex),
+      key: slotKey,
       id: "product-placeholder-" + String(slotIndex),
       section: "Loading",
       title: "Loading product",
@@ -215,7 +234,7 @@ function createPlaceholderProducts(count: number, startIndex = 0): Product[] {
       rating: 0,
       stock: 0,
       reviewCount: 0,
-      revealKey: "product-placeholder-" + String(slotIndex),
+      revealKey: slotKey,
       images: [],
     };
   });
@@ -710,9 +729,17 @@ export function GridVirtualizationDemo() {
       ac.abort();
     };
   }, [retryKey]);
-  const displayProducts = isInitialBusy
-    ? createPlaceholderProducts(PRODUCT_COUNT)
-    : products;
+  const displayProducts = useMemo(() => {
+    if (isInitialBusy) {
+      return createPlaceholderProducts(PRODUCT_COUNT, 0, getProductSlotKey);
+    }
+
+    return products.map((product, index) => ({
+      ...product,
+      key: getProductSlotKey(index),
+      revealKey: product.id,
+    }));
+  }, [isInitialBusy, products]);
   const retry = useCallback(() => setRetryKey((v) => v + 1), []);
   return (
     <section className={styles.shell}>

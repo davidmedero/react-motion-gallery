@@ -1002,7 +1002,11 @@ export function Video(props: VideoProps) {
             height: '100%',
             overflow: 'hidden',
             pointerEvents: 'none',
-            background: '#000',
+            backgroundColor: 'transparent',
+            backgroundImage: suspendedFrameSrc ? `url("${suspendedFrameSrc}")` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
           }}
         >
           {suspendedFrameSrc ? (

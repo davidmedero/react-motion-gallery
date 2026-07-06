@@ -34,12 +34,13 @@ type UseFsCaptionOverlayArgs = {
   items: MediaItem[];
   caption?: FullscreenCaptionOptions;
   isZoomed: boolean;
-  captionZoomMotion: FullscreenCaptionZoomMotion;
+  captionZoomMotion?: FullscreenCaptionZoomMotion;
   viewportWidth: number;
   viewportHeight: number;
   interactive?: boolean;
   closing?: boolean;
   fadeOutMs?: number;
+  wrapperBaseStyle?: React.CSSProperties;
   resolveFsCaptionPlacement: (
     placement: ResponsiveCaptionPlacement | undefined,
     breakpoint: number | undefined,
@@ -72,12 +73,13 @@ type RenderFsCaptionOverlayTreeArgs = {
   items: MediaItem[];
   caption?: FullscreenCaptionOptions;
   isZoomed: boolean;
-  captionZoomMotion: FullscreenCaptionZoomMotion;
+  captionZoomMotion?: FullscreenCaptionZoomMotion;
   viewportWidth: number;
   viewportHeight: number;
   fadeOutMs: number;
   fadeOutEasing: string;
   overlayOpacity?: number;
+  wrapperBaseStyle?: React.CSSProperties;
   resolveFsCaptionPlacement: (
     placement: ResponsiveCaptionPlacement | undefined,
     breakpoint: number | undefined,
@@ -129,6 +131,7 @@ function buildCaptionOverlayShellStyle(args: {
   fadeOutMs: number;
   fadeOutEasing: string;
   opacity: string;
+  wrapperBaseStyle?: React.CSSProperties;
 }): React.CSSProperties {
   const {
     caption,
@@ -138,6 +141,7 @@ function buildCaptionOverlayShellStyle(args: {
     fadeOutMs,
     fadeOutEasing,
     opacity,
+    wrapperBaseStyle,
   } = args;
 
   return {
@@ -157,13 +161,14 @@ function buildCaptionOverlayShellStyle(args: {
         : undefined,
     willChange: fadeOutMs > 0 ? 'opacity' : undefined,
     pointerEvents: 'none',
+    ...(wrapperBaseStyle ?? {}),
   };
 }
 
 function buildCaptionOverlaySurfaceStyle(args: {
   caption: FullscreenCaptionOptions | undefined;
   placement: FsCaptionPlacement | null | undefined;
-  captionZoomMotion: FullscreenCaptionZoomMotion;
+  captionZoomMotion?: FullscreenCaptionZoomMotion;
 }): React.CSSProperties {
   const { caption, placement, captionZoomMotion } = args;
 
@@ -173,7 +178,7 @@ function buildCaptionOverlaySurfaceStyle(args: {
     color: '#fff',
     fontSize: '0.9rem',
     ...(caption?.style ?? {}),
-    ...captionZoomMotion.contentStyle,
+    ...(captionZoomMotion?.contentStyle ?? {}),
     pointerEvents: 'none',
   };
 }
@@ -280,6 +285,7 @@ export function renderFsCaptionOverlayTree(
     viewportHeight,
     fadeOutMs,
     fadeOutEasing,
+    wrapperBaseStyle,
     resolveFsCaptionPlacement,
   } = args;
   const overlayOpacity = args.overlayOpacity;
@@ -322,6 +328,7 @@ export function renderFsCaptionOverlayTree(
   const isContentCrossfade = crossfadeTarget === 'content';
   const activeLayerIndex = renderedLayers.length - 1;
   const shellClassName = caption?.className;
+  const captionInteractive = captionZoomMotion?.interactive ?? true;
   const surfaceStyle = buildCaptionOverlaySurfaceStyle({
     caption,
     placement: effectivePlacement,
@@ -350,8 +357,9 @@ export function renderFsCaptionOverlayTree(
           fadeOutMs,
           fadeOutEasing,
           opacity: overlayOpacityValue,
+          wrapperBaseStyle,
         })}
-        aria-hidden={captionZoomMotion.interactive ? undefined : true}
+        aria-hidden={captionInteractive ? undefined : true}
       >
         <div
           data-rmg-fs-caption-surface="true"
@@ -389,7 +397,7 @@ export function renderFsCaptionOverlayTree(
                           active: layerIndex === activeLayerIndex,
                         })}
                         aria-hidden={
-                          layerIndex === activeLayerIndex && captionZoomMotion.interactive
+                          layerIndex === activeLayerIndex && captionInteractive
                             ? undefined
                             : true
                         }
@@ -423,7 +431,7 @@ export function renderFsCaptionOverlayTree(
                         active: layerIndex === activeLayerIndex,
                       })}
                       aria-hidden={
-                        layerIndex === activeLayerIndex && captionZoomMotion.interactive
+                        layerIndex === activeLayerIndex && captionInteractive
                           ? undefined
                           : true
                       }
@@ -458,9 +466,10 @@ export function renderFsCaptionOverlayTree(
                 overlayOpacity == null
                   ? `calc(var(${CAPTION_OVERLAY_OPACITY_VAR}, 1) * ${layer.opacity})`
                   : String(overlayOpacity * layer.opacity),
+              wrapperBaseStyle,
             })}
             aria-hidden={
-              layerIndex === activeLayerIndex && captionZoomMotion.interactive
+              layerIndex === activeLayerIndex && captionInteractive
                 ? undefined
                 : true
             }
@@ -501,6 +510,7 @@ export function FsCaptionOverlay(props: FsCaptionOverlayProps) {
     viewportHeight,
     closing,
     fadeOutMs: fadeOutMsProp,
+    wrapperBaseStyle,
     resolveFsCaptionPlacement,
   } = props;
 
@@ -701,6 +711,7 @@ export function FsCaptionOverlay(props: FsCaptionOverlayProps) {
         fadeOutMs,
         fadeOutEasing,
         overlayOpacity,
+        wrapperBaseStyle,
         resolveFsCaptionPlacement,
       })}
     </>
@@ -790,6 +801,7 @@ export function useFsCaptionOverlay(
     interactive,
     closing,
     fadeOutMs: fadeOutMsProp,
+    wrapperBaseStyle,
     resolveFsCaptionPlacement,
   } = args;
 
@@ -929,6 +941,7 @@ export function useFsCaptionOverlay(
         viewportHeight,
         fadeOutMs,
         fadeOutEasing,
+        wrapperBaseStyle,
         resolveFsCaptionPlacement,
       });
 
@@ -947,6 +960,7 @@ export function useFsCaptionOverlay(
       scheduleRootUnmount,
       viewportWidth,
       viewportHeight,
+      wrapperBaseStyle,
     ]
   );
 

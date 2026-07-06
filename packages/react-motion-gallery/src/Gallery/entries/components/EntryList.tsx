@@ -13,7 +13,6 @@ import type {
 } from "../types";
 import type { BreakpointMap } from "../../shared/responsive";
 import { useEntryInView } from "../hooks/useEntryInView";
-import { useEntryDecodeReady } from "../hooks/useEntryDecodeReady";
 import { isEntriesPlugin } from "../plugins/create";
 import { usePrefersReducedMotion } from "../../shared/hooks/usePrefersReducedMotion";
 import { EntrySkeletonCard, EntrySkeletonSpec } from "./EntrySkeleton";
@@ -28,6 +27,7 @@ import {
   resolveLoadingForceOptions,
   type LoadingForceOptions,
 } from "../../shared/loading/force";
+import { useReliableInfiniteTrigger } from "../../shared/infiniteScrollTrigger";
 
 declare const process:
   | {
@@ -165,10 +165,11 @@ async function waitForEntryContentReady(
   const images =
     options?.waitForImages === false ? [] : getBlockingEntryImages(row);
 
-  await Promise.all([
-    waitForDocumentFontsReady(),
-    ...images.map((image) => waitForImageElementReady(image)),
-  ]);
+  await waitForDocumentFontsReady();
+
+  for (const image of images) {
+    await waitForImageElementReady(image);
+  }
 }
 
 type Props = {
@@ -187,6 +188,9 @@ type Props = {
     entryInView?: boolean;
     mediaNodes: React.ReactNode[];
     entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
+    mediaReadyKey?: React.Key;
+    mediaReadyTimeoutMs?: number;
+    onMediaReadyChange?: (ready: boolean) => void;
   }) => React.ReactNode;
   breakpoints: BreakpointMap;
   registerExpandableImage?: (
@@ -253,6 +257,36 @@ function resolveEntriesDataWindow(
   if (options.mode === "server") return indexedItems;
 
   return indexedItems.slice(0, Math.max(0, options.visibleCount | 0));
+}
+
+function resolveVirtualScrollRoot(
+  scrollRoot: EntriesVirtualizationOptions["scrollRoot"] | undefined,
+) {
+  if (!scrollRoot) return null;
+  if (typeof scrollRoot === "function") return scrollRoot();
+  if ("current" in scrollRoot) return scrollRoot.current;
+  return scrollRoot;
+}
+
+function getVirtualViewportRange(
+  listRoot: HTMLElement,
+  scrollRoot: Element | null,
+) {
+  const listRect = listRoot.getBoundingClientRect();
+
+  if (!scrollRoot) {
+    return {
+      viewportTop: -listRect.top,
+      viewportBottom: -listRect.top + window.innerHeight,
+    };
+  }
+
+  const rootRect = scrollRoot.getBoundingClientRect();
+
+  return {
+    viewportTop: rootRect.top - listRect.top,
+    viewportBottom: rootRect.bottom - listRect.top,
+  };
 }
 
 function useEntriesVirtualWindow(
@@ -323,9 +357,10 @@ function useEntriesVirtualWindow(
       return;
     }
 
-    const rect = root.getBoundingClientRect();
-    const viewportTop = -rect.top;
-    const viewportBottom = viewportTop + window.innerHeight;
+    const { viewportTop, viewportBottom } = getVirtualViewportRange(
+      root,
+      resolveVirtualScrollRoot(options?.scrollRoot),
+    );
     let cursor = 0;
     let startRow = 0;
     let endRow = rowCount;
@@ -390,7 +425,16 @@ function useEntriesVirtualWindow(
             layout,
           },
     );
-  }, [count, enabled, gap, getSize, layout, listRef, overscan]);
+  }, [
+    count,
+    enabled,
+    gap,
+    getSize,
+    layout,
+    listRef,
+    options?.scrollRoot,
+    overscan,
+  ]);
 
   React.useEffect(() => {
     recomputeRange();
@@ -399,13 +443,22 @@ function useEntriesVirtualWindow(
   React.useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
 
-    window.addEventListener("scroll", recomputeRange, { passive: true });
+    const scrollRoot = resolveVirtualScrollRoot(options?.scrollRoot);
+    const scrollTarget = scrollRoot ?? window;
+
+    scrollTarget.addEventListener("scroll", recomputeRange, { passive: true });
+    if (scrollRoot) {
+      window.addEventListener("scroll", recomputeRange, { passive: true });
+    }
     window.addEventListener("resize", recomputeRange);
     return () => {
-      window.removeEventListener("scroll", recomputeRange);
+      scrollTarget.removeEventListener("scroll", recomputeRange);
+      if (scrollRoot) {
+        window.removeEventListener("scroll", recomputeRange);
+      }
       window.removeEventListener("resize", recomputeRange);
     };
-  }, [enabled, recomputeRange]);
+  }, [enabled, options?.scrollRoot, recomputeRange]);
 
   React.useEffect(() => {
     return () => {
@@ -478,59 +531,26 @@ function useEntriesVirtualWindow(
 
 function EntriesInfiniteSentinel({
   options,
-  listRef,
+  resetKey,
 }: {
   options: EntriesInfiniteScrollOptions;
-  listRef: React.RefObject<HTMLDivElement | null>;
+  resetKey?: React.Key;
 }) {
   const sentinelRef = React.useRef<HTMLDivElement | null>(null);
-  const armedRef = React.useRef(true);
   const enabled = options.enabled !== false;
   const hasMore = options.hasMore ?? true;
   const loading = !!options.loading;
 
-  React.useEffect(() => {
-    armedRef.current = true;
-  }, [hasMore]);
-
-  React.useEffect(() => {
-    if (!enabled || !hasMore || typeof IntersectionObserver === "undefined")
-      return;
-
-    const node = sentinelRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const intersecting = entries.some((entry) => entry.isIntersecting);
-        if (!intersecting) {
-          armedRef.current = true;
-          return;
-        }
-
-        if (!armedRef.current || loading) return;
-        armedRef.current = false;
-        options.onLoadMore?.();
-      },
-      {
-        root: null,
-        rootMargin: options.rootMargin ?? "600px 0px",
-        threshold: options.threshold ?? 0,
-      },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [
+  useReliableInfiniteTrigger(sentinelRef, {
     enabled,
     hasMore,
-    listRef,
     loading,
-    options,
-    options.onLoadMore,
-    options.rootMargin,
-    options.threshold,
-  ]);
+    onLoadMore: options.onLoadMore,
+    resetKey,
+    rootMargin: options.rootMargin ?? "600px 0px",
+    scrollRoot: options.scrollRoot,
+    threshold: options.threshold ?? 0,
+  });
 
   if (!enabled || !hasMore) return null;
 
@@ -646,6 +666,16 @@ function addEntryKeysToSet(prev: Set<string>, entryKeys: string[]) {
   });
 
   return changed ? next : prev;
+}
+
+function setEntryKeyInSet(prev: Set<string>, entryKey: string, value: boolean) {
+  const hasKey = prev.has(entryKey);
+  if (value === hasKey) return prev;
+
+  const next = new Set(prev);
+  if (value) next.add(entryKey);
+  else next.delete(entryKey);
+  return next;
 }
 
 export const EntryList = React.forwardRef<EntriesHandle, Props>(
@@ -794,7 +824,9 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
       React.useState<Set<string>>(() => new Set());
     const [paintedReadyContentEntryKeys, setPaintedReadyContentEntryKeys] =
       React.useState<Set<string>>(() => new Set());
-    const [verifiedReadyContentEntryKeys, setVerifiedReadyContentEntryKeys] =
+    const [mediaReadyEntryKeys, setMediaReadyEntryKeys] =
+      React.useState<Set<string>>(() => new Set());
+    const [mediaReportedEntryKeys, setMediaReportedEntryKeys] =
       React.useState<Set<string>>(() => new Set());
     const [settledRevealEntryKeys, setSettledRevealEntryKeys] = React.useState<
       Set<string>
@@ -802,82 +834,13 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
     const [settledSkeletonEntryKeys, setSettledSkeletonEntryKeys] =
       React.useState<Set<string>>(() => new Set());
     const entryRowNodesRef = React.useRef(new Map<string, HTMLElement>());
-    const queuedRevealEntryKeysRef = React.useRef(new Set<string>());
-    const revealQueueRef = React.useRef<string[]>([]);
-    const revealSchedulerActiveRef = React.useRef(false);
-    const revealSchedulerTimerRef = React.useRef<number | null>(null);
-    const revealSchedulerFrameIdsRef = React.useRef<number[]>([]);
-
-    const clearRevealScheduler = React.useCallback(() => {
-      if (revealSchedulerTimerRef.current != null) {
-        window.clearTimeout(revealSchedulerTimerRef.current);
-        revealSchedulerTimerRef.current = null;
-      }
-
-      revealSchedulerFrameIdsRef.current.forEach((frameId) => {
-        window.cancelAnimationFrame(frameId);
-      });
-      revealSchedulerFrameIdsRef.current = [];
-      revealSchedulerActiveRef.current = false;
-    }, []);
-
-    const scheduleQueuedReveal = React.useCallback(
-      (delayMs = 0) => {
-        if (
-          revealSchedulerActiveRef.current ||
-          revealQueueRef.current.length === 0
-        ) {
-          return;
-        }
-
-        const releaseNextEntry = () => {
-          revealSchedulerActiveRef.current = false;
-          revealSchedulerTimerRef.current = null;
-          revealSchedulerFrameIdsRef.current = [];
-
-          const entryKey = revealQueueRef.current.shift();
-          if (!entryKey) return;
-
-          queuedRevealEntryKeysRef.current.delete(entryKey);
-          setAnimatedReadyEntryKeys((prev) =>
-            addEntryKeysToSet(prev, [entryKey]),
-          );
-
-          if (revealQueueRef.current.length > 0) {
-            scheduleQueuedReveal(Math.max(0, revealN.staggerMs));
-          }
-        };
-
-        const releaseAfterPaint = () => {
-          if (
-            typeof window === "undefined" ||
-            typeof window.requestAnimationFrame !== "function"
-          ) {
-            releaseNextEntry();
-            return;
-          }
-
-          const firstFrame = window.requestAnimationFrame(() => {
-            const secondFrame = window.requestAnimationFrame(releaseNextEntry);
-            revealSchedulerFrameIdsRef.current = [firstFrame, secondFrame];
-          });
-          revealSchedulerFrameIdsRef.current = [firstFrame];
-        };
-
-        revealSchedulerActiveRef.current = true;
-
-        if (delayMs > 0 && typeof window !== "undefined") {
-          revealSchedulerTimerRef.current = window.setTimeout(
-            releaseAfterPaint,
-            delayMs,
-          );
-          return;
-        }
-
-        releaseAfterPaint();
-      },
-      [revealN.staggerMs],
+    const fallbackMediaVerificationEntryKeysRef = React.useRef(new Set<string>());
+    const mountedPaintedContentEntryKeysRef = React.useRef(new Set<string>());
+    const mediaReportedEntryKeysRef = React.useRef(new Set<string>());
+    const mediaReadyCallbacksRef = React.useRef(
+      new Map<string, (ready: boolean) => void>(),
     );
+    const mediaReadyMountedRef = React.useRef(true);
 
     React.useEffect(() => {
       const currentKeys = new Set(
@@ -893,7 +856,10 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
       setPaintedReadyContentEntryKeys((prev) =>
         pruneEntryKeySet(prev, retainedEntryStateKeySignature),
       );
-      setVerifiedReadyContentEntryKeys((prev) =>
+      setMediaReadyEntryKeys((prev) =>
+        pruneEntryKeySet(prev, retainedEntryStateKeySignature),
+      );
+      setMediaReportedEntryKeys((prev) =>
         pruneEntryKeySet(prev, retainedEntryStateKeySignature),
       );
       setSettledRevealEntryKeys((prev) =>
@@ -907,33 +873,38 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
         if (!currentKeys.has(entryKey))
           entryRowNodesRef.current.delete(entryKey);
       });
-      revealQueueRef.current = revealQueueRef.current.filter((entryKey) =>
-        currentKeys.has(entryKey),
-      );
-      queuedRevealEntryKeysRef.current.forEach((entryKey) => {
+      mediaReadyCallbacksRef.current.forEach((_, entryKey) => {
         if (!currentKeys.has(entryKey))
-          queuedRevealEntryKeysRef.current.delete(entryKey);
+          mediaReadyCallbacksRef.current.delete(entryKey);
       });
-      if (revealQueueRef.current.length === 0) {
-        clearRevealScheduler();
-      }
-    }, [clearRevealScheduler, retainedEntryStateKeySignature]);
+      fallbackMediaVerificationEntryKeysRef.current.forEach((entryKey) => {
+        if (!currentKeys.has(entryKey)) {
+          fallbackMediaVerificationEntryKeysRef.current.delete(entryKey);
+        }
+      });
+      mountedPaintedContentEntryKeysRef.current.forEach((entryKey) => {
+        if (!currentKeys.has(entryKey)) {
+          mountedPaintedContentEntryKeysRef.current.delete(entryKey);
+        }
+      });
+    }, [retainedEntryStateKeySignature]);
 
     React.useEffect(() => {
-      return () => {
-        entryRowNodesRef.current.clear();
-        revealQueueRef.current = [];
-        queuedRevealEntryKeysRef.current.clear();
-        clearRevealScheduler();
-      };
-    }, [clearRevealScheduler]);
+      mediaReadyMountedRef.current = true;
 
-    const revealOrderRef = React.useRef<number>(0);
-    const revealOrderByEntryRef = React.useRef<number[]>([]);
-    if (revealOrderByEntryRef.current.length !== len) {
-      revealOrderByEntryRef.current = Array.from({ length: len }, () => -1);
-      revealOrderRef.current = 0;
-    }
+      return () => {
+        mediaReadyMountedRef.current = false;
+        entryRowNodesRef.current.clear();
+        mediaReadyCallbacksRef.current.clear();
+        fallbackMediaVerificationEntryKeysRef.current.clear();
+        mountedPaintedContentEntryKeysRef.current.clear();
+        mediaReportedEntryKeysRef.current.clear();
+      };
+    }, []);
+
+    React.useEffect(() => {
+      mediaReportedEntryKeysRef.current = mediaReportedEntryKeys;
+    }, [mediaReportedEntryKeys]);
 
     const entryLoadingForce = paginationLoading
       ? ({ enabled: true, showContent: true, skeletonOpacity: 1 } as const)
@@ -965,9 +936,9 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
     const shouldStageEntryReveal =
       loadingActive &&
       !prefersReducedMotion &&
-      (revealN.durationMs > 0 || revealN.staggerMs > 0);
+      revealN.durationMs > 0;
 
-    const { everInView, setEntryRef } = useEntryInView(len, {
+    const { nearView, inView, everInView, setEntryRef } = useEntryInView(len, {
       root: null,
       nearMargin: loadingN.nearMargin,
       viewMargin: loadingN.viewMargin,
@@ -975,18 +946,27 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
       keys: entryStateKeys,
     });
 
-    const decodeGateEnabled =
-      loadingActive && (!loadingForce.enabled || loadingForce.showContent);
-    const decodePriority = entries.mediaLayout === "slider" ? "first" : "all";
-
-    const { decodedReady } = useEntryDecodeReady(
-      decodeGateEnabled,
-      items as any,
-      everInView,
-      {
-        timeoutMs: loadingN.decodeTimeoutMs,
-        priority: decodePriority,
+    const setEntryMediaReady = React.useCallback(
+      (entryKey: string, ready: boolean) => {
+        setMediaReportedEntryKeys((prev) =>
+          setEntryKeyInSet(prev, entryKey, true),
+        );
+        setMediaReadyEntryKeys((prev) => setEntryKeyInSet(prev, entryKey, ready));
       },
+      [],
+    );
+    const getEntryMediaReadyCallback = React.useCallback(
+      (entryKey: string) => {
+        const existing = mediaReadyCallbacksRef.current.get(entryKey);
+        if (existing) return existing;
+
+        const callback = (ready: boolean) => {
+          setEntryMediaReady(entryKey, ready);
+        };
+        mediaReadyCallbacksRef.current.set(entryKey, callback);
+        return callback;
+      },
+      [setEntryMediaReady],
     );
 
     const resolvedSkeletonEnterMs = prefersReducedMotion
@@ -1008,6 +988,7 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
     const currentlyMountedContentEntryKeys: string[] = [];
     const currentlyReadyContentEntryKeys: string[] = [];
     const currentlyRevealableEntryKeys: string[] = [];
+    const currentlyFallbackMediaEntryKeys: string[] = [];
     const rowsForRender = renderedEntries.slice(
       virtualWindow.start,
       virtualWindow.end,
@@ -1024,13 +1005,30 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
           const shouldMeasureVirtualRow =
             virtualWindow.layout !== "grid" ||
             virtualIndex % virtualWindow.columnCount === 0;
+          const isNear = nearView[entryIndex] ?? false;
+          const isCurrentInView = inView[entryIndex] ?? false;
           const hasEver = everInView[entryIndex] ?? false;
-          const isDecoded = decodedReady[entryIndex] ?? false;
+          const mediaArray = entry.media ?? [];
+          const entryHasMedia = mediaArray.length > 0;
+          const mediaReadyKey = mediaArray
+            .map(
+              (media, mediaIndex) =>
+                `${mediaIndex}:${(media as any)?.kind ?? ""}:${(media as any)?.src ?? ""}`,
+            )
+            .join("\u0000");
           const entryRenderKey =
             entryRenderKeys[entryIndex] ?? getEntryKey(entry, entryIndex);
           const entryStateKey =
             entryStateKeys[entryIndex] ?? getEntryStateKey(entry, entryIndex);
           const entryWasRevealed = animatedReadyEntryKeys.has(entryStateKey);
+          const mediaReady =
+            !entryHasMedia ||
+            entryWasRevealed ||
+            !loadingN.waitForMedia ||
+            mediaReadyEntryKeys.has(entryStateKey);
+          const mediaReadinessReported =
+            !entryHasMedia ||
+            mediaReportedEntryKeys.has(entryStateKey);
           const contentHadPaint =
             !shouldStageEntryReveal ||
             entryWasRevealed ||
@@ -1039,18 +1037,15 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
             !shouldStageEntryReveal ||
             entryWasRevealed ||
             paintedReadyContentEntryKeys.has(entryStateKey);
-          const readyContentVerified =
-            !shouldStageEntryReveal ||
-            entryWasRevealed ||
-            verifiedReadyContentEntryKeys.has(entryStateKey);
 
-          const shouldMountContent = entryWasRevealed || hasEver;
+          const shouldMountContent = entryWasRevealed || isNear || hasEver;
           const mountedContentReady =
             entryWasRevealed ||
-            (shouldMountContent && (loadingN.waitForDecode ? isDecoded : true));
+            (shouldMountContent && mediaReady);
+          const canRevealEntry = entryWasRevealed || isCurrentInView;
           const defaultReveal = loadingActive
             ? entryWasRevealed ||
-              (hasEver && (loadingN.waitForDecode ? isDecoded : true))
+              (canRevealEntry && mediaReady)
             : shouldMountContent;
           const entryLoadingVisualState = resolveEntryLoadingVisualState({
             loadingActive,
@@ -1099,17 +1094,25 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
             reveal &&
             contentHadPaint &&
             readyContentHadPaint &&
-            readyContentVerified &&
             !entryLoadingVisualState.compareMode
           ) {
             currentlyRevealableEntryKeys.push(entryStateKey);
           }
 
+          if (
+            shouldMountContent &&
+            loadingN.waitForMedia &&
+            entryHasMedia &&
+            !entryWasRevealed &&
+            !mediaReady &&
+            !mediaReadinessReported
+          ) {
+            currentlyFallbackMediaEntryKeys.push(entryStateKey);
+          }
+
           let contentNode: React.ReactNode = null;
 
           if (shouldMountContent) {
-            const mediaArray = entry.media ?? [];
-
             const mediaNodes = mediaArray.map((media, mediaIndex) => {
               const globalIndex =
                 entryFlatIndex?.[entryIndex]?.[mediaIndex] ?? 0;
@@ -1259,9 +1262,12 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
 
             const mediaContainer = renderMediaContainer({
               entryIndex,
-              entryInView: entryReady,
+              entryInView: canRevealEntry,
               mediaNodes,
               entrySliderRefs,
+              mediaReadyKey,
+              mediaReadyTimeoutMs: loadingN.decodeTimeoutMs,
+              onMediaReadyChange: getEntryMediaReadyCallback(entryStateKey),
             });
 
             contentNode =
@@ -1273,9 +1279,6 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
                   })
                 : mediaContainer;
           }
-
-          const limit = revealN.staggerLimit;
-          const delayIndex = limit > 0 && entryIndex < limit ? entryIndex : 0;
 
           const skeletonOverride =
             typeof (entries.render as any)?.skeleton === "function"
@@ -1289,15 +1292,6 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
           const skeletonWrapStyle = splitEntrySkeletonWrapStyle(
             skelWrap?.style,
           );
-
-          if (reveal && revealOrderByEntryRef.current[entryIndex] === -1) {
-            revealOrderByEntryRef.current[entryIndex] =
-              revealOrderRef.current++;
-          }
-
-          const order = revealOrderByEntryRef.current[entryIndex];
-          const revealDelayMs =
-            shouldStageEntryReveal || order < 0 ? 0 : order * revealN.staggerMs;
 
           return (
             <div
@@ -1324,8 +1318,6 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
               data-rmg-entry-virtual-row={virtualRowIndex}
               style={{
                 ["--rmg-entry-min-height" as any]: loadingN.minHeight,
-                ["--rmg-entry-reveal-index" as any]: delayIndex,
-                ["--rmg-entry-reveal-delay" as any]: `${revealDelayMs}ms`,
                 ...entries.entryRow?.style,
               }}
             >
@@ -1397,10 +1389,13 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
       currentlyMountedContentEntryKeys.join("\u0000");
     const currentlyReadyContentEntryKeySignature =
       currentlyReadyContentEntryKeys.join("\u0000");
-    const currentlyReadyPaintedContentEntryKeySignature =
-      currentlyReadyContentEntryKeys
-        .filter((entryKey) => paintedReadyContentEntryKeys.has(entryKey))
+    const currentlyMountedPaintedContentEntryKeySignature =
+      currentlyMountedContentEntryKeys
+        .filter((entryKey) => paintedContentEntryKeys.has(entryKey))
         .join("\u0000");
+    const currentlyFallbackMediaEntryKeySignature = currentlyFallbackMediaEntryKeys
+      .filter((entryKey) => paintedContentEntryKeys.has(entryKey))
+      .join("\u0000");
 
     React.useEffect(() => {
       setPaintedContentEntryKeys((prev) =>
@@ -1410,9 +1405,6 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
 
     React.useEffect(() => {
       setPaintedReadyContentEntryKeys((prev) =>
-        pruneEntryKeySet(prev, currentlyReadyContentEntryKeySignature),
-      );
-      setVerifiedReadyContentEntryKeys((prev) =>
         pruneEntryKeySet(prev, currentlyReadyContentEntryKeySignature),
       );
     }, [currentlyReadyContentEntryKeySignature]);
@@ -1504,71 +1496,54 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
     }, [currentlyReadyContentEntryKeySignature, shouldStageEntryReveal]);
 
     React.useEffect(() => {
-      const readyPaintedEntryKeys = splitEntryKeySignature(
-        currentlyReadyPaintedContentEntryKeySignature,
+      mountedPaintedContentEntryKeysRef.current = new Set(
+        splitEntryKeySignature(currentlyMountedPaintedContentEntryKeySignature),
+      );
+    }, [currentlyMountedPaintedContentEntryKeySignature]);
+
+    React.useEffect(() => {
+      if (!currentlyFallbackMediaEntryKeySignature) return;
+
+      const fallbackEntryKeys = splitEntryKeySignature(
+        currentlyFallbackMediaEntryKeySignature,
       );
 
-      setVerifiedReadyContentEntryKeys((prev) =>
-        pruneEntryKeySet(prev, currentlyReadyPaintedContentEntryKeySignature),
-      );
+      fallbackEntryKeys.forEach((entryKey) => {
+        if (mediaReadyEntryKeys.has(entryKey)) return;
+        if (mediaReportedEntryKeysRef.current.has(entryKey)) return;
+        if (fallbackMediaVerificationEntryKeysRef.current.has(entryKey)) return;
 
-      if (!currentlyReadyPaintedContentEntryKeySignature) return;
+        const row = entryRowNodesRef.current.get(entryKey);
+        if (!row) return;
 
-      if (!shouldStageEntryReveal) {
-        setVerifiedReadyContentEntryKeys((prev) =>
-          addEntryKeysToSet(prev, readyPaintedEntryKeys),
-        );
-        return;
-      }
+        fallbackMediaVerificationEntryKeysRef.current.add(entryKey);
 
-      let cancelled = false;
-
-      void Promise.all(
-        readyPaintedEntryKeys.map(async (entryKey) => {
-          const row = entryRowNodesRef.current.get(entryKey);
-          if (!row) return null;
-
+        void (async () => {
           await waitForEntryContentReady(row, {
-            waitForImages: loadingN.waitForDecode,
+            waitForImages: true,
           });
-          return entryKey;
-        }),
-      ).then((entryKeys) => {
-        if (cancelled) return;
 
-        const verifiedEntryKeys = entryKeys.filter(
-          (entryKey): entryKey is string => typeof entryKey === "string",
-        );
+          if (!mediaReadyMountedRef.current) return;
+          if (!mountedPaintedContentEntryKeysRef.current.has(entryKey)) return;
+          if (mediaReportedEntryKeysRef.current.has(entryKey)) return;
 
-        if (!verifiedEntryKeys.length) return;
-
-        setVerifiedReadyContentEntryKeys((prev) =>
-          addEntryKeysToSet(prev, verifiedEntryKeys),
-        );
+          setMediaReadyEntryKeys((prev) =>
+            setEntryKeyInSet(prev, entryKey, true),
+          );
+        })().finally(() => {
+          fallbackMediaVerificationEntryKeysRef.current.delete(entryKey);
+        });
       });
-
-      return () => {
-        cancelled = true;
-      };
-    }, [currentlyReadyPaintedContentEntryKeySignature, shouldStageEntryReveal]);
+    }, [
+      currentlyFallbackMediaEntryKeySignature,
+      mediaReadyEntryKeys,
+      mediaReportedEntryKeys,
+    ]);
 
     React.useEffect(() => {
       const revealableEntryKeys = splitEntryKeySignature(
         currentlyRevealableEntryKeySignature,
       );
-      const revealableEntryKeySet = new Set(revealableEntryKeys);
-
-      revealQueueRef.current = revealQueueRef.current.filter((entryKey) =>
-        revealableEntryKeySet.has(entryKey),
-      );
-      queuedRevealEntryKeysRef.current.forEach((entryKey) => {
-        if (!revealableEntryKeySet.has(entryKey)) {
-          queuedRevealEntryKeysRef.current.delete(entryKey);
-        }
-      });
-      if (revealQueueRef.current.length === 0) {
-        clearRevealScheduler();
-      }
 
       if (!currentlyRevealableEntryKeySignature) return;
 
@@ -1586,26 +1561,9 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
           addEntryKeysToSet(prev, entryKeysToMark),
         );
       };
-      const clearRevealQueue = () => {
-        revealQueueRef.current = [];
-        queuedRevealEntryKeysRef.current.clear();
-        clearRevealScheduler();
-      };
 
       if (!shouldStageEntryReveal) {
-        clearRevealQueue();
         markEntriesReady();
-        return;
-      }
-
-      if (revealN.staggerMs > 0) {
-        entryKeysToMark.forEach((entryKey) => {
-          if (queuedRevealEntryKeysRef.current.has(entryKey)) return;
-
-          revealQueueRef.current.push(entryKey);
-          queuedRevealEntryKeysRef.current.add(entryKey);
-        });
-        scheduleQueuedReveal();
         return;
       }
 
@@ -1613,12 +1571,9 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
         typeof window === "undefined" ||
         typeof window.requestAnimationFrame !== "function"
       ) {
-        clearRevealQueue();
         markEntriesReady();
         return;
       }
-
-      clearRevealQueue();
 
       let firstFrame = 0;
       let secondFrame = 0;
@@ -1636,10 +1591,7 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
       };
     }, [
       animatedReadyEntryKeys,
-      clearRevealScheduler,
       currentlyRevealableEntryKeySignature,
-      revealN.staggerMs,
-      scheduleQueuedReveal,
       shouldStageEntryReveal,
     ]);
 
@@ -1719,7 +1671,6 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
         .filter(Boolean)
         .join(" "),
       style: {
-        ["--rmg-entry-reveal-stagger" as any]: `${revealN.staggerMs}ms`,
         ["--rmg-entry-reveal-duration" as any]: `${revealN.durationMs}ms`,
         ["--rmg-entry-reveal-easing" as any]: revealN.easing,
         ...entries.entryList?.style,
@@ -1756,7 +1707,7 @@ export const EntryList = React.forwardRef<EntriesHandle, Props>(
             options={
               infiniteScrollPlugin.options as EntriesInfiniteScrollOptions
             }
-            listRef={listRef}
+            resetKey={renderedEntries.length}
           />
         ) : null}
       </div>

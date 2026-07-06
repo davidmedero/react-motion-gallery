@@ -82,6 +82,11 @@ const ENTRY_MEDIA_SLIDER_PLUGINS = [
   sliderArrows(),
   sliderDots(),
 ];
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
 
 function productImages(product: DummyProduct) {
   const urls = [
@@ -425,7 +430,10 @@ function ProductOverlay({ entry, mediaIndex }: EntryOverlayRenderArgs) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: {
       enabled: true,
       closeScroll: true,
@@ -506,7 +514,7 @@ function EntriesProductsView({
             },
             loading: {
               enabled: true,
-              waitForDecode: true,
+              waitForMedia: true,
               force: isInitialBusy ? true : undefined,
               skeletonWrap: {
                 className: styles.skeletonWrap,

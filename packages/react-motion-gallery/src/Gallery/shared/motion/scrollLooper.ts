@@ -20,9 +20,10 @@ export function ScrollLooper(
 
   return {
     loop(direction: number) {
-      if (!shouldLoop(direction)) return
+      if (!shouldLoop(direction)) return 0
       const shift = contentSize * (direction * -1)
       vectors.forEach(v => v.add(shift))
+      return shift
     }
   }
 }

@@ -1,6 +1,7 @@
 export { GalleryCore, useGalleryCore } from "./Gallery/core";
 export { Entries, flattenEntries, useEntriesReady } from "./Gallery/entries";
 export { useFullscreenController } from "./Gallery/fullscreen";
+export type { UseFullscreenControllerReturn } from "./Gallery/fullscreen";
 export { FullscreenThumbnailSlider } from "./Gallery/fullscreenThumbnails";
 export { Slider } from "./Gallery/slider/default";
 export { useSliderReady } from "./slider-ready";
@@ -39,6 +40,8 @@ export type {
   SliderRevealOptions,
   SliderSkipSnaps,
   SliderSkipSnapsOptions,
+  SliderUnderflowAlign,
+  SliderVirtualizationOptions,
   SliderOptions,
   SliderHandle,
   SliderApi,
@@ -135,21 +138,26 @@ export type {
 } from "./Gallery/entries";
 export type {
   FullscreenCaptionOptions,
+  FullscreenCloseOptions,
   FullscreenCloseScrollContext,
   FullscreenCloseScrollEnabled,
   FullscreenCloseScrollOptions,
   FullscreenCloseScrollTiming,
   FullscreenControlsOptions,
   FullscreenCrossfadeOptions,
+  FullscreenDialogTransitionOptions,
+  FullscreenDialogOptions,
   FullscreenEffectsOptions,
   FullscreenIntroPathTiming,
   FullscreenLazyLoadOptions,
   FullscreenMobileDetectionContext,
+  FullscreenMountStrategy,
   FullscreenOptions,
   FullscreenPlugin,
   FullscreenPluginKind,
   FullscreenSliderOptions,
   FullscreenVideoOptions,
+  FullscreenZoomPanBoundsMode,
   FullscreenZoomPanOptions,
   FsCaptionPlacement,
   FsIntroRequest,
@@ -167,7 +175,11 @@ export type {
   ThumbnailLoadingRenderArgs,
   ThumbnailLoadingOptions,
   ThumbnailSkeletonMode,
+  ThumbnailFadeOnSyncOptions,
   ThumbnailRevealOptions,
+  ThumbnailRenderItemArgs,
+  ThumbnailRenderItem,
+  ThumbnailItemKey,
   ThumbnailsOptions,
 } from "./Gallery/thumbnails/types";
 export type { ThumbnailSyncBridge } from "./Gallery/thumbnails/syncBridge";

@@ -8,8 +8,14 @@ import { useEntryInView } from "./useEntryInView";
 type RectMode = "visible" | "near" | "offscreen";
 type MockIntersectionObserverEntry = Pick<
   IntersectionObserverEntry,
-  "target" | "isIntersecting"
+  "target" | "isIntersecting" | "intersectionRatio"
 >;
+
+type EntryInViewState = {
+  nearView: boolean[];
+  inView: boolean[];
+  everInView: boolean[];
+};
 
 function setRect(node: HTMLElement, mode: RectMode) {
   const top = mode === "visible" ? 0 : mode === "near" ? 1000 : 2000;
@@ -38,7 +44,7 @@ function Probe({
   entryKeys: string[];
   rectMode: RectMode;
   nearMargin?: string;
-  onState: (state: { nearView: boolean[]; everInView: boolean[] }) => void;
+  onState: (state: EntryInViewState) => void;
 }) {
   const state = useEntryInView(entryKeys.length, {
     keys: entryKeys,
@@ -50,9 +56,10 @@ function Probe({
   React.useEffect(() => {
     onState({
       nearView: state.nearView,
+      inView: state.inView,
       everInView: state.everInView,
     });
-  }, [onState, state.nearView, state.everInView]);
+  }, [onState, state.nearView, state.inView, state.everInView]);
 
   return (
     <>
@@ -110,8 +117,8 @@ describe("useEntryInView", () => {
     const rootEl = document.createElement("div");
     document.body.appendChild(rootEl);
     const root = createRoot(rootEl);
-    const states: Array<{ nearView: boolean[]; everInView: boolean[] }> = [];
-    const onState = (state: { nearView: boolean[]; everInView: boolean[] }) => {
+    const states: EntryInViewState[] = [];
+    const onState = (state: EntryInViewState) => {
       states.push(state);
     };
 
@@ -123,6 +130,7 @@ describe("useEntryInView", () => {
 
     expect(states.at(-1)).toEqual({
       nearView: [true, true],
+      inView: [true, true],
       everInView: [true, true],
     });
 
@@ -134,6 +142,7 @@ describe("useEntryInView", () => {
 
     expect(states.at(-1)).toEqual({
       nearView: [true, true],
+      inView: [true, true],
       everInView: [true, true],
     });
 
@@ -144,6 +153,7 @@ describe("useEntryInView", () => {
     });
 
     expect(states.at(-1)?.everInView).toEqual([true, true]);
+    expect(states.at(-1)?.inView).toEqual([false, false]);
 
     await React.act(async () => {
       root.render(
@@ -153,6 +163,7 @@ describe("useEntryInView", () => {
 
     expect(states.at(-1)).toEqual({
       nearView: [false, false],
+      inView: [false, false],
       everInView: [false, false],
     });
 
@@ -166,8 +177,8 @@ describe("useEntryInView", () => {
     const rootEl = document.createElement("div");
     document.body.appendChild(rootEl);
     const root = createRoot(rootEl);
-    const states: Array<{ nearView: boolean[]; everInView: boolean[] }> = [];
-    const onState = (state: { nearView: boolean[]; everInView: boolean[] }) => {
+    const states: EntryInViewState[] = [];
+    const onState = (state: EntryInViewState) => {
       states.push(state);
     };
 
@@ -184,6 +195,7 @@ describe("useEntryInView", () => {
 
     expect(states[states.length - 1]).toEqual({
       nearView: [true],
+      inView: [false],
       everInView: [false],
     });
 
@@ -200,6 +212,7 @@ describe("useEntryInView", () => {
 
     expect(states[states.length - 1]).toEqual({
       nearView: [true],
+      inView: [false],
       everInView: [false],
     });
 
@@ -209,13 +222,13 @@ describe("useEntryInView", () => {
     rootEl.remove();
   });
 
-  test("lets IntersectionObserver own initial visibility without synchronous measuring", async () => {
+  test("seeds initial visibility before IntersectionObserver reports", async () => {
     vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
 
     const rootEl = document.createElement("div");
     document.body.appendChild(rootEl);
     const root = createRoot(rootEl);
-    const states: Array<{ nearView: boolean[]; everInView: boolean[] }> = [];
+    const states: EntryInViewState[] = [];
 
     function IOBasedProbe() {
       const state = useEntryInView(1, {
@@ -228,17 +241,16 @@ describe("useEntryInView", () => {
       React.useEffect(() => {
         states.push({
           nearView: state.nearView,
+          inView: state.inView,
           everInView: state.everInView,
         });
-      }, [state.nearView, state.everInView]);
+      }, [state.nearView, state.inView, state.everInView]);
 
       return (
         <div
           ref={(node) => {
             if (node) {
-              node.getBoundingClientRect = () => {
-                throw new Error("visibility should come from IntersectionObserver");
-              };
+              setRect(node, "visible");
             }
             state.setEntryRef(0)(node);
           }}
@@ -251,8 +263,9 @@ describe("useEntryInView", () => {
     });
 
     expect(states.at(-1)).toEqual({
-      nearView: [false],
-      everInView: [false],
+      nearView: [true],
+      inView: [true],
+      everInView: [true],
     });
     expect(MockIntersectionObserver.instances).toHaveLength(2);
 
@@ -260,12 +273,19 @@ describe("useEntryInView", () => {
       MockIntersectionObserver.instances.forEach((observer) => {
         const node = Array.from(observer.observed)[0];
         expect(node).toBeDefined();
-        observer.emit([{ target: node as Element, isIntersecting: true }]);
+        observer.emit([
+          {
+            target: node as Element,
+            isIntersecting: true,
+            intersectionRatio: 1,
+          },
+        ]);
       });
     });
 
     expect(states.at(-1)).toEqual({
       nearView: [true],
+      inView: [true],
       everInView: [true],
     });
 

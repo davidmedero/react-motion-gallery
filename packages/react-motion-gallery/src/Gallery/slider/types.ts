@@ -10,6 +10,7 @@ import type { IndexMode } from "../api/types";
 import { RefObject } from "react";
 import type { SliderIndexChannel } from "./sliderSub";
 import type { LoadingForceOptions } from "../shared/loading/force";
+import type { SliderVirtualizationOptions } from "../shared/virtualTrack";
 
 export type SliderNodeInput = React.ReactNode | React.ReactNode[];
 export type SliderRemoveTarget = number | ((i: number) => boolean);
@@ -28,10 +29,12 @@ export interface SliderApi extends SliderItemsApi {
 }
 
 export type ResponsiveHeightRule = { query: string; height: string };
+export type SliderUnderflowAlign = "start" | "center" | "end";
 
 export type SliderLayout = {
   gap?: number;
   cellsPerSlide?: ResponsiveNumber;
+  underflowAlign?: SliderUnderflowAlign;
 };
 
 export type SliderDirection = {
@@ -62,6 +65,7 @@ export type SliderScroll = {
 
 export type SliderArrows = {
   enabled?: boolean;
+  crossfade?: boolean;
   arrow?: ElementStyle;
   prev?: ElementStyle;
   next?: ElementStyle;
@@ -84,9 +88,18 @@ export type SliderProgress = {
   render?: (args: ProgressRenderArgs) => React.ReactNode;
 };
 
+export type SliderScrollbarCrossfade =
+  | boolean
+  | {
+      enabled?: boolean;
+      durationMs?: number;
+      easing?: string;
+    };
+
 export type SliderScrollbar = {
   enabled?: boolean;
   root?: ElementStyle;
+  crossfade?: SliderScrollbarCrossfade;
   render?: (args: ScrollbarRenderArgs) => React.ReactNode;
 };
 
@@ -266,12 +279,15 @@ export type SliderOptions = {
   direction?: SliderDirection;
   align?: "start" | "center";
   scroll?: SliderScroll;
+  virtualization?: SliderVirtualizationOptions;
   elements?: SliderElements;
   reveal?: SliderRevealOptions;
   motion?: SliderMotion;
   indexChannel?: SliderIndexChannel;
   plugins?: SliderPlugin[];
 };
+
+export type { SliderVirtualizationOptions };
 
 export type SliderUiSelectOptions = {
   crossfade?: boolean;
@@ -294,8 +310,14 @@ export type SliderCrossfadeCoreApi = {
   getViewportNode: () => HTMLDivElement | null;
   getSnapLocationForIndex: (index: number) => number;
   readMotionState: () => SliderMotionSnapshot;
-  restoreMotionState: (state: SliderMotionSnapshot) => void;
-  renderTrackAtLocation: (location: number) => void;
+  restoreMotionState: (
+    state: SliderMotionSnapshot,
+    options?: { syncVirtual?: boolean }
+  ) => void;
+  renderTrackAtLocation: (
+    location: number,
+    options?: { syncVirtual?: boolean }
+  ) => void;
   jumpTrackToIndexInstant: (index: number) => void;
   jumpToIndexInstant: (index: number, mode?: IndexMode) => void;
   commitIndexOnly: (
@@ -317,6 +339,14 @@ export type SliderCrossfadeRuntime = {
   clearWheelSession: () => void;
   startUi: (
     index: number,
+    options?: { durationMs?: number; easing?: string }
+  ) => boolean;
+  startProgressUi: (
+    target: {
+      index: number;
+      location: number;
+      sourceIndex?: number;
+    },
     options?: { durationMs?: number; easing?: string }
   ) => boolean;
 };
@@ -357,7 +387,15 @@ export interface SliderCoreHandle {
     getCenterOffsetForIndex: (idx: number) => number;
   };
   _scrollByPixels?: (deltaPx: number) => boolean;
-  _scrollToProgressFromUi?: (progress: number) => boolean;
+  _scrollToProgressFromUi?: (
+    progress: number,
+    options?: {
+      crossfade?: boolean;
+      durationMs?: number;
+      easing?: string;
+    }
+  ) => boolean;
+  _settleForFullscreenOpen?: () => void;
   _usesLegacyEngine?: boolean;
   _getCrossfadeCore?: () => SliderCrossfadeCoreApi;
   _registerCrossfadeRuntime?: (

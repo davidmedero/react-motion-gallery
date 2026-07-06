@@ -23,6 +23,18 @@ function isMediaReady(node: Element) {
   return true;
 }
 
+function waitForImageDecode(image: HTMLImageElement) {
+  const decode = (
+    image as HTMLImageElement & { decode?: () => Promise<void> }
+  ).decode;
+
+  if (typeof decode === "function") {
+    return decode.call(image).catch(() => undefined);
+  }
+
+  return Promise.resolve();
+}
+
 function visibleSlideNodes(handle: SliderHandle) {
   const nodes = handle.getSlideNodes();
 
@@ -47,7 +59,7 @@ function waitForVisibleMedia(handle: SliderHandle, onReady: () => void) {
   const media = slides.flatMap((slide) =>
     Array.from(slide.querySelectorAll("img,video"))
   );
-  const pending = new Set(media.filter((node) => !isMediaReady(node)));
+  const pending = new Set(media);
 
   if (pending.size === 0) {
     onReady();
@@ -73,11 +85,28 @@ function waitForVisibleMedia(handle: SliderHandle, onReady: () => void) {
   };
 
   for (const node of pending) {
+    if (node instanceof HTMLImageElement && node.complete) {
+      void waitForImageDecode(node).then(() => markReady(node));
+      continue;
+    }
+
+    if (!(node instanceof HTMLImageElement) && isMediaReady(node)) {
+      markReady(node);
+      continue;
+    }
+
     const events =
       node instanceof HTMLVideoElement
         ? ["loadeddata", "canplay", "error"]
         : ["load", "error"];
-    const listener = () => markReady(node);
+    const listener = () => {
+      if (node instanceof HTMLImageElement) {
+        void waitForImageDecode(node).then(() => markReady(node));
+        return;
+      }
+
+      markReady(node);
+    };
 
     for (const event of events) {
       node.addEventListener(event, listener, { once: true });

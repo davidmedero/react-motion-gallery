@@ -1,1 +1,1 @@
-export{a as entriesInfiniteScroll,b as useEntriesInfiniteScroll}from'./chunk-RD4L57DG.mjs';import'./chunk-ODBPQRVS.mjs';
+export{a as entriesInfiniteScroll,b as useEntriesInfiniteScroll}from'./chunk-X3W5XLLH.mjs';import'./chunk-ODBPQRVS.mjs';

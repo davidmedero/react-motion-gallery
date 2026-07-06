@@ -378,27 +378,6 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
     };
   }, []);
 
-  const renderedCells = React.useMemo(() => {
-    const base = localCellsState.map((cell) => {
-      const node = cell.node;
-      return React.isValidElement(node) ? (
-        React.cloneElement(node as React.ReactElement, { key: cell.id })
-      ) : (
-        <span key={cell.id} style={{ display: "block" }}>
-          {node as any}
-        </span>
-      );
-    });
-
-    return pluginEntries.reduce<React.ReactNode>(
-      (next, entry) =>
-        entry.plugin.transformChildren
-          ? entry.plugin.transformChildren(next, entry.plugin.options)
-          : next,
-      base
-    );
-  }, [localCellsState, pluginEntries]);
-
   const vw = useViewportWidth();
   const effectiveBreakpoints = React.useMemo(
     () => ({ ...BREAKPOINT_MAP, ...(breakpoints || {}) }),
@@ -440,6 +419,27 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
     }),
     [sliderObject.scroll, resolvedGroupCells]
   );
+
+  const renderedCells = React.useMemo(() => {
+    const base = localCellsState.map((cell) => {
+      const node = cell.node;
+      return React.isValidElement(node) ? (
+        React.cloneElement(node as React.ReactElement, { key: cell.id })
+      ) : (
+        <span key={cell.id} style={{ display: "block" }}>
+          {node as any}
+        </span>
+      );
+    });
+
+    return pluginEntries.reduce<React.ReactNode>(
+      (next, entry) =>
+        entry.plugin.transformChildren
+          ? entry.plugin.transformChildren(next, entry.plugin.options)
+          : next,
+      base
+    );
+  }, [localCellsState, pluginEntries]);
 
   React.useEffect(() => {
     if (!reveal) return;
@@ -517,11 +517,13 @@ const CoreSlider = React.forwardRef<SliderHandle, Props>(function CoreSlider(
           ? resolvedCellsPerSlide ?? 1
           : undefined
       }
+      underflowAlign={sliderObject.layout.underflowAlign}
       direction={sliderObject.direction}
       align={sliderObject.align}
       scroll={resolvedScroll}
       autoHeight={pluginKinds.has("auto-height")}
       motion={sliderObject.motion}
+      virtualization={sliderOptions.virtualization}
       initialIndex={sliderOptions.initialIndex}
       indexChannel={resolvedIndexChannel}
       indexChannelControlled={!!providedIndexChannel}

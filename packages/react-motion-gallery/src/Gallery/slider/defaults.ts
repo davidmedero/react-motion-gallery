@@ -1,5 +1,5 @@
 export const DEFAULT_SLIDER = {
-  layout: { gap: 20 },
+  layout: { gap: 20, underflowAlign: "center" as const },
   direction: { dir: "ltr" as const, axis: "x" as const },
   align: "start" as const,
 

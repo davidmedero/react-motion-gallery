@@ -1,11 +1,16 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  isFullscreenVirtualWindowStableForOffset,
+  shouldDeferFullscreenCrossfadeIndexCommit,
   resolveFullscreenReleaseSnapForce,
   resolveFullscreenIntroOpacityTransition,
+  resolveFullscreenTrackOpacity,
   resolveFullscreenVideoClickSnapAction,
+  shouldRevealFullscreenTrackBeforeCrossfadeFinish,
   shouldSuppressFullscreenLoopForScroll,
   shouldStartFullscreenCrossfade,
+  shouldUseFullscreenLiveTrackSourceCrossfade,
   shouldUseFullscreenZoomedSourceSnapshot,
 } from "./FullscreenSlider";
 import {
@@ -21,8 +26,53 @@ import {
 import {
   getFullscreenVideoOpenRefIndex,
   resolveAllowedFullscreenImageIndices,
+  shouldDeferFullscreenLiveVideo,
   shouldPlayFullscreenVideoOnOpen,
 } from "./FullscreenRuntime";
+
+describe("fullscreen virtual window reuse", () => {
+  const metrics = {
+    count: 100,
+    viewport: 100,
+    cellsPerSlide: 1,
+    cellSize: 100,
+    gap: 0,
+    stride: 100,
+    baseSpan: 10000,
+    trackSpan: 10000,
+  };
+
+  const virtualWindow = {
+    enabled: true,
+    from: -1,
+    to: 2,
+    items: [],
+  };
+
+  test("keeps repeated in-window offsets from rebuilding the virtual window", () => {
+    expect(
+      isFullscreenVirtualWindowStableForOffset({
+        virtualWindow,
+        metrics,
+        options: { enabled: true, overscan: 1, threshold: 5 },
+        scrollOffset: 50,
+        loop: true,
+      })
+    ).toBe(true);
+  });
+
+  test("requires a new virtual window after crossing a boundary", () => {
+    expect(
+      isFullscreenVirtualWindowStableForOffset({
+        virtualWindow,
+        metrics,
+        options: { enabled: true, overscan: 1, threshold: 5 },
+        scrollOffset: 150,
+        loop: true,
+      })
+    ).toBe(false);
+  });
+});
 
 function createTarget(currentTarget: number, loop = false) {
   const snaps = [0, -100, -200, -300];
@@ -194,6 +244,82 @@ describe("fullscreen slider intro opacity timing", () => {
       })
     ).toBe("opacity 460ms ease-in-out");
   });
+
+  test("keeps the real track hidden until the crossfade handoff reveals it", () => {
+    expect(
+      resolveFullscreenTrackOpacity({
+        hasActiveCrossfade: true,
+        showFullscreenSlider: true,
+        shouldFadeIntro: false,
+        fadeOpening: false,
+      })
+    ).toBe(0);
+
+    expect(
+      resolveFullscreenTrackOpacity({
+        hasActiveCrossfade: true,
+        crossfadeSourceMode: "track",
+        crossfadeSourceOpacity: 0.42,
+        showFullscreenSlider: true,
+        shouldFadeIntro: false,
+        fadeOpening: false,
+      })
+    ).toBe(0.42);
+
+    expect(
+      resolveFullscreenTrackOpacity({
+        hasActiveCrossfade: true,
+        crossfadeTrackRevealed: true,
+        showFullscreenSlider: true,
+        shouldFadeIntro: false,
+        fadeOpening: false,
+      })
+    ).toBe(1);
+
+    expect(
+      resolveFullscreenTrackOpacity({
+        hasActiveCrossfade: false,
+        showFullscreenSlider: true,
+        shouldFadeIntro: true,
+        fadeOpening: false,
+      })
+    ).toBe(1);
+  });
+
+  test("skips the live-track crossfade handoff while fullscreen is closing", () => {
+    expect(
+      shouldRevealFullscreenTrackBeforeCrossfadeFinish({
+        show: true,
+        showFullscreenSlider: true,
+        closingModal: false,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRevealFullscreenTrackBeforeCrossfadeFinish({
+        show: true,
+        showFullscreenSlider: true,
+        closingModal: true,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldRevealFullscreenTrackBeforeCrossfadeFinish({
+        show: false,
+        showFullscreenSlider: true,
+        closingModal: false,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldRevealFullscreenTrackBeforeCrossfadeFinish({
+        show: true,
+        showFullscreenSlider: true,
+        closingModal: false,
+        closeRequested: true,
+      })
+    ).toBe(false);
+  });
 });
 
 describe("fullscreen lazy image allow state", () => {
@@ -282,6 +408,81 @@ describe("fullscreen zoomed source snapshot rules", () => {
       })
     ).toBe(false);
   });
+
+  test("uses the live track source only for playing video control crossfades", () => {
+    expect(
+      shouldUseFullscreenLiveTrackSourceCrossfade({
+        sourceIsVideo: true,
+        sourceVideoPlaying: true,
+        trigger: "requestSet",
+        hasSourceSnapshot: false,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldUseFullscreenLiveTrackSourceCrossfade({
+        sourceIsVideo: true,
+        sourceVideoPlaying: true,
+        trigger: "arrow",
+        hasSourceSnapshot: false,
+      })
+    ).toBe(true);
+  });
+
+  test("keeps static source layers when video is not playing or crossfade is gesture-driven", () => {
+    expect(
+      shouldUseFullscreenLiveTrackSourceCrossfade({
+        sourceIsVideo: true,
+        sourceVideoPlaying: false,
+        trigger: "requestSet",
+        hasSourceSnapshot: false,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldUseFullscreenLiveTrackSourceCrossfade({
+        sourceIsVideo: true,
+        sourceVideoPlaying: true,
+        trigger: "drag",
+        hasSourceSnapshot: false,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldUseFullscreenLiveTrackSourceCrossfade({
+        sourceIsVideo: true,
+        sourceVideoPlaying: true,
+        trigger: "wheel",
+        hasSourceSnapshot: false,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldUseFullscreenLiveTrackSourceCrossfade({
+        sourceIsVideo: true,
+        sourceVideoPlaying: true,
+        trigger: "requestSet",
+        hasSourceSnapshot: true,
+      })
+    ).toBe(false);
+  });
+
+  test("defers the visible index commit while the live track is the source", () => {
+    expect(
+      shouldDeferFullscreenCrossfadeIndexCommit({
+        crossfadeSourceMode: "track",
+      })
+    ).toBe(true);
+
+    expect(
+      shouldDeferFullscreenCrossfadeIndexCommit({
+        crossfadeSourceMode: "slide",
+      })
+    ).toBe(false);
+
+    expect(shouldDeferFullscreenCrossfadeIndexCommit({})).toBe(false);
+  });
+
 });
 
 describe("fullscreen loop suppression rules", () => {
@@ -343,7 +544,7 @@ describe("fullscreen video play-on-open rules", () => {
   test("only attempts playback for visible fullscreen video opens", () => {
     expect(
       shouldPlayFullscreenVideoOnOpen({
-        enabled: true,
+        playOnOpen: true,
         showFullscreenModal: true,
         showFullscreenSlider: true,
         closingModal: false,
@@ -353,7 +554,7 @@ describe("fullscreen video play-on-open rules", () => {
 
     expect(
       shouldPlayFullscreenVideoOnOpen({
-        enabled: true,
+        playOnOpen: true,
         showFullscreenModal: true,
         showFullscreenSlider: true,
         closingModal: false,
@@ -363,7 +564,7 @@ describe("fullscreen video play-on-open rules", () => {
 
     expect(
       shouldPlayFullscreenVideoOnOpen({
-        enabled: false,
+        playOnOpen: false,
         showFullscreenModal: true,
         showFullscreenSlider: true,
         closingModal: false,
@@ -371,14 +572,87 @@ describe("fullscreen video play-on-open rules", () => {
       })
     ).toBe(false);
   });
+
+  test("uses transition playback only for dialog-switched video opens", () => {
+    const videoItem = {
+      kind: "video",
+      src: "https://example.com/demo.mp4",
+    } as any;
+
+    expect(
+      shouldPlayFullscreenVideoOnOpen({
+        playOnOpen: true,
+        playOnTransition: false,
+        openingFromDialogTransition: true,
+        showFullscreenModal: true,
+        showFullscreenSlider: true,
+        closingModal: false,
+        item: videoItem,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldPlayFullscreenVideoOnOpen({
+        playOnOpen: false,
+        playOnTransition: true,
+        openingFromDialogTransition: true,
+        showFullscreenModal: true,
+        showFullscreenSlider: true,
+        closingModal: false,
+        item: videoItem,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldPlayFullscreenVideoOnOpen({
+        playOnOpen: false,
+        playOnTransition: true,
+        openingFromDialogTransition: false,
+        showFullscreenModal: true,
+        showFullscreenSlider: true,
+        closingModal: false,
+        item: videoItem,
+      })
+    ).toBe(false);
+  });
+
+  test("defers live video content while fullscreen is closed", () => {
+    expect(
+      shouldDeferFullscreenLiveVideo({
+        showFullscreenModal: false,
+        fsLazyVideosEnabled: false,
+        openingInProgress: false,
+        openingTargetKind: "video",
+      })
+    ).toBe(true);
+
+    expect(
+      shouldDeferFullscreenLiveVideo({
+        showFullscreenModal: true,
+        fsLazyVideosEnabled: true,
+        openingInProgress: true,
+        openingTargetKind: "image",
+      })
+    ).toBe(true);
+
+    expect(
+      shouldDeferFullscreenLiveVideo({
+        showFullscreenModal: true,
+        fsLazyVideosEnabled: true,
+        openingInProgress: true,
+        openingTargetKind: "video",
+      })
+    ).toBe(false);
+  });
 });
 
 describe("fullscreen video click snap rules", () => {
-  test("snaps non-clone video clicks instantly to their canonical slide", () => {
+  test("snaps non-clone video clicks at snap without replaying native Plyr toggles", () => {
     expect(
       resolveFullscreenVideoClickSnapAction({
         canonicalIndex: 2,
         isClone: false,
+        isAtSnap: true,
       })
     ).toEqual({
       snapIndex: 2,
@@ -387,11 +661,26 @@ describe("fullscreen video click snap rules", () => {
     });
   });
 
+  test("snaps off-snap non-clone video clicks before retrying playback", () => {
+    expect(
+      resolveFullscreenVideoClickSnapAction({
+        canonicalIndex: 2,
+        isClone: false,
+        isAtSnap: false,
+      })
+    ).toEqual({
+      snapIndex: 2,
+      settle: "instant",
+      playWhenVisible: true,
+    });
+  });
+
   test("snaps clone video clicks instantly before retrying playback on the original", () => {
     expect(
       resolveFullscreenVideoClickSnapAction({
         canonicalIndex: 3,
         isClone: true,
+        isAtSnap: true,
       })
     ).toEqual({
       snapIndex: 3,

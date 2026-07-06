@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vite
 
 import ThumbnailSlider from "./ThumbnailSlider";
 import ThumbnailSliderShell from "./index";
+import createSliderIndexChannel from "../slider/sliderSub";
 import styles from "./Thumbnails.module.css";
 
 type Deferred<T> = {
@@ -384,6 +385,127 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 
+function createThumbItems(count: number) {
+  return Array.from({ length: count }, (_, index) => (
+    <img key={`thumb-${index}`} src={`/thumb-${index}.jpg`} alt={`Thumb ${index}`} />
+  ));
+}
+
+function renderedThumbIndexes() {
+  return Array.from(
+    document.querySelectorAll<HTMLElement>("[data-rmg-thumb-rendered-index]")
+  ).map((node) => Number(node.getAttribute("data-rmg-thumb-rendered-index")));
+}
+
+describe("ThumbnailSlider virtualization", () => {
+  test("falls back to full rendering when fixed thumbnail size cannot be measured", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const view = await setup(
+      <ThumbnailSlider
+        position="bottom"
+        thumbnailHeight={DEFAULT_THUMB_HEIGHT}
+        thumbnailsContainerWidth={DEFAULT_CONTAINER_WIDTH}
+        selectDuration={0}
+        freeScrollDuration={0}
+        sliderFriction={1}
+        virtualization={{ enabled: true, threshold: 5 }}
+      >
+        {createThumbItems(12)}
+      </ThumbnailSlider>
+    );
+
+    expect(document.querySelectorAll("[data-rmg-thumb-index]")).toHaveLength(12);
+    expect(document.querySelector("[data-rmg-thumb-virtual='true']")).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Thumbnail virtualization")
+    );
+
+    warnSpy.mockRestore();
+    await view.cleanup();
+  });
+
+  test("windows fixed-size thumbnails and updates the window from wheel coordinates", async () => {
+    const view = await setup(
+      <ThumbnailSlider
+        position="bottom"
+        thumbnailWidth={DEFAULT_THUMB_WIDTH}
+        thumbnailHeight={DEFAULT_THUMB_HEIGHT}
+        thumbnailsContainerWidth={DEFAULT_CONTAINER_WIDTH}
+        gap={8}
+        selectDuration={0}
+        freeScrollDuration={0}
+        sliderFriction={1}
+        virtualization={{ enabled: true, overscan: 1, threshold: 5 }}
+      >
+        {createThumbItems(30)}
+      </ThumbnailSlider>
+    );
+
+    const virtualThumbs = document.querySelectorAll("[data-rmg-thumb-virtual='true']");
+    expect(virtualThumbs.length).toBeGreaterThan(0);
+    expect(virtualThumbs.length).toBeLessThan(30);
+    expect(renderedThumbIndexes()).toContain(0);
+
+    const root = document.querySelector<HTMLElement>("[data-rmg-thumb-core-scope]");
+    expect(root).not.toBeNull();
+
+    await React.act(async () => {
+      root?.dispatchEvent(
+        new WheelEvent("wheel", {
+          deltaX: 900,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      vi.advanceTimersByTime(32);
+      await Promise.resolve();
+    });
+    await settle(4);
+
+    const nextIndexes = renderedThumbIndexes();
+    expect(nextIndexes.some((index) => index > 5)).toBe(true);
+    expect(nextIndexes.length).toBeLessThan(30);
+
+    await view.cleanup();
+  });
+});
+
+describe("ThumbnailSlider base channel sync", () => {
+  test("does not rerun non-virtual measurement when the active base index changes", async () => {
+    const indexChannel = createSliderIndexChannel(0, "instant");
+    const view = await setup(
+      <ThumbnailSlider
+        position="left"
+        thumbnailWidth={72}
+        thumbnailHeight={108}
+        thumbnailsContainerHeight={360}
+        centerActiveThumb
+        gap={10}
+        selectDuration={0}
+        freeScrollDuration={0}
+        sliderFriction={1}
+        indexChannel={indexChannel}
+      >
+        {createThumbItems(6)}
+      </ThumbnailSlider>
+    );
+
+    const observerCount = resizeObservers.length;
+
+    await React.act(async () => {
+      indexChannel.set(2, "animated");
+      vi.advanceTimersByTime(32);
+      await Promise.resolve();
+    });
+    await settle(2);
+
+    expect(resizeObservers).toHaveLength(observerCount);
+
+    await view.cleanup();
+  });
+});
+
 describe("ThumbnailSlider readiness", () => {
   test("waits for thumbnail image decode before reporting ready", async () => {
     const deferred = createDeferred<void>();
@@ -410,6 +532,75 @@ describe("ThumbnailSlider readiness", () => {
     const view = await setup(createSliderNode(onReadyChange));
 
     expect(lastReadyState(onReadyChange)).toBe(true);
+
+    await view.cleanup();
+  });
+
+  test("keeps auto-height horizontal rails from collapsing after measurement", async () => {
+    const view = await setup(
+      <ThumbnailSlider
+        position="bottom"
+        thumbnailWidth={DEFAULT_THUMB_WIDTH}
+        thumbnailHeight={DEFAULT_THUMB_HEIGHT}
+        thumbnailsContainerWidth={DEFAULT_CONTAINER_WIDTH}
+        selectDuration={0}
+        freeScrollDuration={0}
+        sliderFriction={1}
+      >
+        {createThumbItems(4)}
+      </ThumbnailSlider>
+    );
+
+    const root = document.querySelector<HTMLElement>("[data-rmg-thumb-core-scope]");
+    expect(root?.style.height).toBe("");
+    expect(root?.style.minHeight).toBe(`${DEFAULT_THUMB_HEIGHT}px`);
+
+    await view.cleanup();
+  });
+
+  test("includes container padding in auto-height horizontal rails", async () => {
+    const view = await setup(
+      <ThumbnailSlider
+        position="bottom"
+        thumbnailWidth={DEFAULT_THUMB_WIDTH}
+        thumbnailHeight={DEFAULT_THUMB_HEIGHT}
+        thumbnailsContainerWidth={DEFAULT_CONTAINER_WIDTH}
+        thumbnailsContainerStyle={{ padding: "8px 12px" }}
+        selectDuration={0}
+        freeScrollDuration={0}
+        sliderFriction={1}
+      >
+        {createThumbItems(4)}
+      </ThumbnailSlider>
+    );
+
+    const root = document.querySelector<HTMLElement>("[data-rmg-thumb-core-scope]");
+    expect(root?.style.minHeight).toBe("76px");
+
+    await view.cleanup();
+  });
+
+  test("includes container padding and border in auto-height horizontal rails", async () => {
+    const view = await setup(
+      <ThumbnailSlider
+        position="bottom"
+        thumbnailWidth={104}
+        thumbnailHeight={64}
+        thumbnailsContainerWidth={DEFAULT_CONTAINER_WIDTH}
+        thumbnailsContainerStyle={{
+          padding: "10px 12px 14px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+        }}
+        selectDuration={0}
+        freeScrollDuration={0}
+        sliderFriction={1}
+      >
+        {createThumbItems(4)}
+      </ThumbnailSlider>
+    );
+
+    const root = document.querySelector<HTMLElement>("[data-rmg-thumb-core-scope]");
+    expect(root?.style.minHeight).toBe("89px");
 
     await view.cleanup();
   });

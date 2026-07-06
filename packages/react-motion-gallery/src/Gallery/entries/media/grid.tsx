@@ -11,6 +11,7 @@ import { useViewportWidth } from "../../shared/hooks/useViewportWidth";
 import { useOptionalGalleryCore } from "../../core";
 import type { RevealOptions } from "../../grid/types";
 import type { GridSkeletonSpec } from "../../skeleton/GridSkeleton";
+import { useReportElementMediaReady } from "./useReportMediaReady";
 import type {
   SkeletonForceOptions,
   SkeletonTimingOptions,
@@ -58,15 +59,37 @@ export function createEntriesGridMedia(args: {
     entryIndex: number;
     entryInView?: boolean;
     mediaNodes: React.ReactNode[];
+    mediaReadyKey?: React.Key;
+    mediaReadyTimeoutMs?: number;
+    onMediaReadyChange?: (ready: boolean) => void;
   }) {
-    const { entryIndex, entryInView, mediaNodes } = props;
+    const {
+      entryIndex,
+      entryInView,
+      mediaNodes,
+      mediaReadyKey,
+      mediaReadyTimeoutMs,
+      onMediaReadyChange,
+    } = props;
 
-    if (!Array.isArray(mediaNodes) || mediaNodes.length === 0) return null;
-
+    const hasMedia = Array.isArray(mediaNodes) && mediaNodes.length > 0;
     const core = useOptionalGalleryCore();
     const viewportWidth = useViewportWidth();
     const breakpoints = core?.effectiveBreakpoints ?? { ...BREAKPOINT_MAP };
     const gridReady = useGridReady();
+    const mediaReadyRootRef = React.useRef<HTMLDivElement | null>(null);
+    const mediaReadyResetKey = React.useMemo(
+      () => `${entryIndex}:${String(mediaReadyKey ?? mediaNodes.length)}`,
+      [entryIndex, mediaNodes.length, mediaReadyKey],
+    );
+
+    useReportElementMediaReady({
+      enabled: hasMedia,
+      rootRef: mediaReadyRootRef,
+      timeoutMs: mediaReadyTimeoutMs,
+      resetKey: mediaReadyResetKey,
+      onMediaReadyChange,
+    });
 
     const cells = React.useMemo(
       () =>
@@ -76,6 +99,8 @@ export function createEntriesGridMedia(args: {
         })),
       [entryIndex, mediaNodes]
     );
+
+    if (!hasMedia) return null;
 
     const gridNode = (
       <GridLayout
@@ -91,9 +116,9 @@ export function createEntriesGridMedia(args: {
       />
     );
 
-    if (!normalizedLoading?.skeleton) return gridNode;
-
-    return (
+    const renderedNode = !normalizedLoading?.skeleton ? (
+      gridNode
+    ) : (
       <Skeleton
         layout={normalizedLoading.skeleton}
         ready={gridReady.ready}
@@ -111,13 +136,29 @@ export function createEntriesGridMedia(args: {
         {gridNode}
       </Skeleton>
     );
+
+    return (
+      <div ref={mediaReadyRootRef} style={{ display: "contents" }}>
+        {renderedNode}
+      </div>
+    );
   }
 
-  return ({ entryIndex, entryInView, mediaNodes }) => (
+  return ({
+    entryIndex,
+    entryInView,
+    mediaNodes,
+    mediaReadyKey,
+    mediaReadyTimeoutMs,
+    onMediaReadyChange,
+  }) => (
     <EntriesGridMediaInner
       entryIndex={entryIndex}
       entryInView={entryInView}
       mediaNodes={mediaNodes}
+      mediaReadyKey={mediaReadyKey}
+      mediaReadyTimeoutMs={mediaReadyTimeoutMs}
+      onMediaReadyChange={onMediaReadyChange}
     />
   );
 }

@@ -37,6 +37,15 @@ describe("slider fullscreen click resolution", () => {
 
     expect(request).toEqual({ index: 0, image });
   });
+
+  test("allows image-less slides to open through the fullscreen fade path", () => {
+    const { slide } = createSlide({ index: 12, clone: false });
+    slide.querySelector("img")?.remove();
+
+    const request = resolveSliderFullscreenClick(slide);
+
+    expect(request).toEqual({ index: 12, image: null });
+  });
 });
 
 describe("slider fullscreen base visibility", () => {

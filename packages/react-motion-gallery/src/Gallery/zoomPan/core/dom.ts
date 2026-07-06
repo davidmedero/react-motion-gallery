@@ -1,7 +1,7 @@
 export function getPrimaryImgEl(container: HTMLElement | null): HTMLImageElement | null {
   if (!container) return null;
 
-  const child0 = container.children[0] as any;
+  const child0 = container.children?.[0] as any;
   if (child0 && child0.tagName && String(child0.tagName).toLowerCase() === "img") {
     return child0 as HTMLImageElement;
   }

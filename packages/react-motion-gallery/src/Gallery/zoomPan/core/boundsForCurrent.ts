@@ -1,6 +1,7 @@
 import { Limit } from "../../shared/motion/limit";
 import { PercentOfView } from "../../shared/motion/scrollBounds";
-import { getFsMediaViewportEl } from "./dom";
+import { getFsMediaViewportEl, getPrimaryImgEl } from "./dom";
+import { imageLayoutMetrics } from "./utils";
 
 type BoundsForCurrentArgs = {
   scale: number;
@@ -36,6 +37,7 @@ export function boundsForCurrent(args: BoundsForCurrentArgs) {
   } = args;
 
   const rect = getFsMediaViewportEl(currentImageEl)?.getBoundingClientRect() ?? null;
+  const imgEl = getPrimaryImgEl(currentImageEl);
 
   // Actual image-area size after caption layout has taken space.
   const vw =
@@ -51,14 +53,17 @@ export function boundsForCurrent(args: BoundsForCurrentArgs) {
   const scaledW = imgW * scale;
   const scaledH = imgH * scale;
 
-  // Keep these based on the actual image area, not the caption-compensated one.
-  const offsetW = (vw - imgW) / 2;
-  const offsetH = (vh - imgH) / 2;
-
   const containerLeft = rect?.left ?? 0;
   const containerTop = rect?.top ?? 0;
-  const imgScreenLeft = containerLeft + offsetW;
-  const imgScreenTop = containerTop + offsetH;
+
+  const {
+    layoutOffsetX,
+    layoutOffsetY,
+    contentOffsetX,
+    contentOffsetY,
+  } = imageLayoutMetrics(imgEl, vw, vh, imgW, imgH);
+  const imgLayoutLeft = containerLeft + layoutOffsetX;
+  const imgLayoutTop = containerTop + layoutOffsetY;
 
   const captionOnLeft = captionPlacement === "left" ? (captionW ?? 0) : 0;
   const captionOnRight = captionPlacement === "right" ? (captionW ?? 0) : 0;
@@ -85,22 +90,24 @@ export function boundsForCurrent(args: BoundsForCurrentArgs) {
 
   if (scaledW <= visibleW) {
     const cx = (contentLeft + contentRight) / 2;
-    const centered = cx - imgScreenLeft - scaledW / 2;
+    const centered =
+      cx - imgLayoutLeft - scale * (contentOffsetX + imgW / 2);
     xMin = centered;
     xMax = centered;
   } else {
-    xMax = contentLeft - imgScreenLeft;
-    xMin = contentRight - scaledW - imgScreenLeft;
+    xMax = contentLeft - imgLayoutLeft - scale * contentOffsetX;
+    xMin = contentRight - imgLayoutLeft - scale * (contentOffsetX + imgW);
   }
 
   if (scaledH <= visibleH) {
     const cy = (contentTop + contentBottom) / 2;
-    const centered = cy - imgScreenTop - scaledH / 2;
+    const centered =
+      cy - imgLayoutTop - scale * (contentOffsetY + imgH / 2);
     yMin = centered;
     yMax = centered;
   } else {
-    yMax = contentTop - imgScreenTop;
-    yMin = contentBottom - scaledH - imgScreenTop;
+    yMax = contentTop - imgLayoutTop - scale * contentOffsetY;
+    yMin = contentBottom - imgLayoutTop - scale * (contentOffsetY + imgH);
   }
 
   return {

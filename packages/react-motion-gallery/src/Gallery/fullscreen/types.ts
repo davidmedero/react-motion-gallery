@@ -7,7 +7,11 @@ import {
   ResponsiveLength,
   ResponsiveNumber,
 } from "../shared/responsive";
-import type { SliderHandle, SliderSkipSnaps } from "../slider/types";
+import type {
+  SliderHandle,
+  SliderSkipSnaps,
+  SliderVirtualizationOptions,
+} from "../slider/types";
 import { EntriesOptions, MediaEntryLink, SlideOwner } from "../entries";
 import type { PlyrOptionsBuilder, PlyrSourceBuilder } from "../video/plyrTypes";
 import type { ZoomPanOptions } from "../zoomPan/types";
@@ -36,6 +40,10 @@ export type FsIntroRequest = null | {
   index: number;
   method: FullscreenOpenMethod;
   closestSelector?: string;
+};
+
+export type FullscreenIntroPendingSpinner = {
+  hide: () => void;
 };
 
 export type FSImageRender = (args: {
@@ -76,6 +84,17 @@ export type FullscreenControlsOptions = {
   counter?: FullscreenCounter;
 };
 
+export type FullscreenDialogOptions = ElementStyle & {
+  enabled?: boolean;
+  opacityDuration?: number;
+  opacityEasing?: string;
+  switchOpacityDuration?: number;
+  switchOpacityEasing?: string;
+  header?: ElementStyle;
+  media?: ElementStyle;
+  caption?: ElementStyle;
+};
+
 export type FsCaptionRenderArgs = {
   item: MediaItem;
   index: number;
@@ -102,6 +121,7 @@ export type FullscreenCaptionOptions = {
 };
 
 export type FullscreenCrossfadeOptions = CrossFade;
+export type FullscreenMountStrategy = "always" | "open";
 
 export type FullscreenIntroPathTiming<T> =
   | T
@@ -125,14 +145,20 @@ export type FullscreenSliderOptions = {
   direction?: "ltr" | "rtl";
   skipSnaps?: SliderSkipSnaps;
   strictSnaps?: boolean;
+  virtualization?: SliderVirtualizationOptions;
 };
 
-export type FullscreenZoomPanOptions = ZoomPanOptions;
+export type FullscreenZoomPanBoundsMode = "media" | "layout";
+
+export type FullscreenZoomPanOptions = ZoomPanOptions & {
+  panBounds?: FullscreenZoomPanBoundsMode;
+};
 
 export type FullscreenVideoOptions = {
   source?: PlyrSourceBuilder;
   options?: PlyrOptionsBuilder;
   playOnOpen?: boolean;
+  playOnTransition?: boolean;
   style?: React.CSSProperties;
   className?: string;
 };
@@ -188,9 +214,21 @@ export type FullscreenCloseScrollOptions = {
   mobileDetection?: (context: FullscreenMobileDetectionContext) => boolean;
 };
 
+export type FullscreenCloseOptions = {
+  immediate?: boolean;
+};
+
+export type FullscreenDialogTransitionOptions = {
+  durationMs?: number;
+  easing?: string;
+};
+
 export type FullscreenOptions = {
   enabled?: boolean;
+  mountStrategy?: FullscreenMountStrategy;
+  overlaysAboveIntroMedia?: boolean;
   items?: MediaItem[] | string[];
+  dialog?: FullscreenDialogOptions;
   renderImage?: FSImageRender;
   video?: FullscreenVideoOptions;
   controls?: FullscreenControlsOptions;
@@ -231,6 +269,7 @@ export type FullscreenRuntimeFeatures = {
     resetAllZoomDom: (args?: { disableImageTransition?: boolean }) => void;
     resetForSlideNavigation: () => void;
     forceResetZoom?: () => void;
+    prepareZoomOutForClose?: (options?: { durationMs?: number }) => Promise<void> | void;
     handleHoverPointerEnter?: (
       e: React.PointerEvent<HTMLDivElement>,
       imageRef: React.RefObject<HTMLDivElement | null>
@@ -251,6 +290,7 @@ export type FullscreenRuntimeFeatures = {
   }) => unknown[];
   defaultPlayerStyle?: React.CSSProperties;
   createVideoSnapshotStore?: () => unknown;
+  lazyLoad?: boolean;
   renderSlides?: (args: any) => React.ReactNode[];
   renderCrossfadeSlides?: (args: any) => React.ReactNode[];
 };

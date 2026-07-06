@@ -150,7 +150,9 @@ export function FullscreenFadeEffectsDemo() {
           align="center"
           plugins={[
             sliderFullscreen(),
-            sliderArrows(),
+            sliderArrows({
+              crossfade: true,
+            }),
             sliderDots(),
             sliderCrossfade({
               controls: true,

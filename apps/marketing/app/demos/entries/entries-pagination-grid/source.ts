@@ -93,7 +93,7 @@ export type ProductEntriesGridViewProps = {
   pendingAppendCount?: number;
   loadingEnabled?: boolean;
   loadingEnterMs?: number;
-  loadingWaitForDecode?: boolean;
+  loadingWaitForMedia?: boolean;
 };
 
 const PRODUCT_SELECT =
@@ -108,12 +108,6 @@ const ENTRY_MEDIA_SLIDER_PLUGINS = [
 const revealOptions = {
   durationMs: 700,
   easing: "cubic-bezier(.2,.7,.2,1)",
-  staggerMs: 200,
-  staggerLimit: 6,
-};
-const cachedRevealOptions = {
-  ...revealOptions,
-  staggerMs: 80,
 };
 const CACHED_PAGE_SKELETON_MS = 0;
 export const PAGE_SIZE = 6;
@@ -467,7 +461,7 @@ export function ProductEntriesGridView({
   pendingAppendCount = 0,
   loadingEnabled = true,
   loadingEnterMs = 360,
-  loadingWaitForDecode = true,
+  loadingWaitForMedia = true,
 }: ProductEntriesGridViewProps) {
   const [useInitialSlots] = useState(() => !!busy && entries.length === 0);
   const isInitialBusy = busy && entries.length === 0;
@@ -532,7 +526,7 @@ export function ProductEntriesGridView({
             },
             loading: {
               enabled: loadingEnabled,
-              waitForDecode: loadingWaitForDecode,
+              waitForMedia: loadingWaitForMedia,
               rememberRevealed: false,
               enterMs: loadingEnterMs,
               force: isInitialBusy ? true : undefined,
@@ -693,13 +687,13 @@ export function EntriesPaginationGridDemo() {
       entries={entries}
       entriesRef={entriesReady.ref}
       plugins={[pagination.plugin]}
-      reveal={usingCachedPage ? cachedRevealOptions : revealOptions}
+      reveal={revealOptions}
       busy={loading && !retainingPageSizeContent}
       ready={entriesReady.ready}
       total={total}
       placeholderCount={pagination.pageSize}
       loadingEnterMs={instantSkeletonEnter ? 0 : 360}
-      loadingWaitForDecode={!usingCachedPage}
+      loadingWaitForMedia={!usingCachedPage}
       pendingAppendCount={
         retainingPageSizeContent
           ? Math.max(0, pagination.pageSize - entries.length)

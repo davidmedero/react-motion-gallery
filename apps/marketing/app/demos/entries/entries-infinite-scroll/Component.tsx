@@ -26,6 +26,7 @@ import {
 } from "react-motion-gallery/entries";
 import { createEntriesSliderMedia } from "react-motion-gallery/entries/media/slider";
 import { useEntriesInfiniteScroll } from "react-motion-gallery/entries/infinite-scroll";
+import { entriesVirtualization } from "react-motion-gallery/entries/virtualization";
 import { useEntriesReady } from "react-motion-gallery/entries/ready";
 import { RatingStars } from "react-motion-gallery/rating-stars";
 import { Skeleton, type SkeletonNode } from "react-motion-gallery/skeleton/base";
@@ -83,6 +84,16 @@ const ENTRY_MEDIA_SLIDER_PLUGINS = [
   sliderArrows(),
   sliderDots(),
 ];
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
+const ENTRIES_VIRTUALIZATION = {
+  estimateSize: 440,
+  gap: 24,
+  overscan: 1,
+};
 
 function productImages(product: DummyProduct) {
   const urls = [
@@ -426,7 +437,10 @@ function ProductOverlay({ entry, mediaIndex }: EntryOverlayRenderArgs) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: {
       enabled: true,
       closeScroll: true,
@@ -506,7 +520,7 @@ function EntriesProductsView({
             },
             loading: {
               enabled: true,
-              waitForDecode: true,
+              waitForMedia: true,
               force: isInitialBusy ? true : undefined,
               skeletonWrap: {
                 className: styles.skeletonWrap,
@@ -652,7 +666,7 @@ export function EntriesInfiniteScrollDemo() {
     <EntriesProductsView
       entries={entries}
       entriesRef={entriesReady.ref}
-      plugins={[infiniteScroll]}
+      plugins={[infiniteScroll, entriesVirtualization(ENTRIES_VIRTUALIZATION)]}
       busy={loading}
       ready={entriesReady.ready}
       total={total}

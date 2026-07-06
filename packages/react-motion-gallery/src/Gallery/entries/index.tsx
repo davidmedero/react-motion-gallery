@@ -32,6 +32,9 @@ export type EntriesMediaContainerRender = (args: {
   entryInView?: boolean;
   mediaNodes: React.ReactNode[];
   entrySliderRefs?: React.RefObject<Array<SliderHandle | null>>;
+  mediaReadyKey?: React.Key;
+  mediaReadyTimeoutMs?: number;
+  onMediaReadyChange?: (ready: boolean) => void;
 }) => React.ReactNode;
 
 type FullscreenItemsInput = MediaItem[] | string[];
@@ -47,6 +50,11 @@ const normalizeFsItems = (v: FullscreenItemsInput | undefined): MediaItem[] => {
 const isImageItem = (m: MediaItem | undefined | null): boolean => {
   if (!m) return false;
   return (m as any).kind === "image";
+};
+
+const canOpenFullscreenItem = (m: MediaItem | undefined | null): boolean => {
+  if (!m) return false;
+  return (m as any).kind === "image" || (m as any).kind === "video";
 };
 
 export function nodeFromMediaDefault(m: MediaItem): React.ReactNode {
@@ -136,6 +144,7 @@ function EntriesCore(props, forwardedRef) {
   const entryMapRef = props.entryMapRef ?? React.useRef<MediaEntryLink[] | null>(null);
   const fsOwnersRef = props.fsOwnersRef ?? React.useRef<SlideOwner[]>([]);
   const entrySliderRefs = props.entrySliderRefs ?? React.useRef<Array<SliderHandle | null>>([]);
+  const entryListRef = props.entryListRef ?? React.useRef<HTMLDivElement | null>(null);
 
   const expandableImageRefs =
     (core?.expandableImageRefs as React.RefObject<Array<HTMLImageElement | null>> | undefined) ??
@@ -178,25 +187,45 @@ function EntriesCore(props, forwardedRef) {
     return flattenedMedia;
   }, [fullscreen?.items, flattenedMedia]);
 
+  const getOwnerSliderHandle = React.useCallback(
+    (globalIndex: number) => {
+      const link = entryMapRef.current?.[globalIndex];
+      if (!link) return null;
+      return entrySliderRefs.current?.[link.entryIndex] ?? null;
+    },
+    [entryMapRef, entrySliderRefs]
+  );
+
+  const settleOwnerSliderForFullscreenOpen = React.useCallback(
+    (globalIndex: number) => {
+      getOwnerSliderHandle(globalIndex)?._settleForFullscreenOpen?.();
+    },
+    [getOwnerSliderHandle]
+  );
+
   React.useEffect(() => {
     if (!core) return;
 
     core.registerFullscreenAdapter("entries", {
       closestSelector: entriesObject.mediaLayout === "slider" ? ".rmg__slide" : ".rmg__grid-item",
-      getOwnerSliderHandle: (globalIndex: number) => {
-        const link = entryMapRef.current?.[globalIndex];
-        if (!link) return null;
-        return entrySliderRefs.current?.[link.entryIndex] ?? null;
-      },
+      getOwnerSliderHandle,
+      syncBeforeOpen: settleOwnerSliderForFullscreenOpen,
       getEntryContext: () => ({
         entryMapRef,
         entryMediaLayout: entriesObject.mediaLayout,
         entriesObject,
         entrySliderRefs,
+        entryListRef,
         expandableImageRefs: core?.expandableImageRefs ?? expandableImageRefs,
       }),
     });
-  }, [core, entriesObject]);
+  }, [
+    core,
+    entriesObject,
+    entryListRef,
+    getOwnerSliderHandle,
+    settleOwnerSliderForFullscreenOpen,
+  ]);
 
   const getOriginImage = (el: HTMLElement | null): HTMLImageElement | null => {
     if (!el) return null;
@@ -212,23 +241,32 @@ function EntriesCore(props, forwardedRef) {
       if (!core?.requestFullscreenOpen) return;
 
       const item = normalizedItems[globalIndex] ?? flattenedMedia[globalIndex];
-      if (!isImageItem(item)) return;
+      if (!canOpenFullscreenItem(item)) return;
 
       const img =
         getOriginImage(originEl ?? null) ??
         (expandableImageRefs.current[globalIndex] as HTMLImageElement | null) ??
         null;
+      const shouldScaleFromImage = isImageItem(item);
 
-      if (!img) return;
+      if (shouldScaleFromImage && !img) return;
+
+      settleOwnerSliderForFullscreenOpen(globalIndex);
 
       core.requestFullscreenOpen({
         source: "entries",
         index: globalIndex,
-        image: img,
+        image: shouldScaleFromImage ? img : null,
         event: undefined,
       });
     },
-    [core, expandableImageRefs, normalizedItems, flattenedMedia]
+    [
+      core,
+      expandableImageRefs,
+      flattenedMedia,
+      normalizedItems,
+      settleOwnerSliderForFullscreenOpen,
+    ]
   );
 
   const fsEnabled = (fullscreen?.enabled ?? true) && normalizedItems.length > 0;
@@ -247,7 +285,7 @@ function EntriesCore(props, forwardedRef) {
       renderMediaContainer={renderMediaContainer}
       entrySliderRefs={entrySliderRefs}
       breakpoints={effectiveBreakpoints}
-      listRef={props.entryListRef}
+      listRef={entryListRef}
     />
   );
 });

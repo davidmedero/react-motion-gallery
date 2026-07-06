@@ -143,15 +143,16 @@ The controller returns `pageIndex`, `pageSize`, `pageCount`, `offset`, `canPrevP
 
 `gridInfiniteScroll()` and `masonryInfiniteScroll()` accept:
 
-| Option       | Type              | Default       | Notes                                |
-| ------------ | ----------------- | ------------- | ------------------------------------ |
-| `enabled`    | `boolean`         | `true`        | Disables the sentinel when false.    |
-| `hasMore`    | `boolean`         | `true`        | Removes the sentinel when false.     |
-| `loading`    | `boolean`         | `false`       | Prevents new load calls while busy.  |
-| `rootMargin` | `string`          | `"600px 0px"` | IntersectionObserver root margin.    |
-| `threshold`  | `number`          | `0`           | IntersectionObserver threshold.      |
-| `onLoadMore` | `() => void`      | `undefined`   | Called when the sentinel intersects. |
-| `sentinel`   | `React.ReactNode` | `undefined`   | Optional rendered sentinel content.  |
+| Option       | Type                                                               | Default       | Notes                                                                 |
+| ------------ | ------------------------------------------------------------------ | ------------- | --------------------------------------------------------------------- |
+| `enabled`    | `boolean`                                                          | `true`        | Disables the sentinel when false.                                     |
+| `hasMore`    | `boolean`                                                          | `true`        | Removes the sentinel when false.                                      |
+| `loading`    | `boolean`                                                          | `false`       | Prevents new load calls while busy.                                   |
+| `rootMargin` | `string`                                                           | `"600px 0px"` | IntersectionObserver root margin.                                     |
+| `scrollRoot` | `Element \| RefObject<Element \| null> \| (() => Element \| null)` | `window`      | Optional nested scroll container used for sentinel visibility checks. |
+| `threshold`  | `number`                                                           | `0`           | IntersectionObserver threshold.                                       |
+| `onLoadMore` | `() => void`                                                       | `undefined`   | Called when the sentinel intersects.                                  |
+| `sentinel`   | `React.ReactNode`                                                  | `undefined`   | Optional rendered sentinel content.                                   |
 
 The sentinel renders after the layout root. That keeps it out of CSS grid placement and out of masonry absolute positioning.
 

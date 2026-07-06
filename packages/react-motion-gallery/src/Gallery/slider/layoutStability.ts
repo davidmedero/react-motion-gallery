@@ -1,3 +1,5 @@
+import type { SliderUnderflowAlign } from "./types";
+
 export const SLIDER_LAYOUT_EPSILON = 0.5;
 
 export function roundSliderLayoutMetric(value: number): number {
@@ -41,6 +43,51 @@ export function resolveSliderContentSpan(args: {
   const { baseSpan, gap, shouldLoop } = args;
   if (!shouldLoop) return baseSpan;
   return baseSpan + (baseSpan > 0 ? gap : 0);
+}
+
+export function resolveSliderFixedCellSize(args: {
+  viewport: number;
+  cellsPerSlide: number;
+  gap: number;
+}): number | null {
+  const viewport = Number(args.viewport);
+  const cellsPerSlide = Number(args.cellsPerSlide);
+  const gap = Math.max(0, Number(args.gap) || 0);
+
+  if (
+    !Number.isFinite(viewport) ||
+    viewport <= 0 ||
+    !Number.isFinite(cellsPerSlide) ||
+    cellsPerSlide <= 0
+  ) {
+    return null;
+  }
+
+  const visibleCells = Math.max(1, cellsPerSlide);
+  return (viewport - gap * Math.max(0, visibleCells - 1)) / visibleCells;
+}
+
+export function resolveSliderUnderflowOffset(args: {
+  viewport: number;
+  contentSpan: number;
+  align?: SliderUnderflowAlign;
+}): number {
+  const viewport = Number(args.viewport);
+  const contentSpan = Number(args.contentSpan);
+  if (
+    !Number.isFinite(viewport) ||
+    viewport <= 0 ||
+    !Number.isFinite(contentSpan) ||
+    contentSpan <= 0 ||
+    contentSpan > viewport
+  ) {
+    return 0;
+  }
+
+  const remaining = viewport - contentSpan;
+  if (args.align === "start") return 0;
+  if (args.align === "end") return Math.round(remaining);
+  return Math.round(remaining / 2);
 }
 
 export function getSliderCenterOffset(args: {

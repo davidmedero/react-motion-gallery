@@ -17,12 +17,14 @@ export type UseMasonryInfiniteScrollOptions = MasonryInfiniteScrollOptions;
 export type MasonryInfiniteScrollPlugin = MasonryPlugin & LightMasonryPlugin;
 
 function MasonryInfiniteScrollRuntime({
+  host,
   options,
 }: MasonryPluginRuntimeProps | LightMasonryPluginRuntimeProps) {
   return (
     <DataInfiniteSentinel
       scope="masonry"
       options={(options as MasonryInfiniteScrollOptions | undefined) ?? {}}
+      resetKey={host.itemCount}
     />
   );
 }
@@ -50,6 +52,7 @@ export function useMasonryInfiniteScroll(
       options.loading,
       options.onLoadMore,
       options.rootMargin,
+      options.scrollRoot,
       options.sentinel,
       options.threshold,
     ]

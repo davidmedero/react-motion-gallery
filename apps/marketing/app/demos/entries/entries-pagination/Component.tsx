@@ -89,12 +89,6 @@ const ENTRY_MEDIA_SLIDER_PLUGINS = [
 const revealOptions = {
   durationMs: 700,
   easing: "cubic-bezier(.2,.7,.2,1)",
-  staggerMs: 200,
-  staggerLimit: 6,
-};
-const cachedRevealOptions = {
-  ...revealOptions,
-  staggerMs: 80,
 };
 const CACHED_PAGE_SKELETON_MS = 0;
 function productImages(product: DummyProduct) {
@@ -529,7 +523,7 @@ function EntriesProductsView({
             },
             loading: {
               enabled: loadingEnabled,
-              waitForDecode: true,
+              waitForMedia: true,
               rememberRevealed: false,
               enterMs: loadingEnterMs,
               force: isInitialBusy ? true : undefined,
@@ -714,7 +708,7 @@ export function EntriesPaginationDemo() {
       entries={entries}
       entriesRef={entriesReady.ref}
       plugins={[pagination.plugin]}
-      reveal={usingCachedPage ? cachedRevealOptions : revealOptions}
+      reveal={revealOptions}
       busy={loading && !retainingPageSizeContent}
       ready={entriesReady.ready}
       total={total}

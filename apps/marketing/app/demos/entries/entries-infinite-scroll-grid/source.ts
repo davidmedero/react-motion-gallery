@@ -32,6 +32,7 @@ import { sliderArrows } from "react-motion-gallery/slider/arrows";
 import { sliderDots } from "react-motion-gallery/slider/dots";
 import { sliderRipple } from "react-motion-gallery/slider/ripple";
 import { useEntriesInfiniteScroll } from "react-motion-gallery/entries/infinite-scroll";
+import { entriesVirtualization } from "react-motion-gallery/entries/virtualization";
 import { useEntriesReady } from "react-motion-gallery/entries/ready";
 import styles from "./entries-infinite-scroll-grid-demo.module.css";
 
@@ -98,6 +99,17 @@ const ENTRY_MEDIA_SLIDER_PLUGINS = [
   sliderArrows(),
   sliderDots(),
 ];
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
+const ENTRIES_VIRTUALIZATION = {
+  layout: "grid" as const,
+  estimateSize: 540,
+  gap: 18,
+  overscan: 1,
+};
 
 export const PAGE_SIZE = 6;
 function productImages(product: DummyProduct) {
@@ -400,7 +412,10 @@ function ProductOverlay({ entry, mediaIndex }: EntryOverlayRenderArgs) {
 
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: {
       enabled: true,
       closeScroll: true,
@@ -504,7 +519,7 @@ export function ProductEntriesGridView({
             },
             loading: {
               enabled: true,
-              waitForDecode: true,
+              waitForMedia: true,
               force: isInitialBusy ? true : undefined,
               skeletonWrap: {
                 className: styles.skeletonWrap,
@@ -636,7 +651,7 @@ export function EntriesInfiniteScrollGridDemo() {
     <ProductEntriesGridView
       entries={entries}
       entriesRef={entriesReady.ref}
-      plugins={[infiniteScroll]}
+      plugins={[infiniteScroll, entriesVirtualization(ENTRIES_VIRTUALIZATION)]}
       busy={loading}
       ready={entriesReady.ready}
       total={total}

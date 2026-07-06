@@ -20,6 +20,23 @@
   opacity: 1;
 }
 
+.fade_container {
+  position: relative;
+}
+
+.syncFadeOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 1;
+  will-change: opacity;
+}
+
+.syncFadeThumb {
+  margin: 0;
+}
+
 .fadeInStart {
   opacity: 0;
 }
@@ -32,7 +49,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fadeInActive { transition: none; }
+  .fadeInActive,
+  .syncFadeOverlay { transition: none; }
 }
 
 .fade_container [data-rmg-thumb-index] > * {

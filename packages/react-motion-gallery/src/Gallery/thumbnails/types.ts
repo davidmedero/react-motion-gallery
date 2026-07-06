@@ -4,6 +4,7 @@ import type { LoadingForceOptions } from "../shared/loading/force";
 import type { ArrowRenderArgs } from "../shared/types/controls";
 import { ElementStyle } from "../shared/types/elements";
 import type { LoadingTimingOptions } from "../shared/types/transitions";
+import type { SliderVirtualizationOptions } from "../shared/virtualTrack";
 
 export type ThumbnailPosition = "top" | "right" | "bottom" | "left";
 
@@ -67,12 +68,20 @@ export type ThumbnailsElements = {
   thumbnail?: ElementStyle;
 };
 
+export type ThumbnailFadeOnSyncOptions = {
+  enabled?: boolean;
+  minDistance?: number;
+  durationMs?: number;
+  easing?: string;
+};
+
 export type ThumbnailsScroll = {
   freeScroll?: boolean;
   groupCells?: boolean;
   loop?: boolean;
   skipSnaps?: boolean;
   centerActiveThumb?: boolean;
+  fadeOnSync?: boolean | ThumbnailFadeOnSyncOptions;
 };
 
 export type ThumbnailsMotion = {
@@ -99,6 +108,7 @@ export type ThumbnailsControls = {
 
 export type ThumbnailCrossfadeOptions = {
   enabled?: boolean;
+  minDistance?: number;
   durationMs?: number;
   easing?: string;
 };
@@ -113,14 +123,36 @@ export type ThumbnailsTransitions = {
   crossfade?: ThumbnailCrossfadeOptions;
 };
 
-export type ThumbnailsOptions = {
+export type ThumbnailRenderItemArgs<T = unknown> = {
+  item: T;
+  index: number;
+  active: boolean;
+  virtualIndex?: number;
+};
+
+export type ThumbnailRenderItem<T = unknown> = (
+  args: ThumbnailRenderItemArgs<T>
+) => React.ReactNode;
+
+export type ThumbnailItemKey<T = unknown> = (
+  item: T,
+  index: number
+) => React.Key;
+
+export type ThumbnailsOptions<T = unknown> = {
   children?: React.ReactNode;
+  items?: readonly T[];
+  renderItem?: ThumbnailRenderItem<T>;
+  getItemKey?: ThumbnailItemKey<T>;
   layout?: ThumbnailsLayout;
   elements?: ThumbnailsElements;
   scroll?: ThumbnailsScroll;
   controls?: ThumbnailsControls;
   motion?: ThumbnailsMotion;
+  virtualization?: SliderVirtualizationOptions;
   reveal?: ThumbnailRevealOptions;
   transitions?: ThumbnailsTransitions;
   breakpointMap?: BreakpointMap;
 };
+
+export type { SliderVirtualizationOptions };

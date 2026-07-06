@@ -11,6 +11,8 @@ const DEFAULT_FULLSCREEN_CAPTION_ZOOM_FADE_EASING =
 
 export const DEFAULT_FULLSCREEN = {
   enabled: false,
+  mountStrategy: "always",
+  overlaysAboveIntroMedia: true,
   closeScroll: false,
   controls: {
     close: {

@@ -20,6 +20,7 @@ import {
 } from "react-motion-gallery/grid";
 import { gridFullscreen } from "react-motion-gallery/grid/fullscreen";
 import { gridLoadMore } from "react-motion-gallery/grid/load-more";
+import { gridVirtualization } from "react-motion-gallery/grid/virtualization";
 import { RatingStars } from "react-motion-gallery/rating-stars";
 import {
   GridSkeleton,
@@ -166,6 +167,16 @@ const revealOptions = {
   staggerMs: 200,
   staggerLimit: 6,
 };
+const FULLSCREEN_SLIDER_VIRTUALIZATION = {
+  enabled: true,
+  overscan: 3,
+  threshold: 12,
+};
+const GRID_VIRTUALIZATION = {
+  estimateSize: 600,
+  gap: 18,
+  overscan: 2,
+};
 function stockLabel(stock: number) {
   if (stock <= 24) return "Only " + String(stock) + " left";
   if (stock <= 72) return String(stock) + " in stock";
@@ -178,7 +189,10 @@ function stockClassName(stock: number) {
 }
 function FullscreenAddon() {
   const { fullscreenNode } = useFullscreenController({
-    plugins: [fullscreenSlider(), fullscreenZoomPan()],
+    plugins: [
+      fullscreenSlider({ virtualization: FULLSCREEN_SLIDER_VIRTUALIZATION }),
+      fullscreenZoomPan(),
+    ],
     fullscreen: { enabled: true, closeScroll: true },
   });
   return <>{fullscreenNode}</>;
@@ -671,7 +685,14 @@ export function GridLoadMoreDemo() {
       }),
     [loading, products.length, total],
   );
-  const plugins = useMemo(() => [plugin, gridFullscreen()], [plugin]);
+  const virtualizationPlugin = useMemo(
+    () => gridVirtualization(GRID_VIRTUALIZATION),
+    [],
+  );
+  const plugins = useMemo(
+    () => [plugin, virtualizationPlugin, gridFullscreen()],
+    [plugin, virtualizationPlugin],
+  );
   const retry = useCallback(
     () => loadNext(products.length === 0 ? "replace" : "append"),
     [loadNext, products.length],

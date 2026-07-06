@@ -17,8 +17,8 @@ import {
   useCallback,
   useMemo,
   Ref,
-  useImperativeHandle,
-  forwardRef,
+	useImperativeHandle,
+	forwardRef,
 } from 'react'
 import type { APITypes } from '../video/plyrTypes';
 import styles from './Slider.module.css'
@@ -36,7 +36,7 @@ import { ScrollBounds, ScrollBoundsType, PercentOfView, PercentOfViewType } from
 import { BaseTarget, factorAbs, ScrollTarget, ScrollTargetType } from '../shared/motion/scrollTarget';
 import { EventStore } from '../shared/motion/eventStore';
 import { Animations, AnimationsType } from '../shared/motion/animations';
-import type { SliderAutoPlayTimer, SliderCoreHandle, SliderCrossfadeRuntime, SliderSkipSnaps } from './types';
+import type { SliderAutoPlayTimer, SliderCoreHandle, SliderCrossfadeRuntime, SliderSkipSnaps, SliderUnderflowAlign } from './types';
 import { IndexMode } from '../api/types';
 import { Counter, CounterType } from '../shared/motion/counter';
 import { BaseLimit, createBaseLimit } from '../shared/motion/baseLimit';
@@ -55,7 +55,9 @@ import {
   fitsWithinSliderViewport,
   getSliderCenterOffset,
   mergeDuplicateContainedSliderPages,
+  resolveSliderFixedCellSize,
   resolveSliderGroupCells,
+  resolveSliderUnderflowOffset,
   roundSliderLayoutMetric,
   resolveSliderMeasuredSize,
   resolveSliderContentSpan,
@@ -65,6 +67,19 @@ import { resolveSliderReleaseSnapForce } from './snapRelease';
 import {
   shouldRebaseSliderVideoCloneAtOrigin,
 } from './videoCloneRebase';
+import {
+  buildFixedVirtualTrackWindow,
+  accumulateFixedVirtualTrackRebaseOffset,
+  fixedVirtualTrackMetricsMatchViewport,
+  resolveFixedVirtualTrackMetrics,
+  resolveSliderVirtualizationOptions,
+  sameFixedVirtualTrackWindow,
+  sameFixedVirtualTrackWindowItems,
+  warnSliderVirtualizationFallback,
+  type FixedVirtualTrackMetrics,
+  type FixedVirtualTrackWindow,
+  type SliderVirtualizationOptions,
+} from '../shared/virtualTrack';
 
 function DragTracker(main: AxisKey | undefined, ownerWindow: WindowType) {
   const scroll: AxisKey = main ?? 'x'
@@ -81,6 +96,14 @@ type BaseScrollTo = {
   index: (n: number, direction: number) => void
 }
 
+const FULLSCREEN_SETTLE_GESTURE_WINDOW_MS = 750;
+
+function nowMs() {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+}
+
 type PlyrApi = APITypes | null;
 type PlyrRefsByIndex = React.RefObject<Record<number, PlyrApi>>;
 
@@ -89,6 +112,13 @@ type PendingCloneToggleState = {
   observer: IntersectionObserver | null;
   rafId: number | null;
   deadlineTs: number;
+};
+
+type NativeSliderVirtualMetrics = {
+  enabled: boolean;
+  metrics: FixedVirtualTrackMetrics;
+  groupSize: number;
+  shouldLoop: boolean;
 };
 
 export function shouldReanchorSliderOnResize(args: {
@@ -126,6 +156,7 @@ interface SliderProps {
   sliderContainerStyles?: React.CSSProperties;
   sliderContainerClassName?: string;
   cellsPerSlide?: number;
+  underflowAlign?: SliderUnderflowAlign;
   direction?: 'ltr' | 'rtl';
   axis?: 'x' | 'y';
   skipSnaps?: SliderSkipSnaps;
@@ -134,6 +165,7 @@ interface SliderProps {
   selectDuration: number;
   freeScrollDuration: number;
   sliderFriction: number;
+  virtualization?: SliderVirtualizationOptions;
   initialIndex?: number;
   indexChannel?: ReturnType<typeof createIndexChannel>;
   indexChannelControlled?: boolean;
@@ -219,6 +251,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     sliderContainerStyles,
     sliderContainerClassName,
     cellsPerSlide,
+    underflowAlign = "center",
     direction,
     axis,
     skipSnaps,
@@ -227,6 +260,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     selectDuration,
     freeScrollDuration,
     sliderFriction,
+    virtualization,
     initialIndex,
     indexChannel: externalIndexChannel,
     indexChannelControlled,
@@ -247,6 +281,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   const sliderContainer = useRef<HTMLDivElement | null>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [clonedChildren, setClonedChildren] = useState<React.ReactElement[]>([])
+  const virtualWindowRef = useRef<FixedVirtualTrackWindow | null>(null)
+  const virtualRawKidsRef = useRef<ReactElement<any>[]>([])
+  const virtualMetricsRef = useRef<NativeSliderVirtualMetrics | null>(null)
+  const lastVirtualPagesSigRef = useRef("")
   const clonesCountRef = useRef(0)
   const [visibleImages, setVisibleImages] = useState(1)
   const [slidesState, setSlidesState] = useState<{ cells: { element: HTMLElement }[] }[]>([])
@@ -257,6 +295,9 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   const cellToSlideRef = useRef<number[]>([]);
   const builtOnceRef = useRef(false);
   const slideBuildSubs = useRef(new Set<(nodes: HTMLElement[]) => void>());
+  const pendingVirtualSlidesBuiltRef = useRef(false);
+  const virtualRebaseOffsetRef = useRef(0);
+  const virtualRebaseClearPendingRef = useRef(false);
   const readySubs = useRef(new Set<(nodes: HTMLElement[]) => void>());
   const readyResolvers = useRef<Array<(nodes: HTMLElement[]) => void>>([]);
   const [layoutReady, setLayoutReady] = useState(false);
@@ -281,6 +322,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   const previousDragX = useRef(0)
   const dragMoveTime = useRef<number>(0)
   const dragStartIndexRef = useRef(0)
+  const lastPointerUpTimeRef = useRef<number>(Number.NEGATIVE_INFINITY)
   const dragStartLocationRef = useRef(0)
   const dragDisplacementRef = useRef(0)
   const boundsRef = useRef<ScrollBoundsType | null>(null)
@@ -303,7 +345,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   const indexCurrentRef = useRef<CounterType | null>(null)
   const indexPreviousRef = useRef<CounterType | null>(null)
   const layoutRef = useRef<{
-    originals: { el: HTMLElement; start: number; end: any; size: any }[];
+    originals: { el: HTMLElement | null; start: number; end: number; size: number }[];
     cw: number;
   } | null>(null);
   const draggingAttr = 'data-rmg-drag';
@@ -379,9 +421,235 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     return Number.isFinite(fallback) ? fallback : 0;
   }
 
+  function setSlideMainSizeCssVar(value: number | null) {
+    const cssValue = value == null ? null : `${value}px`;
+    const targets = [slider.current, viewportRef.current, sliderContainer.current];
+
+    for (const target of targets) {
+      if (!target) continue;
+
+      if (cssValue == null) {
+        target.style.removeProperty("--rmg-slide-main-size");
+      } else {
+        target.style.setProperty("--rmg-slide-main-size", cssValue);
+      }
+    }
+  }
+
+  function resetNativeVirtualWindow() {
+    virtualWindowRef.current = null;
+    lastVirtualPagesSigRef.current = "";
+    pendingVirtualSlidesBuiltRef.current = false;
+    clearNativeVirtualRebaseOffset();
+    const track = slider.current;
+    if (track) {
+      track.style.removeProperty("width");
+      track.style.removeProperty("height");
+      track.style.removeProperty("min-width");
+      track.style.removeProperty("min-height");
+    }
+  }
+
+  function renderNativeVirtualWindow(
+    next: FixedVirtualTrackWindow,
+    metrics: NativeSliderVirtualMetrics,
+    force = false
+  ) {
+    const previousWindow = virtualWindowRef.current;
+
+    if (!force && sameFixedVirtualTrackWindow(previousWindow, next)) return;
+
+    if (
+      !force &&
+      sameFixedVirtualTrackWindowItems(previousWindow, next) &&
+      applyNativeVirtualWindowOffsets(next)
+    ) {
+      virtualWindowRef.current = next;
+      return;
+    }
+
+    virtualWindowRef.current = next;
+    const rawKids = virtualRawKidsRef.current;
+    const slidesArr: ReactElement<any>[] = [];
+    cells.current = [];
+
+    const extraStyle: React.CSSProperties = {
+      position: "absolute",
+      flex: "0 0 auto",
+      [AX.sizeKey]: "var(--rmg-slide-main-size)",
+    } as any;
+
+    next.items.forEach((item) => {
+      const child = rawKids[item.canonicalIndex];
+      if (!child) return;
+      slidesArr.push(
+        cloneCoreSlide(
+          child,
+          `virtual-${item.virtualIndex}-${item.canonicalIndex}`,
+          item.virtualIndex,
+          cells,
+          metrics.metrics.count,
+          {
+            ...extraStyle,
+            ...getNativeVirtualSlideOffsetStyle(item, metrics),
+          },
+          item.virtualIndex !== item.canonicalIndex,
+          slideStoreBag,
+          indexChannel,
+          plyrRefsByIdx
+        )
+      );
+    });
+
+    pendingVirtualSlidesBuiltRef.current = true;
+    setClonedChildren(slidesArr);
+  }
+
+  function scrollOffsetFromLocation(location: number) {
+    return -location;
+  }
+
+  function scrollOffsetForSlide(slideIndex: number) {
+    const slide = slides.current?.[slideIndex];
+    if (slide) return slide.target;
+    const metrics = virtualMetricsRef.current?.metrics;
+    return metrics ? slideIndex * metrics.stride : 0;
+  }
+
+  function syncNativeVirtualWindowForOffset(
+    scrollOffset: number,
+    force = false
+  ) {
+    const virtual = virtualMetricsRef.current;
+    if (!virtual?.enabled) return;
+    renderNativeVirtualWindow(
+      buildFixedVirtualTrackWindow({
+        metrics: virtual.metrics,
+        scrollOffset,
+        loop: virtual.shouldLoop,
+        options: virtualization,
+      }),
+      virtual,
+      force
+    );
+  }
+
+  function syncNativeVirtualWindowForLocation(
+    location: number,
+    force = false
+  ) {
+    syncNativeVirtualWindowForOffset(
+      scrollOffsetFromLocation(location),
+      force
+    );
+  }
+
+  function syncNativeVirtualWindowForSlide(slideIndex: number, force = false) {
+    syncNativeVirtualWindowForOffset(scrollOffsetForSlide(slideIndex), force);
+  }
+
+  function getNativeVirtualSlideOffsetValue(
+    item: FixedVirtualTrackWindow["items"][number],
+    metrics: NativeSliderVirtualMetrics
+  ) {
+    if (metrics.shouldLoop && metrics.metrics.count > 0) {
+      const percentage =
+        Math.round((item.virtualIndex / metrics.metrics.count) * 100 * 1_000_000) /
+        1_000_000;
+
+      return `calc(${percentage}% + var(--rmg-virtual-rebase-offset, 0px))`;
+    }
+
+    return `calc(${item.offset}px + var(--rmg-virtual-rebase-offset, 0px))`;
+  }
+
+  function getNativeVirtualSlideOffsetStyle(
+    item: FixedVirtualTrackWindow["items"][number],
+    metrics: NativeSliderVirtualMetrics
+  ): React.CSSProperties {
+    const offsetValue = getNativeVirtualSlideOffsetValue(item, metrics);
+    return AX.main === "x"
+      ? { left: offsetValue, top: 0 }
+      : { top: offsetValue, left: 0 };
+  }
+
+  function applyNativeVirtualWindowOffsets(next: FixedVirtualTrackWindow) {
+    const track = slider.current;
+    if (!track) return false;
+    const metrics = virtualMetricsRef.current;
+    if (!metrics?.enabled) return false;
+
+    const renderedByVirtualIndex = new Map<number, HTMLElement>();
+    for (const child of Array.from(track.children)) {
+      if (!(child instanceof HTMLElement)) continue;
+
+      const renderedIndex = Number.parseInt(
+        child.getAttribute("data-rmg-rendered-idx") ?? "",
+        10
+      );
+      if (Number.isFinite(renderedIndex)) {
+        renderedByVirtualIndex.set(renderedIndex, child);
+      }
+    }
+
+    for (const item of next.items) {
+      const element = renderedByVirtualIndex.get(item.virtualIndex);
+      if (!element) return false;
+
+      const offsetValue = getNativeVirtualSlideOffsetValue(item, metrics);
+      if (AX.main === "x") {
+        element.style.left = offsetValue;
+        element.style.top = "0px";
+      } else {
+        element.style.top = offsetValue;
+        element.style.left = "0px";
+      }
+    }
+
+    return true;
+  }
+
+  function setNativeVirtualRebaseOffset(offset: number) {
+    const track = slider.current;
+    if (!track) return;
+
+    if (Math.abs(offset) <= 0.01) {
+      track.style.removeProperty("--rmg-virtual-rebase-offset");
+      return;
+    }
+
+    track.style.setProperty("--rmg-virtual-rebase-offset", `${offset}px`);
+  }
+
+  function applyNativeVirtualLoopCompensation(loopShift: number) {
+    if (!virtualMetricsRef.current?.enabled || loopShift === 0) return;
+
+    const nextOffset = accumulateFixedVirtualTrackRebaseOffset(
+      virtualRebaseOffsetRef.current,
+      loopShift
+    );
+    virtualRebaseOffsetRef.current = nextOffset;
+    virtualRebaseClearPendingRef.current = true;
+    setNativeVirtualRebaseOffset(nextOffset);
+  }
+
+  function clearNativeVirtualRebaseOffset() {
+    if (
+      virtualRebaseOffsetRef.current === 0 &&
+      !virtualRebaseClearPendingRef.current
+    ) {
+      return;
+    }
+
+    virtualRebaseOffsetRef.current = 0;
+    virtualRebaseClearPendingRef.current = false;
+    setNativeVirtualRebaseOffset(0);
+  }
+
   function createMainSizeStableResizeGuard(targets: Array<HTMLElement | null>) {
     let lastMainSize = getViewportMainSize();
-    // Auto-height may resize the cross axis; that should not reanchor scroll.
+    // Auto-height and aspect-ratio rails may resize the cross axis; that
+    // should not rebuild main-axis geometry or reanchor scroll.
     const lastTargetMainSizes = new WeakMap<Element, number>();
 
     const readTargetMainSize = (target: Element | null) => {
@@ -569,6 +837,13 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     return kids.slice(before, kids.length - after);
   }
 
+  function notifyMountedSlidesBuilt() {
+    const nodes = getOriginalNodes();
+    if (!nodes.length) return;
+    builtOnceRef.current = true;
+    slideBuildSubs.current.forEach((fn) => fn(nodes));
+  }
+
   function measureFlowLayout(elements: HTMLElement[]) {
     if (!elements.length) return [];
 
@@ -672,13 +947,13 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
   function getCenterOffsetForIndex(idx: number) {
     const slide = slides.current?.[idx];
-    if (!slide?.cells?.[0]?.element) return 0;
+    if (!slide) return 0;
     const containerSize = getViewportMainSize();
     if (containerSize <= 0) return 0;
     const alignSize =
       slide.alignSize > 0
         ? slide.alignSize
-        : getLayoutMainSize(slide.cells[0].element);
+        : getLayoutMainSize(slide.cells[0]?.element ?? null);
     return getSliderCenterOffset({
       viewport: containerSize,
       alignSize,
@@ -836,6 +1111,40 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     indexCurrentRef.current?.set(idx);
     indexPreviousRef.current?.set(idx);
 
+  }
+
+  function getFullscreenSettleIndex() {
+    const recentClick =
+      isClick.current &&
+      nowMs() - lastPointerUpTimeRef.current <= FULLSCREEN_SETTLE_GESTURE_WINDOW_MS;
+
+    return recentClick ? dragStartIndexRef.current : selectedIndex.current;
+  }
+
+  function scrollToIndexForFullscreenOpen(requested: number) {
+    const len = slides.current?.length ?? 0;
+    if (!len) return;
+
+    const idx = clampIndex(requested, len);
+    if (!slides.current?.[idx]) return;
+
+    scrollToIndex(idx, { programmatic: true });
+  }
+
+  function settleForFullscreenOpen() {
+    const settleIndex = getFullscreenSettleIndex();
+
+    crossfadeRuntimeRef.current?.finish();
+    pointerDownRef.current = false;
+    isPointerDown.current = false;
+    isScrolling.current = false;
+    isClick.current = false;
+    dragDisplacementRef.current = 0;
+    sliderVelocity.current = 0;
+    setDragCursor(false);
+    unlockWheelNow();
+
+    scrollToIndexForFullscreenOpen(settleIndex);
   }
 
   function getClientXY(evt: any) {
@@ -1060,7 +1369,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     loopStableRef.current = next;
     setWrap(next);
     isWrapping.current = next;
-    if (!next) loopRenderOffsetRef.current = 0;
+    if (!next) {
+      loopRenderOffsetRef.current = 0;
+      clearNativeVirtualRebaseOffset();
+    }
 
     hasPositioned.current = false;
     setLayoutReady(false);
@@ -1096,11 +1408,11 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
       retryTimeout = window.setTimeout(() => {
         retryTimeout = null;
-        rebuildClonedChildren();
+        rebuildClonedChildren({ forceVirtualRender: true });
       }, 0);
     };
 
-    const rebuildClonedChildren = () => {
+    const rebuildClonedChildren = (options: { forceVirtualRender?: boolean } = {}) => {
       if (isRebuilding) return;
       isRebuilding = true;
 
@@ -1108,10 +1420,12 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         const rawKids = Children
           .toArray(children)
           .filter(isValidElement) as ReactElement<any>[];
+        virtualRawKidsRef.current = rawKids;
 
         const originals = rawKids.length;
         if (originals < 1) {
-          el.style.removeProperty("--rmg-slide-main-size");
+          setSlideMainSizeCssVar(null);
+          resetNativeVirtualWindow();
           clonesCountRef.current = 0;
           loopRenderOffsetRef.current = 0;
           lastCloneSigRef.current = "";
@@ -1148,16 +1462,107 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         let cellSize: number | undefined;
 
         if (useCols) {
-          cols = Math.max(1, Math.min(originals, cellsPerSlide as number));
-          const totalGap = gap * Math.max(0, cols - 1);
-          cellSize = (cw - totalGap) / cols;
+          const fixedCellsPerSlide = Math.max(1, cellsPerSlide as number);
+          cols = Math.max(1, Math.min(originals, fixedCellsPerSlide));
+          cellSize =
+            resolveSliderFixedCellSize({
+              viewport: cw,
+              cellsPerSlide: fixedCellsPerSlide,
+              gap,
+            }) ?? undefined;
         }
 
         if (useCols && cellSize != null) {
-          el.style.setProperty("--rmg-slide-main-size", `${cellSize}px`);
+          setSlideMainSizeCssVar(cellSize);
         } else {
-          el.style.removeProperty("--rmg-slide-main-size");
+          setSlideMainSizeCssVar(null);
         }
+
+        const virtualOptions = resolveSliderVirtualizationOptions(virtualization);
+        const fixedVirtualMetrics =
+          useCols && cellSize != null
+            ? resolveFixedVirtualTrackMetrics({
+                count: originals,
+                viewport: cw,
+                cellsPerSlide: cellsPerSlide as number,
+                gap,
+                loop,
+              })
+            : null;
+        const supportsNativeVirtualization =
+          virtualOptions.enabled &&
+          AX.main === "x" &&
+          !centerAlign &&
+          !autoHeight &&
+          useCols &&
+          fixedVirtualMetrics != null &&
+          originals > virtualOptions.threshold;
+
+        if (virtualOptions.enabled && !supportsNativeVirtualization) {
+          warnSliderVirtualizationFallback(
+            "[react-motion-gallery] Slider virtualization currently supports fixed-size horizontal slider tracks and fell back to full rendering."
+          );
+        }
+
+        if (supportsNativeVirtualization && fixedVirtualMetrics) {
+          const shouldLoop = shouldEnableSliderLoop({
+            loop,
+            itemCount: originals,
+            span: fixedVirtualMetrics.baseSpan,
+            viewport: cw,
+          });
+          const virtualTrackMetrics =
+            fixedVirtualMetrics.trackSpan ===
+            resolveSliderContentSpan({
+              baseSpan: fixedVirtualMetrics.baseSpan,
+              gap,
+              shouldLoop,
+            })
+              ? fixedVirtualMetrics
+              : resolveFixedVirtualTrackMetrics({
+                  count: originals,
+                  viewport: cw,
+                  cellsPerSlide: cellsPerSlide as number,
+                  gap,
+                  loop: shouldLoop,
+                });
+          if (!virtualTrackMetrics) return;
+          const groupSize = Math.max(1, fixedGroupCells ?? 1);
+          const metrics: NativeSliderVirtualMetrics = {
+            enabled: true,
+            metrics: virtualTrackMetrics,
+            groupSize,
+            shouldLoop,
+          };
+          virtualMetricsRef.current = metrics;
+          clonesCountRef.current = 0;
+          loopRenderOffsetRef.current = 0;
+          clearNativeVirtualRebaseOffset();
+          if (visibleImagesRef.current !== 0) {
+            setVisibleImages(0);
+            visibleImagesRef.current = 0;
+          }
+          el.style.width = `${virtualTrackMetrics.trackSpan}px`;
+          el.style.minWidth = `${virtualTrackMetrics.trackSpan}px`;
+
+          const activeSlide = selectedIndex.current || 0;
+          const initialOffset = activeSlide * virtualTrackMetrics.stride * groupSize;
+          const nextWindow = buildFixedVirtualTrackWindow({
+            metrics: virtualTrackMetrics,
+            scrollOffset: initialOffset,
+            loop: shouldLoop,
+            options: virtualization,
+          });
+
+          setWrapSafe(shouldLoop);
+          const shouldForceVirtualRender =
+            options.forceVirtualRender === true || virtualWindowRef.current == null;
+          renderNativeVirtualWindow(nextWindow, metrics, shouldForceVirtualRender);
+          return;
+        }
+
+        virtualMetricsRef.current = null;
+        resetNativeVirtualWindow();
 
         let sum = 0;
         let count = 0;
@@ -1274,11 +1679,11 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     ]);
 
     const ro = new ResizeObserver((entries) => {
-      if (autoHeight && shouldIgnoreResize(entries)) return;
+      if (shouldIgnoreResize(entries)) return;
       rebuildClonedChildren();
     });
 
-    rebuildClonedChildren();
+    rebuildClonedChildren({ forceVirtualRender: true });
 
     if (viewportRef.current) {
       ro.observe(viewportRef.current);
@@ -1306,6 +1711,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     autoHeight,
     indexChannel,
     slideStoreBag,
+    freeScroll,
+    loop,
+    gap,
+    virtualization,
     wrap,
   ]);
 
@@ -1324,14 +1733,68 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       const originalEls = slideEls.slice(clonesBefore, slideEls.length - clonesBefore);
       if (originalEls.length === 0) return;
 
+      const cw = getViewportMainSize();
+      if (cw <= 0) return;
+
+      const virtualMetrics = virtualMetricsRef.current;
+      if (virtualMetrics?.enabled) {
+        const metrics = virtualMetrics.metrics;
+        if (!fixedVirtualTrackMetricsMatchViewport(metrics, cw)) return;
+
+        const originalsForLayout = Array.from(
+          { length: metrics.count },
+          (_, index) => {
+            const start = index * metrics.stride;
+            return {
+              el: null,
+              start,
+              end: start + metrics.cellSize,
+              size: metrics.cellSize,
+            };
+          }
+        );
+        const wantLoop = shouldEnableSliderLoop({
+          loop,
+          itemCount: metrics.count,
+          span: metrics.baseSpan,
+          viewport: cw,
+        });
+
+        layoutRef.current = {
+          originals: originalsForLayout,
+          cw,
+        };
+
+        sliderWidth.current = resolveSliderContentSpan({
+          baseSpan: metrics.baseSpan,
+          gap,
+          shouldLoop: wantLoop,
+        });
+        trackEl.style.width = `${sliderWidth.current}px`;
+        trackEl.style.minWidth = `${sliderWidth.current}px`;
+
+        const sig =
+          `virtual|count=${metrics.count}` +
+          `|cw=${roundSliderLayoutMetric(cw)}` +
+          `|cell=${roundSliderLayoutMetric(metrics.cellSize)}` +
+          `|W=${roundSliderLayoutMetric(metrics.baseSpan)}` +
+          `|wrap=${wantLoop ? 1 : 0}`;
+
+        if (sig !== lastGeomSigRef.current) {
+          lastGeomSigRef.current = sig;
+          rebuildPagesNow();
+        }
+
+        setWrapSafe(wantLoop);
+        setIsMeasured(true);
+        return;
+      }
+
       const originalsForLayout = measureFlowLayout(originalEls);
       if (originalsForLayout.some((item) => item.size === 0)) {
         setTimeout(measureAndPosition, 0);
         return;
       }
-
-      const cw = getViewportMainSize();
-      if (cw <= 0) return;
 
       layoutRef.current = {
         originals: originalsForLayout,
@@ -1376,7 +1839,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     ]);
 
     const ro = new ResizeObserver((entries) => {
-      if (autoHeight && shouldIgnoreResize(entries)) return;
+      if (shouldIgnoreResize(entries)) return;
       measureAndPosition();
     });
 
@@ -1422,6 +1885,15 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sliderImagesReady, engineReady, isReady]);
 
+  useLayoutEffect(() => {
+    if (!pendingVirtualSlidesBuiltRef.current) return;
+    if (!virtualMetricsRef.current?.enabled) return;
+
+    pendingVirtualSlidesBuiltRef.current = false;
+    clearNativeVirtualRebaseOffset();
+    notifyMountedSlidesBuilt();
+  }, [clonedChildren]);
+
   useEffect(() => {
     if (!isReady) return;
 
@@ -1433,25 +1905,29 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   useLayoutEffect(() => {
     if (
       !slider.current ||
-      cells.current.length === 0 ||
+      (!virtualMetricsRef.current?.enabled && cells.current.length === 0) ||
       sliderWidth.current === 0 ||
       !slides.current ||
       !slides.current[0] ||
-      !slides.current[0].cells[0]?.element
+      (!virtualMetricsRef.current?.enabled && !slides.current[0].cells[0]?.element)
     ) return;
 
     const containerSize = getViewportMainSize();
     if (containerSize <= 0) return;
 
     if (!wrap && sliderWidth.current <= containerSize) {
-      trackCenterOffsetRef.current = Math.round((containerSize - sliderWidth.current) / 2);
+      trackCenterOffsetRef.current = resolveSliderUnderflowOffset({
+        viewport: containerSize,
+        contentSpan: sliderWidth.current,
+        align: underflowAlign,
+      });
     } else {
       trackCenterOffsetRef.current = 0;
     }
 
     positionSlider(offsetLocationRef.current?.get() ?? xRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slidesState, wrap]);
+  }, [slidesState, wrap, underflowAlign]);
 
   useEffect(() => {
     const containerEl = slider.current
@@ -1485,6 +1961,146 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         retry()
         return
       }
+      const allowCenteredOverflow = centerAlign && !wrap
+      const virtualMetrics = virtualMetricsRef.current;
+      if (virtualMetrics?.enabled) {
+        const data = L.originals;
+        const cw = L.cw;
+        const renderedByCanonical = new Map<number, HTMLElement>();
+
+        allEls.forEach((el) => {
+          const raw = el.getAttribute("data-rmg-idx");
+          const index = raw == null ? NaN : Number.parseInt(raw, 10);
+          if (Number.isFinite(index)) renderedByCanonical.set(index, el);
+        });
+
+        const resolvedGroupCells = resolveSliderGroupCells({
+          total: data.length,
+          groupCells,
+          cellsPerSlide,
+        });
+        const pages: Array<{
+          target: number;
+          alignSize: number;
+          cells: { element: HTMLElement | null; index: number }[];
+        }> = [];
+
+        if (resolvedGroupCells.enabled) {
+          const groupSize = Math.max(1, resolvedGroupCells.fixedCount ?? 1);
+          for (let startIndex = 0; startIndex < data.length; startIndex += groupSize) {
+            const endIndex = Math.min(data.length, startIndex + groupSize);
+            const first = data[startIndex];
+            const last = data[endIndex - 1];
+            if (!first || !last) continue;
+
+            const isLast = endIndex >= data.length;
+            let target = first.start;
+            if (isLast && !wrap && !allowCenteredOverflow) {
+              target = Math.max(0, (sliderWidth.current || 0) - cw);
+            }
+            if (startIndex === 0) target = 0;
+
+            pages.push({
+              target,
+              alignSize: Math.max(0, last.end - first.start),
+              cells: Array.from({ length: endIndex - startIndex }, (_, offset) => {
+                const index = startIndex + offset;
+                return {
+                  element: renderedByCanonical.get(index) ?? null,
+                  index,
+                };
+              }),
+            });
+          }
+        } else {
+          const maxTarget = Math.max(0, (sliderWidth.current || 0) - cw);
+          const EPS = 0.5;
+
+          data.forEach((d, index) => {
+            let target = index === 0 ? 0 : d.start;
+            if (!wrap && !allowCenteredOverflow) target = Math.min(target, maxTarget);
+            if (
+              pages.length &&
+              Math.abs(target - pages[pages.length - 1].target) <= EPS
+            ) {
+              return;
+            }
+
+            pages.push({
+              target,
+              alignSize: d.size,
+              cells: [{ element: renderedByCanonical.get(index) ?? null, index }],
+            });
+          });
+        }
+
+        const containedSlides = mergeDuplicateContainedSliderPages({
+          pages,
+          viewport: cw,
+          contentSpan: sliderWidth.current || 0,
+          centerAlign,
+          containScroll: containScroll && !wrap,
+        });
+        const virtualPagesSig =
+          `virtual-pages|count=${data.length}` +
+          `|cw=${roundSliderLayoutMetric(cw)}` +
+          `|W=${roundSliderLayoutMetric(sliderWidth.current || 0)}` +
+          `|group=${resolvedGroupCells.fixedCount ?? 0}` +
+          `|wrap=${wrap ? 1 : 0}` +
+          `|contain=${containScroll && !wrap ? 1 : 0}`;
+
+        const baseSpan = data[data.length - 1]?.end ?? 0;
+        const nextWrap = shouldEnableSliderLoop({
+          loop,
+          itemCount: data.length,
+          span: baseSpan,
+          viewport: cw,
+        });
+        if (nextWrap !== wrap) {
+          setWrapSafe(nextWrap);
+          return;
+        }
+
+        if (lastVirtualPagesSigRef.current === virtualPagesSig && slides.current.length) {
+          slides.current = slides.current.map((slide) => ({
+            ...slide,
+            cells: slide.cells.map((cell) => ({
+              ...cell,
+              element: renderedByCanonical.get(cell.index) ?? null,
+            })),
+          })) as any;
+
+          if (!canceled) notifyMountedSlidesBuilt();
+          setLayoutReady(true);
+          return;
+        }
+
+        lastVirtualPagesSigRef.current = virtualPagesSig;
+        loopRenderOffsetRef.current = 0;
+        isWrapping.current = nextWrap;
+        slides.current = containedSlides as any;
+        setSlidesState(containedSlides as any);
+
+        if (translateRef.current) {
+          syncMotionGeometry({
+            reanchor: shouldReanchorOnResize,
+          });
+        }
+
+        setLayoutReady(true);
+
+        const map: number[] = [];
+        containedSlides.forEach((slide, slideIdx) => {
+          slide.cells.forEach((cell) => {
+            map[cell.index] = slideIdx;
+          });
+        });
+        cellToSlideRef.current = map;
+
+        if (!canceled) notifyMountedSlidesBuilt();
+        return;
+      }
+
       if (originals.length !== L.originals.length) {
         retry()
         return
@@ -1492,7 +2108,6 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
       const data = L.originals
       const cw = L.cw
-      const allowCenteredOverflow = centerAlign && !wrap
 
       const pages: { els: HTMLElement[]; target: number }[] = []
       let i = 0
@@ -1518,7 +2133,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
             if (j === i) j++
           }
 
-          const slice = data.slice(i, j).map((d) => d.el)
+          const slice = data
+            .slice(i, j)
+            .map((d) => d.el)
+            .filter((el): el is HTMLElement => !!el)
           const isLast = j >= data.length
 
           let target = startLeft
@@ -1538,7 +2156,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
           data.forEach((d, idx) => {
             const t = idx === 0 ? 0 : d.start
             if (!pages.length || Math.abs(t - pages[pages.length - 1].target) > EPS) {
-              pages.push({ els: [d.el], target: t })
+              if (d.el) pages.push({ els: [d.el], target: t })
             }
           })
         } else {
@@ -1548,7 +2166,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
             t = Math.min(t, maxTarget)
 
             if (!pages.length || Math.abs(t - pages[pages.length - 1].target) > EPS) {
-              pages.push({ els: [d.el], target: t })
+              if (d.el) pages.push({ els: [d.el], target: t })
             }
 
             if (Math.abs(t - maxTarget) <= EPS) break
@@ -1560,6 +2178,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
           const lastEls = data
             .filter((d) => d.start < winEnd && d.end > winStart)
             .map((d) => d.el)
+            .filter((el): el is HTMLElement => !!el)
 
           if (lastEls.length) {
             const lastT = pages[pages.length - 1]?.target ?? -1
@@ -1578,7 +2197,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
               }
             }
             const fallback = data[Math.max(0, safeIdx)]
-            if (fallback) {
+            if (fallback?.el) {
               const lastT = pages[pages.length - 1]?.target ?? -1
               if (Math.abs(lastT - maxTarget) > EPS) {
                 pages.push({ els: [fallback.el], target: maxTarget })
@@ -1734,6 +2353,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       xRef.current = settled;
       syncProgressUiInFrame();
       programNavRef.current = false;
+      syncNativeVirtualWindowForSlide(targetIndex);
     }
   }
 
@@ -1896,11 +2516,23 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     lockWheelFor(UI_NAV_WHEEL_LOCK_MS);
   }
 
-  function scrollToProgressFromUi(progress: number): boolean {
-    const scrollTo = scrollToRef.current;
+  function scrollToProgressFromUi(
+    progress: number,
+    options?: {
+      crossfade?: boolean;
+      durationMs?: number;
+      easing?: string;
+    }
+  ): boolean {
+    const scrollTarget = scrollTargetRef.current;
     const body = bodyRef.current;
     const limit = scrollLimitRef.current;
-    if (!scrollTo || !body || !limit) return false;
+    const targetVector = targetRef.current;
+    const indexCurrent = indexCurrentRef.current;
+    const indexPrevious = indexPreviousRef.current;
+    if (!scrollTarget || !body || !limit || !targetVector || !indexCurrent || !indexPrevious) {
+      return false;
+    }
 
     const span = limit.max - limit.min;
     if (span <= 0) {
@@ -1926,14 +2558,51 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     const distance = targetOffset - currentNormalized;
 
     body.useDuration(0).useFriction(1).sync().resetVelocity();
-    scrollTo.distance(distance, false);
+    const target = scrollTarget.byDistance(distance, false);
+    const indexDiff = target.index !== indexCurrent.get();
+    const sourceIndex = indexCurrent.get();
+    const settled = targetVector.get() + target.distance;
 
-    const settled =
-      offsetLocationRef.current?.get() ??
-      targetRef.current?.get() ??
-      currentOffset;
+    if (
+      options?.crossfade === true &&
+      crossfadeRuntimeRef.current?.startProgressUi(
+        {
+          index: target.index,
+          location: settled,
+          sourceIndex,
+        },
+        {
+          durationMs: options.durationMs,
+          easing: options.easing,
+        }
+      )
+    ) {
+      syncProgressUiInFrame();
+
+      const ch: any = indexChannel;
+      ch.emitBasePointerDown?.();
+
+      return true;
+    }
+
+    targetVector.add(target.distance);
+    body.seek();
+
+    offsetLocationRef.current?.set(settled);
     xRef.current = settled;
+
+    syncNativeVirtualWindowForLocation(settled);
+    positionSlider(settled);
     syncProgressUiInFrame();
+
+    if (indexDiff) {
+      indexPrevious.set(indexCurrent.get());
+      indexCurrent.set(target.index);
+
+      const idx = indexCurrent.get();
+      selectedIndex.current = idx;
+      indexChannel.set(idx, "instant");
+    }
 
     const ch: any = indexChannel;
     ch.emitBasePointerDown?.();
@@ -1976,6 +2645,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     programNavRef.current = false;
     body.useDuration(0).useFriction(1);
     target.set(next);
+    syncNativeVirtualWindowForLocation(next);
     isAnimatingRef.current = true;
     anim.start();
     return true;
@@ -2042,6 +2712,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
     translateRef.current = Translate(track, AX);
     positionSlider(initialSnap);
+    syncNativeVirtualWindowForLocation(initialSnap, true);
 
     commitIndex(startIdx, 'instant');
 
@@ -2065,6 +2736,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
           offsetLocationRef.current?.set(settled)
           xRef.current = settled
           positionSlider(settled)
+          syncNativeVirtualWindowForLocation(settled)
         }
       }
 
@@ -2141,7 +2813,11 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         if (wrap && (sliderWidth.current || 0) > 0) {
           const body = bodyRef.current!
           const dir = body.direction() || Math.sign(targetRef.current!.get() - locationRef.current!.get()) || 0
-          looperRef.current?.loop(dir)
+          const loopShift = looperRef.current?.loop(dir) ?? 0
+          if (loopShift !== 0) {
+            applyNativeVirtualLoopCompensation(loopShift)
+            syncNativeVirtualWindowForLocation(locationRef.current!.get(), true)
+          }
         }
 
         xRef.current = locationRef.current!.get()
@@ -2151,11 +2827,6 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         const shouldSettle = body ? body.settled() : true
         const recoveringOob = !wrap && (boundsRef.current?.reached() ?? false)
         const idle = shouldSettle && !pointerDownRef.current && !recoveringOob
-        if (idle) {
-          animRef.current?.stop()
-          isAnimatingRef.current = false
-          programNavRef.current = false
-        }
         const cur = locationRef.current!.get()
         const prev = previousLocationRef.current!.get()
         let loc = cur * alpha + prev * (1 - alpha)
@@ -2164,8 +2835,14 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         offsetLocationRef.current!.set(loc)
         xRef.current = loc
         positionSlider()
+        syncNativeVirtualWindowForLocation(loc)
         syncProgressUiInFrame();
         updateActiveIndexFromX(loc)
+        if (idle) {
+          animRef.current?.stop()
+          isAnimatingRef.current = false
+          programNavRef.current = false
+        }
       }
     )
     animRef.current = anim
@@ -2286,6 +2963,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     }
 
     function onUp(evt: PointerEvent) {
+      lastPointerUpTimeRef.current = nowMs();
       isPointerDown.current = false
       preventScroll = false
       pointerDownRef.current = false
@@ -2298,7 +2976,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       lockWheelFor(300);
 
       if (isClick.current) {
-        scrollToIndex(selectedIndex.current)
+        scrollToIndexForFullscreenOpen(dragStartIndexRef.current)
         const clickedVideo = clickedVideoSurface(evt);
         if (clickedVideo != null) {
           if (clickedVideo.isClone) {
@@ -2306,8 +2984,8 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
           } else {
             snapToIndex(clickedVideo.canonicalIndex);
           }
-          return;
         }
+        return;
       }
 
       if (crossfadeRuntimeRef.current?.canUseDrag()) {
@@ -2460,6 +3138,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
       xRef.current = next;
 
       positionSlider(next);
+      syncNativeVirtualWindowForLocation(next);
       updateActiveIndexFromX(next);
 
       animRef.current?.start();
@@ -2503,7 +3182,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     };
   }
 
-  function restoreMotionState(state: ReturnType<typeof readMotionState>) {
+  function restoreMotionState(
+    state: ReturnType<typeof readMotionState>,
+    options?: { syncVirtual?: boolean }
+  ) {
     locationRef.current?.set(state.location);
     previousLocationRef.current?.set(state.previous);
     offsetLocationRef.current?.set(state.offset);
@@ -2511,9 +3193,10 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     xRef.current = state.x;
 
     positionSlider(state.offset);
+    syncNativeVirtualWindowForLocation(state.offset, options?.syncVirtual === true);
   }
 
-  function renderTrackAtLocation(loc: number) {
+  function renderTrackAtLocation(loc: number, options?: { syncVirtual?: boolean }) {
     locationRef.current?.set(loc);
     previousLocationRef.current?.set(loc);
     offsetLocationRef.current?.set(loc);
@@ -2521,6 +3204,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     xRef.current = loc;
 
     positionSlider(loc);
+    syncNativeVirtualWindowForLocation(loc, options?.syncVirtual === true);
   }
 
   function jumpTrackToIndexInstant(idx: number) {
@@ -2545,6 +3229,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     commitIndex(normalizedIdx, mode);
     indexCurrentRef.current?.set(normalizedIdx);
     selectedIndex.current = normalizedIdx;
+    syncNativeVirtualWindowForSlide(normalizedIdx);
   }
 
   function commitIndexOnly(idx: number, mode: IndexMode, sourceIndex?: number) {
@@ -2834,9 +3519,12 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
 
         cellsInView: () => cellsInViewInternal(),
 
-        _scrollToProgressFromUi: (progress: number) => scrollToProgressFromUi(progress),
+        _scrollToProgressFromUi: (progress, options) =>
+          scrollToProgressFromUi(progress, options),
 
         _scrollByPixels: (deltaPx: number) => scrollByPixelsFromPlugin(deltaPx),
+
+        _settleForFullscreenOpen: () => settleForFullscreenOpen(),
 
         _getCrossfadeCore: () => ({
           getIndex: () => getSafeIndex(),
@@ -2895,7 +3583,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     ]);
 
     const ro = new ResizeObserver((entries) => {
-      if (autoHeight && shouldIgnoreMainSizeStableResize(entries)) return;
+      if (shouldIgnoreMainSizeStableResize(entries)) return;
 
       const cw = getViewportMainSize();
       if (cw <= 0) return;
@@ -2909,8 +3597,11 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
         // otherwise resizing from scrollable -> non-scrollable while on index != 0
         // can freeze after onUp (snap logic runs with stale multi-snap state).
         if (contentW <= cw) {
-          const center = Math.round((cw - contentW) / 2);
-          trackCenterOffsetRef.current = center;
+          trackCenterOffsetRef.current = resolveSliderUnderflowOffset({
+            viewport: cw,
+            contentSpan: contentW,
+            align: underflowAlign,
+          });
 
           // If engine isn't ready yet, just re-position (don't touch null refs).
           if (
@@ -2989,7 +3680,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
     }
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wrap, layoutReady, isMeasured, isReady, shouldReanchorOnResize, autoHeight, containScroll]);
+  }, [wrap, layoutReady, isMeasured, isReady, shouldReanchorOnResize, autoHeight, containScroll, underflowAlign]);
 
   function onTouchStart(e: TouchEvent) {
     const t0 = e.touches[0]
@@ -3020,6 +3711,20 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const nativeVirtualTrackMetrics = virtualMetricsRef.current?.metrics ?? null;
+  const nativeVirtualTrackSpan =
+    nativeVirtualTrackMetrics != null
+      ? sliderWidth.current || nativeVirtualTrackMetrics.trackSpan
+      : 0;
+  const trackStyle: React.CSSProperties =
+    nativeVirtualTrackMetrics != null
+      ? {
+          gap: 0,
+          width: `${nativeVirtualTrackSpan}px`,
+          minWidth: `${nativeVirtualTrackSpan}px`,
+        }
+      : { gap: `${gap}px` };
+
   const inner = (
     <>
       <div 
@@ -3035,7 +3740,7 @@ const SliderCore = forwardRef<SliderCoreHandle, SliderProps>(function SliderCore
           ref={slider}
           className={`${styles.track} ${rtlCls}`}
           data-rmg-axis={AX.main}
-          style={{ gap: `${gap}px` }}
+          style={trackStyle}
         >
           {clonedChildren}
         </div>

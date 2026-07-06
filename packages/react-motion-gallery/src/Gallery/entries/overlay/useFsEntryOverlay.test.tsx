@@ -126,6 +126,18 @@ describe('fullscreen entry overlay rendering', () => {
     );
   });
 
+  test('renders entry overlays without zoom motion state', () => {
+    const args: any = createBaseArgs();
+    args.overlayZoomMotion = undefined;
+
+    const tree = renderFsEntryOverlayTree(args) as React.ReactElement<any>;
+    const shells = Children.toArray(tree.props.children) as React.ReactElement<any>[];
+    const surface = shells[0]?.props.children as React.ReactElement<any>;
+
+    expect(surface.props.style.transform).toBeUndefined();
+    expect(surface.props.children).toBeTruthy();
+  });
+
   test('passes the active media item to entry overlay renderers', () => {
     const seen: unknown[] = [];
     renderFsEntryOverlayTree({
@@ -301,4 +313,5 @@ describe('fullscreen entry overlay rendering', () => {
     expect(contentLayers[1]?.props.style.position).toBe('relative');
     expect(contentLayers[1]?.props.style.zIndex).toBe(1);
   });
+
 });

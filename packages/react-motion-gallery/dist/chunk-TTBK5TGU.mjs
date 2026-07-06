@@ -1,0 +1,1 @@
+import {a}from'./chunk-ODBPQRVS.mjs';import {l as l$1,h,i,b,j}from'./chunk-4OG3ZB7R.mjs';function P(t){return h(t)}function y(t){return i(t)}function r(t){return a("pagination",b(t))}function l(t){return j(t,r)}var D=l$1;export{P as a,y as b,r as c,l as d,D as e};

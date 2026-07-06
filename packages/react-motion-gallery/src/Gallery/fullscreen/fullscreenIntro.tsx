@@ -28,6 +28,14 @@ import {
   resolveFullscreenIntroDurationMs,
   resolveFullscreenIntroEasing,
 } from "./introTiming";
+import { claimFullscreenDialogSwitch } from "./dialogSwitch";
+import {
+  FULLSCREEN_INTRO_MEDIA_Z_INDEX_OFFSET,
+} from "./layering";
+import {
+  mountIntroPendingSpinner,
+  shouldRenderIntroPendingSpinner,
+} from "./introPendingSpinner";
 
 type RefEl<T extends HTMLElement> = React.RefObject<T | null>;
 type ObjectFitMode = "contain" | "cover";
@@ -61,6 +69,7 @@ export type FullscreenIntroArgs = {
   fullscreenThumbnailPosition?: FullscreenThumbnailSlotLayout["position"] | null;
   setShowFullscreenSlider: (v: boolean) => void;
   setFsFadeOpening: (v: boolean) => void;
+  onDialogSwitchClaim?: (durationMs: number) => void;
   addShield?: (timeoutMs?: number) => void;
   resolveFsCaptionPlacement: (
     placement: ResponsiveCaptionPlacement | undefined,
@@ -316,6 +325,23 @@ function computeContentRect(args: {
   return { rect, effectivePlacement, thumbPos, sideWidth, topBottomHeight };
 }
 
+function readFullscreenDialogMediaRect(
+  fullscreenRoot: HTMLElement | null
+): DOMRect | null {
+  if (!fullscreenRoot) return null;
+
+  const mediaPane = fullscreenRoot.querySelector<HTMLElement>(
+    '[data-rmg-fs-dialog-media="true"]'
+  );
+  if (!mediaPane) return null;
+
+  const rect = mediaPane.getBoundingClientRect();
+  if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height)) return null;
+  if (rect.width <= 0 || rect.height <= 0) return null;
+
+  return new DOMRect(rect.left, rect.top, rect.width, rect.height);
+}
+
 function mountOverlayCaption(args: {
   overlay: HTMLDivElement;
   styles: Record<string, string>;
@@ -469,6 +495,7 @@ function computeFallbackEndTransform(
 }
 
 const OPEN_PROXY_MAX_LONG_EDGE = 1024;
+const OPEN_INTRO_TARGET_IMAGE_WAIT_MS = 120;
 
 function resolveOpeningProxyRaster(args: {
   sourceNatW: number;
@@ -513,8 +540,8 @@ function readMountedFullscreenImageState(
   if (!targetImg) return null;
 
   const rect = targetImg.getBoundingClientRect();
-  const natW = targetImg.naturalWidth || 0;
-  const natH = targetImg.naturalHeight || 0;
+  const natW = readImageIntrinsicDimension(targetImg, "width");
+  const natH = readImageIntrinsicDimension(targetImg, "height");
 
   if (rect.width <= 0 || rect.height <= 0 || natW <= 0 || natH <= 0) {
     return null;
@@ -531,6 +558,31 @@ function readMountedFullscreenImageState(
     natH,
     rect,
   };
+}
+
+function readPositiveNumber(value: unknown) {
+  const next =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number.parseFloat(value)
+        : NaN;
+
+  return Number.isFinite(next) && next > 0 ? next : 0;
+}
+
+function readImageIntrinsicDimension(
+  img: HTMLImageElement,
+  dimension: "width" | "height"
+) {
+  const natural =
+    dimension === "width" ? img.naturalWidth : img.naturalHeight;
+  if (natural > 0) return natural;
+
+  const attr = readPositiveNumber(img.getAttribute(dimension));
+  if (attr > 0) return attr;
+
+  return 0;
 }
 
 function readMountedFullscreenImage(
@@ -617,6 +669,56 @@ function waitForMountedFullscreenCaption(
   });
 }
 
+function waitForMountedFullscreenImageState(
+  index: number,
+  maxWaitMs: number,
+  fullscreenRoot?: HTMLElement | null
+): Promise<FullscreenImageState | null> {
+  const immediate = readMountedFullscreenImageState(index, fullscreenRoot);
+  if (immediate) return Promise.resolve(immediate);
+  if (maxWaitMs <= 0) return Promise.resolve(null);
+
+  return new Promise((resolve) => {
+    const startedAt =
+      typeof performance !== "undefined" &&
+      typeof performance.now === "function"
+        ? performance.now()
+        : Date.now();
+    let rafId = 0;
+    let settled = false;
+
+    const readNow = () =>
+      typeof performance !== "undefined" &&
+      typeof performance.now === "function"
+        ? performance.now()
+        : Date.now();
+
+    const resolveOnce = (value: FullscreenImageState | null) => {
+      if (settled) return;
+      settled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      resolve(value);
+    };
+
+    const tick = () => {
+      const next = readMountedFullscreenImageState(index, fullscreenRoot);
+      if (next) {
+        resolveOnce(next);
+        return;
+      }
+
+      if (readNow() - startedAt >= maxWaitMs) {
+        resolveOnce(null);
+        return;
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+  });
+}
+
 function waitForAnimationFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
@@ -692,6 +794,14 @@ async function waitForFullscreenImageHandoff(args: {
   }
 
   await waitForAnimationFrames(2);
+}
+
+function isMountedFullscreenImageHandoffReady(
+  index: number,
+  fullscreenRoot?: HTMLElement | null
+) {
+  const img = readMountedFullscreenImage(index, fullscreenRoot);
+  return !!img && isFullscreenImageHandoffReady(img);
 }
 
 function insetForViewportRect(rect: DOMRect, vw: number, vh: number) {
@@ -856,6 +966,7 @@ function runFadeIntro(args: {
   setFsFadeOpening: (v: boolean) => void;
   durationMs: number;
   easing: string;
+  onIntroStart?: () => void;
 }) {
   const {
     overlay,
@@ -867,6 +978,7 @@ function runFadeIntro(args: {
     setFsFadeOpening,
     durationMs,
     easing,
+    onIntroStart,
   } = args;
 
   mountOverlayOnce(overlay);
@@ -876,6 +988,7 @@ function runFadeIntro(args: {
   overlay.style.transition = `opacity ${durationMs}ms ${easing}`;
 
   requestAnimationFrame(() => {
+    onIntroStart?.();
     overlay.style.opacity = "1";
     overlay.style.pointerEvents = "none";
     overlayCaptionRef.current?.classList.add(styles.open);
@@ -973,6 +1086,7 @@ function runScaleIntro(args: {
   overlayCaptionRef: RefEl<HTMLDivElement>;
   overlayCaptionRootRef: React.RefObject<Root | null>;
   setShowFullscreenSlider: (v: boolean) => void;
+  onIntroStart?: () => void;
 }) {
   const {
     originalImage,
@@ -991,6 +1105,7 @@ function runScaleIntro(args: {
     overlayCaptionRef,
     overlayCaptionRootRef,
     setShowFullscreenSlider,
+    onIntroStart,
   } = args;
 
   clearFullscreenTrackOpacityTransition(fullscreenRoot);
@@ -1125,6 +1240,8 @@ function runScaleIntro(args: {
   };
 
   function startAnimation(targetImageState: FullscreenImageState | null) {
+    onIntroStart?.();
+
     const {
       startT,
       endT,
@@ -1182,8 +1299,15 @@ function runScaleIntro(args: {
     120,
     fullscreenRoot
   );
+  const fullscreenImageStatePromise = waitForMountedFullscreenImageState(
+    index,
+    OPEN_INTRO_TARGET_IMAGE_WAIT_MS,
+    fullscreenRoot
+  );
 
-  startAnimationOnce(readMountedFullscreenImageState(index, fullscreenRoot));
+  void fullscreenImageStatePromise.then((targetImageState) => {
+    startAnimationOnce(targetImageState);
+  });
 
   void fullscreenCaptionPromise.then((captionState) => {
     requestAnimationFrame(() => {
@@ -1251,6 +1375,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     fullscreenThumbnailPosition,
     setShowFullscreenSlider,
     setFsFadeOpening,
+    onDialogSwitchClaim,
     addShield,
     resolveFsCaptionPlacement,
     viewportOverlay,
@@ -1262,7 +1387,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
   const item = normalizedItems[index];
 
   const computedBaseZ = baseZ ?? 9999;
-  const INTRO_DUP_Z = computedBaseZ - 1;
+  const INTRO_DUP_Z = computedBaseZ + FULLSCREEN_INTRO_MEDIA_Z_INDEX_OFFSET;
   const fullscreenRoot = fullscreenRootRef?.current ?? null;
 
   const transformDurationMs = resolveFullscreenIntroDurationMs(
@@ -1281,6 +1406,19 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     fs.effects?.introEasing,
     "fade"
   );
+
+  const dialogSwitch = claimFullscreenDialogSwitch();
+  if (dialogSwitch) {
+    onDialogSwitchClaim?.(dialogSwitch.durationMs);
+
+    if (dialogSwitch.overlay?.isConnected) {
+      overlayDivRef.current = dialogSwitch.overlay;
+    }
+
+    setFsFadeOpening(false);
+    setShowFullscreenSlider(true);
+    return;
+  }
 
   addShield?.(400);
 
@@ -1320,9 +1458,9 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     willRunScaleIntro ? transformEasing : fadeEasing
   );
 
-  const {
-    rect: contentRect,
-  } = computeContentRect({
+  overlay.style.setProperty("--rmg-fs-z", String(computedBaseZ));
+
+  const computedContentRect = computeContentRect({
     vw,
     vh,
     fs,
@@ -1330,7 +1468,27 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     fsThumbContainerRef,
     fullscreenThumbnailPosition,
     resolveFsCaptionPlacement,
-  });
+  }).rect;
+
+  const dialogContentRect =
+    fs.dialog && fs.dialog.enabled !== false
+      ? readFullscreenDialogMediaRect(fullscreenRoot)
+      : null;
+  const contentRect = dialogContentRect ?? computedContentRect;
+
+  const introPendingSpinnerHandle =
+    fs.mountStrategy === "open"
+      ? undefined
+      : mountIntroPendingSpinner({
+          styles,
+          contentRect,
+          enabled:
+            !isMountedFullscreenImageHandoffReady(index, fullscreenRoot) &&
+            shouldRenderIntroPendingSpinner({ fs, isVideoSlide }),
+        });
+  const hideIntroPendingSpinner = () => {
+    introPendingSpinnerHandle?.hide();
+  };
 
   mountOverlayCaption({
     overlay,
@@ -1354,6 +1512,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
       setFsFadeOpening,
       durationMs: fadeDurationMs,
       easing: fadeEasing,
+      onIntroStart: hideIntroPendingSpinner,
     });
     return;
   }
@@ -1369,6 +1528,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
       setFsFadeOpening,
       durationMs: fadeDurationMs,
       easing: fadeEasing,
+      onIntroStart: hideIntroPendingSpinner,
     });
     return;
   }
@@ -1390,6 +1550,7 @@ export function runFullscreenIntro(args: FullscreenIntroArgs) {
     overlayCaptionRef,
     overlayCaptionRootRef,
     setShowFullscreenSlider,
+    onIntroStart: hideIntroPendingSpinner,
   });
 }
 

@@ -79,6 +79,8 @@
 .productRoot :global([data-rmg-grid-skel-scope] > div),
 .productRoot :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div) {
   contain: paint;
+}
+.productRoot :global([data-rmg-grid-skel-scope] [data-rmg-grid-item-key] > div) {
   background:
     linear-gradient(
       180deg,

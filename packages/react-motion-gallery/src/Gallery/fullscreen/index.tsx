@@ -11,6 +11,8 @@ import { useWindowSize } from "../shared/hooks/useWindowSize";
 import type {
   FsCaptionPlacement,
   FsIntroRequest,
+  FullscreenCloseOptions,
+  FullscreenDialogTransitionOptions,
   FullscreenEffectsOptions,
   FullscreenOptions,
   FullscreenPlugin,
@@ -34,6 +36,15 @@ import { resolveFullscreenControllerOpenMethod } from "./openMethod";
 import { BREAKPOINT_MAP, BreakpointMap, resolveCaptionPlacementFromResponsive, ResponsiveCaptionPlacement } from "../shared/responsive";
 import { resolveFullscreenSliderGap } from "./transforms";
 import { mergeFullscreenIntroPathTiming } from "./introTiming";
+import {
+  beginFullscreenDialogSwitch,
+  cancelFullscreenDialogSwitch,
+  finishFullscreenDialogSwitch,
+  getActiveFullscreenDialogSwitch,
+  waitForFullscreenDialogSwitchClaim,
+  type FullscreenDialogSwitch,
+} from "./dialogSwitch";
+import { resolveFullscreenDialogSwitchTransitionOptions } from "./dialogTransitionTiming";
 type FullscreenOpenMethod = "fade" | "scale";
 
 type PendingFullscreenReopen = {
@@ -42,6 +53,25 @@ type PendingFullscreenReopen = {
   originEl: HTMLElement | null;
   requestedMethod?: FullscreenOpenMethod;
 };
+
+type DialogTransitionState = {
+  hidden: boolean;
+  durationMs?: number;
+  easing?: string;
+};
+
+const DEFAULT_DIALOG_TRANSITION_STATE: DialogTransitionState = {
+  hidden: false,
+};
+
+function waitForMs(durationMs: number) {
+  const duration = Number.isFinite(durationMs) ? Math.max(0, durationMs) : 0;
+  if (duration <= 0 || typeof window === "undefined") return Promise.resolve();
+
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, duration);
+  });
+}
 
 function resolveImageFromSlot(slot: unknown): HTMLImageElement | null {
   if (!slot) return null;
@@ -115,6 +145,25 @@ function mergeFullscreenOptionLayer(
 
   if (base.controls || layer.controls) {
     merged.controls = { ...(base.controls ?? {}), ...(layer.controls ?? {}) };
+  }
+
+  if (base.dialog || layer.dialog) {
+    merged.dialog = {
+      ...(base.dialog ?? {}),
+      ...(layer.dialog ?? {}),
+      header:
+        base.dialog?.header || layer.dialog?.header
+          ? { ...(base.dialog?.header ?? {}), ...(layer.dialog?.header ?? {}) }
+          : undefined,
+      media:
+        base.dialog?.media || layer.dialog?.media
+          ? { ...(base.dialog?.media ?? {}), ...(layer.dialog?.media ?? {}) }
+          : undefined,
+      caption:
+        base.dialog?.caption || layer.dialog?.caption
+          ? { ...(base.dialog?.caption ?? {}), ...(layer.dialog?.caption ?? {}) }
+          : undefined,
+    };
   }
 
   if (base.caption || layer.caption) {
@@ -233,12 +282,14 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   const entryCtx = entriesAdapter?.getEntryContext?.() ?? {};
 
   const fallbackEntryMapRef = useRef<any>(null);
+  const fallbackEntryRootRef = useRef<HTMLDivElement | null>(null);
 
   const safeEntriesObject = useMemo(() => {
     return entryCtx.entriesObject ?? { render: {}, mediaLayout: "slider" };
   }, [entryCtx.entriesObject]);
 
   const safeEntryMapRef = entryCtx.entryMapRef ?? fallbackEntryMapRef;
+  const safeEntryRootRef = entryCtx.entryListRef ?? fallbackEntryRootRef;
 
   const safeEntryMediaLayout =
     entryCtx.entryMediaLayout ??
@@ -340,6 +391,15 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   const requestFsCloseRef = useRef<null | (() => void)>(null);
   const cancelFsCloseRef = useRef<null | (() => void)>(null);
   const pendingReopenRef = useRef<PendingFullscreenReopen | null>(null);
+  const closeResolversRef = useRef<Array<() => void>>([]);
+  const dialogSwitchThumbnailHoldTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dialogTransitionState, setDialogTransitionState] =
+    useState<DialogTransitionState>(DEFAULT_DIALOG_TRANSITION_STATE);
+  const [dialogTransitionSwitch, setDialogTransitionSwitch] =
+    useState<FullscreenDialogSwitch | null>(null);
+  const [dialogSwitchThumbnailsHidden, setDialogSwitchThumbnailsHidden] =
+    useState(false);
 
   const runtimePlugin = useMemo(
     () => plugins.find((plugin) => plugin?.RuntimeHost),
@@ -384,6 +444,183 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       caption: { ...DEFAULT_FULLSCREEN.caption, ...(configuredFullscreen?.caption ?? {}) },
     };
   }, [configuredFullscreen]);
+
+  const resolveDialogTransitionOptions = useCallback(
+    (options?: FullscreenDialogTransitionOptions) => {
+      return resolveFullscreenDialogSwitchTransitionOptions({
+        options,
+        dialog: fs.dialog,
+        effects: fs.effects,
+      });
+    },
+    [
+      fs.dialog,
+      fs.effects,
+    ]
+  );
+
+  const resolveCloseWaiters = useCallback(() => {
+    const waiters = closeResolversRef.current.splice(0);
+    waiters.forEach((resolve) => resolve());
+  }, []);
+
+  const clearDialogSwitchThumbnailHold = useCallback(() => {
+    if (dialogSwitchThumbnailHoldTimerRef.current) {
+      clearTimeout(dialogSwitchThumbnailHoldTimerRef.current);
+      dialogSwitchThumbnailHoldTimerRef.current = null;
+    }
+  }, []);
+
+  const holdDialogSwitchThumbnails = useCallback(
+    (durationMs: number) => {
+      clearDialogSwitchThumbnailHold();
+      setDialogSwitchThumbnailsHidden(true);
+
+      const duration = Number.isFinite(durationMs)
+        ? Math.max(0, durationMs)
+        : 0;
+
+      dialogSwitchThumbnailHoldTimerRef.current = setTimeout(() => {
+        dialogSwitchThumbnailHoldTimerRef.current = null;
+        setDialogSwitchThumbnailsHidden(false);
+      }, duration);
+    },
+    [clearDialogSwitchThumbnailHold]
+  );
+
+  const silentlyUnmountDialogSwitch = useCallback(
+    (switchState: FullscreenDialogSwitch) => {
+      clearDialogSwitchThumbnailHold();
+      setDialogTransitionState(DEFAULT_DIALOG_TRANSITION_STATE);
+      setDialogTransitionSwitch(null);
+      setDialogSwitchThumbnailsHidden(false);
+      setClosingModal(false);
+      setShowFullscreenSlider(false);
+      setFsFadeOpening(false);
+
+      if (overlayCaptionRootRef.current) {
+        overlayCaptionRootRef.current.unmount();
+        overlayCaptionRootRef.current = null;
+      }
+
+      overlayCaptionRef.current?.remove();
+      overlayCaptionRef.current = null;
+
+      duplicateImgRef.current?.remove();
+      duplicateImgRef.current = null;
+
+      if (overlayDivRef.current === switchState.overlay) {
+        overlayDivRef.current = null;
+      }
+
+      setShowFullscreenModal(false);
+    },
+    [clearDialogSwitchThumbnailHold]
+  );
+
+  const closeFullscreen = useCallback(
+    (options?: FullscreenCloseOptions) => {
+      if (!showFullscreenModal && !closingModal) {
+        return Promise.resolve();
+      }
+
+      return new Promise<void>((resolve) => {
+        closeResolversRef.current.push(resolve);
+
+        if (options?.immediate) {
+          clearDialogSwitchThumbnailHold();
+          setDialogTransitionState(DEFAULT_DIALOG_TRANSITION_STATE);
+          setDialogTransitionSwitch(null);
+          setDialogSwitchThumbnailsHidden(false);
+          cancelFsCloseRef.current?.();
+          setClosingModal(false);
+          setShowFullscreenSlider(false);
+          setShowFullscreenModal(false);
+          return;
+        }
+
+        const requestClose = requestFsCloseRef.current;
+        if (requestClose) {
+          requestClose();
+          return;
+        }
+
+        setShowFullscreenModal(false);
+      });
+    },
+    [clearDialogSwitchThumbnailHold, closingModal, showFullscreenModal]
+  );
+
+  const transitionDialogTo = useCallback(
+    async (
+      openNext: () => void,
+      options?: FullscreenDialogTransitionOptions
+    ) => {
+      if (!showFullscreenModal && !closingModal) {
+        openNext();
+        return;
+      }
+
+      const transition = resolveDialogTransitionOptions(options);
+      const switchState = beginFullscreenDialogSwitch({
+        overlay: overlayDivRef.current,
+        durationMs: transition.durationMs,
+        easing: transition.easing,
+      });
+
+      setDialogSwitchThumbnailsHidden(true);
+
+      try {
+        openNext();
+      } catch (error) {
+        clearDialogSwitchThumbnailHold();
+        cancelFullscreenDialogSwitch(switchState);
+        setDialogSwitchThumbnailsHidden(false);
+        throw error;
+      }
+
+      const claimed = await waitForFullscreenDialogSwitchClaim(
+        switchState,
+        Math.max(80, transition.durationMs)
+      );
+
+      if (!claimed) {
+        clearDialogSwitchThumbnailHold();
+        cancelFullscreenDialogSwitch(switchState);
+        setDialogSwitchThumbnailsHidden(false);
+        return;
+      }
+
+      setDialogTransitionState({
+        hidden: true,
+        durationMs: transition.durationMs,
+        easing: transition.easing,
+      });
+
+      await waitForMs(transition.durationMs);
+      silentlyUnmountDialogSwitch(switchState);
+      finishFullscreenDialogSwitch(switchState);
+    },
+    [
+      clearDialogSwitchThumbnailHold,
+      closingModal,
+      resolveDialogTransitionOptions,
+      showFullscreenModal,
+      silentlyUnmountDialogSwitch,
+    ]
+  );
+
+  const restoreDialog = useCallback(
+    (options?: FullscreenDialogTransitionOptions) => {
+      const transition = resolveDialogTransitionOptions(options);
+      setDialogTransitionState({
+        hidden: false,
+        durationMs: transition.durationMs,
+        easing: transition.easing,
+      });
+    },
+    [resolveDialogTransitionOptions]
+  );
 
   const setScale = useCallback((newScale: number) => {
     scaleRef.current = newScale;
@@ -482,7 +719,10 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       mountEl: fullscreenThumbnailMountEl,
       fsSub,
       visible: showFullscreenModal,
-      invisible: closingModal,
+      invisible:
+        closingModal ||
+        dialogTransitionState.hidden ||
+        dialogSwitchThumbnailsHidden,
       direction: fullscreenDirection,
       registerLayout: registerFullscreenThumbnailLayout,
       clearLayout: clearFullscreenThumbnailLayout,
@@ -492,6 +732,8 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       fsSub,
       showFullscreenModal,
       closingModal,
+      dialogTransitionState.hidden,
+      dialogSwitchThumbnailsHidden,
       fullscreenDirection,
       registerFullscreenThumbnailLayout,
       clearFullscreenThumbnailLayout,
@@ -597,6 +839,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       );
 
       const introImg = method === "scale" ? originImg : null;
+      const activeDialogSwitch = getActiveFullscreenDialogSwitch();
 
       const sel = getClosestSelector(source);
       const introReq = {
@@ -608,6 +851,17 @@ export function useFullscreenController(args: UseFullscreenArgs) {
 
       isClick.current = true;
 
+      if (activeDialogSwitch) {
+        setDialogTransitionState({
+          hidden: false,
+          durationMs: activeDialogSwitch.durationMs,
+          easing: activeDialogSwitch.easing,
+        });
+        setDialogTransitionSwitch(activeDialogSwitch);
+      } else {
+        setDialogTransitionSwitch(null);
+      }
+
       setFullscreenOpen(true);
       fsSub.setLocalIndex(fullscreenIndex);
       setShowFullscreenModal(true);
@@ -615,7 +869,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       setSlideIndex(fullscreenIndex);
     },
     [
-      fs.enabled,
+      fs,
       normalizedItems,
       syncBeforeOpen,
       layout,
@@ -698,9 +952,27 @@ export function useFullscreenController(args: UseFullscreenArgs) {
   }, [fs.enabled, fsOpenSub, openFullscreenAt, syncFullscreenSourceFromIndex]);
 
   useEffect(() => {
-    if (showFullscreenModal) return;
+    if (showFullscreenModal || closingModal) return;
+    clearDialogSwitchThumbnailHold();
+    setDialogTransitionState(DEFAULT_DIALOG_TRANSITION_STATE);
+    setDialogTransitionSwitch(null);
+    setDialogSwitchThumbnailsHidden(false);
+    resolveCloseWaiters();
     setFullscreenOpen(false);
-  }, [showFullscreenModal, setFullscreenOpen]);
+  }, [
+    clearDialogSwitchThumbnailHold,
+    closingModal,
+    resolveCloseWaiters,
+    showFullscreenModal,
+    setFullscreenOpen,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      clearDialogSwitchThumbnailHold();
+      resolveCloseWaiters();
+    };
+  }, [clearDialogSwitchThumbnailHold, resolveCloseWaiters]);
 
   useEffect(() => {
     core.setFsEnabled(fs.enabled && hasFullscreenRuntime);
@@ -735,6 +1007,7 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         expandableImageRefs={expandableImageRefs}
         resolveLayoutlessTarget={resolveLayoutlessTarget}
         entryMapRef={safeEntryMapRef}
+        entryRootRef={safeEntryRootRef}
         entryMediaLayout={safeEntryMediaLayout}
         introFade={fs.effects.introFade}
         introDuration={fs.effects.introDuration}
@@ -803,6 +1076,11 @@ export function useFullscreenController(args: UseFullscreenArgs) {
         syncFullscreenSourceFromIndex={syncFullscreenSourceFromIndex}
         setFullscreenOpen={setFullscreenOpen}
         runtimePlugins={plugins}
+        dialogHidden={dialogTransitionState.hidden}
+        dialogTransitionDurationMs={dialogTransitionState.durationMs}
+        dialogTransitionEasing={dialogTransitionState.easing}
+        dialogTransitionSwitch={dialogTransitionSwitch}
+        onDialogSwitchClaim={holdDialogSwitchThumbnails}
       />
     ) : null;
 
@@ -832,9 +1110,16 @@ export function useFullscreenController(args: UseFullscreenArgs) {
     setShowFullscreenModal,
     setShowFullscreenSlider,
     setFsFadeOpening,
+    closeFullscreen,
+    transitionDialogTo,
+    restoreDialog,
     showFullscreenModal,
     showFullscreenSlider,
     fsFadeOpening,
     closingModal,
   };
 }
+
+export type UseFullscreenControllerReturn = ReturnType<
+  typeof useFullscreenController
+>;

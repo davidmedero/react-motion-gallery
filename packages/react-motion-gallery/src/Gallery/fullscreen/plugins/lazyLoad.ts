@@ -13,6 +13,7 @@ export function fullscreenLazyLoad(options?: FullscreenLazyLoadOptions) {
     {
       options: options ? { lazyLoad: options } : undefined,
       runtime: {
+        lazyLoad: true,
         renderSlides: renderFullscreenSlides,
         renderCrossfadeSlides: renderFullscreenCrossfadeSlides,
       },

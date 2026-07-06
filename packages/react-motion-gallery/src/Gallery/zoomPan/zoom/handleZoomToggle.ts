@@ -1,5 +1,9 @@
 import type React from "react";
-import { getCurrentTransform, baseFitSize } from "../core/utils";
+import {
+  getCurrentTransform,
+  baseFitSize,
+  imageLayoutMetrics,
+} from "../core/utils";
 import {
   gapAllEdges,
   getClientXY,
@@ -87,8 +91,13 @@ export function handleZoomToggle(
   const cy = clientY - rect.top;
 
   const { baseW, baseH } = baseFitSize(imgEl, containerW, containerH);
-  const offXc = (containerW - baseW) / 2;
-  const offYc = (containerH - baseH) / 2;
+  const { layoutOffsetX, layoutOffsetY } = imageLayoutMetrics(
+    imgEl,
+    containerW,
+    containerH,
+    baseW,
+    baseH
+  );
 
   const tx0 = ctx.offX.current!.get();
   const ty0 = ctx.offY.current!.get();
@@ -98,8 +107,8 @@ export function handleZoomToggle(
 
   if (goingIn) {
     const k = s1 / s0;
-    tx1 = tx0 + (1 - k) * (cx - offXc - tx0);
-    ty1 = ty0 + (1 - k) * (cy - offYc - ty0);
+    tx1 = tx0 + (1 - k) * (cx - layoutOffsetX - tx0);
+    ty1 = ty0 + (1 - k) * (cy - layoutOffsetY - ty0);
 
     const { x: limX, y: limY } = ctx.boundsForCurrent(
       s1,
@@ -159,7 +168,8 @@ export function handleZoomToggle(
     baseW,
     baseH,
     containerW,
-    containerH
+    containerH,
+    willBeZoomed ? undefined : { ignoreReserved: true }
   );
 
   ctx.boundsX.current = ctx.ScrollBounds(

@@ -29,6 +29,13 @@ import {
   resolveFullscreenIntroDurationMs,
   resolveFullscreenIntroEasing,
 } from './introTiming';
+import { waitForElementMediaReady } from '../shared/itemLifecycle';
+import { hydrateLazyImageShell } from '../shared/lazy/lazyShell';
+import {
+  FULLSCREEN_CLOSE_BODY_LAYER_Z_INDEX,
+  FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX,
+  resolveFullscreenRootZIndexOffset,
+} from './layering';
 
 interface FullscreenModalProps {
   fsSub: FullscreenSliderSub
@@ -52,6 +59,8 @@ interface FullscreenModalProps {
   centerSlider?: () => void;
   setSliderIndex: (i: number, mode: IndexMode) => void;
   onForceResetZoom: () => void;
+  prepareZoomOutForClose?: (options?: { durationMs?: number }) => Promise<void> | void;
+  isZoomed?: boolean;
   layout?: 'slider' | 'grid' | 'masonry' | 'entries' | null;
   expandableImageRefs: RefObject<RefObject<HTMLImageElement | null>[]>
   resolveLayoutlessTarget: (index: number) => {
@@ -71,9 +80,12 @@ interface FullscreenModalProps {
   syncFullscreenSourceFromIndex: (nextIndex: number) => void;
   baseZ?: number;
   rootRef?: React.RefObject<HTMLDivElement | null>;
+  promoteRootAboveIntroMedia?: boolean;
+  entryRootRef?: React.RefObject<HTMLDivElement | null>;
   introMethod?: "fade" | "scale" | null;
   setLatchedIntroMethod: React.Dispatch<React.SetStateAction<FullscreenOpenMethod | null>>;
   latchedIntroIndex: number;
+  renderCloseButton?: boolean;
 }
 
 type TrackedStyleProp =
@@ -94,7 +106,11 @@ type TrackStyleMutation = (
 type TrackMutedMutation = (el: HTMLMediaElement | null, value: boolean) => void
 
 const CLOSE_POINTER_GUARD_MS = 80;
+const CLOSE_PREP_TEARDOWN_GRACE_MS = 2000;
 const CLOSE_SCROLL_MOBILE_MAX_VIEWPORT_WIDTH = 767;
+const CLOSE_THUMB_SETTLE_TIMEOUT_MS = 900;
+const CLOSE_THUMB_MEDIA_TIMEOUT_MS = 1200;
+const DIALOG_ZOOM_OUT_CLOSE_DURATION_MS = 220;
 
 export function shouldUseFadeClose(args: {
   introFade?: boolean;
@@ -102,9 +118,16 @@ export function shouldUseFadeClose(args: {
   introMethod?: FullscreenOpenMethod | null;
   isLatchedIntroIndex?: boolean;
   hasTransformTarget?: boolean;
+  ignoreLatchedFadeIntro?: boolean;
 }) {
   if (args.introFade || args.isVideoSlide) return true;
-  if (args.introMethod === 'fade' && args.isLatchedIntroIndex) return true;
+  if (
+    args.introMethod === 'fade' &&
+    args.isLatchedIntroIndex &&
+    !args.ignoreLatchedFadeIntro
+  ) {
+    return true;
+  }
   if (args.hasTransformTarget === false) return true;
   if (args.hasTransformTarget) return false;
   return args.introMethod === 'fade';
@@ -219,6 +242,20 @@ export function resolveCloseShieldReleaseMs(durationMs: number) {
   return Math.min(duration, CLOSE_POINTER_GUARD_MS);
 }
 
+export function resolveClosePrepTeardownFallbackMs(args: {
+  fadeDurationMs: number;
+  transformDurationMs: number;
+}) {
+  const fadeDuration = Number.isFinite(args.fadeDurationMs)
+    ? Math.max(0, args.fadeDurationMs)
+    : 0;
+  const transformDuration = Number.isFinite(args.transformDurationMs)
+    ? Math.max(0, args.transformDurationMs)
+    : 0;
+
+  return Math.max(fadeDuration, transformDuration) + CLOSE_PREP_TEARDOWN_GRACE_MS;
+}
+
 function freezeRect(el: HTMLElement, trackStyleMutation: TrackStyleMutation) {
   const r = el.getBoundingClientRect()
   trackStyleMutation(el, 'width', `${Math.max(1, Math.round(r.width))}px`)
@@ -295,6 +332,105 @@ function waitForAnimationFrames(count: number): Promise<void> {
 
     tick(remaining);
   });
+}
+
+function readNowMs() {
+  return typeof performance !== "undefined" && typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
+}
+
+function remainingMs(startMs: number, timeoutMs: number) {
+  return Math.max(0, timeoutMs - (readNowMs() - startMs));
+}
+
+function isRectVerticallyAlignedWithViewport(cellEl: HTMLElement, viewportEl: HTMLElement) {
+  const cellRect = cellEl.getBoundingClientRect();
+  const viewportRect = viewportEl.getBoundingClientRect();
+  return cellRect.bottom > viewportRect.top && cellRect.top < viewportRect.bottom;
+}
+
+async function waitForCloseTargetCell(args: {
+  track: HTMLDivElement;
+  viewportEl: HTMLElement;
+  wrapIndex: number;
+  fallback?: HTMLElement | null;
+  timeoutMs?: number;
+}) {
+  const timeoutMs = args.timeoutMs ?? CLOSE_THUMB_SETTLE_TIMEOUT_MS;
+  const startedAt = readNowMs();
+  let latest = args.fallback ?? null;
+
+  while (remainingMs(startedAt, timeoutMs) > 0) {
+    const next = findRenderedCellForIndex(args.track, args.viewportEl, args.wrapIndex);
+    if (next) {
+      latest = next;
+
+      const rect = next.getBoundingClientRect();
+      const hasBox = rect.width > 0 && rect.height > 0;
+      if (hasBox && isCellVisible(next, args.viewportEl, true)) {
+        return next;
+      }
+    }
+
+    await waitForAnimationFrames(1);
+  }
+
+  return latest;
+}
+
+async function waitWithTimeout(
+  promise: Promise<unknown>,
+  timeoutMs: number
+) {
+  if (timeoutMs <= 0) return;
+
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve();
+    };
+    const timeout = setTimeout(finish, timeoutMs);
+
+    promise.then(finish, finish);
+  });
+}
+
+async function waitForCloseTargetMediaReady(cellEl: HTMLElement) {
+  const startedAt = readNowMs();
+
+  const lazyHosts = [
+    cellEl,
+    ...Array.from(cellEl.querySelectorAll<HTMLElement>("[data-rmg-lazyload]")),
+  ].filter((host, index, all) => {
+    const hasLazyTarget =
+      host.hasAttribute("data-rmg-lazy-src") ||
+      !!host.querySelector("[data-rmg-lazy-src]");
+    return hasLazyTarget && all.indexOf(host) === index;
+  });
+
+  for (const host of lazyHosts) {
+    hydrateLazyImageShell(host);
+  }
+
+  cellEl.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+    img.loading = "eager";
+    img.decoding = "async";
+    img.setAttribute("fetchpriority", "high");
+  });
+
+  await waitWithTimeout(
+    waitForElementMediaReady(cellEl, {
+      timeoutMs: remainingMs(startedAt, CLOSE_THUMB_MEDIA_TIMEOUT_MS),
+      waitForLazy: true,
+    }),
+    remainingMs(startedAt, CLOSE_THUMB_MEDIA_TIMEOUT_MS)
+  );
+
+  await waitForAnimationFrames(1);
 }
 
 type ObjectFitMode = "contain" | "cover";
@@ -537,16 +673,16 @@ type ClipperArgs = {
 
 function createClipper({ DURATION_MS, EASING }: ClipperArgs): HTMLDivElement {
   const clipper = document.createElement('div')
-  Object.assign(clipper.style, {
-    position: 'fixed',
-    inset: '0',
-    clipPath: 'inset(0px 0px 0px 0px)',
-    willChange: 'clip-path',
-    pointerEvents: 'none',
-    transition: `clip-path ${DURATION_MS}ms ${EASING}`,
-    zIndex: '9998',
-    background: 'transparent',
-  } as CSSStyleDeclaration)
+	  Object.assign(clipper.style, {
+	    position: 'fixed',
+	    inset: '0',
+	    clipPath: 'inset(0px 0px 0px 0px)',
+	    willChange: 'clip-path',
+	    pointerEvents: 'none',
+	    transition: `clip-path ${DURATION_MS}ms ${EASING}`,
+	    zIndex: String(FULLSCREEN_CLOSE_BODY_LAYER_Z_INDEX),
+	    background: 'transparent',
+	  } as CSSStyleDeclaration)
   document.body.appendChild(clipper)
   void clipper.offsetWidth
   return clipper
@@ -576,11 +712,14 @@ async function findThumbInfoEnsuringVisible(
   if (!viewport) return null
 
   let targetCell = findRenderedCellForIndex(slider, viewport, wrapIndex)
-  if (!targetCell) return null
+  let shouldWaitForSnap = !targetCell
+  let movedSlider = false
 
-  const fullyVisible = isCellVisible(targetCell, viewport, /*allowPartial*/ false)
+  if (targetCell) {
+    shouldWaitForSnap = isRectVerticallyAlignedWithViewport(targetCell, viewport)
+  }
 
-  if (!fullyVisible) {
+  if (!targetCell || !isCellVisible(targetCell, viewport, /*allowPartial*/ false)) {
     const moved = moveBaseSliderToSlide(
       wrapIndex,
       slidesRef,
@@ -589,9 +728,23 @@ async function findThumbInfoEnsuringVisible(
     )
 
     if (moved) {
+      movedSlider = true
       void slider.offsetWidth
-      targetCell = findRenderedCellForIndex(slider, viewport, wrapIndex) ?? targetCell
+      targetCell = shouldWaitForSnap
+        ? await waitForCloseTargetCell({
+            track: slider,
+            viewportEl: viewport,
+            wrapIndex,
+            fallback: targetCell,
+          })
+        : findRenderedCellForIndex(slider, viewport, wrapIndex) ?? targetCell
     }
+  }
+
+  if (!targetCell) return null
+
+  if (movedSlider && isCellVisible(targetCell, viewport, true)) {
+    await waitForCloseTargetMediaReady(targetCell)
   }
 
   const cropRect = getScaleSettledRect(targetCell) ?? targetCell.getBoundingClientRect()
@@ -1120,6 +1273,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   centerSlider,
   setSliderIndex,
   onForceResetZoom,
+  prepareZoomOutForClose,
+  isZoomed,
   layout,
   expandableImageRefs,
   resolveLayoutlessTarget,
@@ -1135,9 +1290,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   syncFullscreenSourceFromIndex,
   baseZ,
   rootRef,
+  promoteRootAboveIntroMedia,
+  entryRootRef,
   introMethod,
   setLatchedIntroMethod,
-  latchedIntroIndex
+  latchedIntroIndex,
+  renderCloseButton = true
 }) => {
 
   const TRANSFORM_DURATION_MS = resolveFullscreenIntroDurationMs(
@@ -1159,6 +1317,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const pointerDownY = React.useRef<number>(0)
 
   const computedBaseZ = baseZ ?? 9999;
+  const computedRootZ =
+    computedBaseZ +
+    resolveFullscreenRootZIndexOffset(!!promoteRootAboveIntroMedia);
 
   const setModalRef = React.useCallback(
     (node: HTMLDivElement | null) => {
@@ -1187,6 +1348,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const trackedCloseKeysRef = React.useRef<WeakMap<object, Set<string>>>(new WeakMap());
   const closeInProgressRef = React.useRef(false);
   const closeAnimationStartedRef = React.useRef(false);
+  const closePrepShieldReleaseTimerRef = React.useRef<number | null>(null);
+  const closePrepTeardownFallbackTimerRef = React.useRef<number | null>(null);
   const postCloseScrollActionRef = React.useRef<null | (() => void | Promise<void>)>(null);
 
   const restoreTrackedCloseMutations = React.useCallback(() => {
@@ -1264,6 +1427,18 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     shieldRef.current = null;
   }
 
+  function clearClosePrepTimers() {
+    if (closePrepShieldReleaseTimerRef.current != null) {
+      window.clearTimeout(closePrepShieldReleaseTimerRef.current);
+      closePrepShieldReleaseTimerRef.current = null;
+    }
+
+    if (closePrepTeardownFallbackTimerRef.current != null) {
+      window.clearTimeout(closePrepTeardownFallbackTimerRef.current);
+      closePrepTeardownFallbackTimerRef.current = null;
+    }
+  }
+
   function setModalClosingHitTestState(closing: boolean) {
     const modal = modalRef.current;
     if (!modal) return;
@@ -1280,6 +1455,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     return () => {
       restoreTrackedCloseMutations();
       if (cancelFsCloseRef.current) cancelFsCloseRef.current = null;
+      clearClosePrepTimers();
       closeInProgressRef.current = false;
       closeAnimationStartedRef.current = false;
       postCloseScrollActionRef.current = null;
@@ -1605,9 +1781,34 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     return (m as any).kind === 'video' || /\.(mp4|webm|ogg)$/i.test((m as any).src || '');
   }
 
+  function shouldZoomOutBeforeDialogClose(isVideoSlide: boolean) {
+    return (
+      !isVideoSlide &&
+      !!isZoomed &&
+      typeof prepareZoomOutForClose === "function" &&
+      !!fs.dialog &&
+      fs.dialog.enabled !== false &&
+      fs.overlaysAboveIntroMedia === false
+    );
+  }
+
+  async function zoomOutBeforeDialogCloseIfNeeded(isVideoSlide: boolean) {
+    if (!shouldZoomOutBeforeDialogClose(isVideoSlide)) return false;
+
+    try {
+      await prepareZoomOutForClose?.({
+        durationMs: DIALOG_ZOOM_OUT_CLOSE_DURATION_MS,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function startClosePrep() {
     if (closeInProgressRef.current) return false;
 
+    clearClosePrepTimers();
     closeInProgressRef.current = true;
     closeAnimationStartedRef.current = false;
     postCloseScrollActionRef.current = null;
@@ -1619,6 +1820,21 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     mountShield();
     setModalClosingHitTestState(true);
+
+    closePrepShieldReleaseTimerRef.current = window.setTimeout(() => {
+      closePrepShieldReleaseTimerRef.current = null;
+      unmountShield();
+    }, resolveCloseShieldReleaseMs(Math.max(FADE_DURATION_MS, TRANSFORM_DURATION_MS)));
+
+    closePrepTeardownFallbackTimerRef.current = window.setTimeout(() => {
+      closePrepTeardownFallbackTimerRef.current = null;
+      if (!closeInProgressRef.current) return;
+      safeTeardown();
+    }, resolveClosePrepTeardownFallbackMs({
+      fadeDurationMs: FADE_DURATION_MS,
+      transformDurationMs: TRANSFORM_DURATION_MS,
+    }));
+
     isAnimating.current = false;
     isClick.current = false;
     cells.current = [];
@@ -1812,7 +2028,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     }) => {
       const fsSlider = withinFs<HTMLElement>(".fullscreen_slider");
       if (!fsSlider) {
-        safeTeardown();
+        fadeCloseAndTeardown();
         return;
       }
 
@@ -1834,7 +2050,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           : null;
 
       if (!targetImg && !args.isVideoSlide) {
-        safeTeardown();
+        fadeCloseAndTeardown();
         return;
       }
 
@@ -1843,7 +2059,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         destImg: args.destImg,
       });
 
-      startCloseAnimation();
+      const didStartCloseAnimation = startCloseAnimation();
+      if (didStartCloseAnimation) {
+        await waitForAnimationFrames(1);
+        if (!closeInProgressRef.current) return;
+      }
+
       fadeChrome();
       fadeOverlay(TRANSFORM_DURATION_MS, TRANSFORM_EASING);
       fadeNonActiveSlides(
@@ -1901,10 +2122,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       const endT = coverTransformForRect(natW, natH, args.thumbCropRect, args.endObjPos);
 
       const overflowRects = findOverflowClipAncestorRectsFromEl(args.destImg ?? null, 2);
-      const parentOverflowRect = overflowRects[0] ?? null;
-      const grandparentOverflowRect = overflowRects[1] ?? null;
-      const closeLayerRoot = modalRef.current;
-      const closeMediaZ = closeLayerRoot ? 1 : computedBaseZ + 1;
+	      const parentOverflowRect = overflowRects[0] ?? null;
+	      const grandparentOverflowRect = overflowRects[1] ?? null;
+	      const closeLayerRoot = modalRef.current;
+	      const closeMediaZ = closeLayerRoot
+	        ? FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX
+	        : computedBaseZ + FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX;
 
       const vw = document.documentElement.clientWidth;
       const vh = window.innerHeight;
@@ -1946,12 +2169,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         height: `${natH}px`,
         maxWidth: 'none',
         maxHeight: 'none',
-        transformOrigin: '50% 50%',
-        willChange: 'transform',
-        transition: 'none',
-        zIndex: '1',
-        pointerEvents: 'none',
-      } as CSSStyleDeclaration);
+	        transformOrigin: '50% 50%',
+	        willChange: 'transform',
+	        transition: 'none',
+	        zIndex: String(FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX),
+	        pointerEvents: 'none',
+	      } as CSSStyleDeclaration);
 
       imageClipper.appendChild(movingEl);
 
@@ -2063,24 +2286,31 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       const link = entryMapRef.current[canonicalIdx];
       if (!link) return;
 
+      const entryRoot = entryRootRef?.current ?? null;
       localSlideIdx = link.mediaIndex;
       const shouldScrollPage = options.scrollPage !== false;
 
       if (shouldScrollPage) {
-        await scrollEntrySectionIntoView(link.entryIndex);
-      } else if (!isEntryOwnerReady(link.entryIndex)) {
+        await scrollEntrySectionIntoView(link.entryIndex, entryRoot);
+      } else if (!isEntryOwnerReady(link.entryIndex, entryRoot)) {
         syncFullscreenSourceFromIndex(canonicalIdx);
         return;
       }
 
-      const ready = await waitForEntryOwnerReady(link.entryIndex);
+      const ready = await waitForEntryOwnerReady(
+        link.entryIndex,
+        undefined,
+        entryRoot
+      );
       if (!ready) return;
 
       // waitForEntryOwnerReady resolves when React sets data-rmg-entry-ready="1", which is
       // when CSS transitions START — not when they finish. Directly force the skeleton and
       // content to their final visual state (no transition) so the FLIP starts on a clean,
       // fully-revealed entry.
-      const revealSection = document.querySelector<HTMLElement>(`[data-rmg-entry-owner="${link.entryIndex}"]`);
+      const revealSection = (entryRoot ?? document).querySelector<HTMLElement>(
+        `[data-rmg-entry-owner="${link.entryIndex}"]`
+      );
       if (revealSection) {
         for (const child of Array.from(revealSection.children)) {
           const el = child as HTMLElement;
@@ -2102,15 +2332,17 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     if (!isGridish && layout === 'entries' && entryMapRef?.current) {
       const link = entryMapRef.current[canonicalIdx];
       if (link) {
-        const section = document.querySelector<HTMLElement>(`[data-rmg-entry-owner="${link.entryIndex}"]`);
+        const entryRoot = entryRootRef?.current ?? null;
+        const section = (entryRoot ?? document).querySelector<HTMLElement>(
+          `[data-rmg-entry-owner="${link.entryIndex}"]`
+        );
         // Suppress reveal transitions so the entry appears instantly before the close
         // animation starts — avoids the skeleton being visible or content still fading
         // in while the FLIP runs.
         trackStylePropertyMutation(section, '--rmg-entry-reveal-duration', '0ms');
-        trackStylePropertyMutation(section, '--rmg-entry-reveal-delay', '0ms');
         trackStylePropertyMutation(section, '--rmg-entry-skeleton-exit-duration', '0ms');
 
-        if (!isEntryOwnerReady(link.entryIndex)) {
+        if (!isEntryOwnerReady(link.entryIndex, entryRoot)) {
           const el = document.createElement('div');
           el.className = styles.spinner;
           el.style.position = 'fixed';
@@ -2125,6 +2357,10 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     const url = originals[canonicalIdx];
     const isVideoSlide = isVideoItem(url);
+    const didZoomOutBeforeDialogClose =
+      await zoomOutBeforeDialogCloseIfNeeded(isVideoSlide);
+    if (!closeInProgressRef.current) return;
+
     const normalizedLatchedIntroIndex = normalizeFsIndex(
       latchedIntroIndex,
       originals.length
@@ -2140,7 +2376,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       if (layout === "entries" && entryMapRef?.current) {
         const link = entryMapRef.current[canonicalIdx];
         if (link) {
-          entryCloseScrollTarget = document.querySelector<HTMLElement>(
+          const entryRoot = entryRootRef?.current ?? null;
+          entryCloseScrollTarget = (entryRoot ?? document).querySelector<HTMLElement>(
             `[data-rmg-entry-owner="${link.entryIndex}"]`
           );
           entryCloseScrollPolicy = resolveFullscreenCloseScrollPolicy({
@@ -2254,6 +2491,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         introMethod,
         isLatchedIntroIndex,
         hasTransformTarget,
+        ignoreLatchedFadeIntro: didZoomOutBeforeDialogClose,
       })
     ) {
       await syncBaseToCanonical();
@@ -2263,7 +2501,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
     if (!isGridish) {
       if (!slider.current || !slides.current?.length) {
-        safeTeardown();
+        fadeCloseAndTeardown();
         return;
       }
 
@@ -2279,7 +2517,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
           ));
 
         if (!thumbInfo) {
-          safeTeardown();
+          fadeCloseAndTeardown();
           return;
         }
 
@@ -2305,14 +2543,14 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     }
 
     if (!expandableImageRefs?.current) {
-      safeTeardown();
+      fadeCloseAndTeardown();
       return;
     }
 
     const destImg = gridishTransformDestImg ?? resolveGridishTransformDestImg(canonicalIdx);
 
     if (!destImg) {
-      safeTeardown();
+      fadeCloseAndTeardown();
       return;
     }
 
@@ -2341,6 +2579,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     postCloseScrollActionRef.current = null;
 
     if (cancelFsCloseRef.current) cancelFsCloseRef.current = null;
+    clearClosePrepTimers();
     closeInProgressRef.current = false;
     closeAnimationStartedRef.current = false;
     unmountShield();
@@ -2387,7 +2626,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const close = () => void proceedToClose();
 
   const userNode =
-    typeof fs?.controls?.close?.render === "function"
+    renderCloseButton && typeof fs?.controls?.close?.render === "function"
       ? fs?.controls?.close.render()
       : null;
 
@@ -2423,7 +2662,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         height: '100%',
         opacity: open ? 1 : 0,
         pointerEvents: open ? 'auto' : 'none',
-        zIndex: computedBaseZ,
+        zIndex: computedRootZ,
         ['--rmg-fs-z' as any]: computedBaseZ,
         display: 'block',
         touchAction: 'none',
@@ -2433,7 +2672,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         overflow: 'hidden',
       }}
     >
-      {closeEnabled && (
+      {closeEnabled && renderCloseButton && (
         <button
           ref={closeButtonRef as any}
           type="button"

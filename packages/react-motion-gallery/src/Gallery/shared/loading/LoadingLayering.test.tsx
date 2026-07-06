@@ -22,14 +22,9 @@ import { useSkeletonRevealGate } from "./skeletonRevealGate";
 vi.mock("../../entries/hooks/useEntryInView", () => ({
   useEntryInView: () => ({
     nearView: [true],
+    inView: [true],
     everInView: [true],
     setEntryRef: () => () => undefined,
-  }),
-}));
-
-vi.mock("../../entries/hooks/useEntryDecodeReady", () => ({
-  useEntryDecodeReady: () => ({
-    decodedReady: [true],
   }),
 }));
 
@@ -56,8 +51,13 @@ function entryListElement(
   renderMediaContainer: (args: {
     entryInView?: boolean;
     mediaNodes: React.ReactNode[];
-  }) => React.ReactNode = ({ mediaNodes }) =>
-    React.createElement("div", null, mediaNodes),
+    onMediaReadyChange?: (ready: boolean) => void;
+  }) => React.ReactNode = ({ mediaNodes, onMediaReadyChange }) =>
+    React.createElement(ReadyEntryMedia, {
+      mediaNodes,
+      ready: true,
+      onMediaReadyChange,
+    }),
 ) {
   return React.createElement(EntryList, {
     enabled: true,
@@ -91,6 +91,20 @@ function entryListElement(
     renderMediaContainer,
     breakpoints: {},
   });
+}
+
+function ReadyEntryMedia(props: {
+  mediaNodes: React.ReactNode[];
+  ready: boolean;
+  onMediaReadyChange?: (ready: boolean) => void;
+}) {
+  const { mediaNodes, ready, onMediaReadyChange } = props;
+
+  React.useEffect(() => {
+    onMediaReadyChange?.(ready);
+  }, [onMediaReadyChange, ready]);
+
+  return React.createElement("div", null, mediaNodes);
 }
 
 async function flushAnimationFrames(count: number) {
@@ -478,6 +492,7 @@ describe("loading layer stacking", () => {
           ],
           loading: {
             enabled: true,
+            waitForMedia: false,
             force: {
               showContent: true,
               skeletonOpacity: 0.4,
@@ -575,7 +590,7 @@ describe("loading layer stacking", () => {
     }
   });
 
-  test("stages entry readiness before starting nested media reveal", async () => {
+  test("passes viewport readiness to nested media before row reveal", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const root = createRoot(host);
@@ -605,7 +620,7 @@ describe("loading layer stacking", () => {
         host
           .querySelector("[data-entry-media-in-view]")
           ?.getAttribute("data-entry-media-in-view"),
-      ).toBe("0");
+      ).toBe("1");
 
       await flushEntryRevealFrames();
 
@@ -619,7 +634,6 @@ describe("loading layer stacking", () => {
           .querySelector("[data-entry-media-in-view]")
           ?.getAttribute("data-entry-media-in-view"),
       ).toBe("1");
-      expect(mediaRevealStates).toContain(false);
       expect(mediaRevealStates[mediaRevealStates.length - 1]).toBe(true);
     } finally {
       await React.act(async () => {
