@@ -169,7 +169,7 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/reveal`                            | `Reveal`, `useReveal`, reveal types                                                          |
 | `react-motion-gallery/rating-stars`                      | `RatingStars`                                                                                |
 | `react-motion-gallery/core`                              | `GalleryCore`, `GalleryCoreProvider`, `useGalleryCore`                                       |
-| `react-motion-gallery/slider`                            | `Slider`, `createSliderIndexChannel`, slider types                                           |
+| `react-motion-gallery/slider`                            | `Slider`, `createSliderIndexChannel`, slider and fixed-track virtualization types            |
 | `react-motion-gallery/slider/ready`                      | `useSliderReady`                                                                             |
 | `react-motion-gallery/slider/arrows`                     | `sliderArrows`                                                                               |
 | `react-motion-gallery/slider/dots`                       | `sliderDots`                                                                                 |
@@ -218,7 +218,7 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/skeleton/cache`                    | Server-safe skeleton cookie cache helpers and types                                          |
 | `react-motion-gallery/skeleton/cache/provider`           | Client `SkeletonCacheProvider` for SSR snapshots and client cookie refresh                   |
 | `react-motion-gallery/skeleton/slider/restore`           | `SliderSkeleton` with `cache`, plus `RestoredSliderSkeleton` for optional restore            |
-| `react-motion-gallery/fullscreen`                        | `useFullscreenController` and fullscreen types                                               |
+| `react-motion-gallery/fullscreen`                        | `useFullscreenController`, dialog handoff methods, and fullscreen types                      |
 | `react-motion-gallery/fullscreen/slider`                 | `fullscreenSlider`                                                                           |
 | `react-motion-gallery/fullscreen/controls`               | `fullscreenControls`                                                                         |
 | `react-motion-gallery/fullscreen/captions`               | `fullscreenCaptions`                                                                         |
@@ -227,8 +227,8 @@ Subpaths give bundlers a smaller graph than the root. Less JS to transfer, parse
 | `react-motion-gallery/fullscreen/lazy-load`              | `fullscreenLazyLoad`                                                                         |
 | `react-motion-gallery/fullscreen/crossfade`              | `fullscreenCrossfade`                                                                        |
 | `react-motion-gallery/fullscreen/thumbnails`             | `fullscreenThumbnails`                                                                       |
-| `react-motion-gallery/thumbnails`                        | `ThumbnailSlider`, thumbnail sync helpers                                                    |
-| `react-motion-gallery/fullscreenThumbnails`              | `FullscreenThumbnailSlider`                                                                  |
+| `react-motion-gallery/thumbnails`                        | `ThumbnailSlider`, thumbnail sync helpers, render-prop data, and virtualization types         |
+| `react-motion-gallery/fullscreenThumbnails`              | `FullscreenThumbnailSlider`, including large fullscreen thumbnail rail virtualization         |
 | `react-motion-gallery/video`                             | `Video` and optional Plyr-backed video types                                                 |
 | `react-motion-gallery/zoomPan`                           | `ZoomPanImage` and zoom/pan types                                                            |
 | `react-motion-gallery/zoomPan/hover`                     | `zoomPanHover`                                                                               |
@@ -720,6 +720,7 @@ export function BasicSlider() {
 | `initialIndex` | `number`                 | `0`                                           | Selects the slide index used for the first layout and reveal fade-in.                                      |
 | `breakpoints`  | `Record<string, number>` | `xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536` | Merged with the internal breakpoint map for responsive values.                                             |
 | `indexChannel` | `SliderIndexChannel`     | internal channel                              | Share index state with thumbnails or sibling sliders.                                                      |
+| `virtualization` | `SliderVirtualizationOptions` | `—`                                      | Windows large fixed-size horizontal slider tracks. Use the same object for fullscreen slider and thumbnail rails when all surfaces should window large media sets. |
 | `plugins`      | `SliderPlugin[]`         | `[]`                                          | Explicit first-party slider features such as arrows, dots, auto-height, effects, fullscreen, or lazy-load. |
 
 ### Slider layout and scroll options
@@ -755,6 +756,62 @@ export function BasicSlider() {
 ```
 
 Numeric values are truncated and clamped to the available slide count. `1`, `0`, negative numbers, `NaN`, and `Infinity` resolve to the normal ungrouped snap behavior, so the slider keeps its standard end-of-track snap handling. Responsive values are re-resolved on viewport resize.
+
+### Slider virtualization
+
+Use `virtualization` when a slider has enough fixed-size cells that mounting every slide would be expensive. The same `SliderVirtualizationOptions` type is shared by base `Slider`, `ThumbnailSlider`, fullscreen slider, and `FullscreenThumbnailSlider`.
+
+```tsx
+import { GalleryCore } from "react-motion-gallery/core";
+import { Slider } from "react-motion-gallery/slider";
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+import { sliderFullscreen } from "react-motion-gallery/slider/fullscreen";
+
+const virtualization = {
+  enabled: true,
+  overscan: 3,
+  threshold: 40,
+};
+
+function FullscreenAddon() {
+  const { fullscreenNode } = useFullscreenController({
+    plugins: [fullscreenSlider()],
+    fullscreen: {
+      enabled: true,
+      slider: { virtualization },
+    },
+  });
+
+  return <>{fullscreenNode}</>;
+}
+
+export function LargeSlider({ slides }: { slides: Array<{ src: string }> }) {
+  return (
+    <GalleryCore layout="slider" fullscreenItems={slides.map((slide) => slide.src)}>
+      <Slider
+        layout={{ gap: 20, cellsPerSlide: { xs: 1, md: 3, lg: 4 } }}
+        scroll={{ groupCells: true, loop: true }}
+        virtualization={virtualization}
+        plugins={[sliderFullscreen()]}
+      >
+        {slides.map((slide, index) => (
+          <img key={slide.src} src={slide.src} alt={`Slide ${index + 1}`} />
+        ))}
+      </Slider>
+      <FullscreenAddon />
+    </GalleryCore>
+  );
+}
+```
+
+| Option      | Type      | Default | Notes |
+| ----------- | --------- | ------- | ----- |
+| `enabled`   | `boolean` | `false` | Enables fixed-track windowing. When false, all cells render normally. |
+| `overscan`  | `number`  | `2`     | Extra cells rendered before and after the visible range. Values below zero clamp to zero. |
+| `threshold` | `number`  | `40`    | Minimum item count before virtualization activates. Counts at or below this value render normally. |
+
+Base slider virtualization currently targets fixed-size horizontal tracks: use `layout.cellsPerSlide`, avoid `align="center"` and `sliderAutoHeight()`, and keep `direction.axis` as `"x"`. If those constraints are not met, the slider falls back to full rendering and warns in development. Fullscreen slider virtualization uses one fullscreen cell per viewport and supports responsive `fullscreen.slider.gap`.
 
 ### Slider element and plugin options
 
@@ -1141,14 +1198,20 @@ The component forwards a ref to its outer thumbnail shell.
 | `layout.thumbnail.height`  | `number \| string`   | `—`        | Height for each thumbnail item.                                       |
 | `layout.container.width`   | `number \| string`   | `—`        | Width for the outer thumbnail container.                              |
 | `layout.container.height`  | `number \| string`   | `—`        | Height for the outer thumbnail container.                             |
+| `items`                    | `readonly T[]`       | `—`        | Optional data list for render-prop thumbnails instead of child nodes. |
+| `renderItem`               | `({ item, index, active, virtualIndex? }) => ReactNode` | `—` | Renders a thumbnail from `items`. `virtualIndex` is present when virtualization renders a loop clone or windowed item. |
+| `getItemKey`               | `(item, index) => React.Key` | `—` | Stable key resolver for `items`. Falls back to item identity or index. |
 | `scroll.freeScroll`        | `boolean`            | `true`     | Enables drag or wheel movement without strict snapping.               |
 | `scroll.groupCells`        | `boolean`            | `false`    | Pages the rail by grouped thumbnail cells.                            |
 | `scroll.loop`              | `boolean`            | `false`    | Wraps thumbnails at the ends.                                         |
 | `scroll.skipSnaps`         | `boolean`            | `false`    | Allows momentum to skip snap points.                                  |
 | `scroll.centerActiveThumb` | `boolean`            | `false`    | Repositions the rail to keep the active thumbnail centered.           |
 | `scroll.fadeOnSync`        | `boolean \| { enabled?: boolean; minDistance?: number; durationMs?: number; easing?: string }` | `false` | Crossfades external base/fullscreen index sync when the target falls outside the current visible thumbnail window plus the `minDistance` cell margin. |
+| `virtualization`           | `SliderVirtualizationOptions` | `—` | Windows large thumbnail rails. Requires fixed thumbnail dimensions or uniform measured thumbnail sizes. |
 
 `ResponsivePosition` accepts a single side, an array, or a breakpoint map. For arrays, the first entry is used.
+
+Thumbnail virtualization uses the same `SliderVirtualizationOptions` fields as base slider virtualization. It is strongest when `layout.thumbnail.width` and `layout.thumbnail.height` are fixed numbers or strings, because the rail can build its window without first rendering every thumbnail. When measured thumbnail sizes are not uniform, it falls back to full rendering and warns in development.
 
 ### Thumbnail element, control, and motion options
 
@@ -2424,6 +2487,9 @@ useFullscreenController({
 | `fullscreenNode`            | `ReactNode`                                            | The fullscreen portal UI. Render this once inside the `GalleryCore` tree. |
 | `fullscreenThumbnailBridge` | `FullscreenThumbnailBridge`                            | Bridge consumed by `FullscreenThumbnailSlider`.                           |
 | `openFullscreenAt`          | `(source, index, originEl?, requestedMethod?) => void` | Programmatic fullscreen open helper returned by the controller.           |
+| `closeFullscreen`           | `(options?: { immediate?: boolean }) => Promise<void>` | Programmatic close helper. Resolves when the close lifecycle has settled. |
+| `transitionDialogTo`        | `(openNext, options?) => Promise<void>`                | Crossfades from the currently mounted fullscreen dialog into another fullscreen-backed dialog or route. |
+| `restoreDialog`             | `(options?) => void`                                  | Brings the active dialog surface back from a hidden switch state with optional timing overrides. |
 | `showFullscreenModal`       | `boolean`                                              | `true` while the fullscreen modal is mounted and open.                    |
 | `showFullscreenSlider`      | `boolean`                                              | `true` once the slider portion is visible.                                |
 | `fsFadeOpening`             | `boolean`                                              | `true` while a fade-based open animation is running.                      |
@@ -2440,10 +2506,16 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `overlaysAboveIntroMedia`                 | `boolean`                                                                          | `true`                          | Keeps fullscreen caption and entry overlays above the scale-intro media clone during open animations. Set `false` for custom dialog stacks that intentionally share the intro media layer.                                                                            |
 | `items`                                   | `MediaItem[] \| string[]`                                                          | `—`                             | Declared in the type, but current fullscreen media resolution comes from `GalleryCore.fullscreenItems`.                                                                                                                                                              |
 | `renderImage`                             | `({ item, index, isZoomed, className, baseStyle }) => ReactNode`                   | `—`                             | Custom fullscreen image renderer. Must render a real descendant `<img>`. With `lazyLoad.images.enabled`, the renderer is mounted only when the slide is allowed and the runtime watches that descendant image for load/decode readiness.                             |
+| `dialog.enabled`                          | `boolean`                                                                          | `true` when `dialog` is provided | Enables the bounded dialog layout. Set `false` to keep dialog style data around while using the normal fullscreen viewport layout.                                                                                                                                    |
+| `dialog.className`                        | `string`                                                                           | `—`                             | Class name for the dialog shell.                                                                                                                                                                                                                                     |
+| `dialog.style`                            | `React.CSSProperties`                                                              | `—`                             | Inline style for the dialog shell, commonly used for responsive width and height constraints.                                                                                                                                                                        |
 | `dialog.opacityDuration`                  | `number`                                                                           | intro fade duration             | Duration for dialog surface opacity on normal open and close transitions.                                                                                                                                                                                            |
 | `dialog.opacityEasing`                    | `string`                                                                           | intro fade easing               | Easing for dialog surface opacity on normal open and close transitions.                                                                                                                                                                                              |
 | `dialog.switchOpacityDuration`            | `number`                                                                           | `dialog.opacityDuration`        | Duration for dialog surface opacity when switching from one mounted dialog to another with `transitionDialogTo`. Per-call transition options still take precedence.                                                                                                   |
 | `dialog.switchOpacityEasing`              | `string`                                                                           | `dialog.opacityEasing`          | Easing for dialog surface opacity when switching from one mounted dialog to another with `transitionDialogTo`. Per-call transition options still take precedence.                                                                                                     |
+| `dialog.header`                           | `ElementStyle`                                                                     | `—`                             | Class and style for the dialog header/control region. Controls and custom header portals can target this surface.                                                                                                                                                    |
+| `dialog.media`                            | `ElementStyle`                                                                     | `—`                             | Class and style for the dialog media pane. Use this to hide or resize media when building caption-driven dialogs.                                                                                                                                                    |
+| `dialog.caption`                          | `ElementStyle`                                                                     | `—`                             | Class and style for the dialog caption/content pane.                                                                                                                                                                                                                |
 | `closeScroll`                             | `boolean \| FullscreenCloseScrollOptions`                                          | `false`                         | Scrolls the matching base item into the center of the viewport when fullscreen closes. `true` enables the default before-close scroll; object form defaults `enabled` to `true`.                                                                                     |
 | `closeScroll.enabled`                     | `boolean \| "desktop-only" \| "mobile-only" \| ((context) => boolean)`             | `true` in object form           | Enables close-scroll conditionally. Function form receives the current fullscreen index, layout, target element, viewport and pointer details, and the resolved `isMobile` flag.                                                                                     |
 | `closeScroll.timing`                      | `"before-close" \| "after-close"`                                                  | `"before-close"`                | Chooses whether to scroll before the close animation starts or after the modal has closed.                                                                                                                                                                           |
@@ -2491,6 +2563,7 @@ The hook returns additional refs and setters for the internal fullscreen runtime
 | `slider.gap`                              | `number \| Record<string, number>`                                                 | `0`                             | Responsive pixel gap between fullscreen slides. Named keys resolve from `GalleryCore.breakpoints`.                                                                                                                                                                   |
 | `slider.skipSnaps`                        | `boolean \| { enabled?: boolean; threshold?: number }`                             | `false`                         | Allows fullscreen drag momentum to skip snap points. Object form matches the base slider `scroll.skipSnaps` behavior.                                                                                                                                                |
 | `slider.strictSnaps`                      | `boolean`                                                                          | `false`                         | Prevents one fullscreen drag release from settling more than one snap away from where the drag started. Overrides `slider.skipSnaps`.                                                                                                                                |
+| `slider.virtualization`                   | `SliderVirtualizationOptions`                                                      | `—`                             | Windows large fullscreen slide sets with the same `{ enabled, overscan, threshold }` object used by base slider virtualization.                                                                                                                                       |
 | `zoom.clickZoomLevel`                     | `number`                                                                           | `2.5`                           | Zoom level used for click-to-zoom.                                                                                                                                                                                                                                   |
 | `zoom.maxZoomLevel`                       | `number`                                                                           | `3`                             | Maximum allowed zoom level.                                                                                                                                                                                                                                          |
 | `zoom.panDuration`                        | `number`                                                                           | `43`                            | Pan settling duration.                                                                                                                                                                                                                                               |
@@ -2537,6 +2610,70 @@ useFullscreenController({
   },
 });
 ```
+
+### Fullscreen dialog API
+
+Set `fullscreen.dialog` when the fullscreen surface should behave like a bounded dialog instead of a full-viewport lightbox. Dialog mode works with `fullscreenSlider()`, captions, video, zoom-pan, lazy-load, and fullscreen thumbnail bridges. It is especially useful for product media viewers, media detail dialogs, and "see all media" handoffs.
+
+```tsx
+import { useFullscreenController } from "react-motion-gallery/fullscreen";
+import { fullscreenCaptions } from "react-motion-gallery/fullscreen/captions";
+import { fullscreenSlider } from "react-motion-gallery/fullscreen/slider";
+
+function ProductMediaFullscreen({ onOpenAll }: { onOpenAll: () => void }) {
+  const {
+    fullscreenNode,
+    showFullscreenModal,
+    closingModal,
+    transitionDialogTo,
+  } = useFullscreenController({
+    plugins: [fullscreenSlider(), fullscreenCaptions()],
+    fullscreen: {
+      enabled: true,
+      mountStrategy: "open",
+      overlaysAboveIntroMedia: false,
+      dialog: {
+        className: "productFullscreenDialog",
+        opacityDuration: 320,
+        switchOpacityDuration: 420,
+        style: {
+          width: "min(calc(100vw - 48px), 1460px)",
+          height: "min(calc(100dvh - 120px), 900px)",
+        },
+        header: { className: "productFullscreenDialogHeader" },
+        media: { className: "productFullscreenDialogMedia" },
+        caption: { className: "productFullscreenDialogCaption" },
+      },
+      caption: {
+        layout: "overlay",
+        placement: { xs: "bottom", lg: "right" },
+        width: { lg: "34%" },
+      },
+      closeScroll: true,
+    },
+  });
+
+  const openAll = () => {
+    void transitionDialogTo(() => onOpenAll(), {
+      durationMs: 420,
+      easing: "cubic-bezier(.4,0,.22,1)",
+    });
+  };
+
+  return (
+    <>
+      {fullscreenNode}
+      {showFullscreenModal && !closingModal ? (
+        <button type="button" onClick={openAll}>
+          See all media
+        </button>
+      ) : null}
+    </>
+  );
+}
+```
+
+`transitionDialogTo(openNext, options)` hides the current fullscreen dialog, calls `openNext`, waits for the next fullscreen dialog to claim the switch, then unmounts the previous dialog. Per-call `durationMs` and `easing` override `dialog.switchOpacityDuration` and `dialog.switchOpacityEasing`; those fall back to `dialog.opacityDuration` and `dialog.opacityEasing`, then to the fullscreen fade intro timing. Use `closeFullscreen({ immediate: true })` only when external app state is removing the dialog immediately and the normal close animation should be bypassed.
 
 ### Responsive fullscreen captions
 
@@ -2699,6 +2836,8 @@ For overlay captions, style the rendered caption content to fill the reserved ca
 | `renderNextArrow`           | `(args) => ReactNode`                    | `—`                                               | Custom next arrow.                                                                  |
 | `thumbnailCrossfade`        | `ThumbnailCrossfadeOptions`              | `—`                                               | Passes base thumbnail crossfade options through, including `minDistance`, so fullscreen thumbnail clicks can choose scroll or fullscreen crossfade motion. |
 | `virtualization`            | `SliderVirtualizationOptions`            | `—`                                               | Windows large fullscreen thumbnail rails.                                            |
+
+`FullscreenThumbnailSlider.virtualization` is passed through to the same thumbnail rail engine used by `ThumbnailSlider`. Provide fixed `thumbnailWidth` and `thumbnailHeight` for the most predictable large-rail windowing; otherwise the rail falls back to full rendering when it cannot prove uniform thumbnail measurements.
 
 #### `FullscreenThumbnailBridge`
 

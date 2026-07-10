@@ -213,9 +213,9 @@ export const metadata: Metadata = {
 };
 
 export default function OwalaAmazonReviewsDevPage() {
-  if (process.env.NODE_ENV !== "development") {
-    notFound();
-  }
+  // if (process.env.NODE_ENV !== "development") {
+  //   notFound();
+  // }
 
   return (
     <>
