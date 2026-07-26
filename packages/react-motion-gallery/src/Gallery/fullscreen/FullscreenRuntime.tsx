@@ -57,6 +57,7 @@ import { DefaultCloseIcon } from './controls/DefaultCloseIcon';
 import {
   FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX,
   FULLSCREEN_THUMBNAIL_SLOT_Z_INDEX,
+  FULLSCREEN_TOP_CHROME_Z_INDEX,
 } from './layering';
 import type { FullscreenDialogSwitch } from './dialogSwitch';
 
@@ -439,7 +440,6 @@ export function shouldDeferFullscreenLiveVideo(args: {
   if (!args.showFullscreenModal) return true;
 
   return (
-    args.fsLazyVideosEnabled &&
     args.openingInProgress &&
     args.openingTargetKind !== "video"
   );
@@ -1336,7 +1336,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
 
   const openingInProgress = showFullscreenModal && !showFullscreenSlider;
   const openingCanonicalIndex = canonicalLen
-    ? canonicalIndexOf(latchedIntroIndex, canonicalLen)
+    ? canonicalIndexOf(activeDialogIntroIndex, canonicalLen)
     : null;
   const currentFsRenderIndex = (() => {
     const current = fsSub.get?.();
@@ -1457,12 +1457,27 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
     if (!shouldMountFullscreenView) return null;
 
     const useWrappedSlides = normalizedItems.length > 1;
+    const openingRenderWindow =
+      (fs.mountStrategy ?? "always") === "open" &&
+      openingInProgress &&
+      openingCanonicalIndex != null &&
+      renderWindow == null
+        ? [
+            {
+              renderedIndex: useWrappedSlides
+                ? openingCanonicalIndex + 1
+                : openingCanonicalIndex,
+              canonicalIndex: openingCanonicalIndex,
+              isClone: false,
+            },
+          ]
+        : renderWindow;
 
     return renderSlides({
       items: useWrappedSlides ? wrappedItems : normalizedItems,
       plyrList: useWrappedSlides ? wrappedPlyrProps : singlePlyrProps,
       getTransform: useWrappedSlides ? wrappedTransform : singleTransform,
-      renderWindow,
+      renderWindow: openingRenderWindow,
       imageRefs,
       playerRefs: useWrappedSlides ? wrappedModePlyrRefs : singleModePlyrRefs,
       cells,
@@ -2102,6 +2117,7 @@ export function FullscreenRuntime(props: FullscreenRuntimeProps) {
         ...(fs?.controls?.close?.style ?? {}),
         position: 'static',
         flex: '0 0 auto',
+        zIndex: FULLSCREEN_TOP_CHROME_Z_INDEX,
         opacity: fullscreenDialogIsVisible ? 1 : 0,
         pointerEvents:
           fullscreenDialogIsVisible ? 'auto' : 'none',

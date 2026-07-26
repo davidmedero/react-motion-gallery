@@ -203,7 +203,7 @@ describe("fullscreen crossfade slide rendering", () => {
     expect(markup).toContain('data-rmg-video-snapshot="true"');
   });
 
-  test("mounts inactive track video slides eagerly by default", () => {
+  test("uses static previews for inactive unprepared video slides by default", () => {
     expect(
       shouldUseFsStaticInactiveVideo({
         activeCanonicalIndex: 0,
@@ -212,7 +212,7 @@ describe("fullscreen crossfade slide rendering", () => {
         lazyEnabled: false,
         liveReady: false,
       })
-    ).toBe(false);
+    ).toBe(true);
 
     const slides = renderFullscreenSlides({
       items: [
@@ -256,7 +256,8 @@ describe("fullscreen crossfade slide rendering", () => {
 
     const markup = renderToStaticMarkup(<>{slides}</>);
 
-    expect(markup).toContain('data-rmg-live-video="true"');
+    expect(markup).toContain('data-rmg-video-snapshot="true"');
+    expect(markup).not.toContain('data-rmg-live-video="true"');
   });
 
   test("omits live track video content when fullscreen is not visible and video is deferred", () => {
@@ -306,7 +307,68 @@ describe("fullscreen crossfade slide rendering", () => {
     expect(markup).not.toContain('data-rmg-live-video="true"');
   });
 
-  test("uses static video previews for inactive lazy track video slides", () => {
+  test("mounts only the opening target player during a video intro", () => {
+    const items = [0, 1, 2].map((index) => ({
+      kind: "video",
+      src: `https://example.com/${index}.mp4`,
+      poster: `https://example.com/${index}.jpg`,
+    })) as any[];
+    const plyrList = items.map((item) => ({
+      source: {
+        type: "video",
+        poster: item.poster,
+        sources: [{ src: item.src, type: "video/mp4" }],
+      },
+      options: {},
+    })) as any[];
+    const slides = renderFullscreenSlides({
+      items,
+      plyrList,
+      getTransform: () => "translateX(0%)",
+      imageRefs: {
+        current: items.map(() => React.createRef<HTMLDivElement>()),
+      },
+      playerRefs: { current: [] },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: false,
+      defaultPlayerStyle: {},
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      resolveFsCaptionPlacement: () => null,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      fsDecodedImagesRef: { current: new Set() },
+      fsCustomDecodedImagesRef: { current: new Set() },
+      fsCustomResolvedSrcByKeyRef: { current: new Map() },
+      fsPreparedVideosRef: { current: new Set() },
+      videoSnapshotStore: createEmptyVideoSnapshotStore(),
+      canonicalLength: 3,
+      activeCanonicalIndex: 1,
+      openingCanonicalIndex: 1,
+      openingInProgress: true,
+      deferLiveVideoUntilVisible: false,
+      getMediaKey: (item) => String((item as any).src ?? ""),
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup.match(/data-rmg-live-video="true"/g)).toHaveLength(1);
+  });
+
+  test("uses static previews for inactive unprepared track video slides", () => {
+    expect(
+      shouldUseFsStaticInactiveVideo({
+        activeCanonicalIndex: 0,
+        canonicalIndex: 1,
+        lazyAllowed: false,
+        lazyEnabled: false,
+        liveReady: false,
+      })
+    ).toBe(true);
+
     expect(
       shouldUseFsStaticInactiveVideo({
         activeCanonicalIndex: 0,
@@ -717,6 +779,45 @@ describe("fullscreen crossfade slide rendering", () => {
     expect(markup).toContain("flex-direction:row");
     expect(markup).toContain("flex:0 0 460.8px");
     expect(markup).toContain("width:calc(100% - 460.8px)");
+  });
+
+  test("base renderer prioritizes only the active image and suppresses neighbor painting during open", () => {
+    const items = [
+      { kind: "image", src: "https://example.com/a.jpg", alt: "A" },
+      { kind: "image", src: "https://example.com/b.jpg", alt: "B" },
+      { kind: "image", src: "https://example.com/c.jpg", alt: "C" },
+    ] as any[];
+    const slides = renderFullscreenBaseSlides({
+      items,
+      getTransform: (index: number) => `translateX(${index * 100}%)`,
+      imageRefs: {
+        current: items.map(() => React.createRef<HTMLDivElement>()),
+      },
+      cells: { current: [] },
+      isZoomed: false,
+      showFullscreenSlider: false,
+      onPanPointerDown: () => undefined,
+      onSuppressNextClickCapture: () => undefined,
+      viewportWidth: 1440,
+      viewportHeight: 900,
+      styles: {
+        imgMargin: "imgMargin",
+        fullscreenImages: "fullscreenImages",
+      },
+      canonicalLength: 3,
+      activeCanonicalIndex: 1,
+      openingCanonicalIndex: 1,
+      openingInProgress: true,
+    });
+
+    const markup = renderToStaticMarkup(<>{slides}</>);
+
+    expect(markup.match(/<img[^>]*fetchPriority="high"/g)).toHaveLength(1);
+    expect(markup.match(/loading="eager"/g)).toHaveLength(1);
+    expect(
+      markup.match(/data-rmg-fs-opening-suspended="true"/g)
+    ).toHaveLength(2);
+    expect(markup).toContain("content-visibility:hidden");
   });
 
   test("base renderer reserves media height for entries overlays with explicit top and bottom heights", () => {

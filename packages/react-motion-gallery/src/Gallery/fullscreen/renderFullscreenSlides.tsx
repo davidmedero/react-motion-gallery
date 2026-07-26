@@ -150,11 +150,10 @@ export function shouldUseFsStaticInactiveVideo(args: {
   liveReady: boolean;
 }) {
   return (
-    args.lazyEnabled &&
     !args.liveReady &&
-    !args.lazyAllowed &&
     args.activeCanonicalIndex != null &&
-    args.canonicalIndex !== args.activeCanonicalIndex
+    args.canonicalIndex !== args.activeCanonicalIndex &&
+    !args.lazyAllowed
   );
 }
 
@@ -1979,7 +1978,18 @@ function FsSlide(props: {
   } = props;
 
   const isNode = item.kind === "node";
-  const shouldDeferLiveVideo = !!deferLiveVideoUntilVisible && !showFullscreenSlider;
+  const isOpeningTargetSlide =
+    !!openingInProgress &&
+    !isClone &&
+    canonicalIndex === openingCanonicalIndex;
+  const suspendDuringOpening =
+    renderMode === "track" &&
+    !!openingInProgress &&
+    !isOpeningTargetSlide;
+  const shouldDeferLiveVideo =
+    !showFullscreenSlider &&
+    (!!deferLiveVideoUntilVisible ||
+      (!!openingInProgress && !isOpeningTargetSlide));
   const liveVideoKey =
     item.kind === "video" ? `video:${getMediaKey(item)}` : null;
   const liveVideoReady =
@@ -2089,6 +2099,9 @@ function FsSlide(props: {
       data-rmg-canonical-idx={canonicalIndex}
       data-rmg-clone={isClone ? "true" : "false"}
       data-rmg-fs-render-mode={renderMode}
+      data-rmg-fs-opening-suspended={
+        suspendDuringOpening ? "true" : undefined
+      }
       ref={(el: HTMLDivElement | null) => {
         if (
           registerCell &&
@@ -2118,6 +2131,7 @@ function FsSlide(props: {
         userSelect: "none",
         WebkitUserSelect: "none",
         pointerEvents: interactive ? "auto" : "none",
+        contentVisibility: suspendDuringOpening ? "hidden" : "visible",
       }}
       className={styles.imgMargin}
     >

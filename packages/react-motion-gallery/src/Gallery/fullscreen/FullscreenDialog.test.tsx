@@ -940,11 +940,17 @@ describe("fullscreen dialog mode", () => {
 
   test("renders the close button inside a dialog header and closes from the backdrop", () => {
     const { container, props, root } = mountRuntime((nextProps) => {
+      configureFullscreenItems(nextProps, 2);
       nextProps.fs.controls = {
         ...nextProps.fs.controls,
         close: {
           className: "custom-close",
+          style: { zIndex: 1 },
           render: () => <span data-testid="close-icon">Close</span>,
+        },
+        counter: {
+          enabled: true,
+          style: { zIndex: 1 },
         },
       };
     });
@@ -964,10 +970,18 @@ describe("fullscreen dialog mode", () => {
     const backdrop = container.querySelector<HTMLElement>(
       '[data-rmg-fs-dialog-backdrop="true"]'
     );
+    const counter = props.counterRef.current as HTMLElement | null;
 
     expect(header).toBeTruthy();
     expect(closeButton).toBeTruthy();
     expect(closeButton?.className).toContain("custom-close");
+    expect(closeButton?.style.zIndex).toBe(
+      String(FULLSCREEN_TOP_CHROME_Z_INDEX)
+    );
+    expect(counter?.style.zIndex).toBe(
+      String(FULLSCREEN_TOP_CHROME_Z_INDEX)
+    );
+    expect(counter?.parentElement).toBe(document.body);
     expect(header?.querySelector('[data-testid="close-icon"]')).toBeTruthy();
     expect(
       Array.from(fullscreenRoot?.children ?? []).filter(

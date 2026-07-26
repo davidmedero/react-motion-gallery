@@ -638,6 +638,15 @@ describe("fullscreen video play-on-open rules", () => {
     expect(
       shouldDeferFullscreenLiveVideo({
         showFullscreenModal: true,
+        fsLazyVideosEnabled: false,
+        openingInProgress: true,
+        openingTargetKind: "image",
+      })
+    ).toBe(true);
+
+    expect(
+      shouldDeferFullscreenLiveVideo({
+        showFullscreenModal: true,
         fsLazyVideosEnabled: true,
         openingInProgress: true,
         openingTargetKind: "video",

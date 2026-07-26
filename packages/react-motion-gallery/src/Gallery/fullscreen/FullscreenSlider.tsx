@@ -3572,7 +3572,8 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
 
     const renderedTrackChildren = renderFullscreenVirtualTrackChildren();
     const closeMediaLayerActive = closeDragLayerActive || closingModal;
-    const closeMediaViewportClipPath = closeMediaLayerActive
+    const closeDragViewportActive = closeDragLayerActive && !closingModal;
+    const closeMediaViewportClipPath = closeDragViewportActive
       ? 'inset(-200vmax 0 -200vmax 0)'
       : undefined;
     const arrowPortalRoot =
@@ -3677,7 +3678,7 @@ export const FullscreenSlider = forwardRef<FullscreenSliderHandle, FullscreenSli
         style={{
           position: 'absolute',
           inset: 0,
-          overflow: closeMediaLayerActive ? 'visible' : 'hidden',
+          overflow: closeDragViewportActive ? 'visible' : 'hidden',
           clipPath: closeMediaViewportClipPath,
           WebkitClipPath: closeMediaViewportClipPath,
           zIndex: closeMediaLayerActive

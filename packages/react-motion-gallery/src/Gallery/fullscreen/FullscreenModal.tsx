@@ -8,6 +8,7 @@ import React, {
   useEffect,
   useLayoutEffect,
 } from 'react'
+import { createPortal } from 'react-dom'
 import type { FullscreenSliderSub } from './fullscreenSliderSub'
 import { parseObjectPosition } from '../shared/transitions/objectPosition';
 import { containTransformForRect, coverTransformForRect, objectFitContentRect } from '../shared/transitions/objectFitTransform';
@@ -34,8 +35,16 @@ import { hydrateLazyImageShell } from '../shared/lazy/lazyShell';
 import {
   FULLSCREEN_CLOSE_BODY_LAYER_Z_INDEX,
   FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX,
+  FULLSCREEN_TOP_CHROME_Z_INDEX,
   resolveFullscreenRootZIndexOffset,
 } from './layering';
+import {
+  createViewportTransformCropper,
+  intersectViewportCropRects,
+  resolveTransitionProxyRaster,
+  TRANSITION_PREPAINT_OPACITY,
+  warmTransitionImage,
+} from './transformTransition';
 
 interface FullscreenModalProps {
   fsSub: FullscreenSliderSub
@@ -501,29 +510,6 @@ function resolveObjectFitMode(
   return value === "contain" ? "contain" : value === "cover" ? "cover" : fallback;
 }
 
-function insetForViewportRect(rect: DOMRect, vw: number, vh: number) {
-  const top = rect.top;
-  const left = rect.left;
-  const right = vw - (rect.left + rect.width);
-  const bottom = vh - (rect.top + rect.height);
-  return `inset(${top}px ${right}px ${bottom}px ${left}px)`;
-}
-
-function createViewportClipper(startInset: string, zIndex: number) {
-  const clipper = document.createElement("div");
-  clipper.setAttribute("data-rmg-fs-close-clipper", "true");
-  Object.assign(clipper.style, {
-    position: "fixed",
-    inset: "0",
-    clipPath: startInset,
-    willChange: "clip-path",
-    transition: "none",
-    pointerEvents: "none",
-    zIndex: String(zIndex),
-  } as CSSStyleDeclaration);
-  return clipper;
-}
-
 function isVisibleTopStickyNavCandidate(el: Element | null): el is HTMLElement {
   if (!(el instanceof HTMLElement)) return false;
 
@@ -554,6 +540,7 @@ function findStickyNav(
     '[data-rmg-intro-sticky-nav="true"]',
     'header[role="banner"]',
     "header",
+    "nav",
   ];
   const candidates = query
     ? Array.from(document.querySelectorAll(query))
@@ -565,22 +552,6 @@ function findStickyNav(
   let bestBottom = -Infinity;
 
   for (const candidate of candidates) {
-    if (!isVisibleTopStickyNavCandidate(candidate)) continue;
-
-    const rect = candidate.getBoundingClientRect();
-    if (sourceRect && !rectsOverlapOnX(rect, sourceRect)) continue;
-
-    if (rect.bottom > bestBottom) {
-      bestBottom = rect.bottom;
-      bestMatch = candidate;
-    }
-  }
-
-  if (bestMatch || query) {
-    return bestMatch;
-  }
-
-  for (const candidate of Array.from(document.body.querySelectorAll("*"))) {
     if (!isVisibleTopStickyNavCandidate(candidate)) continue;
 
     const rect = candidate.getBoundingClientRect();
@@ -1313,8 +1284,13 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const FADE_EASING = resolveFullscreenIntroEasing(introEasing, 'fade');
 
   const modalRef = React.useRef<HTMLDivElement | null>(null);
+  const [chromePortalReady, setChromePortalReady] = React.useState(false);
   const pointerDownX = React.useRef<number>(0)
   const pointerDownY = React.useRef<number>(0)
+
+  useLayoutEffect(() => {
+    setChromePortalReady(true);
+  }, []);
 
   const computedBaseZ = baseZ ?? 9999;
   const computedRootZ =
@@ -1348,6 +1324,7 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
   const trackedCloseKeysRef = React.useRef<WeakMap<object, Set<string>>>(new WeakMap());
   const closeInProgressRef = React.useRef(false);
   const closeAnimationStartedRef = React.useRef(false);
+  const closeExternalCleanupRef = React.useRef<null | (() => void)>(null);
   const closePrepShieldReleaseTimerRef = React.useRef<number | null>(null);
   const closePrepTeardownFallbackTimerRef = React.useRef<number | null>(null);
   const postCloseScrollActionRef = React.useRef<null | (() => void | Promise<void>)>(null);
@@ -1453,6 +1430,8 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
 
   useEffect(() => {
     return () => {
+      closeExternalCleanupRef.current?.();
+      closeExternalCleanupRef.current = null;
       restoreTrackedCloseMutations();
       if (cancelFsCloseRef.current) cancelFsCloseRef.current = null;
       clearClosePrepTimers();
@@ -1829,7 +1808,12 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
     closePrepTeardownFallbackTimerRef.current = window.setTimeout(() => {
       closePrepTeardownFallbackTimerRef.current = null;
       if (!closeInProgressRef.current) return;
-      safeTeardown();
+      const cancelClose = cancelFsCloseRef.current;
+      if (cancelClose) {
+        cancelClose();
+      } else {
+        safeTeardown();
+      }
     }, resolveClosePrepTeardownFallbackMs({
       fadeDurationMs: FADE_DURATION_MS,
       transformDurationMs: TRANSFORM_DURATION_MS,
@@ -2059,32 +2043,35 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         destImg: args.destImg,
       });
 
-      const didStartCloseAnimation = startCloseAnimation();
-      if (didStartCloseAnimation) {
-        await waitForAnimationFrames(1);
-        if (!closeInProgressRef.current) return;
-      }
+      const beginClosePresentation = () => {
+        fadeChrome();
+        fadeOverlay(TRANSFORM_DURATION_MS, TRANSFORM_EASING);
+        fadeNonActiveSlides(
+          fsSlider,
+          nodeIdx,
+          targetImg,
+          args.isVideoSlide,
+          TRANSFORM_DURATION_MS,
+          TRANSFORM_EASING
+        );
 
-      fadeChrome();
-      fadeOverlay(TRANSFORM_DURATION_MS, TRANSFORM_EASING);
-      fadeNonActiveSlides(
-        fsSlider,
-        nodeIdx,
-        targetImg,
-        args.isVideoSlide,
-        TRANSFORM_DURATION_MS,
-        TRANSFORM_EASING
-      );
+        const clone = cloneFsCaptionForNode(fsSlider, nodeIdx);
+        if (clone) {
+          clone.style.transition = `opacity ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
+          void clone.offsetWidth;
+          clone.style.opacity = "0";
+        }
+        return clone;
+      };
 
-      let captionClone: HTMLElement | null = cloneFsCaptionForNode(fsSlider, nodeIdx);
-      if (captionClone) {
-        captionClone.style.transition = `opacity ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
-        void captionClone.offsetWidth;
-        captionClone.style.opacity = "0";
-      }
-
-      // video path
       if (args.isVideoSlide) {
+        const didStartCloseAnimation = startCloseAnimation();
+        if (didStartCloseAnimation) {
+          await waitForAnimationFrames(1);
+          if (!closeInProgressRef.current) return;
+        }
+
+        const captionClone = beginClosePresentation();
         await animateVideoCloseProxy({
           fsSliderEl: fsSlider,
           nodeIdx,
@@ -2101,163 +2088,200 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         return;
       }
 
-      // image path (move the real fullscreen image)
-      const movingEl = targetImg!;
-      const restoreIntoParent = movingEl.parentNode || null;
-      const restoreNextSibling = movingEl.nextSibling || null;
-
-      const fsCS = getComputedStyle(movingEl);
-      const fsObjPos = parseObjectPosition(fsCS?.objectPosition ?? null) ?? { x: 0.5, y: 0.5 };
-      const fsFit = ((fsCS?.objectFit || "contain") as "contain" | "cover");
-
-      const curRect = movingEl.getBoundingClientRect();
-      const natW = Math.max(1, movingEl.naturalWidth || Math.round(curRect.width) || 1);
-      const natH = Math.max(1, movingEl.naturalHeight || Math.round(curRect.height) || 1);
-
-      const startT =
-        fsFit === "contain"
-          ? containTransformForRect(natW, natH, curRect, fsObjPos)
-          : coverTransformForRect(natW, natH, curRect, fsObjPos);
-
-      const endT = coverTransformForRect(natW, natH, args.thumbCropRect, args.endObjPos);
-
-      const overflowRects = findOverflowClipAncestorRectsFromEl(args.destImg ?? null, 2);
-	      const parentOverflowRect = overflowRects[0] ?? null;
-	      const grandparentOverflowRect = overflowRects[1] ?? null;
-	      const closeLayerRoot = modalRef.current;
-	      const closeMediaZ = closeLayerRoot
-	        ? FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX
-	        : computedBaseZ + FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX;
-
-      const vw = document.documentElement.clientWidth;
-      const vh = window.innerHeight;
-
-      const imageClipper = createViewportClipper(
-        insetForViewportRect(curRect, vw, vh),
-        closeMediaZ
+      const liveImage = targetImg!;
+      const source = liveImage.currentSrc || liveImage.src;
+      const fsCS = getComputedStyle(liveImage);
+      const fsObjPos =
+        parseObjectPosition(fsCS?.objectPosition ?? null) ?? { x: 0.5, y: 0.5 };
+      const fsFit = (fsCS?.objectFit || "contain") as "contain" | "cover";
+      const curRect = liveImage.getBoundingClientRect();
+      const sourceWidth = Math.max(
+        1,
+        liveImage.naturalWidth || Math.round(curRect.width) || 1
+      );
+      const sourceHeight = Math.max(
+        1,
+        liveImage.naturalHeight || Math.round(curRect.height) || 1
       );
 
-      const parentClipper = parentOverflowRect
-        ? createViewportClipper('inset(0px 0px 0px 0px)', closeMediaZ)
-        : null;
+      if (
+        !source ||
+        curRect.width <= 0 ||
+        curRect.height <= 0
+      ) {
+        fadeCloseAndTeardown();
+        return;
+      }
 
-      const grandparentClipper = grandparentOverflowRect
-        ? createViewportClipper('inset(0px 0px 0px 0px)', closeMediaZ)
-        : null;
+      const proxyRaster = resolveTransitionProxyRaster({
+        sourceWidth,
+        sourceHeight,
+        startRect: curRect,
+        endRect: args.thumbCropRect,
+        devicePixelRatio: window.devicePixelRatio,
+      });
+      const proxyWidth = proxyRaster.width;
+      const proxyHeight = proxyRaster.height;
+      const startT =
+        fsFit === "contain"
+          ? containTransformForRect(
+              proxyWidth,
+              proxyHeight,
+              curRect,
+              fsObjPos
+            )
+          : coverTransformForRect(
+              proxyWidth,
+              proxyHeight,
+              curRect,
+              fsObjPos
+            );
+      const endT = coverTransformForRect(
+        proxyWidth,
+        proxyHeight,
+        args.thumbCropRect,
+        args.endObjPos
+      );
+      const overflowRects = findOverflowClipAncestorRectsFromEl(
+        args.destImg ?? null,
+        2
+      );
+      const vw =
+        document.documentElement.clientWidth || window.innerWidth || 1;
+      const vh =
+        window.innerHeight || document.documentElement.clientHeight || 1;
+      const endCropRect = intersectViewportCropRects(
+        [endClipRect, ...overflowRects],
+        vw,
+        vh
+      );
+      const closeLayerRoot = modalRef.current;
+      const closeMediaZ = closeLayerRoot
+        ? FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX
+        : computedBaseZ + FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX;
+      const cropper = createViewportTransformCropper({
+        startRect: curRect,
+        viewportWidth: vw,
+        viewportHeight: vh,
+        zIndex: closeMediaZ,
+        dataAttribute: "data-rmg-fs-close-clipper",
+      });
+      const proxy = document.createElement("img");
 
-      const prevStyle = {
-        position: movingEl.style.position,
-        left: movingEl.style.left,
-        top: movingEl.style.top,
-        width: movingEl.style.width,
-        height: movingEl.style.height,
-        maxWidth: movingEl.style.maxWidth,
-        maxHeight: movingEl.style.maxHeight,
-        transformOrigin: movingEl.style.transformOrigin,
-        transform: movingEl.style.transform,
-        transition: movingEl.style.transition,
-        willChange: movingEl.style.willChange,
-        zIndex: movingEl.style.zIndex,
-        pointerEvents: movingEl.style.pointerEvents,
+      proxy.decoding = "async";
+      proxy.loading = "eager";
+      proxy.draggable = false;
+      proxy.alt = "";
+      proxy.setAttribute("aria-hidden", "true");
+      proxy.setAttribute("data-rmg-fs-close-proxy", "true");
+      proxy.setAttribute("fetchpriority", "high");
+      if (liveImage.crossOrigin) {
+        proxy.crossOrigin = liveImage.crossOrigin;
+      }
+      if (liveImage.referrerPolicy) {
+        proxy.referrerPolicy = liveImage.referrerPolicy;
+      }
+      proxy.src = source;
+
+      Object.assign(proxy.style, {
+        position: "absolute",
+        left: "0",
+        top: "0",
+        width: `${proxyWidth}px`,
+        height: `${proxyHeight}px`,
+        maxWidth: "none",
+        maxHeight: "none",
+        transformOrigin: "50% 50%",
+        willChange: "transform",
+        transition: "none",
+        zIndex: String(FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX),
+        pointerEvents: "none",
+        opacity: String(TRANSITION_PREPAINT_OPACITY),
+        display: "block",
+        backfaceVisibility: "hidden",
+      } as CSSStyleDeclaration);
+
+      const applyProxyTransform = (transform: RectTransform) => {
+        proxy.style.transform =
+          `translate3d(${transform.cx}px, ${transform.cy}px, 0)` +
+          ` translate3d(${-proxyWidth / 2}px, ${-proxyHeight / 2}px, 0)` +
+          ` scale(${transform.scale})`;
       };
 
-      Object.assign(movingEl.style, {
-        position: 'fixed',
-        left: '0',
-        top: '0',
-        width: `${natW}px`,
-        height: `${natH}px`,
-        maxWidth: 'none',
-        maxHeight: 'none',
-	        transformOrigin: '50% 50%',
-	        willChange: 'transform',
-	        transition: 'none',
-	        zIndex: String(FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX),
-	        pointerEvents: 'none',
-	      } as CSSStyleDeclaration);
+      applyProxyTransform(startT);
+      cropper.content.appendChild(proxy);
 
-      imageClipper.appendChild(movingEl);
+      (closeLayerRoot ?? document.body).appendChild(cropper.root);
+      void cropper.root.offsetWidth;
+      void proxy.offsetWidth;
 
-      if (parentClipper) {
-        parentClipper.appendChild(imageClipper);
-
-        if (grandparentClipper) {
-          grandparentClipper.appendChild(parentClipper);
-        }
-      } else if (grandparentClipper) {
-        grandparentClipper.appendChild(imageClipper);
-      }
-
-      const outermostClipper = grandparentClipper ?? parentClipper ?? imageClipper;
-
-      (closeLayerRoot ?? document.body).appendChild(outermostClipper);
-
-      movingEl.style.transform =
-        `translate3d(${startT.cx}px, ${startT.cy}px, 0)` +
-        ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
-        ` scale(${startT.scale})`;
-
-      void movingEl.offsetWidth;
-      void imageClipper.offsetWidth;
-      void parentClipper?.offsetWidth;
-      void grandparentClipper?.offsetWidth;
-
-      imageClipper.style.transition = `clip-path ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
-      if (parentClipper) {
-        parentClipper.style.transition = `clip-path ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
-      }
-      if (grandparentClipper) {
-        grandparentClipper.style.transition = `clip-path ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
-      }
-      movingEl.style.transition = `transform ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
-
-      requestAnimationFrame(() => {
-        imageClipper.style.clipPath = insetForViewportRect(endClipRect, vw, vh);
-        if (parentClipper && parentOverflowRect) {
-          parentClipper.style.clipPath = insetForViewportRect(parentOverflowRect, vw, vh);
-        }
-        if (grandparentClipper && grandparentOverflowRect) {
-          grandparentClipper.style.clipPath = insetForViewportRect(grandparentOverflowRect, vw, vh);
-        }
-
-        movingEl.style.transform =
-          `translate3d(${endT.cx}px, ${endT.cy}px, 0)` +
-          ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
-          ` scale(${endT.scale})`;
-      });
-
+      let captionClone: HTMLElement | null = null;
       let finished = false;
+      let animationRaf: number | null = null;
+      let fallbackTimer: number | null = null;
+
+      const removeExternalTransition = () => {
+        if (animationRaf != null) {
+          window.cancelAnimationFrame(animationRaf);
+          animationRaf = null;
+        }
+        if (fallbackTimer != null) {
+          window.clearTimeout(fallbackTimer);
+          fallbackTimer = null;
+        }
+        proxy.removeEventListener("transitionend", onEnd);
+        captionClone?.remove();
+        cropper.root.remove();
+        if (closeExternalCleanupRef.current === removeExternalTransition) {
+          closeExternalCleanupRef.current = null;
+        }
+      };
 
       const finish = () => {
         if (finished) return;
         finished = true;
 
-        movingEl.removeEventListener('transitionend', onEnd as any);
-
-        try {
-          if (restoreIntoParent) {
-            if (restoreNextSibling) {
-              restoreIntoParent.insertBefore(movingEl, restoreNextSibling);
-            } else {
-              restoreIntoParent.appendChild(movingEl);
-            }
-          }
-        } catch {}
-
-        Object.assign(movingEl.style, prevStyle);
-
-        try { outermostClipper.remove(); } catch {}
-
+        removeExternalTransition();
+        if (cancelFsCloseRef.current === finish) {
+          cancelFsCloseRef.current = null;
+        }
         safeTeardown();
       };
 
-      const onEnd = (ev: TransitionEvent) => {
-        if (ev.propertyName !== 'transform') return;
+      const onEnd = (event: TransitionEvent) => {
+        if (event.propertyName !== "transform") return;
         finish();
       };
 
-      movingEl.addEventListener('transitionend', onEnd as any, { once: true });
-      window.setTimeout(() => finish(), TRANSFORM_DURATION_MS + 80);
+      closeExternalCleanupRef.current = removeExternalTransition;
+      cancelFsCloseRef.current = finish;
+      await warmTransitionImage(proxy);
+      if (!closeInProgressRef.current || !proxy.isConnected) return;
+
+      const didStartCloseAnimation = startCloseAnimation();
+      if (didStartCloseAnimation) {
+        await waitForAnimationFrames(1);
+        if (!closeInProgressRef.current || !proxy.isConnected) return;
+      }
+
+      captionClone = beginClosePresentation();
+      trackStyleMutation(targetSlide, "visibility", "hidden");
+
+      cropper.setTransition(TRANSFORM_DURATION_MS, TRANSFORM_EASING);
+      proxy.style.transition = `transform ${TRANSFORM_DURATION_MS}ms ${TRANSFORM_EASING}`;
+      proxy.style.opacity = "1";
+      proxy.addEventListener("transitionend", onEnd);
+
+      animationRaf = window.requestAnimationFrame(() => {
+        animationRaf = null;
+        cropper.setRect(endCropRect);
+        applyProxyTransform(endT);
+      });
+
+      fallbackTimer = window.setTimeout(
+        finish,
+        TRANSFORM_DURATION_MS + 80
+      );
     };
 
     let canonicalIdx = normalizedFsIndex;
@@ -2645,6 +2669,50 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
       ? fs.controls.counter.render({ index: canonicalIdx, count: cellCount })
       : null;
 
+  const chromePortalRoot =
+    chromePortalReady && typeof document !== "undefined" ? document.body : null;
+  const standardChromeNode = (
+    <>
+      {closeEnabled && renderCloseButton && (
+        <button
+          ref={closeButtonRef as any}
+          type="button"
+          aria-label="Close"
+          onClick={() => close()}
+          className={[
+            styles?.closeBtn,
+            fs?.controls?.close?.className ?? "",
+            open ? styles.open : "",
+          ].filter(Boolean).join(" ")}
+          style={{
+            ...fs?.controls?.close?.style,
+            zIndex: FULLSCREEN_TOP_CHROME_Z_INDEX,
+          }}
+        >
+          {userNode ?? <DefaultCloseIcon />}
+        </button>
+      )}
+      {showCounter && (
+        <div
+          ref={counterRef as any}
+          className={[
+            styles?.counter,
+            fs?.controls?.counter?.className ?? "",
+            open ? styles.open : "",
+          ].filter(Boolean).join(" ")}
+          style={{
+            ...(fs?.controls?.counter?.style ?? {}),
+            zIndex: FULLSCREEN_TOP_CHROME_Z_INDEX,
+          }}
+        >
+          {userCounterNode ?? (
+            <DefaultCounterText index={canonicalIdx} count={cellCount} />
+          )}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div
       ref={setModalRef}
@@ -2672,41 +2740,9 @@ export const FullscreenModal: React.FC<FullscreenModalProps> = ({
         overflow: 'hidden',
       }}
     >
-      {closeEnabled && renderCloseButton && (
-        <button
-          ref={closeButtonRef as any}
-          type="button"
-          aria-label="Close"
-          onClick={() => close()}
-          className={[
-            styles?.closeBtn,
-            fs?.controls?.close?.className ?? "",
-            open ? styles.open : "",
-          ].filter(Boolean).join(" ")}
-          style={{
-            ...fs?.controls?.close?.style,
-          }}
-        >
-          {userNode ?? <DefaultCloseIcon />}
-        </button>
-      )}
-      {showCounter && (
-        <div
-          ref={counterRef as any}
-          className={[
-            styles?.counter,
-            fs?.controls?.counter?.className ?? "",
-            open ? styles.open : "",
-          ].filter(Boolean).join(" ")}
-          style={{
-            ...(fs?.controls?.counter?.style ?? {}),
-          }}
-        >
-          {userCounterNode ?? (
-            <DefaultCounterText index={canonicalIdx} count={cellCount} />
-          )}
-        </div>
-      )}
+      {chromePortalRoot
+        ? createPortal(standardChromeNode, chromePortalRoot)
+        : null}
       {children}
     </div>
   )

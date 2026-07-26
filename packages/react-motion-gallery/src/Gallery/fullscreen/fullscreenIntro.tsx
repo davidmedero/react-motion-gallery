@@ -36,6 +36,14 @@ import {
   mountIntroPendingSpinner,
   shouldRenderIntroPendingSpinner,
 } from "./introPendingSpinner";
+import {
+  createViewportTransformCropper,
+  intersectViewportCropRects,
+  resolveTransitionProxyInnerLayout,
+  resolveTransitionProxyRaster,
+  TRANSITION_PREPAINT_OPACITY,
+  warmTransitionImage,
+} from "./transformTransition";
 
 type RefEl<T extends HTMLElement> = React.RefObject<T | null>;
 type ObjectFitMode = "contain" | "cover";
@@ -494,42 +502,7 @@ function computeFallbackEndTransform(
     : containTransformForRect(natW, natH, contentRect, endObjPos);
 }
 
-const OPEN_PROXY_MAX_LONG_EDGE = 1024;
 const OPEN_INTRO_TARGET_IMAGE_WAIT_MS = 120;
-
-function resolveOpeningProxyRaster(args: {
-  sourceNatW: number;
-  sourceNatH: number;
-  startRect: DOMRect;
-  contentRect: DOMRect;
-  targetImageState: FullscreenImageState | null;
-}) {
-  const {
-    sourceNatW,
-    sourceNatH,
-    startRect,
-    contentRect,
-    targetImageState,
-  } = args;
-  const basisW = Math.max(1, targetImageState?.natW ?? sourceNatW);
-  const basisH = Math.max(1, targetImageState?.natH ?? sourceNatH);
-  const basisLong = Math.max(basisW, basisH);
-  const targetRect = targetImageState?.rect ?? contentRect;
-  const visualLong = Math.max(
-    startRect.width,
-    startRect.height,
-    targetRect.width,
-    targetRect.height,
-    1
-  );
-  const rasterLong = Math.max(1, Math.min(visualLong, OPEN_PROXY_MAX_LONG_EDGE));
-  const rasterScale = rasterLong / basisLong;
-
-  return {
-    proxyRasterW: Math.max(1, Math.round(basisW * rasterScale)),
-    proxyRasterH: Math.max(1, Math.round(basisH * rasterScale)),
-  };
-}
 
 function readMountedFullscreenImageState(
   index: number,
@@ -804,14 +777,6 @@ function isMountedFullscreenImageHandoffReady(
   return !!img && isFullscreenImageHandoffReady(img);
 }
 
-function insetForViewportRect(rect: DOMRect, vw: number, vh: number) {
-  const top = rect.top;
-  const left = rect.left;
-  const right = vw - (rect.left + rect.width);
-  const bottom = vh - (rect.top + rect.height);
-  return `inset(${top}px ${right}px ${bottom}px ${left}px)`;
-}
-
 function isVisibleTopStickyNavCandidate(el: Element | null): el is HTMLElement {
   if (!(el instanceof HTMLElement)) return false;
 
@@ -842,6 +807,7 @@ function findStickyNav(
     '[data-rmg-intro-sticky-nav="true"]',
     'header[role="banner"]',
     "header",
+    "nav",
   ];
   const candidates = query
     ? Array.from(document.querySelectorAll(query))
@@ -853,22 +819,6 @@ function findStickyNav(
   let bestBottom = -Infinity;
 
   for (const candidate of candidates) {
-    if (!isVisibleTopStickyNavCandidate(candidate)) continue;
-
-    const rect = candidate.getBoundingClientRect();
-    if (sourceRect && !rectsOverlapOnX(rect, sourceRect)) continue;
-
-    if (rect.bottom > bestBottom) {
-      bestBottom = rect.bottom;
-      bestMatch = candidate;
-    }
-  }
-
-  if (bestMatch || query) {
-    return bestMatch;
-  }
-
-  for (const candidate of Array.from(document.body.querySelectorAll("*"))) {
     if (!isVisibleTopStickyNavCandidate(candidate)) continue;
 
     const rect = candidate.getBoundingClientRect();
@@ -905,20 +855,6 @@ function intersectRectWithTopOccluder(
   }
 
   return new DOMRect(left, top, right - left, bottom - top);
-}
-
-function createViewportClipper(startInset: string, zIndex: number) {
-  const clipper = document.createElement("div");
-  Object.assign(clipper.style, {
-    position: "fixed",
-    inset: "0",
-    clipPath: startInset,
-    willChange: "clip-path",
-    transition: "none",
-    pointerEvents: "none",
-    zIndex: String(zIndex),
-  } as CSSStyleDeclaration);
-  return clipper;
 }
 
 function clipsOverflow(style: CSSStyleDeclaration | null | undefined) {
@@ -1131,67 +1067,70 @@ function runScaleIntro(args: {
       : null;
   const startVisibleImgRect = occlusionAdjustedRect ?? baseVisibleImgRect;
 
-  const imageClipper = createViewportClipper(
-    insetForViewportRect(startVisibleImgRect, vw, vh),
-    introZ
-  );
-
   const overflowRects = findOverflowClipAncestorRects(originalImage, 2);
   const parentOverflowRect = overflowRects[0] ?? null;
   const grandparentOverflowRect = overflowRects[1] ?? null;
+  const startCropRect = intersectViewportCropRects(
+    [
+      startVisibleImgRect,
+      parentOverflowRect,
+      grandparentOverflowRect,
+    ],
+    vw,
+    vh
+  );
+  const cropper = createViewportTransformCropper({
+    startRect: startCropRect,
+    viewportWidth: vw,
+    viewportHeight: vh,
+    zIndex: introZ,
+    dataAttribute: "data-rmg-fs-intro-cropper",
+  });
 
-  const parentClipper = parentOverflowRect
-    ? createViewportClipper(insetForViewportRect(parentOverflowRect, vw, vh), introZ)
-    : null;
+  const proxy = document.createElement("div");
+  proxy.setAttribute("data-rmg-fs-intro-proxy", "true");
 
-  const grandparentClipper = grandparentOverflowRect
-    ? createViewportClipper(insetForViewportRect(grandparentOverflowRect, vw, vh), introZ)
-    : null;
-
-  const dup = document.createElement("img");
-  dup.src = originalImage.currentSrc || originalImage.src;
-  dup.decoding = "sync";
-  dup.loading = "eager";
-
-  Object.assign(dup.style, {
-    position: "fixed",
+  Object.assign(proxy.style, {
+    position: "absolute",
     left: "0",
     top: "0",
-    width: `${sourceNatW}px`,
-    height: `${sourceNatH}px`,
     maxWidth: "none",
     maxHeight: "none",
     transformOrigin: "50% 50%",
     willChange: "transform",
     transition: "none",
-    opacity: "0",
     display: "block",
+    pointerEvents: "none",
     zIndex: String(introZ),
     backfaceVisibility: "hidden",
   } as CSSStyleDeclaration);
 
-  duplicateImgRef.current = dup;
+  const dup = document.createElement("img");
+  dup.decoding = "async";
+  dup.loading = "eager";
+  dup.src = originalImage.currentSrc || originalImage.src;
+  dup.setAttribute("aria-hidden", "true");
+  dup.setAttribute("data-rmg-fs-intro-proxy-image", "true");
 
-  imageClipper.appendChild(dup);
+  Object.assign(dup.style, {
+    position: "absolute",
+    left: "0",
+    top: "0",
+    maxWidth: "none",
+    maxHeight: "none",
+    transformOrigin: "0 0",
+    transition: "none",
+    opacity: String(TRANSITION_PREPAINT_OPACITY),
+    display: "block",
+    backfaceVisibility: "hidden",
+  } as CSSStyleDeclaration);
 
-  if (parentClipper) {
-    parentClipper.appendChild(imageClipper);
-
-    if (grandparentClipper) {
-      grandparentClipper.appendChild(parentClipper);
-    }
-  } else if (grandparentClipper) {
-    grandparentClipper.appendChild(imageClipper);
-  }
-
-  const outermostClipper = grandparentClipper ?? parentClipper ?? imageClipper;
-
-  const frag = document.createDocumentFragment();
-  frag.append(overlay, outermostClipper);
-  document.body.appendChild(frag);
-
-  const applyTransform = (transform: RectTransform, natW: number, natH: number) => {
-    dup.style.transform =
+  const applyMotionTransform = (
+    transform: RectTransform,
+    natW: number,
+    natH: number
+  ) => {
+    proxy.style.transform =
       `translate3d(${transform.cx}px, ${transform.cy}px, 0)` +
       ` translate3d(${-natW / 2}px, ${-natH / 2}px, 0)` +
       ` scale(${transform.scale})`;
@@ -1199,19 +1138,16 @@ function runScaleIntro(args: {
 
   const computeTransforms = (targetImageState: FullscreenImageState | null) => {
     const startTransformRect = fit === "contain" ? baseVisibleImgRect : imgRect;
-    const {
-      proxyRasterW,
-      proxyRasterH,
-    } = resolveOpeningProxyRaster({
-      sourceNatW,
-      sourceNatH,
+    const targetRect = targetImageState?.rect ?? contentRect;
+    const proxyRaster = resolveTransitionProxyRaster({
+      sourceWidth: Math.max(1, targetImageState?.natW ?? sourceNatW),
+      sourceHeight: Math.max(1, targetImageState?.natH ?? sourceNatH),
       startRect: startTransformRect,
-      contentRect,
-      targetImageState,
+      endRect: targetRect,
+      devicePixelRatio: window.devicePixelRatio,
     });
-
-    dup.style.width = `${proxyRasterW}px`;
-    dup.style.height = `${proxyRasterH}px`;
+    const proxyRasterW = proxyRaster.width;
+    const proxyRasterH = proxyRaster.height;
 
     const startT = computeRectTransform({
       fit,
@@ -1239,47 +1175,86 @@ function runScaleIntro(args: {
     };
   };
 
-  function startAnimation(targetImageState: FullscreenImageState | null) {
+  const applyProxyLayout = (
+    prepared: ReturnType<typeof computeTransforms>
+  ) => {
+    const { proxyRasterW, proxyRasterH } = prepared;
+    const inner = resolveTransitionProxyInnerLayout({
+      proxyWidth: proxyRasterW,
+      proxyHeight: proxyRasterH,
+    });
+
+    proxy.style.width = `${proxyRasterW}px`;
+    proxy.style.height = `${proxyRasterH}px`;
+    dup.style.width = `${inner.width}px`;
+    dup.style.height = `${inner.height}px`;
+    dup.style.transform = `scale(${inner.scale})`;
+  };
+
+  const initialTransforms = computeTransforms(null);
+  applyProxyLayout(initialTransforms);
+  applyMotionTransform(
+    initialTransforms.startT,
+    initialTransforms.proxyRasterW,
+    initialTransforms.proxyRasterH
+  );
+
+  duplicateImgRef.current = proxy;
+  proxy.appendChild(dup);
+  cropper.content.appendChild(proxy);
+
+  const ownsActiveProxy = () =>
+    duplicateImgRef.current === proxy &&
+    proxy.isConnected &&
+    dup.isConnected;
+
+  const frag = document.createDocumentFragment();
+  frag.append(overlay, cropper.root);
+  document.body.appendChild(frag);
+
+  function startAnimation(
+    prepared: ReturnType<typeof computeTransforms>
+  ) {
     onIntroStart?.();
+    completionFallbackTimer = window.setTimeout(() => {
+      void completeIntro();
+    }, Math.max(0, durationMs) + 180);
 
     const {
       startT,
       endT,
       proxyRasterW,
       proxyRasterH,
-    } = computeTransforms(targetImageState);
+    } = prepared;
 
-    applyTransform(startT, proxyRasterW, proxyRasterH);
-    dup.style.opacity = "1";
+    applyProxyLayout(prepared);
+    applyMotionTransform(startT, proxyRasterW, proxyRasterH);
+    dup.style.opacity = String(TRANSITION_PREPAINT_OPACITY);
     overlay.style.opacity = "0";
     overlay.style.pointerEvents = "none";
 
     void dup.offsetWidth;
-    void imageClipper.offsetWidth;
-    void parentClipper?.offsetWidth;
-    void grandparentClipper?.offsetWidth;
+    void proxy.offsetWidth;
+    void cropper.root.offsetWidth;
     void overlay.offsetWidth;
 
     requestAnimationFrame(() => {
-      imageClipper.style.transition = `clip-path ${durationMs}ms ${easing}`;
-      if (parentClipper) {
-        parentClipper.style.transition = `clip-path ${durationMs}ms ${easing}`;
+      if (!ownsActiveProxy()) {
+        disposeLocalProxy();
+        return;
       }
-      if (grandparentClipper) {
-        grandparentClipper.style.transition = `clip-path ${durationMs}ms ${easing}`;
-      }
-      dup.style.transition = `transform ${durationMs}ms ${easing}`;
+      cropper.setTransition(durationMs, easing);
+      proxy.style.transition = `transform ${durationMs}ms ${easing}`;
       overlay.style.transition = `opacity ${durationMs}ms ${easing}`;
 
       requestAnimationFrame(() => {
-        imageClipper.style.clipPath = "inset(0px 0px 0px 0px)";
-        if (parentClipper) {
-          parentClipper.style.clipPath = "inset(0px 0px 0px 0px)";
+        if (!ownsActiveProxy()) {
+          disposeLocalProxy();
+          return;
         }
-        if (grandparentClipper) {
-          grandparentClipper.style.clipPath = "inset(0px 0px 0px 0px)";
-        }
-        applyTransform(endT, proxyRasterW, proxyRasterH);
+        cropper.setRect(new DOMRect(0, 0, vw, vh));
+        dup.style.opacity = "1";
+        applyMotionTransform(endT, proxyRasterW, proxyRasterH);
         overlay.style.opacity = "1";
         overlay.style.pointerEvents = "none";
       });
@@ -1288,10 +1263,12 @@ function runScaleIntro(args: {
 
   let started = false;
 
-  const startAnimationOnce = (targetImageState: FullscreenImageState | null) => {
-    if (started) return;
+  const startAnimationOnce = (
+    prepared: ReturnType<typeof computeTransforms>
+  ) => {
+    if (started || !ownsActiveProxy()) return;
     started = true;
-    startAnimation(targetImageState);
+    startAnimation(prepared);
   };
 
   const fullscreenCaptionPromise = waitForMountedFullscreenCaption(
@@ -1305,12 +1282,22 @@ function runScaleIntro(args: {
     fullscreenRoot
   );
 
-  void fullscreenImageStatePromise.then((targetImageState) => {
-    startAnimationOnce(targetImageState);
+  void fullscreenImageStatePromise.then(async (targetImageState) => {
+    if (!ownsActiveProxy()) return;
+    const prepared = computeTransforms(targetImageState);
+    applyProxyLayout(prepared);
+    applyMotionTransform(
+      prepared.startT,
+      prepared.proxyRasterW,
+      prepared.proxyRasterH
+    );
+    await warmTransitionImage(dup);
+    startAnimationOnce(prepared);
   });
 
   void fullscreenCaptionPromise.then((captionState) => {
     requestAnimationFrame(() => {
+      if (!ownsActiveProxy()) return;
       const liveOverlayCaption = overlayCaptionRef.current;
       if (!liveOverlayCaption) return;
 
@@ -1333,11 +1320,41 @@ function runScaleIntro(args: {
     });
   });
 
-  const onEnd = async (ev: TransitionEvent) => {
-    if (ev.propertyName !== "transform") return;
-    dup.removeEventListener("transitionend", onEnd);
+  let completionStarted = false;
+  let completionFallbackTimer: number | null = null;
 
+  const clearCompletionFallback = () => {
+    if (completionFallbackTimer != null) {
+      window.clearTimeout(completionFallbackTimer);
+      completionFallbackTimer = null;
+    }
+  };
+
+  const disposeLocalProxy = () => {
+    clearCompletionFallback();
+    proxy.removeEventListener("transitionend", onEnd);
+    cropper.root.remove();
+    proxy.remove();
+    if (duplicateImgRef.current === proxy) {
+      (duplicateImgRef as any).current = null;
+    }
+  };
+
+  const completeIntro = async () => {
+    if (completionStarted) return;
+    completionStarted = true;
+    clearCompletionFallback();
+    if (!ownsActiveProxy()) {
+      disposeLocalProxy();
+      return;
+    }
+
+    proxy.removeEventListener("transitionend", onEnd);
     await waitForAnimationFrames(2);
+    if (!ownsActiveProxy()) {
+      disposeLocalProxy();
+      return;
+    }
 
     clearFullscreenTrackOpacityTransition(fullscreenRoot);
     flushSync(() => setShowFullscreenSlider(true));
@@ -1348,15 +1365,27 @@ function runScaleIntro(args: {
       maxWaitMs: Math.max(300, Math.min(1000, durationMs + 500)),
     });
 
+    if (!ownsActiveProxy()) {
+      disposeLocalProxy();
+      return;
+    }
+
     requestAnimationFrame(() => {
+      if (!ownsActiveProxy()) {
+        disposeLocalProxy();
+        return;
+      }
       cleanupOverlayCaption(overlayCaptionRootRef, overlayCaptionRef);
-      outermostClipper.remove();
-      dup.remove();
-      (duplicateImgRef as any).current = null;
+      disposeLocalProxy();
     });
   };
 
-  dup.addEventListener("transitionend", onEnd, { once: true });
+  const onEnd = (ev: TransitionEvent) => {
+    if (ev.target !== proxy || ev.propertyName !== "transform") return;
+    void completeIntro();
+  };
+
+  proxy.addEventListener("transitionend", onEnd);
 }
 
 export function runFullscreenIntro(args: FullscreenIntroArgs) {

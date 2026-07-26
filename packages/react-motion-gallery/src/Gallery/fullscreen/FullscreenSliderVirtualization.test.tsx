@@ -526,6 +526,26 @@ describe("fullscreen slider virtualization", () => {
     unmount(root, container);
   });
 
+  test("does not retain a viewport clip-path during proxy-driven close", async () => {
+    const { container, root } = mountFullscreenSlider({
+      count: 3,
+      closingModal: true,
+    });
+    await settle();
+
+    const viewport = container.querySelector<HTMLElement>(
+      "[data-rmg-fs-viewport='true']"
+    );
+
+    expect(viewport?.getAttribute("data-rmg-fs-close-layer-active")).toBe(
+      "true"
+    );
+    expect(viewport?.style.overflow).toBe("hidden");
+    expect(viewport?.style.clipPath).toBe("");
+
+    unmount(root, container);
+  });
+
   test("renders a bounded virtual window for large fullscreen tracks", async () => {
     const { container, root } = mountFullscreenSlider({
       count: 30,

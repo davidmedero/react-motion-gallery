@@ -55,7 +55,10 @@ function BaseSlide(props: {
   item: MediaItem;
   index: number;
   canonicalIndex: number;
+  activeCanonicalIndex?: number | null;
   isClone: boolean;
+  openingCanonicalIndex?: number | null;
+  openingInProgress?: boolean;
   imageRef: React.RefObject<HTMLDivElement | null>;
   cells: React.RefObject<{ element: HTMLElement; index: number }[]>;
   isZoomed: boolean;
@@ -99,7 +102,10 @@ function BaseSlide(props: {
     item,
     index,
     canonicalIndex,
+    activeCanonicalIndex,
     isClone,
+    openingCanonicalIndex,
+    openingInProgress,
     imageRef,
     cells,
     isZoomed,
@@ -123,6 +129,17 @@ function BaseSlide(props: {
   } = props;
 
   const isNode = item.kind === "node";
+  const isOpeningTarget =
+    !!openingInProgress &&
+    !isClone &&
+    canonicalIndex === openingCanonicalIndex;
+  const isPriorityImage =
+    !isClone &&
+    (!openingInProgress ||
+      canonicalIndex === activeCanonicalIndex ||
+      isOpeningTarget);
+  const suspendDuringOpening =
+    renderMode === "track" && !!openingInProgress && !isOpeningTarget;
   const baseImgStyle: React.CSSProperties = {
     maxWidth: "100%",
     maxHeight: "100%",
@@ -162,7 +179,8 @@ function BaseSlide(props: {
             className={styles.fullscreenImages}
             draggable="false"
             decoding="async"
-            loading="lazy"
+            loading={isPriorityImage ? "eager" : "lazy"}
+            fetchPriority={isPriorityImage ? "high" : "low"}
             src={poster}
             style={{
               ...baseImgStyle,
@@ -196,8 +214,8 @@ function BaseSlide(props: {
         className={styles.fullscreenImages}
         draggable="false"
         decoding="async"
-        loading={isClone ? "lazy" : "eager"}
-        fetchPriority={isClone ? "low" : "high"}
+        loading={isPriorityImage ? "eager" : "lazy"}
+        fetchPriority={isPriorityImage ? "high" : "low"}
         src={(item as any).src ?? ""}
         srcSet={(item as any).srcSet ?? undefined}
         sizes={(item as any).sizes ?? undefined}
@@ -216,6 +234,9 @@ function BaseSlide(props: {
       data-rmg-canonical-idx={canonicalIndex}
       data-rmg-clone={isClone ? "true" : "false"}
       data-rmg-fs-render-mode={renderMode}
+      data-rmg-fs-opening-suspended={
+        suspendDuringOpening ? "true" : undefined
+      }
       ref={(el: HTMLDivElement | null) => {
         if (
           registerCell &&
@@ -245,6 +266,7 @@ function BaseSlide(props: {
         userSelect: "none",
         WebkitUserSelect: "none",
         pointerEvents: interactive ? "auto" : "none",
+        contentVisibility: suspendDuringOpening ? "hidden" : "visible",
       }}
       className={styles.imgMargin}
     >
@@ -344,6 +366,9 @@ export function renderFullscreenBaseSlides(opts: any) {
     styles,
     renderImage,
     canonicalLength,
+    activeCanonicalIndex,
+    openingCanonicalIndex,
+    openingInProgress,
     renderMode = "track",
     renderWindow,
   } = opts;
@@ -443,7 +468,10 @@ export function renderFullscreenBaseSlides(opts: any) {
         item={item}
         index={index}
         canonicalIndex={canonicalIndex}
+        activeCanonicalIndex={activeCanonicalIndex}
         isClone={isClone}
+        openingCanonicalIndex={openingCanonicalIndex}
+        openingInProgress={openingInProgress}
         imageRef={imageRefs.current[index]}
         cells={cells}
         isZoomed={isZoomed}

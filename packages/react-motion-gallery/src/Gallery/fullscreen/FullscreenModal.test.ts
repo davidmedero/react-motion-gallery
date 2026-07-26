@@ -13,7 +13,10 @@ import {
   resolveFullscreenCloseScrollPolicy,
   shouldUseFadeClose,
 } from "./FullscreenModal";
-import { FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX } from "./layering";
+import {
+  FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX,
+  FULLSCREEN_TOP_CHROME_Z_INDEX,
+} from "./layering";
 
 function rect(
   left: number,
@@ -60,6 +63,14 @@ async function flushAnimationFrame() {
   });
 }
 
+async function flushTransitionWarm() {
+  await React.act(async () => {
+    vi.advanceTimersByTime(50);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
 beforeAll(() => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 });
@@ -67,6 +78,7 @@ beforeAll(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   if (Object.prototype.hasOwnProperty.call(document, "elementsFromPoint")) {
     delete (document as any).elementsFromPoint;
   }
@@ -380,6 +392,7 @@ describe("fullscreen close sequencing", () => {
       layout?: "grid" | "slider";
       coverDestWithNav?: boolean;
       omitFullscreenImage?: boolean;
+      showCounter?: boolean;
     } = {}
   ) {
     vi.useFakeTimers();
@@ -442,6 +455,7 @@ describe("fullscreen close sequencing", () => {
 
     const destImg = document.createElement("img");
     destImg.setAttribute("data-rmg-test", "dest-img");
+    destImg.src = "/thumbnail.jpg";
     destImg.style.objectFit = "cover";
     destImg.style.objectPosition = "50% 50%";
     destHost.appendChild(destImg);
@@ -550,7 +564,7 @@ describe("fullscreen close sequencing", () => {
           rightChevronRef,
           cells: { current: [] },
           setShowFullscreenSlider: vi.fn(),
-          cellCount: 1,
+          cellCount: options.showCounter ? 2 : 1,
           setClosingModal,
           slides: {
             current:
@@ -580,11 +594,11 @@ describe("fullscreen close sequencing", () => {
               close: {
                 render: () => React.createElement("span", null, "close"),
               },
-              counter: { enabled: false },
+              counter: { enabled: options.showCounter === true },
             },
             effects: {},
           },
-          styles: { open: "open", closeBtn: "closeBtn" },
+          styles: { open: "open", closeBtn: "closeBtn", counter: "counter" },
           syncFullscreenSourceFromIndex: vi.fn(),
           introMethod: "scale",
           setLatchedIntroMethod: vi.fn(),
@@ -594,14 +608,13 @@ describe("fullscreen close sequencing", () => {
       )
     );
 
-    const closeButton = container.querySelector(
-      "button[aria-label='Close']"
-    ) as HTMLButtonElement | null;
+    const closeButton = closeButtonRef.current as HTMLButtonElement | null;
     expect(closeButton).not.toBeNull();
 
     return {
       cancelFsCloseRef,
       closeButton,
+      counter: counterRef.current,
       container,
       events,
       root,
@@ -614,6 +627,33 @@ describe("fullscreen close sequencing", () => {
       await Promise.resolve();
     });
   }
+
+  test("portals the standard close button and counter into the body-level top chrome layer", () => {
+    const {
+      closeButton,
+      counter,
+      container,
+      root,
+    } = setupGridCloseScenario(undefined, undefined, "linear", {
+      showCounter: true,
+    });
+    const modal = container.querySelector("[data-rmg-fs-root='true']");
+
+    expect(closeButton?.style.zIndex).toBe(
+      String(FULLSCREEN_TOP_CHROME_Z_INDEX)
+    );
+    expect(counter?.style.zIndex).toBe(
+      String(FULLSCREEN_TOP_CHROME_Z_INDEX)
+    );
+    expect(closeButton?.parentElement).toBe(document.body);
+    expect(counter?.parentElement).toBe(document.body);
+    expect(modal?.contains(closeButton ?? null)).toBe(false);
+    expect(modal?.contains(counter ?? null)).toBe(false);
+
+    unmount(root, container);
+    expect(closeButton?.isConnected).toBe(false);
+    expect(counter?.isConnected).toBe(false);
+  });
 
   test("does not page-scroll by default during grid close", async () => {
     const { closeButton, container, events, root } = setupGridCloseScenario();
@@ -634,7 +674,7 @@ describe("fullscreen close sequencing", () => {
     unmount(root, container);
   });
 
-  test("does not wait when closeScroll is enabled but no page scroll is needed", async () => {
+  test("only waits for the proxy warm-up when no page scroll is needed", async () => {
     const { closeButton, container, events, root } = setupGridCloseScenario(
       true,
       undefined,
@@ -644,6 +684,11 @@ describe("fullscreen close sequencing", () => {
 
     await clickClose(closeButton);
 
+    expect(events).toEqual([]);
+    expect(
+      container.querySelector('[data-rmg-fs-close-proxy="true"]')
+    ).not.toBeNull();
+    await flushTransitionWarm();
     expect(events).toEqual(["closing:true"]);
 
     await flushAnimationFrame();
@@ -658,7 +703,7 @@ describe("fullscreen close sequencing", () => {
     unmount(root, container);
   });
 
-  test("starts slider close immediately when the thumbnail is already visible", async () => {
+  test("starts a visible slider close after its proxy is warm", async () => {
     const { closeButton, container, events, root } = setupGridCloseScenario(
       undefined,
       undefined,
@@ -668,6 +713,8 @@ describe("fullscreen close sequencing", () => {
 
     await clickClose(closeButton);
 
+    expect(events).toEqual([]);
+    await flushTransitionWarm();
     expect(events).toEqual(["closing:true"]);
 
     await flushAnimationFrame();
@@ -889,9 +936,7 @@ describe("fullscreen close sequencing", () => {
       )
     );
 
-    const closeButton = container.querySelector(
-      "button[aria-label='Close']"
-    ) as HTMLButtonElement | null;
+    const closeButton = closeButtonRef.current as HTMLButtonElement | null;
 
     await clickClose(closeButton);
 
@@ -910,6 +955,7 @@ describe("fullscreen close sequencing", () => {
 
     await flushAnimationFrame();
 
+    await flushTransitionWarm();
     expect(events).toContain("closing:true");
 
     await flushAnimationFrame();
@@ -1088,9 +1134,7 @@ describe("fullscreen close sequencing", () => {
       )
     );
 
-    const closeButton = container.querySelector(
-      "button[aria-label='Close']"
-    ) as HTMLButtonElement | null;
+    const closeButton = closeButtonRef.current as HTMLButtonElement | null;
 
     await clickClose(closeButton);
 
@@ -1137,6 +1181,100 @@ describe("fullscreen close sequencing", () => {
     expect(closeClipper?.style.zIndex).toBe(
       String(FULLSCREEN_CLOSE_MEDIA_LAYER_Z_INDEX)
     );
+
+    unmount(root, container);
+  });
+
+  test("keeps transform close above the former device-pixel cutoff with a capped proxy", async () => {
+    vi.stubGlobal("devicePixelRatio", 10);
+    vi.spyOn(
+      HTMLImageElement.prototype,
+      "naturalWidth",
+      "get"
+    ).mockReturnValue(2400);
+    vi.spyOn(
+      HTMLImageElement.prototype,
+      "naturalHeight",
+      "get"
+    ).mockReturnValue(1500);
+
+    const { closeButton, container, root } = setupGridCloseScenario(
+      undefined,
+      undefined,
+      "linear",
+      { destDocumentTop: 250 }
+    );
+    const liveImage = container.querySelector<HTMLImageElement>(
+      '[data-rmg-test="fs-img"]'
+    );
+    const liveParent = liveImage?.parentElement;
+
+    await clickClose(closeButton);
+    await flushAnimationFrame();
+
+    const proxy = container.querySelector<HTMLImageElement>(
+      '[data-rmg-fs-close-proxy="true"]'
+    );
+    const cropper = container.querySelector<HTMLElement>(
+      '[data-rmg-fs-close-clipper="true"]'
+    );
+
+    expect(proxy).not.toBeNull();
+    expect(proxy).not.toBe(liveImage);
+    expect(Math.max(
+      Number.parseFloat(proxy?.style.width || "0"),
+      Number.parseFloat(proxy?.style.height || "0")
+    )).toBeLessThanOrEqual(1024);
+    expect(liveImage?.parentElement).toBe(liveParent);
+    expect(liveImage?.style.position).toBe("");
+    expect(liveImage?.style.width).toBe("");
+    expect(cropper?.style.clipPath).toBe("");
+    expect(cropper?.querySelector('[style*="clip-path"]')).toBeNull();
+
+    unmount(root, container);
+    expect(
+      document.querySelector('[data-rmg-fs-close-proxy="true"]')
+    ).toBeNull();
+  });
+
+  test("does not swap to a lower-resolution same-aspect thumbnail during close", async () => {
+    vi.spyOn(
+      HTMLImageElement.prototype,
+      "naturalWidth",
+      "get"
+    ).mockReturnValue(2400);
+    vi.spyOn(
+      HTMLImageElement.prototype,
+      "naturalHeight",
+      "get"
+    ).mockReturnValue(1500);
+
+    const { closeButton, container, root } = setupGridCloseScenario(
+      undefined,
+      undefined,
+      "linear",
+      { destDocumentTop: 250 }
+    );
+    const destinationImage = document.querySelector<HTMLImageElement>(
+      '[data-rmg-test="dest-img"]'
+    );
+    expect(destinationImage).not.toBeNull();
+    Object.defineProperty(destinationImage!, "naturalWidth", {
+      configurable: true,
+      value: 240,
+    });
+    Object.defineProperty(destinationImage!, "naturalHeight", {
+      configurable: true,
+      value: 150,
+    });
+
+    await clickClose(closeButton);
+
+    const proxy = container.querySelector<HTMLImageElement>(
+      '[data-rmg-fs-close-proxy="true"]'
+    );
+    expect(proxy?.src).toContain("/fullscreen.jpg");
+    expect(proxy?.src).not.toContain("/thumbnail.jpg");
 
     unmount(root, container);
   });
@@ -1271,6 +1409,7 @@ describe("fullscreen close sequencing", () => {
     expect(events).toEqual(["scrollTo"]);
 
     await flushAnimationFrame();
+    await flushTransitionWarm();
     expect(events.slice(0, 2)).toEqual(["scrollTo", "closing:true"]);
 
     await flushAnimationFrame();
@@ -1297,6 +1436,7 @@ describe("fullscreen close sequencing", () => {
     await flushAnimationFrame();
     await flushAnimationFrame();
     await flushAnimationFrame();
+    await flushTransitionWarm();
 
     expect(events.slice(0, 2)).toEqual(["scrollTo", "closing:true"]);
 
@@ -1440,9 +1580,7 @@ describe("fullscreen close sequencing", () => {
       )
     );
 
-    const closeButton = container.querySelector(
-      "button[aria-label='Close']"
-    ) as HTMLButtonElement | null;
+    const closeButton = closeButtonRef.current as HTMLButtonElement | null;
 
     await clickClose(closeButton);
     expect(section.style.getPropertyValue("--rmg-entry-reveal-duration")).toBe("0ms");
@@ -1625,9 +1763,7 @@ describe("fullscreen close sequencing", () => {
       )
     );
 
-    const closeButton = container.querySelector(
-      "button[aria-label='Close']"
-    ) as HTMLButtonElement | null;
+    const closeButton = closeButtonRef.current as HTMLButtonElement | null;
 
     return {
       closeButton,
@@ -1696,6 +1832,7 @@ describe("fullscreen close sequencing", () => {
       await Promise.resolve();
     });
 
+    await flushTransitionWarm();
     expect(events).toEqual(["zoom-out", "closing:true"]);
     await flushAnimationFrame();
     expect(container.querySelector("[data-rmg-fs-close-clipper='true']")).not.toBeNull();

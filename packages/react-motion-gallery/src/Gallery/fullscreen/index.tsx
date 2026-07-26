@@ -506,7 +506,14 @@ export function useFullscreenController(args: UseFullscreenArgs) {
       overlayCaptionRef.current?.remove();
       overlayCaptionRef.current = null;
 
-      duplicateImgRef.current?.remove();
+      const introCropRoot = duplicateImgRef.current?.closest(
+        '[data-rmg-fs-transform-crop="true"]'
+      );
+      if (introCropRoot) {
+        introCropRoot.remove();
+      } else {
+        duplicateImgRef.current?.remove();
+      }
       duplicateImgRef.current = null;
 
       if (overlayDivRef.current === switchState.overlay) {

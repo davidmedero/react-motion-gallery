@@ -33,15 +33,22 @@ async function flushAnimationFrame() {
   await Promise.resolve();
 }
 
+async function flushTransitionWarm() {
+  vi.advanceTimersByTime(50);
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 describe("fullscreen scale intro", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     resetFullscreenDialogSwitchForTests();
     document.body.innerHTML = "";
   });
 
-  test("uses mounted target dimensions before natural image dimensions are available", async () => {
+  test("keeps the scale path above the former device-pixel cutoff and uses mounted target dimensions", async () => {
     vi.useFakeTimers();
 
     let rafNow = 0;
@@ -53,6 +60,7 @@ describe("fullscreen scale intro", () => {
       configurable: true,
       value: 700,
     });
+    vi.stubGlobal("devicePixelRatio", 5);
     Object.defineProperty(window, "requestAnimationFrame", {
       configurable: true,
       value: (callback: FrameRequestCallback) =>
@@ -69,6 +77,10 @@ describe("fullscreen scale intro", () => {
     const originalImage = document.createElement("img");
     originalImage.setAttribute("data-rmg-test", "origin");
     originalImage.src = "/thumb.jpg";
+    Object.defineProperty(originalImage, "currentSrc", {
+      configurable: true,
+      value: "/selected-thumb.jpg",
+    });
     originalImage.style.objectFit = "contain";
     originalImage.style.objectPosition = "50% 50%";
     Object.defineProperty(originalImage, "naturalWidth", {
@@ -159,17 +171,39 @@ describe("fullscreen scale intro", () => {
     });
 
     await Promise.resolve();
+    await flushTransitionWarm();
+    await flushAnimationFrame();
     await flushAnimationFrame();
     await flushAnimationFrame();
 
-    expect(duplicateImgRef.current?.style.transform).toContain(
+    const proxy = duplicateImgRef.current;
+    const proxyImage = proxy?.querySelector<HTMLImageElement>(
+      '[data-rmg-fs-intro-proxy-image="true"]'
+    );
+
+    expect(proxy?.dataset.rmgFsIntroProxy).toBe("true");
+    expect(proxy?.style.transform).toContain(
       "translate3d(300px, 350px, 0)"
     );
-    expect(duplicateImgRef.current?.style.transform).not.toContain(
+    expect(proxy?.style.transform).not.toContain(
       "translate3d(500px, 350px, 0)"
     );
-    expect(duplicateImgRef.current?.style.zIndex).toBe("1210");
-    expect(duplicateImgRef.current?.parentElement?.style.zIndex).toBe("1210");
+    expect(proxy?.style.transition).toBe("transform 360ms linear");
+    expect(proxy?.style.zIndex).toBe("1210");
+    expect(proxy?.parentElement?.style.zIndex).toBe("1210");
+    expect(proxyImage?.getAttribute("src")).toBe("/selected-thumb.jpg");
+    expect(proxyImage?.src).not.toContain("/full.jpg");
+    expect(proxyImage?.style.width).toBe("250px");
+    expect(proxyImage?.style.height).toBe("250px");
+    expect(proxyImage?.style.transform).toBe("scale(1.6)");
+    expect(proxyImage?.style.transition).toBe("none");
+    expect(proxyImage?.style.willChange).toBe("");
+    const cropper = proxy?.closest<HTMLElement>(
+      '[data-rmg-fs-intro-cropper="true"]'
+    );
+    expect(cropper).not.toBeNull();
+    expect(cropper?.style.clipPath).toBe("");
+    expect(cropper?.querySelector('[style*="clip-path"]')).toBeNull();
   });
 
   test("does not treat rendered target image dimensions as intrinsic dimensions", async () => {
@@ -299,17 +333,196 @@ describe("fullscreen scale intro", () => {
     });
 
     await Promise.resolve();
-    vi.advanceTimersByTime(121);
+    vi.advanceTimersByTime(128);
     await Promise.resolve();
+    await flushTransitionWarm();
     await flushAnimationFrame();
     await flushAnimationFrame();
     await flushAnimationFrame();
 
-    expect(duplicateImgRef.current?.style.width).toBe("600px");
-    expect(duplicateImgRef.current?.style.height).toBe("450px");
-    expect(duplicateImgRef.current?.style.transform).toContain(
+    const proxy = duplicateImgRef.current;
+    const proxyImage = proxy?.querySelector<HTMLImageElement>(
+      '[data-rmg-fs-intro-proxy-image="true"]'
+    );
+
+    expect(proxy?.style.width).toBe("600px");
+    expect(proxy?.style.height).toBe("450px");
+    expect(proxy?.style.transform).toContain(
       "scale(0.6666666666666666)"
     );
+    expect(proxyImage?.style.width).toBe("250px");
+    expect(proxyImage?.style.height).toBe("187.5px");
+    expect(proxyImage?.style.transform).toBe("scale(2.4)");
+    expect(proxyImage?.style.transition).toBe("none");
+  });
+
+  test("completes from the outer proxy and hands off to the ready fullscreen image", async () => {
+    vi.useFakeTimers();
+
+    let rafNow = 0;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 1000,
+    });
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      value: 700,
+    });
+    Object.defineProperty(window, "requestAnimationFrame", {
+      configurable: true,
+      value: (callback: FrameRequestCallback) =>
+        window.setTimeout(() => {
+          rafNow += 16;
+          callback(rafNow);
+        }, 16),
+    });
+    Object.defineProperty(window, "cancelAnimationFrame", {
+      configurable: true,
+      value: (id: number) => window.clearTimeout(id),
+    });
+
+    const originalImage = document.createElement("img");
+    originalImage.setAttribute("data-rmg-test", "origin");
+    originalImage.src = "/thumb.jpg";
+    originalImage.style.objectFit = "cover";
+    Object.defineProperty(originalImage, "naturalWidth", {
+      configurable: true,
+      value: 800,
+    });
+    Object.defineProperty(originalImage, "naturalHeight", {
+      configurable: true,
+      value: 600,
+    });
+    document.body.appendChild(originalImage);
+
+    const fullscreenRoot = document.createElement("div");
+    const targetSlide = document.createElement("div");
+    targetSlide.setAttribute("data-rmg-fs-slide", "true");
+    targetSlide.setAttribute("data-rmg-canonical-idx", "0");
+    targetSlide.setAttribute("data-rmg-clone", "false");
+
+    const targetMedia = document.createElement("div");
+    targetMedia.setAttribute("data-rmg-fs-media", "true");
+
+    const targetImage = document.createElement("img");
+    targetImage.setAttribute("data-rmg-test", "target");
+    targetImage.src = "/full.jpg";
+    targetImage.style.objectFit = "contain";
+    targetImage.style.objectPosition = "50% 50%";
+    Object.defineProperty(targetImage, "complete", {
+      configurable: true,
+      value: true,
+    });
+    Object.defineProperty(targetImage, "naturalWidth", {
+      configurable: true,
+      value: 1600,
+    });
+    Object.defineProperty(targetImage, "naturalHeight", {
+      configurable: true,
+      value: 1200,
+    });
+    targetImage.decode = vi.fn(() => Promise.resolve());
+
+    targetMedia.appendChild(targetImage);
+    targetSlide.appendChild(targetMedia);
+    fullscreenRoot.appendChild(targetSlide);
+    document.body.appendChild(fullscreenRoot);
+
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: HTMLElement
+    ) {
+      const testId = this.getAttribute("data-rmg-test");
+      if (testId === "origin") return rect(20, 30, 160, 120);
+      if (testId === "target") return rect(100, 80, 800, 600);
+      return rect(0, 0, 1000, 700);
+    });
+
+    const duplicateImgRef = { current: null as HTMLElement | null };
+    const setShowFullscreenSlider = vi.fn();
+
+    runFullscreenIntro({
+      originalImage,
+      method: "scale",
+      index: 0,
+      normalizedItems: [
+        {
+          kind: "image",
+          src: "/full.jpg",
+          alt: "Full",
+          width: 1600,
+          height: 1200,
+        },
+      ],
+      styles: {
+        fullscreenOverlay: "fullscreenOverlay",
+        fsOverlayCaption: "fsOverlayCaption",
+        open: "open",
+      },
+      fs: {
+        enabled: true,
+        effects: {
+          introDuration: { transform: 360, fade: 180 },
+          introEasing: "linear",
+        },
+      } as any,
+      overlayDivRef: { current: null },
+      duplicateImgRef,
+      overlayCaptionRef: { current: null },
+      overlayCaptionRootRef: { current: null },
+      setShowFullscreenSlider,
+      setFsFadeOpening: vi.fn(),
+      addShield: vi.fn(),
+      resolveFsCaptionPlacement: () => null,
+      baseZ: 1200,
+      fullscreenRootRef: { current: fullscreenRoot },
+    });
+
+    await Promise.resolve();
+    await flushTransitionWarm();
+
+    const proxy = duplicateImgRef.current;
+    const proxyImage = proxy?.querySelector<HTMLImageElement>(
+      '[data-rmg-fs-intro-proxy-image="true"]'
+    );
+    const cropper = proxy?.closest<HTMLElement>(
+      '[data-rmg-fs-intro-cropper="true"]'
+    );
+    const startTransform = proxy?.style.transform;
+    const innerTransform = proxyImage?.style.transform;
+
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+
+    expect(proxy?.style.transform).not.toBe(startTransform);
+    expect(proxyImage?.style.transform).toBe(innerTransform);
+    expect(proxy?.style.transition).toBe("transform 360ms linear");
+    expect(proxyImage?.style.transition).toBe("none");
+
+    const transitionEnd = new Event("transitionend", { bubbles: true });
+    Object.defineProperty(transitionEnd, "propertyName", {
+      configurable: true,
+      value: "transform",
+    });
+    proxy?.dispatchEvent(transitionEnd);
+    await Promise.resolve();
+
+    await flushAnimationFrame();
+    await flushAnimationFrame();
+    expect(setShowFullscreenSlider).toHaveBeenCalledWith(true);
+    expect(proxy?.isConnected).toBe(true);
+
+    await Promise.resolve();
+    for (let frame = 0; frame < 6; frame += 1) {
+      await flushAnimationFrame();
+    }
+    await Promise.resolve();
+
+    expect(targetImage.decode).toHaveBeenCalledTimes(1);
+    expect(cropper?.isConnected).toBe(false);
+    expect(proxy?.isConnected).toBe(false);
+    expect(proxyImage?.isConnected).toBe(false);
+    expect(duplicateImgRef.current).toBeNull();
   });
 
   test("shows a pending spinner until the scale intro starts", async () => {
@@ -417,6 +630,8 @@ describe("fullscreen scale intro", () => {
 
     vi.advanceTimersByTime(140);
     await Promise.resolve();
+    await flushTransitionWarm();
+    await flushAnimationFrame();
 
     expect(layer?.style.opacity).toBe("0");
     expect(spinner?.style.opacity).toBe("1");
